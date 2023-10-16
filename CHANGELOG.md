@@ -1,4 +1,31 @@
-## 1.212.0 (Unreleased)
+## 1.211.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster: modify support steady state;alicloud/resource_alicloud_polardb_cluster_test: modify support steady state. [GH-6557]
+- resource/alicloud_cms_event_rule: Added the field fc_parameters, sls_parameters, mns_parameters, contact_parameters, webhook_parameters, open_api_parameters. [GH-6562]
+- resource/alicloud_adb_db_cluster_lake_version: Added the field resource_group_id, source_db_cluster_id, backup_set_id, restore_to_time, restore_type. [GH-6568]
+- resource/alicloud_cloud_monitor_service_hybrid_double_write: Updated action DescribeHybridDoubleWriteForOutput to DescribeHybridDoubleWrite to fix read error. [GH-6576]
+- resource/alicloud_redis_tair_instance: add new attribute storage_performance_level, storage_size_gb, tags. [GH-6578]
+- resource/alicloud_cen_transit_router_vbr_attachment: add retry code. [GH-6579]
+- docs: fix page anchor. [GH-6580]
+- docs: fixed block link issue in the document. [GH-6581]
+- docs: Fixes the invalid url link. [GH-6586]
+- docs: Fixed invalid links. [GH-6587]
+- docs: fixed block link issue in the document. [GH-6588]
+- docs: fix link. [GH-6589]
+- update links in document. [GH-6582]
+- testcase: modify alicloud_ecs_network_interface_attachmemt, alicloud_ecs_invocation, alicloud_ecs_network_interface, alicloud_ecs_network_interface_permission, alicloud_ecs_key_pair_attachment, alicloud_auto_provisioning_group, alicloud_ecs_snapshot. [GH-6565]
+- testcase: skip testcase in scdn. [GH-6569]
+
+BUG FIXES:
+
+- resource/alicloud_cs_kubernetes_addon: Fix addon resource status check bug; data-source/alicloud_cs_kubernetes_addons: Sort results. [GH-6561]
+- resource/alicloud_ga_endpoint_group: Fixed the traffic_percentage error caused by modify other field. [GH-6564]
+- resource/alicloud_havip_attachment: fix instance_id evaluation; resource/alicloud_route_table_attachment: fix vswitch_id evaluation; resource/alicloud_common_bandwidth_package_attachment: fix instance_id evaluation. [GH-6567]
+- resource/alicloud_resource_manager_resource_directory: Fixed the delete error when status is Enabled. [GH-6574]
+- service_alicloud_bss_open_api: update the error handle of QueryAvailableInstances. [GH-6575]
+
 ## 1.211.0 (September 28, 2023)
 
 - **New Resource:** `alicloud_drds_polardbx_instance` ([#6554](https://github.com/aliyun/terraform-provider-alicloud/issues/6554))

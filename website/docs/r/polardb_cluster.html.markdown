@@ -13,7 +13,7 @@ Provides an PolarDB cluster resource. An PolarDB cluster is an isolated database
 environment in the cloud. An PolarDB cluster can contain multiple user-created
 databases.
 
--> **NOTE:** Available since v1.66.0+.
+-> **NOTE:** Available since v1.66.0.
 
 ## Example Usage
 
@@ -112,8 +112,8 @@ The following arguments are supported:
 * `db_node_class` - (Required) The db_node_class of cluster node.
 -> **NOTE:** Node specifications are divided into cluster version, single node version and History Library version. They can't change each other, but the general specification and exclusive specification of cluster version can be changed. 
   From version 1.204.0, If you need to create a Serverless cluster, `db_node_class` can be set to `polar.mysql.sl.small`.
-* `modify_type` - (Optional, Available since 1.71.2+) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
-* `db_node_count` - (Optional, Available since 1.95.0+)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
+* `modify_type` - (Optional, Available since 1.71.2) Use as `db_node_class` change class, define upgrade or downgrade. Valid values are `Upgrade`, `Downgrade`, Default to `Upgrade`.
+* `db_node_count` - (Optional, Available since 1.95.0)Number of the PolarDB cluster nodes, default is 2(Each cluster must contain at least a primary node and a read-only node). Add/remove nodes by modifying this parameter, valid values: [2~16].  
 -> **NOTE:** To avoid adding or removing multiple read-only nodes by mistake, the system allows you to add or remove one read-only node at a time.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB cluster. it supports multiple zone.
 * `pay_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, Default to `PostPaid`.
@@ -121,62 +121,62 @@ The following arguments are supported:
 * `auto_renew_period` - (Optional) Auto-renewal period of an cluster, in the unit of the month. It is valid when pay_type is `PrePaid`. Valid value:1, 2, 3, 6, 12, 24, 36, Default to 1.
 * `period` - (Optional) The duration that you will buy DB cluster (in month). It is valid when pay_type is `PrePaid`. Valid values: [1~9], 12, 24, 36.
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
-* `db_cluster_ip_array` - (Optional, Type: list, Available since 1.130.0+) db_cluster_ip_array defines how users can send requests to your API. See [`db_cluster_ip_array`](#db_cluster_ip_array) below.
+* `db_cluster_ip_array` - (Optional, Type: list, Available since 1.130.0) db_cluster_ip_array defines how users can send requests to your API. See [`db_cluster_ip_array`](#db_cluster_ip_array) below.
 * `security_ips` - (Optional, Deprecated) This attribute has been deprecated from v1.130.0 and using `db_cluster_ip_array` sub-element `security_ips` instead.
   Its value is same as `db_cluster_ip_array` sub-element `security_ips` value and its db_cluster_ip_array_name is "default".
-* `resource_group_id` (Optional, ForceNew, Computed, Available since 1.96.0+) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
+* `resource_group_id` (Optional, ForceNew, Computed, Available since 1.96.0) The ID of resource group which the PolarDB cluster belongs. If not specified, then it belongs to the default resource group.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 -> **NOTE:** If vswitch_id is not specified, system will get a vswitch belongs to the user automatically.
 * `maintain_time` - (Optional) Maintainable time period format of the instance: HH:MMZ-HH:MMZ (UTC time)
 * `description` - (Optional, Computed) The description of cluster.
-* `collector_status` - (Optional, Available since 1.114.0+) Specifies whether to enable or disable SQL data collector. Valid values are `Enable`, `Disabled`.
+* `collector_status` - (Optional, Available since 1.114.0) Specifies whether to enable or disable SQL data collector. Valid values are `Enable`, `Disabled`.
 * `parameters` - (Optional) Set of parameters needs to be set after DB cluster was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/en/polardb/latest/modifydbclusterparameters) .See [`parameters`](#parameters) below.
-* `tags` - (Optional, Available since 1.68.0+) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since 1.68.0) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `tde_status` - (Optional, Available since 1.121.3+) turn on TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be closed after it is turned on. 
+* `tde_status` - (Optional, Available since 1.121.3) turn on TDE encryption. Valid values are `Enabled`, `Disabled`. Default to `Disabled`. TDE cannot be closed after it is turned on. 
 -> **NOTE:** `tde_status` Cannot modify after created when `db_type` is `PostgreSQL` or `Oracle`.`tde_status` only support modification from `Disabled` to `Enabled` when `db_type` is `MySQL`.
-* `encrypt_new_tables` - (Optional, Available since 1.124.1+) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports. 
+* `encrypt_new_tables` - (Optional, Available since 1.124.1) turn on table auto encryption. Valid values are `ON`, `OFF`. Only MySQL 8.0 supports. 
 -> **NOTE:** `encrypt_new_tables` Polardb MySQL 8.0 cluster, after TDE and Automatic Encryption are enabled, all newly created tables are automatically encrypted in the cluster.
-* `encryption_key` - (Optional, Available since 1.200.0+) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.
-* `role_arn` - (Optional, Available since 1.200.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role. A RAM role is a virtual identity that you can create within your Alibaba Cloud account. For more information see [RAM role overview](https://www.alibabacloud.com/help/en/resource-access-management/latest/ram-role-overview).
-* `security_group_ids` - (Optional, Available since 1.128.0+) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
+* `encryption_key` - (Optional, Available since 1.200.0) The ID of the custom key. `encryption_key` cannot be modified after TDE is opened.
+* `role_arn` - (Optional, Available since 1.200.0) The Alibaba Cloud Resource Name (ARN) of the RAM role. A RAM role is a virtual identity that you can create within your Alibaba Cloud account. For more information see [RAM role overview](https://www.alibabacloud.com/help/en/resource-access-management/latest/ram-role-overview).
+* `security_group_ids` - (Optional, Available since 1.128.0) The ID of the security group. Separate multiple security groups with commas (,). You can add a maximum of three security groups to a cluster.
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~20 minutes. Please make full preparation before changing them.
-* `deletion_lock` - (Optional, Available since 1.169.0+) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
+* `deletion_lock` - (Optional, Available since 1.169.0) turn on table deletion_lock. Valid values are 0, 1. 1 means to open the cluster protection lock, 0 means to close the cluster protection lock
 -> **NOTE:**  Cannot modify after created when `pay_type` is `Prepaid` .`deletion_lock` the cluster protection lock can be turned on or off when `pay_type` is `Postpaid`.
-* `backup_retention_policy_on_cluster_deletion` - (Optional, Available since 1.170.0+) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/deletedbcluster-1)
-* `imci_switch` - (Optional, Available since 1.173.0+) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
+* `backup_retention_policy_on_cluster_deletion` - (Optional, Available since 1.170.0) The retention policy for the backup sets when you delete the cluster.  Valid values are `ALL`, `LATEST`, `NONE`. Value options can refer to the latest docs [DeleteDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/deletedbcluster-1)
+* `imci_switch` - (Optional, Available since 1.173.0) Specifies whether to enable the In-Memory Column Index (IMCI) feature. Valid values are `ON`, `OFF`.
 -> **NOTE:**  Only polardb MySQL Cluster version is available. The cluster with minor version number of 8.0.1 supports the column index feature, and the specific kernel version must be 8.0.1.1.22 or above.
 -> **NOTE:**  The single node, the single node version of the history library, and the cluster version of the history library do not support column save indexes.
-* `sub_category` - (Optional, Available since 1.177.0+)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
-* `creation_option` - (Optional, Available since 1.179.0+) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationOption`.
+* `sub_category` - (Optional, Available since 1.177.0)  The category of the cluster. Valid values are `Exclusive`, `General`. Only MySQL supports.
+* `creation_option` - (Optional, Available since 1.179.0) The method that is used to create a cluster. Valid values are `Normal`,`CloneFromPolarDB`,`CloneFromRDS`,`MigrationFromRDS`,`CreateGdnStandby`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationOption`.
 -> **NOTE:** The default value is Normal. If DBType is set to MySQL and DBVersion is set to 5.6 or 5.7, this parameter can be set to CloneFromRDS or MigrationFromRDS. If DBType is set to MySQL and DBVersion is set to 8.0, this parameter can be set to CreateGdnStandby.
-* `creation_category` - (Optional, ForceNew, Computed, Available since 1.179.0+) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`,`SENormal`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationCategory`.
+* `creation_category` - (Optional, ForceNew, Computed, Available since 1.179.0) The edition of the PolarDB service. Valid values are `Normal`,`Basic`,`ArchiveNormal`,`NormalMultimaster`,`SENormal`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CreationCategory`.
 -> **NOTE:** You can set this parameter to Basic only when DBType is set to MySQL and DBVersion is set to 5.6, 5.7, or 8.0. You can set this parameter to Archive only when DBType is set to MySQL and DBVersion is set to 8.0. From version 1.188.0, `creation_category` can be set to `NormalMultimaster`. From version 1.203.0, `creation_category` can be set to `SENormal`.
-* `source_resource_id` - (Optional, Available since 1.179.0+) The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `SourceResourceId`.
-* `gdn_id` - (Optional, Available since 1.179.0+) The ID of the global database network (GDN).
+* `source_resource_id` - (Optional, Available since 1.179.0) The ID of the source RDS instance or the ID of the source PolarDB cluster. This parameter is required only when CreationOption is set to MigrationFromRDS, CloneFromRDS, or CloneFromPolarDB.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `SourceResourceId`.
+* `gdn_id` - (Optional, Available since 1.179.0) The ID of the global database network (GDN).
 -> **NOTE:** This parameter is required if CreationOption is set to CreateGdnStandby.
-* `clone_data_point` - (Optional, Available since 1.179.0+) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CloneDataPoint`.
+* `clone_data_point` - (Optional, Available since 1.179.0) The time point of data to be cloned. Valid values are `LATEST`,`BackupID`,`Timestamp`.Value options can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `CloneDataPoint`.
 -> **NOTE:** If CreationOption is set to CloneFromRDS, the value of this parameter must be LATEST.
-* `vpc_id` - (Optional, ForceNew, Computed, Available since v1.185.0+) The id of the VPC.
-* `storage_type` - (Optional, ForceNew, Available since v1.203.0+) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`. The standard version only supports MySQL.
+* `vpc_id` - (Optional, ForceNew, Computed, Available since v1.185.0) The id of the VPC.
+* `storage_type` - (Optional, ForceNew, Available since v1.203.0) The storage type of the cluster. Enterprise storage type values are `PSL5`, `PSL4`. The standard version storage type values are `ESSDPL1`, `ESSDPL2`, `ESSDPL3`. The standard version only supports MySQL.
 -> **NOTE:** Serverless cluster does not support this parameter.
-* `storage_space` - (Optional, Computed, Available since v1.203.0+) Storage space charged by space (monthly package). Unit: GB.
+* `storage_space` - (Optional, Computed, Available since v1.203.0) Storage space charged by space (monthly package). Unit: GB.
 -> **NOTE:**  Valid values for PolarDB for MySQL Standard Edition: 20 to 32000. It is valid when pay_type are `PrePaid` ,`PostPaid`.
 -> **NOTE:**  Valid values for PolarDB for MySQL Enterprise Edition: 50 to 100000.It is valid when pay_type is `PrePaid`.
-* `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0+) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
-* `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0+) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
-* `serverless_type` - (Optional, Available since v1.204.0+) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
-* `serverless_steady_switch` - (Optional, Available since v1.212.0+) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
+* `storage_pay_type` - (Optional, ForceNew, Computed, Available since v1.210.0) The billing method of the storage. Valid values `Postpaid`, `Prepaid`.
+* `hot_standby_cluster` - (Optional, Computed, Available since v1.203.0) Whether to enable the hot standby cluster. Valid values are `ON`, `OFF`. Only MySQL supports.
+* `serverless_type` - (Optional, Available since v1.204.0) The type of the serverless cluster. Valid values `AgileServerless`, `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `serverless_steady_switch` - (Optional, Available since v1.211.1) Serverless steady-state switch. Valid values are `ON`, `OFF`. This parameter is valid only for serverless clusters.
   -> **NOTE:** When serverless_steady_switch is `ON` and serverless_type is `SteadyServerless`, parameters `scale_min`, `scale_max`, `scale_ro_num_min` and `scale_ro_num_max` are all required.
-* `scale_min` - (Optional, Available since v1.204.0+) The minimum number of PCUs per node for scaling. Valid values: 1 PCU to 31 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`.· This parameter is valid only for serverless clusters.
-* `scale_max` - (Optional, Available since v1.204.0+) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
-* `scale_ro_num_min` - (Optional, Available since v1.204.0+) The minimum number of read-only nodes for scaling. Valid values: 0 to 15 . It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7 .It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
-* `scale_ro_num_max` - (Optional, Available since v1.204.0+) The maximum number of read-only nodes for scaling. Valid values: 0 to 15. It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7. It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
-* `allow_shut_down` - (Optional, Available since v1.204.0+) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`. This parameter is valid only for serverless clusters.
-* `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0+) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds. This parameter is valid only for serverless clusters.
-* `scale_ap_ro_num_min` - (Optional, Available since v1.212.0+) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
-* `scale_ap_ro_num_max` - (Optional, Available since v1.212.0+) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
+* `scale_min` - (Optional, Available since v1.204.0) The minimum number of PCUs per node for scaling. Valid values: 1 PCU to 31 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`.· This parameter is valid only for serverless clusters.
+* `scale_max` - (Optional, Available since v1.204.0) The maximum number of PCUs per node for scaling. Valid values: 1 PCU to 32 PCUs. It is valid when serverless_type is `AgileServerless`. Valid values: 1 PCU to 8 PCUs.It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `scale_ro_num_min` - (Optional, Available since v1.204.0) The minimum number of read-only nodes for scaling. Valid values: 0 to 15 . It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7 .It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `scale_ro_num_max` - (Optional, Available since v1.204.0) The maximum number of read-only nodes for scaling. Valid values: 0 to 15. It is valid when serverless_type is `AgileServerless`. Valid values: 0 to 7. It is valid when serverless_type is `SteadyServerless`. This parameter is valid only for serverless clusters.
+* `allow_shut_down` - (Optional, Available since v1.204.0) Specifies whether to enable the no-activity suspension feature. Default value: false. Valid values are `true`, `false`. This parameter is valid only for serverless clusters.
+* `seconds_until_auto_pause` - (Optional, Computed, Available since v1.204.0) The detection period for No-activity Suspension. Valid values: 300 to 86,4005. Unit: seconds. The detection duration must be a multiple of 300 seconds. This parameter is valid only for serverless clusters.
+* `scale_ap_ro_num_min` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
+* `scale_ap_ro_num_max` - (Optional, Available since v1.211.1) Number of Read-only Columnar Nodes. Valid values: 0 to 7. This parameter is valid only for serverless clusters. This parameter is required when there are column nodes that support steady-state serverless.
 * `upgrade_type` - (Optional, Available since v1.208.1) Version upgrade type. Valid values are PROXY, DB, ALL. PROXY means upgrading the proxy version, DB means upgrading the db version, ALL means upgrading both db and proxy versions simultaneously.
 * `from_time_service` - (Optional, Available since v1.208.1) Immediate or scheduled kernel version upgrade. Valid values are `true`, `false`. True means immediate execution, False means scheduled execution.
 * `planned_start_time` - (Optional, Available since v1.208.1) The earliest time to start executing a scheduled (i.e. within the target time period) kernel version upgrade task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
@@ -220,11 +220,11 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The PolarDB cluster ID.
-* `connection_string` - (Available since 1.81.0+) PolarDB cluster connection string. 
-* `port` - (Available since 1.196.0+) PolarDB cluster connection port. 
-* `status` - (Available since 1.204.1+) PolarDB cluster status.
-* `create_time` - (Available since 1.204.1+) PolarDB cluster creation time.
-* `tde_region` - (Available since 1.200.0+) The region where the TDE key resides.
+* `connection_string` - (Available since 1.81.0) PolarDB cluster connection string. 
+* `port` - (Available since 1.196.0) PolarDB cluster connection port. 
+* `status` - (Available since 1.204.1) PolarDB cluster status.
+* `create_time` - (Available since 1.204.1) PolarDB cluster creation time.
+* `tde_region` - (Available since 1.200.0) The region where the TDE key resides.
 -> **NOTE:** TDE can be enabled on clusters that have joined a global database network (GDN). After TDE is enabled on the primary cluster in a GDN, TDE is enabled on the secondary clusters in the GDN by default. The key used by the secondary clusters and the region for the key resides must be the same as the primary cluster. The region of the key cannot be modified.
 -> **NOTE:** You cannot enable TDE for the secondary clusters in a GDN. Used to view user KMS activation status.
 
