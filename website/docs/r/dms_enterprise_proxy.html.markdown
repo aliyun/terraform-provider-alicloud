@@ -11,7 +11,7 @@ description: |-
 
 Provides a DMS Enterprise Proxy resource.
 
-For information about DMS Enterprise Proxy and how to use it, see [What is Proxy](https://www.alibabacloud.com/help/en/data-management-service/latest/createproxy).
+For information about DMS Enterprise Proxy and how to use it, see [What is Proxy](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxy).
 
 -> **NOTE:** Available since v1.188.0.
 
