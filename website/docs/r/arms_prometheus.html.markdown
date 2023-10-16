@@ -11,7 +11,7 @@ description: |-
 
 Provides a Application Real-Time Monitoring Service (ARMS) Prometheus resource.
 
-For information about Application Real-Time Monitoring Service (ARMS) Prometheus and how to use it, see [What is Prometheus](https://www.alibabacloud.com/help/en/application-real-time-monitoring-service/latest/api-doc-arms-2019-08-08-api-doc-createprometheusinstance).
+For information about Application Real-Time Monitoring Service (ARMS) Prometheus and how to use it, see [What is Prometheus](https://www.alibabacloud.com/help/en/arms/developer-reference/api-arms-2019-08-08-createprometheusinstance).
 
 -> **NOTE:** Available since v1.203.0.
 

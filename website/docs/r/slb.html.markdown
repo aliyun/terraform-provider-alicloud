@@ -16,7 +16,7 @@ Provides an Application Load Balancer resource.
 -> **NOTE:** At present, to avoid some unnecessary regulation confusion, SLB can not support alicloud international account to create "paybybandwidth" instance.
 
 -> **NOTE:** The supported specifications vary by region. Currently not all regions support guaranteed-performance instances.
-For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/doc-detail/27657.htm).
+For more details about guaranteed-performance instance, see [Guaranteed-performance instances](https://www.alibabacloud.com/help/en/slb/classic-load-balancer/developer-reference/api-createloadbalancer-2#t4182.html).
 
 ## Example Usage
 
@@ -30,7 +30,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  vpc_name   = var.name
   cidr_block = "172.16.0.0/12"
 }
 
@@ -42,8 +42,8 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_slb" "default" {
-  name          = var.name
-  specification = "slb.s2.small"
+  load_balancer_name = var.name
+  load_balancer_spec = "slb.s2.small"
   vswitch_id    = alicloud_vswitch.default.id
   tags = {
     tag_a = 1
