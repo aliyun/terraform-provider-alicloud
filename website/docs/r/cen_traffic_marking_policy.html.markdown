@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud Enterprise Network (CEN) Traffic Marking Policy resource.
 
-For information about Cloud Enterprise Network (CEN) Traffic Marking Policy and how to use it, see [What is Traffic Marking Policy](https://www.alibabacloud.com/help/en/cloud-enterprise-network/latest/api-doc-cbn-2017-09-12-api-doc-createtrafficmarkingpolicy).
+For information about Cloud Enterprise Network (CEN) Traffic Marking Policy and how to use it, see [What is Traffic Marking Policy](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtrafficmarkingpolicy).
 
 -> **NOTE:** Available since v1.173.0.
 

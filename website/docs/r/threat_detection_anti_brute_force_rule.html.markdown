@@ -13,7 +13,7 @@ Provides a Threat Detection Anti Brute Force Rule resource.
 
 For information about Threat Detection Anti Brute Force Rule and how to use it, see [What is Anti Brute Force Rule](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createantibruteforcerule).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
@@ -21,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_threat_detection_anti_brute_force_rule" "default" {
-  anti_brute_force_rule_name = "apispec_test"
+  anti_brute_force_rule_name = "apispec_example"
   forbidden_time             = 360
   uuid_list                  = ["032b618f-b220-4a0d-bd37-fbdc6ef58b6a"]
   fail_count                 = 80
@@ -42,10 +42,11 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
+
 * `id` - The ID of the defense rule.
 * `anti_brute_force_rule_id` - The ID of the defense rule.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Anti Brute Force Rule.
