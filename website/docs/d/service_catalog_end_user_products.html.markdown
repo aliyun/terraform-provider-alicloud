@@ -9,9 +9,9 @@ description: |-
 
 # alicloud_service_catalog_end_user_products
 
-This data source provides Service Catalog End User Product available to the user.[What is End User Product](https://www.alibabacloud.com/help/en/servicecatalog/latest/api-doc-servicecatalog-2021-09-01-api-doc-listproductsasenduser)
+This data source provides Service Catalog End User Product available to the user.[What is End User Product](https://www.alibabacloud.com/help/en/servicecatalog/latest/api-servicecatalog-2021-09-01-listproductsasenduser)
 
--> **NOTE:** Available in 1.197.0+
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 

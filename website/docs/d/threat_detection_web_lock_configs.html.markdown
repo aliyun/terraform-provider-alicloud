@@ -9,13 +9,13 @@ description: |-
 
 # alicloud_threat_detection_web_lock_configs
 
-This data source provides Threat Detection Web Lock Config available to the user.[What is Web Lock Config](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-modifyweblockstart)
+This data source provides Threat Detection Web Lock Config available to the user.[What is Web Lock Config](https://www.alibabacloud.com/help/en/security-center/latest/api-sas-2018-12-03-describeweblockconfiglist)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_threat_detection_web_lock_configs" "default" {
   ids = ["${alicloud_threat_detection_web_lock_config.default.id}"]
 }

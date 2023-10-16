@@ -11,7 +11,7 @@ description: |-
 
 Provides a AliKafka Instance Allowed Ip Attachment resource.
 
-For information about Ali Kafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-doc-alikafka-2019-09-16-api-doc-updateallowedip).
+For information about Ali Kafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-updateallowedip).
 
 -> **NOTE:** Available since v1.163.0.
 
