@@ -671,7 +671,7 @@ The following arguments are supported:
   - true: delete protect.
   - false: no delete protect.
 
--> **NOTE:** `deletion_protection` is valid only when attribute `instance_charge_type` is set to `Postpaid` or `Serverless`, supported engine type: **MySQL**, **PostgresSQL**, **MariaDB**, **MSSQL**.
+-> **NOTE:** `deletion_protection` is valid only when attribute `instance_charge_type` is set to `Postpaid` or `Serverless`, supported engine type: `MySQL`, `PostgreSQL`, `MariaDB`, `MSSQL`.
 * `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
@@ -685,12 +685,7 @@ The following arguments are supported:
   * **serverless_basic**: RDS Serverless Basic Edition. This edition is available only for instances that run MySQL and PostgreSQL. (Available in 1.200.0+)
   * **serverless_standard**: RDS Serverless Basic Edition. This edition is available only for instances that run MySQL and PostgreSQL. (Available in 1.204.0+)
   * **serverless_ha**: RDS Serverless High-availability Edition for SQL Server. (Available in 1.204.0+)
-
-* `tcp_connection_type` - (Optional, Available in 1.171.0+) The availability check method of the instance. Valid values:
-  - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
-  - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
-
-
+  
 -> **NOTE:** `zone_id_slave_a` and `zone_id_slave_b` can specify slave zone ids when creating the high-availability or enterprise edition instances. Meanwhile, `vswitch_id` needs to pass in the corresponding vswitch id to the slave zone by order (If the `vswitch_id` is not specified, the classic network version will be created). For example, `zone_id` = "zone-a" and `zone_id_slave_a` = "zone-c", `zone_id_slave_b` = "zone-b", then the `vswitch_id` must be "vsw-zone-a,vsw-zone-c,vsw-zone-b". Of course, you can also choose automatic allocation , for example, `zone_id` = "zone-a" and `zone_id_slave_a` = "Auto",`zone_id_slave_b` = "Auto", then the `vswitch_id` must be "vsw-zone-a,Auto,Auto". The list contains up to 2 slave zone ids , separated by commas.
 * `pg_hba_conf` - (Optional, Available in 1.155.0+) The configuration of [AD domain](https://www.alibabacloud.com/help/en/doc-detail/349288.htm) . See [`pg_hba_conf`](#pg_hba_conf) below.
 * `babelfish_port` - (Optional, Available in 1.176.0+) The TDS port of the instance for which Babelfish is enabled.

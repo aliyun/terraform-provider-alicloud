@@ -10,7 +10,7 @@ description: |-
 # alicloud_gpdb_instance
 
 Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-doc-gpdb-2016-05-03-api-doc-createdbinstance)
+You can see detail product introduction [here](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance)
 
 -> **NOTE:** Available since v1.47.0.
 
@@ -64,7 +64,7 @@ resource "alicloud_gpdb_instance" "default" {
 
 The following arguments are supported:
 
-* `engine` - (Required, ForceNew) The database engine used by the instance. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-doc-gpdb-2016-05-03-api-doc-createdbinstance) `EngineVersion`.
+* `engine` - (Required, ForceNew) The database engine used by the instance. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance) `EngineVersion`.
 * `engine_version` - (Required, ForceNew) The version of the database engine used by the instance.
 * `vswitch_id` - (Required, ForceNew) The vswitch id.
 * `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).

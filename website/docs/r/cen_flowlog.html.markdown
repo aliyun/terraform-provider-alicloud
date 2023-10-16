@@ -7,15 +7,15 @@ description: |-
   Provides a Alicloud CEN manage route entried resource.
 ---
 
-# alicloud\_cen_flowlog
+# alicloud_cen_flowlog
 
 This resource used to create a flow log function in Cloud Enterprise Network (CEN). 
 By using the flow log function, you can capture the traffic data of the network instances in different regions of a CEN. 
 You can also use the data aggregated in flow logs to analyze cross-region traffic flows, minimize traffic costs, and troubleshoot network faults.
 
-For information about CEN flow log and how to use it, see [Manage CEN flowlog](https://www.alibabacloud.com/help/doc-detail/123006.htm).
+For information about CEN flow log and how to use it, see [Manage CEN flowlog](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createflowlog).
 
--> **NOTE:** Available in 1.73.0+
+-> **NOTE:** Available since v1.73.0.
 
 ## Example Usage
 
@@ -71,4 +71,3 @@ CEN flowlog can be imported using the id, e.g.
 ```shell
 $ terraform import alicloud_cen_flowlog.default flowlog-tig1xxxxxx
 ```
-

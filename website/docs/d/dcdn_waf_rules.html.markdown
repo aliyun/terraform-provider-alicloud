@@ -9,9 +9,9 @@ description: |-
 
 # alicloud_dcdn_waf_rules
 
-This data source provides Dcdn Waf Rule available to the user.[What is Waf Rule](https://www.alibabacloud.com/help/en/dynamic-route-for-cdn/latest/configure-protection-rules)
+This data source provides Dcdn Waf Rule available to the user.[What is Waf Rule](https://www.alibabacloud.com/help/en/dcdn/developer-reference/api-dcdn-2018-01-15-batchcreatedcdnwafrules)
 
--> **NOTE:** Available in 1.201.0+
+-> **NOTE:** Available since v1.201.0.
 
 ## Example Usage
 
@@ -45,6 +45,14 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the Waf Rule.
   * `action` - Specifies the action of the rule.
   * `cn_region_list` - The blocked regions in the Chinese mainland, separated by commas (,).
+  * `regular_types` - The type of the regular expression. If the value of the tags field contains waf_group, you can specify this field.
+  * `remote_addr` - Filter by IP address.
+  * `waf_group_ids` - The id of the waf rule group.
+  * `effect` - The effective range of the frequency control blacklist.
+  * `other_region_list` - The effective range of the frequency control blacklist.
+  * `cc_status` - Whether to turn on Frequency Control, on/off
+  * `scenes` - List of protection scenarios
+  * `regular_rules` - The regular expression.
   * `conditions` - The trigger condition of the rule.
     * `key` - The match field.
     * `op_value` - The logical symbol.
@@ -57,14 +65,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `threshold` - The trigger threshold of rate limiting. Valid values: 2 to 500000. Unit: requests.
     * `ttl` - The validity period of the blacklist. Valid values: 60 to 86400. Unit: seconds.
     * `status` - The information about the HTTP status code.
-      * `codet` - The HTTP status code returned.
+      * `code` - The HTTP status code returned.
       * `ratio` - The percentage of HTTP status codes.
       * `count` - The number of times that the HTTP status code that was returned.
-  * `regular_types` - The type of the regular expression. If the value of the tags field contains waf_group, you can specify this field.
-  * `remote_addr` - Filter by IP address.
-  * `waf_group_ids` - The id of the waf rule group.
-  * `effect` - The effective range of the frequency control blacklist.
-  * `other_region_list` - The effective range of the frequency control blacklist.
-  * `cc_status` - Whether to turn on Frequency Control, on/off
-  * `scenes` - List of protection scenarios
-  * `regular_rules` - The regular expression.
