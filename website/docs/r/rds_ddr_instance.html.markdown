@@ -11,7 +11,7 @@ description: |-
 
 Provide RDS remote disaster recovery instance resources. 
 
-For information about RDS remote disaster recovery instance and how to use it, see [What is ApsaraDB for RDS Remote Disaster Recovery](https://www.alibabacloud.com/help/en/apsaradb-for-rds/latest/api-rds-2014-08-15-createddrinstance).
+For information about RDS remote disaster recovery instance and how to use it, see [What is ApsaraDB for RDS Remote Disaster Recovery](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-createddrinstance).
 
 -> **NOTE:** Available since v1.198.0.
 

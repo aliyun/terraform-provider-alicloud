@@ -9,13 +9,13 @@ description: |-
 
 # alicloud_dms_enterprise_proxy_accesses
 
-This data source provides DMS Enterprise Proxy Access available to the user.[What is Proxy Access](https://www.alibabacloud.com/help/zh/data-management-service/latest/api-doc-dms-enterprise-2018-11-01-api-doc-createproxyaccess)
+This data source provides DMS Enterprise Proxy Access available to the user.[What is Proxy Access](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxy)
 
 -> **NOTE:** Available in 1.195.0+
 
 ## Example Usage
 
-```
+```terraform
 resource "alicloud_dms_enterprise_proxy_access" "default" {
   indep_password = "PASSWORD-DEMO"
   proxy_id       = 1881
