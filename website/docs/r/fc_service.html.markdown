@@ -10,7 +10,7 @@ description: |-
 # alicloud_fc_service
 
 Provides a Alicloud Function Compute Service resource. The resource is the base of launching Function and Trigger configuration.
- For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/en/function-compute/latest/api-doc-fc-open-2021-04-06-api-doc-createservice).
+ For information about Service and how to use it, see [What is Function Compute](https://www.alibabacloud.com/help/en/fc/developer-reference/api-fc-open-2021-04-06-createservice).
 
 -> **NOTE:** The resource requires a provider field 'account_id'. [See account_id](https://www.terraform.io/docs/providers/alicloud/index.html#account_id).
 

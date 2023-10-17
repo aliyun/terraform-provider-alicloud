@@ -11,7 +11,7 @@ description: |-
 
 Provides a Hybrid Backup Recovery (HBR) Hana Backup Plan resource.
 
-For information about Hybrid Backup Recovery (HBR) Hana Backup Plan and how to use it, see [What is Hana Backup Plan](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-doc-hbr-2017-09-08-api-doc-createhanabackupplan).
+For information about Hybrid Backup Recovery (HBR) Hana Backup Plan and how to use it, see [What is Hana Backup Plan](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-hbr-2017-09-08-createhanabackupplan).
 
 -> **NOTE:** Available in v1.179.0+.
 

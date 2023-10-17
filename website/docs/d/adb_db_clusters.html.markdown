@@ -47,7 +47,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `clusters` - A list of Adb Db Clusters. Each element contains the following attributes:
 	* `auto_renew_period` - Auto-renewal period of an cluster, in the unit of the month.
 	* `commodity_code` - The name of the service.
-	* `compute_resource` - The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources. For more information, see [Specifications](https://www.alibabacloud.com/help/en/doc-detail/144851.htm).
+	* `compute_resource` - The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources.
 	* `connection_string` - The endpoint of the cluster.
 	* `create_time` - The CreateTime of the ADB cluster.
 	* `db_cluster_category` - The db cluster category.

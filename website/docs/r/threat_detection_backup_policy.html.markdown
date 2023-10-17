@@ -36,10 +36,10 @@ resource "alicloud_threat_detection_backup_policy" "default" {
 The following arguments are supported:
 
 * `backup_policy_name` - (Required) Protection of the Name of the Policy.
-* `policy` - (Required) The Specified Protection Policies of the Specific Configuration. see [how to use it](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-createbackuppolicy).
+* `policy` - (Required) The Specified Protection Policies of the Specific Configuration. see [how to use it](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-createbackuppolicy).
 * `policy_version` - (Required, ForceNew) Anti-Blackmail Policy Version. Valid values: `1.0.0`, `2.0.0`.
 * `uuid_list` - (Required) Specify the Protection of Server UUID List.
-* `policy_region_id` - (Optional) The region ID of the non-Alibaba cloud server. You can call the [DescribeSupportRegion](https://www.alibabacloud.com/help/en/security-center/latest/api-doc-sas-2018-12-03-api-doc-describesupportregion) interface to view the region supported by anti-ransomware, and then select the region supported by anti-ransomware according to the region where your non-Alibaba cloud server is located.
+* `policy_region_id` - (Optional) The region ID of the non-Alibaba cloud server. You can call the [DescribeSupportRegion](https://www.alibabacloud.com/help/en/security-center/developer-reference/api-sas-2018-12-03-describesupportregion) interface to view the region supported by anti-ransomware, and then select the region supported by anti-ransomware according to the region where your non-Alibaba cloud server is located.
 
 ## Attributes Reference
 

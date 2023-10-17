@@ -11,7 +11,7 @@ description: |-
 
 Provides a DNS Monitor Config resource.
 
-For information about DNS Monitor Config and how to use it, see [What is Monitor Config](https://www.alibabacloud.com/help/en/doc-detail/198064.html).
+For information about DNS Monitor Config and how to use it, see [What is Monitor Config](https://www.alibabacloud.com/help/en/alibaba-cloud-dns/latest/api-alidns-2015-01-09-adddnsgtmmonitor).
 
 -> **NOTE:** Available since v1.153.0.
 
@@ -90,7 +90,7 @@ The following arguments are supported:
 * `interval` - (Required) The health check interval. Unit: seconds. Valid values: `60`.
 * `isp_city_node` - (Required) The Monitoring node. See [`isp_city_node`](#isp_city_node) below for details.
 * `lang` - (Optional) The lang.
-* `monitor_extend_info` - (Required) The extended information. This value follows the json format. For more details, see the [description of MonitorExtendInfo in the Request parameters table for details](https://www.alibabacloud.com/help/en/doc-detail/198064.html).
+* `monitor_extend_info` - (Required) The extended information. This value follows the json format. For more details, see the [description of MonitorExtendInfo in the Request parameters table for details](https://www.alibabacloud.com/help/en/alibaba-cloud-dns/latest/api-alidns-2015-01-09-adddnsgtmmonitor).
 * `protocol_type` - (Required) The health check protocol. Valid values: `HTTP`, `HTTPS`, `PING`, `TCP`.
 * `timeout` - (Required) The timeout period. Unit: milliseconds. Valid values: `2000`, `3000`, `5000`, `10000`.
 

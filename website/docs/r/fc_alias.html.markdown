@@ -10,7 +10,7 @@ description: |-
 # alicloud_fc_alias
 
 Creates a Function Compute service alias. Creates an alias that points to the specified Function Compute service version. 
- For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/en/function-compute/latest/api-doc-fc-open-2021-04-06-api-doc-createalias).
+ For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/en/fc/developer-reference/api-createalias).
 
 -> **NOTE:** Available since v1.104.0.
 

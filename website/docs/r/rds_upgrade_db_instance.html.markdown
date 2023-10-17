@@ -91,8 +91,8 @@ The following arguments are supported:
   * **cloud_essd2**: ESSDs of PL2.
   * **cloud_essd3**: ESSDs of PL3.
 * `payment_type` - (Required) The billing method of the new instance. Valid values: `PayAsYouGo` and `Subscription`.
-* `db_instance_class` - (Required) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
-* `db_instance_storage` - (Required) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/doc-detail/26312.htm).
+* `db_instance_class` - (Required) The instance type of the new instance. For information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
+* `db_instance_storage` - (Required) The storage capacity of the new instance. Unit: GB. The storage capacity increases in increments of 5 GB. For more information, see [Primary ApsaraDB RDS instance types](https://www.alibabacloud.com/help/en/rds/product-overview/primary-apsaradb-rds-instance-types).
 
 -> **NOTE:** The default value of this parameter is the storage capacity of the original instance.
 * `vpc_id` - (Optional, Computed) The ID of the VPC to which the new instance belongs.
@@ -170,10 +170,10 @@ The following arguments are supported:
 
 -> **NOTE:** SQL Server 2017 cluster version is currently not supported.
 * `tde_status` - (Optional) Specifies whether to enable TDE. Valid values: `Enabled` and `Disabled`.
-* `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/doc-detail/26243.htm) operation to query the most recent region list.
+* `zone_id` - (Optional, Computed, ForceNew) The ID of the zone to which the new instance belongs. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query the most recent region list.
 
 -> **NOTE:** The default value of this parameter is the ID of the zone to which the original instance belongs.
-* `zone_id_slave_1` - (Optional, Computed, ForceNew) The ID of the zone to which the secondary instance of the new instance belongs. You can specify this parameter only when the original instance runs RDS High-availability Edition. You can select a zone that belongs to the region where the original instance resides. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/kms/developer-reference/api-describeregions) operation to query zone IDs.
+* `zone_id_slave_1` - (Optional, Computed, ForceNew) The ID of the zone to which the secondary instance of the new instance belongs. You can specify this parameter only when the original instance runs RDS High-availability Edition. You can select a zone that belongs to the region where the original instance resides. You can call the [DescribeRegions](https://www.alibabacloud.com/help/en/rds/developer-reference/api-rds-2014-08-15-describeregions) operation to query zone IDs.
 * `engine` - (Optional, Computed, ForceNew) Database type. Value options: MySQL, SQLServer, PostgreSQL.
 * `parameters` - (Optional, Computed) Set of parameters needs to be set after DB instance was launched. Available parameters can refer to the latest docs [View database parameter templates](https://www.alibabacloud.com/help/doc-detail/26284.htm). See [`parameters`](#parameters) below.
 * `force_restart` - (Optional) Set it to true to make some parameter efficient when modifying them. Default to false.

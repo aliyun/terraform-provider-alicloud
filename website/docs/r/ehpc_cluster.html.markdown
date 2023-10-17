@@ -11,7 +11,7 @@ description: |-
 
 Provides a Ehpc Cluster resource.
 
-For information about Ehpc Cluster and how to use it, see [What is Cluster](https://www.alibabacloud.com/help/e-hpc/latest/createcluster).
+For information about Ehpc Cluster and how to use it, see [What is Cluster](https://www.alibabacloud.com/help/en/e-hpc/developer-reference/api-ehpc-2018-04-12-createcluster).
 
 -> **NOTE:** Available since v1.173.0.
 

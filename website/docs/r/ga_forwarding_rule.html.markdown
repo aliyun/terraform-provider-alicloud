@@ -151,7 +151,7 @@ The rule_actions supports the following:
 
 * `order` (Required, Int) Forwarding priority.
 * `rule_action_type` (Required) Forward action type.
-* `rule_action_value` (Optional, Available since v1.207.0) The value of the forwarding action type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-doc-ga-2019-11-20-api-doc-createforwardingrules).
+* `rule_action_value` (Optional, Available since v1.207.0) The value of the forwarding action type. For more information, see [How to use it](https://www.alibabacloud.com/help/en/global-accelerator/latest/api-ga-2019-11-20-createforwardingrules).
 * `forward_group_config` (Optional, Set) Forwarding configuration. See [`forward_group_config`](#rule_actions-forward_group_config) below.
 -> **NOTE:** From version 1.207.0, We recommend that you do not use `forward_group_config`, and we recommend that you use the `rule_action_type` and `rule_action_value` to configure forwarding actions.
 

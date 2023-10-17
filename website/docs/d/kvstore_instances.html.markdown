@@ -31,7 +31,7 @@ The following arguments are supported:
 * `ids` - (Optional, Available 1.52.2+) A list of KVStore DBInstance IDs.
 * `instance_type` - (Optional) The engine type of the KVStore DBInstance. Options are `Memcache`, and `Redis`. If no value is specified, all types are returned.
 * `status` - (Optional) The status of the KVStore DBInstance. Valid values: `Changing`, `CleaningUpExpiredData`, `Creating`, `Flushing`, `HASwitching`, `Inactive`, `MajorVersionUpgrading`, `Migrating`, `NetworkModifying`, `Normal`, `Rebooting`, `SSLModifying`, `Transforming`, `ZoneMigrating`.
-* `instance_class`- (Optional) Type of the applied ApsaraDB for Redis instance. For more information, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/61135.htm).
+* `instance_class`- (Optional) Type of the applied ApsaraDB for Redis instance. For more information, see [Instance type table](https://help.aliyun.com/zh/redis/developer-reference/instance-types).
 * `vpc_id` - (Optional) Used to retrieve instances belong to specified VPC.
 * `vswitch_id` - (Optional) Used to retrieve instances belong to specified `vswitch` resources.
 * `tags` - (Optional) Query the instance bound to the tag. The format of the incoming value is `json` string, including `TagKey` and `TagValue`. `TagKey` cannot be null, and `TagValue` can be empty. Format example `{"key1":"value1"}`.
