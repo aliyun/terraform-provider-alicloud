@@ -10,7 +10,7 @@ description: |-
 
 Provides a Quotas Quota Application resource. Details of Quota Application.
 
-For information about Quotas Quota Application and how to use it, see [What is Quota Application](https://www.alibabacloud.com/help/en/quota-center/latest/api-doc-quotas-2020-05-10-api-doc-createquotaapplication).
+For information about Quotas Quota Application and how to use it, see [What is Quota Application](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-createquotaapplication).
 
 -> **NOTE:** Available since v1.117.0.
 

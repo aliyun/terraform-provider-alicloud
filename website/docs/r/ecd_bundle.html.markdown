@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECD Bundle resource.
 
-For information about ECD Bundle and how to use it, see [What is Bundle](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createbundle).
+For information about ECD Bundle and how to use it, see [What is Bundle](https://www.alibabacloud.com/help/en/wuying-workspace/developer-reference/api-ecd-2020-09-30-createbundle).
 
 -> **NOTE:** Available since v1.170.0.
 

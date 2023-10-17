@@ -11,7 +11,7 @@ description: |-
 
 Provides a ECD Desktop resource.
 
-For information about ECD Desktop and how to use it, see [What is Desktop](https://www.alibabacloud.com/help/en/elastic-desktop-service/latest/api-doc-ecd-2020-09-30-api-doc-createdesktops)
+For information about ECD Desktop and how to use it, see [What is Desktop](https://www.alibabacloud.com/help/en/wuying-workspace/developer-reference/api-ecd-2020-09-30-createdesktops)
 
 -> **NOTE:** Available since v1.144.0.
 

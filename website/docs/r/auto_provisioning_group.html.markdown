@@ -96,7 +96,7 @@ The following arguments are supported:
 * `valid_until` - (Optional, ForceNew) The time when the auto provisioning group expires. The period of time between this point in time and the point in time specified by the `valid_from` parameter is the effective time period of the auto provisioning group.By default, an auto provisioning group never expires.
 * `launch_template_config` - (Required, ForceNew) DataDisk mappings to attach to ecs instance. See [`Block config`](#block-config) below for details.
 
-### `Block config`
+### `Block-config`
 
 The config mapping supports the following:
 * `instance_type` - (Optional) The instance type of the Nth extended configurations of the launch template.

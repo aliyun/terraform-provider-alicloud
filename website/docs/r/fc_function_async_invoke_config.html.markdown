@@ -10,7 +10,7 @@ description: |-
 # alicloud_fc_function_async_invoke_config
 
 Manages an asynchronous invocation configuration for a FC Function or Alias.  
- For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/en/function-compute/latest/api-doc-fc-open-2021-04-06-api-doc-putfunctionasyncinvokeconfig).
+ For the detailed information, please refer to the [developer guide](https://www.alibabacloud.com/help/en/fc/developer-reference/api-fc-open-2021-04-06-putfunctionasyncinvokeconfig).
 
 -> **NOTE:** Available since v1.100.0.
 

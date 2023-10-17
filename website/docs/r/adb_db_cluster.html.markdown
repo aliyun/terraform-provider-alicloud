@@ -70,7 +70,7 @@ The alicloud_adb_cluster resource allows you to manage your adb cluster, but Ter
 The following arguments are supported:
 
 * `auto_renew_period` - (Optional, Int) Auto-renewal period of an cluster, in the unit of the month. It is valid when `payment_type` is `Subscription`. Valid values: `1`, `2`, `3`, `6`, `12`, `24`, `36`. Default Value: `1`.
-* `compute_resource` - (Optional) The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources. For more information, see [ComputeResource](https://www.alibabacloud.com/help/en/doc-detail/144851.htm)
+* `compute_resource` - (Optional) The specifications of computing resources in elastic mode. The increase of resources can speed up queries. AnalyticDB for MySQL automatically scales computing resources. For more information, see [ComputeResource](https://www.alibabacloud.com/help/en/analyticdb-for-mysql/developer-reference/api-adb-2019-03-15-describecomputeresource)
 * `db_cluster_category` - (Required) The db cluster category. Valid values: `Basic`, `Cluster`, `MixedStorage`.
 * `db_cluster_class` - (Deprecated since v1.121.2) It duplicates with attribute db_node_class and is deprecated from 1.121.2.
 * `db_cluster_version` - (Optional, ForceNew) The db cluster version. Valid values: `3.0`. Default Value: `3.0`.

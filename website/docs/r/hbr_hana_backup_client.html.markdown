@@ -11,7 +11,7 @@ description: |-
 
 Provides a Hybrid Backup Recovery (HBR) Hana Backup Client resource.
 
-For information about Hybrid Backup Recovery (HBR) Hana Backup Client and how to use it, see [What is Hana Backup Client](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-doc-hbr-2017-09-08-api-doc-createclients).
+For information about Hybrid Backup Recovery (HBR) Hana Backup Client and how to use it, see [What is Hana Backup Client](https://www.alibabacloud.com/help/en/hybrid-backup-recovery/latest/api-hbr-2017-09-08-createclients).
 
 -> **NOTE:** Available in v1.198.0+.
 

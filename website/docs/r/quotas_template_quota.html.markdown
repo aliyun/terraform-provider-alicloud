@@ -11,7 +11,7 @@ description: |-
 
 Provides a Quotas Template Quota resource. 
 
-For information about Quotas Template Quota and how to use it, see [What is Template Quota](https://www.alibabacloud.com/help/en/quota-center/latest/api-doc-quotas-2020-05-10-api-doc-createtemplatequotaitem).
+For information about Quotas Template Quota and how to use it, see [What is Template Quota](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-createtemplatequotaitem).
 
 -> **NOTE:** Available since v1.206.0.
 

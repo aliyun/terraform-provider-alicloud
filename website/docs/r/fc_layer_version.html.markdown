@@ -11,7 +11,7 @@ description: |-
 
 Provides a Function Compute Layer Version resource.
 
-For information about FC Layer Version and how to use it, see [What is Layer Version](https://www.alibabacloud.com/help/en/icms-test/latest/api-doc-pre-fc-open-2021-04-06-api-doc-createlayerversion).
+For information about FC Layer Version and how to use it, see [What is Layer Version](https://www.alibabacloud.com/help/en/fc/developer-reference/api-fc-open-2021-04-06-createlayerversion).
 
 -> **NOTE:** Available since v1.180.0.
 
