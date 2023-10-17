@@ -123,3 +123,69 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceEventRuleTarge
 
 	return object, nil
 }
+
+func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgentProcess(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeMonitoringAgentProcesses"
+
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"InstanceId": parts[0],
+	}
+
+	idExist := false
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	resp, err := jsonpath.Get("$.NodeProcesses.NodeProcess", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NodeProcesses.NodeProcess", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MonitoringAgentProcess", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["InstanceId"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["ProcessId"]) == parts[1] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MonitoringAgentProcess", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
