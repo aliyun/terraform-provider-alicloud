@@ -1631,6 +1631,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_write":             resourceAliCloudCloudMonitorServiceHybridDoubleWrite(),
 			"alicloud_event_bridge_connection":                               resourceAliCloudEventBridgeConnection(),
 			"alicloud_event_bridge_api_destination":                          resourceAliCloudEventBridgeApiDestination(),
+			"alicloud_cloud_monitor_service_monitoring_agent_process":        resourceAliCloudCloudMonitorServiceMonitoringAgentProcess(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
