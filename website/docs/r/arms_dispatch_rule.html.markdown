@@ -98,7 +98,7 @@ The label_match_expression_groups supports the following:
 ### `label_match_expression_grid-label_match_expression_groups-label_match_expressions`
 The label_match_expressions supports the following:
 
-* `key` - (Required) The key of the tag of the dispatch rule. Valud values:
+* `key` - (Required) The key of the tag of the dispatch rule. Valid values:
   * _aliyun_arms_userid: user ID
   * _aliyun_arms_involvedObject_kind: type of the associated object
   * _aliyun_arms_involvedObject_id: ID of the associated object 

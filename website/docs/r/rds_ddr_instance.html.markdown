@@ -328,7 +328,7 @@ The multiple zone ID can be retrieved by setting `multi` to "true" in the data s
   - true: delete protect.
   - false: no delete protect.
 
--> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgresSQL**, **MariaDB**, **MSSQL**.
+-> **NOTE:** `deletion_protection` is valid only when attribute `payment_type` is set to `PayAsYouGo`, supported engine type: **MySQL**, **PostgreSQL**, **MariaDB**, **MSSQL**.
 * `tcp_connection_type` - (Optional) The availability check method of the instance. Valid values:
   - **SHORT**: Alibaba Cloud uses short-lived connections to check the availability of the instance.
   - **LONG**: Alibaba Cloud uses persistent connections to check the availability of the instance.
