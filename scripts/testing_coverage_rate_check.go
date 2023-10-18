@@ -134,7 +134,7 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 
 	for key, value := range schemaAttributes {
 		// "dry_run" or removed
-		if key == "dry_run" || len(value.Removed) != 0 {
+		if key == "dry_run" {
 			continue
 		}
 		(*schemaAllSet).Add(key)
@@ -154,6 +154,10 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 func getSchemaAttributes(rootName string, schemaAttributes map[string]SchemaAttribute,
 	resourceSchema map[string]*schema.Schema) {
 	for key, value := range resourceSchema {
+		if len(value.Removed) != 0 {
+			continue
+		}
+
 		if rootName != "" {
 			key = rootName + "." + key
 		}
@@ -167,7 +171,6 @@ func getSchemaAttributes(rootName string, schemaAttributes map[string]SchemaAttr
 				ForceNew:   value.ForceNew,
 				Default:    fmt.Sprint(value.Default),
 				Deprecated: value.Deprecated,
-				Removed:    value.Removed,
 			}
 		}
 		if value.Type == schema.TypeSet || value.Type == schema.TypeList {
@@ -283,7 +286,9 @@ func getTestCaseAttr(filePath string, resourceName string,
 					if len(attrStr) != 0 {
 						attrSlice := strings.Split(attrStr, ",")
 						for _, v := range attrSlice {
-							(*testIgnoreSet).Add(v)
+							if len(v) != 0 {
+								(*testIgnoreSet).Add(v)
+							}
 						}
 					}
 					ignoreStr = ""
