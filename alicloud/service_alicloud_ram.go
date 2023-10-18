@@ -303,18 +303,30 @@ func (s *RamService) DescribeRamGroupMembership(id string) (*ram.ListUsersForGro
 	request := ram.CreateListUsersForGroupRequest()
 	request.RegionId = s.client.RegionId
 	request.GroupName = id
-	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-		return ramClient.ListUsersForGroup(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	users := []ram.User{}
+
+	var raw interface{}
+	var err error
+	for {
+		raw, err = s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+			return ramClient.ListUsersForGroup(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"EntityNotExist"}) {
+				return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+		response = raw.(*ram.ListUsersForGroupResponse)
+		users = append(users, response.Users.User...)
+		if !response.IsTruncated {
+			break
+		}
+		request.Marker = response.Marker
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response = raw.(*ram.ListUsersForGroupResponse)
-	if len(response.Users.User) > 0 {
+	if len(users) > 0 {
 		return response, nil
 	}
 	return response, WrapErrorf(err, NotFoundMsg, ProviderERROR)

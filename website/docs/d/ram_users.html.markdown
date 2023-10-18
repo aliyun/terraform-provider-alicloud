@@ -16,17 +16,71 @@ This data source provides a list of RAM users in an Alibaba Cloud account accord
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
+resource "alicloud_ram_group" "default" {
+  name     = "group1"
+  comments = "group comments"
+  force    = true
+}
+
+resource "alicloud_ram_user" "default" {
+  name         = "user-example"
+  display_name = "displayname"
+  mobile       = "86-18888888888"
+  email        = "hello.uuu@aaa.com"
+  comments     = "yoyoyo"
+}
+
+resource "alicloud_ram_group_membership" "default" {
+  group_name = alicloud_ram_group.default.name
+  user_names = ["${alicloud_ram_user.default.name}"]
+}
+
+resource "alicloud_ram_policy" "default" {
+  policy_name     = "ram-policy-example"
+  policy_document = <<EOF
+			{
+				"Statement": [
+				 {
+					"Action": [
+					"oss:ListObjects",
+					"oss:ListObjects"
+			  		],
+			  		"Effect": "Deny",
+			  		"Resource": [
+						"acs:oss:*:*:mybucket",
+						"acs:oss:*:*:mybucket/*"
+			  		]
+				 }
+		  		],
+				"Version": "1"
+			}
+	  		EOF
+  description     = "this is a policy example"
+  force           = true
+}
+
+resource "alicloud_ram_user_policy_attachment" "default" {
+  policy_name = alicloud_ram_policy.default.policy_name
+  user_name   = alicloud_ram_user.default.name
+  policy_type = alicloud_ram_policy.default.type
+}
+
 data "alicloud_ram_users" "users_ds" {
   output_file = "users.txt"
-  group_name  = "group1"
-  policy_name = "AliyunACSDefaultAccess"
+  group_name  = alicloud_ram_group.default.name
+  policy_name = alicloud_ram_policy.default.policy_name
   policy_type = "Custom"
-  name_regex  = "^user"
+  name_regex  = alicloud_ram_user.default.name
 }
 
 output "first_user_id" {
   value = data.alicloud_ram_users.users_ds.users.0.id
 }
+
 ```
 
 ## Argument Reference
