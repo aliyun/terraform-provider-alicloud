@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudRAMGroupMembership_basic(t *testing.T) {
+func TestAccAliCloudRAMGroupMembership_basic(t *testing.T) {
 	var v *ram.ListUsersForGroupResponse
 	resourceId := "alicloud_ram_group_membership.default"
 	ra := resourceAttrInit(resourceId, groupMenbershipMap)
@@ -166,17 +166,26 @@ func testAccCheckRamGroupMembershipDestroy(s *terraform.State) error {
 
 		request := ram.CreateListUsersForGroupRequest()
 		request.GroupName = rs.Primary.ID
+		users := []ram.User{}
 
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.ListUsersForGroup(request)
-		})
+		for {
+			raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+				return ramClient.ListUsersForGroup(request)
+			})
 
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
-			return WrapError(err)
+			if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Group"}) {
+				return WrapError(err)
+			}
+
+			response, _ := raw.(*ram.ListUsersForGroupResponse)
+			users = append(users, response.Users.User...)
+			if !response.IsTruncated {
+				break
+			}
+			request.Marker = response.Marker
 		}
-		response, _ := raw.(*ram.ListUsersForGroupResponse)
-		if len(response.Users.User) > 0 {
-			for _, v := range response.Users.User {
+		if len(users) > 0 {
+			for _, v := range users {
 				for _, u := range rs.Primary.Meta["user_names"].([]string) {
 					if v.UserName == u {
 						return WrapError(Error("Error membership still exist."))

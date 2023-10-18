@@ -167,31 +167,39 @@ func dataSourceAlicloudRamUsersRead(d *schema.ResourceData, meta interface{}) er
 	if groupNameOk {
 		request := ram.CreateListUsersForGroupRequest()
 		request.GroupName = groupName.(string)
+		users := []ram.User{}
 
 		var raw interface{}
 		var err error
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
-			raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-				return ramClient.ListUsersForGroup(request)
+		for {
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutRead)), func() *resource.RetryError {
+				raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+					return ramClient.ListUsersForGroup(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
 			})
 			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
+				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ram_users", request.GetActionName(), AlibabaCloudSdkGoERROR)
+
+			response, _ := raw.(*ram.ListUsersForGroupResponse)
+			users = append(users, response.Users.User...)
+			if !response.IsTruncated {
+				break
+			}
+			request.Marker = response.Marker
 		}
 
-		response, _ := raw.(*ram.ListUsersForGroupResponse)
-
-		for _, v := range response.Users.User {
+		for _, v := range users {
 			groupFilterUsersMap[v.UserName] = v
 		}
 
