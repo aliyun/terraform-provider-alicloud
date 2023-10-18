@@ -1639,6 +1639,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_event_bridge_connection":                               resourceAliCloudEventBridgeConnection(),
 			"alicloud_event_bridge_api_destination":                          resourceAliCloudEventBridgeApiDestination(),
 			"alicloud_cloud_monitor_service_monitoring_agent_process":        resourceAliCloudCloudMonitorServiceMonitoringAgentProcess(),
+			"alicloud_cloud_monitor_service_group_monitoring_agent_process":  resourceAliCloudCloudMonitorServiceGroupMonitoringAgentProcess(),
 		},
 	}
 	provider.ConfigureFunc = func(d *schema.ResourceData) (interface{}, error) {
