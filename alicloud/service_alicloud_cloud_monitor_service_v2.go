@@ -189,3 +189,79 @@ func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceMonitoringAgen
 
 	return object, nil
 }
+
+func (s *CloudMonitorServiceServiceV2) DescribeCloudMonitorServiceGroupMonitoringAgentProcess(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeGroupMonitoringAgentProcess"
+
+	conn, err := s.client.NewCmsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"GroupId":    parts[0],
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		if fmt.Sprint(response["Success"]) == "false" {
+			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		resp, err := jsonpath.Get("$.Processes.Process", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Processes.Process", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:GroupMonitoringAgentProcess", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["GroupId"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["Id"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:GroupMonitoringAgentProcess", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
