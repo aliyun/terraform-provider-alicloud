@@ -279,6 +279,9 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 		} else {
 			result.Name = words[1]
 		}
+		if strings.Contains(words[2], "Removed") {
+			result.Removed = "Removed since"
+		}
 		//result["Description"] = words[2]
 		return &result
 	}
