@@ -1,0 +1,91 @@
+---
+subcategory: "Ack One"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ack_one_cluster"
+description: |-
+  Provides a Alicloud Ack One Cluster resource.
+---
+
+# alicloud_ack_one_cluster
+
+Provides a Ack One Cluster resource. Fleet Manager Cluster.
+
+For information about Ack One Cluster and how to use it, see [What is Cluster](https://www.alibabacloud.com/help/en/ack/distributed-cloud-container-platform-for-kubernetes/developer-reference/api-adcp-2022-01-01-createhubcluster).
+
+-> **NOTE:** Available since v1.212.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "defaultVpc" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+
+}
+
+resource "alicloud_vswitch" "defaultyVSwitch" {
+  vpc_id       = alicloud_vpc.defaultVpc.id
+  cidr_block   = "172.16.2.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+
+}
+
+
+resource "alicloud_ack_one_cluster" "default" {
+  network {
+    vpc_id    = alicloud_vpc.defaultVpc.id
+    vswitches = ["${alicloud_vswitch.defaultyVSwitch.id}"]
+  }
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `cluster_name` - (Optional, ForceNew, Computed) Cluster name.
+* `network` - (Required, ForceNew) Cluster network information. See [`network`](#network) below.
+* `profile` - (Optional, ForceNew, Computed) Cluster attributes. Valid values: 'Default', 'XFlow'.
+
+### `network`
+
+The network supports the following:
+* `vpc_id` - (Required, ForceNew) VpcId to which the cluster belongs.
+* `vswitches` - (Required, ForceNew) Switch to which the cluster belongs.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - Cluster creation time.
+* `network` - Cluster network information.
+  * `security_group_ids` - Security group to which the cluster belongs.
+* `status` - The status of the resource.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 25 mins) Used when create the Cluster.
+* `delete` - (Defaults to 25 mins) Used when delete the Cluster.
+
+## Import
+
+Ack One Cluster can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_ack_one_cluster.example <id>
+```
