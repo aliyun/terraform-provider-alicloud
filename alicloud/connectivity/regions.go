@@ -271,3 +271,4 @@ var SlsTestRegions = []Region{EUWest1}
 var ServiceMeshStandardUnsupportedRegions = []Region{EUCentral1, APSouthEast1, USEast1, USWest1}
 var DRDSPolarDbxSupportRegions = []Region{Hangzhou}
 var VPCRouteTableAttachmentSupportRegions = []Region{Hangzhou}
+var AckOneSupportRegions = []Region{Hangzhou, Hongkong}
