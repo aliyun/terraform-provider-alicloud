@@ -730,7 +730,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_ad_connector_office_sites":                    dataSourceAlicloudEcdAdConnectorOfficeSites(),
 			"alicloud_ecs_activations":                                  dataSourceAlicloudEcsActivations(),
 			"alicloud_cms_hybrid_monitor_datas":                         dataSourceAlicloudCmsHybridMonitorDatas(),
-			"alicloud_cloud_firewall_address_books":                     dataSourceAlicloudCloudFirewallAddressBooks(),
+			"alicloud_cloud_firewall_address_books":                     dataSourceAliCloudCloudFirewallAddressBooks(),
 			"alicloud_hbr_hana_instances":                               dataSourceAlicloudHbrHanaInstances(),
 			"alicloud_cms_hybrid_monitor_sls_tasks":                     dataSourceAlicloudCmsHybridMonitorSlsTasks(),
 			"alicloud_hbr_hana_backup_plans":                            dataSourceAlicloudHbrHanaBackupPlans(),
