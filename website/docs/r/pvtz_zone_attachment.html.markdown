@@ -7,9 +7,11 @@ description: |-
   Provides vpcs bound to Alicloud Private Zone resource.
 ---
 
-# alicloud\_pvtz\_zone\_attachment
+# alicloud_pvtz_zone_attachment
 
 Provides vpcs bound to Alicloud Private Zone resource.
+
+-> **NOTE:** Available since v1.13.0+.
 
 -> **NOTE:** Terraform will auto bind vpc to a Private Zone while it uses `alicloud_pvtz_zone_attachment` to build a Private Zone and VPC binding resource.
 
@@ -19,15 +21,15 @@ Using `vpc_ids` to attach being in same region several vpc instances to a privat
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {
-  name = "foo.test.com"
+  zone_name = "foo.example.com"
 }
 
 resource "alicloud_vpc" "first" {
-  name       = "the-first-vpc"
+  vpc_name   = "the-first-vpc"
   cidr_block = "172.16.0.0/12"
 }
 resource "alicloud_vpc" "second" {
-  name       = "the-second-vpc"
+  vpc_name   = "the-second-vpc"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -41,15 +43,15 @@ Using `vpcs` to attach being in same region several vpc instances to a private z
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {
-  name = "foo.test.com"
+  zone_name = "foo.example.com"
 }
 
 resource "alicloud_vpc" "first" {
-  name       = "the-first-vpc"
+  vpc_name   = "the-first-vpc"
   cidr_block = "172.16.0.0/12"
 }
 resource "alicloud_vpc" "second" {
-  name       = "the-second-vpc"
+  vpc_name   = "the-second-vpc"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -69,15 +71,15 @@ Using `vpcs` to attach being in different regions several vpc instances to a pri
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {
-  name = "foo.test.com"
+  zone_name = "foo.example.com"
 }
 
 resource "alicloud_vpc" "first" {
-  name       = "the-first-vpc"
+  vpc_name   = "the-first-vpc"
   cidr_block = "172.16.0.0/12"
 }
 resource "alicloud_vpc" "second" {
-  name       = "the-second-vpc"
+  vpc_name   = "the-second-vpc"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -88,7 +90,7 @@ provider "alicloud" {
 
 resource "alicloud_vpc" "third" {
   provider   = alicloud.eu
-  name       = "the-third-vpc"
+  vpc_name   = "the-third-vpc"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -113,16 +115,16 @@ The following arguments are supported:
 
 * `zone_id` - (Required, ForceNew) The name of the Private Zone Record.
 * `vpc_ids` - (Optional, Conflict with `vpcs`) The id List of the VPC with the same region, for example:["vpc-1","vpc-2"]. 
-* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) The List of the VPC:
-    * `vpc_id` - (Required) The Id of the vpc.
-    * `region_id` - (Optional) The region of the vpc. If not set, the current region will instead of.
-    
-    Recommend to use `vpcs`.
-
+* `vpcs` - (Optional, Conflict with `vpc_ids`, Available in 1.62.1+) See [`vpcs`](#vpcs) below.Recommend to use `vpcs`.
 * `lang` - (Optional, ForceNew, Available in 1.62.1+) The language of code.
 * `user_client_ip` - (Optional, ForceNew, Available in 1.62.1+) The user custom IP address.
 
-### Timeouts
+### `vpcs`
+The vpcs support the following:
+* `vpc_id` - (Required) The Id of the vpc.
+* `region_id` - (Optional) The region of the vpc. If not set, the current region will instead of.
+
+## Timeouts
 
 -> **NOTE:** Available in 1.110.0+.
 
