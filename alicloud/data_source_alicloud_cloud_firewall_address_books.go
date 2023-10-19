@@ -13,53 +13,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCloudFirewallAddressBooks() *schema.Resource {
+func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCloudFirewallAddressBooksRead,
+		Read: dataSourceAliCloudCloudFirewallAddressBooksRead,
 		Schema: map[string]*schema.Schema{
-			"group_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ip", "tag"}, false),
-			},
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
-			"names": {
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
+			"group_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"ip", "tag"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"books": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"address_list": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-						},
-						"auto_add_tag_ecs": {
-							Type:     schema.TypeInt,
+						"id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"description": {
+						"group_uuid": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -71,31 +66,35 @@ func dataSourceAlicloudCloudFirewallAddressBooks() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"id": {
+						"description": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"group_uuid": {
-							Type:     schema.TypeString,
+						"auto_add_tag_ecs": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
-
 						"tag_relation": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"address_list": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 						"ecs_tags": {
 							Type:     schema.TypeSet,
-							Optional: true,
+							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"tag_key": {
 										Type:     schema.TypeString,
-										Optional: true,
+										Computed: true,
 									},
 									"tag_value": {
 										Type:     schema.TypeString,
-										Optional: true,
+										Computed: true,
 									},
 								},
 							},
@@ -107,16 +106,27 @@ func dataSourceAlicloudCloudFirewallAddressBooks() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCloudFirewallAddressBooksRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCloudFirewallAddressBooksRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DescribeAddressBook"
 
+	action := "DescribeAddressBook"
 	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["CurrentPage"] = 1
+
 	if v, ok := d.GetOk("group_type"); ok {
 		request["GroupType"] = v
 	}
-	request["PageSize"] = PageSizeLarge
-	request["CurrentPage"] = 1
+
+	var objects []map[string]interface{}
+	var addressBookNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		addressBookNameRegex = r
+	}
 
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
@@ -127,17 +137,8 @@ func dataSourceAlicloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	var nameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return WrapError(err)
-		}
-		nameRegex = r
-	}
 
 	var response map[string]interface{}
-	var objects []map[string]interface{}
 	conn, err := client.NewCloudfwClient()
 	if err != nil {
 		return WrapError(err)
@@ -156,34 +157,45 @@ func dataSourceAlicloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 				}
 				return resource.NonRetryableError(err)
 			}
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cloud_firewall_address_books", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Acls", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Acls", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+			if addressBookNameRegex != nil && !addressBookNameRegex.MatchString(fmt.Sprint(item["GroupName"])) {
+				continue
+			}
+
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["GroupUuid"])]; !ok {
 					continue
 				}
 			}
-			if nameRegex != nil {
-				if !nameRegex.MatchString(fmt.Sprint(item["GroupName"])) {
-					continue
-				}
-			}
+
 			objects = append(objects, item)
 		}
+
 		if len(result) < PageSizeLarge {
 			break
 		}
+
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
 
@@ -192,28 +204,28 @@ func dataSourceAlicloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"address_list":     object["AddressList"],
-			"auto_add_tag_ecs": formatInt(object["AutoAddTagEcs"]),
-			"description":      object["Description"],
-			"group_name":       object["GroupName"],
-			"group_type":       object["GroupType"],
 			"id":               fmt.Sprint(object["GroupUuid"]),
 			"group_uuid":       fmt.Sprint(object["GroupUuid"]),
+			"group_name":       object["GroupName"],
+			"group_type":       object["GroupType"],
+			"description":      object["Description"],
+			"auto_add_tag_ecs": formatInt(object["AutoAddTagEcs"]),
 			"tag_relation":     object["TagRelation"],
+			"address_list":     object["AddressList"],
 		}
-		names = append(names, object["Name"])
-		tags := make([]map[string]interface{}, 0)
-		t, _ := jsonpath.Get("$.TagList", object)
-		if t != nil {
-			for _, t := range t.([]interface{}) {
-				ecsTagItem := make(map[string]interface{})
-				ecsTagItem["tag_value"] = t.(map[string]interface{})["TagValue"]
-				ecsTagItem["tag_key"] = t.(map[string]interface{})["TagKey"]
-				tags = append(tags, ecsTagItem)
-			}
+
+		ecsTags := make([]map[string]interface{}, 0)
+		for _, tagListItem := range object["TagList"].([]interface{}) {
+			ecsTagItem := make(map[string]interface{})
+			ecsTagItem["tag_value"] = tagListItem.(map[string]interface{})["TagValue"]
+			ecsTagItem["tag_key"] = tagListItem.(map[string]interface{})["TagKey"]
+			ecsTags = append(ecsTags, ecsTagItem)
 		}
-		mapping["ecs_tags"] = tags
+
+		mapping["ecs_tags"] = ecsTags
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["GroupName"])
 		s = append(s, mapping)
 	}
 
@@ -229,6 +241,7 @@ func dataSourceAlicloudCloudFirewallAddressBooksRead(d *schema.ResourceData, met
 	if err := d.Set("books", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
