@@ -2,22 +2,22 @@
 subcategory: "Service Mesh"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_service_mesh_service_mesh"
-sidebar_current: "docs-alicloud-resource-service-mesh-service-mesh"
 description: |-
   Provides a Alicloud Service Mesh Service Mesh resource.
 ---
 
 # alicloud_service_mesh_service_mesh
 
-Provides a Service Mesh Service Mesh resource.
+Provides a Service Mesh Service Mesh resource. 
 
-For information about Service Mesh Service Mesh and how to use it, see [What is Service Mesh](https://www.alibabacloud.com/help/en/alibaba-cloud-service-mesh/latest/api-servicemesh-2020-01-11-createservicemesh).
+For information about Service Mesh Service Mesh and how to use it, see [What is Service Mesh](https://www.alibabacloud.com/help/en/asm/developer-reference/api-servicemesh-2020-01-11-createservicemesh).
 
 -> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
-creating a standard cluster
+Basic Usage
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -47,7 +47,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_service_mesh_service_mesh" "default" {
   service_mesh_name = var.name
   edition           = "Default"
-  version           = data.alicloud_service_mesh_versions.default.versions.0.version
+  version           = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
   cluster_spec      = "standard"
   network {
     vpc_id        = alicloud_vpc.default.id
@@ -87,7 +87,7 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_service_mesh_service_mesh" "default" {
   service_mesh_name = var.name
   edition           = "Pro"
-  version           = data.alicloud_service_mesh_versions.default.versions.0.version
+  version           = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
   cluster_spec      = "enterprise"
   network {
     vpc_id        = alicloud_vpc.default.id
@@ -103,140 +103,153 @@ resource "alicloud_service_mesh_service_mesh" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `load_balancer` - (Optional, ForceNew) The configuration of the Load Balancer. See [`load_balancer`](#load_balancer) below.
-* `mesh_config` - (Optional) The configuration of the Service grid. See [`mesh_config`](#mesh_config) below.
-* `network` - (Required, ForceNew) The network configuration of the Service grid. See [`network`](#network) below.
-* `service_mesh_name` - (Optional, ForceNew) The name of the resource.
-* `version` - (Optional) The version of the resource. you can look up the version using `alicloud_service_mesh_versions`. **Note:** The `version` supports updating from v1.170.0, the relevant version can be obtained via `istio_operator_version` in `alicloud_service_mesh_service_meshes`.
-* `edition` - (Optional, ForceNew) The type  of the resource. Valid values: `Default` and `Pro`. `Default`: the standard. `Pro`: the Pro version.
-* `force` - (Optional) This parameter is used for resource destroy. Default value is `false`.
-* `cluster_spec` - (Optional, Available since v1.166.0) The service mesh instance specification. 
-  Valid values: `standard`,`enterprise`,`ultimate`. Default to `standard`.
-* `cluster_ids` - (Optional, Available since v1.166.0) The array of the cluster ids.
-* `extra_configuration` - (Optional, Available since v1.169.0) The configurations of additional features for the ASM instance. See [`extra_configuration`](#extra_configuration) below.
-
-
-### `network`
-
-The network supports the following: 
-
-* `vpc_id` - (Required) The ID of the VPC.
-* `vswitche_list` - (Required) The list of Virtual Switch.
+* `cluster_ids` - (Optional, Available since v1.166.0+.) List of clusters.
+* `cluster_spec` - (Optional, ForceNew, Computed, Available since v1.166.0+.) Cluster specification. The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`. Default to `standard`.
+* `customized_prometheus` - (Optional, Available since v1.212.0) Whether to customize Prometheus. Value:
+  -'true': custom Prometheus.
+  -'false': Do not customize Prometheus. Default value: 'false '.
+* `edition` - (Optional, ForceNew) Grid instance version type. Valid values: `Default` and `Pro`. Default: the standard. Pro: the Pro version.
+* `extra_configuration` - (Optional, Computed) Data plane KubeAPI access capability. See [`extra_configuration`](#extra_configuration) below.
+* `force` - (Optional) Whether to forcibly delete the ASM instance. Value:
+  -'true': force deletion of ASM instance
+  -'false': no forced deletion of ASM instance. Default value: false.
+* `load_balancer` - (Optional, ForceNew) Load balancing information. See [`load_balancer`](#load_balancer) below.
+* `mesh_config` - (Optional, ForceNew) Service grid configuration information. See [`mesh_config`](#mesh_config) below.
+* `network` - (Required, ForceNew) Service grid network configuration information. See [`network`](#network) below.
+* `prometheus_url` - (Optional, Available since v1.212.0) The Prometheus service address (in non-custom cases, use the ARMS address format).
+* `service_mesh_name` - (Optional, ForceNew) ServiceMeshName.
+* `tags` - (Optional, Map, Available since v1.212.0) The tag of the resource.
+* `version` - (Optional) Service grid version number. The version of the resource. you can look up the version using alicloud_service_mesh_versions. Note: The version supports updating from v1.170.0, the relevant version can be obtained via istio_operator_version in `alicloud_service_mesh_service_meshes`.
 
 ### `extra_configuration`
 
 The extra_configuration supports the following:
+* `cr_aggregation_enabled` - (Optional) Whether the data plane KubeAPI access capability is enabled. Indicates whether the Kubernetes API of clusters on the data plane is used to access Istio resources. A value of true indicates that the Kubernetes API is used.
 
-* `cr_aggregation_enabled` - (Optional, Available since v1.169.0) Indicates whether the Kubernetes API of clusters on the data plane is used to access Istio resources. A value of `true` indicates that the Kubernetes API is used.
+### `load_balancer`
 
+The load_balancer supports the following:
+* `api_server_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposed API Server.
+* `pilot_public_eip` - (Optional, ForceNew) Indicates whether to use the IP address of a public network exposure Istio Pilot.
 
 ### `mesh_config`
 
-The mesh_config supports the following: 
-
-* `access_log` - (Optional) The configuration of the access logging. See [`access_log`](#mesh_config-access_log) below.
-* `control_plane_log` - (Optional, ForceNew, Available since v1.174.0) The configuration of the control plane logging. See [`control_plane_log`](#mesh_config-control_plane_log) below.
-* `audit` - (Optional) The configuration of the audit. See [`audit`](#mesh_config-audit) below.
-* `customized_zipkin` - (Optional) Whether to enable the use of a custom zipkin.
-* `enable_locality_lb` - (Optional) The enable locality lb.
-* `kiali` - (Optional) The configuration of the Kiali. See [`kiali`](#mesh_config-kiali) below.
-* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See [`opa`](#mesh_config-opa) below.
-* `outbound_traffic_policy` - (Optional) The policy of the Out to the traffic. Valid values: `ALLOW_ANY` and `REGISTRY_ONLY`.
-* `pilot` - (Optional, ForceNew) The configuration of the Link trace sampling. See [`pilot`](#mesh_config-pilot) below.
-* `proxy` - (Optional) The configuration of the Proxy. See [`proxy`](#mesh_config-proxy) below.
-* `sidecar_injector` - (Optional)The configuration of the Sidecar injector. See [`sidecar_injector`](#mesh_config-sidecar_injector) below.
-* `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
-* `tracing` - (Optional) Whether to enable link trace you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
+The mesh_config supports the following:
+* `access_log` - (Optional) The access logging configuration. See [`mesh_config-access_log`](#mesh_config-access_log) below.
+* `audit` - (Optional, ForceNew, Computed) Audit information. See [`mesh_config-audit`](#mesh_config-audit) below.
+* `control_plane_log` - (Optional, ForceNew) Control plane log collection configuration. See [`mesh_config-control_plane_log`](#mesh_config-control_plane_log) below.
+* `customized_zipkin` - (Optional) Whether or not to enable the use of a custom zipkin.
+* `enable_locality_lb` - (Optional, ForceNew) Whether to enable service can access the service through the nearest node access.
+* `include_ip_ranges` - (Optional, Computed) The IP ADDRESS range.
+* `kiali` - (Optional) Kiali configuration. See [`mesh_config-kiali`](#mesh_config-kiali) below.
+* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See [`mesh_config-opa`](#mesh_config-opa) below.
+* `outbound_traffic_policy` - (Optional) Out to the traffic policy.
+* `pilot` - (Optional, ForceNew) Link trace sampling information. See [`mesh_config-pilot`](#mesh_config-pilot) below.
+* `proxy` - (Optional) Proxy configuration. See [`mesh_config-proxy`](#mesh_config-proxy) below.
+* `sidecar_injector` - (Optional) Sidecar injector configuration. See [`mesh_config-sidecar_injector`](#mesh_config-sidecar_injector) below.
+* `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
+* `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
 
 ### `mesh_config-access_log`
 
 The access_log supports the following:
+* `enabled` - (Optional) Whether to enable access log.
+* `project` - (Optional) Access the SLS Project of log collection.
 
-* `enabled` - (Optional, Available since v1.174.0) Whether to enable of the access logging. Valid values: `true` and `false`.
-* `project` - (Optional, Available since v1.174.0) The SLS Project of the access logging.
+### `mesh_config-audit`
+
+The audit supports the following:
+* `enabled` - (Optional, ForceNew, Computed) Enable Audit.
+* `project` - (Optional, ForceNew, Computed) Audit Log Items.
 
 ### `mesh_config-control_plane_log`
 
 The control_plane_log supports the following:
-
-* `enabled` - (Optional, Available since v1.174.0) Whether to enable of the control plane logging. Valid values: `true` and `false`.
-* `project` - (Optional, Available since v1.174.0) The SLS Project of the control plane logging.
-
-### `mesh_config-sidecar_injector`
-
-The sidecar_injector supports the following: 
-
-* `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
-* `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
-* `limit_cpu` - (Optional) The limit cpu of the Sidecar injector Pods.
-* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
-* `request_cpu` - (Optional) The requested cpu the Sidecar injector Pods.
-* `request_memory` - (Optional) The requested memory the Sidecar injector Pods.
-
-### `mesh_config-proxy`
-
-The proxy supports the following: 
-
-* `limit_cpu` - (Optional) The limit cpu of the resource.
-* `limit_memory` - (Optional) The memory limit of the resource.
-* `request_cpu` - (Optional) The request cpu of the resource.
-* `request_memory` - (Optional) The request memory of the resource.
-
-### `mesh_config-pilot`
-
-The pilot supports the following: 
-
-* `http10_enabled` - (Optional) Whether to support the HTTP1.0.
-* `trace_sampling` - (Optional) The  percentage of the Link trace sampling.
+* `enabled` - (Optional, ForceNew) Whether to enable control plane log collection. Value:
+  -'true': enables control plane log collection.
+  -'false': does not enable control plane log collection.
+* `project` - (Optional, ForceNew) The name of the SLS Project to which the control plane logs are collected.
 
 ### `mesh_config-kiali`
 
-The kiali supports the following: 
-
-* `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false.
+The kiali supports the following:
+* `enabled` - (Optional) Whether to enable kiali, you must first open the collection Prometheus, when the configuration update is false, the system automatically set this value to false).
 
 ### `mesh_config-opa`
 
 The opa supports the following:
-
 * `enabled` - (Optional) Whether integration-open policy agent (OPA) plug-in.
-* `limit_cpu` - (Optional) The CPU resource  of the limitsOPA proxy container.
-* `limit_memory` - (Optional) The memory resource limit of the OPA proxy container.
-* `log_level` - (Optional) The log level of the OPA proxy container .
-* `request_cpu` - (Optional) The CPU resource request of the OPA proxy container.
-* `request_memory` - (Optional) The memory resource request of the OPA proxy container.
+* `limit_cpu` - (Optional) OPA proxy container of CPU resource limits.
+* `limit_memory` - (Optional) OPA proxy container of the memory resource limit.
+* `log_level` - (Optional) OPA proxy container log level.
+* `request_cpu` - (Optional) OPA proxy container of CPU resource request.
+* `request_memory` - (Optional) OPA proxy container of the memory resource request.
 
-### `mesh_config-audit`
+### `mesh_config-pilot`
 
-The audit supports the following: 
+The pilot supports the following:
+* `http10_enabled` - (Optional) Whether to support the HTTP1.0.
+* `trace_sampling` - (Optional) Link trace sampling percentage.
 
-* `enabled` - (Optional) Whether to enable Service grid audit.
-* `project` - (Optional) The Service grid audit that to the project.
+### `mesh_config-proxy`
 
-### `load_balancer`
+The proxy supports the following:
+* `limit_cpu` - (Optional) CPU resources.
+* `limit_memory` - (Optional) Memory limit resource.
+* `request_cpu` - (Optional) CPU requests resources.
+* `request_memory` - (Optional) A memory request resources.
 
-The load_balancer supports the following: 
+### `mesh_config-sidecar_injector`
 
-* `api_server_public_eip` - (Optional)  Whether to use the IP address of a public network exposed the API Server.
-* `pilot_public_eip` - (Optional) Whether to use the IP address of a public network exposure the Istio Pilot.
-* `pilot_public_loadbalancer_id` - (Optional) The ID of the Server Load Balancer (SLB) instance that is used when Istio Pilot is exposed to the Internet.
-* `api_server_loadbalancer_id` - (Optional)  The ID of the SLB instance that is used when the API server is exposed to the Internet.
+The sidecar_injector supports the following:
+* `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
+* `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
+* `init_cni_configuration` - (Optional) CNI configuration. See [`mesh_config-sidecar_injector-init_cni_configuration`](#mesh_config-sidecar_injector-init_cni_configuration) below.
+* `limit_cpu` - (Optional) Sidecar injector Pods on the throttle.
+* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
+* `request_cpu` - (Optional) Sidecar injector Pods on the requested resource.
+* `request_memory` - (Optional) Sidecar injector Pods on the requested resource.
+
+### `mesh_config-sidecar_injector-init_cni_configuration`
+
+The init_cni_configuration supports the following:
+* `enabled` - (Optional) Enable CNI.
+* `exclude_namespaces` - (Optional) The excluded namespace.
+
+### `network`
+
+The network supports the following:
+* `vswitche_list` - (Required, ForceNew) Virtual Switch ID.
+* `vpc_id` - (Required, ForceNew) VPC ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Service Mesh.
-* `status` - The status of the resource. Valid values: `running` or `initial`.
+* `id` - The ID of the resource supplied above.
+* `create_time` - Service grid creation time.
+* `load_balancer` - Load balancing information.
+  * `api_server_loadbalancer_id` - The IP address of a public network exposed API Server corresponding to the load balancing ID.
+  * `pilot_public_loadbalancer_id` - The IP address of a public network exposure Istio Pilot corresponds to the load balancing ID.
+* `mesh_config` - Service grid configuration information.
+  * `prometheus` - Prometheus configuration.
+    * `external_url` - Prometheus service addresses (enabled external Prometheus when the system automatically populates).
+    * `use_external` - Whether to enable external Prometheus.
+  * `sidecar_injector` - The configuration of the Sidecar injector.
+    * `sidecar_injector_webhook_as_yaml` - Other configurations of automatically injected sidecar (in YAML format).
+  * `kiali` - Kiali configuration.
+    * `url` - Grid topology service address.
+  * `proxy` - Proxy configuration.
+    * `cluster_domain` - Trust cluster domain.
+* `network` - Service grid network configuration information.
+  * `security_group_id` - Security group ID.
+* `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Service Mesh.
+* `delete` - (Defaults to 5 mins) Used when delete the Service Mesh.
 * `update` - (Defaults to 5 mins) Used when update the Service Mesh.
-* `delete` - (Defaults to 10 mins) Used when delete the Service Mesh.
 
 ## Import
 
