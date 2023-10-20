@@ -105,7 +105,7 @@ resource "alicloud_service_mesh_service_mesh" "default" {
 The following arguments are supported:
 * `cluster_ids` - (Optional, Available since v1.166.0+.) List of clusters.
 * `cluster_spec` - (Optional, ForceNew, Computed, Available since v1.166.0+.) Cluster specification. The service mesh instance specification. Valid values: `standard`,`enterprise`,`ultimate`. Default to `standard`.
-* `customized_prometheus` - (Optional, Available since v1.212.0) Whether to customize Prometheus. Value:
+* `customized_prometheus` - (Optional, Available since v1.211.2) Whether to customize Prometheus. Value:
   -'true': custom Prometheus.
   -'false': Do not customize Prometheus. Default value: 'false '.
 * `edition` - (Optional, ForceNew) Grid instance version type. Valid values: `Default` and `Pro`. Default: the standard. Pro: the Pro version.
@@ -116,9 +116,9 @@ The following arguments are supported:
 * `load_balancer` - (Optional, ForceNew) Load balancing information. See [`load_balancer`](#load_balancer) below.
 * `mesh_config` - (Optional, ForceNew) Service grid configuration information. See [`mesh_config`](#mesh_config) below.
 * `network` - (Required, ForceNew) Service grid network configuration information. See [`network`](#network) below.
-* `prometheus_url` - (Optional, Available since v1.212.0) The Prometheus service address (in non-custom cases, use the ARMS address format).
+* `prometheus_url` - (Optional, Available since v1.211.2) The Prometheus service address (in non-custom cases, use the ARMS address format).
 * `service_mesh_name` - (Optional, ForceNew) ServiceMeshName.
-* `tags` - (Optional, Map, Available since v1.212.0) The tag of the resource.
+* `tags` - (Optional, Map, Available since v1.211.2) The tag of the resource.
 * `version` - (Optional) Service grid version number. The version of the resource. you can look up the version using alicloud_service_mesh_versions. Note: The version supports updating from v1.170.0, the relevant version can be obtained via istio_operator_version in `alicloud_service_mesh_service_meshes`.
 
 ### `extra_configuration`

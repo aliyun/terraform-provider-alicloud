@@ -1,20 +1,25 @@
-## 1.211.2 (Unreleased)
+## 1.212.0 (Unreleased)
+## 1.211.2 (October 20, 2023)
 
 ENHANCEMENTS:
 
-- resource/alicloud_ecs_disk: update attribute resource_group_id as computed; resource/alicloud_instance: set system disk attribute when change the image. [GH-6573]
-- resource/alicloud_polardb_cluster: modify support setting lower_case_table_names parameter is zero. [GH-6596]
-- resource/alicloud_alb_load_balancer: adds new attribute ipv6_address_type, bandwidth_package_id, address_ip_version and fixed an issue where logs could not be closed. [GH-6601]
-- resource/alicloud_ecs_launch_template: add new attribute system_disk.encrypted. [GH-6606]
-- data-source/alicloud_ram_users: modify list ram user request , resource/alicloud_ram_group: modify list ram user request, resource/alicloud_ram_group_membership_test: modify list ram user request, service_alicloud_ram : modify list ram user request. [GH-6598]
-- docs: fix link. [GH-6593]
-- docs: fix link. [GH-6594]
-- docs: update pvtz_zone_attachment sample. [GH-6602]
+- resource/alicloud_service_mesh_service_mesh: add new attribute mesh_config.sidecar_injector.init_cni_configuration. ([#6566](https://github.com/aliyun/terraform-provider-alicloud/issues/6566))
+- resource/alicloud_polardb_cluster: modify support hot_replica_mode;alicloud/resource_alicloud_polardb_cluster_test: modify support hot_replica_mode ([#6607](https://github.com/aliyun/terraform-provider-alicloud/issues/6607))
+- resource/alicloud_ecs_disk: update attribute resource_group_id as computed; resource/alicloud_instance: set system disk attribute when change the image. ([#6573](https://github.com/aliyun/terraform-provider-alicloud/issues/6573))
+- resource/alicloud_polardb_cluster: modify support setting lower_case_table_names parameter is zero. ([#6596](https://github.com/aliyun/terraform-provider-alicloud/issues/6596))
+- resource/alicloud_alb_load_balancer: adds new attribute ipv6_address_type, bandwidth_package_id, address_ip_version and fixed an issue where logs could not be closed. ([#6601](https://github.com/aliyun/terraform-provider-alicloud/issues/6601))
+- resource/alicloud_ecs_launch_template: add new attribute system_disk.encrypted. ([#6606](https://github.com/aliyun/terraform-provider-alicloud/issues/6606))
+- resource/alicloud_db_readonly_instance: Fixed rds mysql readonly bug ([#6504](https://github.com/aliyun/terraform-provider-alicloud/issues/6504))
+- data-source/alicloud_ram_users: modify list ram user request , resource/alicloud_ram_group: modify list ram user request, resource/alicloud_ram_group_membership_test: modify list ram user request, service_alicloud_ram : modify list ram user request. ([#6598](https://github.com/aliyun/terraform-provider-alicloud/issues/6598))
+- docs: improve the alicloud_log_audit docs ([#6603](https://github.com/aliyun/terraform-provider-alicloud/issues/6603))
+- docs: fix link. ([#6593](https://github.com/aliyun/terraform-provider-alicloud/issues/6593))
+- docs: fix link. ([#6594](https://github.com/aliyun/terraform-provider-alicloud/issues/6594))
+- docs: update pvtz_zone_attachment sample. ([#6602](https://github.com/aliyun/terraform-provider-alicloud/issues/6602))
 
 BUG FIXES:
 
-- resource/alicloud_alb_listener: Fixed alb TypeSet bug caused by tf sdk v1.17.2; resource/alicloud_alb_rule: Fixed alb TypeSet bug caused by tf sdk v 1.17.2. [GH-6583]
-- data-source/alicloud_cloud_firewall_address_books: Fixed the read invalid error when using an international account. [GH-6604]
+- resource/alicloud_alb_listener: Fixed alb TypeSet bug caused by tf sdk v1.17.2; resource/alicloud_alb_rule: Fixed alb TypeSet bug caused by tf sdk v 1.17.2. ([#6583](https://github.com/aliyun/terraform-provider-alicloud/issues/6583))
+- data-source/alicloud_cloud_firewall_address_books: Fixed the read invalid error when using an international account. ([#6604](https://github.com/aliyun/terraform-provider-alicloud/issues/6604))
 
 ## 1.211.1 (October 16, 2023)
 
