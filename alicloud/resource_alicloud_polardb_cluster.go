@@ -397,6 +397,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"loose_polar_log_bin": {
 				Type:             schema.TypeString,
+				Computed:         true,
 				Optional:         true,
 				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
 				DiffSuppressFunc: polardbDiffSuppressFunc,
@@ -413,12 +414,15 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"lower_case_table_names": {
 				Type:             schema.TypeInt,
 				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
 				ValidateFunc:     IntInSlice([]int{0, 1}),
 				DiffSuppressFunc: polardbDiffSuppressFunc,
 			},
 			"default_time_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: StringInSlice([]string{"-12:00", "-11:00", "-10:00", "-9:00", "-8:00", "-7:00",
 					"-6:00", "-5:00", "-4:00", "-3:00", "-2:00", "-1:00",
 					"+0:00", "+1:00", "+2:00", "+3:00", "+4:00", "+5:00",
@@ -483,6 +487,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 	d.Partial(true)
+
+	if d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin") {
+		if err := polarDBService.CreateClusterParamsModifyParameters(d); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	if d.HasChange("parameters") {
 		if err := polarDBService.ModifyParameters(d); err != nil {
@@ -920,12 +930,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				scaleMax := v.(int)
 				request["ScaleMax"] = strconv.Itoa(scaleMax)
 			}
-			if v, ok := d.GetOk("scale_ro_num_min"); ok {
-				scaleRoNumMin := v.(int)
+			ScaleRoNumMin := d.Get("scale_ro_num_min")
+			if ScaleRoNumMin != nil {
+				scaleRoNumMin := ScaleRoNumMin.(int)
 				request["ScaleRoNumMin"] = strconv.Itoa(scaleRoNumMin)
 			}
-			if v, ok := d.GetOk("scale_ro_num_max"); ok {
-				scaleRoNumMax := v.(int)
+			ScaleRoNumMax := d.Get("scale_ro_num_max")
+			if ScaleRoNumMax != nil {
+				scaleRoNumMax := ScaleRoNumMin.(int)
 				request["ScaleRoNumMax"] = strconv.Itoa(scaleRoNumMax)
 			}
 			clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
@@ -939,12 +951,14 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				}
 			}
 			if imciParamterSwitch {
-				if v, ok := d.GetOk("scale_ap_ro_num_min"); ok {
-					scaleApRoNumMin := v.(int)
+				ScaleApRoNumMin := d.Get("scale_ap_ro_num_min")
+				if ScaleApRoNumMin != nil {
+					scaleApRoNumMin := ScaleApRoNumMin.(int)
 					request["ScaleApRoNumMin"] = strconv.Itoa(scaleApRoNumMin)
 				}
-				if v, ok := d.GetOk("scale_ap_ro_num_max"); ok {
-					scaleApRoNumMax := v.(int)
+				ScaleApRoNumMax := d.Get("scale_ap_ro_num_max")
+				if ScaleApRoNumMax != nil {
+					scaleApRoNumMax := ScaleApRoNumMax.(int)
 					request["ScaleApRoNumMax"] = strconv.Itoa(scaleApRoNumMax)
 				}
 			}
@@ -1583,9 +1597,9 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 	if v, ok := d.GetOk("parameter_group_id"); ok {
 		request["ParameterGroupId"] = v.(string)
 	}
-
-	if v, ok := d.GetOk("lower_case_table_names"); ok {
-		request["LowerCaseTableNames"] = v.(int)
+	LowerCaseTableNames := d.Get("lower_case_table_names")
+	if LowerCaseTableNames != nil {
+		request["LowerCaseTableNames"] = LowerCaseTableNames.(int)
 	}
 
 	if v, ok := d.GetOk("default_time_zone"); ok {
@@ -1647,4 +1661,13 @@ func convertPolarDBServerlessSteadySwitchReadResponse(source string) string {
 		return "ON"
 	}
 	return "OFF"
+}
+
+func IsContain(items []string, item string) bool {
+	for _, eachItem := range items {
+		if eachItem == item {
+			return true
+		}
+	}
+	return false
 }
