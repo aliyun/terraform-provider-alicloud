@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -5,8 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -24,10 +24,50 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"cluster_ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"cluster_spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"standard", "enterprise", "ultimate"}, false),
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"customized_prometheus": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"edition": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, false),
+			},
+			"extra_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cr_aggregation_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -35,174 +75,65 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"load_balancer": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				MaxItems: 1,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"api_server_public_eip": {
-							Type:     schema.TypeBool,
-							Optional: true,
+						"api_server_loadbalancer_id": {
+							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"pilot_public_eip": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
-						},
-						"api_server_loadbalancer_id": {
-							Type:     schema.TypeString,
-							Computed: true,
+							ForceNew: true,
 						},
 						"pilot_public_loadbalancer_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"api_server_public_eip": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
 					},
 				},
-				ForceNew: true,
 			},
 			"mesh_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				ForceNew: true,
 				MaxItems: 1,
-				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"access_log": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"enabled": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-									},
 									"project": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
-								},
-							},
-						},
-						"control_plane_log": {
-							Type:     schema.TypeList,
-							Optional: true,
-							Computed: true,
-							MaxItems: 1,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
-									},
-									"project": {
-										Type:     schema.TypeString,
-										Optional: true,
 									},
 								},
 							},
-						},
-						"audit": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"enabled": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-									},
-									"project": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"customized_zipkin": {
-							Type:     schema.TypeBool,
-							Optional: true,
-							Computed: true,
-						},
-						"kiali": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"enabled": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"opa": {
-							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
-							Computed: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"enabled": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-									},
-									"limit_cpu": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"limit_memory": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"log_level": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"request_cpu": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"request_memory": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-								},
-							},
-						},
-						"outbound_traffic_policy": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Computed:     true,
-							ValidateFunc: validation.StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
 						},
 						"pilot": {
 							Type:     schema.TypeList,
 							Optional: true,
+							ForceNew: true,
 							MaxItems: 1,
-							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"http10_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
 									},
 									"trace_sampling": {
 										Type:     schema.TypeFloat,
@@ -211,71 +142,51 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 								},
 							},
 						},
-						"proxy": {
+						"opa": {
 							Type:     schema.TypeList,
 							Optional: true,
 							MaxItems: 1,
-							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"limit_cpu": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
 									"limit_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
-									},
-									"request_cpu": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
 									},
 									"request_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
+									},
+									"limit_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"log_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"request_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 								},
 							},
 						},
-						"sidecar_injector": {
+						"prometheus": {
 							Type:     schema.TypeList,
-							Optional: true,
-							MaxItems: 1,
 							Computed: true,
+							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"auto_injection_policy_enabled": {
+									"use_external": {
 										Type:     schema.TypeBool,
-										Optional: true,
 										Computed: true,
 									},
-									"enable_namespaces_by_default": {
-										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-									},
-									"limit_cpu": {
+									"external_url": {
 										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"limit_memory": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"request_cpu": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-									},
-									"request_memory": {
-										Type:     schema.TypeString,
-										Optional: true,
 										Computed: true,
 									},
 								},
@@ -284,17 +195,173 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"telemetry": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
 						},
-						"tracing": {
-							Type:     schema.TypeBool,
+						"outbound_traffic_policy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
+						},
+						"sidecar_injector": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"limit_memory": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"auto_injection_policy_enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"request_memory": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"enable_namespaces_by_default": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"limit_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"init_cni_configuration": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"enabled": {
+													Type:     schema.TypeBool,
+													Optional: true,
+												},
+												"exclude_namespaces": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"request_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"sidecar_injector_webhook_as_yaml": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"audit": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							ForceNew: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"project": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+						"kiali": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"url": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"proxy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"limit_memory": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"request_memory": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"cluster_domain": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"limit_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"request_cpu": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+						"include_ip_ranges": {
+							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
 						"enable_locality_lb": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
+							ForceNew: true,
+						},
+						"control_plane_log": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"project": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+						"tracing": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"customized_zipkin": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 					},
 				},
@@ -302,613 +369,771 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"network": {
 				Type:     schema.TypeList,
 				Required: true,
-				MaxItems: 1,
 				ForceNew: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
+						},
+						"security_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"vswitche_list": {
 							Type:     schema.TypeList,
 							Required: true,
-							MaxItems: 1,
+							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
 			},
+			"prometheus_url": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"service_mesh_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"edition": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Default", "Pro"}, false),
-			},
+			"tags": tagsSchema(),
 			"version": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
-			},
-			"cluster_spec": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "enterprise", "ultimate"}, false),
-			},
-			"cluster_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"extra_configuration": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"cr_aggregation_enabled": {
-							Type:     schema.TypeBool,
-							Computed: true,
-							Optional: true,
-						},
-					},
-				},
 			},
 		},
 	}
 }
 
 func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateServiceMesh"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewServicemeshClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+
+	if v, ok := d.GetOk("service_mesh_name"); ok {
+		request["Name"] = v
+	}
+	jsonPathResult1, err := jsonpath.Get("$[0].vpc_id", d.Get("network"))
+	if err == nil {
+		request["VpcId"] = jsonPathResult1
+	}
+
+	if v, ok := d.GetOk("load_balancer"); ok {
+		jsonPathResult2, err := jsonpath.Get("$[0].api_server_public_eip", v)
+		if err == nil && jsonPathResult2 != "" {
+			request["ApiServerPublicEip"] = jsonPathResult2
+		}
+	}
+	if v, ok := d.GetOk("load_balancer"); ok {
+		jsonPathResult3, err := jsonpath.Get("$[0].pilot_public_eip", v)
+		if err == nil && jsonPathResult3 != "" {
+			request["PilotPublicEip"] = jsonPathResult3
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult4, err := jsonpath.Get("$[0].tracing", v)
+		if err == nil && jsonPathResult4 != "" {
+			request["Tracing"] = jsonPathResult4
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult5, err := jsonpath.Get("$[0].pilot[0].trace_sampling", v)
+		if err == nil && jsonPathResult5 != "" {
+			request["TraceSampling"] = jsonPathResult5
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult6, err := jsonpath.Get("$[0].customized_zipkin", v)
+		if err == nil && jsonPathResult6 != "" {
+			request["CustomizedZipkin"] = jsonPathResult6
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult7, err := jsonpath.Get("$[0].telemetry", v)
+		if err == nil && jsonPathResult7 != "" {
+			request["Telemetry"] = jsonPathResult7
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult8, err := jsonpath.Get("$[0].include_ip_ranges", v)
+		if err == nil && jsonPathResult8 != "" {
+			request["IncludeIPRanges"] = jsonPathResult8
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult9, err := jsonpath.Get("$[0].opa[0].log_level", v)
+		if err == nil && jsonPathResult9 != "" {
+			request["OPALogLevel"] = jsonPathResult9
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult10, err := jsonpath.Get("$[0].opa[0].request_cpu", v)
+		if err == nil && jsonPathResult10 != "" {
+			request["OPARequestCPU"] = jsonPathResult10
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult11, err := jsonpath.Get("$[0].opa[0].limit_cpu", v)
+		if err == nil && jsonPathResult11 != "" {
+			request["OPALimitCPU"] = jsonPathResult11
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult12, err := jsonpath.Get("$[0].opa[0].limit_memory", v)
+		if err == nil && jsonPathResult12 != "" {
+			request["OPALimitMemory"] = jsonPathResult12
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult13, err := jsonpath.Get("$[0].opa[0].request_memory", v)
+		if err == nil && jsonPathResult13 != "" {
+			request["OPARequestMemory"] = jsonPathResult13
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult14, err := jsonpath.Get("$[0].proxy[0].request_cpu", v)
+		if err == nil && jsonPathResult14 != "" {
+			request["ProxyRequestCPU"] = jsonPathResult14
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult15, err := jsonpath.Get("$[0].proxy[0].limit_cpu", v)
+		if err == nil && jsonPathResult15 != "" {
+			request["ProxyLimitCPU"] = jsonPathResult15
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult16, err := jsonpath.Get("$[0].proxy[0].limit_memory", v)
+		if err == nil && jsonPathResult16 != "" {
+			request["ProxyLimitMemory"] = jsonPathResult16
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult17, err := jsonpath.Get("$[0].proxy[0].request_memory", v)
+		if err == nil && jsonPathResult17 != "" {
+			request["ProxyRequestMemory"] = jsonPathResult17
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult18, err := jsonpath.Get("$[0].kiali[0].enabled", v)
+		if err == nil && jsonPathResult18 != "" {
+			request["KialiEnabled"] = jsonPathResult18
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult19, err := jsonpath.Get("$[0].access_log[0].enabled", v)
+		if err == nil && jsonPathResult19 != "" {
+			request["AccessLogEnabled"] = jsonPathResult19
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult20, err := jsonpath.Get("$[0].enable_locality_lb", v)
+		if err == nil && jsonPathResult20 != "" {
+			request["LocalityLoadBalancing"] = jsonPathResult20
+		}
+	}
 	if v, ok := d.GetOk("version"); ok {
 		request["IstioVersion"] = v
 	}
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("service_mesh_name"); ok {
-		request["Name"] = v
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult22, err := jsonpath.Get("$[0].opa[0].enabled", v)
+		if err == nil && jsonPathResult22 != "" {
+			request["OpaEnabled"] = jsonPathResult22
+		}
 	}
 	if v, ok := d.GetOk("edition"); ok {
 		request["Edition"] = v
 	}
-
-	if v, ok := d.GetOk("network"); ok {
-		for _, networkMap := range v.([]interface{}) {
-			if networkArg, ok := networkMap.(map[string]interface{}); ok {
-				if v, ok := networkArg["vpc_id"]; ok {
-					request["VpcId"] = v
-				}
-				if v, ok := networkArg["vswitche_list"]; ok {
-					request["VSwitches"] = convertListToJsonString(v.([]interface{}))
-				}
-			}
-		}
-	}
-
-	if v, ok := d.GetOk("load_balancer"); ok {
-		for _, loadBalancerMap := range v.([]interface{}) {
-			if loadBalancerArg, ok := loadBalancerMap.(map[string]interface{}); ok {
-				if v, ok := loadBalancerArg["api_server_public_eip"]; ok {
-					request["ApiServerPublicEip"] = v
-				}
-				if v, ok := loadBalancerArg["pilot_public_eip"]; ok {
-					request["PilotPublicEip"] = v
-				}
-			}
-		}
-	}
-	if v, ok := d.GetOk("mesh_config"); ok {
-		for _, meshConfigMap := range v.([]interface{}) {
-			if meshConfigArg, ok := meshConfigMap.(map[string]interface{}); ok {
-
-				if v, ok := meshConfigArg["customized_zipkin"]; ok {
-					request["CustomizedZipkin"] = v
-				}
-				if v, ok := meshConfigArg["tracing"]; ok {
-					request["Tracing"] = v
-				}
-				if v, ok := meshConfigArg["telemetry"]; ok {
-					request["Telemetry"] = v
-				}
-				if v, ok := meshConfigArg["enable_locality_lb"]; ok {
-					request["EnableLocalityLB"] = v
-				}
-				if pilot, ok := meshConfigArg["pilot"]; ok {
-					for _, pilotMap := range pilot.([]interface{}) {
-						if pilotArg, ok := pilotMap.(map[string]interface{}); ok {
-							if v, ok := pilotArg["trace_sampling"]; ok {
-								request["TraceSampling"] = v
-							}
-						}
-					}
-				}
-				if AccessLog, ok := meshConfigArg["access_log"]; ok {
-					for _, AccessLogMap := range AccessLog.([]interface{}) {
-						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
-							if v, ok := AccessLogArg["enabled"]; ok {
-								request["AccessLogEnabled"] = v
-							}
-							if v, ok := AccessLogArg["project"]; ok {
-								request["AccessLogProject"] = v
-							}
-						}
-					}
-				}
-				if ControlPlaneLog, ok := meshConfigArg["control_plane_log"]; ok {
-					for _, ControlPlaneLogMap := range ControlPlaneLog.([]interface{}) {
-						if ControlPlaneLogArg, ok := ControlPlaneLogMap.(map[string]interface{}); ok {
-							if v, ok := ControlPlaneLogArg["enabled"]; ok {
-								request["ControlPlaneLogEnabled"] = v
-							}
-							if v, ok := ControlPlaneLogArg["project"]; ok {
-								request["ControlPlaneLogProject"] = v
-							}
-						}
-					}
-				}
-				if proxy, ok := meshConfigArg["proxy"]; ok {
-					for _, proxyMap := range proxy.([]interface{}) {
-						if proxyArg, ok := proxyMap.(map[string]interface{}); ok {
-							if v, ok := proxyArg["request_memory"]; ok {
-								request["ProxyRequestMemory"] = v
-							}
-							if v, ok := proxyArg["request_cpu"]; ok {
-								request["ProxyRequestCPU"] = v
-							}
-							if v, ok := proxyArg["limit_memory"]; ok {
-								request["ProxyLimitMemory"] = v
-							}
-							if v, ok := proxyArg["limit_cpu"]; ok {
-								request["ProxyLimitCPU"] = v
-							}
-						}
-					}
-				}
-				if opa, ok := meshConfigArg["opa"]; ok {
-					for _, opaMap := range opa.([]interface{}) {
-						if opaArg, ok := opaMap.(map[string]interface{}); ok {
-							if v, ok := opaArg["enabled"]; ok {
-								request["OpaEnabled"] = v
-							}
-							if v, ok := opaArg["log_level"]; ok {
-								request["OPALogLevel"] = v
-							}
-							if v, ok := opaArg["request_cpu"]; ok {
-								request["OPARequestCPU"] = v
-							}
-							if v, ok := opaArg["request_memory"]; ok {
-								request["OPARequestMemory"] = v
-							}
-							if v, ok := opaArg["limit_cpu"]; ok {
-								request["OPALimitCPU"] = v
-							}
-							if v, ok := opaArg["limit_memory"]; ok {
-								request["OPALimitMemory"] = v
-							}
-						}
-
-					}
-				}
-				if audit, ok := meshConfigArg["audit"]; ok {
-					for _, auditMap := range audit.([]interface{}) {
-						if auditArg, ok := auditMap.(map[string]interface{}); ok {
-							if v, ok := auditArg["enabled"]; ok {
-								request["EnableAudit"] = v
-							}
-							if v, ok := auditArg["project"]; ok {
-								request["AuditProject"] = v
-							}
-							if v, ok := auditArg["enabled"]; ok {
-								request["OpaEnabled"] = v
-							}
-						}
-					}
-				}
-				if kiali, ok := meshConfigArg["kiali"]; ok {
-					for _, kialiMap := range kiali.([]interface{}) {
-						if kialiArg, ok := kialiMap.(map[string]interface{}); ok {
-							if v, ok := kialiArg["enabled"]; ok {
-								request["KialiEnabled"] = v
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 	if v, ok := d.GetOk("cluster_spec"); ok {
 		request["ClusterSpec"] = v
 	}
+	if v, ok := d.GetOkExists("customized_prometheus"); ok {
+		request["CustomizedPrometheus"] = v
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult26, err := jsonpath.Get("$[0].control_plane_log[0].enabled", v)
+		if err == nil && jsonPathResult26 != "" {
+			request["ControlPlaneLogEnabled"] = jsonPathResult26
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult27, err := jsonpath.Get("$[0].control_plane_log[0].project", v)
+		if err == nil && jsonPathResult27 != "" {
+			request["ControlPlaneLogProject"] = jsonPathResult27
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult28, err := jsonpath.Get("$[0].audit[0].enabled", v)
+		if err == nil && jsonPathResult28 != "" {
+			request["EnableAudit"] = jsonPathResult28
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult29, err := jsonpath.Get("$[0].audit[0].project", v)
+		if err == nil && jsonPathResult29 != "" {
+			request["AuditProject"] = jsonPathResult29
+		}
+	}
+	jsonPathResult30, err := jsonpath.Get("$[0].vswitche_list", d.Get("network"))
+	if err == nil {
+		request["VSwitches"] = convertListToJsonString(jsonPathResult30.([]interface{}))
+	}
 
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult31, err := jsonpath.Get("$[0].access_log[0].project", v)
+		if err == nil && jsonPathResult31 != "" {
+			request["AccessLogProject"] = jsonPathResult31
+		}
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ERR404", "InvalidActiveState.ACK"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InvalidActiveState.ACK", "ERR404"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_mesh_service_mesh", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["ServiceMeshId"]))
-	servicemeshService := ServicemeshService{client}
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"create_timeout", "failed"}))
+
+	serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
 	return resourceAliCloudServiceMeshServiceMeshUpdate(d, meta)
 }
+
 func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	servicemeshService := ServicemeshService{client}
-	object, err := servicemeshService.DescribeServiceMeshServiceMesh(d.Id())
+	serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+
+	objectRaw, err := serviceMeshServiceV2.DescribeServiceMeshServiceMesh(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_service_mesh_service_mesh servicemeshService.DescribeServiceMeshServiceMesh Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_service_mesh_service_mesh DescribeServiceMeshServiceMesh Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("service_mesh_name", object["ServiceMeshInfo"].(map[string]interface{})["Name"])
-	d.Set("edition", object["ServiceMeshInfo"].(map[string]interface{})["Profile"])
 
-	if spec, ok := object["Spec"]; ok {
-		if specArg, ok := spec.(map[string]interface{}); ok && len(specArg) > 0 {
-			loadBalancerSli := make([]map[string]interface{}, 0)
-			if loadBalancer, ok := specArg["LoadBalancer"]; ok {
-				if loadBalancerArg, ok := loadBalancer.(map[string]interface{}); ok && len(loadBalancerArg) > 0 {
-					loadBalancerMap := make(map[string]interface{})
-					loadBalancerMap["pilot_public_eip"] = loadBalancerArg["PilotPublicEip"]
-					loadBalancerMap["pilot_public_loadbalancer_id"] = loadBalancerArg["PilotPublicLoadbalancerId"]
-					loadBalancerMap["api_server_loadbalancer_id"] = loadBalancerArg["ApiServerLoadbalancerId"]
-					loadBalancerMap["api_server_public_eip"] = loadBalancerArg["ApiServerPublicEip"]
-					loadBalancerSli = append(loadBalancerSli, loadBalancerMap)
-				}
-			}
-			d.Set("load_balancer", loadBalancerSli)
+	d.Set("cluster_spec", objectRaw["ClusterSpec"])
+	serviceMeshInfo1RawObj, _ := jsonpath.Get("$.ServiceMeshInfo", objectRaw)
+	serviceMeshInfo1Raw := make(map[string]interface{})
+	if serviceMeshInfo1RawObj != nil {
+		serviceMeshInfo1Raw = serviceMeshInfo1RawObj.(map[string]interface{})
+	}
+	d.Set("create_time", serviceMeshInfo1Raw["CreationTime"])
+	d.Set("edition", serviceMeshInfo1Raw["Profile"])
+	d.Set("service_mesh_name", serviceMeshInfo1Raw["Name"])
+	d.Set("status", serviceMeshInfo1Raw["State"])
+	d.Set("version", serviceMeshInfo1Raw["Version"])
+	clusters1Raw := make([]interface{}, 0)
+	if objectRaw["Clusters"] != nil {
+		clusters1Raw = objectRaw["Clusters"].([]interface{})
+	}
 
-			meshConfigSli := make([]map[string]interface{}, 0)
-			if meshConfig, ok := specArg["MeshConfig"]; ok {
-				meshConfigMap := make(map[string]interface{})
-				if meshConfigArg, ok := meshConfig.(map[string]interface{}); ok && len(meshConfigArg) > 0 {
-					accessLogSli := make([]map[string]interface{}, 0)
-					if accessLog, ok := meshConfigArg["AccessLog"]; ok {
-						if accessLogArg, ok := accessLog.(map[string]interface{}); ok && len(accessLogArg) > 0 {
-							accessLogMap := make(map[string]interface{})
-							accessLogMap["enabled"] = accessLogArg["Enabled"]
-							accessLogMap["project"] = accessLogArg["Project"]
-							accessLogSli = append(accessLogSli, accessLogMap)
-						}
-					}
-					meshConfigMap["access_log"] = accessLogSli
-					controlPlaneLogSli := make([]map[string]interface{}, 0)
-					if controlPlaneLog, ok := meshConfigArg["ControlPlaneLogInfo"]; ok {
-						if controlPlaneLogArg, ok := controlPlaneLog.(map[string]interface{}); ok && len(controlPlaneLogArg) > 0 {
-							controlPlaneLogMap := make(map[string]interface{})
-							controlPlaneLogMap["enabled"] = controlPlaneLogArg["Enabled"]
-							controlPlaneLogMap["project"] = controlPlaneLogArg["Project"]
-							controlPlaneLogSli = append(controlPlaneLogSli, controlPlaneLogMap)
-						}
-					}
-					meshConfigMap["control_plane_log"] = controlPlaneLogSli
-					auditSli := make([]map[string]interface{}, 0)
-					if audit, ok := meshConfigArg["Audit"]; ok {
-						if auditArg, ok := audit.(map[string]interface{}); ok && len(auditArg) > 0 {
-							auditMap := make(map[string]interface{})
-							auditMap["enabled"] = auditArg["Enabled"]
-							auditMap["project"] = auditArg["Project"]
-							auditSli = append(auditSli, auditMap)
-							meshConfigMap["audit"] = auditSli
-						}
-					}
+	d.Set("cluster_ids", clusters1Raw)
 
-					meshConfigMap["customized_zipkin"] = meshConfigArg["CustomizedZipkin"]
-					meshConfigMap["enable_locality_lb"] = meshConfigArg["EnableLocalityLB"]
-
-					kialiSli := make([]map[string]interface{}, 0)
-					if kiali, ok := meshConfigArg["Kiali"]; ok {
-						if kialiArg, ok := kiali.(map[string]interface{}); ok && len(kialiArg) > 0 {
-							kialiMap := make(map[string]interface{})
-							kialiMap["enabled"] = kialiArg["Enabled"]
-							kialiSli = append(kialiSli, kialiMap)
-						}
-					}
-					meshConfigMap["kiali"] = kialiSli
-
-					opaSli := make([]map[string]interface{}, 0)
-					if opa, ok := meshConfigArg["OPA"]; ok {
-						opaMap := make(map[string]interface{})
-						if opaArg, ok := opa.(map[string]interface{}); ok && len(opaArg) > 0 {
-							opaMap["enabled"] = opaArg["Enabled"]
-							opaMap["limit_cpu"] = opaArg["LimitCPU"]
-							opaMap["limit_memory"] = opaArg["LimitMemory"]
-							opaMap["log_level"] = opaArg["LogLevel"]
-							opaMap["request_cpu"] = opaArg["RequestCPU"]
-							opaMap["request_memory"] = opaArg["RequestMemory"]
-						}
-						opaSli = append(opaSli, opaMap)
-					}
-					meshConfigMap["opa"] = opaSli
-					meshConfigMap["outbound_traffic_policy"] = meshConfigArg["OutboundTrafficPolicy"]
-
-					pilotSli := make([]map[string]interface{}, 0)
-					if pilot := meshConfigArg["Pilot"]; ok {
-						if pilotArg, ok := pilot.(map[string]interface{}); ok && len(pilotArg) > 0 {
-							pilotMap := make(map[string]interface{})
-							pilotMap["http10_enabled"] = pilotArg["Http10Enabled"]
-							pilotMap["trace_sampling"] = pilotArg["TraceSampling"]
-							pilotSli = append(pilotSli, pilotMap)
-						}
-					}
-					meshConfigMap["pilot"] = pilotSli
-
-					extraConfigSli := make([]map[string]interface{}, 0)
-					if raw, ok := meshConfigArg["ExtraConfiguration"]; ok {
-						if extraConfigArg, ok := raw.(map[string]interface{}); ok && len(extraConfigArg) > 0 {
-							extraConfigMap := make(map[string]interface{})
-							if v, ok := extraConfigArg["CRAggregationConfiguration"].(map[string]interface{}); ok {
-								extraConfigMap["cr_aggregation_enabled"] = v["Enabled"]
-								extraConfigSli = append(extraConfigSli, extraConfigMap)
-							}
-						}
-					}
-					d.Set("extra_configuration", extraConfigSli)
-
-					proxySli := make([]map[string]interface{}, 0)
-					if proxy, ok := meshConfigArg["Proxy"]; ok {
-						if proxyArg, ok := proxy.(map[string]interface{}); ok && len(proxyArg) > 0 {
-							proxyMap := make(map[string]interface{})
-							proxyMap["limit_cpu"] = proxyArg["LimitCPU"]
-							proxyMap["limit_memory"] = proxyArg["LimitMemory"]
-							proxyMap["request_cpu"] = proxyArg["RequestCPU"]
-							proxyMap["request_memory"] = proxyArg["RequestMemory"]
-							proxySli = append(proxySli, proxyMap)
-						}
-					}
-					meshConfigMap["proxy"] = proxySli
-
-					sidecarInjectorSli := make([]map[string]interface{}, 0)
-					if sidecarInjector, ok := meshConfigArg["SidecarInjector"]; ok {
-						if sidecarInjectorArg, ok := sidecarInjector.(map[string]interface{}); ok && len(sidecarInjectorArg) > 0 {
-							sidecarInjectorMap := make(map[string]interface{})
-							sidecarInjectorMap["auto_injection_policy_enabled"] = sidecarInjectorArg["AutoInjectionPolicyEnabled"]
-							sidecarInjectorMap["enable_namespaces_by_default"] = sidecarInjectorArg["EnableNamespacesByDefault"]
-							sidecarInjectorMap["limit_cpu"] = sidecarInjectorArg["LimitCPU"]
-							sidecarInjectorMap["limit_memory"] = sidecarInjectorArg["LimitMemory"]
-							sidecarInjectorMap["request_cpu"] = sidecarInjectorArg["RequestCPU"]
-							sidecarInjectorMap["request_memory"] = sidecarInjectorArg["RequestMemory"]
-							sidecarInjectorSli = append(sidecarInjectorSli, sidecarInjectorMap)
-						}
-					}
-					meshConfigMap["sidecar_injector"] = sidecarInjectorSli
-					meshConfigMap["telemetry"] = meshConfigArg["Telemetry"]
-					meshConfigMap["tracing"] = meshConfigArg["Tracing"]
-					meshConfigSli = append(meshConfigSli, meshConfigMap)
-				}
-			}
-			d.Set("mesh_config", meshConfigSli)
-
-			networkSli := make([]map[string]interface{}, 0)
-			if network, ok := specArg["Network"]; ok {
-				if networkArg, ok := network.(map[string]interface{}); ok && len(networkArg) > 0 {
-					networkMap := make(map[string]interface{})
-					networkMap["vswitche_list"] = networkArg["VSwitches"]
-					networkMap["vpc_id"] = networkArg["VpcId"]
-					networkSli = append(networkSli, networkMap)
-				}
-			}
-			d.Set("network", networkSli)
+	extraConfigurationMaps := make([]map[string]interface{}, 0)
+	extraConfigurationMap := make(map[string]interface{})
+	cRAggregationConfiguration1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.ExtraConfiguration.CRAggregationConfiguration", objectRaw)
+	cRAggregationConfiguration1Raw := make(map[string]interface{})
+	if cRAggregationConfiguration1RawObj != nil {
+		cRAggregationConfiguration1Raw = cRAggregationConfiguration1RawObj.(map[string]interface{})
+	}
+	if len(cRAggregationConfiguration1Raw) > 0 {
+		extraConfigurationMap["cr_aggregation_enabled"] = cRAggregationConfiguration1Raw["Enabled"]
+		extraConfigurationMaps = append(extraConfigurationMaps, extraConfigurationMap)
+	}
+	d.Set("extra_configuration", extraConfigurationMaps)
+	loadBalancerMaps := make([]map[string]interface{}, 0)
+	loadBalancerMap := make(map[string]interface{})
+	loadBalancer1RawObj, _ := jsonpath.Get("$.Spec.LoadBalancer", objectRaw)
+	loadBalancer1Raw := make(map[string]interface{})
+	if loadBalancer1RawObj != nil {
+		loadBalancer1Raw = loadBalancer1RawObj.(map[string]interface{})
+	}
+	if len(loadBalancer1Raw) > 0 {
+		loadBalancerMap["api_server_loadbalancer_id"] = loadBalancer1Raw["ApiServerLoadbalancerId"]
+		loadBalancerMap["api_server_public_eip"] = loadBalancer1Raw["ApiServerPublicEip"]
+		loadBalancerMap["pilot_public_eip"] = loadBalancer1Raw["PilotPublicEip"]
+		loadBalancerMap["pilot_public_loadbalancer_id"] = loadBalancer1Raw["PilotPublicLoadbalancerId"]
+		loadBalancerMaps = append(loadBalancerMaps, loadBalancerMap)
+	}
+	d.Set("load_balancer", loadBalancerMaps)
+	meshConfigMaps := make([]map[string]interface{}, 0)
+	meshConfigMap := make(map[string]interface{})
+	meshConfig1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig", objectRaw)
+	meshConfig1Raw := make(map[string]interface{})
+	if meshConfig1RawObj != nil {
+		meshConfig1Raw = meshConfig1RawObj.(map[string]interface{})
+	}
+	if len(meshConfig1Raw) > 0 {
+		meshConfigMap["customized_zipkin"] = meshConfig1Raw["CustomizedZipkin"]
+		meshConfigMap["enable_locality_lb"] = meshConfig1Raw["EnableLocalityLB"]
+		meshConfigMap["include_ip_ranges"] = meshConfig1Raw["IncludeIPRanges"]
+		meshConfigMap["outbound_traffic_policy"] = meshConfig1Raw["OutboundTrafficPolicy"]
+		meshConfigMap["telemetry"] = meshConfig1Raw["Telemetry"]
+		meshConfigMap["tracing"] = meshConfig1Raw["Tracing"]
+		accessLogMaps := make([]map[string]interface{}, 0)
+		accessLogMap := make(map[string]interface{})
+		accessLog1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.AccessLog", objectRaw)
+		accessLog1Raw := make(map[string]interface{})
+		if accessLog1RawObj != nil {
+			accessLog1Raw = accessLog1RawObj.(map[string]interface{})
 		}
+		if len(accessLog1Raw) > 0 {
+			accessLogMap["enabled"] = accessLog1Raw["Enabled"]
+			accessLogMap["project"] = accessLog1Raw["Project"]
+			accessLogMaps = append(accessLogMaps, accessLogMap)
+		}
+		meshConfigMap["access_log"] = accessLogMaps
+		auditMaps := make([]map[string]interface{}, 0)
+		auditMap := make(map[string]interface{})
+		audit1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Audit", objectRaw)
+		audit1Raw := make(map[string]interface{})
+		if audit1RawObj != nil {
+			audit1Raw = audit1RawObj.(map[string]interface{})
+		}
+		if len(audit1Raw) > 0 {
+			auditMap["enabled"] = audit1Raw["Enabled"]
+			auditMap["project"] = audit1Raw["Project"]
+			auditMaps = append(auditMaps, auditMap)
+		}
+		meshConfigMap["audit"] = auditMaps
+		controlPlaneLogMaps := make([]map[string]interface{}, 0)
+		controlPlaneLogMap := make(map[string]interface{})
+		controlPlaneLogInfo1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.ControlPlaneLogInfo", objectRaw)
+		controlPlaneLogInfo1Raw := make(map[string]interface{})
+		if controlPlaneLogInfo1RawObj != nil {
+			controlPlaneLogInfo1Raw = controlPlaneLogInfo1RawObj.(map[string]interface{})
+		}
+		if len(controlPlaneLogInfo1Raw) > 0 {
+			controlPlaneLogMap["enabled"] = controlPlaneLogInfo1Raw["Enabled"]
+			controlPlaneLogMap["project"] = controlPlaneLogInfo1Raw["Project"]
+			controlPlaneLogMaps = append(controlPlaneLogMaps, controlPlaneLogMap)
+		}
+		meshConfigMap["control_plane_log"] = controlPlaneLogMaps
+		kialiMaps := make([]map[string]interface{}, 0)
+		kialiMap := make(map[string]interface{})
+		kiali1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Kiali", objectRaw)
+		kiali1Raw := make(map[string]interface{})
+		if kiali1RawObj != nil {
+			kiali1Raw = kiali1RawObj.(map[string]interface{})
+		}
+		if len(kiali1Raw) > 0 {
+			kialiMap["enabled"] = kiali1Raw["Enabled"]
+			kialiMap["url"] = kiali1Raw["Url"]
+			kialiMaps = append(kialiMaps, kialiMap)
+		}
+		meshConfigMap["kiali"] = kialiMaps
+		oPAMaps := make([]map[string]interface{}, 0)
+		oPAMap := make(map[string]interface{})
+		oPA1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.OPA", objectRaw)
+		oPA1Raw := make(map[string]interface{})
+		if oPA1RawObj != nil {
+			oPA1Raw = oPA1RawObj.(map[string]interface{})
+		}
+		if len(oPA1Raw) > 0 {
+			oPAMap["enabled"] = oPA1Raw["Enabled"]
+			oPAMap["limit_cpu"] = oPA1Raw["LimitCPU"]
+			oPAMap["limit_memory"] = oPA1Raw["LimitMemory"]
+			oPAMap["log_level"] = oPA1Raw["LogLevel"]
+			oPAMap["request_cpu"] = oPA1Raw["RequestCPU"]
+			oPAMap["request_memory"] = oPA1Raw["RequestMemory"]
+			oPAMaps = append(oPAMaps, oPAMap)
+		}
+		meshConfigMap["opa"] = oPAMaps
+		pilotMaps := make([]map[string]interface{}, 0)
+		pilotMap := make(map[string]interface{})
+		pilot1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Pilot", objectRaw)
+		pilot1Raw := make(map[string]interface{})
+		if pilot1RawObj != nil {
+			pilot1Raw = pilot1RawObj.(map[string]interface{})
+		}
+		if len(pilot1Raw) > 0 {
+			pilotMap["http10_enabled"] = pilot1Raw["Http10Enabled"]
+			pilotMap["trace_sampling"] = pilot1Raw["TraceSampling"]
+			pilotMaps = append(pilotMaps, pilotMap)
+		}
+		meshConfigMap["pilot"] = pilotMaps
+		prometheusMaps := make([]map[string]interface{}, 0)
+		prometheusMap := make(map[string]interface{})
+		prometheus1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Prometheus", objectRaw)
+		prometheus1Raw := make(map[string]interface{})
+		if prometheus1RawObj != nil {
+			prometheus1Raw = prometheus1RawObj.(map[string]interface{})
+		}
+		if len(prometheus1Raw) > 0 {
+			prometheusMap["external_url"] = prometheus1Raw["ExternalUrl"]
+			prometheusMap["use_external"] = prometheus1Raw["UseExternal"]
+			prometheusMaps = append(prometheusMaps, prometheusMap)
+		}
+		meshConfigMap["prometheus"] = prometheusMaps
+		proxyMaps := make([]map[string]interface{}, 0)
+		proxyMap := make(map[string]interface{})
+		proxy1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Proxy", objectRaw)
+		proxy1Raw := make(map[string]interface{})
+		if proxy1RawObj != nil {
+			proxy1Raw = proxy1RawObj.(map[string]interface{})
+		}
+		if len(proxy1Raw) > 0 {
+			proxyMap["cluster_domain"] = proxy1Raw["ClusterDomain"]
+			proxyMap["limit_cpu"] = proxy1Raw["LimitCPU"]
+			proxyMap["limit_memory"] = proxy1Raw["LimitMemory"]
+			proxyMap["request_cpu"] = proxy1Raw["RequestCPU"]
+			proxyMap["request_memory"] = proxy1Raw["RequestMemory"]
+			proxyMaps = append(proxyMaps, proxyMap)
+		}
+		meshConfigMap["proxy"] = proxyMaps
+		sidecarInjectorMaps := make([]map[string]interface{}, 0)
+		sidecarInjectorMap := make(map[string]interface{})
+		sidecarInjector1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.SidecarInjector", objectRaw)
+		sidecarInjector1Raw := make(map[string]interface{})
+		if sidecarInjector1RawObj != nil {
+			sidecarInjector1Raw = sidecarInjector1RawObj.(map[string]interface{})
+		}
+		if len(sidecarInjector1Raw) > 0 {
+			sidecarInjectorMap["auto_injection_policy_enabled"] = sidecarInjector1Raw["AutoInjectionPolicyEnabled"]
+			sidecarInjectorMap["enable_namespaces_by_default"] = sidecarInjector1Raw["EnableNamespacesByDefault"]
+			sidecarInjectorMap["limit_cpu"] = sidecarInjector1Raw["LimitCPU"]
+			sidecarInjectorMap["limit_memory"] = sidecarInjector1Raw["LimitMemory"]
+			sidecarInjectorMap["request_cpu"] = sidecarInjector1Raw["RequestCPU"]
+			sidecarInjectorMap["request_memory"] = sidecarInjector1Raw["RequestMemory"]
+			sidecarInjectorMap["sidecar_injector_webhook_as_yaml"] = sidecarInjector1Raw["SidecarInjectorWebhookAsYaml"]
+			initCNIConfigurationMaps := make([]map[string]interface{}, 0)
+			initCNIConfigurationMap := make(map[string]interface{})
+			initCNIConfiguration1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.SidecarInjector.InitCNIConfiguration", objectRaw)
+			initCNIConfiguration1Raw := make(map[string]interface{})
+			if initCNIConfiguration1RawObj != nil {
+				initCNIConfiguration1Raw = initCNIConfiguration1RawObj.(map[string]interface{})
+			}
+			if len(initCNIConfiguration1Raw) > 0 {
+				initCNIConfigurationMap["enabled"] = initCNIConfiguration1Raw["Enabled"]
+				initCNIConfigurationMap["exclude_namespaces"] = initCNIConfiguration1Raw["ExcludeNamespaces"]
+				initCNIConfigurationMaps = append(initCNIConfigurationMaps, initCNIConfigurationMap)
+			}
+			sidecarInjectorMap["init_cni_configuration"] = initCNIConfigurationMaps
+			sidecarInjectorMaps = append(sidecarInjectorMaps, sidecarInjectorMap)
+		}
+		meshConfigMap["sidecar_injector"] = sidecarInjectorMaps
+		meshConfigMaps = append(meshConfigMaps, meshConfigMap)
 	}
-	d.Set("status", object["ServiceMeshInfo"].(map[string]interface{})["State"])
-	d.Set("version", object["ServiceMeshInfo"].(map[string]interface{})["Version"])
+	d.Set("mesh_config", meshConfigMaps)
+	networkMaps := make([]map[string]interface{}, 0)
+	networkMap := make(map[string]interface{})
+	network1RawObj, _ := jsonpath.Get("$.Spec.Network", objectRaw)
+	network1Raw := make(map[string]interface{})
+	if network1RawObj != nil {
+		network1Raw = network1RawObj.(map[string]interface{})
+	}
+	if len(network1Raw) > 0 {
+		networkMap["security_group_id"] = network1Raw["SecurityGroupId"]
+		networkMap["vpc_id"] = network1Raw["VpcId"]
+		vSwitches1Raw, _ := jsonpath.Get("$.Spec.Network.VSwitches", objectRaw)
+		networkMap["vswitche_list"] = vSwitches1Raw
+		networkMaps = append(networkMaps, networkMap)
+	}
+	d.Set("network", networkMaps)
 
-	d.Set("cluster_spec", object["ClusterSpec"])
-	clusters := make([]interface{}, 0)
-	if v, ok := object["Clusters"].([]interface{}); ok {
-		clusters = append(clusters, v...)
+	objectRaw, err = serviceMeshServiceV2.DescribeListTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
 	}
-	d.Set("cluster_ids", clusters)
+
+	tagsMaps := objectRaw["TagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = serviceMeshServiceV2.DescribeDescribeServiceMeshKubeconfig(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 }
+
 func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	servicemeshService := ServicemeshService{client}
+	var request map[string]interface{}
 	var response map[string]interface{}
+	update := false
 	d.Partial(true)
+	action := "UpdateMeshFeature"
 	conn, err := client.NewServicemeshClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
-	updateMeshFeatureReq := map[string]interface{}{
-		"ServiceMeshId": d.Id(),
+	request = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult, err := jsonpath.Get("$[0].tracing", d.Get("mesh_config"))
+		if err == nil {
+			request["Tracing"] = jsonPathResult
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult1, err := jsonpath.Get("$[0].pilot[0].trace_sampling", d.Get("mesh_config"))
+		if err == nil {
+			request["TraceSampling"] = jsonPathResult1
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult2, err := jsonpath.Get("$[0].telemetry", d.Get("mesh_config"))
+		if err == nil {
+			request["Telemetry"] = jsonPathResult2
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult3, err := jsonpath.Get("$[0].customized_zipkin", d.Get("mesh_config"))
+		if err == nil {
+			request["CustomizedZipkin"] = jsonPathResult3
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult4, err := jsonpath.Get("$[0].outbound_traffic_policy", d.Get("mesh_config"))
+		if err == nil {
+			request["OutboundTrafficPolicy"] = jsonPathResult4
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult5, err := jsonpath.Get("$[0].include_ip_ranges", d.Get("mesh_config"))
+		if err == nil {
+			request["IncludeIPRanges"] = jsonPathResult5
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult6, err := jsonpath.Get("$[0].sidecar_injector[0].enable_namespaces_by_default", d.Get("mesh_config"))
+		if err == nil {
+			request["EnableNamespacesByDefault"] = jsonPathResult6
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult7, err := jsonpath.Get("$[0].pilot[0].http10_enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["Http10Enabled"] = jsonPathResult7
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult8, err := jsonpath.Get("$[0].opa[0].log_level", d.Get("mesh_config"))
+		if err == nil {
+			request["OPALogLevel"] = jsonPathResult8
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult9, err := jsonpath.Get("$[0].opa[0].request_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["OPARequestCPU"] = jsonPathResult9
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult10, err := jsonpath.Get("$[0].opa[0].request_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["OPARequestMemory"] = jsonPathResult10
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult11, err := jsonpath.Get("$[0].opa[0].limit_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["OPALimitCPU"] = jsonPathResult11
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult12, err := jsonpath.Get("$[0].opa[0].limit_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["OPALimitMemory"] = jsonPathResult12
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult13, err := jsonpath.Get("$[0].proxy[0].limit_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["ProxyLimitCPU"] = jsonPathResult13
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult14, err := jsonpath.Get("$[0].proxy[0].request_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["ProxyRequestCPU"] = jsonPathResult14
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult15, err := jsonpath.Get("$[0].proxy[0].limit_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["ProxyLimitMemory"] = jsonPathResult15
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult16, err := jsonpath.Get("$[0].kiali[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["KialiEnabled"] = jsonPathResult16
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult17, err := jsonpath.Get("$[0].access_log[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["AccessLogEnabled"] = jsonPathResult17
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult18, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].exclude_namespaces", d.Get("mesh_config"))
+		if err == nil {
+			request["CniExcludeNamespaces"] = jsonPathResult18
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult19, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["CniEnabled"] = jsonPathResult19
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult20, err := jsonpath.Get("$[0].proxy[0].request_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["ProxyRequestMemory"] = jsonPathResult20
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult21, err := jsonpath.Get("$[0].sidecar_injector[0].request_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["SidecarInjectorRequestMemory"] = jsonPathResult21
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult22, err := jsonpath.Get("$[0].sidecar_injector[0].limit_memory", d.Get("mesh_config"))
+		if err == nil {
+			request["SidecarInjectorLimitMemory"] = jsonPathResult22
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult23, err := jsonpath.Get("$[0].sidecar_injector[0].limit_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["SidecarInjectorLimitCPU"] = jsonPathResult23
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult24, err := jsonpath.Get("$[0].sidecar_injector[0].request_cpu", d.Get("mesh_config"))
+		if err == nil {
+			request["SidecarInjectorRequestCPU"] = jsonPathResult24
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
+		update = true
+		jsonPathResult25, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["OpaEnabled"] = jsonPathResult25
+		}
+	}
+
+	if v, ok := d.GetOkExists("customized_prometheus"); ok {
+		request["CustomizedPrometheus"] = v
+	}
+	if v, ok := d.GetOk("prometheus_url"); ok {
+		request["PrometheusUrl"] = v
 	}
 	if d.HasChange("mesh_config") {
 		update = true
-	}
-
-	if v, ok := d.GetOk("mesh_config"); ok {
-		for _, meshConfigMap := range v.([]interface{}) {
-			if meshConfigArg, ok := meshConfigMap.(map[string]interface{}); ok {
-
-				if v, ok := meshConfigArg["customized_zipkin"]; ok {
-					updateMeshFeatureReq["CustomizedZipkin"] = v
-				}
-				if v, ok := meshConfigArg["outbound_traffic_policy"]; ok {
-					updateMeshFeatureReq["OutboundTrafficPolicy"] = v
-				}
-				if proxy, ok := meshConfigArg["proxy"]; ok {
-					for _, proxyMap := range proxy.([]interface{}) {
-						if proxyArg, ok := proxyMap.(map[string]interface{}); ok {
-							if v, ok := proxyArg["request_memory"]; ok {
-								updateMeshFeatureReq["ProxyRequestMemory"] = v
-							}
-							if v, ok := proxyArg["request_cpu"]; ok {
-								updateMeshFeatureReq["ProxyRequestCPU"] = v
-							}
-							if v, ok := proxyArg["limit_memory"]; ok {
-								updateMeshFeatureReq["ProxyLimitMemory"] = v
-							}
-							if v, ok := proxyArg["limit_cpu"]; ok {
-								updateMeshFeatureReq["ProxyLimitCPU"] = v
-							}
-						}
-					}
-				}
-				if AccessLog, ok := meshConfigArg["access_log"]; ok {
-					for _, AccessLogMap := range AccessLog.([]interface{}) {
-						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
-							if v, ok := AccessLogArg["enabled"]; ok {
-								updateMeshFeatureReq["AccessLogEnabled"] = v
-							}
-							if v, ok := AccessLogArg["project"]; ok {
-								updateMeshFeatureReq["AccessLogProject"] = v
-							}
-						}
-					}
-				}
-				if sidecarInjector, ok := meshConfigArg["sidecar_injector"]; ok && !d.IsNewResource() {
-					for _, sidecarInjectorMap := range sidecarInjector.([]interface{}) {
-						if sidecarInjectorArg, ok := sidecarInjectorMap.(map[string]interface{}); ok {
-							if v, ok := sidecarInjectorArg["auto_injection_policy_enabled"]; ok {
-								updateMeshFeatureReq["AutoInjectionPolicyEnabled"] = v
-							}
-							if v, ok := sidecarInjectorArg["enable_namespaces_by_default"]; ok {
-								updateMeshFeatureReq["EnableNamespacesByDefault"] = v
-							}
-							if v, ok := sidecarInjectorArg["limit_cpu"]; ok {
-								updateMeshFeatureReq["SidecarInjectorLimitCPU"] = v
-							}
-							if v, ok := sidecarInjectorArg["limit_memory"]; ok {
-								updateMeshFeatureReq["SidecarInjectorLimitMemory"] = v
-							}
-							if v, ok := sidecarInjectorArg["request_cpu"]; ok {
-								updateMeshFeatureReq["SidecarInjectorRequestCPU"] = v
-							}
-							if v, ok := sidecarInjectorArg["request_memory"]; ok {
-								updateMeshFeatureReq["SidecarInjectorRequestMemory"] = v
-							}
-						}
-					}
-				}
-
-				if AccessLog, ok := meshConfigArg["mesh_config"]; ok {
-					for _, AccessLogMap := range AccessLog.([]interface{}) {
-						if AccessLogArg, ok := AccessLogMap.(map[string]interface{}); ok {
-							if v, ok := AccessLogArg["enabled"]; ok {
-								updateMeshFeatureReq["AccessLogEnabled"] = v
-							}
-						}
-					}
-				}
-				if v, ok := meshConfigArg["tracing"]; ok {
-					updateMeshFeatureReq["Tracing"] = v
-				}
-				if v, ok := meshConfigArg["telemetry"]; ok {
-					updateMeshFeatureReq["Telemetry"] = v
-				}
-				if pilot, ok := meshConfigArg["pilot"]; ok {
-					for _, pilotMap := range pilot.([]interface{}) {
-						if pilotArg, ok := pilotMap.(map[string]interface{}); ok {
-							if v, ok := pilotArg["trace_sampling"]; ok {
-								updateMeshFeatureReq["TraceSampling"] = v
-							}
-							if v, ok := pilotArg["http10_enabled"]; ok {
-								updateMeshFeatureReq["Http10Enabled"] = v
-							}
-						}
-					}
-				}
-				if opa, ok := meshConfigArg["opa"]; ok {
-					for _, opaMap := range opa.([]interface{}) {
-						if opaArg, ok := opaMap.(map[string]interface{}); ok {
-							if v, ok := opaArg["enabled"]; ok {
-								updateMeshFeatureReq["OpaEnabled"] = v
-							}
-							if v, ok := opaArg["log_level"]; ok {
-								updateMeshFeatureReq["OPALogLevel"] = v
-							}
-							if v, ok := opaArg["request_cpu"]; ok {
-								updateMeshFeatureReq["OPARequestCPU"] = v
-							}
-							if v, ok := opaArg["request_memory"]; ok {
-								updateMeshFeatureReq["OPARequestMemory"] = v
-							}
-							if v, ok := opaArg["limit_cpu"]; ok {
-								updateMeshFeatureReq["OPALimitCPU"] = v
-							}
-							if v, ok := opaArg["limit_memory"]; ok {
-								updateMeshFeatureReq["OPALimitMemory"] = v
-							}
-						}
-					}
-				}
-				if audit, ok := meshConfigArg["audit"]; ok {
-					for _, auditMap := range audit.([]interface{}) {
-						if auditArg, ok := auditMap.(map[string]interface{}); ok {
-							if v, ok := auditArg["enabled"]; ok {
-								updateMeshFeatureReq["EnableAudit"] = v
-							}
-							if v, ok := auditArg["project"]; ok {
-								updateMeshFeatureReq["AuditProject"] = v
-							}
-						}
-					}
-				}
-				if kiali, ok := meshConfigArg["kiali"]; ok {
-					for _, kialiMap := range kiali.([]interface{}) {
-						if kialiArg, ok := kialiMap.(map[string]interface{}); ok {
-							if v, ok := kialiArg["enabled"]; ok {
-								updateMeshFeatureReq["KialiEnabled"] = v
-							}
-						}
-					}
-				}
-			}
+		jsonPathResult28, err := jsonpath.Get("$[0].sidecar_injector[0].auto_injection_policy_enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["AutoInjectionPolicyEnabled"] = jsonPathResult28
 		}
 	}
-	if !d.IsNewResource() && d.HasChange("cluster_spec") {
+
+	if !d.IsNewResource() && d.HasChange("mesh_config") {
 		update = true
-		if v, ok := d.GetOk("cluster_spec"); ok {
-			updateMeshFeatureReq["ClusterSpec"] = v
+		jsonPathResult29, err := jsonpath.Get("$[0].access_log[0].project", d.Get("mesh_config"))
+		if err == nil {
+			request["AccessLogProject"] = jsonPathResult29
 		}
 	}
 
 	if update {
-		action := "UpdateMeshFeature"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, updateMeshFeatureReq, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -916,73 +1141,69 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, updateMeshFeatureReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("tracing")
+		d.SetPartial("trace_sampling")
+		d.SetPartial("telemetry")
+		d.SetPartial("customized_zipkin")
+		d.SetPartial("outbound_traffic_policy")
+		d.SetPartial("include_ip_ranges")
+		d.SetPartial("enable_namespaces_by_default")
+		d.SetPartial("http10_enabled")
+		d.SetPartial("log_level")
+		d.SetPartial("request_cpu")
+		d.SetPartial("request_memory")
+		d.SetPartial("limit_cpu")
+		d.SetPartial("limit_memory")
+		d.SetPartial("limit_cpu")
+		d.SetPartial("request_cpu")
+		d.SetPartial("limit_memory")
+		d.SetPartial("enabled")
+		d.SetPartial("enabled")
+		d.SetPartial("exclude_namespaces")
+		d.SetPartial("enabled")
+		d.SetPartial("request_memory")
+		d.SetPartial("request_memory")
+		d.SetPartial("limit_memory")
+		d.SetPartial("limit_cpu")
+		d.SetPartial("request_cpu")
+		d.SetPartial("enabled")
+		d.SetPartial("auto_injection_policy_enabled")
+		d.SetPartial("project")
 	}
-
 	update = false
-	UpdateMeshCRAggregationReq := map[string]interface{}{
-		"ServiceMeshId": d.Id(),
+	action = "UpdateMeshCRAggregation"
+	conn, err = client.NewServicemeshClient()
+	if err != nil {
+		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
 	if d.HasChange("extra_configuration") {
 		update = true
-		if extraConfig, ok := d.GetOk("extra_configuration"); ok {
-			for _, extraConfigMap := range extraConfig.([]interface{}) {
-				if extraConfigArg, ok := extraConfigMap.(map[string]interface{}); ok {
-					if v, ok := extraConfigArg["cr_aggregation_enabled"]; ok {
-						UpdateMeshCRAggregationReq["Enabled"] = v
-					}
-				}
-			}
-		}
-	}
-	if update {
-		action := "UpdateMeshCRAggregation"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), UpdateMeshCRAggregationReq, nil, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, updateMeshFeatureReq)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+		jsonPathResult, err := jsonpath.Get("$[0].cr_aggregation_enabled", d.Get("extra_configuration"))
+		if err == nil {
+			request["Enabled"] = jsonPathResult
 		}
 	}
 
-	update = false
-	if !d.IsNewResource() && d.HasChange("version") {
-		update = true
-	}
-	UpgradeEditionReq := map[string]interface{}{
-		"ServiceMeshId": d.Id(),
-	}
-	if v, ok := d.GetOk("version"); ok {
-		UpgradeEditionReq["ExpectedVersion"] = v
-	}
 	if update {
-		action := "UpgradeMeshEditionPartially"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-01-11"), StringPointer("AK"), UpgradeEditionReq, nil, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -990,34 +1211,90 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, updateMeshFeatureReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+		d.SetPartial("cr_aggregation_enabled")
+	}
+	update = false
+	action = "UpgradeMeshEditionPartially"
+	conn, err = client.NewServicemeshClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("version") {
+		update = true
+		request["ExpectedVersion"] = d.Get("version")
+	}
+
+	request["ASMGatewayContinue"] = "false"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("version")
 	}
 
 	if d.HasChange("cluster_ids") {
-		oraw, nraw := d.GetChange("cluster_ids")
-		removed := oraw.([]interface{})
-		created := nraw.([]interface{})
-		if len(removed) > 0 {
-			for _, item := range removed {
-				removeClusterReq := map[string]interface{}{
-					"ServiceMeshId": d.Id(),
-				}
-				removeClusterReq["ClusterId"] = item
+		oldEntry, newEntry := d.GetChange("cluster_ids")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			clusterIds := removed.([]interface{})
+
+			for _, item := range clusterIds {
 				action := "RemoveClusterFromServiceMesh"
+				conn, err := client.NewServicemeshClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				request["ServiceMeshId"] = d.Id()
+				if v, ok := item.(string); ok {
+					jsonPathResult, err := jsonpath.Get("$", v)
+					if err != nil {
+						return WrapError(err)
+					}
+					request["ClusterId"] = jsonPathResult
+				}
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, removeClusterReq, &util.RuntimeOptions{})
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1025,27 +1302,47 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 						}
 						return resource.NonRetryableError(err)
 					}
+					addDebug(action, response, request)
 					return nil
 				})
-				addDebug(action, response, removeClusterReq)
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+				serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+				d.SetPartial("cluster_ids")
+
 			}
+			d.SetPartial("cluster_ids")
 		}
 
-		if len(created) > 0 {
-			for _, item := range created {
-				addClusterReq := map[string]interface{}{
-					"ServiceMeshId": d.Id(),
-				}
-				addClusterReq["ClusterId"] = item
+		if len(added.([]interface{})) > 0 {
+			clusterIds := added.([]interface{})
+
+			for _, item := range clusterIds {
 				action := "AddClusterIntoServiceMesh"
+				conn, err := client.NewServicemeshClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				request["ServiceMeshId"] = d.Id()
+				if v, ok := item.(string); ok {
+					jsonPathResult, err := jsonpath.Get("$", v)
+					if err != nil {
+						return WrapError(err)
+					}
+					request["ClusterId"] = jsonPathResult
+				}
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, addClusterReq, &runtime)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1053,60 +1350,76 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 						}
 						return resource.NonRetryableError(err)
 					}
+					addDebug(action, response, request)
 					return nil
 				})
-				addDebug(action, response, addClusterReq)
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
+				serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+				stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
+				d.SetPartial("cluster_ids")
+
 			}
+			d.SetPartial("cluster_ids")
 		}
 	}
-
-	d.Partial(false)
-
-	stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{"updating_failed", "failed", "upgrading_failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	if d.HasChange("tags") {
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		if err := serviceMeshServiceV2.SetResourceTags(d, "servicemesh"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
+	d.Partial(false)
 	return resourceAliCloudServiceMeshServiceMeshRead(d, meta)
 }
+
 func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	servicemeshService := ServicemeshService{client}
 	action := "DeleteServiceMesh"
+	var request map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewServicemeshClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"ServiceMeshId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
 
 	if v, ok := d.GetOkExists("force"); ok {
 		request["Force"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ErrorPermitted.ClustersNotEmpty", "RelatedResourceReused", "StillInitializing"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"RelatedResourceReused", "StillInitializing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, servicemeshService.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), []string{}))
+
+	serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 60*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
