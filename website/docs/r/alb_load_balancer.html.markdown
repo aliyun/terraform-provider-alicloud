@@ -73,10 +73,10 @@ The following arguments are supported:
   - **IPv4**:IPv4 type.
   - **DualStack**: the dual-stack type.
 * `address_type` - (Required) The type of IP address that the SLB instance uses to provide services.
-* `bandwidth_package_id` - (Optional, ForceNew, Available since v1.212.0) The ID of the EIP bandwidth plan which is associated with an ALB instance that uses a public IP address.
+* `bandwidth_package_id` - (Optional, ForceNew, Available since v1.211.2) The ID of the EIP bandwidth plan which is associated with an ALB instance that uses a public IP address.
 * `deletion_protection_enabled` - (Optional) Whether to enable delete protection. Value:true: on.false (default): Off.
 * `dry_run` - (Optional) Whether to PreCheck only this request, value:true: sends a check request and does not create a resource. Check items include whether required parameters are filled in, request format, and business restrictions. If the check fails, the corresponding error is returned. If the check passes, the error code DryRunOperation is returned.false (default): Sends a normal request, returns the HTTP_2xx status code after the check, and directly performs the operation.
-* `ipv6_address_type` - (Optional, Available since v1.212.0) The address type of Ipv6.
+* `ipv6_address_type` - (Optional, Available since v1.211.2) The address type of Ipv6.
 * `load_balancer_billing_config` - (Required, ForceNew) The configuration of the billing method. See [`load_balancer_billing_config`](#load_balancer_billing_config) below.
 * `load_balancer_edition` - (Required) The edition of the ALB instance.
 * `load_balancer_name` - (Optional) The name of the resource.
