@@ -692,13 +692,16 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"description":            "${var.name}",
 					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
-					"lower_case_table_names": "1",
+					"lower_case_table_names": "0",
 					"backup_retention_policy_on_cluster_deletion": "NONE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-						"zone_id":           CHECKSET,
+						"resource_group_id":      CHECKSET,
+						"zone_id":                CHECKSET,
+						"lower_case_table_names": CHECKSET,
+						"loose_polar_log_bin":    CHECKSET,
+						"default_time_zone":      CHECKSET,
 					}),
 				),
 			},
@@ -716,7 +719,27 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "loose_polar_log_bin", "default_time_zone", "parameter_group_id", "lower_case_table_names", "backup_retention_policy_on_cluster_deletion"},
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"loose_polar_log_bin": "OFF",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"loose_polar_log_bin": "OFF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"default_time_zone": "+2:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_time_zone": "+2:00",
+					}),
+				),
 			},
 		},
 	})
@@ -758,23 +781,20 @@ func TestAccAliCloudPolarDBCluster_Create(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_type":                "MySQL",
-					"db_version":             "8.0",
-					"pay_type":               "PostPaid",
-					"db_node_count":          "2",
-					"db_node_class":          "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":             "${local.vswitch_id}",
-					"creation_category":      "Normal",
-					"clone_data_point":       "LATEST",
-					"loose_polar_log_bin":    "ON",
-					"db_node_num":            "2",
-					"default_time_zone":      "+1:00",
-					"creation_option":        "CloneFromPolarDB",
-					"source_resource_id":     "${alicloud_polardb_cluster.cluster.id}",
-					"description":            "${var.name}",
-					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
-					"lower_case_table_names": "1",
+					"db_type":            "MySQL",
+					"db_version":         "8.0",
+					"pay_type":           "PostPaid",
+					"db_node_count":      "2",
+					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
+					"vswitch_id":         "${local.vswitch_id}",
+					"creation_category":  "Normal",
+					"clone_data_point":   "LATEST",
+					"db_node_num":        "2",
+					"creation_option":    "CloneFromPolarDB",
+					"source_resource_id": "${alicloud_polardb_cluster.cluster.id}",
+					"description":        "${var.name}",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"parameter_group_id": "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -797,7 +817,7 @@ func TestAccAliCloudPolarDBCluster_Create(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "source_resource_id", "clone_data_point", "db_node_num", "loose_polar_log_bin", "default_time_zone", "parameter_group_id", "lower_case_table_names"},
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "source_resource_id", "clone_data_point", "db_node_num", "parameter_group_id"},
 			},
 		},
 	})

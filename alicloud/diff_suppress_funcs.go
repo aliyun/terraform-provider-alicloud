@@ -363,7 +363,8 @@ func polardbProxyTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 }
 
 func polardbDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" {
+	creationOption, optionOk := d.GetOk("creation_option")
+	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" && (creationOption == "Normal" || !optionOk) {
 		return false
 	}
 	return true

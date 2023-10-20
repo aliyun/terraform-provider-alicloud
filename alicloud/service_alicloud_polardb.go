@@ -6,6 +6,7 @@ import (
 	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -835,17 +836,23 @@ func (s *PolarDBService) RefreshEndpointConfig(d *schema.ResourceData) error {
 func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var param []map[string]interface{}
 	documented, ok := d.GetOk("parameters")
-	if !ok {
-		d.Set("parameters", param)
-		return nil
-	}
 	object, err := s.DescribeParameters(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-
 	var parameters = make(map[string]interface{})
 	for _, i := range object.RunningParameters.Parameter {
+		// 创建集群传入参数模板参数
+		changeParams := []string{"loose_polar_log_bin", "lower_case_table_names", "default_time_zone"}
+		if IsContain(changeParams, i.ParameterName) {
+			if i.ParameterName == "lower_case_table_names" {
+				if _parameterValue, err := strconv.Atoi(i.ParameterValue); err == nil {
+					d.Set(i.ParameterName, _parameterValue)
+				}
+			} else {
+				d.Set(i.ParameterName, i.ParameterValue)
+			}
+		}
 		if i.ParameterName != "" {
 			parameter := map[string]interface{}{
 				"name":  i.ParameterName,
@@ -863,6 +870,10 @@ func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 				break
 			}
 		}
+	}
+	if !ok {
+		d.Set("parameters", param)
+		return nil
 	}
 	if err := d.Set("parameters", param); err != nil {
 		return WrapError(err)
@@ -910,6 +921,44 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 		}
 	}
 	d.SetPartial("parameters")
+	return nil
+}
+
+func (s *PolarDBService) CreateClusterParamsModifyParameters(d *schema.ResourceData) error {
+	request := polardb.CreateModifyDBClusterParametersRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = d.Id()
+	config := make(map[string]interface{})
+	allConfig := make(map[string]string)
+	changeParams := []string{"loose_polar_log_bin", "default_time_zone"}
+	for _, i := range changeParams {
+		v := d.Get(i)
+		if v != nil {
+			config[i] = v
+			allConfig[i] = fmt.Sprint(v)
+		}
+	}
+	cfg, _ := json.Marshal(config)
+	request.Parameters = string(cfg)
+	// wait instance status is Normal before modifying
+	if err := s.WaitForCluster(d.Id(), Running, DefaultLongTimeout); err != nil {
+		return WrapError(err)
+	}
+	raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+		return polarDBClient.ModifyDBClusterParameters(request)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	// wait instance parameter expect after modifying
+	if err := s.WaitForPolarDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
+		return WrapError(err)
+	}
+	for _, i := range changeParams {
+		d.SetPartial(i)
+	}
 	return nil
 }
 
