@@ -718,6 +718,30 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "loose_polar_log_bin", "default_time_zone", "parameter_group_id", "lower_case_table_names", "backup_retention_policy_on_cluster_deletion"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_replica_mode": "ON",
+					"db_node_id":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_replica_mode": "ON",
+						"db_node_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_replica_mode": "OFF",
+					"db_node_id":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_replica_mode": "OFF",
+						"db_node_id":       CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }
