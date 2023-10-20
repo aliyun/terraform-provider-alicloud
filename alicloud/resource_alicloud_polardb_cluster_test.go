@@ -741,6 +741,30 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_replica_mode": "ON",
+					"db_node_id":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_replica_mode": "ON",
+						"db_node_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_replica_mode": "OFF",
+					"db_node_id":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_replica_mode": "OFF",
+						"db_node_id":       CHECKSET,
+					}),
+				),
+			},
 		},
 	})
 }

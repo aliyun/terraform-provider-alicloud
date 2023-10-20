@@ -196,6 +196,8 @@ The following arguments are supported:
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
 * `default_time_zone` - (Optional, Computed, Available since 1.210.0) The time zone of the cluster. You can set the parameter to a value that is on the hour from -12:00 to +13:00 based on UTC. Example: 00:00. Default value: SYSTEM. This value indicates that the time zone of the cluster is the same as the time zone of the region.
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
+* `db_node_id` - (Optional, Available since v1.211.2) The ID of the node or node subscript. Node subscript values: 1 to 15.
+* `hot_replica_mode` - (Optional, Available since v1.211.2) Indicates whether the hot standby feature is enabled. Valid values are `ON`, `OFF`. Only MySQL supports.
 
 
 ### `db_cluster_ip_array`

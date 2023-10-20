@@ -430,6 +430,17 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 					"+12:00", "+13:00", "SYSTEM"}, false),
 				DiffSuppressFunc: polardbDiffSuppressFunc,
 			},
+			"hot_replica_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"ON", "OFF"}, false),
+				RequiredWith: []string{"db_node_id"},
+			},
+			"db_node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -1143,6 +1154,55 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("storage_space")
 	}
 
+	if d.HasChange("hot_replica_mode") {
+		dbNodeIdIndex := ""
+		if v, ok := d.GetOk("db_node_id"); ok && v.(string) != "" {
+			if len(v.(string)) > 2 {
+				dbNodeIdIndex = v.(string)
+			} else {
+				clusterAttribute, err := polarDBService.DescribePolarDBClusterAttribute(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+				index := formatInt(v)
+				dbNodeIdIndex = clusterAttribute.DBNodes[index].DBNodeId
+			}
+		}
+		if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
+			action := "ModifyDBNodeHotReplicaMode"
+			hotReplicaMode := d.Get("hot_replica_mode").(string)
+			request := map[string]interface{}{
+				"DBClusterId":    d.Id(),
+				"HotReplicaMode": hotReplicaMode,
+				"DBNodeId":       dbNodeIdIndex,
+			}
+			//retry
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			//wait tde status 'Running'
+			stateConf := BuildStateConf([]string{"RoleSwitching"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("hot_replica_mode")
+			d.SetPartial("db_node_id")
+		}
+	}
+
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
 }
@@ -1354,6 +1414,20 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 		if v, ok := serverlessInfo["Switch"]; ok {
 			serverlessSwitch = fmt.Sprint(v)
 			d.Set("serverless_steady_switch", convertPolarDBServerlessSteadySwitchReadResponse(serverlessSwitch))
+		}
+	}
+	if v, ok := d.GetOk("db_node_id"); ok && v.(string) != "" {
+		dbNodeIdIndex := v.(string)
+		if len(dbNodeIdIndex) > 2 {
+			for _, nodes := range clusterAttribute.DBNodes {
+				if nodes.DBNodeId == dbNodeIdIndex {
+					d.Set("db_node_id", nodes.DBNodeId)
+					d.Set("hot_replica_mode", nodes.HotReplicaMode)
+				}
+			}
+		} else {
+			d.Set("db_node_id", dbNodeIdIndex)
+			d.Set("hot_replica_mode", clusterAttribute.DBNodes[formatInt(dbNodeIdIndex)].HotReplicaMode)
 		}
 	}
 	return nil
