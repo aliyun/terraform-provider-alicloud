@@ -146,11 +146,12 @@ func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 							"name":                 name,
 							"size":                 "40",
 							"delete_with_instance": "false",
+							"encrypted":            "false",
 						},
 					},
 					"resource_group_id": "rg-zkdfjahg9zxncv0",
 					"user_data":         "xxxxxxx",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":            "vpc-asdfnbg0as8dfk1nb2",
 					"zone_id":           "cn-hangzhou-i",
 
@@ -218,6 +219,21 @@ func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 							"name":                 name + "Update",
 							"size":                 "50",
 							"delete_with_instance": "true",
+							"encrypted":            "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk": []map[string]interface{}{
+						{
+							"encrypted": "false",
 						},
 					},
 				}),
@@ -338,7 +354,7 @@ func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id": "${data.alicloud_vswitches.default.vswitches.1.id}",
+					"vswitch_id": "${alicloud_vswitch.shareVswitch2.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -499,7 +515,7 @@ func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 					"security_group_ids":            []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":             "rg-zkdfjahg9zxncv0",
 					"user_data":                     "xxxxxxx",
-					"vswitch_id":                    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":                    "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":                        "vpc-asdfnbg0as8dfk1nb2",
 					"zone_id":                       "cn-hangzhou-i",
 
@@ -523,6 +539,7 @@ func TestAccAlicloudECSLaunchTemplateBasic(t *testing.T) {
 							"name":                 name,
 							"size":                 "40",
 							"delete_with_instance": "false",
+							"encrypted":            "false",
 						},
 					},
 					"data_disks": []map[string]string{
@@ -642,7 +659,7 @@ func TestAccAlicloudECSLaunchTemplateMulti(t *testing.T) {
 					},
 					"resource_group_id": "rg-zkdfjahg9zxncv0",
 					"user_data":         "xxxxxxxxxxxxxx",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
 					"vpc_id":            "vpc-asdfnbg0as8dfk1nb2",
 					"zone_id":           "cn-beijing-a",
 
@@ -746,7 +763,7 @@ func TestAccAlicloudECSLaunchTemplateBasic1(t *testing.T) {
 
 					"resource_group_id": "rg-zkdfjahg9zxncv0",
 					"userdata":          "xxxxxxx",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${alicloud_vswitch.shareVswitch1.id}",
 
 					"tags": map[string]string{
 						"tag1": "hello",
@@ -890,6 +907,24 @@ data "alicloud_vpcs" "default" {
 data "alicloud_vswitches" "default" {
  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
 }
+
+resource "alicloud_vpc" "shareVPC" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "shareVswitch1" {
+  vpc_id     = alicloud_vpc.shareVPC.id
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "shareVswitch2" {
+  vpc_id     = alicloud_vpc.shareVPC.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.2.0/24"
+}
+
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"
   vpc_id  = "${data.alicloud_vpcs.default.ids.0}"
@@ -968,6 +1003,22 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+}
+resource "alicloud_vpc" "shareVPC" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+}
+
+resource "alicloud_vswitch" "shareVswitch1" {
+  vpc_id     = alicloud_vpc.shareVPC.id
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "shareVswitch2" {
+  vpc_id     = alicloud_vpc.shareVPC.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.2.0/24"
 }
 resource "alicloud_security_group" "default" {
   name   = "${var.name}"

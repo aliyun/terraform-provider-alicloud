@@ -294,6 +294,10 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 							ValidateFunc:  validation.IntBetween(20, 500),
 							ConflictsWith: []string{"system_disk_size"},
 						},
+						"encrypted": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -560,6 +564,7 @@ func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			systemDiskMap["DiskName"] = systemDiskArg["name"]
 			systemDiskMap["PerformanceLevel"] = systemDiskArg["performance_level"]
 			systemDiskMap["Size"] = requests.NewInteger(systemDiskArg["size"].(int))
+			systemDiskMap["Encrypted"] = requests.NewBoolean(systemDiskArg["encrypted"].(bool))
 		}
 		request["SystemDisk"] = systemDiskMap
 
@@ -767,6 +772,7 @@ func resourceAlicloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	systemDiskMap["name"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.DiskName"]
 	systemDiskMap["performance_level"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.PerformanceLevel"]
 	systemDiskMap["size"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.Size"]
+	systemDiskMap["encrypted"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SystemDisk.Encrypted"]
 	systemDiskSli = append(systemDiskSli, systemDiskMap)
 	d.Set("system_disk", systemDiskSli)
 
@@ -1065,6 +1071,7 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 			systemDiskMap["DiskName"] = systemDiskArg["name"]
 			systemDiskMap["PerformanceLevel"] = systemDiskArg["performance_level"]
 			systemDiskMap["Size"] = requests.NewInteger(systemDiskArg["size"].(int))
+			systemDiskMap["Encrypted"] = requests.NewBoolean(systemDiskArg["encrypted"].(bool))
 		}
 		request["SystemDisk"] = systemDiskMap
 	} else {

@@ -13,7 +13,7 @@ Provides a ECS Launch Template resource.
 
 For information about ECS Launch Template and how to use it, see [What is Launch Template](https://www.alibabacloud.com/help/en/doc-detail/74686.htm).
 
--> **NOTE:** Available in v1.120.0+.
+-> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
 
@@ -121,7 +121,7 @@ resource "alicloud_ecs_launch_template" "default" {
 The following arguments are supported:
 
 * `auto_release_time` - (Optional) Instance auto release time. The time is presented using the ISO8601 standard and in UTC time. The format is  YYYY-MM-DDTHH:MM:SSZ.
-* `data_disks` - (Optional) The list of data disks created with instance.
+* `data_disks` - (Optional) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
 * `deployment_set_id` - (Optional) The Deployment Set Id.
 * `description` - (Optional) Description of instance launch template version 1. It can be [2, 256] characters in length. It cannot start with "http://" or "https://". The default value is null.
 * `enable_vm_os_config` - (Optional) Whether to enable the instance operating system configuration.
@@ -139,7 +139,7 @@ The following arguments are supported:
     - Ignore this parameter for Windows instances. It is null by default. Even if you enter this parameter, only the  Password content is used.
     - The password logon method for Linux instances is set to forbidden upon initialization.
 * `launch_template_name` - (Optional, ForceNew) The name of Launch Template.
-* `network_interfaces` - (Optional) The list of network interfaces created with instance.
+* `network_interfaces` - (Optional) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `network_type` - (Optional) Network type of the instance. Valid values: `classic`, `vpc`.
 * `password_inherit` - (Optional) Whether to use the password preset by the mirror.
 * `period` - (Optional) The subscription period of the instance. Unit: months. This parameter takes effect and is required only when InstanceChargeType is set to PrePaid. If the DedicatedHostId parameter is specified, the value of the Period parameter must be within the subscription period of the dedicated host.
@@ -154,7 +154,7 @@ The following arguments are supported:
 * `spot_duration` - (Optional, Computed) The protection period of the preemptible instance. Unit: hours. Valid values: `0`, `1`, `2`, `3`, `4`, `5`, and `6`. Default to: `1`.
 * `spot_price_limit` -(Optional) Sets the maximum hourly instance price. Supports up to three decimal places.
 * `spot_strategy` - (Optional) The spot strategy for a Pay-As-You-Go instance. This parameter is valid and required only when InstanceChargeType is set to PostPaid. Valid values: `NoSpot`, `SpotAsPriceGo`, `SpotWithPriceLimit`.
-* `system_disk` - (Optional) The System Disk.
+* `system_disk` - (Optional) The System Disk. See [`system_disk`](#system_disk) below.
 * `template_resource_group_id` - (Optional, ForceNew) The template resource group id.
 * `user_data` - (Optional, Computed) The User Data.
 * `version_description` - (Optional) The description of the launch template version. The description must be 2 to 256 characters in length and cannot start with http:// or https://.                                    
@@ -172,7 +172,7 @@ The following arguments are supported:
 * `system_disk_size` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 * `system_disk_description` - (Deprecated) It has been deprecated from version 1.120.0, and use field `system_disk` instead.
 
-#### Block system_disk
+### `system_disk`
 
 The system_disk supports the following: 
 
@@ -183,8 +183,9 @@ The system_disk supports the following:
 * `name` - (Optional, Computed) System disk name. The name is a string of 2 to 128 characters. It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).
 * `performance_level` - (Optional) The performance level of the ESSD used as the system disk. Valid Values: `PL0`, `PL1`, `PL2`, and `PL3`. Default to: `PL0`.
 * `size` - (Optional, Computed) Size of the system disk, measured in GB. Value range: [20, 500].
+* `encrypted` - (Optional) Specifies whether the system disk is encrypted.
 
-#### Block network_interfaces
+### `network_interfaces`
 
 The network_interfaces supports the following: 
 
@@ -194,7 +195,7 @@ The network_interfaces supports the following:
 * `security_group_id` - (Optional) The security group ID must be one in the same VPC.
 * `vswitch_id` - (Optional) The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
 
-#### Block data_disks
+### `data_disks`
 
 The data_disks supports the following: 
 
