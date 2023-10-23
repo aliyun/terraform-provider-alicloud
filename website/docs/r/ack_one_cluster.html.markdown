@@ -10,7 +10,7 @@ description: |-
 
 Provides a Ack One Cluster resource. Fleet Manager Cluster.
 
-For information about Ack One Cluster and how to use it, see [What is Cluster](https://www.alibabacloud.com/help/en/ack/distributed-cloud-container-platform-for-kubernetes/developer-reference/api-adcp-2022-01-01-createhubcluster).
+For information about Ack One Cluster and how to use it, see [What is Cluster](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.212.0.
 
@@ -51,6 +51,9 @@ resource "alicloud_ack_one_cluster" "default" {
     vpc_id    = alicloud_vpc.defaultVpc.id
     vswitches = ["${alicloud_vswitch.defaultyVSwitch.id}"]
   }
+  cluster_name = var.name
+
+  profile = "XFlow"
 }
 ```
 
@@ -59,7 +62,7 @@ resource "alicloud_ack_one_cluster" "default" {
 The following arguments are supported:
 * `cluster_name` - (Optional, ForceNew, Computed) Cluster name.
 * `network` - (Required, ForceNew) Cluster network information. See [`network`](#network) below.
-* `profile` - (Optional, ForceNew, Computed) Cluster attributes. Valid values: 'Default', 'XFlow'.
+* `profile` - (Optional, ForceNew, Computed) Cluster attributes.
 
 ### `network`
 
