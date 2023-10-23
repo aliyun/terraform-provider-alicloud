@@ -326,6 +326,7 @@ func (s *RamService) DescribeRamGroupMembership(id string) (*ram.ListUsersForGro
 		}
 		request.Marker = response.Marker
 	}
+	response.Users.User = users
 	if len(users) > 0 {
 		return response, nil
 	}
