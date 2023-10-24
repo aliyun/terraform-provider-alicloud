@@ -54,7 +54,7 @@ github.com/alibabacloud-go/alibabacloud-gateway-sls-util/client
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
-# github.com/alibabacloud-go/cs-20151215/v3 v3.0.36
+# github.com/alibabacloud-go/cs-20151215/v3 v3.0.42
 ## explicit; go 1.15
 github.com/alibabacloud-go/cs-20151215/v3/client
 # github.com/alibabacloud-go/darabonba-array v0.1.0
@@ -106,7 +106,7 @@ github.com/alibabacloud-go/tea-rpc-utils/service
 # github.com/alibabacloud-go/tea-utils v1.4.5
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-utils/service
-# github.com/alibabacloud-go/tea-utils/v2 v2.0.1
+# github.com/alibabacloud-go/tea-utils/v2 v2.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea-utils/v2/service
 # github.com/alibabacloud-go/tea-xml v1.1.2

@@ -7,11 +7,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alibabacloud-go/tea/tea"
+
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
+	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
@@ -53,6 +56,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"worker_vswitch_ids": {
 				Type:     schema.TypeList,
 				Required: true,
+				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
@@ -65,55 +69,55 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MaxItems:   10,
-				Deprecated: "Field 'worker_instance_types' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'instance_types' to replace it.",
+				MaxItems: 10,
+				Removed:  "Field 'worker_instance_types' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'instance_types' to replace it.",
 			},
 			"worker_number": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'worker_number' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes., by using field 'desired_size' to replace it.",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Removed:  "Field 'worker_number' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes., by using field 'desired_size' to replace it.",
 			},
 			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(20, 32768),
-				Deprecated:   "Field 'worker_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_size' to replace it.",
+				Removed:      "Field 'worker_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_size' to replace it.",
 			},
 			"worker_disk_category": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_category' to replace it.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_category' to replace it.",
 			},
 			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
-				Deprecated:       "Field 'worker_disk_performance_level' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_performance_level' to replace it",
+				Removed:          "Field 'worker_disk_performance_level' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_performance_level' to replace it",
 			},
 			"worker_disk_snapshot_policy_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_disk_snapshot_policy_id' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_disk_snapshot_policy_id' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
-				Deprecated:       "Field 'worker_data_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks.size' to replace it",
+				Removed:          "Field 'worker_data_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks.size' to replace it",
 			},
 			"worker_data_disk_category": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_data_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks.category' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_data_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks.category' to replace it",
 			},
 			"worker_instance_charge_type": {
-				Type:       schema.TypeString,
-				Computed:   true,
-				Optional:   true,
-				Deprecated: "Field 'worker_instance_charge_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'instance_charge_type' to replace it",
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+				Removed:  "Field 'worker_instance_charge_type' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'instance_charge_type' to replace it",
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -159,7 +163,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'worker_data_disks' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks' to replace it",
+				Removed: "Field 'worker_data_disks' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'data_disks' to replace it",
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
@@ -167,7 +171,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_period_unit' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'period_unit' to replace it",
+				Removed:          "Field 'worker_period_unit' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'period_unit' to replace it",
 			},
 			"worker_period": {
 				Type:     schema.TypeInt,
@@ -177,13 +181,13 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'period' to replace it",
+				Removed:          "Field 'worker_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'period' to replace it",
 			},
 			"worker_auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_auto_renew' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'auto_renew' to replace it",
+				Removed:          "Field 'worker_auto_renew' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'auto_renew' to replace it",
 			},
 			"worker_auto_renew_period": {
 				Type:             schema.TypeInt,
@@ -191,12 +195,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'auto_renew_period' to replace it",
+				Removed:          "Field 'worker_auto_renew_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'auto_renew_period' to replace it",
 			},
 			"exclude_autoscaler_nodes": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
+				Type:     schema.TypeBool,
+				Optional: true,
+				Removed:  "Field 'exclude_autoscaler_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes",
 			},
 			// global configurations
 			"pod_vswitch_ids": {
@@ -211,21 +215,24 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"pod_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"service_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"node_cidr_mask": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      KubernetesClusterNodeCIDRMasksByDefault,
 				ValidateFunc: validation.IntBetween(24, 28),
 			},
 			"enable_ssh": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'enable_ssh' has been deprecated from provider version 1.177.0.",
+				Type:     schema.TypeBool,
+				Optional: true,
+				Removed:  "Field 'enable_ssh' has been removed from provider version 1.212.0.",
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -237,19 +244,19 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Optional:      true,
 				Sensitive:     true,
 				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
-				Deprecated:    "Field 'password' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'password' to replace it",
+				Removed:       "Field 'password' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'password' to replace it",
 			},
 			"key_name": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"password", "kms_encrypted_password"},
-				Deprecated:    "Field 'key_name' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'key_name' to replace it",
+				Removed:       "Field 'key_name' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'key_name' to replace it",
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"password", "key_name"},
-				Deprecated:    "Field 'kms_encrypted_password' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'kms_encrypted_password' to replace it",
+				Removed:       "Field 'kms_encrypted_password' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'kms_encrypted_password' to replace it",
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -257,23 +264,23 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem:       schema.TypeString,
-				Deprecated: "Field 'kms_encryption_context' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'kms_encryption_context' to replace it",
+				Elem:    schema.TypeString,
+				Removed: "Field 'kms_encryption_context' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'kms_encryption_context' to replace it",
 			},
 			"user_ca": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"image_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'image_id' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'image_id' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'image_id' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'image_id' to replace it",
 			},
 			"install_cloud_monitor": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'install_cloud_monitor' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'install_cloud_monitor' to replace it",
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+				Removed:  "Field 'install_cloud_monitor' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'install_cloud_monitor' to replace it",
 			},
 			"version": {
 				Type:     schema.TypeString,
@@ -285,11 +292,12 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
-				Deprecated:   "Field 'cpu_policy' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'cpu_policy' to replace it",
+				Removed:      "Field 'cpu_policy' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'cpu_policy' to replace it",
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      "ipvs",
 				ValidateFunc: validation.StringInSlice([]string{"iptables", "ipvs"}, false),
 			},
@@ -303,6 +311,10 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"config": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -346,21 +358,21 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Default:      "Linux",
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
-				Deprecated:   "Field 'os_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
+				Removed:      "Field 'os_type' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},
 			"platform": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				ForceNew:   true,
-				Deprecated: "Field 'platform' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'platform' to replace it.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Removed:  "Field 'platform' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'platform' to replace it.",
 			},
 			"node_port_range": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				ForceNew:   true,
-				Deprecated: "Field 'platform' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Removed:  "Field 'platform' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},
 			"cluster_domain": {
 				Type:        schema.TypeString,
@@ -384,7 +396,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'runtime' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'runtime_name' and 'runtime_version' to replace it.",
+				Removed: "Field 'runtime' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'runtime_name' and 'runtime_version' to replace it.",
 			},
 			"taints": {
 				Type:     schema.TypeList,
@@ -406,7 +418,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'taints' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'taints' to replace it.",
+				Removed: "Field 'taints' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'taints' to replace it.",
 			},
 			"rds_instances": {
 				Type:     schema.TypeList,
@@ -414,21 +426,22 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				Deprecated: "Field 'rds_instances' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'rds_instances' to replace it.",
+				Removed: "Field 'rds_instances' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'rds_instances' to replace it.",
 			},
 			"user_data": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'user_data' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'user_data' to replace it.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'user_data' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'user_data' to replace it.",
 			},
 			"node_name_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^customized,[a-z0-9]([-a-z0-9\.])*,([5-9]|[1][0-2]),([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`), "Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test."),
-				Deprecated:   "Field 'node_name_mode' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'node_name_mode' to replace it.",
+				Removed:      "Field 'node_name_mode' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'node_name_mode' to replace it.",
 			},
 			"worker_nodes": {
 				Type:     schema.TypeList,
+				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -446,7 +459,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'worker_nodes' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
+				Removed: "Field 'worker_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},
 			"custom_san": {
 				Type:     schema.TypeString,
@@ -461,9 +474,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			// computed parameters
 			"kube_config": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'kube_config' has been removed from provider version 1.212.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -538,6 +551,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"is_enterprise_security_group": {
 				Type:          schema.TypeBool,
@@ -557,6 +571,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				Removed:  "Field 'availability_zone' has been removed from provider version 1.212.0.",
 			},
 			// remove parameters below
 			// mix vswitch_ids between master and worker is not a good guidance to create cluster
@@ -681,18 +696,17 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"control_plane_log_ttl": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
-				ForceNew: true,
 			},
 			"control_plane_log_project": {
 				Type:     schema.TypeString,
+				Computed: true,
 				Optional: true,
-				ForceNew: true,
 			},
 			"control_plane_log_components": {
 				Type:     schema.TypeList,
 				Optional: true,
-				ForceNew: true,
 				MinItems: 1,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -707,7 +721,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			},
 			"rrsa_metadata": {
 				Type:     schema.TypeList,
-				Optional: true,
 				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -873,48 +886,6 @@ func updateKubernetesClusterTag(d *schema.ResourceData, meta interface{}) error 
 	return nil
 }
 
-func updateKubernetesClusterRRSA(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
-	enableRRSA := false
-	if v, ok := d.GetOk("enable_rrsa"); ok {
-		enableRRSA = v.(bool)
-	}
-	// it's not allowed to disable rrsa
-	if !enableRRSA {
-		return fmt.Errorf("It's not supported to disable RRSA! " +
-			"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
-	}
-
-	// version check
-	clusterVersion := d.Get("version").(string)
-	if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
-		return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
-	}
-
-	action := "ModifyClusterRRSA"
-	client := meta.(*connectivity.AliyunClient)
-
-	var requestInfo cs.ModifyClusterArgs
-	requestInfo.EnableRRSA = enableRRSA
-
-	var response interface{}
-	if err := invoker.Run(func() error {
-		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
-		})
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, DenverdinoAliyungo)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		requestMap["enable_rrsa"] = requestInfo.EnableRRSA
-		addDebug(action, response, requestInfo, requestMap)
-	}
-	d.SetPartial("enable_rrsa")
-	return nil
-}
-
 // versionCompare check version,
 // if cueVersion is newer than neededVersion return 1
 // if curVersion is equal neededVersion return 0
@@ -966,4 +937,75 @@ func versionCompare(neededVersion, curVersion string) (int, error) {
 	}
 
 	return compare, nil
+}
+
+func updateControlPlaneLog(d *schema.ResourceData, meta interface{}) error {
+	request := &roacs.UpdateControlPlaneLogRequest{}
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	csService := CsService{client}
+	if d.HasChange("control_plane_log_ttl") {
+		if v, ok := d.GetOk("control_plane_log_ttl"); ok {
+			request.LogTtl = tea.String(v.(string))
+		}
+	}
+	if d.HasChange("control_plane_log_project") {
+		if v, ok := d.GetOk("control_plane_log_project"); ok {
+			request.LogProject = tea.String(v.(string))
+		}
+	}
+	if d.HasChange("control_plane_log_components") {
+		if v, ok := d.GetOk("control_plane_log_components"); ok {
+			list := v.([]interface{})
+			components := make([]*string, len(list))
+			for i, c := range list {
+				components[i] = tea.String(c.(string))
+			}
+			request.Components = components
+		}
+	}
+
+	_, err = csClient.UpdateControlPlaneLog(tea.String(d.Id()), request)
+	if err != nil {
+		return err
+	}
+	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	response, err := client.CheckControlPlaneLogEnable(tea.String(d.Id()))
+	if err != nil {
+		return err
+	}
+	if response.Body != nil {
+		if response.Body.LogTtl != nil {
+			d.Set("control_plane_log_ttl", *response.Body.LogTtl)
+		}
+		if response.Body.LogProject != nil {
+			d.Set("control_plane_log_project", *response.Body.LogProject)
+		}
+		components := make([]string, len(response.Body.Components))
+		for i, c := range response.Body.Components {
+			components[i] = *c
+		}
+		d.Set("control_plane_log_components", components)
+	}
+
+	return nil
 }

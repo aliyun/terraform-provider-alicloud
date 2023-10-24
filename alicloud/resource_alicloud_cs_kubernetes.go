@@ -13,11 +13,8 @@ import (
 	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
 	"github.com/alibabacloud-go/tea/tea"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
 	"strconv"
@@ -80,6 +77,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_vswitch_ids": {
 				Type:     schema.TypeList,
 				Required: true,
+				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
@@ -90,6 +88,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_instance_types": {
 				Type:     schema.TypeList,
 				Required: true,
+				ForceNew: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -99,12 +98,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      40,
 				ValidateFunc: validation.IntBetween(40, 500),
 			},
 			"master_disk_category": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				Default:  DiskCloudEfficiency,
 			},
 			"master_disk_performance_level": {
@@ -122,12 +123,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"master_period_unit": {
 				Type:             schema.TypeString,
 				Optional:         true,
+				ForceNew:         true,
 				Default:          Month,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
@@ -135,6 +138,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 				Default:  1,
 				// must be a valid period, expected [1-9], 12, 24, 36, 48 or 60,
 				ValidateFunc: validation.Any(
@@ -145,12 +149,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"master_auto_renew": {
 				Type:             schema.TypeBool,
 				Default:          false,
+				ForceNew:         true,
 				Optional:         true,
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"master_auto_renew_period": {
 				Type:             schema.TypeInt,
 				Optional:         true,
+				ForceNew:         true,
 				Default:          1,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
@@ -163,8 +169,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				Deprecated: "Field 'worker_vswitch_ids' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'vswitch_ids' to replace it",
-				MinItems:   1,
+				Removed:  "Field 'worker_vswitch_ids' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'vswitch_ids' to replace it",
+				MinItems: 1,
 			},
 			"worker_instance_types": {
 				Type:     schema.TypeList,
@@ -172,50 +178,50 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
-				MinItems:   1,
-				MaxItems:   10,
-				Deprecated: "Field 'worker_instance_types' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_types' to replace it",
+				MinItems: 1,
+				MaxItems: 10,
+				Removed:  "Field 'worker_instance_types' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_types' to replace it",
 			},
 			"worker_number": {
-				Type:       schema.TypeInt,
-				Optional:   true,
-				Deprecated: "Field 'worker_number' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'desired_size' to replace it",
+				Type:     schema.TypeInt,
+				Optional: true,
+				Removed:  "Field 'worker_number' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'desired_size' to replace it",
 			},
 			"worker_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.IntBetween(20, 32768),
-				Deprecated:   "Field 'worker_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
+				Removed:      "Field 'worker_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
 			},
 			"worker_disk_category": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_category' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_category' to replace it",
 			},
 			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
-				Deprecated:       "Field 'worker_disk_performance_level' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_performance_level' to replace it",
+				Removed:          "Field 'worker_disk_performance_level' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_performance_level' to replace it",
 			},
 			"worker_disk_snapshot_policy_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_disk_snapshot_policy_id' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_disk_snapshot_policy_id' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
 			},
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				ValidateFunc:     validation.IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
-				Deprecated:       "Field 'worker_data_disk_size' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.size' to replace it",
+				Removed:          "Field 'worker_data_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.size' to replace it",
 			},
 			"worker_data_disk_category": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'worker_data_disk_category' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.category' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'worker_data_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.category' to replace it",
 			},
 			"worker_data_disks": {
 				Optional: true,
@@ -261,13 +267,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'worker_data_disks' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks' to replace it",
+				Removed: "Field 'worker_data_disks' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks' to replace it",
 			},
 			"worker_instance_charge_type": {
-				Type:       schema.TypeString,
-				Computed:   true,
-				Optional:   true,
-				Deprecated: "Field 'worker_instance_charge_type' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+				Removed:  "Field 'worker_instance_charge_type' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
 			},
 			"worker_period_unit": {
 				Type:             schema.TypeString,
@@ -275,7 +281,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_period_unit' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
+				Removed:          "Field 'worker_period_unit' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
 			},
 			"worker_period": {
 				Type:     schema.TypeInt,
@@ -285,13 +291,13 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period' to replace it",
+				Removed:          "Field 'worker_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period' to replace it",
 			},
 			"worker_auto_renew": {
 				Type:             schema.TypeBool,
 				Optional:         true,
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_auto_renew' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew' to replace it",
+				Removed:          "Field 'worker_auto_renew' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew' to replace it",
 			},
 			"worker_auto_renew_period": {
 				Type:             schema.TypeInt,
@@ -299,12 +305,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Computed:         true,
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Deprecated:       "Field 'worker_auto_renew_period' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
+				Removed:          "Field 'worker_auto_renew_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
 			},
 			"exclude_autoscaler_nodes": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'exclude_autoscaler_nodes' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Type:     schema.TypeBool,
+				Optional: true,
+				Removed:  "Field 'exclude_autoscaler_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			// global configurations
 			// Terway network
@@ -321,14 +327,17 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"pod_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"service_cidr": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"node_cidr_mask": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				ForceNew:     true,
 				Default:      KubernetesClusterNodeCIDRMasksByDefault,
 				ValidateFunc: validation.IntBetween(24, 28),
 			},
@@ -347,6 +356,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ConflictsWith: []string{"password", "kms_encrypted_password"},
+				ForceNew:      true,
 			},
 			"kms_encrypted_password": {
 				Type:          schema.TypeString,
@@ -380,11 +390,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"image_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"install_cloud_monitor": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  true,
+				ForceNew: true,
 			},
 			"version": {
 				Type:     schema.TypeString,
@@ -396,11 +409,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
-				Deprecated:   "Field 'cpu_policy' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'cpu_policy' to replace it",
+				Removed:      "Field 'cpu_policy' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'cpu_policy' to replace it",
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"iptables", "ipvs"}, false),
 			},
 			"addons": {
@@ -413,6 +427,10 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 							Optional: true,
 						},
 						"config": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"version": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -457,11 +475,11 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 			},
 			"node_port_range": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				ForceNew:   true,
-				Deprecated: "Field 'node_port_range' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			"runtime": {
 				Type:     schema.TypeMap,
@@ -508,7 +526,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'taints' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'taints' to replace it",
+				Removed: "Field 'taints' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'taints' to replace it",
 			},
 			"rds_instances": {
 				Type:     schema.TypeList,
@@ -524,9 +542,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			},
 			// computed parameters
 			"kube_config": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'kube_config' has been deprecated from provider version 1.187.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'kube_config' has been removed from provider version 1.212.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -601,10 +619,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"is_enterprise_security_group": {
 				Type:          schema.TypeBool,
 				Optional:      true,
+				ForceNew:      true,
 				Computed:      true,
 				ConflictsWith: []string{"security_group_id"},
 			},
@@ -638,7 +658,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			},
 			"worker_nodes": {
 				Type:     schema.TypeList,
-				Computed: true,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"id": {
@@ -655,7 +675,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'worker_nodes' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
+				Removed: "Field 'worker_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
 			},
 			// remove parameters below
 			// mix vswitch_ids between master and worker is not a good guidance to create cluster
@@ -692,6 +712,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				Removed:  "Field 'availability_zone' has been removed from provider version 1.212.0.",
 			},
 			// single az would be never supported.
 			"vswitch_id": {
@@ -744,14 +765,16 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"user_data": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Deprecated: "Field 'user_data' has been deprecated from provider version 1.177.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'user_data' to replace it",
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field 'user_data' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'user_data' to replace it",
 			},
 			"node_name_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^customized,[a-z0-9]([-a-z0-9\.])*,([5-9]|[1][0-2]),([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`), "Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test."),
+				ForceNew:     true,
 			},
 			"worker_ram_role_name": {
 				Type:     schema.TypeString,
@@ -852,169 +875,6 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		addDebug("ModifyCluster", response, requestInfo)
 		d.SetPartial("resource_group_id")
 	}
-	if d.HasChange("worker_number") && !d.IsNewResource() {
-		oldV, newV := d.GetChange("worker_number")
-
-		oldValue, ok := oldV.(int)
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("worker_number old value can not be parsed"), "parseError %d", oldValue)
-		}
-		newValue, ok := newV.(int)
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("worker_number new value can not be parsed"), "parseError %d", newValue)
-		}
-
-		// scale out cluster.
-		if newValue > oldValue {
-			password := d.Get("password").(string)
-			if password == "" {
-				if v := d.Get("kms_encrypted_password").(string); v != "" {
-					kmsService := KmsService{client}
-					decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-					if err != nil {
-						return WrapError(err)
-					}
-					password = decryptResp
-				}
-			}
-
-			keyPair := d.Get("key_name").(string)
-
-			args := &cs.ScaleOutKubernetesClusterRequest{
-				KeyPair:             keyPair,
-				LoginPassword:       password,
-				ImageId:             d.Get("image_id").(string),
-				UserData:            d.Get("user_data").(string),
-				Count:               int64(newValue) - int64(oldValue),
-				WorkerVSwitchIds:    expandStringList(d.Get("worker_vswitch_ids").([]interface{})),
-				WorkerInstanceTypes: expandStringList(d.Get("worker_instance_types").([]interface{})),
-			}
-
-			if v := d.Get("user_data").(string); v != "" {
-				_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-				if base64DecodeError == nil {
-					args.UserData = v
-				} else {
-					args.UserData = base64.StdEncoding.EncodeToString([]byte(v))
-				}
-			}
-
-			if v, ok := d.GetOk("worker_instance_charge_type"); ok {
-				args.WorkerInstanceChargeType = v.(string)
-				if args.WorkerInstanceChargeType == string(PrePaid) {
-					args.WorkerAutoRenew = d.Get("worker_auto_renew").(bool)
-					args.WorkerAutoRenewPeriod = d.Get("worker_auto_renew_period").(int)
-					args.WorkerPeriod = d.Get("worker_period").(int)
-					args.WorkerPeriodUnit = d.Get("worker_period_unit").(string)
-				}
-			}
-
-			if v, ok := d.GetOk("worker_disk_category"); ok {
-				args.WorkerSystemDiskCategory = aliyungoecs.DiskCategory(v.(string))
-			}
-
-			if v, ok := d.GetOk("worker_disk_size"); ok {
-				args.WorkerSystemDiskSize = int64(v.(int))
-			}
-
-			if v, ok := d.GetOk("worker_disk_snapshot_policy_id"); ok {
-				args.WorkerSnapshotPolicyId = v.(string)
-			}
-
-			if v, ok := d.GetOk("worker_disk_performance_level"); ok {
-				args.WorkerSystemDiskPerformanceLevel = v.(string)
-			}
-
-			if dds, ok := d.GetOk("worker_data_disks"); ok {
-				disks := dds.([]interface{})
-				createDataDisks := make([]cs.DataDisk, 0, len(disks))
-				for _, e := range disks {
-					pack := e.(map[string]interface{})
-					dataDisk := cs.DataDisk{
-						Size:                 pack["size"].(string),
-						DiskName:             pack["name"].(string),
-						Category:             pack["category"].(string),
-						Device:               pack["device"].(string),
-						AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-						KMSKeyId:             pack["kms_key_id"].(string),
-						Encrypted:            pack["encrypted"].(string),
-						PerformanceLevel:     pack["performance_level"].(string),
-					}
-					createDataDisks = append(createDataDisks, dataDisk)
-				}
-				args.WorkerDataDisks = createDataDisks
-			}
-
-			if _, ok := d.GetOk("tags"); ok {
-				if tags, err := ConvertCsTags(d); err == nil {
-					args.Tags = tags
-				}
-				d.SetPartial("tags")
-			}
-
-			if d.HasChange("taints") && !d.IsNewResource() {
-				args.Taints = expandKubernetesTaintsConfig(d.Get("taints").([]interface{}))
-			}
-
-			if d.HasChange("runtime") && !d.IsNewResource() {
-				args.Runtime = expandKubernetesRuntimeConfig(d.Get("runtime").(map[string]interface{}))
-			}
-
-			if d.HasChange("rds_instances") && !d.IsNewResource() {
-				args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
-			}
-
-			if d.HasChange("cpu_policy") && !d.IsNewResource() {
-				args.CpuPolicy = d.Get("cpu_policy").(string)
-			}
-
-			if d.HasChange("install_cloud_monitor") && !d.IsNewResource() {
-				args.CloudMonitorFlags = d.Get("install_cloud_monitor").(bool)
-			}
-
-			if d.HasChange("image_id") && !d.IsNewResource() {
-				args.ImageId = d.Get("image_id").(string)
-			}
-
-			var resoponse interface{}
-			if err := invoker.Run(func() error {
-				var err error
-				resoponse, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-					resp, err := csClient.ScaleOutKubernetesCluster(d.Id(), args)
-					return resp, err
-				})
-				return err
-			}); err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ResizeKubernetesCluster", DenverdinoAliyungo)
-			}
-			if debugOn() {
-				resizeRequestMap := make(map[string]interface{})
-				resizeRequestMap["ClusterId"] = d.Id()
-				resizeRequestMap["Args"] = args
-				addDebug("ResizeKubernetesCluster", resoponse, resizeRequestMap)
-			}
-
-			stateConf := BuildStateConf([]string{"scaling"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
-			d.SetPartial("worker_number")
-			d.SetPartial("worker_data_disks")
-			d.SetPartial("worker_disk_category")
-			d.SetPartial("worker_disk_size")
-			d.SetPartial("worker_disk_snapshot_policy_id")
-			d.SetPartial("worker_disk_performance_level")
-		}
-
-		// remove cluster nodes.
-		if newValue < oldValue {
-			nodes, err := removeKubernetesNodes(d, meta)
-			if err != nil {
-				return WrapErrorf(fmt.Errorf("node removed failed"), "node:%++v, err:%++v", nodes, err)
-			}
-		}
-	}
 
 	// modify cluster name
 	if !d.IsNewResource() && (d.HasChange("name") || d.HasChange("name_prefix")) {
@@ -1046,38 +906,10 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("name_prefix")
 	}
 
-	// modify cluster deletion protection
-	if !d.IsNewResource() && d.HasChange("deletion_protection") {
-		var requestInfo cs.ModifyClusterArgs
-		if v, ok := d.GetOk("deletion_protection"); ok {
-			requestInfo.DeletionProtection = v.(bool)
+	if !d.IsNewResource() && d.HasChanges("deletion_protection", "maintenance_window", "enable_rrsa") {
+		if err := modifyCluster(d, meta, &invoker); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}
-
-		var response interface{}
-		if err := invoker.Run(func() error {
-			_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
-			})
-			return err
-		}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyDeletionProtectionFailed"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			requestMap["deletion_protection"] = requestInfo.DeletionProtection
-			addDebug("ModifyCluster", response, requestInfo, requestMap)
-		}
-		d.SetPartial("deletion_protection")
-	}
-
-	// modify cluster maintenance window
-	if !d.IsNewResource() && d.HasChange("maintenance_window") {
-		var mw cs.MaintenanceWindow
-		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
-			mw = expandMaintenanceWindowConfig(v)
-		}
-		_ = modifyMaintenanceWindow(d, meta, mw)
 	}
 
 	// modify cluster tag
@@ -1088,10 +920,10 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	// modify cluster rrsa policy
-	if d.HasChange("enable_rrsa") {
-		if err := updateKubernetesClusterRRSA(d, meta, &invoker); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterRRSA", DenverdinoAliyungo)
+	// update control plane config
+	if d.HasChanges([]string{"control_plane_log_ttl", "control_plane_log_project", "control_plane_log_components"}...) {
+		if err := updateControlPlaneLog(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateControlPlaneLog", AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1130,6 +962,65 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	UpgradeAlicloudKubernetesCluster(d, meta)
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
+}
+
+func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	request := &roacs.ModifyClusterRequest{}
+	client := meta.(*connectivity.AliyunClient)
+	csClient, err := client.NewRoaCsClient()
+	csService := CsService{client}
+	// modify cluster deletion protection
+	if !d.IsNewResource() && d.HasChange("deletion_protection") {
+		v := d.Get("deletion_protection")
+		request.SetDeletionProtection(v.(bool))
+	}
+
+	// modify cluster maintenance window
+	if !d.IsNewResource() && d.HasChange("maintenance_window") {
+		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
+			request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v)
+		}
+		d.SetPartial("maintenance_window")
+	}
+
+	// modify cluster rrsa policy
+	if d.HasChange("enable_rrsa") {
+		enableRRSA := false
+		if v, ok := d.GetOk("enable_rrsa"); ok {
+			enableRRSA = v.(bool)
+		}
+		// it's not allowed to disable rrsa
+		if !enableRRSA {
+			return fmt.Errorf("It's not supported to disable RRSA! " +
+				"If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file.")
+		}
+
+		// version check
+		clusterVersion := d.Get("version").(string)
+		if res, err := versionCompare(KubernetesClusterRRSASupportedVersion, clusterVersion); res < 0 || err != nil {
+			return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
+		}
+		request.SetEnableRrsa(enableRRSA)
+		d.SetPartial("enable_rrsa")
+	}
+
+	if err := invoker.Run(func() error {
+		_, err := csClient.ModifyCluster(tea.String(d.Id()), request)
+		return err
+	}); err != nil && !IsExpectedErrors(err, []string{"ClusterNameAlreadyExist", "ErrorModifyDeletionProtectionFailed"}) {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
+	}
+
+	stateConf := BuildStateConf([]string{"updating"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
@@ -1185,172 +1076,129 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
 
 	//request.Parameters
-	if v, ok := object.Parameters["WorkerInstanceChargeType"]; ok {
-		d.Set("worker_instance_charge_type", Interface2String(v))
-	}
 	if v, ok := object.Parameters["MasterVSwitchIds"]; ok {
 		d.Set("master_vswitch_ids", strings.Split(Interface2String(v), ","))
 	}
-	if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
-		d.Set("worker_vswitch_ids", strings.Split(Interface2String(v), ","))
+	if v, ok := object.Parameters["MasterSystemDiskCategory"]; ok {
+		category := Interface2String(v)
+		d.Set("master_disk_category", category)
+		if category == string(DiskCloudESSD) {
+			if v, ok := object.Parameters["MasterSystemDiskPerformanceLevel"]; ok && v != nil {
+				d.Set("master_disk_performance_level", Interface2String(v))
+			}
+		}
 	}
-	if v, ok := object.Parameters["WorkerPeriodUnit"]; ok {
-		d.Set("worker_period_unit", Interface2String(v))
+	if v, ok := object.Parameters["MasterSystemDiskSize"]; ok {
+		d.Set("master_disk_size", formatInt(v))
 	}
-	if v, ok := object.Parameters["WorkerPeriod"]; ok {
-		d.Set("worker_period", formatInt(v))
+	if v, ok := object.Parameters["MasterSnapshotPolicyId"]; ok {
+		d.Set("master_disk_snapshot_policy_id", Interface2String(v))
 	}
-	if v, ok := object.Parameters["WorkerAutoRenewPeriod"]; ok {
-		d.Set("worker_auto_renew_period", formatInt(v))
+	if v, ok := object.Parameters["MasterInstanceChargeType"]; ok {
+		chargeType := Interface2String(v)
+		d.Set("master_instance_charge_type", chargeType)
+		if chargeType == string(PrePaid) {
+			if v, ok := object.Parameters["MasterAutoRenew"]; ok {
+				d.Set("master_auto_renew", Interface2Bool(v))
+			}
+			if v, ok := object.Parameters["MasterAutoRenewPeriod"]; ok {
+				d.Set("master_auto_renew_period", formatInt(v))
+			}
+			if v, ok := object.Parameters["MasterPeriod"]; ok {
+				d.Set("master_period", formatInt(v))
+			}
+			if v, ok := object.Parameters["MasterPeriodUnit"]; ok {
+				d.Set("master_period_unit", Interface2String(v))
+			}
+		}
 	}
-	if v, ok := object.Parameters["WorkerAutoRenew"]; ok {
-		d.Set("worker_auto_renew", Interface2Bool(v))
+	if v, ok := object.Parameters["MasterInstanceTypes"]; ok {
+		d.Set("master_instance_types", strings.Split(Interface2String(v), ","))
 	}
-	if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
-		d.Set("install_cloud_monitor", Interface2Bool(v))
+	if object.ClusterType != "Kubernetes" {
+		if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
+			d.Set("worker_vswitch_ids", strings.Split(Interface2String(v), ","))
+		}
+	}
+	if object.Profile == EdgeProfile {
+		if v, ok := object.Parameters["WorkerInstanceChargeType"]; ok {
+			d.Set("worker_instance_charge_type", Interface2String(v))
+		}
+		if v, ok := object.Parameters["WorkerInstanceTypes"]; ok {
+			d.Set("worker_instance_types", strings.Split(Interface2String(v), ","))
+		}
+		if v, ok := object.Parameters["WorkerSystemDiskCategory"]; ok {
+			d.Set("worker_disk_category", Interface2String(v))
+		}
+		if v, ok := object.Parameters["WorkerSystemDiskSize"]; ok {
+			d.Set("worker_disk_size", formatInt(v))
+		}
+		if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
+			d.Set("install_cloud_monitor", Interface2Bool(v))
+		}
+		// only works with default-nodepool
+		workerNodes := fetchWorkerNodes(d, meta)
+		d.Set("worker_nodes", workerNodes)
+		d.Set("worker_number", len(workerNodes))
+	}
+	if object.ClusterType == "Kubernetes" {
+		if v, ok := object.Parameters["CloudMonitorFlags"]; ok {
+			d.Set("install_cloud_monitor", Interface2Bool(v))
+		}
+		if v, ok := object.Parameters["SSHFlags"]; ok {
+			d.Set("enable_ssh", Interface2Bool(v))
+		}
+		if v, ok := object.Parameters["NodeNameMode"]; ok {
+			d.Set("node_name_mode", Interface2String(v))
+		}
+		if v, ok := object.Parameters["MasterImageId"]; ok {
+			d.Set("image_id", Interface2String(v))
+		}
+		if v, ok := object.Parameters["MasterKeyPair"]; ok {
+			d.Set("key_name", Interface2String(v))
+		}
+		if v, ok := object.Parameters["IsEnterpriseSecurityGroup"]; ok {
+			d.Set("is_enterprise_security_group", Interface2Bool(v))
+		}
+		d.Set("master_nodes", fetchMasterNodes(d, meta))
+	}
+	if v, ok := object.Parameters["PodVswitchIds"]; ok {
+		l := make([]string, 0)
+		err := json.Unmarshal([]byte(Interface2String(v)), &l)
+		if err == nil && len(l) > 0 {
+			d.Set("pod_vswitch_ids", l)
+		}
 	}
 	if v, ok := object.Parameters["ProxyMode"]; ok {
 		d.Set("proxy_mode", Interface2String(v))
 	}
+	if v, ok := object.Parameters["ServiceCIDR"]; ok {
+		d.Set("service_cidr", Interface2String(v))
+	}
+	if v, ok := object.Parameters["ContainerCIDR"]; ok {
+		d.Set("pod_cidr", Interface2String(v))
+	}
+	//if v, ok := object.Parameters["SNatEntry"]; ok {
+	//	d.Set("new_nat_gateway", Interface2String(v))
+	//}
 
+	// Cluster Metadata
+	metadata := object.GetMetaData()
+	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil {
+		l := expandStringList(v.([]interface{}))
+		d.Set("custom_san", strings.Join(l, ","))
+	}
+	//if v, ok := metadata["Timezone"]; ok {
+	//	d.Set("timezone", Interface2String(v))
+	//}
 	// Cluster capabilities
 	capabilities := fetchClusterCapabilities(object.MetaData)
 	if v, ok := capabilities["PublicSLB"]; ok {
 		d.Set("slb_internet_enabled", Interface2Bool(v))
 	}
-
-	var masterNodes []map[string]interface{}
-	var workerNodes []map[string]interface{}
-	var unsupportedNodePoolCluster bool
-	var defaultNodePoolId string
-	var nodePoolDetails interface{}
-	// get the default nodepool id
-	if err := invoker.Run(func() error {
-		var err error
-		nodePoolDetails, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			nodePools, err := csClient.DescribeClusterNodePools(d.Id())
-			return *nodePools, err
-		})
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DescribeClusterNodePools", DenverdinoAliyungo)
+	if v, ok := capabilities["NodeCIDRMask"]; ok {
+		d.Set("node_cidr_mask", formatInt(v))
 	}
-
-	unsupportedNodePoolCluster = len(nodePoolDetails.([]cs.NodePoolDetail)) == 0
-
-	for _, v := range nodePoolDetails.([]cs.NodePoolDetail) {
-		// Special handling for edge clusters since there are two default node pools: 'ess' and 'edge'
-		if object.Profile == EdgeProfile {
-			if tea.BoolValue(v.IsDefault) && v.NodePoolInfo.NodePoolType == defaultNodePoolType {
-				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
-				break
-			}
-		} else {
-			if tea.BoolValue(v.IsDefault) {
-				defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
-				break
-			}
-		}
-	}
-
-	// kubernetes version 允许存在节点池
-	pageNumber := 1
-	for {
-		if defaultNodePoolId == "" && !unsupportedNodePoolCluster {
-			break
-		}
-		var result []cs.KubernetesNodeType
-		var pagination *cs.PaginationResult
-		var requestInfo *cs.Client
-		var response interface{}
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				nodes, paginationResult, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, defaultNodePoolId)
-				return []interface{}{nodes, paginationResult}, err
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
-			addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
-		}
-		result, _ = response.([]interface{})[0].([]cs.KubernetesNodeType)
-		pagination, _ = response.([]interface{})[1].(*cs.PaginationResult)
-
-		if pageNumber == 1 && (len(result) == 0 || result[0].InstanceId == "") {
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-				if err := invoker.Run(func() error {
-					raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-						requestInfo = csClient
-						nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}, defaultNodePoolId)
-						return nodes, err
-					})
-					response = raw
-					return err
-				}); err != nil {
-					return resource.NonRetryableError(err)
-				}
-				tmp, _ := response.([]cs.KubernetesNodeType)
-				if len(tmp) > 0 && tmp[0].InstanceId != "" {
-					result = tmp
-				}
-
-				for _, stableState := range cs.NodeStableClusterState {
-					// If cluster is in NodeStableClusteState, node list will not change
-					if object.State == string(stableState) {
-						if debugOn() {
-							requestMap := make(map[string]interface{})
-							requestMap["ClusterId"] = d.Id()
-							requestMap["Pagination"] = common.Pagination{PageNumber: pageNumber, PageSize: PageSizeLarge}
-							addDebug("GetKubernetesClusterNodes", response, requestInfo, requestMap)
-						}
-						return nil
-					}
-				}
-				time.Sleep(5 * time.Second)
-				return resource.RetryableError(Error("[ERROR] There is no any nodes in kubernetes cluster %s.", d.Id()))
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
-			}
-
-		}
-
-		if d.Get("exclude_autoscaler_nodes") != nil && d.Get("exclude_autoscaler_nodes").(bool) {
-			result, err = knockOffAutoScalerNodes(result, meta)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
-			}
-		}
-
-		for _, node := range result {
-			mapping := map[string]interface{}{
-				"id":         node.InstanceId,
-				"name":       node.InstanceName,
-				"private_ip": node.IpAddress[0],
-			}
-			if node.InstanceRole == "Master" {
-				masterNodes = append(masterNodes, mapping)
-			} else {
-				workerNodes = append(workerNodes, mapping)
-			}
-		}
-
-		if len(result) < pagination.PageSize {
-			break
-		}
-		pageNumber += 1
-	}
-
-	d.Set("master_nodes", masterNodes)
-	d.Set("worker_nodes", workerNodes)
-	d.Set("worker_number", int64(len(workerNodes)))
 
 	// Get slb information and set connect
 	connection := make(map[string]string)
@@ -1439,7 +1287,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// write cluster conn authority to tf state
 	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
-		return fmt.Errorf("error setting certificate_authority: %s", err)
+		return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
 	}
 
 	// rrsa metadata only for managed, ignore attributes error
@@ -1447,6 +1295,13 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	} else {
 		d.Set("rrsa_metadata", data)
+		if len(data) > 0 {
+			d.Set("enable_rrsa", data[0]["enabled"].(bool))
+		}
+	}
+
+	if err := checkControlPlaneLogEnable(d, meta); err != nil {
+		return WrapError(fmt.Errorf("error setting controlPlaneLog: %s", err))
 	}
 
 	return nil
@@ -1469,7 +1324,7 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
 		}
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DeleteCluster", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
 	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
@@ -1524,6 +1379,7 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 					addons = append(addons, cs.Addon{
 						Name:     addon["name"].(string),
 						Config:   addon["config"].(string),
+						Version:  addon["version"].(string),
 						Disabled: addon["disabled"].(bool),
 					})
 				}
@@ -1784,61 +1640,6 @@ func buildKubernetesArgs(d *schema.ResourceData, meta interface{}) (*cs.Delicate
 	return creationArgs, nil
 }
 
-func knockOffAutoScalerNodes(nodes []cs.KubernetesNodeType, meta interface{}) ([]cs.KubernetesNodeType, error) {
-	log.Printf("[DEBUG] start to knock off auto scaler nodes %++v\n", nodes)
-	client := meta.(*connectivity.AliyunClient)
-	realNodesMap := make(map[string]ecs.Instance)
-	result := make([]cs.KubernetesNodeType, 0)
-	instanceIds := make([]interface{}, 0)
-
-	if len(nodes) == 0 {
-		return result, nil
-	}
-
-	for _, node := range nodes {
-		instanceIds = append(instanceIds, node.InstanceId)
-	}
-
-	request := ecs.CreateDescribeInstancesRequest()
-	request.RegionId = client.RegionId
-	request.PageSize = requests.NewInteger(len(nodes))
-	request.InstanceIds = convertListToJsonString(instanceIds)
-
-	// get all the nodes in use
-	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-		return ecsClient.DescribeInstances(request)
-	})
-
-	if err != nil {
-		return result, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_instances", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
-	response, _ := raw.(*ecs.DescribeInstancesResponse)
-
-	// filter out all autoscaler nodes
-	for _, instance := range response.Instances.Instance {
-		flags := false
-		for _, v := range instance.Tags.Tag {
-			if v.TagKey == defaultScalingGroupTag && v.TagValue == "true" {
-				flags = true
-			}
-		}
-		if flags != true {
-			realNodesMap[instance.InstanceId] = instance
-		}
-	}
-
-	// get the target node list
-	for _, node := range nodes {
-		if _, ok := realNodesMap[node.InstanceId]; ok {
-			result = append(result, node)
-		}
-	}
-
-	return result, nil
-}
-
 func expandKubernetesTaintsConfig(l []interface{}) []cs.Taint {
 	config := []cs.Taint{}
 
@@ -1866,95 +1667,6 @@ func expandKubernetesRuntimeConfig(l map[string]interface{}) cs.Runtime {
 	}
 
 	return config
-}
-
-func removeKubernetesNodes(d *schema.ResourceData, meta interface{}) ([]string, error) {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	invoker := NewInvoker()
-	// remove nodes count
-	o, n := d.GetChange("worker_number")
-	count := o.(int) - n.(int)
-
-	var result []cs.KubernetesNodeType
-	var response interface{}
-	var defaultNodePoolId string
-
-	// get the default nodepool id
-	if err := invoker.Run(func() error {
-		var err error
-		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			nodePools, err := csClient.DescribeClusterNodePools(d.Id())
-			return *nodePools, err
-		})
-		return err
-	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
-	}
-
-	for _, v := range response.([]cs.NodePoolDetail) {
-		if tea.BoolValue(v.IsDefault) {
-			defaultNodePoolId = v.BasicNodePool.NodePoolInfo.NodePoolId
-		}
-	}
-
-	// list all nodes of default nodepool
-	if err := invoker.Run(func() error {
-		var err error
-		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			nodes, _, err := csClient.GetKubernetesClusterNodes(d.Id(), common.Pagination{PageNumber: 1, PageSize: PageSizeLarge}, defaultNodePoolId)
-			return nodes, err
-		})
-		return err
-	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", DenverdinoAliyungo)
-	}
-
-	ret := response.([]cs.KubernetesNodeType)
-
-	// filter out autoscaler nodes
-	var err error
-	result, err = knockOffAutoScalerNodes(ret, meta)
-	if err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetKubernetesClusterNodes", AlibabaCloudSdkGoERROR)
-	}
-
-	// filter out Master nodes
-	var allNodeName []string
-	var allHostName []string
-	for _, value := range result {
-		if value.InstanceRole == "Worker" {
-			allNodeName = append(allNodeName, value.NodeName)
-			allHostName = append(allHostName, value.InstanceId)
-		}
-	}
-
-	// remove nodes
-	removeNodesName := allNodeName[:count]
-	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
-		Nodes:       removeNodesName,
-		ReleaseNode: true,
-		DrainNode:   false,
-	}
-	if err := invoker.Run(func() error {
-		var err error
-		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			resp, err := csClient.DeleteKubernetesClusterNodes(d.Id(), removeNodesArgs)
-			return resp, err
-		})
-		return err
-	}); err != nil {
-		return nil, WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveClusterNodes", DenverdinoAliyungo)
-	}
-
-	stateConf := BuildStateConf([]string{"removing"}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return nil, WrapErrorf(err, IdMsg, d.Id())
-	}
-
-	d.SetPartial("worker_number")
-
-	return allHostName[len(allHostName)-count:], nil
 }
 
 func flattenAlicloudCSCertificate(certificate *roacs.DescribeClusterUserKubeconfigResponseBody) map[string]string {
@@ -1995,6 +1707,29 @@ func expandMaintenanceWindowConfig(l []interface{}) (config cs.MaintenanceWindow
 	}
 
 	return
+}
+
+func expandMaintenanceWindowConfigRoa(l []interface{}) *roacs.MaintenanceWindow {
+	if len(l) == 0 || l[0] == nil {
+		return nil
+	}
+
+	m := l[0].(map[string]interface{})
+	config := &roacs.MaintenanceWindow{}
+	if v, ok := m["enable"]; ok {
+		config.SetEnable(v.(bool))
+	}
+	if v, ok := m["maintenance_time"]; ok && v != "" {
+		config.SetMaintenanceTime(v.(string))
+	}
+	if v, ok := m["duration"]; ok && v != "" {
+		config.SetDuration(v.(string))
+	}
+	if v, ok := m["weekly_period"]; ok && v != "" {
+		config.SetWeeklyPeriod(v.(string))
+	}
+
+	return config
 }
 
 func flattenMaintenanceWindowConfig(config *cs.MaintenanceWindow) (m []map[string]interface{}) {
@@ -2122,4 +1857,105 @@ func flattenRRSAMetadata(meta string) ([]map[string]interface{}, error) {
 	attributes["ram_oidc_provider_arn"] = data.ProviderArn
 
 	return []map[string]interface{}{attributes}, nil
+}
+
+func fetchMasterNodes(d *schema.ResourceData, meta interface{}) []map[string]interface{} {
+	csClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return nil
+	}
+	var nodes []*roacs.DescribeClusterNodesResponseBodyNodes
+	num := 1
+	size := 100
+	for {
+		request := &roacs.DescribeClusterNodesRequest{
+			PageNumber: tea.String(strconv.Itoa(num)),
+			PageSize:   tea.String(strconv.Itoa(size)),
+		}
+		response, err := csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+		if err != nil {
+			return nil
+		}
+		if response.Body == nil || response.Body.Nodes == nil {
+			break
+		}
+		if len(response.Body.Nodes) > 0 {
+			nodes = append(nodes, response.Body.Nodes...)
+		}
+		if len(response.Body.Nodes) == 0 || (response.Body.Page != nil && len(nodes) >= int(*response.Body.Page.TotalCount)) {
+			break
+		}
+		num = num + 1
+	}
+	var masterNodes []map[string]interface{}
+	for _, node := range nodes {
+		if *node.InstanceRole != "Master" {
+			continue
+		}
+		masterNodes = append(masterNodes, map[string]interface{}{
+			"id":         node.InstanceId,
+			"name":       node.NodeName,
+			"private_ip": node.IpAddress[0],
+		})
+	}
+
+	return masterNodes
+}
+
+func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]interface{} {
+	csClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return nil
+	}
+	response, err := csClient.DescribeClusterNodePools(tea.String(d.Id()))
+	if err != nil {
+		return nil
+	}
+	nodepoolId := ""
+	if response.Body != nil && response.Body.Nodepools != nil {
+		for _, nodepool := range response.Body.Nodepools {
+			if *nodepool.NodepoolInfo.Type == defaultNodePoolType && *nodepool.NodepoolInfo.Name == "default-nodepool" {
+				nodepoolId = *nodepool.NodepoolInfo.NodepoolId
+				break
+			}
+		}
+	}
+	if nodepoolId == "" {
+		return nil
+	}
+
+	var nodes []*roacs.DescribeClusterNodesResponseBodyNodes
+	num := 1
+	size := 100
+	for {
+		request := &roacs.DescribeClusterNodesRequest{
+			PageNumber: tea.String(strconv.Itoa(num)),
+			PageSize:   tea.String(strconv.Itoa(size)),
+			NodepoolId: tea.String(nodepoolId),
+		}
+		response, err := csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+		if err != nil {
+			return nil
+		}
+		if response.Body == nil || response.Body.Nodes == nil {
+			break
+		}
+		if len(response.Body.Nodes) > 0 {
+			nodes = append(nodes, response.Body.Nodes...)
+		}
+		if len(response.Body.Nodes) == 0 || (response.Body.Page != nil && len(nodes) >= int(*response.Body.Page.TotalCount)) {
+			break
+		}
+		num = num + 1
+	}
+	var workerNodes []map[string]interface{}
+	for _, node := range nodes {
+		workerNodes = append(workerNodes, map[string]interface{}{
+			"id":         node.InstanceId,
+			"name":       node.NodeName,
+			"private_ip": node.IpAddress[0],
+		})
+	}
+
+	return workerNodes
 }

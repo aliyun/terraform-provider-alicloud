@@ -1000,6 +1000,11 @@ func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs
 
 	state, upgradeError := s.WaitForUpgradeCluster(clusterId, "Upgrade")
 	if state == cs.Task_Status_Success && upgradeError == nil {
+		// ensure upgrading finished, target running
+		stateConf := BuildStateConf([]string{"upgrading"}, []string{"running"}, UpgradeClusterTimeout, 10*time.Second, s.CsKubernetesInstanceStateRefreshFunc(clusterId, []string{"deleting", "failed"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
 		return nil
 	}
 
