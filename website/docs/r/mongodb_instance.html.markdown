@@ -123,7 +123,7 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The ID of the MongoDB.
-* `retention_period` - Instance log backup retention days. Available in 1.42.0+.
+* `retention_period` - Instance data backup retention days. Available in 1.42.0+.
 * `replica_set_name` - The name of the mongo replica set
 * `ssl_status` - Status of the SSL feature. `Open`: SSL is turned on; `Closed`: SSL is turned off.
 * `replica_sets` - Replica set instance information. The details see Block replica_sets. **NOTE:** Available since v1.140. See [`replica_sets`](#replica_sets) below.
