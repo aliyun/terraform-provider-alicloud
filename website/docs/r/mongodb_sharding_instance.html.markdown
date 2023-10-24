@@ -146,7 +146,7 @@ The config_server_list supports the following:
 The following attributes are exported:
 
 * `id` - The ID of the MongoDB.
-* `retention_period` - Instance log backup retention days. **NOTE:** Available in 1.42.0+.
+* `retention_period` - Instance data backup retention days. **NOTE:** Available in 1.42.0+.
 * `config_server_list` - The node information list of config server. 
     * `max_iops` - The maximum IOPS of the Config Server node.
     * `connect_string` - The connection address of the Config Server node.
