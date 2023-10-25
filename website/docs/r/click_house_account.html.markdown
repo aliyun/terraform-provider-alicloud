@@ -11,7 +11,7 @@ description: |-
 
 Provides a Click House Account resource.
 
-For information about Click House Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/en/clickhouse/latest/api-clickhouse-2019-11-11-createaccount).
+For information about Click House Account and how to use it, see [What is Account](https://www.alibabacloud.com/help/zh/clickhouse/latest/api-clickhouse-2019-11-11-createaccount).
 
 -> **NOTE:** Available since v1.134.0.
 

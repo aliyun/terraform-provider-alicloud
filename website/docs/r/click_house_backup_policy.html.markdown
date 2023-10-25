@@ -11,7 +11,7 @@ description: |-
 
 Provides a Click House Backup Policy resource.
 
-For information about Click House Backup Policy and how to use it, see [What is Backup Policy](https://www.alibabacloud.com/help/en/clickhouse/latest/api-clickhouse-2019-11-11-createbackuppolicy).
+For information about Click House Backup Policy and how to use it, see [What is Backup Policy](https://www.alibabacloud.com/help/zh/clickhouse/latest/api-clickhouse-2019-11-11-createbackuppolicy).
 
 -> **NOTE:** Available since v1.147.0.
 
