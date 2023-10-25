@@ -45,6 +45,6 @@ The following attributes are exported in addition to the arguments listed above:
   * `application_type` - The type of the package for the deployment of the application that you want to create. The valid values are: WAR and JAR. We strongly recommend you to set this parameter when creating the application.
   * `build_package_id` - The package ID of Enterprise Distributed Application Service (EDAS) Container.
   * `cluster_id` - The ID of the cluster that you want to create the application.
-  * `cluster_type` -  The type of the cluster that you want to create. Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernates cluster.
+  * `cluster_type` -  The type of the cluster that you want to create. Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernetes cluster.
   * `region_id` - The ID of the namespace the application belongs to.
 
