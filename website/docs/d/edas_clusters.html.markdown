@@ -44,7 +44,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `clusters` - A list of clusters.
   * `cluster_id` - The ID of the cluster that you want to create the application.
   * `cluster_name` - The name of the cluster.
-  * `cluster_type` - The type of the cluster, Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernates cluster.
+  * `cluster_type` - The type of the cluster, Valid values: 1: Swarm cluster. 2: ECS cluster. 3: Kubernetes cluster.
   * `create_time` - Cluster's creation time.
   * `update_time` - The time when the cluster was last updated.
   * `cpu` - The total number of CPUs in the cluster.
