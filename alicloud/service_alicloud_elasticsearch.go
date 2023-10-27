@@ -531,7 +531,7 @@ func updateDataNodeSpec(d *schema.ResourceData, meta interface{}) error {
 	spec["disk"] = d.Get("data_node_disk_size")
 	spec["diskType"] = d.Get("data_node_disk_type")
 
-	if v, ok := d.GetOkExists("data_node_disk_performance_level"); ok {
+	if v, ok := d.GetOkExists("data_node_disk_performance_level"); ok && v != "" {
 		spec["performanceLevel"] = v.(string)
 	}
 	content["nodeSpec"] = spec
