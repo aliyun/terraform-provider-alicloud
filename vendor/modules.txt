@@ -35,15 +35,36 @@ github.com/agiledragon/gomonkey/v2/creflect
 # github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-fc-util/client
+# github.com/alibabacloud-go/alibabacloud-gateway-sls v0.0.6
+## explicit; go 1.14
+github.com/alibabacloud-go/alibabacloud-gateway-sls/client
+# github.com/alibabacloud-go/alibabacloud-gateway-sls-util v0.0.1
+## explicit; go 1.19
+github.com/alibabacloud-go/alibabacloud-gateway-sls-util/client
 # github.com/alibabacloud-go/alibabacloud-gateway-spi v0.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
 # github.com/alibabacloud-go/cs-20151215/v3 v3.0.36
 ## explicit; go 1.15
 github.com/alibabacloud-go/cs-20151215/v3/client
+# github.com/alibabacloud-go/darabonba-array v0.1.0
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-array/client
+# github.com/alibabacloud-go/darabonba-encode-util v0.0.2
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-encode-util/client
+# github.com/alibabacloud-go/darabonba-map v0.0.2
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-map/client
 # github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-openapi/v2/client
+# github.com/alibabacloud-go/darabonba-signature-util v0.0.7
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-signature-util/client
+# github.com/alibabacloud-go/darabonba-string v1.0.2
+## explicit; go 1.14
+github.com/alibabacloud-go/darabonba-string/client
 # github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68
 ## explicit
 github.com/alibabacloud-go/debug/debug
@@ -319,8 +340,8 @@ github.com/golang/snappy
 # github.com/google/flatbuffers v1.11.0
 ## explicit
 github.com/google/flatbuffers/go
-# github.com/google/go-cmp v0.5.5
-## explicit; go 1.8
+# github.com/google/go-cmp v0.5.9
+## explicit; go 1.13
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -619,8 +640,8 @@ github.com/tidwall/pretty
 # github.com/tidwall/sjson v1.2.5
 ## explicit; go 1.14
 github.com/tidwall/sjson
-# github.com/tjfoc/gmsm v1.3.2
-## explicit; go 1.12
+# github.com/tjfoc/gmsm v1.4.1
+## explicit; go 1.14
 github.com/tjfoc/gmsm/sm3
 # github.com/ulikunitz/xz v0.5.8
 ## explicit; go 1.12
