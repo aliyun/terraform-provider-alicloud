@@ -1193,7 +1193,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ros_stack":                                             resourceAlicloudRosStack(),
 			"alicloud_ros_stack_group":                                       resourceAlicloudRosStackGroup(),
 			"alicloud_ros_template":                                          resourceAlicloudRosTemplate(),
-			"alicloud_privatelink_vpc_endpoint_service":                      resourceAlicloudPrivatelinkVpcEndpointService(),
+			"alicloud_privatelink_vpc_endpoint_service":                      resourceAliCloudPrivateLinkVpcEndpointService(),
 			"alicloud_privatelink_vpc_endpoint":                              resourceAlicloudPrivatelinkVpcEndpoint(),
 			"alicloud_privatelink_vpc_endpoint_connection":                   resourceAlicloudPrivatelinkVpcEndpointConnection(),
 			"alicloud_privatelink_vpc_endpoint_service_resource":             resourceAlicloudPrivatelinkVpcEndpointServiceResource(),
