@@ -1,207 +1,275 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"fmt"
+	"log"
 	"time"
 
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudLogProject() *schema.Resource {
+func resourceAliCloudSlsProject() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudLogProjectCreate,
-		Read:   resourceAlicloudLogProjectRead,
-		Update: resourceAlicloudLogProjectUpdate,
-		Delete: resourceAlicloudLogProjectDelete,
+		Create: resourceAliCloudSlsProjectCreate,
+		Read:   resourceAliCloudSlsProjectRead,
+		Update: resourceAliCloudSlsProjectUpdate,
+		Delete: resourceAliCloudSlsProjectDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(3 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"name": {
+			"create_time": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"project_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"project_name", "name"},
+				ForceNew:     true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"policy": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"tags": tagsSchema(),
+			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'name' has been deprecated since provider version 1.212.0. New field 'project_name' instead.",
+				ForceNew:   true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudLogProjectCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlsProjectCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	logService := LogService{client}
-	var requestInfo *sls.Client
-	request := map[string]string{
-		"name":        d.Get("name").(string),
-		"description": d.Get("description").(string),
+
+	action := fmt.Sprintf("/")
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	hostMap := make(map[string]*string)
+	conn, err := client.NewSlsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			requestInfo = slsClient
-			return slsClient.CreateProject(request["name"], request["description"])
-		})
+	request = make(map[string]interface{})
+	if v, ok := d.GetOk("project_name"); ok {
+		request["projectName"] = v
+	}
+	if v, ok := d.GetOk("name"); ok {
+		request["projectName"] = v
+	}
+
+	if v, ok := d.GetOk("description"); ok {
+		request["description"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["resourceGroupId"] = v
+	}
+	body = request
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.Execute(genRoaParam("CreateProject", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{LogClientTimeout}) {
-				time.Sleep(5 * time.Second)
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("CreateProject", raw, requestInfo, request)
-		response, _ := raw.(*sls.LogProject)
-		d.SetId(response.Name)
+		addDebug(action, response, request)
 		return nil
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_project", "CreateProject", AliyunLogGoSdkERROR)
-	}
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, logService.LogProjectStateRefreshFunc(d.Id(), []string{}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_project", action, AlibabaCloudSdkGoERROR)
 	}
 
-	return resourceAlicloudLogProjectUpdate(d, meta)
+	d.SetId(fmt.Sprint(request["projectName"]))
+
+	return resourceAliCloudSlsProjectUpdate(d, meta)
 }
 
-func resourceAlicloudLogProjectRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlsProjectRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	logService := LogService{client}
-	object, err := logService.DescribeLogProject(d.Id())
+	slsServiceV2 := SlsServiceV2{client}
+
+	objectRaw, err := slsServiceV2.DescribeSlsProject(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_log_project DescribeSlsProject Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("name", object.Name)
-	d.Set("description", object.Description)
-	projectTags, err := logService.DescribeLogProjectTags(object.Name)
-	if projectTags != nil {
-		tags := map[string]interface{}{}
-		for _, tag := range projectTags {
-			if !tagIgnored(tag.TagKey, tag.TagValue) {
-				tags[tag.TagKey] = tag.TagValue
-			}
-		}
-		if err := d.Set("tags", tags); err != nil {
-			return WrapError(err)
-		}
+
+	d.Set("create_time", objectRaw["createTime"])
+	d.Set("description", objectRaw["description"])
+	d.Set("resource_group_id", objectRaw["resourceGroupId"])
+	d.Set("status", objectRaw["status"])
+	d.Set("project_name", objectRaw["projectName"])
+
+	objectRaw, err = slsServiceV2.DescribeListTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
 	}
-	policy, err := logService.DescribeLogProjectPolicy(object.Name)
+
+	tagsMaps := objectRaw["tagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	logService := LogService{client}
+	policy, err := logService.DescribeLogProjectPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 	if policy != "" {
 		d.Set("policy", policy)
 	}
-
+	d.Set("name", d.Get("project_name"))
 	return nil
 }
 
-func buildTags(projectName string, tags map[string]interface{}) *sls.ResourceTags {
-	slsTags := []sls.ResourceTag{}
-
-	for key, value := range tags {
-		tag := sls.ResourceTag{Key: key, Value: value.(string)}
-		slsTags = append(slsTags, tag)
-	}
-	projectTags := sls.NewProjectTags(projectName, slsTags)
-	return projectTags
-}
-
-func deleteProjectTags(client *connectivity.AliyunClient, slsTags []string, projectName string) error {
-	var requestInfo *sls.Client
-	projectUnTags := sls.NewProjectUnTags(projectName, slsTags)
-	raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-		requestInfo = slsClient
-		return nil, slsClient.UnTagResources(projectName, projectUnTags)
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, projectName, "DeletaTags", AliyunLogGoSdkERROR)
-	}
-	addDebug("UnTagResources", raw, requestInfo, map[string]string{
-		"name": projectName,
-	})
-	return nil
-}
-
-func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var body map[string]interface{}
+	var hostMap map[string]*string
+	update := false
 	d.Partial(true)
-
-	var requestInfo *sls.Client
-	logService := LogService{client}
-	projectName := d.Get("name").(string)
-	request := map[string]string{
-		"name":        projectName,
-		"description": d.Get("description").(string),
+	action := fmt.Sprintf("/")
+	conn, err := client.NewSlsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if d.HasChange("description") {
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			requestInfo = slsClient
-			return slsClient.UpdateProject(request["name"], request["description"])
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	hostMap = make(map[string]*string)
+	hostMap["project"] = StringPointer(d.Id())
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["description"] = d.Get("description")
+	}
+
+	body = request
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.Execute(genRoaParam("UpdateProject", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProject", AliyunLogGoSdkERROR)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug("UpdateProject", raw, requestInfo, request)
+		d.SetPartial("description")
+	}
+	update = false
+	action = fmt.Sprintf("/resourcegroup")
+	conn, err = client.NewSlsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	hostMap = make(map[string]*string)
+	request["resourceId"] = d.Id()
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+		request["resourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	request["resourceType"] = "PROJECT"
+	body = request
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.Execute(genRoaParam("ChangeResourceGroup", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("tags") {
-		projectTags, err := logService.DescribeLogProjectTags(projectName)
-		if err != nil {
-			return err
-		}
-		slsTags := []string{}
-		for _, value := range projectTags {
-			slsTags = append(slsTags, value.TagKey)
-		}
-		tags := d.Get("tags").(map[string]interface{})
-		if tags == nil || len(tags) == 0 {
-			if err := deleteProjectTags(client, slsTags, projectName); err != nil {
-				return WrapError(err)
-			}
-		} else {
-			if err := deleteProjectTags(client, slsTags, projectName); err != nil {
-				return WrapError(err)
-			}
-			projectNewTags := buildTags(projectName, tags)
-			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				requestInfo = slsClient
-				return nil, slsClient.TagResources(projectName, projectNewTags)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateTags", AliyunLogGoSdkERROR)
-			}
-			addDebug("UpdateTags", raw, requestInfo, request)
+		slsServiceV2 := SlsServiceV2{client}
+		if err := slsServiceV2.SetResourceTags(d, "PROJECT"); err != nil {
+			return WrapError(err)
 		}
 		d.SetPartial("tags")
 	}
-
 	if d.HasChange("policy") {
+		var requestInfo *sls.Client
 		policy := ""
 		if v, ok := d.GetOk("policy"); ok {
 			policy = v.(string)
 		}
 		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			if policy == "" {
-				return nil, slsClient.DeleteProjectPolicy(projectName)
+				return nil, slsClient.DeleteProjectPolicy(d.Id())
 			}
-			return nil, slsClient.UpdateProjectPolicy(projectName, policy)
+			return nil, slsClient.UpdateProjectPolicy(d.Id(), policy)
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProjectPolicy", AliyunLogGoSdkERROR)
@@ -210,37 +278,46 @@ func resourceAlicloudLogProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("policy")
 	}
 	d.Partial(false)
-
-	return resourceAlicloudLogProjectRead(d, meta)
+	return resourceAliCloudSlsProjectRead(d, meta)
 }
 
-func resourceAlicloudLogProjectDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudSlsProjectDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	logService := LogService{client}
-	var requestInfo *sls.Client
-	request := map[string]string{
-		"name":        d.Get("name").(string),
-		"description": d.Get("description").(string),
+	action := fmt.Sprintf("/")
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	hostMap := make(map[string]*string)
+	conn, err := client.NewSlsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	err := resource.Retry(3*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-			requestInfo = slsClient
-			return nil, slsClient.DeleteProject(request["name"])
-		})
+	request = make(map[string]interface{})
+	hostMap["project"] = StringPointer(d.Id())
+
+	body = request
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.Execute(genRoaParam("DeleteProject", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{LogClientTimeout, "RequestTimeout"}) {
+			if NeedRetry(err) {
+				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug("DeleteProject", raw, requestInfo, request)
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ProjectNotExist"}) {
-			return nil
-		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteProject", AliyunLogGoSdkERROR)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(logService.WaitForLogProject(d.Id(), Deleted, DefaultTimeout))
+
+	return nil
 }

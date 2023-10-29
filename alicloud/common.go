@@ -23,6 +23,8 @@ import (
 
 	"github.com/denverdino/aliyungo/cs"
 
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
@@ -1541,4 +1543,23 @@ func InArray(target string, strArray []string) bool {
 		}
 	}
 	return false
+}
+func genRoaParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+}
+
+func expandSingletonToList(singleton interface{}) []interface{} {
+	vs := make([]interface{}, 0)
+	vs = append(vs, singleton)
+	return vs
 }
