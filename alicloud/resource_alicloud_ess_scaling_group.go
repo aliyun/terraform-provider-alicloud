@@ -115,7 +115,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 10),
+				ValidateFunc: validation.IntBetween(1, 10),
 			},
 			"spot_instance_remedy": {
 				Type:     schema.TypeBool,
@@ -140,6 +140,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ECS", "ECI"}, false),
 			},
 			"protected_instances": {
@@ -476,13 +477,9 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		request["DesiredCapacity"] = v
 	}
 
-	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
-		request["OnDemandBaseCapacity"] = v
-	}
+	request["OnDemandBaseCapacity"] = d.Get("on_demand_base_capacity")
 
-	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
-		request["OnDemandPercentageAboveBaseCapacity"] = v
-	}
+	request["OnDemandPercentageAboveBaseCapacity"] = d.Get("on_demand_percentage_above_base_capacity")
 
 	if v, ok := d.GetOk("spot_instance_pools"); ok {
 		request["SpotInstancePools"] = v
@@ -514,7 +511,6 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.AliyunClient, oldLoadbalancerSet *schema.Set, newLoadbalancerSet *schema.Set) error {
 	detachLoadbalancerSet := oldLoadbalancerSet.Difference(newLoadbalancerSet)
 	attachLoadbalancerSet := newLoadbalancerSet.Difference(oldLoadbalancerSet)
-	// attach
 	if attachLoadbalancerSet.Len() > 0 {
 		var subLists = partition(attachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
@@ -532,7 +528,6 @@ func attachOrDetachLoadbalancers(d *schema.ResourceData, client *connectivity.Al
 			addDebug(attachLoadbalancersRequest.GetActionName(), raw, attachLoadbalancersRequest.RpcRequest, attachLoadbalancersRequest)
 		}
 	}
-	// detach
 	if detachLoadbalancerSet.Len() > 0 {
 		var subLists = partition(detachLoadbalancerSet, int(AttachDetachLoadbalancersBatchsize))
 		for _, subList := range subLists {
@@ -561,7 +556,6 @@ func setProtectedInstances(d *schema.ResourceData, client *connectivity.AliyunCl
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
 
-	// set protected
 	if protected.Len() > 0 {
 		var subLists = partition(protected, 20)
 		for _, subList := range subLists {
@@ -576,7 +570,6 @@ func setProtectedInstances(d *schema.ResourceData, client *connectivity.AliyunCl
 		}
 	}
 
-	// set unprotected
 	if unprotected.Len() > 0 {
 		var subLists = partition(unprotected, 20)
 		for _, subList := range subLists {
@@ -597,7 +590,6 @@ func setProtectedInstances(d *schema.ResourceData, client *connectivity.AliyunCl
 func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.AliyunClient, oldDbInstanceIdSet *schema.Set, newDbInstanceIdSet *schema.Set) error {
 	detachDbInstanceSet := oldDbInstanceIdSet.Difference(newDbInstanceIdSet)
 	attachDbInstanceSet := newDbInstanceIdSet.Difference(oldDbInstanceIdSet)
-	// attach
 	if attachDbInstanceSet.Len() > 0 {
 		var subLists = partition(attachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
@@ -615,7 +607,6 @@ func attachOrDetachDbInstances(d *schema.ResourceData, client *connectivity.Aliy
 			addDebug(attachDbInstancesRequest.GetActionName(), raw, attachDbInstancesRequest.RpcRequest, attachDbInstancesRequest)
 		}
 	}
-	// detach
 	if detachDbInstanceSet.Len() > 0 {
 		var subLists = partition(detachDbInstanceSet, int(AttachDetachDbinstancesBatchsize))
 		for _, subList := range subLists {
