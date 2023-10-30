@@ -863,6 +863,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_backup_policy":                                   resourceAliCloudGpdbBackupPolicy(),
 			"alicloud_threat_detection_file_upload_limit":                   resourceAliCloudThreatDetectionFileUploadLimit(),
 			"alicloud_threat_detection_client_file_protect":                 resourceAliCloudThreatDetectionClientFileProtect(),
+			"alicloud_dms_enterprise_authority_template":                    resourceAliCloudDMSEnterpriseAuthorityTemplate(),
 			"alicloud_kms_application_access_point":                         resourceAliCloudKmsApplicationAccessPoint(),
 			"alicloud_kms_client_key":                                       resourceAliCloudKmsClientKey(),
 			"alicloud_kms_policy":                                           resourceAliCloudKmsPolicy(),
