@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/dds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -25,7 +25,6 @@ func init() {
 }
 
 func testSweepMongoDBInstances(region string) error {
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -109,46 +108,244 @@ func testSweepMongoDBInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudMongoDBInstance_classic(t *testing.T) {
-	var v dds.DBInstance
+func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.MongoDBTDESupportRegions)
 	resourceId := "alicloud_mongodb_instance.default"
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceClassicConfig)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":          "${local.vswitch_id}",
 					"engine_version":      "4.2",
-					"db_instance_storage": "10",
 					"db_instance_class":   "dds.mongo.mid",
-					"name":                name,
+					"db_instance_storage": "20",
+					"storage_type":        "local_ssd",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-						"ssl_status":           CHECKSET,
+						"engine_version":      "4.2",
+						"db_instance_class":   "dds.mongo.mid",
+						"db_instance_storage": "20",
+						"storage_type":        "local_ssd",
+						"vswitch_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_class": "dds.mongo.standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_class": "dds.mongo.standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"replication_factor": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"replication_factor": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"period":               "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
+						"period":               "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password": "YourPassword_123",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"readonly_replicas": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"readonly_replicas": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_time": "11:00Z-12:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "11:00Z-12:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"snapshot_backup_type": "Flash",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"snapshot_backup_type": "Flash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_status": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "00:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_end_time": "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_end_time": "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "50",
+					"order_type":          "UPGRADE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage": "50",
+						"order_type":          "UPGRADE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tde_status":     "enabled",
+					"encryptor_name": "aes-256-cbc",
+					"encryption_key": "${alicloud_kms_key.default.id}",
+					"role_arn":       "acs:ram::" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":role/aliyunrdsinstanceencryptiondefaultrole",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tde_status":     "enabled",
+						"encryptor_name": "aes-256-cbc",
+						"encryption_key": CHECKSET,
+						"role_arn":       CHECKSET,
 					}),
 				),
 			},
@@ -169,49 +366,90 @@ func TestAccAliCloudMongoDBInstance_classic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name + "update",
+					"parameters": []interface{}{
+						map[string]interface{}{
+							"name":  "operationProfiling.slowOpThresholdMs",
+							"value": "80",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name + "update",
+						"parameters.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "4.4",
+					"db_instance_class":   "mdb.shard.2x.xlarge.d",
+					"db_instance_storage": "20",
+					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":      "4.4",
+						"db_instance_class":   "mdb.shard.2x.xlarge.d",
+						"db_instance_storage": "20",
+						"vswitch_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_class": "mdb.shard.2x.2xlarge.d",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_class": "mdb.shard.2x.2xlarge.d",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "30",
-						"db_instance_class":   "dds.mongo.standard",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "YourPassword_123",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"security_ip_list": []string{"10.168.1.12"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"security_ip_list.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"security_group_id": "${alicloud_security_group.default.id}",
+					"security_group_id": "${data.alicloud_security_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -221,225 +459,21 @@ func TestAccAliCloudMongoDBInstance_classic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
-					"backup_time":   "11:00Z-12:00Z",
+					"replication_factor": "3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "1",
-						"backup_time":     "11:00Z-12:00Z",
+						"replication_factor": "3",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"maintain_start_time": "02:00Z",
-					"maintain_end_time":   "03:00Z",
+					"name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"maintain_start_time": "02:00Z",
-						"maintain_end_time":   "03:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":                name,
-					"account_password":    "YourPassword_",
-					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
-					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
-					"backup_period":       []string{"Tuesday", "Wednesday"},
-					"backup_time":         "10:00Z-11:00Z",
-					"maintain_start_time": REMOVEKEY,
-					"maintain_end_time":   REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                        name,
-						"account_password":            "YourPassword_",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"db_instance_storage":         "30",
-						"db_instance_class":           "dds.mongo.standard",
-						"backup_period.#":             "2",
-						"backup_period.1592931319":    "Tuesday",
-						"backup_period.1970423419":    "Wednesday",
-						"backup_time":                 "10:00Z-11:00Z",
-						"maintain_start_time":         REMOVEKEY,
-						"maintain_end_time":           REMOVEKEY,
-						"ssl_status":                  CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_charge_type": "PrePaid",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_charge_type": "PrePaid",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew", "account_password"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_classic1(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceClassicConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":          "${local.vswitch_id}",
-					"zone_id":             "${local.zone_id}",
-					"engine_version":      "4.2",
-					"db_instance_storage": "2000",
-					"db_instance_class":   "dds.mongo.2xlarge",
-					"name":                name,
-					"ssl_action":          "Open",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"db_instance_storage":  "2000",
-						"db_instance_class":    "dds.mongo.2xlarge",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-						"ssl_status":           "Open",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_status": "Open",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_action": "Close",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_status": "Closed",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_vpc(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vswitch_id":          "${local.vswitch_id}",
-					"engine_version":      "4.2",
-					"db_instance_storage": "10",
-					"db_instance_class":   "dds.mongo.mid",
-					"name":                name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_storage": "30",
-						"db_instance_class":   "dds.mongo.standard",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "YourPassword_123",
+						"name": name,
 					}),
 				),
 			},
@@ -455,177 +489,11 @@ func TestAccAliCloudMongoDBInstance_vpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
-					"backup_time":   "11:00Z-12:00Z",
+					"account_password": "YourPassword_123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "1",
-						"backup_time":     "11:00Z-12:00Z",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":                name,
-					"account_password":    "YourPassword_",
-					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
-					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
-					"backup_period":       []string{"Tuesday", "Wednesday"},
-					"backup_time":         "10:00Z-11:00Z",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":                        name,
-						"account_password":            "YourPassword_",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"db_instance_storage":         "30",
-						"db_instance_class":           "dds.mongo.standard",
-						"backup_period.#":             "2",
-						"backup_time":                 "10:00Z-11:00Z",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew", "account_password"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_vpc1(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vswitch_id":          "${local.vswitch_id}",
-					"engine_version":      "4.2",
-					"network_type":        "VPC",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":             "${local.zone_id}",
-					"db_instance_storage": "10",
-					"db_instance_class":   "dds.mongo.mid",
-					"name":                name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"network_type":         "VPC",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-						"resource_group_id":    CHECKSET,
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"zone_id":              CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_vpc2(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vswitch_id":          "${local.vswitch_id}",
-					"engine_version":      "6.0",
-					"network_type":        "VPC",
-					"storage_type":        "cloud_essd1",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":             "${local.zone_id}",
-					"db_instance_storage": "470",
-					"db_instance_class":   "mdb.shard.2x.xlarge.d",
-					"name":                name,
-					"readonly_replicas":   "1",
-					"hidden_zone_id":      "${data.alicloud_mongodb_zones.default.ids.1}",
-					"secondary_zone_id":   "${data.alicloud_mongodb_zones.default.ids.2}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":       "6.0",
-						"network_type":         "VPC",
-						"storage_type":         "cloud_essd1",
-						"db_instance_storage":  "470",
-						"db_instance_class":    "mdb.shard.2x.xlarge.d",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-						"resource_group_id":    CHECKSET,
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"zone_id":              CHECKSET,
-						"readonly_replicas":    "1",
-						"hidden_zone_id":       CHECKSET,
-						"secondary_zone_id":    CHECKSET,
+						"account_password": "YourPassword_123",
 					}),
 				),
 			},
@@ -640,194 +508,109 @@ func TestAccAliCloudMongoDBInstance_vpc2(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_multiAZ(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceMultiAZConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceMultiAZConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheckWithRegions(t, true, connectivity.MongoDBMultiAzSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_id":             "${local.zone_id}",
-					"vswitch_id":          "${local.vswitch_id}",
-					"engine_version":      "4.2",
-					"db_instance_storage": "10",
-					"db_instance_class":   "dds.mongo.mid",
-					"name":                name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name": name + "update",
+					"backup_time": "11:00Z-12:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_storage": "30",
-						"db_instance_class":   "dds.mongo.standard",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_123",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"account_password": "YourPassword_123",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"security_ip_list": []string{"10.168.1.12"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"security_ip_list.#": "1",
+						"backup_time": "11:00Z-12:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"backup_period": []string{"Wednesday"},
-					"backup_time":   "11:00Z-12:00Z",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_period.#": "1",
-						"backup_time":     "11:00Z-12:00Z",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                name,
-					"account_password":    "YourPassword_",
-					"security_ip_list":    []string{"10.168.1.12", "10.168.1.13"},
-					"db_instance_storage": "30",
-					"db_instance_class":   "dds.mongo.standard",
-					"backup_period":       []string{"Tuesday", "Wednesday"},
-					"backup_time":         "10:00Z-11:00Z",
+					"backup_interval": "15",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                        name,
-						"account_password":            "YourPassword_",
-						"security_ip_list.#":          "2",
-						"security_ip_list.4095458986": "10.168.1.12",
-						"security_ip_list.3976237035": "10.168.1.13",
-						"db_instance_storage":         "30",
-						"db_instance_class":           "dds.mongo.standard",
-						"backup_period.#":             "2",
-						"backup_time":                 "10:00Z-11:00Z",
+						"backup_interval": "15",
 					}),
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew", "account_password"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudMongoDBInstance_parameters(t *testing.T) {
-	var v dds.DBInstance
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	ra := resourceAttrInit(resourceId, nil)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceVpcConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceMongodbInstanceVpcConfig)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vswitch_id":          "${local.vswitch_id}",
-					"engine_version":      "4.2",
-					"network_type":        "VPC",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":             "${local.zone_id}",
-					"db_instance_storage": "10",
-					"db_instance_class":   "dds.mongo.mid",
-					"name":                name,
+					"snapshot_backup_type": "Flash",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine_version":       "4.2",
-						"network_type":         "VPC",
-						"db_instance_storage":  "10",
-						"db_instance_class":    "dds.mongo.mid",
-						"name":                 name,
-						"storage_engine":       "WiredTiger",
-						"instance_charge_type": "PostPaid",
-						"replication_factor":   "3",
-						"replica_sets.#":       CHECKSET,
-						"resource_group_id":    CHECKSET,
-						"vpc_id":               CHECKSET,
-						"vswitch_id":           CHECKSET,
-						"zone_id":              CHECKSET,
+						"snapshot_backup_type": "Flash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_action": "Open",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_status": "Open",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_start_time": "00:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_start_time": "00:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintain_end_time": "03:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintain_end_time": "03:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_storage": "50",
+					"order_type":          "UPGRADE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_storage": "50",
+						"order_type":          "UPGRADE",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "acceptance test",
 					}),
 				),
 			},
@@ -847,36 +630,112 @@ func TestAccAliCloudMongoDBInstance_parameters(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
 				Config: testAccConfig(map[string]interface{}{
+					"engine_version":       "4.4",
+					"db_instance_class":    "mdb.shard.2x.xlarge.d",
+					"db_instance_storage":  "20",
+					"storage_engine":       "WiredTiger",
+					"storage_type":         "cloud_essd1",
+					"vpc_id":               "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"zone_id":              "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"secondary_zone_id":    "${data.alicloud_mongodb_zones.default.zones.1.id}",
+					"hidden_zone_id":       "${data.alicloud_mongodb_zones.default.zones.2.id}",
+					"security_group_id":    "${data.alicloud_security_groups.default.ids.0}",
+					"replication_factor":   "3",
+					"network_type":         "VPC",
+					"name":                 name,
+					"instance_charge_type": "PostPaid",
+					"security_ip_list":     []string{"10.168.1.12"},
+					//"kms_encrypted_password":    "",
+					//"kms_encryption_context":    "",
+					"encrypted":                 "true",
+					"cloud_disk_encryption_key": "${alicloud_kms_key.default.id}",
+					"readonly_replicas":         "2",
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"backup_time":               "11:00Z-12:00Z",
+					"backup_period":             []string{"Wednesday"},
+					"backup_interval":           "15",
+					"snapshot_backup_type":      "Flash",
+					"ssl_action":                "Open",
+					"maintain_start_time":       "00:00Z",
+					"maintain_end_time":         "03:00Z",
 					"parameters": []interface{}{
 						map[string]interface{}{
 							"name":  "operationProfiling.slowOpThresholdMs",
-							"value": "70",
+							"value": "80",
 						},
-						map[string]interface{}{
-							"name":  "setParameter.flowControlTargetLagSeconds",
-							"value": "20",
-						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"parameters.#": "2",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"parameters": []interface{}{
-						map[string]interface{}{
-							"name":  "setParameter.flowControlTargetLagSeconds",
-							"value": "10",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"parameters.#": "1",
+						"engine_version":            "4.4",
+						"db_instance_class":         "mdb.shard.2x.xlarge.d",
+						"db_instance_storage":       "20",
+						"storage_engine":            "WiredTiger",
+						"storage_type":              "cloud_essd1",
+						"vpc_id":                    CHECKSET,
+						"vswitch_id":                CHECKSET,
+						"zone_id":                   CHECKSET,
+						"secondary_zone_id":         CHECKSET,
+						"hidden_zone_id":            CHECKSET,
+						"security_group_id":         CHECKSET,
+						"replication_factor":        "3",
+						"network_type":              "VPC",
+						"name":                      name,
+						"instance_charge_type":      "PostPaid",
+						"security_ip_list.#":        "1",
+						"encrypted":                 "true",
+						"cloud_disk_encryption_key": CHECKSET,
+						"readonly_replicas":         "2",
+						"resource_group_id":         CHECKSET,
+						"backup_time":               "11:00Z-12:00Z",
+						"backup_period.#":           "1",
+						"backup_interval":           "15",
+						"snapshot_backup_type":      "Flash",
+						"ssl_status":                "Open",
+						"maintain_start_time":       "00:00Z",
+						"maintain_end_time":         "03:00Z",
+						"parameters.#":              "1",
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "acceptance test",
 					}),
 				),
 			},
@@ -884,110 +743,95 @@ func TestAccAliCloudMongoDBInstance_parameters(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_action", "order_type", "auto_renew", "parameters"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
 			},
 		},
 	})
 }
 
-func resourceMongodbInstanceClassicConfig(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-		default = "%s"
-	}
-
-	data "alicloud_mongodb_zones" "default" {
-	}
-
-	resource "alicloud_security_group" "default" {
-  		name   = var.name
-  		vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-
-	data "alicloud_vpcs" "default" {
-	  	name_regex = "default-NODELETING"
-	}
-	
-	data "alicloud_vswitches" "default" {
-	  	vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-	
-	resource "alicloud_vswitch" "this" {
-	  	count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	  	vswitch_name = var.name
-	  	vpc_id       = data.alicloud_vpcs.default.ids.0
-	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
-	  	cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-	}
-	
-	locals {
-	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
-	  	vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
-	}
-`, name)
+var AliCloudMongoDBInstanceMap = map[string]string{
+	"storage_engine":      CHECKSET,
+	"storage_type":        CHECKSET,
+	"vpc_id":              CHECKSET,
+	"vswitch_id":          CHECKSET,
+	"zone_id":             CHECKSET,
+	"replication_factor":  CHECKSET,
+	"network_type":        CHECKSET,
+	"readonly_replicas":   CHECKSET,
+	"resource_group_id":   CHECKSET,
+	"backup_time":         CHECKSET,
+	"backup_interval":     CHECKSET,
+	"maintain_start_time": CHECKSET,
+	"maintain_end_time":   CHECKSET,
+	"retention_period":    CHECKSET,
+	"replica_set_name":    CHECKSET,
+	"ssl_status":          CHECKSET,
 }
 
-func resourceMongodbInstanceVpcConfig(name string) string {
+func AliCloudMongoDBInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+  		default = "%s"
 	}
-	
+
 	data "alicloud_resource_manager_resource_groups" "default" {
   		status = "OK"
 	}
-	
+
 	data "alicloud_mongodb_zones" "default" {
 	}
-	
-	data "alicloud_vpcs" "default" {
-	  	name_regex = "default-NODELETING"
-	}
-	
-	data "alicloud_vswitches" "default" {
-	  	vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-	
-	resource "alicloud_vswitch" "this" {
-		count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	  	vswitch_name = var.name
-	  	vpc_id       = data.alicloud_vpcs.default.ids.0
-	  	zone_id      = data.alicloud_mongodb_zones.default.ids.0
-	  	cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-	}
-	
-	locals {
-	  	zone_id    = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.vswitches.0.zone_id : data.alicloud_mongodb_zones.default.zones.0.id
-		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.this.*.id, [""])[0]
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = "cn-hangzhou-k"
+	}
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		pending_window_in_days = 7
+  		key_state              = "Enabled"
 	}
 `, name)
 }
 
-func resourceMongodbInstanceMultiAZConfig(name string) string {
+func AliCloudMongoDBInstanceBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-		default = "%s"
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
 	}
 
 	data "alicloud_mongodb_zones" "default" {
-		multi = true
-	}
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
 	}
 
-	locals {
-  		zone_id = data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids[length(data.alicloud_mongodb_zones.default.zones.0.multi_zone_ids) - 1]
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
 	}
-	
+
 	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
-	  zone_id = local.zone_id
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 	}
-	
-	locals {
-	  vswitch_id = data.alicloud_vswitches.default.ids[0]
+
+	data "alicloud_security_groups" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		pending_window_in_days = 7
+  		key_state              = "Enabled"
 	}
 `, name)
 }
