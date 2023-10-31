@@ -272,3 +272,4 @@ var ServiceMeshStandardUnsupportedRegions = []Region{EUCentral1, APSouthEast1, U
 var DRDSPolarDbxSupportRegions = []Region{Hangzhou}
 var VPCRouteTableAttachmentSupportRegions = []Region{Hangzhou}
 var AckOneSupportRegions = []Region{Hangzhou, Hongkong}
+var RocketMQSupportRegions = []Region{ChengDu, USWest1}
