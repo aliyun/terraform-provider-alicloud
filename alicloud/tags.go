@@ -112,6 +112,9 @@ func tagsToMap(tags interface{}) map[string]interface{} {
 			} else if v, ok := t["tagKey"]; ok {
 				tagKey = v.(string)
 				tagValue = t["tagValue"]
+			} else if v, ok := t["key"]; ok {
+				tagKey = v.(string)
+				tagValue = t["value"]
 			}
 			if !tagIgnored(tagKey, tagValue) {
 				result[tagKey] = tagValue
