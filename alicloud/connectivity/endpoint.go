@@ -317,4 +317,5 @@ const (
 	BssOpenAPIEndpointInternational           = "business.ap-southeast-1.aliyuncs.com"
 	EcdOpenAPIEndpointUser                    = "eds-user.ap-southeast-1.aliyuncs.com"
 	CloudFirewallOpenAPIEndpointControlPolicy = "cloudfw.ap-southeast-1.aliyuncs.com"
+	SaSOpenAPIEndpointInternational           = "tds.ap-southeast-1.aliyuncs.com"
 )
