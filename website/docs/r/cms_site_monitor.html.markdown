@@ -28,6 +28,23 @@ resource "alicloud_cms_site_monitor" "basic" {
     city = "546"
     isp  = "465"
   }
+  options_json = <<EOT
+{
+    "http_method": "get",
+    "waitTime_after_completion": null,
+    "ipv6_task": false,
+    "diagnosis_ping": false,
+    "diagnosis_mtr": false,
+    "assertions": [
+        {
+            "operator": "lessThan",
+            "type": "response_time",
+            "target": 1000
+        }
+    ],
+    "time_out": 30000
+}
+EOT
 }
 ```
 
@@ -40,7 +57,7 @@ The following arguments are supported:
 * `task_type` - (Required, ForceNew) The protocol of the site monitoring task. Currently, site monitoring supports the following protocols: HTTP, PING, TCP, UDP, DNS, SMTP, POP3, and FTP.
 * `alert_ids` - (Optional, List) The IDs of existing alert rules to be associated with the site monitoring task.
 * `interval` - (Optional, Int) The monitoring interval of the site monitoring task. Unit: minutes. Valid values: `1`, `5`, `15`, `30` and `60`. Default value: `1`. **NOTE:** From version 1.207.0, `interval` can be set to `30`, `60`.
-* `options_json` - (Optional) The extended options of the protocol of the site monitoring task. The options vary according to the protocol.
+* `options_json` - (Optional) The extended options of the protocol of the site monitoring task. The options vary according to the protocol. See [extended options](https://www.alibabacloud.com/help/en/cms/developer-reference/api-cms-2019-01-01-createsitemonitor#api-detail-35).
 * `isp_cities` - (Optional, Set) The detection points in a JSON array. For example, `[{"city":"546","isp":"465"},{"city":"572","isp":"465"},{"city":"738","isp":"465"}]` indicates the detection points in Beijing, Hangzhou, and Qingdao respectively. You can call the [DescribeSiteMonitorISPCityList](https://www.alibabacloud.com/help/en/doc-detail/115045.htm) operation to query detection point information. If this parameter is not specified, three detection points will be chosen randomly for monitoring. See [`isp_cities`](#isp_cities) below.
 
 ### `isp_cities`
