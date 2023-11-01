@@ -17,6 +17,6 @@ package dds
 
 // SupportedDBType is a nested struct in dds response
 type SupportedDBType struct {
-	DbType         string         `json:"DbType" xml:"DbType"`
-	AvailableZones AvailableZones `json:"AvailableZones" xml:"AvailableZones"`
+	DbType         string                                    `json:"DbType" xml:"DbType"`
+	AvailableZones AvailableZonesInDescribeAvailableResource `json:"AvailableZones" xml:"AvailableZones"`
 }

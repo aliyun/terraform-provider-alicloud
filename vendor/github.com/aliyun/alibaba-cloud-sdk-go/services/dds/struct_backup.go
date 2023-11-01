@@ -17,15 +17,15 @@ package dds
 
 // Backup is a nested struct in dds response
 type Backup struct {
-	BackupStatus              string `json:"BackupStatus" xml:"BackupStatus"`
-	BackupType                string `json:"BackupType" xml:"BackupType"`
-	BackupStartTime           string `json:"BackupStartTime" xml:"BackupStartTime"`
-	BackupIntranetDownloadURL string `json:"BackupIntranetDownloadURL" xml:"BackupIntranetDownloadURL"`
-	BackupSize                int64  `json:"BackupSize" xml:"BackupSize"`
-	BackupDownloadURL         string `json:"BackupDownloadURL" xml:"BackupDownloadURL"`
 	BackupMode                string `json:"BackupMode" xml:"BackupMode"`
+	BackupStatus              string `json:"BackupStatus" xml:"BackupStatus"`
+	BackupIntranetDownloadURL string `json:"BackupIntranetDownloadURL" xml:"BackupIntranetDownloadURL"`
+	BackupStartTime           string `json:"BackupStartTime" xml:"BackupStartTime"`
 	BackupEndTime             string `json:"BackupEndTime" xml:"BackupEndTime"`
-	BackupId                  int    `json:"BackupId" xml:"BackupId"`
 	BackupDBNames             string `json:"BackupDBNames" xml:"BackupDBNames"`
 	BackupMethod              string `json:"BackupMethod" xml:"BackupMethod"`
+	BackupId                  int    `json:"BackupId" xml:"BackupId"`
+	BackupType                string `json:"BackupType" xml:"BackupType"`
+	BackupDownloadURL         string `json:"BackupDownloadURL" xml:"BackupDownloadURL"`
+	BackupSize                int64  `json:"BackupSize" xml:"BackupSize"`
 }

@@ -7,21 +7,39 @@ description: |-
   Provides a list of Anti-DDoS Advanced(Ddosbgp) instances available to the user.
 ---
 
-# alicloud\_ddosbgp\_instances
+# alicloud_ddosbgp_instances
 
 This data source provides a list of Anti-DDoS Advanced instances in an Alibaba Cloud account according to the specified filters.
 
--> **NOTE:** Available in 1.183.0+ .
+-> **NOTE:** Available in v1.183.0+ .
 
 ## Example Usage
 
-```
+```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
+variable "name" {
+  default = "tf-example"
+}
+
+resource "alicloud_ddosbgp_instance" "instance" {
+  name             = var.name
+  base_bandwidth   = 20
+  bandwidth        = -1
+  ip_count         = 100
+  ip_type          = "IPv4"
+  normal_bandwidth = 100
+  type             = "Enterprise"
+}
+
 data "alicloud_ddosbgp_instances" "instance" {
-  name_regex = "^ddosbgp"
+  name_regex = "ddosbgp"
 }
 
 output "instance" {
-  value = "${alicloud_ddosbgp_instances.instance.*.id}"
+  value = data.alicloud_ddosbgp_instances.instance.*.id
 }
 ```
 
@@ -30,7 +48,6 @@ output "instance" {
 The following arguments are supported:
 
 * `name_regex` - (Optional) A regex string to filter results by the instance name.
-* `region` - (Optional) A region of instance.
 * `ids` - (Optional) A list of instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

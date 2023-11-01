@@ -21,7 +21,6 @@ import (
 )
 
 // AddIp invokes the ddosbgp.AddIp API synchronously
-// api document: https://help.aliyun.com/api/ddosbgp/addip.html
 func (client *Client) AddIp(request *AddIpRequest) (response *AddIpResponse, err error) {
 	response = CreateAddIpResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AddIp(request *AddIpRequest) (response *AddIpResponse, err
 }
 
 // AddIpWithChan invokes the ddosbgp.AddIp API asynchronously
-// api document: https://help.aliyun.com/api/ddosbgp/addip.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddIpWithChan(request *AddIpRequest) (<-chan *AddIpResponse, <-chan error) {
 	responseChan := make(chan *AddIpResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AddIpWithChan(request *AddIpRequest) (<-chan *AddIpRespons
 }
 
 // AddIpWithCallback invokes the ddosbgp.AddIp API asynchronously
-// api document: https://help.aliyun.com/api/ddosbgp/addip.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddIpWithCallback(request *AddIpRequest, callback func(response *AddIpResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,11 +71,10 @@ func (client *Client) AddIpWithCallback(request *AddIpRequest, callback func(res
 // AddIpRequest is the request struct for api AddIp
 type AddIpRequest struct {
 	*requests.RpcRequest
-	IpList           string `position:"Query" name:"IpList"`
-	ResourceGroupId  string `position:"Query" name:"ResourceGroupId"`
-	InstanceId       string `position:"Query" name:"InstanceId"`
-	SourceIp         string `position:"Query" name:"SourceIp"`
-	ResourceRegionId string `position:"Query" name:"ResourceRegionId"`
+	IpList          string `position:"Query" name:"IpList"`
+	ResourceGroupId string `position:"Query" name:"ResourceGroupId"`
+	InstanceId      string `position:"Query" name:"InstanceId"`
+	SourceIp        string `position:"Query" name:"SourceIp"`
 }
 
 // AddIpResponse is the response struct for api AddIp
@@ -94,7 +88,8 @@ func CreateAddIpRequest() (request *AddIpRequest) {
 	request = &AddIpRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("ddosbgp", "2018-07-20", "AddIp", "ddosbgp", "openAPI")
+	request.InitWithApiInfo("ddosbgp", "2018-07-20", "AddIp", "", "")
+	request.Method = requests.POST
 	return
 }
 

@@ -86,10 +86,12 @@ type CreateDBInstanceRequest struct {
 	BusinessInfo           string                 `position:"Query" name:"BusinessInfo"`
 	Period                 requests.Integer       `position:"Query" name:"Period"`
 	BackupId               string                 `position:"Query" name:"BackupId"`
+	EncryptionKey          string                 `position:"Query" name:"EncryptionKey"`
 	OwnerId                requests.Integer       `position:"Query" name:"OwnerId"`
 	DBInstanceClass        string                 `position:"Query" name:"DBInstanceClass"`
 	SecurityIPList         string                 `position:"Query" name:"SecurityIPList"`
 	VSwitchId              string                 `position:"Query" name:"VSwitchId"`
+	ProvisionedIops        requests.Integer       `position:"Query" name:"ProvisionedIops"`
 	AutoRenew              string                 `position:"Query" name:"AutoRenew"`
 	ZoneId                 string                 `position:"Query" name:"ZoneId"`
 	ClientToken            string                 `position:"Query" name:"ClientToken"`
@@ -105,6 +107,7 @@ type CreateDBInstanceRequest struct {
 	OwnerAccount           string                 `position:"Query" name:"OwnerAccount"`
 	ClusterId              string                 `position:"Query" name:"ClusterId"`
 	AccountPassword        string                 `position:"Query" name:"AccountPassword"`
+	Encrypted              requests.Boolean       `position:"Query" name:"Encrypted"`
 	VpcId                  string                 `position:"Query" name:"VpcId"`
 	ChargeType             string                 `position:"Query" name:"ChargeType"`
 }

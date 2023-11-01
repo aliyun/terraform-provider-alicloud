@@ -92,7 +92,9 @@ type CreateDBClusterRequest struct {
 	DBMinorVersion                         string                `position:"Query" name:"DBMinorVersion"`
 	AutoRenew                              requests.Boolean      `position:"Query" name:"AutoRenew"`
 	HotStandbyCluster                      string                `position:"Query" name:"HotStandbyCluster"`
+	StoragePayType                         string                `position:"Query" name:"StoragePayType"`
 	ZoneId                                 string                `position:"Query" name:"ZoneId"`
+	StorageAutoScale                       string                `position:"Query" name:"StorageAutoScale"`
 	TDEStatus                              requests.Boolean      `position:"Query" name:"TDEStatus"`
 	AllowShutDown                          string                `position:"Query" name:"AllowShutDown"`
 	LowerCaseTableNames                    string                `position:"Query" name:"LowerCaseTableNames"`
@@ -106,11 +108,13 @@ type CreateDBClusterRequest struct {
 	GDNId                                  string                `position:"Query" name:"GDNId"`
 	LooseXEngine                           string                `position:"Query" name:"LooseXEngine"`
 	LoosePolarLogBin                       string                `position:"Query" name:"LoosePolarLogBin"`
+	Architecture                           string                `position:"Query" name:"Architecture"`
 	ResourceOwnerAccount                   string                `position:"Query" name:"ResourceOwnerAccount"`
 	OwnerAccount                           string                `position:"Query" name:"OwnerAccount"`
 	LooseXEngineUseMemoryPct               string                `position:"Query" name:"LooseXEngineUseMemoryPct"`
 	UsedTime                               string                `position:"Query" name:"UsedTime"`
 	DBNodeNum                              requests.Integer      `position:"Query" name:"DBNodeNum"`
+	StorageUpperBound                      requests.Integer      `position:"Query" name:"StorageUpperBound"`
 	VPCId                                  string                `position:"Query" name:"VPCId"`
 	ScaleRoNumMin                          string                `position:"Query" name:"ScaleRoNumMin"`
 	DBType                                 string                `position:"Query" name:"DBType"`

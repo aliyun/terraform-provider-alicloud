@@ -161,7 +161,6 @@ func resourceAlicloudDdosbgpInstanceUpdate(d *schema.ResourceData, meta interfac
 		request := ddosbgp.CreateModifyRemarkRequest()
 		request.InstanceId = d.Id()
 		request.RegionId = client.RegionId
-		request.ResourceRegionId = client.RegionId
 
 		request.Remark = d.Get("name").(string)
 

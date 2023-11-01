@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDdosEvent invokes the ddosbgp.DescribeDdosEvent API synchronously
-// api document: https://help.aliyun.com/api/ddosbgp/describeddosevent.html
 func (client *Client) DescribeDdosEvent(request *DescribeDdosEventRequest) (response *DescribeDdosEventResponse, err error) {
 	response = CreateDescribeDdosEventResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDdosEvent(request *DescribeDdosEventRequest) (resp
 }
 
 // DescribeDdosEventWithChan invokes the ddosbgp.DescribeDdosEvent API asynchronously
-// api document: https://help.aliyun.com/api/ddosbgp/describeddosevent.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDdosEventWithChan(request *DescribeDdosEventRequest) (<-chan *DescribeDdosEventResponse, <-chan error) {
 	responseChan := make(chan *DescribeDdosEventResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDdosEventWithChan(request *DescribeDdosEventReques
 }
 
 // DescribeDdosEventWithCallback invokes the ddosbgp.DescribeDdosEvent API asynchronously
-// api document: https://help.aliyun.com/api/ddosbgp/describeddosevent.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDdosEventWithCallback(request *DescribeDdosEventRequest, callback func(response *DescribeDdosEventResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,22 +71,21 @@ func (client *Client) DescribeDdosEventWithCallback(request *DescribeDdosEventRe
 // DescribeDdosEventRequest is the request struct for api DescribeDdosEvent
 type DescribeDdosEventRequest struct {
 	*requests.RpcRequest
-	StartTime        requests.Integer `position:"Query" name:"StartTime"`
-	ResourceGroupId  string           `position:"Query" name:"ResourceGroupId"`
-	SourceIp         string           `position:"Query" name:"SourceIp"`
-	PageSize         requests.Integer `position:"Query" name:"PageSize"`
-	ResourceRegionId string           `position:"Query" name:"ResourceRegionId"`
-	Ip               string           `position:"Query" name:"Ip"`
-	EndTime          requests.Integer `position:"Query" name:"EndTime"`
-	InstanceId       string           `position:"Query" name:"InstanceId"`
-	PageNo           requests.Integer `position:"Query" name:"PageNo"`
+	StartTime       requests.Integer `position:"Query" name:"StartTime"`
+	ResourceGroupId string           `position:"Query" name:"ResourceGroupId"`
+	SourceIp        string           `position:"Query" name:"SourceIp"`
+	PageSize        requests.Integer `position:"Query" name:"PageSize"`
+	Ip              string           `position:"Query" name:"Ip"`
+	EndTime         requests.Integer `position:"Query" name:"EndTime"`
+	InstanceId      string           `position:"Query" name:"InstanceId"`
+	PageNo          requests.Integer `position:"Query" name:"PageNo"`
 }
 
 // DescribeDdosEventResponse is the response struct for api DescribeDdosEvent
 type DescribeDdosEventResponse struct {
 	*responses.BaseResponse
-	RequestId string  `json:"RequestId" xml:"RequestId"`
 	Total     int64   `json:"Total" xml:"Total"`
+	RequestId string  `json:"RequestId" xml:"RequestId"`
 	Events    []Event `json:"Events" xml:"Events"`
 }
 
@@ -100,7 +94,8 @@ func CreateDescribeDdosEventRequest() (request *DescribeDdosEventRequest) {
 	request = &DescribeDdosEventRequest{
 		RpcRequest: &requests.RpcRequest{},
 	}
-	request.InitWithApiInfo("ddosbgp", "2018-07-20", "DescribeDdosEvent", "ddosbgp", "openAPI")
+	request.InitWithApiInfo("ddosbgp", "2018-07-20", "DescribeDdosEvent", "", "")
+	request.Method = requests.POST
 	return
 }
 
