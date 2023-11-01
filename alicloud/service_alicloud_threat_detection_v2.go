@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -44,6 +45,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
+
+		if fmt.Sprint(response["Code"]) == "NODATA" {
+			conn.Endpoint = String(connectivity.SaSOpenAPIEndpointInternational)
+			return resource.RetryableError(errors.New("NODATA"))
+		}
+
 		addDebug(action, response, request)
 		return nil
 	})
@@ -78,6 +85,7 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 	query["InstanceIDs"] = id
 
 	request["ProductCode"] = "sas"
+	request["ProductType"] = "sas"
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
@@ -85,6 +93,11 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				request["ProductType"] = ""
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)

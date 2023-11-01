@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -10,71 +12,88 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudThreatDetectionInstance() *schema.Resource {
+func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudThreatDetectionInstanceCreate,
-		Read:   resourceAlicloudThreatDetectionInstanceRead,
-		Update: resourceAlicloudThreatDetectionInstanceUpdate,
-		Delete: resourceAlicloudThreatDetectionInstanceDelete,
+		Create: resourceAliCloudThreatDetectionInstanceCreate,
+		Read:   resourceAliCloudThreatDetectionInstanceRead,
+		Update: resourceAliCloudThreatDetectionInstanceUpdate,
+		Delete: resourceAliCloudThreatDetectionInstanceDelete,
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
 			"buy_number": {
-				Optional: true,
 				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"container_image_scan": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Deprecated:   "Field 'container_image_scan' has been deprecated from provider version 1.212.0. Container Image security scan. Interval type, value interval:[0,200000].> The step size is 20, that is, only multiples of 20 can be filled in.",
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Container Image security scan. Interval type, value interval:[0,200000].> The step size is 20, that is, only multiples of 20 can be filled in."),
+			},
+			"container_image_scan_new": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Container Image security scan. Interval type, value interval:[0,200000].> The step size is 20, that is, only multiples of 20 can be filled in."),
 			},
 			"create_time": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"honeypot": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Number of cloud honeypot licenses. Interval type, value interval:[20,500].> This module can only be purchased when honeypot_switch = 1, starting with 20."),
 			},
 			"honeypot_switch": {
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"1", "2"}, false),
 				Type:         schema.TypeString,
-			},
-			"instance_id": {
-				Optional: true,
-				Computed: true,
-				Type:     schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"1", "2"}, false),
+				Computed:     true,
 			},
 			"modify_type": {
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Downgrade", "Upgrade"}, false),
 				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Upgrade", "Downgrade"}, false),
 			},
 			"payment_type": {
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
 				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Subscription"}, false),
 			},
 			"period": {
-				Optional: true,
 				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"rasp_count": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"renew_period": {
-				Optional: true,
 				Type:     schema.TypeInt,
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 						return false
 					}
 					return true
 				},
+				Computed: true,
 			},
 			"renewal_period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"M", "Y"}, false),
+				ValidateFunc: StringInSlice([]string{"M", "Y"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
 						return false
@@ -83,148 +102,136 @@ func resourceAlicloudThreatDetectionInstance() *schema.Resource {
 				},
 			},
 			"renewal_status": {
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 			},
 			"sas_anti_ransomware": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Anti-ransomware capacity. Unit: GB. Interval type, value interval:[0,9999999999].> The step size is 10, that is, only multiples of 10 can be filled in."),
+			},
+			"sas_cspm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Cloud platform configuration check scan times, interval type, value range:[1000,9999999999].> You must have sas_cspm_switch = 1 to purchase this module. The step size is 100, that is, only multiples of 10 can be filled in."),
+			},
+			"sas_cspm_switch": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
 			},
 			"sas_sc": {
-				Optional: true,
 				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"sas_sdk": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Number of malicious file detections. Unit: 10,000 times. Interval type, value interval:[10,9999999999].> This module can only be purchased when sas_sdk_switch = 1. The step size is 10, that is, only multiples of 10 can be filled in."),
 			},
 			"sas_sdk_switch": {
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
 				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+				Computed:     true,
 			},
 			"sas_sls_storage": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Log analysis storage capacity. Unit: GB. Interval type, value interval:[0,600000].> The step size is 10, that is, only multiples of 10 can be filled in."),
 			},
 			"sas_webguard_boolean": {
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
 				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
 			},
 			"sas_webguard_order_num": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Tamper-proof authorization number. Value:-0: No1: Yes."),
 			},
 			"status": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"threat_analysis": {
-				Optional: true,
-				Type:     schema.TypeString,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Threat Analysis log storage capacity. Interval type, value interval:[0,9999999999].> This module can only be purchased when Threat_analysis_switch = 1. The step size is 10, that is, only multiples of 10 can be filled in."),
 			},
 			"threat_analysis_switch": {
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1"}, false),
 				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
 			},
 			"v_core": {
-				Optional: true,
 				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"version_code": {
-				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"level10", "level2", "level3", "level7", "level8"}, false),
 				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringInSlice([]string{"level2", "level8", "level7", "level3", "level10"}, false),
+			},
+			"vul_count": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vul_switch": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
 			},
 		},
 	}
 }
 
-func resourceAlicloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	request := make(map[string]interface{})
+
+	action := "CreateInstance"
+	var request map[string]interface{}
+	var response map[string]interface{}
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
 
-	parameterMapList := make([]map[string]interface{}, 0)
-	if v, ok := d.GetOk("buy_number"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "BuyNumber",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("container_image_scan"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Container_Image_Scan",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("honeypot"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "honeypot",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("honeypot_switch"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "honeypot_switch",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("payment_type"); ok {
-		request["SubscriptionType"] = v
-	}
+	request["ClientToken"] = buildClientToken(action)
+
 	if v, ok := d.GetOk("period"); ok {
 		request["Period"] = v
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
 	}
-	if v, ok := d.GetOk("sas_anti_ransomware"); ok {
+	if v, ok := d.GetOk("renew_period"); ok {
+		request["RenewPeriod"] = v
+	}
+	request["SubscriptionType"] = d.Get("payment_type")
+	parameterMapList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("version_code"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_anti_ransomware",
+			"Code":  "VersionCode",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("sas_sc"); ok {
+	if v, ok := d.GetOk("buy_number"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_sc",
+			"Code":  "BuyNumber",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("sas_sdk"); ok {
+	if v, ok := d.GetOk("v_core"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_SDK",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_sdk_switch"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_SDK_switch",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_sls_storage"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_sls_storage",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_webguard_boolean"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_webguard_boolean",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_webguard_order_num"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_webguard_order_num",
+			"Code":  "vCore",
 			"Value": v,
 		})
 	}
@@ -240,36 +247,111 @@ func resourceAlicloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("v_core"); ok {
+	if v, ok := d.GetOk("sas_sdk"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "vCore",
+			"Code":  "sas_SDK",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("version_code"); ok {
+	if v, ok := d.GetOk("sas_sdk_switch"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "VersionCode",
+			"Code":  "sas_SDK_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("honeypot"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "honeypot",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("honeypot_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "honeypot_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_anti_ransomware"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_anti_ransomware",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_sc"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_sc",
+			"Value": fmt.Sprint(v),
+		})
+	}
+	if v, ok := d.GetOk("sas_sls_storage"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_sls_storage",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_webguard_order_num"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_webguard_order_num",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_webguard_boolean"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_webguard_boolean",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("container_image_scan"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Container_Image_Scan",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("vul_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Vul_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("vul_count"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Vul_count",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_cspm_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_cspm_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_cspm"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_cspm",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("rasp_count"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "rasp_count",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("container_image_scan_new"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Container_Image_Scan_new",
 			"Value": v,
 		})
 	}
 	request["Parameter"] = parameterMapList
 
-	if v, ok := d.GetOk("renew_period"); ok {
-		request["RenewPeriod"] = v
-	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renew_period", "renewal_status", d.Get("renewal_status")))
-	}
-	request["ProductCode"] = "sas"
 	request["ProductType"] = "sas"
+	request["ProductCode"] = "sas"
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		request["ClientToken"] = buildClientToken(action)
 
-	request["ClientToken"] = buildClientToken("CreateInstance")
-	var response map[string]interface{}
-	action := "CreateInstance"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -282,81 +364,150 @@ func resourceAlicloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
+
+		if fmt.Sprint(response["Code"]) != "Success" {
+			return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
+		}
+
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_instance", action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Code"]) != "Success" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	if v, err := jsonpath.Get("$.Data.InstanceId", response); err != nil || v == nil {
-		return WrapErrorf(err, IdMsg, "alicloud_threat_detection_instance")
-	} else {
-		d.SetId(fmt.Sprint(v))
-	}
 
-	return resourceAlicloudThreatDetectionInstanceRead(d, meta)
+	id, _ := jsonpath.Get("$.Data.InstanceId", response)
+	d.SetId(fmt.Sprint(id))
+
+	return resourceAliCloudThreatDetectionInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudThreatDetectionInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	threatDetectionService := ThreatDetectionService{client}
+	threatDetectionServiceV2 := ThreatDetectionServiceV2{client}
 
-	object, err := threatDetectionService.DescribeThreatDetectionInstance(d.Id())
+	objectRaw, err := threatDetectionServiceV2.DescribeThreatDetectionInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_threat_detection_instance threatDetectionService.DescribeThreatDetectionInstance Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_threat_detection_instance DescribeThreatDetectionInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("create_time", object["CreateTime"])
-	d.Set("instance_id", object["InstanceID"])
-	d.Set("payment_type", object["SubscriptionType"])
-	d.Set("status", object["Status"])
-	d.Set("renewal_status", object["RenewStatus"])
-	if v, ok := object["RenewalDuration"]; ok && formatInt(v) != 0 {
-		d.Set("renew_period", formatInt(v))
+
+	instanceComponentValue1RawObj, _ := jsonpath.Get("$.InstanceComponentValue", objectRaw)
+	instanceComponentValue1Raw := make(map[string]interface{})
+	if instanceComponentValue1RawObj != nil {
+		instanceComponentValue1Raw = instanceComponentValue1RawObj.(map[string]interface{})
+	}
+	d.Set("buy_number", instanceComponentValue1Raw["BuyNumber"])
+	d.Set("container_image_scan", instanceComponentValue1Raw["ContainerImageScan"])
+	d.Set("container_image_scan_new", instanceComponentValue1Raw["ContainerImageScanNew"])
+	d.Set("honeypot", instanceComponentValue1Raw["Honeypot"])
+	d.Set("honeypot_switch", instanceComponentValue1Raw["HoneypotSwitch"])
+	d.Set("rasp_count", instanceComponentValue1Raw["RaspCount"])
+	d.Set("sas_anti_ransomware", instanceComponentValue1Raw["SasAntiRansomware"])
+	d.Set("sas_cspm", instanceComponentValue1Raw["SasCspm"])
+	d.Set("sas_cspm_switch", instanceComponentValue1Raw["SasCspmSwitch"])
+	if instanceComponentValue1Raw["SasSc"] != nil && instanceComponentValue1Raw["SasSc"] != "" {
+		d.Set("sas_sc", convertStringToBool(instanceComponentValue1Raw["SasSc"].(string)))
+	}
+	d.Set("sas_sdk", instanceComponentValue1Raw["SasSdk"])
+	d.Set("sas_sdk_switch", instanceComponentValue1Raw["SasSdkSwitch"])
+	d.Set("sas_sls_storage", instanceComponentValue1Raw["SasSlsStorage"])
+	d.Set("sas_webguard_boolean", instanceComponentValue1Raw["SasWebguardBoolean"])
+	d.Set("sas_webguard_order_num", instanceComponentValue1Raw["SasWebguardOrderNum"])
+	d.Set("threat_analysis", instanceComponentValue1Raw["ThreatAnalysis"])
+	d.Set("threat_analysis_switch", instanceComponentValue1Raw["ThreatAnalysisSwitch"])
+	d.Set("v_core", instanceComponentValue1Raw["VCore"])
+	d.Set("version_code", instanceComponentValue1Raw["VersionCode"])
+	d.Set("vul_count", instanceComponentValue1Raw["VulCount"])
+	d.Set("vul_switch", instanceComponentValue1Raw["VulSwitch"])
+
+	objectRaw, err = threatDetectionServiceV2.DescribeQueryAvailableInstances(d.Id())
+	if err != nil {
+		return WrapError(err)
 	}
 
-	d.Set("renewal_period_unit", object["RenewalDurationUnit"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("payment_type", objectRaw["SubscriptionType"])
+	if v, ok := objectRaw["RenewalDuration"]; ok && formatInt(v) != 0 {
+		d.Set("renew_period", formatInt(v))
+	}
+	d.Set("renewal_period_unit", objectRaw["RenewalDurationUnit"])
+	d.Set("renewal_status", objectRaw["RenewStatus"])
+	d.Set("status", objectRaw["Status"])
 
 	return nil
 }
 
-func resourceAlicloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	var request map[string]interface{}
+	var response map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "ModifyInstance"
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Partial(true)
-	update := false
-	var response map[string]interface{}
-	request := map[string]interface{}{
-		"InstanceId": d.Id(),
-	}
-
+	request = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["ClientToken"] = buildClientToken(action)
 	request["ModifyType"] = d.Get("modify_type")
-	if d.HasChanges("buy_number", "container_image_scan", "honeypot", "honeypot_switch", "sas_anti_ransomware", "sas_sc", "sas_sdk", "sas_sdk_switch", "sas_sls_storage", "sas_webguard_boolean", "threat_analysis_switch", "threat_analysis", "sas_webguard_order_num", "version_code", "v_core") {
+	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 	}
-
+	request["SubscriptionType"] = d.Get("payment_type")
+	if !d.IsNewResource() && d.HasChanges("version_code", "buy_number", "v_core", "threat_analysis", "threat_analysis_switch", "sas_sdk", "sas_sdk_switch", "honeypot", "honeypot_switch", "sas_anti_ransomware", "sas_sc", "sas_sls_storage", "sas_webguard_order_num", "sas_webguard_boolean", "container_image_scan", "vul_switch", "vul_count", "sas_cspm_switch", "sas_cspm", "rasp_count", "container_image_scan_new") {
+		update = true
+	}
 	parameterMapList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("version_code"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "VersionCode",
+			"Value": v,
+		})
+	}
 	if v, ok := d.GetOk("buy_number"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "BuyNumber",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("container_image_scan"); ok {
+	if v, ok := d.GetOk("v_core"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Container_Image_Scan",
+			"Code":  "vCore",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_sdk"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_SDK",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_sdk_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_SDK_switch",
 			"Value": v,
 		})
 	}
@@ -381,30 +532,12 @@ func resourceAlicloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("sas_sc"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "sas_sc",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_sdk"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_SDK",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_sdk_switch"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_SDK_switch",
-			"Value": v,
+			"Value": fmt.Sprint(v),
 		})
 	}
 	if v, ok := d.GetOk("sas_sls_storage"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "sas_sls_storage",
-			"Value": v,
-		})
-	}
-	if v, ok := d.GetOk("sas_webguard_boolean"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "sas_webguard_boolean",
 			"Value": v,
 		})
 	}
@@ -414,43 +547,64 @@ func resourceAlicloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("threat_analysis"); ok {
+	if v, ok := d.GetOk("sas_webguard_boolean"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Threat_analysis",
+			"Code":  "sas_webguard_boolean",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("threat_analysis_switch"); ok {
+	if v, ok := d.GetOk("container_image_scan"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "Threat_analysis_switch",
+			"Code":  "Container_Image_Scan",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("v_core"); ok {
+	if v, ok := d.GetOk("vul_switch"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "vCore",
+			"Code":  "Vul_switch",
 			"Value": v,
 		})
 	}
-	if v, ok := d.GetOk("version_code"); ok {
+	if v, ok := d.GetOk("vul_count"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "VersionCode",
+			"Code":  "Vul_count",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_cspm_switch"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_cspm_switch",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("sas_cspm"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "sas_cspm",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("rasp_count"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "rasp_count",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("container_image_scan_new"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Container_Image_Scan_new",
 			"Value": v,
 		})
 	}
 	request["Parameter"] = parameterMapList
 
-	request["SubscriptionType"] = d.Get("payment_type")
-	request["ProductCode"] = "sas"
 	request["ProductType"] = "sas"
-
+	request["ProductCode"] = "sas"
 	if update {
-		action := "ModifyInstance"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			request["ClientToken"] = buildClientToken(action)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -463,60 +617,49 @@ func resourceAlicloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 				}
 				return resource.NonRetryableError(err)
 			}
-			response = resp
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
+
+			if fmt.Sprint(response["Code"]) != "Success" {
+				return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
+			}
+
 			return nil
 		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		if fmt.Sprint(response["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
-		d.SetPartial("parameter")
 	}
-
-	var setRenewalResponse map[string]interface{}
 	update = false
-	setRenewalReq := map[string]interface{}{
-		"InstanceIDs":      d.Id(),
-		"ProductCode":      "sas",
-		"ProductType":      "sas",
-		"SubscriptionType": d.Get("payment_type"),
+	action = "SetRenewal"
+	conn, err = client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
 	}
-
+	request = make(map[string]interface{})
+	request["InstanceIDs"] = d.Id()
+	request["ProductType"] = "sas"
 	if d.HasChange("renewal_status") {
 		update = true
 	}
-	if v, ok := d.GetOk("renewal_status"); ok {
-		setRenewalReq["RenewalStatus"] = v
-	}
+	request["RenewalStatus"] = d.Get("renewal_status")
 
 	if d.HasChange("renew_period") {
 		update = true
-		if v, ok := d.GetOk("renew_period"); ok {
-			setRenewalReq["RenewalPeriod"] = v
-		}
 	}
+	request["RenewalPeriod"] = d.Get("renew_period")
 
 	if d.HasChange("renewal_period_unit") {
 		update = true
 	}
-	if v, ok := d.GetOk("renewal_period_unit"); ok {
-		setRenewalReq["RenewalPeriodUnit"] = v
-	} else if v, ok := d.GetOk("renewal_status"); ok && v.(string) == "AutoRenewal" {
-		return WrapError(fmt.Errorf("attribute '%s' is required when '%s' is %v ", "renewal_period_unit", "renewal_status", d.Get("renewal_status")))
-	}
+	request["RenewalPeriodUnit"] = d.Get("renewal_period_unit")
 
+	request["ProductCode"] = "sas"
+	request["SubscriptionType"] = d.Get("payment_type")
 	if update {
-		action := "SetRenewal"
-		conn, err := client.NewBssopenapiClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			setRenewalResponse, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, setRenewalReq, &util.RuntimeOptions{})
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -524,33 +667,32 @@ func resourceAlicloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 				}
 				if IsExpectedErrors(err, []string{"NotApplicable"}) {
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
-					setRenewalReq["ProductType"] = ""
+					request["ProductType"] = ""
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
+
+			if fmt.Sprint(response["Code"]) != "Success" {
+				return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
+			}
+
 			return nil
 		})
-		addDebug(action, setRenewalResponse, setRenewalReq)
-
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		if fmt.Sprint(setRenewalResponse["Code"]) != "Success" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, setRenewalResponse))
-		}
-
 		d.SetPartial("renewal_status")
 		d.SetPartial("renew_period")
 		d.SetPartial("renewal_period_unit")
 	}
 
 	d.Partial(false)
-
-	return resourceAlicloudThreatDetectionInstanceRead(d, meta)
+	return resourceAliCloudThreatDetectionInstanceRead(d, meta)
 }
 
-func resourceAlicloudThreatDetectionInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudThreatDetectionInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Instance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
