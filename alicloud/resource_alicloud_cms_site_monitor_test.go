@@ -75,7 +75,7 @@ func testSweepCmsSiteMonitor(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsSiteMonitor_basic(t *testing.T) {
+func TestAccAliCloudCmsSiteMonitor_basic(t *testing.T) {
 	resourceName := "alicloud_cms_site_monitor.basic"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -102,7 +102,7 @@ func TestAccAlicloudCmsSiteMonitor_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
+func TestAccAliCloudCmsSiteMonitor_update(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -133,7 +133,7 @@ func TestAccAlicloudCmsSiteMonitor_update(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCmsSiteMonitor_basic1(t *testing.T) {
+func TestAccAliCloudCmsSiteMonitor_basic1(t *testing.T) {
 	resourceName := "alicloud_cms_site_monitor.basic"
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -215,6 +215,23 @@ func testAccCmsSiteMonitor_update() string {
     		city = "546"
     		isp  = "465"
   		}
+		options_json = <<EOT
+		{
+			"http_method": "get",
+			"waitTime_after_completion": null,
+			"ipv6_task": false,
+			"diagnosis_ping": false,
+			"diagnosis_mtr": false,
+			"assertions": [
+				{
+					"operator": "lessThan",
+					"type": "response_time",
+					"target": 1000
+				}
+			],
+			"time_out": 30000
+		}
+EOT
 	}
 	`)
 }
@@ -234,6 +251,23 @@ func testAccCmsSiteMonitor_updateAfter() string {
     		city = "572"
     		isp  = "465"
   		}
+		options_json = <<EOT
+		{
+			"http_method": "post",
+			"waitTime_after_completion": null,
+			"ipv6_task": true,
+			"diagnosis_ping": false,
+			"diagnosis_mtr": false,
+			"assertions": [
+				{
+					"operator": "lessThan",
+					"type": "response_time",
+					"target": 1000
+				}
+			],
+			"time_out": 30000
+		}
+		EOT
 	}
 	`)
 }
