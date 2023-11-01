@@ -17,7 +17,7 @@ package market
 
 // Item is a nested struct in market response
 type Item struct {
-	Url  string `json:"url" xml:"url"`
-	Code string `json:"code" xml:"code"`
-	Name string `json:"name" xml:"name"`
+	Url  string `json:"Url" xml:"Url"`
+	Code string `json:"Code" xml:"Code"`
+	Name string `json:"Name" xml:"Name"`
 }

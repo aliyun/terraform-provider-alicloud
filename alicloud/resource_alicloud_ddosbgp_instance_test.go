@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
+func TestAccAliCloudDdosbgpInstance_basic(t *testing.T) {
 	var v ddosbgp.Instance
 
 	resourceId := "alicloud_ddosbgp_instance.default"
@@ -48,6 +48,8 @@ func TestAccAlicloudDdosbgpInstance_basic(t *testing.T) {
 					"bandwidth":        "-1",
 					"ip_count":         "100",
 					"ip_type":          "IPv4",
+					"type":             "Enterprise",
+					"period":           12,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

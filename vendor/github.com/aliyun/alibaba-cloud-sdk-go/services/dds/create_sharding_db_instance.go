@@ -80,13 +80,16 @@ type CreateShardingDBInstanceRequest struct {
 	ResourceGroupId        string                                  `position:"Query" name:"ResourceGroupId"`
 	SecurityToken          string                                  `position:"Query" name:"SecurityToken"`
 	DBInstanceDescription  string                                  `position:"Query" name:"DBInstanceDescription"`
+	Tag                    *[]CreateShardingDBInstanceTag          `position:"Query" name:"Tag"  type:"Repeated"`
 	GlobalSecurityGroupIds string                                  `position:"Query" name:"GlobalSecurityGroupIds"`
 	Period                 requests.Integer                        `position:"Query" name:"Period"`
+	EncryptionKey          string                                  `position:"Query" name:"EncryptionKey"`
 	ConfigServer           *[]CreateShardingDBInstanceConfigServer `position:"Query" name:"ConfigServer"  type:"Repeated"`
 	OwnerId                requests.Integer                        `position:"Query" name:"OwnerId"`
 	SecurityIPList         string                                  `position:"Query" name:"SecurityIPList"`
 	VSwitchId              string                                  `position:"Query" name:"VSwitchId"`
 	Mongos                 *[]CreateShardingDBInstanceMongos       `position:"Query" name:"Mongos"  type:"Repeated"`
+	ProvisionedIops        requests.Integer                        `position:"Query" name:"ProvisionedIops"`
 	AutoRenew              string                                  `position:"Query" name:"AutoRenew"`
 	ZoneId                 string                                  `position:"Query" name:"ZoneId"`
 	ClientToken            string                                  `position:"Query" name:"ClientToken"`
@@ -98,6 +101,7 @@ type CreateShardingDBInstanceRequest struct {
 	SrcDBInstanceId        string                                  `position:"Query" name:"SrcDBInstanceId"`
 	OwnerAccount           string                                  `position:"Query" name:"OwnerAccount"`
 	AccountPassword        string                                  `position:"Query" name:"AccountPassword"`
+	Encrypted              requests.Boolean                        `position:"Query" name:"Encrypted"`
 	VpcId                  string                                  `position:"Query" name:"VpcId"`
 	ProtocolType           string                                  `position:"Query" name:"ProtocolType"`
 	ChargeType             string                                  `position:"Query" name:"ChargeType"`
@@ -108,6 +112,12 @@ type CreateShardingDBInstanceReplicaSet struct {
 	ReadonlyReplicas string `name:"ReadonlyReplicas"`
 	Storage          string `name:"Storage"`
 	Class            string `name:"Class"`
+}
+
+// CreateShardingDBInstanceTag is a repeated param struct in CreateShardingDBInstanceRequest
+type CreateShardingDBInstanceTag struct {
+	Value string `name:"Value"`
+	Key   string `name:"Key"`
 }
 
 // CreateShardingDBInstanceConfigServer is a repeated param struct in CreateShardingDBInstanceRequest

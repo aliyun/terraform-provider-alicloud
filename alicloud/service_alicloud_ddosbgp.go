@@ -19,7 +19,6 @@ type DdosbgpService struct {
 func (s *DdosbgpService) DescribeDdosbgpInstance(id string) (v ddosbgp.Instance, err error) {
 	request := ddosbgp.CreateDescribeInstanceListRequest()
 	request.RegionId = s.client.RegionId
-	request.DdosRegionId = s.client.RegionId
 	request.InstanceIdList = "[\"" + id + "\"]"
 	request.PageNo = "1"
 	request.PageSize = "10"

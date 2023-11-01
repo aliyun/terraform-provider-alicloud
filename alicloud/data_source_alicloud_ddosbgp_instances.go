@@ -99,7 +99,6 @@ func dataSourceAlicloudDdosbgpInstancesRead(d *schema.ResourceData, meta interfa
 	request.PageSize = requests.Integer(strconv.Itoa(PageSizeLarge))
 	request.PageNo = "1"
 	request.RegionId = client.RegionId
-	request.DdosRegionId = client.RegionId
 	var instances []ddosbgp.Instance
 
 	var nameRegex *regexp.Regexp

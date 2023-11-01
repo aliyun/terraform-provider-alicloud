@@ -17,8 +17,9 @@ package ddosbgp
 
 // Ipitem is a nested struct in ddosbgp response
 type Ipitem struct {
-	Ip      string `json:"Ip" xml:"Ip"`
-	Product string `json:"Product" xml:"Product"`
 	Status  string `json:"Status" xml:"Status"`
+	Ip      string `json:"Ip" xml:"Ip"`
 	Remark  string `json:"Remark" xml:"Remark"`
+	Product string `json:"Product" xml:"Product"`
+	Region  string `json:"Region" xml:"Region"`
 }

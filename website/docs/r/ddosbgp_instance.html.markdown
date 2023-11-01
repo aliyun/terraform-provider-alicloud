@@ -20,9 +20,14 @@ Anti-DDoS Advanced instance resource. "Ddosbgp" is the short term of this produc
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "tf-example"
 }
+
 resource "alicloud_ddosbgp_instance" "instance" {
   name             = var.name
   base_bandwidth   = 20

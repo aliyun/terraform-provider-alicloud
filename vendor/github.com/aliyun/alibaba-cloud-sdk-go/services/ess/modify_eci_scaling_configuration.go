@@ -105,6 +105,7 @@ type ModifyEciScalingConfigurationRequest struct {
 	SecurityContextSysctl         *[]ModifyEciScalingConfigurationSecurityContextSysctl   `position:"Query" name:"SecurityContextSysctl"  type:"Repeated"`
 	DnsConfigNameServer           *[]string                                               `position:"Query" name:"DnsConfigNameServer"  type:"Repeated"`
 	InitContainer                 *[]ModifyEciScalingConfigurationInitContainer           `position:"Query" name:"InitContainer"  type:"Repeated"`
+	InstanceType                  *[]string                                               `position:"Query" name:"InstanceType"  type:"Repeated"`
 	TerminationGracePeriodSeconds requests.Integer                                        `position:"Query" name:"TerminationGracePeriodSeconds"`
 	ImageRegistryCredential       *[]ModifyEciScalingConfigurationImageRegistryCredential `position:"Query" name:"ImageRegistryCredential"  type:"Repeated"`
 	ResourceOwnerAccount          string                                                  `position:"Query" name:"ResourceOwnerAccount"`
@@ -175,6 +176,7 @@ type ModifyEciScalingConfigurationTag struct {
 // ModifyEciScalingConfigurationVolume is a repeated param struct in ModifyEciScalingConfigurationRequest
 type ModifyEciScalingConfigurationVolume struct {
 	DiskVolumeFsType                 string                                                                 `name:"DiskVolume.FsType"`
+	EmptyDirVolumeSizeLimit          string                                                                 `name:"EmptyDirVolume.SizeLimit"`
 	NFSVolumePath                    string                                                                 `name:"NFSVolume.Path"`
 	DiskVolumeDiskId                 string                                                                 `name:"DiskVolume.DiskId"`
 	FlexVolumeFsType                 string                                                                 `name:"FlexVolume.FsType"`

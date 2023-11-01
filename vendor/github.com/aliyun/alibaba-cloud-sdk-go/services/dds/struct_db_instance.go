@@ -19,6 +19,7 @@ package dds
 type DBInstance struct {
 	ReplicaSetName              string                                        `json:"ReplicaSetName" xml:"ReplicaSetName"`
 	Engine                      string                                        `json:"Engine" xml:"Engine"`
+	ProvisionedIops             int64                                         `json:"ProvisionedIops" xml:"ProvisionedIops"`
 	DBInstanceOrderStatus       string                                        `json:"DBInstanceOrderStatus" xml:"DBInstanceOrderStatus"`
 	DBInstanceClass             string                                        `json:"DBInstanceClass" xml:"DBInstanceClass"`
 	VpcAuthMode                 string                                        `json:"VpcAuthMode" xml:"VpcAuthMode"`
@@ -26,18 +27,22 @@ type DBInstance struct {
 	MaxConnections              int                                           `json:"MaxConnections" xml:"MaxConnections"`
 	HiddenZoneId                string                                        `json:"HiddenZoneId" xml:"HiddenZoneId"`
 	DBInstanceType              string                                        `json:"DBInstanceType" xml:"DBInstanceType"`
+	UseClusterBackup            bool                                          `json:"UseClusterBackup" xml:"UseClusterBackup"`
 	DBInstanceId                string                                        `json:"DBInstanceId" xml:"DBInstanceId"`
 	NetworkType                 string                                        `json:"NetworkType" xml:"NetworkType"`
 	ReplicationFactor           string                                        `json:"ReplicationFactor" xml:"ReplicationFactor"`
+	EncryptionKey               string                                        `json:"EncryptionKey" xml:"EncryptionKey"`
 	MaxIOPS                     int                                           `json:"MaxIOPS" xml:"MaxIOPS"`
 	DBInstanceReleaseProtection bool                                          `json:"DBInstanceReleaseProtection" xml:"DBInstanceReleaseProtection"`
 	ReplacateId                 string                                        `json:"ReplacateId" xml:"ReplacateId"`
 	EngineVersion               string                                        `json:"EngineVersion" xml:"EngineVersion"`
 	VPCId                       string                                        `json:"VPCId" xml:"VPCId"`
+	BurstingEnabled             bool                                          `json:"BurstingEnabled" xml:"BurstingEnabled"`
 	VPCCloudInstanceIds         string                                        `json:"VPCCloudInstanceIds" xml:"VPCCloudInstanceIds"`
 	MaintainStartTime           string                                        `json:"MaintainStartTime" xml:"MaintainStartTime"`
 	DBInstanceStorage           int                                           `json:"DBInstanceStorage" xml:"DBInstanceStorage"`
 	SecondaryZoneId             string                                        `json:"SecondaryZoneId" xml:"SecondaryZoneId"`
+	Encrypted                   bool                                          `json:"Encrypted" xml:"Encrypted"`
 	CurrentKernelVersion        string                                        `json:"CurrentKernelVersion" xml:"CurrentKernelVersion"`
 	StorageType                 string                                        `json:"StorageType" xml:"StorageType"`
 	ZoneId                      string                                        `json:"ZoneId" xml:"ZoneId"`
@@ -53,6 +58,7 @@ type DBInstance struct {
 	CloudType                   string                                        `json:"CloudType" xml:"CloudType"`
 	MaintainEndTime             string                                        `json:"MaintainEndTime" xml:"MaintainEndTime"`
 	ExpireTime                  string                                        `json:"ExpireTime" xml:"ExpireTime"`
+	SyncPercent                 string                                        `json:"SyncPercent" xml:"SyncPercent"`
 	VSwitchId                   string                                        `json:"VSwitchId" xml:"VSwitchId"`
 	CreationTime                string                                        `json:"CreationTime" xml:"CreationTime"`
 	StorageEngine               string                                        `json:"StorageEngine" xml:"StorageEngine"`
