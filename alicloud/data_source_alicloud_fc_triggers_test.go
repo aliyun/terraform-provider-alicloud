@@ -150,7 +150,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 
@@ -193,24 +193,26 @@ resource "alicloud_ram_role_policy_attachment" "default" {
 }
 
 var testTriggerLogTemplateDs = `
-    {
-        "sourceConfig": {
-            "logstore": "${alicloud_log_store.default.name}"
-        },
-        "jobConfig": {
-            "maxRetryTime": 3,
-            "triggerInterval": 60
-        },
-        "functionParameter": {
-            "a": "b",
-            "c": "d"
-        },
-        "logConfig": {
-            "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.default1.name}"
-        },
-        "enable": true
-    }
+	{
+		"sourceConfig":{
+			"logstore":"${alicloud_log_store.default.name}",
+			"startTime":null
+		},
+		"jobConfig":{
+			"maxRetryTime":3,
+			"triggerInterval":60
+		},
+		"functionParameter":{
+			"a":"b",
+			"c":"d"
+		},
+		"logConfig":{
+			"project":"${alicloud_log_project.default.name}",
+			"logstore":"${alicloud_log_store.default1.name}"
+		},
+		"enable":true,
+		"targetConfig":null
+	}
 `
 
 var testFCLogRoleTemplateDs = `
