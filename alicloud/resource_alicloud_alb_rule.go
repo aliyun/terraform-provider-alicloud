@@ -812,7 +812,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 						forwardGroupConfigMap["server_group_sticky_session"] = serverGroupStickySessionMaps
 						forwardGroupConfigMaps = append(forwardGroupConfigMaps, forwardGroupConfigMap)
 						ruleActionsMap["forward_group_config"] = forwardGroupConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 					}
 
 				}
@@ -828,7 +827,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					fixedResponseConfigMap["http_code"] = fixedResponseConfigArg["HttpCode"]
 					fixedResponseConfigMaps = append(fixedResponseConfigMaps, fixedResponseConfigMap)
 					ruleActionsMap["fixed_response_config"] = fixedResponseConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
 
@@ -842,7 +840,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					insertHeaderConfigMap["value_type"] = insertHeaderConfigArg["ValueType"]
 					insertHeaderConfigMaps = append(insertHeaderConfigMaps, insertHeaderConfigMap)
 					ruleActionsMap["insert_header_config"] = insertHeaderConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
 
@@ -859,7 +856,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					redirectConfigMap["query"] = redirectConfigArg["Query"]
 					redirectConfigMaps = append(redirectConfigMaps, redirectConfigMap)
 					ruleActionsMap["redirect_config"] = redirectConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
 
@@ -873,7 +869,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					rewriteConfigMap["query"] = rewriteConfigArg["Query"]
 					rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
 					ruleActionsMap["rewrite_config"] = rewriteConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
 
@@ -885,7 +880,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					trafficLimitConfigMap["qps"] = trafficLimitConfigArg["QPS"]
 					trafficLimitConfigMaps = append(trafficLimitConfigMaps, trafficLimitConfigMap)
 					ruleActionsMap["traffic_limit_config"] = trafficLimitConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
 
@@ -913,7 +907,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 										"target_type":         trafficMirrorConfigArg["TargetType"],
 									})
 									ruleActionsMap["traffic_mirror_config"] = trafficMirrorConfigMaps
-									ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 								}
 							}
 						}
@@ -954,9 +947,10 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 
 					corsConfigMaps = append(corsConfigMaps, corsConfigMap)
 					ruleActionsMap["cors_config"] = corsConfigMaps
-					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 				}
 			}
+
+			ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 		}
 
 		d.Set("rule_actions", ruleActionsMaps)
