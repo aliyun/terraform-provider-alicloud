@@ -1055,6 +1055,29 @@ func formatInt(src interface{}) int {
 	}
 }
 
+func formatBool(src interface{}) bool {
+	if src == nil {
+		return false
+	}
+	attrType := reflect.TypeOf(src)
+	switch attrType.String() {
+	case "bool":
+		return src.(bool)
+	case "string":
+		vv := fmt.Sprint(src)
+		if vv == "" {
+			return false
+		}
+		v, err := strconv.ParseBool(vv)
+		if err != nil {
+			panic(err)
+		}
+		return v
+	default:
+		panic(fmt.Sprintf("Not support type %s", attrType.String()))
+	}
+}
+
 func formatFloat64(src interface{}) float64 {
 	if src == nil {
 		return 0
