@@ -7,19 +7,19 @@ description: |-
   Provides a list of Cloud Firewall Control Policies to the user.
 ---
 
-# alicloud\_cloud\_firewall\_control\_policies
+# alicloud_cloud_firewall_control_policies
 
 This data source provides the Cloud Firewall Control Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0+.
 
 ## Example Usage
 
 Basic Usage
 
-```
-data "alicloud_cloud_firewall_control_policies" "example" {	
-	direction = "in"
+```terraform
+data "alicloud_cloud_firewall_control_policies" "example" {
+  direction = "in"
 }
 ```
 
