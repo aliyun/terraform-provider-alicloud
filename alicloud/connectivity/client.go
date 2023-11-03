@@ -5040,6 +5040,7 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	config := &openapi.Config{
 		AccessKeyId:     tea.String(client.config.AccessKey),
 		AccessKeySecret: tea.String(client.config.SecretKey),
+		SecurityToken:   tea.String(client.config.SecurityToken),
 	}
 
 	productCode := "sls"
