@@ -182,6 +182,7 @@ var DTSSupportRegions = []Region{Hangzhou, APSouth1, ShenZhenFinance1, CnNorth2G
 var OOSSupportRegions = []Region{APSouthEast5, USWest1, EUWest1, Qingdao, ChengDu, Shanghai, Huhehaote, Shenzhen, APNorthEast1, APSouthEast1, EUCentral1, Hangzhou, Beijing, APSouth1, APSouthEast3, USEast1, Zhangjiakou, Hongkong, APSouthEast2}
 var MongoDBSupportRegions = []Region{APSouth1, Shanghai, APSouthEast2, WuLanChaBu, CnNorth2Gov1, Hangzhou, Beijing, Qingdao, Zhangjiakou, USWest1, GuangZhou, APSouthEast6, EUWest1, ChengDu, APSouthEast1, APSouthEast3, APSouthEast5, ShanghaiFinance, Hongkong, HeYuan, Huhehaote, USEast1, EUCentral1, APNorthEast1, Shenzhen, ShenZhenFinance1, MEEast1}
 var MongoDBServerlessSupportRegions = []Region{APSouthEast5, Shanghai, USEast1, Hongkong, HeYuan, Zhangjiakou, APSouthEast6, GuangZhou, Huhehaote, Beijing, Shenzhen, WuLanChaBu, ChengDu, Hangzhou, Qingdao, USWest1, APSouthEast1}
+var MongoDBTDESupportRegions = []Region{Hangzhou, Beijing, Shanghai}
 var FnFSupportRegions = []Region{Shenzhen, Beijing, Shanghai, APSouthEast1, USWest1, Hangzhou}
 var GaSupportRegions = []Region{Hangzhou}
 var AlidnsSupportRegions = []Region{Hangzhou, APSouthEast1}
