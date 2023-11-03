@@ -127,6 +127,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 				Default:  false,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"launch_template_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -223,6 +228,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("scaling_group_name", object["ScalingGroupName"])
 	d.Set("default_cooldown", object["DefaultCooldown"])
 	d.Set("multi_az_policy", object["MultiAZPolicy"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("on_demand_base_capacity", object["OnDemandBaseCapacity"])
 	d.Set("on_demand_percentage_above_base_capacity", object["OnDemandPercentageAboveBaseCapacity"])
 	d.Set("spot_instance_pools", object["SpotInstancePools"])
@@ -442,6 +448,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		"MaxSize":         d.Get("max_size"),
 		"DefaultCooldown": d.Get("default_cooldown"),
 		"MultiAZPolicy":   d.Get("multi_az_policy"),
+		"ResourceGroupId": d.Get("resource_group_id"),
 		"GroupType":       d.Get("group_type"),
 	}
 

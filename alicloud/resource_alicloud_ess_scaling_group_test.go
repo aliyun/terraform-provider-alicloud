@@ -94,7 +94,7 @@ func testSweepEssGroups(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_basic(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -205,7 +205,7 @@ func TestAccAlicloudEssScalingGroup_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_desiredCapacity(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_desiredCapacity(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -271,7 +271,7 @@ func TestAccAlicloudEssScalingGroup_desiredCapacity(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssScalingGroup_max_min_desiredCapacityRange(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_max_min_desiredCapacityRange(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -329,7 +329,7 @@ func TestAccAlicloudEssScalingGroup_max_min_desiredCapacityRange(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssScalingGroup_withLaunchTemplateId(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -381,7 +381,7 @@ func TestAccAlicloudEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -470,7 +470,7 @@ func TestAccAlicloudEssScalingGroup_costoptimized(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_vpc(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -565,7 +565,107 @@ func TestAccAlicloudEssScalingGroup_vpc(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
+//******************
+
+func TestAccAliCloudEssScalingGroup_resourceGroupId(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "1",
+		"max_size":           "1",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup_vpc-%d", rand),
+		"vswitch_ids.#":      "2",
+		"removal_policies.#": "2",
+		"multi_az_policy":    "BALANCE",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccEssScalingGroupVpc(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"resource_group_id"},
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateMaxSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateScalingGroupName(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroupUpdate-%d", rand),
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateRemovalPolicies(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"removal_policies.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateDefaultCooldown(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"default_cooldown": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupVpcUpdateMinSize(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_size": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccEssScalingGroupResourceGroupId(EcsInstanceCommonTestCase, rand),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+		},
+	})
+
+}
+
+//*********************
+
+func TestAccAliCloudEssScalingGroup_slb(t *testing.T) {
 	var v ess.ScalingGroup
 	var slb *slb.DescribeLoadBalancerAttributeResponse
 	rand := acctest.RandIntRange(10000, 999999)
@@ -700,7 +800,7 @@ func TestAccAlicloudEssScalingGroup_slb(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_tags(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_tags(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -754,7 +854,7 @@ func TestAccAlicloudEssScalingGroup_tags(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_healthCheckType(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -805,7 +905,7 @@ func TestAccAlicloudEssScalingGroup_healthCheckType(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_eci(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_eci(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -857,7 +957,7 @@ func TestAccAlicloudEssScalingGroup_eci(t *testing.T) {
 
 }
 
-func TestAccAlicloudEssScalingGroup_protected_instances(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_protected_instances(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -1269,6 +1369,32 @@ func testAccEssScalingGroupVpc(common string, rand int) string {
 		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		multi_az_policy = "BALANCE"
+	}`, common, rand)
+}
+
+func testAccEssScalingGroupResourceGroupId(common string, rand int) string {
+	return fmt.Sprintf(`
+	%s
+	variable "name" {
+		default = "tf-testAccEssScalingGroup_vpc-%d"
+	}
+	
+	resource "alicloud_vswitch" "default2" {
+		  vpc_id = "${alicloud_vpc.default.id}"
+		  cidr_block = "172.16.1.0/24"
+		  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+		  name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		default_cooldown = 20
+		vswitch_ids = ["${alicloud_vswitch.default.id}", "${alicloud_vswitch.default2.id}"]
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		multi_az_policy = "BALANCE"
+        resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.ids.0}"
 	}`, common, rand)
 }
 
