@@ -1,4 +1,39 @@
 ## 1.212.0 (Unreleased)
+
+- **New Resource:** `alicloud_rocketmq_instance` [GH-6538]
+- **New Resource:** `alicloud_rocketmq_topic` [GH-6538]
+- **New Resource:** `alicloud_rocketmq_consumer_group` [GH-6538]
+- **New Resource:** `alicloud_threat_detection_client_file_protect` [GH-6541]
+- **New Resource:** `alicloud_threat_detection_file_upload_limit` [GH-6541]
+- **New Resource:** `alicloud_threat_detection_client_user_define_rule` [GH-6541]
+- **New Resource:** `alicloud_cloud_monitor_service_monitoring_agent_process` [GH-6591]
+- **New Resource:** `alicloud_cloud_monitor_service_group_monitoring_agent_process` [GH-6595]
+- **New Resource:** `alicloud_ack_one_cluster` [GH-6600]
+- **New Resource:** `alicloud_dms_enterprise_authority_template` [GH-6605]
+
+ENHANCEMENTS:
+
+- resource/alicloud_threat_detection_instance: add attributes: container_image_scan_new, product_type, rasp_count, sas_cspm, sas_cspm_switch. [GH-6479]
+- resource/alicloud_ddoscoo_instance: Added the field edition_sale, address_type, bandwidth_mode and ip. [GH-6546]
+- resource/alicloud_log_project: add new attribute resource_group_id. [GH-6614]
+- resource/alicloud_privatelink_vpc_endpoint_service: add new attribute resource_group_id, service_resource_type, service_support_ipv6, zone_affinity_enabled. [GH-6616]
+- resource/alicloud_service_mesh_service_mesh: add computed tag for attributes; data-source/alicloud_service_mesh_service_meshes: add new attribute kube_config. [GH-6621]
+- resource/alicloud_mongodb_instance: Added the field encrypted, cloud_disk_encryption_key, encryptor_name, encryption_key, role_arn, backup_interval, snapshot_backup_type. [GH-6631]
+- data-source/alicloud_ddosbgp_instances: update sdk version ; resource/alicloud_ddosbgp_instance: update sdk version. [GH-6615]
+- service_alicloud_ram.go: return all users after read request. [GH-6609]
+- docs/alicloud_mongodb_instance: correct attribute retention_period's description. [GH-6610]
+- docs: fix spelling errors. [GH-6611]
+- docs: fix link. [GH-6612]
+- docs/alicloud_cms_site_monitor: Imporves the example by adding options_json parameter. [GH-6623]
+- docs: Improved sls example. [GH-6625]
+- add SecurityToken for sls client. [GH-6632]
+
+BUG FIXES:
+
+- resource/alicloud_cms_group_metric_rule: Fixed cms TypeSet bug caused by tf sdk v1.17.2. [GH-6528]
+- resource/alicloud_cs_kubernetes: remove params, fix ci, support control plane log config; resource/alicloud_cs_managed_kubernetes: remove params, fix ci. [GH-6618]
+- data-source/alicloud_cloud_firewall_control_policies: Fixes the unconvertible error when setting release. [GH-6629]
+
 ## 1.211.2 (October 20, 2023)
 
 ENHANCEMENTS:
