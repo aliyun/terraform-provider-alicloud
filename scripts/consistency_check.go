@@ -209,9 +209,22 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 						rootName = m[1]
 					} else if rootPrefixLen > thisLen {
 						parts := strings.Split(subAttributeName, ".")
+						backIndex := rootPrefixLen - thisLen
+						if backIndex%2 == 0 {
+							backIndex /= 2
+						} else {
+							return fmt.Errorf("resource %s docs %s have not been formatted.", resourceName, docsPath)
+						}
 						if len(parts) > 0 {
-							subAttributeName = strings.TrimSuffix(strings.TrimSuffix(subAttributeName, parts[len(parts)-1]), ".")
-							rootName = m[1]
+							for backIndex > 0 {
+								backIndex--
+								if strings.Contains(subAttributeName, ".") {
+									subAttributeName = strings.TrimSuffix(strings.TrimSuffix(subAttributeName, parts[len(parts)-1]), ".")
+								} else {
+									subAttributeName = ""
+								}
+								rootName = m[1]
+							}
 						}
 					} else {
 						rootName = m[1]
