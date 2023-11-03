@@ -11,35 +11,58 @@ description: |-
 
 This data source provides the Service Mesh Service Meshes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_service_mesh_service_meshes" "ids" {
-  ids = ["example_id"]
-}
-output "service_mesh_service_mesh_id_1" {
-  value = data.alicloud_service_mesh_service_meshes.ids.meshes.0.id
+variable "name" {
+  default = "tf_example"
 }
 
-data "alicloud_service_mesh_service_meshes" "nameRegex" {
-  name_regex = "^my-ServiceMesh"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-output "service_mesh_service_mesh_id_2" {
-  value = data.alicloud_service_mesh_service_meshes.nameRegex.meshes.0.id
+data "alicloud_service_mesh_versions" "default" {
+  edition = "Default"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.0.0.0/8"
+}
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.1.0.0/16"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_service_mesh_service_mesh" "default" {
+  service_mesh_name = var.name
+  edition           = "Pro"
+  version           = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
+  cluster_spec      = "enterprise"
+  network {
+    vpc_id        = alicloud_vpc.default.id
+    vswitche_list = [alicloud_vswitch.default.id]
+  }
+  load_balancer {
+    pilot_public_eip      = false
+    api_server_public_eip = false
+  }
 }
 
 data "alicloud_service_mesh_service_meshes" "status" {
-  ids    = ["example_id"]
+  ids    = [alicloud_service_mesh_service_mesh.default.id]
   status = "running"
 }
+
 output "service_mesh_service_mesh_id_3" {
   value = data.alicloud_service_mesh_service_meshes.status.meshes.0.id
 }
-
 ```
 
 ## Argument Reference
@@ -50,6 +73,7 @@ The following arguments are supported:
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Service Mesh name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the resource. Valid values: `running` or `initial`.
+* `enable_details` - (Optional) Whether to query the detailed list of resource attributes.
 
 ## Attributes Reference
 
@@ -131,3 +155,4 @@ The following attributes are exported in addition to the arguments listed above:
     * `service_mesh_name` - The name of the resource.
     * `status` - The status of the resource.
     * `version` - The version of the resource.
+    * `kube_config` - The content of Kube config.
