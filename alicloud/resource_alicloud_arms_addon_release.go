@@ -47,7 +47,6 @@ func resourceAliCloudArmsAddonRelease() *schema.Resource {
 			"aliyun_lang": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
 			},
 			"create_time": {
@@ -113,17 +112,12 @@ func resourceAliCloudArmsAddonReleaseCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_addon_release", action, AlibabaCloudSdkGoERROR)
 	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_addon_release InstallAddon Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_addon_release", action, AlibabaCloudSdkGoERROR, response)
-	}
 
 	environmentId, _ := jsonpath.Get("$.Data.EnvironmentId", response)
 	releaseName, _ := jsonpath.Get("$.Data.ReleaseName", response)
 	d.SetId(fmt.Sprintf("%v:%v", environmentId, releaseName))
 
-	return resourceAliCloudArmsAddonReleaseRead(d, meta)
+	return resourceAliCloudArmsAddonReleaseUpdate(d, meta)
 }
 
 func resourceAliCloudArmsAddonReleaseRead(d *schema.ResourceData, meta interface{}) error {

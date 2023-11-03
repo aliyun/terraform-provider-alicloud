@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -39,7 +38,9 @@ func resourceAliCloudArmsEnvironment() *schema.Resource {
 			},
 			"environment_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"environment_name": {
 				Type:     schema.TypeString,
@@ -116,11 +117,6 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_environment", action, AlibabaCloudSdkGoERROR)
 	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_environment CreateEnvironment Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_environment", action, AlibabaCloudSdkGoERROR, response)
-	}
 
 	d.SetId(fmt.Sprint(response["Data"]))
 
@@ -155,11 +151,6 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_environment", action, AlibabaCloudSdkGoERROR)
-	}
-	code, _ = jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_environment InitEnvironment Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_environment", action, AlibabaCloudSdkGoERROR, response)
 	}
 
 	d.SetId(fmt.Sprint(query["EnvironmentId"]))
@@ -303,7 +294,6 @@ func resourceAliCloudArmsEnvironmentDelete(d *schema.ResourceData, meta interfac
 	}
 	request = make(map[string]interface{})
 	query["EnvironmentId"] = d.Id()
-	query["DeletePromInstance"] = true
 	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}

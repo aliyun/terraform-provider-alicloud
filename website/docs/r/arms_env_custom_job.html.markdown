@@ -10,7 +10,7 @@ description: |-
 
 Provides a ARMS Env Custom Job resource. Custom jobs in the arms environment.
 
-For information about ARMS Env Custom Job and how to use it, see [What is Env Custom Job](https://www.alibabacloud.com/help/en/arms/developer-reference/api-arms-2019-08-08-createenvcustomjob).
+For information about ARMS Env Custom Job and how to use it, see [What is Env Custom Job](https://www.alibabacloud.com/help/en/).
 
 -> **NOTE:** Available since v1.212.0.
 
@@ -19,37 +19,66 @@ For information about ARMS Env Custom Job and how to use it, see [What is Env Cu
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
-resource "random_integer" "default" {
-  max = 99999
-  min = 10000
-}
-
 variable "name" {
   default = "terraform-example"
 }
 
-resource "alicloud_vpc" "vpc" {
-  description = var.name
-  cidr_block  = "172.16.0.0/12"
-  vpc_name    = var.name
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
-resource "alicloud_arms_environment" "env-ecs" {
-  environment_type     = "ECS"
-  environment_name     = "terraform-example-${random_integer.default.result}"
-  bind_resource_id     = alicloud_vpc.vpc.id
-  environment_sub_type = "ECS"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
+
+resource "alicloud_vpc" "vpc" {
+  description = "api-resource-sub-test1-hz-job"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+
+}
+
+resource "alicloud_vswitch" "vsw" {
+  description  = "api-resource-test1-hz"
+  vpc_id       = alicloud_vpc.vpc.id
+  vswitch_name = var.name
+
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "172.16.0.0/24"
+}
+
+resource "alicloud_ack_cluster" "ask" {
+  kubernetes_version = "1.26.3-aliyun.1"
+  cluster_type       = "ManagedKubernetes"
+  cluster_spec       = "ack.pro.small"
+  vpc_id             = alicloud_vpc.vpc.id
+  service_cidr       = "192.168.0.0/24"
+  cluster_name       = var.name
+
+  container_cidr = "192.168.1.0/24"
+  vswitch_id     = alicloud_vswitch.vsw.id
+  profile        = "Serverless"
+}
+
+resource "alicloud_arms_environment" "env-cs" {
+  environment_type = "CS"
+  environment_name = var.name
+
+  bind_resource_id     = alicloud_ack_cluster.ask.id
+  environment_sub_type = "ACK"
+  tags {
+    tag_key   = "api-cs-k1"
+    tag_value = "api-cs-v1"
+  }
+}
+
 
 resource "alicloud_arms_env_custom_job" "default" {
   status              = "run"
-  environment_id      = alicloud_arms_environment.env-ecs.id
+  environment_id      = alicloud_arms_environment.env-cs.id
   env_custom_job_name = var.name
-  config_yaml         = <<EOF
+
+  config_yaml = <<EOF
 scrape_configs:
 - job_name: job-demo1
   honor_timestamps: false
@@ -60,8 +89,19 @@ scrape_configs:
   static_configs:
   - targets:
     - 127.0.0.1:9090
+- job_name: job-demo2
+  honor_timestamps: false
+  honor_labels: false
+  scrape_interval: 30s
+  scheme: http
+  metrics_path: /metric
+  static_configs:
+  - targets:
+    - 127.0.0.1:9090
+  http_sd_configs:
+  - url: 127.0.0.1:9090
+    refresh_interval: 30s
 EOF
-  aliyun_lang         = "en"
 }
 ```
 

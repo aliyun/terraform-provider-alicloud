@@ -107,11 +107,6 @@ func resourceAliCloudArmsEnvServiceMonitorCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_service_monitor", action, AlibabaCloudSdkGoERROR)
 	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_env_service_monitor CreateEnvServiceMonitor Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_service_monitor", action, AlibabaCloudSdkGoERROR, response)
-	}
 
 	namespace, _ := jsonpath.Get("$.Data.Namespace", response)
 	serviceMonitorName, _ := jsonpath.Get("$.Data.ServiceMonitorName", response)

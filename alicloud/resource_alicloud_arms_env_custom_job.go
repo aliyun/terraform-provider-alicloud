@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -107,11 +105,6 @@ func resourceAliCloudArmsEnvCustomJobCreate(d *schema.ResourceData, meta interfa
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_custom_job", action, AlibabaCloudSdkGoERROR)
-	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_env_custom_job CreateEnvCustomJob Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_custom_job", action, AlibabaCloudSdkGoERROR, response)
 	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["EnvironmentId"], response["Data"]))

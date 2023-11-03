@@ -29,6 +29,16 @@ func resourceAliCloudArmsEnvFeature() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"aliyun_lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"config": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"env_feature_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -46,6 +56,10 @@ func resourceAliCloudArmsEnvFeature() *schema.Resource {
 			"namespace": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"region": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -70,9 +84,18 @@ func resourceAliCloudArmsEnvFeatureCreate(d *schema.ResourceData, meta interface
 	request = make(map[string]interface{})
 	query["EnvironmentId"] = d.Get("environment_id")
 	query["FeatureName"] = d.Get("env_feature_name")
-	query["RegionId"] = client.RegionId
+	request["RegionId"] = client.RegionId
 
-	query["FeatureVersion"] = d.Get("feature_version")
+	request["FeatureVersion"] = d.Get("feature_version")
+	if v, ok := d.GetOk("config"); ok {
+		request["Config"] = v
+	}
+	if v, ok := d.GetOk("aliyun_lang"); ok {
+		request["AliyunLang"] = v
+	}
+	if v, ok := d.GetOk("region"); ok {
+		request["Region"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -93,11 +116,6 @@ func resourceAliCloudArmsEnvFeatureCreate(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_feature", action, AlibabaCloudSdkGoERROR)
 	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_env_feature InstallEnvironmentFeature Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_feature", action, AlibabaCloudSdkGoERROR, response)
-	}
 
 	d.SetId(fmt.Sprintf("%v:%v", query["EnvironmentId"], query["FeatureName"]))
 
@@ -107,7 +125,7 @@ func resourceAliCloudArmsEnvFeatureCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudArmsEnvFeatureRead(d, meta)
+	return resourceAliCloudArmsEnvFeatureUpdate(d, meta)
 }
 
 func resourceAliCloudArmsEnvFeatureRead(d *schema.ResourceData, meta interface{}) error {
@@ -129,6 +147,8 @@ func resourceAliCloudArmsEnvFeatureRead(d *schema.ResourceData, meta interface{}
 	if feature1RawObj != nil {
 		feature1Raw = feature1RawObj.(map[string]interface{})
 	}
+	d.Set("aliyun_lang", feature1Raw["Language"])
+	d.Set("config", feature1Raw["Config"])
 	d.Set("feature_version", feature1Raw["Version"])
 	d.Set("status", feature1Raw["Status"])
 	d.Set("env_feature_name", feature1Raw["Name"])

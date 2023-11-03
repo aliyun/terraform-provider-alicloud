@@ -30,9 +30,8 @@ func resourceAliCloudArmsEnvPodMonitor() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"aliyun_lang": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"config_yaml": {
 				Type:     schema.TypeString,
@@ -107,11 +106,6 @@ func resourceAliCloudArmsEnvPodMonitorCreate(d *schema.ResourceData, meta interf
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_pod_monitor", action, AlibabaCloudSdkGoERROR)
-	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_env_pod_monitor CreateEnvPodMonitor Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_env_pod_monitor", action, AlibabaCloudSdkGoERROR, response)
 	}
 
 	namespace, _ := jsonpath.Get("$.Data.Namespace", response)
