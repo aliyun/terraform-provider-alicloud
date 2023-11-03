@@ -108,18 +108,18 @@ The following arguments are supported:
 * `customized_prometheus` - (Optional, Available since v1.211.2) Whether to customize Prometheus. Value:
   -'true': custom Prometheus.
   -'false': Do not customize Prometheus. Default value: 'false '.
-* `edition` - (Optional, ForceNew) Grid instance version type. Valid values: `Default` and `Pro`. Default: the standard. Pro: the Pro version.
+* `edition` - (Optional, ForceNew, Computed) Grid instance version type. Valid values: `Default` and `Pro`. Default: the standard. Pro: the Pro version.
 * `extra_configuration` - (Optional, Computed) Data plane KubeAPI access capability. See [`extra_configuration`](#extra_configuration) below.
 * `force` - (Optional) Whether to forcibly delete the ASM instance. Value:
   -'true': force deletion of ASM instance
   -'false': no forced deletion of ASM instance. Default value: false.
-* `load_balancer` - (Optional, ForceNew) Load balancing information. See [`load_balancer`](#load_balancer) below.
-* `mesh_config` - (Optional, ForceNew) Service grid configuration information. See [`mesh_config`](#mesh_config) below.
+* `load_balancer` - (Optional, ForceNew, Computed) Load balancing information. See [`load_balancer`](#load_balancer) below.
+* `mesh_config` - (Optional, ForceNew, Computed) Service grid configuration information. See [`mesh_config`](#mesh_config) below.
 * `network` - (Required, ForceNew) Service grid network configuration information. See [`network`](#network) below.
 * `prometheus_url` - (Optional, Available since v1.211.2) The Prometheus service address (in non-custom cases, use the ARMS address format).
 * `service_mesh_name` - (Optional, ForceNew) ServiceMeshName.
 * `tags` - (Optional, Map, Available since v1.211.2) The tag of the resource.
-* `version` - (Optional) Service grid version number. The version of the resource. you can look up the version using alicloud_service_mesh_versions. Note: The version supports updating from v1.170.0, the relevant version can be obtained via istio_operator_version in `alicloud_service_mesh_service_meshes`.
+* `version` - (Optional, Computed) Service grid version number. The version of the resource. you can look up the version using alicloud_service_mesh_versions. Note: The version supports updating from v1.170.0, the relevant version can be obtained via istio_operator_version in `alicloud_service_mesh_service_meshes`.
 
 ### `extra_configuration`
 
@@ -135,26 +135,26 @@ The load_balancer supports the following:
 ### `mesh_config`
 
 The mesh_config supports the following:
-* `access_log` - (Optional) The access logging configuration. See [`mesh_config-access_log`](#mesh_config-access_log) below.
-* `audit` - (Optional, ForceNew, Computed) Audit information. See [`mesh_config-audit`](#mesh_config-audit) below.
-* `control_plane_log` - (Optional, ForceNew) Control plane log collection configuration. See [`mesh_config-control_plane_log`](#mesh_config-control_plane_log) below.
-* `customized_zipkin` - (Optional) Whether or not to enable the use of a custom zipkin.
+* `access_log` - (Optional, Computed) The access logging configuration. See [`access_log`](#mesh_config-access_log) below.
+* `audit` - (Optional, ForceNew, Computed) Audit information. See [`audit`](#mesh_config-audit) below.
+* `control_plane_log` - (Optional, ForceNew, Computed) Control plane log collection configuration. See [`control_plane_log`](#mesh_config-control_plane_log) below.
+* `customized_zipkin` - (Optional, Computed) Whether or not to enable the use of a custom zipkin.
 * `enable_locality_lb` - (Optional, ForceNew) Whether to enable service can access the service through the nearest node access.
 * `include_ip_ranges` - (Optional, Computed) The IP ADDRESS range.
-* `kiali` - (Optional) Kiali configuration. See [`mesh_config-kiali`](#mesh_config-kiali) below.
-* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See [`mesh_config-opa`](#mesh_config-opa) below.
+* `kiali` - (Optional, Computed) Kiali configuration. See [`kiali`](#mesh_config-kiali) below.
+* `opa` - (Optional) The open-door policy of agent (OPA) plug-in information. See [`opa`](#mesh_config-opa) below.
 * `outbound_traffic_policy` - (Optional) Out to the traffic policy.
-* `pilot` - (Optional, ForceNew) Link trace sampling information. See [`mesh_config-pilot`](#mesh_config-pilot) below.
-* `proxy` - (Optional) Proxy configuration. See [`mesh_config-proxy`](#mesh_config-proxy) below.
-* `sidecar_injector` - (Optional) Sidecar injector configuration. See [`mesh_config-sidecar_injector`](#mesh_config-sidecar_injector) below.
+* `pilot` - (Optional, ForceNew) Link trace sampling information. See [`pilot`](#mesh_config-pilot) below.
+* `proxy` - (Optional) Proxy configuration. See [`proxy`](#mesh_config-proxy) below.
+* `sidecar_injector` - (Optional) Sidecar injector configuration. See [`sidecar_injector`](#mesh_config-sidecar_injector) below.
 * `telemetry` - (Optional) Whether to enable acquisition Prometheus metrics (it is recommended that you use [Alibaba Cloud Prometheus monitoring](https://arms.console.aliyun.com/).
 * `tracing` - (Optional) Whether to enable link trace (you need to have [Alibaba Cloud link tracking service](https://tracing-analysis.console.aliyun.com/).
 
 ### `mesh_config-access_log`
 
 The access_log supports the following:
-* `enabled` - (Optional) Whether to enable access log.
-* `project` - (Optional) Access the SLS Project of log collection.
+* `enabled` - (Optional, Computed) Whether to enable access log.
+* `project` - (Optional, Computed) Access the SLS Project of log collection.
 
 ### `mesh_config-audit`
 
@@ -165,10 +165,10 @@ The audit supports the following:
 ### `mesh_config-control_plane_log`
 
 The control_plane_log supports the following:
-* `enabled` - (Optional, ForceNew) Whether to enable control plane log collection. Value:
+* `enabled` - (Optional, ForceNew, Computed) Whether to enable control plane log collection. Value:
   -'true': enables control plane log collection.
   -'false': does not enable control plane log collection.
-* `project` - (Optional, ForceNew) The name of the SLS Project to which the control plane logs are collected.
+* `project` - (Optional, ForceNew, Computed) The name of the SLS Project to which the control plane logs are collected.
 
 ### `mesh_config-kiali`
 
@@ -188,7 +188,7 @@ The opa supports the following:
 ### `mesh_config-pilot`
 
 The pilot supports the following:
-* `http10_enabled` - (Optional) Whether to support the HTTP1.0.
+* `http10_enabled` - (Optional, Computed) Whether to support the HTTP1.0.
 * `trace_sampling` - (Optional) Link trace sampling percentage.
 
 ### `mesh_config-proxy`
@@ -202,13 +202,13 @@ The proxy supports the following:
 ### `mesh_config-sidecar_injector`
 
 The sidecar_injector supports the following:
-* `auto_injection_policy_enabled` - (Optional) Whether to enable by Pod Annotations automatic injection Sidecar.
-* `enable_namespaces_by_default` - (Optional) Whether it is the all namespaces you turn on the auto injection capabilities.
-* `init_cni_configuration` - (Optional) CNI configuration. See [`mesh_config-sidecar_injector-init_cni_configuration`](#mesh_config-sidecar_injector-init_cni_configuration) below.
-* `limit_cpu` - (Optional) Sidecar injector Pods on the throttle.
-* `limit_memory` - (Optional) Sidecar injector Pods on the throttle.
-* `request_cpu` - (Optional) Sidecar injector Pods on the requested resource.
-* `request_memory` - (Optional) Sidecar injector Pods on the requested resource.
+* `auto_injection_policy_enabled` - (Optional, Computed) Whether to enable by Pod Annotations automatic injection Sidecar.
+* `enable_namespaces_by_default` - (Optional, Computed) Whether it is the all namespaces you turn on the auto injection capabilities.
+* `init_cni_configuration` - (Optional, Computed) CNI configuration. See [`init_cni_configuration`](#mesh_config-sidecar_injector-init_cni_configuration) below.
+* `limit_cpu` - (Optional, Computed) Sidecar injector Pods on the throttle.
+* `limit_memory` - (Optional, Computed) Sidecar injector Pods on the throttle.
+* `request_cpu` - (Optional, Computed) Sidecar injector Pods on the requested resource.
+* `request_memory` - (Optional, Computed) Sidecar injector Pods on the requested resource.
 
 ### `mesh_config-sidecar_injector-init_cni_configuration`
 

@@ -404,6 +404,10 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"kube_config": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -418,6 +422,7 @@ func dataSourceAlicloudServiceMeshServiceMeshes() *schema.Resource {
 
 func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	serviceMeshServiceV2 := ServiceMeshServiceV2{client}
 
 	action := "DescribeServiceMeshes"
 	request := make(map[string]interface{})
@@ -737,6 +742,15 @@ func dataSourceAlicloudServiceMeshServiceMeshesRead(d *schema.ResourceData, meta
 		resp, err = jsonpath.Get("$", response)
 		if v, ok := resp.(map[string]interface{}); ok {
 			mapping["sidecar_version"] = v["Version"]
+		}
+
+		response, err = serviceMeshServiceV2.DescribeDescribeServiceMeshKubeconfig(id)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_service_mesh_service_meshes", action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err = jsonpath.Get("$", response)
+		if v, ok := resp.(map[string]interface{}); ok {
+			mapping["kube_config"] = v["Kubeconfig"]
 		}
 
 		s = append(s, mapping)

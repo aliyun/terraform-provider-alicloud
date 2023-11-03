@@ -51,6 +51,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"edition": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, false),
 			},
@@ -75,6 +76,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"load_balancer": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -103,6 +105,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"mesh_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -110,16 +113,19 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"access_log": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"project": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 									},
 								},
 							},
@@ -127,6 +133,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"pilot": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
@@ -134,6 +141,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"http10_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 									},
 									"trace_sampling": {
 										Type:     schema.TypeFloat,
@@ -204,20 +212,24 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"sidecar_injector": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"limit_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"auto_injection_policy_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 									},
 									"request_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"enable_namespaces_by_default": {
 										Type:     schema.TypeBool,
@@ -226,6 +238,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"limit_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"init_cni_configuration": {
 										Type:     schema.TypeList,
@@ -248,6 +261,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"request_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 									},
 									"sidecar_injector_webhook_as_yaml": {
 										Type:     schema.TypeString,
@@ -282,6 +296,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"kiali": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -338,6 +353,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"control_plane_log": {
 							Type:     schema.TypeList,
 							Optional: true,
+							Computed: true,
 							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
@@ -345,11 +361,13 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"project": {
 										Type:     schema.TypeString,
 										Optional: true,
+										Computed: true,
 										ForceNew: true,
 									},
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
+										Computed: true,
 										ForceNew: true,
 									},
 								},
@@ -362,6 +380,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"customized_zipkin": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -408,6 +427,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}

@@ -356,6 +356,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -972,6 +973,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1140,6 +1142,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1401,4 +1404,98 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccAliCloudServiceMeshServiceMesh_basic6(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc%sservicemeshstandard%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence6)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.ServiceMeshStandardUnsupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"network.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence6(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	data "alicloud_service_mesh_versions" "default" {
+		edition = "Default"
+	}
+
+	data "alicloud_zones" "default" {
+		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_vpcs" "default" {
+		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+		vpc_id  = data.alicloud_vpcs.default.ids.0
+		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_log_project" "default_1" {
+		name        = "${var.name}-01"
+		description = "created by terraform"
+	}
+
+	resource "alicloud_log_project" "default_2" {
+		name        = "${var.name}-02"
+		description = "created by terraform"
+	}
+
+	locals {
+		vswitch_id    = data.alicloud_vswitches.default.ids.0
+		vpc_id        = data.alicloud_vpcs.default.ids.0
+		log_project_1 = alicloud_log_project.default_1.name
+		log_project_2 = alicloud_log_project.default_2.name
+		version_1     = reverse(data.alicloud_service_mesh_versions.default.versions).0.version
+		version_2     = reverse(data.alicloud_service_mesh_versions.default.versions).1.version
+	}
+`, name)
 }
