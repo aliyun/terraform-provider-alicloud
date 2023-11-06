@@ -11,7 +11,7 @@ import (
 	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
 )
 
-func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {
+func TestAccAliCloudCSKubernetesPermissions_basic(t *testing.T) {
 	var v []*cs.GrantPermissionsRequestBody
 	resourceId := "alicloud_cs_kubernetes_permissions.default"
 	serviceFunc := func() interface{} {
@@ -42,9 +42,20 @@ func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"uid": "${alicloud_ram_user.user.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"uid":           CHECKSET,
+						"permissions.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"uid": "${alicloud_ram_user.user.id}",
 					"permissions": []map[string]string{
 						{
-							"cluster":     "${alicloud_cs_managed_kubernetes.default.0.id}",
+							"cluster":     "${alicloud_cs_managed_kubernetes.default.id}",
 							"role_type":   "cluster",
 							"role_name":   "dev",
 							"namespace":   "",
@@ -55,7 +66,24 @@ func TestAccAlicloudCSKubernetesPermissions_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"uid": CHECKSET,
+						"uid":           CHECKSET,
+						"permissions.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"permissions": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"uid":           CHECKSET,
+						"permissions.#": "0",
 					}),
 				),
 			},
@@ -75,14 +103,6 @@ variable "name" {
 
 data "alicloud_zones" "default" {
   available_resource_creation  = "VSwitch"
-}
-
-data "alicloud_instance_types" "default" {
-	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
-	kubernetes_node_role       = "Worker"
-    instance_type_family       = "ecs.sn1ne"
 }
 
 data "alicloud_vpcs" "default" {
@@ -109,22 +129,12 @@ locals {
 # Create a management cluster
 resource "alicloud_cs_managed_kubernetes" "default" {
   name                        = var.name
-  count                       = 1
   cluster_spec                = "ack.pro.small"
   worker_vswitch_ids          = [local.vswitch_id]
-  new_nat_gateway             = true
-  worker_instance_types       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-  node_port_range             = "30000-32767"
-  password                    = "Hello1234"
+  new_nat_gateway             = false
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 41)
   service_cidr                = cidrsubnet("172.17.0.0/16", 4, 3)
-  install_cloud_monitor       = true
-  slb_internet_enabled        = true
-  worker_disk_category        = "cloud_efficiency"
-  worker_data_disk_category   = "cloud_ssd"
-  worker_data_disk_size       = 200
-  worker_disk_size            = 40
-  worker_instance_charge_type = "PostPaid"
+  slb_internet_enabled        = false
   depends_on                  = ["alicloud_ram_user_policy_attachment.attach"]
 }
 
@@ -163,6 +173,5 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
   policy_type = alicloud_ram_policy.policy.type
   user_name   = alicloud_ram_user.user.name
 }
-
 `, name)
 }
