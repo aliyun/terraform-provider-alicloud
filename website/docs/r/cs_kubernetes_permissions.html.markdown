@@ -16,7 +16,7 @@ For more information about how to authorize a RAM user by attaching RAM policies
 
 -> **NOTE:** If you call this operation as a RAM user, make sure that this RAM user has the permissions to grant other RAM users the permissions to manage ACK clusters. Otherwise, the `StatusForbidden` or `ForbiddenGrantPermissions` errors will be returned. For more information, see [Use a RAM user to grant RBAC permissions to other RAM users](https://www.alibabacloud.com/help/faq-detail/119035.htm).
 
--> **NOTE:** This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
+-> **NOTE:** This operation **overwrites** the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
 
 -> **NOTE:** Available since v1.122.0.
 
@@ -28,17 +28,6 @@ variable "name" {
 }
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
-}
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_18.*64"
-  most_recent = true
-  owners      = "system"
-}
-data "alicloud_instance_types" "default" {
-  availability_zone    = data.alicloud_zones.default.zones.0.id
-  cpu_core_count       = 4
-  memory_size          = 8
-  kubernetes_node_role = "Worker"
 }
 
 resource "alicloud_vpc" "default" {
@@ -102,22 +91,30 @@ resource "alicloud_ram_user_policy_attachment" "default" {
 }
 
 resource "alicloud_cs_kubernetes_permissions" "default" {
-  uid = alicloud_ram_user_policy_attachment.default.user_name
+  uid = alicloud_ram_user.default.id
   permissions {
     cluster     = alicloud_cs_managed_kubernetes.default.id
-    role_type   = "cluster"
+    role_type   = "namespace"
     role_name   = "dev"
-    namespace   = ""
     is_custom   = false
     is_ram_role = false
+    namespace   = "kube-system"
+  }
+  permissions {
+    cluster     = alicloud_cs_managed_kubernetes.default.id
+    role_type   = "namespace"
+    role_name   = "dev"
+    is_custom   = false
+    is_ram_role = false
+    namespace   = "default"
   }
 }
 
-
-#If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform. 
+# If you already have users and clusters, to complete RBAC authorization, you only need to run the following code to use Terraform.
 locals {
   cluster_id = alicloud_cs_managed_kubernetes.default.id
-  user_name  = alicloud_ram_user.default.id
+  user_id    = alicloud_ram_user.default.id
+  user_name  = alicloud_ram_user.default.name
 }
 
 resource "alicloud_ram_policy" "policy" {
@@ -150,24 +147,29 @@ resource "alicloud_ram_user_policy_attachment" "attach" {
   user_name   = local.user_name
 }
 
+# You can import resource by uid and add all required permissions to resource firstly.
+# Make sure that the required permissions are included because this resource will overwrite the permissions that have been granted to the specified RAM user.
 resource "alicloud_cs_kubernetes_permissions" "already_attach" {
-  uid = alicloud_ram_user_policy_attachment.attach.user_name
+  uid = local.user_id
+  # Define all required permissions in one resource block for one user using list permissions, otherwise they will overwrite each other.
   permissions {
     cluster     = local.cluster_id
-    role_type   = "cluster"
-    role_name   = "ops"
+    role_type   = "namespace"
+    role_name   = "dev"
     is_custom   = false
     is_ram_role = false
-    namespace   = ""
+    namespace   = "kube-system"
+  }
+  permissions {
+    cluster     = local.cluster_id
+    role_type   = "namespace"
+    role_name   = "dev"
+    is_custom   = false
+    is_ram_role = false
+    namespace   = "default"
   }
 }
-
-# Remove user permissions,Remove the current user's permissions on the cluster
-resource "alicloud_cs_kubernetes_permissions" "remove_permissions" {
-  uid = alicloud_cs_kubernetes_permissions.already_attach.uid
-}
 ```
-
 ## Argument Reference
 
 The following arguments are supported.
@@ -199,3 +201,10 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `update` - (Defaults to 60 mins) Used when activating the kubernetes cluster when necessary during update.
 * `delete` - (Defaults to 60 mins) Used when terminating the kubernetes cluster.
 
+## Import
+
+alicloud_cs_kubernetes_permissions can be imported using the RAM user id or Ram Role id, e.g.
+
+```shell
+$ terraform import alicloud_cs_kubernetes_permissions.user <uid>
+```

@@ -76,82 +76,63 @@ func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
 }
 
 func resourceAlicloudCSKubernetesPermissionsCreate(d *schema.ResourceData, meta interface{}) error {
-	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
-	}
-
-	// Query existing permissions
 	uid := d.Get("uid").(string)
-
 	// Grant Permissions
-	// If other permissions with this right already exist, the existing permissions will be merged
-	grantPermissionsRequest := buildPermissionArgs(d)
-	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
-		err := grantPermissionsForAddPerm(client, uid, grantPermissionsRequest)
-		if err == nil {
-			return resource.NonRetryableError(err)
-		}
-		time.Sleep(5 * time.Second)
-		return resource.RetryableError(Error("[ERROR] Grant user permission failed %s", d.Id()))
-	})
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "GrantPermissions", AliyunTablestoreGoSdk)
+	if err := grantPermissions(d, meta, false); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "GrantPermissions", AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug("GrantPermissions", grantPermissionsRequest, err)
 	d.SetId(uid)
 	return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
 }
 
 func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("uid", d.Id())
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+	describePerms, err := describeUserPermission(client, d.Id())
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", AlibabaCloudSdkGoERROR)
+	}
+	var permissions []map[string]interface{}
+	for _, perm := range describePerms {
+		permission := map[string]interface{}{}
+		if perm.IsRamRole != nil {
+			permission["is_ram_role"] = tea.Int64Value(perm.IsRamRole) == 1
+		}
+		resourceType := tea.StringValue(perm.ResourceType)
+		if tea.StringValue(perm.RoleType) == "custom" {
+			permission["is_custom"] = true
+			permission["role_name"] = tea.StringValue(perm.RoleName)
+		} else {
+			permission["role_name"] = tea.StringValue(perm.RoleType)
+		}
+		resourceId := tea.StringValue(perm.ResourceId)
+		if strings.Contains(resourceId, "/") {
+			parts := strings.Split(resourceId, "/")
+			permission["cluster"] = parts[0]
+			permission["namespace"] = parts[1]
+			permission["role_type"] = "namespace"
+		} else if resourceType == "cluster" {
+			permission["cluster"] = resourceId
+			permission["role_type"] = "cluster"
+		}
+		if resourceType == "console" && resourceId == "all-clusters" {
+			permission["role_type"] = "all-clusters"
+		}
+		permissions = append(permissions, permission)
+	}
+	d.Set("permissions", permissions)
 	return nil
 }
 
 func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta interface{}) error {
 	d.Partial(true)
-
-	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
-	}
-
-	uid := d.Get("uid").(string)
-
-	// Update the permissions of the specified cluster.
-	// If other permissions of the cluster already exist, they will replace the existing permissions, and they will be added if they do not exist.
-	// Keep other existing cluster permissions.
+	// Update the permissions of the specified cluster, override
 	if d.HasChange("permissions") {
-		oldValue, newValue := d.GetChange("permissions")
-		o := oldValue.(*schema.Set).List()
-		n := newValue.(*schema.Set).List()
-
-		// Remove all clusters permission
-		if len(n) == 0 {
-			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(o))
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
-			}
-			d.Partial(false)
-			return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
-		}
-
-		// Remove some clusters permission
-		if len(n) > 0 && len(n) < len(o) {
-			// get difference cluster of permissions
-			clusters := difference(parseClusterIds(o), parseClusterIds(n))
-			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, clusters)
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
-			}
-			d.Partial(false)
-		}
-		// update user permissions
-		updatePermissionsRequest := buildPermissionArgs(d)
-		err := grantPermissionsForUpdateSomeClusterPerms(client, uid, updatePermissionsRequest)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, ResourceName, "UpdateClusterPermissions", err)
+		if err := grantPermissions(d, meta, false); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, ResourceName, "UpdatePermissions", AlibabaCloudSdkGoERROR)
 		}
 		d.Partial(false)
 		return resourceAlicloudCSKubernetesPermissionsRead(d, meta)
@@ -165,22 +146,12 @@ func resourceAlicloudCSKubernetesPermissionsUpdate(d *schema.ResourceData, meta 
 }
 
 func resourceAlicloudCSKubernetesPermissionsDelete(d *schema.ResourceData, meta interface{}) error {
-	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	// Remove all permissions owned by the user
+	err := grantPermissions(d, meta, true)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveAllPermissions", AlibabaCloudSdkGoERROR)
 	}
 
-	uid := d.Id()
-
-	// Remove up some clusters permissions owned by the user
-	if v, ok := d.GetOk("permissions"); ok {
-		if perms := v.(*schema.Set).List(); len(perms) > 0 {
-			err := grantPermissionsForDeleteSomeClusterPerms(client, uid, parseClusterIds(perms))
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, ResourceName, "RemoveSomeClustersPermissions", err)
-			}
-		}
-	}
 	return nil
 }
 
@@ -206,51 +177,6 @@ func buildPermissionArgs(d *schema.ResourceData) []*cs.GrantPermissionsRequestBo
 	return grantPermissionsRequest
 }
 
-func convertDescribePermissionsToGrantPermissionsRequestBody(perms []*cs.DescribeUserPermissionResponseBody) []*cs.GrantPermissionsRequestBody {
-	var permReqs []*cs.GrantPermissionsRequestBody
-	for _, p := range perms {
-		p := p
-		req := &cs.GrantPermissionsRequestBody{
-			Cluster:   nil,
-			IsCustom:  nil,
-			RoleName:  nil,
-			RoleType:  tea.String("cluster"),
-			Namespace: nil,
-			IsRamRole: nil,
-		}
-		resourceId := ""
-		resourceType := tea.StringValue(p.ResourceType)
-
-		req.IsRamRole = tea.Bool(tea.Int64Value(p.IsRamRole) == 1)
-		if tea.StringValue(p.RoleType) == "custom" {
-			req.IsCustom = tea.Bool(true)
-			req.RoleName = tea.String(tea.StringValue(p.RoleName))
-		} else {
-			req.RoleName = tea.String(tea.StringValue(p.RoleType))
-		}
-		resourceId = tea.StringValue(p.ResourceId)
-		if strings.Contains(resourceId, "/") {
-			parts := strings.Split(resourceId, "/")
-			cluster := parts[0]
-			namespace := parts[1]
-			req.Cluster = tea.String(cluster)
-			req.Namespace = tea.String(namespace)
-			req.RoleType = tea.String("namespace")
-		} else if resourceType == "cluster" {
-			cluster := resourceId
-			req.Cluster = tea.String(cluster)
-			req.RoleType = tea.String("cluster")
-		}
-		if resourceType == "console" && resourceId == "all-clusters" {
-			req.RoleType = tea.String("all-clusters")
-		}
-
-		permReqs = append(permReqs, req)
-	}
-
-	return permReqs
-}
-
 func describeUserPermission(client *cs.Client, uid string) ([]*cs.DescribeUserPermissionResponseBody, error) {
 	resp, err := client.DescribeUserPermission(tea.String(uid))
 	if err != nil {
@@ -259,106 +185,32 @@ func describeUserPermission(client *cs.Client, uid string) ([]*cs.DescribeUserPe
 	return resp.Body, nil
 }
 
-func grantPermissions(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
-	if body == nil {
+func grantPermissions(d *schema.ResourceData, meta interface{}, isDelete bool) error {
+	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+
+	uid := d.Get("uid").(string)
+	body := buildPermissionArgs(d)
+	if isDelete || body == nil {
 		body = []*cs.GrantPermissionsRequestBody{}
 	}
 	req := &cs.GrantPermissionsRequest{
 		Body: body,
 	}
-	_, err := client.GrantPermissions(tea.String(uid), req)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func grantPermissionsForAddPerm(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
-	existPerms, err := describeUserPermission(client, uid)
-	if err != nil {
-		return err
-	}
-	perms := convertDescribePermissionsToGrantPermissionsRequestBody(existPerms)
-	perms = append(perms, body...)
-	req := &cs.GrantPermissionsRequest{
-		Body: perms,
-	}
-	_, err = client.GrantPermissions(tea.String(uid), req)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func grantPermissionsForUpdateSomeClusterPerms(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
-	describePerms, err := describeUserPermission(client, uid)
-	if err != nil {
-		return err
-	}
-	existPerms := convertDescribePermissionsToGrantPermissionsRequestBody(describePerms)
-	newPerms := []*cs.GrantPermissionsRequestBody{}
-	toUpdatePermMap := map[string][]*cs.GrantPermissionsRequestBody{}
-	for _, p := range body {
-		p := p
-		cluster := tea.StringValue(p.Cluster)
-		if _, ok := toUpdatePermMap[cluster]; !ok {
-			toUpdatePermMap[cluster] = []*cs.GrantPermissionsRequestBody{}
+	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
+		_, err := client.GrantPermissions(tea.String(uid), req)
+		if err != nil {
+			if NeedRetry(err) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		toUpdatePermMap[cluster] = append(toUpdatePermMap[cluster], p)
-	}
-	for _, p := range existPerms {
-		p := p
-		cluster := tea.StringValue(p.Cluster)
-		if v, ok := toUpdatePermMap[cluster]; ok {
-			newPerms = append(newPerms, v...)
-			delete(toUpdatePermMap, cluster)
-		} else {
-			newPerms = append(newPerms, p)
-		}
-	}
-	for _, p := range toUpdatePermMap {
-		newPerms = append(newPerms, p...)
-	}
-
-	req := &cs.GrantPermissionsRequest{
-		Body: newPerms,
-	}
-	_, err = client.GrantPermissions(tea.String(uid), req)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func grantPermissionsForDeleteSomeClusterPerms(client *cs.Client, uid string, clusters []string) error {
-	describePerms, err := describeUserPermission(client, uid)
-	if err != nil {
-		return err
-	}
-	existPerms := convertDescribePermissionsToGrantPermissionsRequestBody(describePerms)
-	var newPerms []*cs.GrantPermissionsRequestBody
-	toDeleteClusterMap := map[string]bool{}
-	for _, c := range clusters {
-		toDeleteClusterMap[c] = true
-	}
-	for _, p := range existPerms {
-		p := p
-		cluster := tea.StringValue(p.Cluster)
-		if !toDeleteClusterMap[cluster] {
-			newPerms = append(newPerms, p)
-		}
-	}
-
-	req := &cs.GrantPermissionsRequest{
-		Body: newPerms,
-	}
-
-	if len(clusters) > 0 && len(newPerms) == 0 {
-		req = &cs.GrantPermissionsRequest{Body: []*cs.GrantPermissionsRequestBody{}}
-	}
-
-	_, err = client.GrantPermissions(tea.String(uid), req)
+		return nil
+	})
+	addDebug("GrantPermissions", body, err)
 	if err != nil {
 		return err
 	}
