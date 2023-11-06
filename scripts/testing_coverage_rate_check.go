@@ -331,7 +331,9 @@ func parseConfig(resourceTest ResourceTest,
 
 				valueSuffix := string(v[len(v)-1])
 				valueStr := v[valueIndex+1 : len(v)-1]
-				if v[valueIndex+1] == '"' && strings.HasSuffix(v, "},") || strings.HasSuffix(v, "],") {
+				bracketCount := strings.Count(v, "]") + strings.Count(v, "[")
+				if v[valueIndex+1] == '"' && strings.HasSuffix(v, "},") ||
+					strings.HasSuffix(v, "],") && bracketCount%2 == 1 {
 					valueSuffix = v[len(v)-2:]
 					valueStr = v[valueIndex+1 : len(v)-2]
 				}
@@ -463,7 +465,7 @@ var (
 	configRegex       = regexp.MustCompile("(.*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
 	ignoreRegex       = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
-	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-]+)\":(.*)")
+	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
 	symbolRegex       = regexp.MustCompile(`\s`)
 	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|([+])")
 	valueFuncRegex    = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
@@ -542,4 +544,21 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 	}
 
 	return isFullCover && isIgnoreLegal && isAllModified
+}
+
+func testAll(diff *diffparser.Diff) {
+    file, err := os.Open("filename.txt")
+    if err != nil {
+        return
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    diff.Files = make([]*diffparser.DiffFile, 0, 800)
+    line := 0
+    for scanner.Scan() {
+        text := scanner.Text()
+        diff.Files = append(diff.Files, &diffparser.DiffFile{NewName: "alicloud/" + text})
+        line++
+    }
 }
