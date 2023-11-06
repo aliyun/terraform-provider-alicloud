@@ -1,38 +1,40 @@
-## 1.212.0 (Unreleased)
+## 1.213.0 (Unreleased)
+## 1.212.0 (November 06, 2023)
 
-- **New Resource:** `alicloud_rocketmq_instance` [GH-6538]
-- **New Resource:** `alicloud_rocketmq_topic` [GH-6538]
-- **New Resource:** `alicloud_rocketmq_consumer_group` [GH-6538]
-- **New Resource:** `alicloud_threat_detection_client_file_protect` [GH-6541]
-- **New Resource:** `alicloud_threat_detection_file_upload_limit` [GH-6541]
-- **New Resource:** `alicloud_threat_detection_client_user_define_rule` [GH-6541]
-- **New Resource:** `alicloud_cloud_monitor_service_monitoring_agent_process` [GH-6591]
-- **New Resource:** `alicloud_cloud_monitor_service_group_monitoring_agent_process` [GH-6595]
-- **New Resource:** `alicloud_ack_one_cluster` [GH-6600]
-- **New Resource:** `alicloud_dms_enterprise_authority_template` [GH-6605]
+- **New Resource:** `alicloud_rocketmq_instance` ([#6538](https://github.com/aliyun/terraform-provider-alicloud/issues/6538))
+- **New Resource:** `alicloud_rocketmq_topic` ([#6538](https://github.com/aliyun/terraform-provider-alicloud/issues/6538))
+- **New Resource:** `alicloud_rocketmq_consumer_group` ([#6538](https://github.com/aliyun/terraform-provider-alicloud/issues/6538))
+- **New Resource:** `alicloud_threat_detection_client_file_protect` ([#6541](https://github.com/aliyun/terraform-provider-alicloud/issues/6541))
+- **New Resource:** `alicloud_threat_detection_file_upload_limit` ([#6541](https://github.com/aliyun/terraform-provider-alicloud/issues/6541))
+- **New Resource:** `alicloud_threat_detection_client_user_define_rule` ([#6541](https://github.com/aliyun/terraform-provider-alicloud/issues/6541))
+- **New Resource:** `alicloud_cloud_monitor_service_monitoring_agent_process` ([#6591](https://github.com/aliyun/terraform-provider-alicloud/issues/6591))
+- **New Resource:** `alicloud_cloud_monitor_service_group_monitoring_agent_process` ([#6595](https://github.com/aliyun/terraform-provider-alicloud/issues/6595))
+- **New Resource:** `alicloud_ack_one_cluster` ([#6600](https://github.com/aliyun/terraform-provider-alicloud/issues/6600))
+- **New Resource:** `alicloud_dms_enterprise_authority_template` ([#6605](https://github.com/aliyun/terraform-provider-alicloud/issues/6605))
 
 ENHANCEMENTS:
 
-- resource/alicloud_threat_detection_instance: add attributes: container_image_scan_new, product_type, rasp_count, sas_cspm, sas_cspm_switch. [GH-6479]
-- resource/alicloud_ddoscoo_instance: Added the field edition_sale, address_type, bandwidth_mode and ip. [GH-6546]
-- resource/alicloud_log_project: add new attribute resource_group_id. [GH-6614]
-- resource/alicloud_privatelink_vpc_endpoint_service: add new attribute resource_group_id, service_resource_type, service_support_ipv6, zone_affinity_enabled. [GH-6616]
-- resource/alicloud_service_mesh_service_mesh: add computed tag for attributes; data-source/alicloud_service_mesh_service_meshes: add new attribute kube_config. [GH-6621]
-- resource/alicloud_mongodb_instance: Added the field encrypted, cloud_disk_encryption_key, encryptor_name, encryption_key, role_arn, backup_interval, snapshot_backup_type. [GH-6631]
-- data-source/alicloud_ddosbgp_instances: update sdk version ; resource/alicloud_ddosbgp_instance: update sdk version. [GH-6615]
-- service_alicloud_ram.go: return all users after read request. [GH-6609]
-- docs/alicloud_mongodb_instance: correct attribute retention_period's description. [GH-6610]
-- docs: fix spelling errors. [GH-6611]
-- docs: fix link. [GH-6612]
-- docs/alicloud_cms_site_monitor: Imporves the example by adding options_json parameter. [GH-6623]
-- docs: Improved sls example. [GH-6625]
-- add SecurityToken for sls client. [GH-6632]
+- resource/alicloud_threat_detection_instance: add attributes: container_image_scan_new, product_type, rasp_count, sas_cspm, sas_cspm_switch. ([#6479](https://github.com/aliyun/terraform-provider-alicloud/issues/6479))
+- resource/alicloud_ddoscoo_instance: Added the field edition_sale, address_type, bandwidth_mode and ip. ([#6546](https://github.com/aliyun/terraform-provider-alicloud/issues/6546))
+- resource/alicloud_log_project: add new attribute resource_group_id. ([#6614](https://github.com/aliyun/terraform-provider-alicloud/issues/6614))
+- resource/alicloud_privatelink_vpc_endpoint_service: add new attribute resource_group_id, service_resource_type, service_support_ipv6, zone_affinity_enabled. ([#6616](https://github.com/aliyun/terraform-provider-alicloud/issues/6616))
+- resource/alicloud_service_mesh_service_mesh: add computed tag for attributes; data-source/alicloud_service_mesh_service_meshes: add new attribute kube_config. ([#6621](https://github.com/aliyun/terraform-provider-alicloud/issues/6621))
+- resource/alicloud_mongodb_instance: Added the field encrypted, cloud_disk_encryption_key, encryptor_name, encryption_key, role_arn, backup_interval, snapshot_backup_type. ([#6631](https://github.com/aliyun/terraform-provider-alicloud/issues/6631))
+- resource/alicloud_cs_managed_kubernetes: Supports support control plane log config; Changes attributes to ForceNew, including worker_vswitch_ids, security_group_id, is_enterprise_security_group, proxy_mode, pod_cidr, service_cidr, node_cidr_mask, security_group_id; Removes the deprecated attributes, like runtime, enable_ssh, rds_instances, exclude_autoscaler_nodes, worker_number, worker_instance_types, password, key_name, kms_encrypted_password, kms_encryption_context, worker_instance_charge_type, worker_period, worker_period_unit, worker_auto_renew, worker_auto_renew_period, worker_disk_category, worker_disk_size, worker_data_disks, node_name_mode, node_port_range, os_type, platform, image_id, cpu_policy, user_data, taints, worker_disk_performance_level, worker_disk_snapshot_policy_id, install_cloud_monitor, kube_config, availability_zone  ([#6618](https://github.com/aliyun/terraform-provider-alicloud/issues/6618))
+- resource/alicloud_cs_kubernetes: Changes the attributes to ForceNew, like master_vswitch_ids, master_instance_types, master_disk_size, master_disk_category, master_instance_charge_type, master_period_unit, master_period, master_auto_renew, master_auto_renew_period, pod_cidr, service_cidr, node_cidr_mask; Removes the deprecated attributes, like exclude_autoscaler_nodes, worker_number, worker_vswitch_ids, worker_instance_types, worker_instance_charge_type, worker_period, worker_period_unit, worker_auto_renew, worker_auto_renew_period, worker_disk_category, worker_disk_size, worker_data_disks, node_port_range, cpu_policy, user_data, taints, worker_disk_performance_level, worker_disk_snapshot_policy_id, kube_config, availability_zone ([#6618](https://github.com/aliyun/terraform-provider-alicloud/issues/6618))
+- data-source/alicloud_ddosbgp_instances: update sdk version ; resource/alicloud_ddosbgp_instance: update sdk version. ([#6615](https://github.com/aliyun/terraform-provider-alicloud/issues/6615))
+- service_alicloud_ram.go: return all users after read request. ([#6609](https://github.com/aliyun/terraform-provider-alicloud/issues/6609))
+- docs/alicloud_mongodb_instance: correct attribute retention_period's description. ([#6610](https://github.com/aliyun/terraform-provider-alicloud/issues/6610))
+- docs: fix spelling errors. ([#6611](https://github.com/aliyun/terraform-provider-alicloud/issues/6611))
+- docs: fix link. ([#6612](https://github.com/aliyun/terraform-provider-alicloud/issues/6612))
+- docs/alicloud_cms_site_monitor: Imporves the example by adding options_json parameter. ([#6623](https://github.com/aliyun/terraform-provider-alicloud/issues/6623))
+- docs: Improved sls example. ([#6625](https://github.com/aliyun/terraform-provider-alicloud/issues/6625))
+- add SecurityToken for sls client. ([#6632](https://github.com/aliyun/terraform-provider-alicloud/issues/6632))
 
 BUG FIXES:
 
-- resource/alicloud_cms_group_metric_rule: Fixed cms TypeSet bug caused by tf sdk v1.17.2. [GH-6528]
-- resource/alicloud_cs_kubernetes: remove params, fix ci, support control plane log config; resource/alicloud_cs_managed_kubernetes: remove params, fix ci. [GH-6618]
-- data-source/alicloud_cloud_firewall_control_policies: Fixes the unconvertible error when setting release. [GH-6629]
+- resource/alicloud_cms_group_metric_rule: Fixed cms TypeSet bug caused by tf sdk v1.17.2. ([#6528](https://github.com/aliyun/terraform-provider-alicloud/issues/6528))
+- data-source/alicloud_cloud_firewall_control_policies: Fixes the unconvertible error when setting release. ([#6629](https://github.com/aliyun/terraform-provider-alicloud/issues/6629))
 
 ## 1.211.2 (October 20, 2023)
 
