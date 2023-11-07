@@ -251,8 +251,8 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 						"Please shorten scaling group min size and try again.", len(removed), object.MinSize)))
 				}
 			}
-			if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "ScalingActivityInProgress", "IncorrectScalingGroupStatus"}) {
-				time.Sleep(5 * time.Second)
+			if IsExpectedErrors(err, []string{"InvalidOperation.Conflict", "ScalingActivityInProgress", "IncorrectScalingGroupStatus", "InvalidInstanceId.NotFound"}) {
+				time.Sleep(8 * time.Second)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
 			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
