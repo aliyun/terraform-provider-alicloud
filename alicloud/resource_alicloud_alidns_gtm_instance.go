@@ -9,78 +9,64 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudAlidnsGtmInstance() *schema.Resource {
+func resourceAliCloudAlidnsGtmInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlidnsGtmInstanceCreate,
-		Read:   resourceAlicloudAlidnsGtmInstanceRead,
-		Update: resourceAlicloudAlidnsGtmInstanceUpdate,
-		Delete: resourceAlicloudAlidnsGtmInstanceDelete,
+		Create: resourceAliCloudAlidnsGtmInstanceCreate,
+		Read:   resourceAliCloudAlidnsGtmInstanceRead,
+		Update: resourceAliCloudAlidnsGtmInstanceUpdate,
+		Delete: resourceAliCloudAlidnsGtmInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"alert_config": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"dingtalk_notice": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"email_notice": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"notice_type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"ADDR_RESUME", "ADDR_ALERT", "ADDR_POOL_GROUP_UNAVAILABLE", "ADDR_POOL_GROUP_AVAILABLE", "ACCESS_STRATEGY_POOL_GROUP_SWITCH", "MONITOR_NODE_IP_CHANGE"}, false),
-						},
-						"sms_notice": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"alert_group": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"cname_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PUBLIC"}, false),
-			},
-			"force_update": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"lang": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"package_edition": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"standard", "ultimate"}, false),
+			},
+			"health_check_task_count": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: IntBetween(0, 100000),
+			},
+			"sms_notification_count": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: IntBetween(0, 100000),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"Subscription"}, false),
 			},
 			"period": {
 				Type:     schema.TypeInt,
 				Required: true,
+			},
+			"alert_group": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"cname_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PUBLIC"}, false),
+			},
+			"force_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"renew_period": {
 				Type:     schema.TypeInt,
@@ -95,37 +81,19 @@ func resourceAlicloudAlidnsGtmInstance() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
-			},
-			"package_edition": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard", "ultimate"}, false),
-			},
-			"health_check_task_count": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.IntBetween(0, 100000),
-			},
-			"sms_notification_count": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.IntBetween(0, 100000),
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
 			},
 			"strategy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"GEO", "LATENCY"}, false),
+				ValidateFunc: StringInSlice([]string{"GEO", "LATENCY"}, false),
 			},
 			"public_cname_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CUSTOM", "SYSTEM_ASSIGN"}, false),
+				ValidateFunc: StringInSlice([]string{"CUSTOM", "SYSTEM_ASSIGN"}, false),
 			},
 			"public_rr": {
 				Type:     schema.TypeString,
@@ -155,13 +123,42 @@ func resourceAlicloudAlidnsGtmInstance() *schema.Resource {
 			"ttl": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{60, 120, 300, 600}),
+				ValidateFunc: IntInSlice([]int{60, 120, 300, 600}),
+			},
+			"lang": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"alert_config": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"dingtalk_notice": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"email_notice": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"notice_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"ADDR_RESUME", "ADDR_ALERT", "ADDR_POOL_GROUP_UNAVAILABLE", "ADDR_POOL_GROUP_AVAILABLE", "ACCESS_STRATEGY_POOL_GROUP_SWITCH", "MONITOR_NODE_IP_CHANGE"}, false),
+						},
+						"sms_notice": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-func resourceAlicloudAlidnsGtmInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsGtmInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateInstance"
@@ -209,6 +206,18 @@ func resourceAlicloudAlidnsGtmInstanceCreate(d *schema.ResourceData, meta interf
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
 				request["ProductType"] = "dns_gtm_public_intl"
+				parameters = []map[string]string{
+					{
+						"Code":  "PackageEdition",
+						"Value": fmt.Sprint(d.Get("package_edition")),
+					},
+					{
+						"Code":  "HealthcheckTaskCount",
+						"Value": fmt.Sprint(d.Get("health_check_task_count")),
+					},
+				}
+
+				request["Parameter"] = parameters
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
@@ -226,9 +235,9 @@ func resourceAlicloudAlidnsGtmInstanceCreate(d *schema.ResourceData, meta interf
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
-	return resourceAlicloudAlidnsGtmInstanceUpdate(d, meta)
+	return resourceAliCloudAlidnsGtmInstanceUpdate(d, meta)
 }
-func resourceAlicloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alidnsService := AlidnsService{client}
 	object, err := alidnsService.DescribeAlidnsGtmInstance(d.Id())
@@ -271,6 +280,10 @@ func resourceAlicloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interfac
 				for _, alertConfigMapArgitem := range alertConfigConfigArgs {
 					alertConfigMapArg := alertConfigMapArgitem.(map[string]interface{})
 					alertConfigsMap := map[string]interface{}{}
+
+					//if _, ok :=  object["AlertConfig"]; ok {
+					//
+					//}
 					alertConfigsMap["sms_notice"] = alertConfigMapArg["SmsNotice"]
 					alertConfigsMap["notice_type"] = alertConfigMapArg["NoticeType"]
 					alertConfigsMap["email_notice"] = alertConfigMapArg["EmailNotice"]
@@ -283,7 +296,7 @@ func resourceAlicloudAlidnsGtmInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	return nil
 }
-func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewAlidnsClient()
 	if err != nil {
@@ -462,9 +475,9 @@ func resourceAlicloudAlidnsGtmInstanceUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("ttl")
 	}
 	d.Partial(false)
-	return resourceAlicloudAlidnsGtmInstanceRead(d, meta)
+	return resourceAliCloudAlidnsGtmInstanceRead(d, meta)
 }
-func resourceAlicloudAlidnsGtmInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudAlidnsGtmInstance. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudAlidnsGtmInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resourceAliCloudAlidnsGtmInstance. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
