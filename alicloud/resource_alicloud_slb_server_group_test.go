@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSLBServerGroup_vpc(t *testing.T) {
+func TestAccAliCloudSLBServerGroup_vpc(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default"
 	ra := resourceAttrInit(resourceId, serverGroupMap)
@@ -127,7 +127,7 @@ func TestAccAlicloudSLBServerGroup_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBServerGroup_multi_vpc(t *testing.T) {
+func TestAccAliCloudSLBServerGroup_multi_vpc(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default.9"
 	ra := resourceAttrInit(resourceId, serverGroupMultiVpcMap)
@@ -156,7 +156,7 @@ func TestAccAlicloudSLBServerGroup_multi_vpc(t *testing.T) {
 						{
 							"server_ids": []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
 							"port":       "100",
-							"weight":     "10",
+							"weight":     "0",
 						},
 						{
 							"server_ids": "${alicloud_instance.default.*.id}",
@@ -173,7 +173,7 @@ func TestAccAlicloudSLBServerGroup_multi_vpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBServerGroup_classic(t *testing.T) {
+func TestAccAliCloudSLBServerGroup_classic(t *testing.T) {
 	var v *slb.DescribeVServerGroupAttributeResponse
 	resourceId := "alicloud_slb_server_group.default"
 	ra := resourceAttrInit(resourceId, serverGroupMultiClassicMap)
@@ -196,12 +196,14 @@ func TestAccAlicloudSLBServerGroup_classic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_id": "${alicloud_slb_load_balancer.default.id}",
-					"name":             name,
+					"load_balancer_id":             "${alicloud_slb_load_balancer.default.id}",
+					"name":                         name,
+					"delete_protection_validation": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": "tf-testAccSlbServerGroupClassic",
+						"name":                         "tf-testAccSlbServerGroupClassic",
+						"delete_protection_validation": "false",
 					}),
 				),
 			},
@@ -297,6 +299,7 @@ data "alicloud_instance_types" "default" {
 }
 data "alicloud_instance_types" "new" {
 	eni_amount = 2
+	instance_type_family = "ecs.g5"
     availability_zone = data.alicloud_slb_zones.default.zones.0.id
 }
 data "alicloud_images" "default" {
@@ -327,13 +330,13 @@ resource "alicloud_ecs_network_interface" "default" {
 }
 resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.1.id}"
   instance_name = "${var.name}"
   count = "21"
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.1.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = data.alicloud_vswitches.default.ids[0]
@@ -450,13 +453,13 @@ resource "alicloud_security_group" "default" {
 }
 resource "alicloud_instance" "default" {
   image_id = "${data.alicloud_images.default.images.0.id}"
-  instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+  instance_type = "${data.alicloud_instance_types.default.instance_types.1.id}"
   instance_name = "${var.name}"
   count = "2"
   security_groups = "${alicloud_security_group.default.*.id}"
   internet_charge_type = "PayByTraffic"
   internet_max_bandwidth_out = "10"
-  availability_zone = "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}"
+  availability_zone = "${data.alicloud_instance_types.default.instance_types.1.availability_zones.0}"
   instance_charge_type = "PostPaid"
   system_disk_category = "cloud_efficiency"
   vswitch_id = data.alicloud_vswitches.default.ids[0]
