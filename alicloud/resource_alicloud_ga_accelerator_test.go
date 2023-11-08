@@ -247,19 +247,19 @@ func testSweepGaAccelerator(region string) error {
 	return nil
 }
 
-func TestAccAlicloudGaAccelerator_basic(t *testing.T) {
+func TestAccAliCloudGaAccelerator_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_accelerator.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaAcceleratorMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaAccelerator")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaAccelerator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAcceleratorBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaAccelerator%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAcceleratorBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -360,19 +360,19 @@ func TestAccAlicloudGaAccelerator_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaAccelerator_basic01(t *testing.T) {
+func TestAccAliCloudGaAccelerator_basic01(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_accelerator.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaAcceleratorMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaAccelerator")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaAccelerator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAcceleratorBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaAccelerator%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAcceleratorBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -455,19 +455,19 @@ func TestAccAlicloudGaAccelerator_basic01(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudGaAccelerator_basic02(t *testing.T) {
+func TestAccAliCloudGaAccelerator_basic02(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_accelerator.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaAcceleratorMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaAccelerator")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudGaAccelerator%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaAcceleratorBasicDependence)
+	name := fmt.Sprintf("tf-testAcc%sAliCloudGaAccelerator%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaAcceleratorBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -530,15 +530,15 @@ func TestAccAlicloudGaAccelerator_basic02(t *testing.T) {
 	})
 }
 
-var AlicloudGaAcceleratorMap = map[string]string{
+var AliCloudGaAcceleratorMap = map[string]string{
 	"status": CHECKSET,
 }
 
-func AlicloudGaAcceleratorBasicDependence(name string) string {
+func AliCloudGaAcceleratorBasicDependence(name string) string {
 	return ""
 }
 
-func TestUnitAlicloudGaAccelerator(t *testing.T) {
+func TestUnitAliCloudGaAccelerator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ga_accelerator"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ga_accelerator"].Schema).Data(nil, nil)
@@ -623,7 +623,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudGaAcceleratorCreate(d, rawClient)
+		err := resourceAliCloudGaAcceleratorCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -641,7 +641,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["Normal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorCreate(d, rawClient)
+		err := resourceAliCloudGaAcceleratorCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -658,7 +658,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorCreate(dCreate, rawClient)
+		err := resourceAliCloudGaAcceleratorCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -675,7 +675,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudGaAcceleratorUpdate(d, rawClient)
+		err := resourceAliCloudGaAcceleratorUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -709,7 +709,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["Normal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorUpdate(resourceData1, rawClient)
+		err := resourceAliCloudGaAcceleratorUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -743,7 +743,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorUpdate(resourceData1, rawClient)
+		err := resourceAliCloudGaAcceleratorUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -777,7 +777,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["Normal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorUpdate(resourceData1, rawClient)
+		err := resourceAliCloudGaAcceleratorUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -811,7 +811,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorUpdate(resourceData1, rawClient)
+		err := resourceAliCloudGaAcceleratorUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -830,7 +830,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorDelete(d, rawClient)
+		err := resourceAliCloudGaAcceleratorDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -847,7 +847,7 @@ func TestUnitAlicloudGaAccelerator(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudGaAcceleratorRead(d, rawClient)
+		err := resourceAliCloudGaAcceleratorRead(d, rawClient)
 		patchDoRequest.Reset()
 		assert.Nil(t, err)
 	})
