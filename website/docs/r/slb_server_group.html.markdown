@@ -7,10 +7,12 @@ description: |-
   Provides a Load Banlancer Virtual Backend Server Group resource.
 ---
 
-# alicloud\_slb\_server\_group
+# alicloud_slb_server_group
 
 A virtual server group contains several ECS instances. The virtual server group can help you to define multiple listening dimension,
 and to meet the personalized requirements of domain name and URL forwarding.
+
+-> **NOTE:** Available since v1.6.0.
 
 -> **NOTE:** One ECS instance can be added into multiple virtual server groups.
 
@@ -67,10 +69,10 @@ The following arguments are supported:
 
 * `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new virtual server group.
 * `name` - (Optional) Name of the virtual server group. Our plugin provides a default name: "tf-server-group".
-* `servers` - A list of ECS instances to be added. **NOTE:** Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows.
+* `servers` - (Deprecated since v1.163.0)A list of ECS instances to be added. **NOTE:** Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'. At most 20 ECS instances can be supported in one resource. It contains three sub-fields as `Block server` follows. See [`servers`](#servers) below for details.
 * `delete_protection_validation` - (Optional, Available in 1.63.0+) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
 
-## Block servers
+### `servers`
 
 The servers mapping supports the following:
 
@@ -84,8 +86,6 @@ The servers mapping supports the following:
 The following attributes are exported:
 
 * `id` - The ID of the virtual server group.
-* `load_balancer_id` - The Load Balancer ID which is used to launch a new virtual server group.
-* `name` - The name of the virtual server group.
 * `servers` - A list of ECS instances that have be added.
 
 ## Import
