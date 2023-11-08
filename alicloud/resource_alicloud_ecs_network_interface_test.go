@@ -436,6 +436,153 @@ func TestAccAlicloudECSNetworkInterface_secondary_private_ip_address_count(t *te
 	})
 }
 
+func TestAccAlicloudECSNetworkInterface_ipv4_prefix_address(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_network_interface.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsNetworkInterface")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 9999)
+	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceIpv4PrefixDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interface_name": name,
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"primary_ip_address":     "${cidrhost(alicloud_vswitch.default.cidr_block, 26)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interface_name": CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"security_group_ids.#":   "1",
+						"resource_group_id":      CHECKSET,
+						"primary_ip_address":     CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv4_prefixes": []string{
+						"172.16.10.16/28",
+						"172.16.10.32/28",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv4_prefixes.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv4_prefixes": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv4_prefixes.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudECSNetworkInterface_ipv4_prefix_count(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_network_interface.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsNetworkInterface")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsnetworkinterface%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsNetworkInterfaceIpv4PrefixDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_interface_name": name,
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_interface_name": CHECKSET,
+						"vswitch_id":             CHECKSET,
+						"security_group_ids.#":   "1",
+						"resource_group_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv4_prefix_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv4_prefix_count": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv4_prefix_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv4_prefix_count": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AlicloudEcsNetworkInterfaceMap = map[string]string{
 	"mac":                    CHECKSET,
 	"network_interface_name": CHECKSET,
@@ -740,6 +887,50 @@ resource "alicloud_security_group" "default" {
     name = "${var.name}"
     vpc_id = alicloud_vpc.default.id
 }
+data "alicloud_resource_manager_resource_groups" "default"{
+	status = "OK"
+}
+`, name)
+}
+
+func AlicloudEcsNetworkInterfaceIpv4PrefixDependence(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+  default = "%s"
+}
+
+data "alicloud_zones" "default" {
+    available_resource_creation= "VSwitch"
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/16"
+  zone_id                = "${data.alicloud_zones.default.zones.0.id}"
+  vswitch_name           = "${var.name}"
+}
+
+resource "alicloud_security_group" "default" {
+    name = "${var.name}"
+    vpc_id = "${alicloud_vpc.default.id}"
+}
+
+resource "alicloud_vpc_vswitch_cidr_reservation" "default" {
+	vswitch_id = "${alicloud_vswitch.default.id}"
+	cidr_reservation_cidr = "172.16.10.0/24"
+}
+
+resource "alicloud_ecs_network_interface" "example" {
+    name = "${var.name}"
+	vswitch_id = "${alicloud_vswitch.default.id}"
+    security_groups = [ "${alicloud_security_group.default.id}" ]
+	depends_on = ["alicloud_vpc_vswitch_cidr_reservation.default"]
+}
+
 data "alicloud_resource_manager_resource_groups" "default"{
 	status = "OK"
 }

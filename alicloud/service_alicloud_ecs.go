@@ -3468,6 +3468,78 @@ func (s *EcsService) WaitForModifyIpv6Address(id string, addressList []string, t
 		}
 	}
 }
+
+func (s *EcsService) WaitForModifyIpv4PrefixCount(id string, count int, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	var ipv4PrefixSetList []interface{}
+	for {
+		object, err := s.DescribeEcsNetworkInterface(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if v, ok := object["Ipv4PrefixSets"].(map[string]interface{})["Ipv4PrefixSet"]; ok {
+			ipv4PrefixSetList = v.([]interface{})
+
+			if len(ipv4PrefixSetList) == count {
+				return nil
+			}
+		} else if count == 0 {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, len(ipv4PrefixSetList), count, ProviderERROR)
+		}
+	}
+}
+
+func (s *EcsService) WaitForModifyIpv4Prefix(id string, addressList []string, timeout int) error {
+	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+
+	sort.Strings(addressList)
+	for {
+		ipv4PrefixSetList := make([]string, 0)
+		object, err := s.DescribeEcsNetworkInterface(id)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		if v, ok := object["Ipv4PrefixSets"].(map[string]interface{})["Ipv4PrefixSet"]; ok {
+			for _, v := range v.([]interface{}) {
+				ipv4PrefixSet := v.(map[string]interface{})
+				ipv4PrefixSetList = append(ipv4PrefixSetList, fmt.Sprint(ipv4PrefixSet["Ipv4Prefix"]))
+			}
+			sort.Strings(ipv4PrefixSetList)
+			if len(ipv4PrefixSetList) != len(addressList) {
+				continue
+			}
+
+			if len(ipv4PrefixSetList) == 0 {
+				return nil
+			}
+
+			diff := false
+			for key, value := range ipv4PrefixSetList {
+				if value != addressList[key] {
+					diff = true
+					continue
+				}
+			}
+			if !diff {
+				return nil
+			}
+
+		} else if len(addressList) == 0 {
+			return nil
+		}
+
+		if time.Now().After(deadline) {
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, ipv4PrefixSetList, addressList, ProviderERROR)
+		}
+	}
+}
+
 func (s *EcsService) DescribeEcsCapacityReservation(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewEcsClient()
 	if err != nil {
