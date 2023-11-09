@@ -267,6 +267,20 @@ func resourceAliCloudInstance() *schema.Resource {
 					},
 				},
 			},
+			"network_interfaces": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"network_interface_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
 			"subnet_id": {
 				Type:     schema.TypeString,
@@ -795,6 +809,18 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DataDisk"] = disksMaps
 	}
 
+	if v, ok := d.GetOk("network_interfaces"); ok {
+		networkInterfacesMaps := make([]map[string]interface{}, 0)
+		interfaces := v.([]interface{})
+		for _, rew := range interfaces {
+			networkInterfacesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+			networkInterfacesMap["NetworkInterfaceId"] = item["network_interface_id"].(string)
+			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
+		}
+		request["NetworkInterface"] = networkInterfacesMaps
+	}
+
 	if v, ok := d.GetOk("hpc_cluster_id"); ok {
 		request["HpcClusterId"] = v
 	}
@@ -1040,13 +1066,20 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("period_unit", periodUnit)
 	}
 	networkInterfaceId := ""
+	networkInterfaceMaps := make([]map[string]interface{}, 0)
 	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
+
 		if obj.Type == "Primary" {
 			networkInterfaceId = obj.NetworkInterfaceId
 			d.Set("primary_ip_address", obj.PrimaryIpAddress)
-			break
+		} else {
+			networkInterfaceMap := make(map[string]interface{})
+			networkInterfaceMap["network_interface_id"] = obj.NetworkInterfaceId
+			networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 		}
 	}
+	d.Set("network_interfaces", networkInterfaceMaps)
+
 	if len(networkInterfaceId) != 0 {
 		object, err := ecsService.DescribeEcsNetworkInterface(networkInterfaceId)
 		if err != nil {
