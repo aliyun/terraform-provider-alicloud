@@ -938,7 +938,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_ddr_instance":                                     resourceAlicloudRdsDdrInstance(),
 			"alicloud_mongodb_instance":                                     resourceAliCloudMongoDBInstance(),
 			"alicloud_mongodb_sharding_instance":                            resourceAlicloudMongoDBShardingInstance(),
-			"alicloud_gpdb_instance":                                        resourceAlicloudGpdbInstance(),
+			"alicloud_gpdb_instance":                                        resourceAliCloudGpdbInstance(),
 			"alicloud_gpdb_elastic_instance":                                resourceAlicloudGpdbElasticInstance(),
 			"alicloud_gpdb_connection":                                      resourceAlicloudGpdbConnection(),
 			"alicloud_tag_policy":                                           resourceAlicloudTagPolicy(),

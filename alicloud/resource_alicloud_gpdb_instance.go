@@ -15,12 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGpdbInstance() *schema.Resource {
+func resourceAliCloudGpdbInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGpdbDbInstanceCreate,
-		Read:   resourceAlicloudGpdbDbInstanceRead,
-		Update: resourceAlicloudGpdbDbInstanceUpdate,
-		Delete: resourceAlicloudGpdbDbInstanceDelete,
+		Create: resourceAliCloudGpdbDbInstanceCreate,
+		Read:   resourceAliCloudGpdbDbInstanceRead,
+		Update: resourceAliCloudGpdbDbInstanceUpdate,
+		Delete: resourceAliCloudGpdbDbInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -45,10 +45,15 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"db_instance_mode": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"StorageElastic", "Serverless", "Classic"}, false),
+			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"db_instance_category": {
 				Type:         schema.TypeString,
@@ -56,12 +61,6 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Basic", "HighAvailability"}, false),
-			},
-			"db_instance_mode": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"StorageElastic", "Serverless", "Classic"}, false),
 			},
 			"instance_spec": {
 				Type:         schema.TypeString,
@@ -96,7 +95,6 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 			"instance_group_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -110,19 +108,16 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
 			},
-			"private_ip_address": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
-			"master_node_num": {
+			"master_cu": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      1,
-				ValidateFunc: IntInSlice([]int{1, 2}),
+				Computed:     true,
+				ValidateFunc: IntInSlice([]int{2, 4, 8, 16, 32}),
 			},
 			"seg_node_num": {
 				Type:         schema.TypeInt,
@@ -220,7 +215,6 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Type:          schema.TypeSet,
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"ip_whitelist"},
 				Deprecated:    "Field 'security_ip_list' has been deprecated from version 1.187.0. Use 'ip_whitelist' instead.",
 			},
@@ -229,7 +223,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Optional:      true,
 				ForceNew:      true,
 				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"Prepaid", "PostPaid"}, false),
+				ValidateFunc:  StringInSlice([]string{"Prepaid", "Postpaid"}, false),
 				ConflictsWith: []string{"payment_type"},
 				Deprecated:    "Field `instance_charge_type` has been deprecated from version 1.187.0. Use `payment_type` instead.",
 			},
@@ -240,6 +234,16 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"zone_id"},
 				Deprecated:    "Field 'availability_zone' has been deprecated from version 1.187.0. Use 'zone_id' instead.",
+			},
+			"master_node_num": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Removed:  "Field `master_node_num` has been removed from provider version 1.213.0.",
+			},
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field `private_ip_address` has been removed from provider version 1.213.0.",
 			},
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -257,7 +261,7 @@ func resourceAlicloudGpdbInstance() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
 	var response map[string]interface{}
@@ -273,6 +277,7 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 	request["Engine"] = d.Get("engine")
 	request["EngineVersion"] = d.Get("engine_version")
 	request["VSwitchId"] = d.Get("vswitch_id")
+	request["DBInstanceMode"] = d.Get("db_instance_mode")
 	request["SecurityIPList"] = LOCAL_HOST_IP
 
 	if v, ok := d.GetOk("db_instance_class"); ok {
@@ -281,10 +286,6 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("db_instance_category"); ok {
 		request["DBInstanceCategory"] = v
-	}
-
-	if v, ok := d.GetOk("db_instance_mode"); ok {
-		request["DBInstanceMode"] = v
 	}
 
 	if v, ok := d.GetOk("instance_spec"); ok {
@@ -323,16 +324,12 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["Period"] = v
 	}
 
-	if v, ok := d.GetOk("private_ip_address"); ok {
-		request["PrivateIpAddress"] = v
-	}
-
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 
-	if v, ok := d.GetOk("master_node_num"); ok {
-		request["MasterNodeNum"] = v
+	if v, ok := d.GetOk("master_cu"); ok {
+		request["MasterCU"] = v
 	}
 
 	if v, ok := d.GetOk("seg_node_num"); ok {
@@ -411,10 +408,10 @@ func resourceAlicloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGpdbDbInstanceUpdate(d, meta)
+	return resourceAliCloudGpdbDbInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
 	object, err := gpdbService.DescribeGpdbDbInstance(d.Id())
@@ -437,8 +434,9 @@ func resourceAlicloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("zone_id", object["ZoneId"])
 	d.Set("availability_zone", object["ZoneId"])
 	d.Set("payment_type", convertGpdbDbInstancePaymentTypeResponse(object["PayType"]))
-	d.Set("instance_charge_type", convertGpdbDbInstancePaymentTypeResponse(object["PayType"]))
-	d.Set("master_node_num", formatInt(object["MasterNodeNum"]))
+	d.Set("instance_charge_type", object["PayType"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("master_cu", formatInt(object["MasterCU"]))
 	d.Set("seg_node_num", formatInt(object["SegNodeNum"]))
 	d.Set("encryption_type", object["EncryptionType"])
 	d.Set("encryption_key", object["EncryptionKey"])
@@ -500,7 +498,7 @@ func resourceAlicloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gpdbService := GpdbService{client}
 	conn, err := client.NewGpdbClient()
@@ -509,6 +507,9 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	}
 	var response map[string]interface{}
 	request := make(map[string]interface{})
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -532,7 +533,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyDBInstanceDescription"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -563,7 +564,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyDBInstanceResourceGroup"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -600,7 +601,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyDBInstanceMaintainTime"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -640,7 +641,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 				action := "ModifySecurityIps"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -673,7 +674,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 				action := "ModifySecurityIps"
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -703,7 +704,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			action := "ModifySecurityIps"
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -737,7 +738,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
@@ -764,43 +765,6 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		"DBInstanceId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("master_node_num") {
-		update = true
-		if v, ok := d.GetOk("master_node_num"); ok {
-			request["UpgradeType"] = 2
-			request["MasterNodeNum"] = v
-		}
-	}
-	if update {
-		action := "UpgradeDBInstance"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("master_node_num")
-	}
-
-	update = false
-	request = map[string]interface{}{
-		"DBInstanceId": d.Id(),
-	}
-	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("instance_spec") {
 		update = true
 		if v, ok := d.GetOk("instance_spec"); ok {
@@ -812,7 +776,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
@@ -849,7 +813,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing", "InternalError"}) || NeedRetry(err) {
 					wait()
@@ -884,7 +848,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyDBInstanceSSL"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -921,7 +885,7 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		action := "ModifyVectorConfiguration"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -945,12 +909,52 @@ func resourceAlicloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("vector_configuration_status")
 	}
 
+	update = false
+	modifyMasterSpec := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("master_cu") {
+		update = true
+	}
+	if v, ok := d.GetOk("master_cu"); ok {
+		modifyMasterSpec["MasterCU"] = v
+	}
+
+	if update {
+		action := "ModifyMasterSpec"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, modifyMasterSpec, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyMasterSpec)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("master_cu")
+	}
+
 	d.Partial(false)
 
-	return resourceAlicloudGpdbDbInstanceRead(d, meta)
+	return resourceAliCloudGpdbDbInstanceRead(d, meta)
 }
 
-func resourceAlicloudGpdbDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGpdbDbInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
