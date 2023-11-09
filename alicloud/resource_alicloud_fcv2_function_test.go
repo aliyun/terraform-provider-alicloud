@@ -18,7 +18,7 @@ import (
 
 // Test Fcv2 Function. >>> Resource test cases, automatically generated.
 // Case 3393
-func TestAccAliCloudcv2Function_basic3393(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3393(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
@@ -770,7 +770,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3270
-func TestAccAliCloudcv2Function_basic3270(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3270(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
@@ -1307,7 +1307,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3395
-func TestAccAliCloudcv2Function_basic3395(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3395(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)
@@ -1920,7 +1920,7 @@ resource "alicloud_ram_role_policy_attachment" "acr" {
 }
 
 // Case 3393  twin
-func TestAccAliCloudcv2Function_basic3393_twin(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3393_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3393)
@@ -2059,7 +2059,7 @@ func TestAccAliCloudcv2Function_basic3393_twin(t *testing.T) {
 }
 
 // Case 3270  twin
-func TestAccAliCloudcv2Function_basic3270_twin(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3270_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3270)
@@ -2155,7 +2155,7 @@ func TestAccAliCloudcv2Function_basic3270_twin(t *testing.T) {
 }
 
 // Case 3395  twin
-func TestAccAliCloudcv2Function_basic3395_twin(t *testing.T) {
+func TestAccAliCloudFcv2Function_basic3395_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_fcv2_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcv2FunctionMap3395)

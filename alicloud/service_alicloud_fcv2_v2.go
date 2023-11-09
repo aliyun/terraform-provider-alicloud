@@ -22,7 +22,6 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
@@ -35,14 +34,11 @@ func (s *Fcv2ServiceV2) DescribeFcv2Function(id string) (object map[string]inter
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
-
+		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

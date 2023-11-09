@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -503,9 +505,12 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 	request["function"] = objectDataLocalMap
 
 	body = objectDataLocalMap
+	headerParams := make(map[string]*string)
+	b, err := json.Marshal(body)
+	headerParams["content-md5"] = tea.String(MD5(b))
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, headerParams, body, &util.RuntimeOptions{})
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
@@ -524,7 +529,7 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 
 	d.SetId(fmt.Sprintf("%v:%v", serviceName, objectDataLocalMap["functionName"]))
 
-	return resourceAliCloudFcv2FunctionUpdate(d, meta)
+	return resourceAliCloudFcv2FunctionRead(d, meta)
 }
 
 func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) error {
@@ -745,9 +750,9 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 	if d.HasChange("runtime") {
 		update = true
-		if v, ok := d.GetOk("runtime"); ok {
-			objectDataLocalMap["runtime"] = v
-		}
+	}
+	if v, ok := d.GetOk("runtime"); ok {
+		objectDataLocalMap["runtime"] = v
 	}
 	if d.HasChange("timeout") {
 		update = true
@@ -969,10 +974,13 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 	}
 
 	body = objectDataLocalMap
+	headerParams := make(map[string]*string)
+	b, err := json.Marshal(body)
+	headerParams["content-md5"] = tea.String(MD5(b))
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, headerParams, body, &util.RuntimeOptions{})
 
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
@@ -1002,17 +1010,15 @@ func resourceAliCloudFcv2FunctionDelete(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 
-	body = request
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {

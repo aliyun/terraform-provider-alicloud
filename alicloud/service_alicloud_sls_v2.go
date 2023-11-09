@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/tidwall/sjson"
 )
 
 type SlsServiceV2 struct {
@@ -25,7 +23,6 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	var hostMap map[string]*string
 	action := fmt.Sprintf("/")
 	conn, err := client.NewSlsClient()
@@ -33,17 +30,15 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap = make(map[string]*string)
 	hostMap["project"] = StringPointer(id)
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetProject", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(genRoaParam("GetProject", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -70,7 +65,6 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	var hostMap map[string]*string
 	action := fmt.Sprintf("/tags")
 	conn, err := client.NewSlsClient()
@@ -78,24 +72,16 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap = make(map[string]*string)
 	query["resourceType"] = StringPointer("PROJECT")
 	query["resourceId"] = StringPointer(convertListToJsonString(convertListStringToListInterface([]string{id})))
-	jsonString := "{}"
-	jsonString, _ = sjson.Set(jsonString, "resourceId[0]", id)
-	err = json.Unmarshal([]byte(jsonString), &request)
-	if err != nil {
-		return object, WrapError(err)
-	}
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("ListTagResources", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(genRoaParam("ListTagResources", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
