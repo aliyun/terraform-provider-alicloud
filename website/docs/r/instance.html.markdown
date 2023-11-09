@@ -177,6 +177,7 @@ Setting it to null can cancel automatic release feature, and the ECS instance wi
     - Active: Enable security enhancement strategy, it only works on system images.
     - Deactive: Disable security enhancement strategy, it works on all images.
 * `data_disks` - (Optional, ForceNew, Available 1.23.1) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
+* `network_interfaces` - (Optional, ForceNew, Available 1.212.0) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `status` - (Optional 1.85.0) The instance status. Valid values: ["Running", "Stopped"]. You can control the instance start and stop through this parameter. Default to `Running`.
 * `hpc_cluster_id` - (Optional, ForceNew, Available since 1.144.0) The ID of the Elastic High Performance Computing (E-HPC) cluster to which to assign the instance.
 * `secondary_private_ips` - (Optional, Available since 1.144.0) A list of Secondary private IP addresses which is selected from within the CIDR block of the VSwitch.
@@ -248,6 +249,10 @@ The data_disks supports the following:
 * `delete_with_instance` - (Optional, ForceNew) Delete this data disk when the instance is destroyed. It only works on cloud, cloud_efficiency, cloud_essd, cloud_ssd disk. If the category of this data disk was ephemeral_ssd, please don't set this param. Default value: `true`.
 * `description` - (Optional, ForceNew) The description of the data disk.
 * `device` - (Optional, ForceNew, Available since 1.183.0) The mount point of the data disk.
+
+### `network_interfaces`
+The network_interfaces supports the following. Currently only one secondary ENI can be specified.
+* `network_interface_id` - (Optional, ForceNew) The ID of the secondary ENI.
 
 ### `maintenance_time`
 
