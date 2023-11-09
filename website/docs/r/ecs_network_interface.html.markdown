@@ -13,7 +13,7 @@ Provides a ECS Network Interface resource.
 
 For information about ECS Network Interface and how to use it, see [What is Network Interface](https://www.alibabacloud.com/help/en/doc-detail/58504.htm).
 
--> **NOTE:** Available in v1.123.1+.
+-> **NOTE:** Available since v1.123.1.
 
 -> **NOTE** Only one of `private_ip_addresses` or `secondary_private_ip_address_count` can be specified when assign private IPs. 
 
@@ -23,7 +23,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-testAcc"
+  default = "tf-example"
 }
 
 resource "alicloud_vpc" "default" {
@@ -87,6 +87,8 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `ipv6_address_count` - (Optional, Computed, Available in 1.193.0+) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
+* `ipv4_prefix_count` - (Optional, Computed, Available in 1.213.0+) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
+* `ipv4_prefixes` - (Optional, Computed, Available in 1.213.0+) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
 
 ## Attributes Reference
 
@@ -96,7 +98,7 @@ The following attributes are exported:
 * `mac` - The MAC address of the ENI.
 * `status` - The status of the ENI.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
