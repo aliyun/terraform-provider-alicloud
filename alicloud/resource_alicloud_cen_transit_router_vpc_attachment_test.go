@@ -21,10 +21,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
+func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
 	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterVpcAttachmentMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouterVpcAttachment")
@@ -32,24 +33,19 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCenTransitRouterVpcAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterVpcAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":                                "${alicloud_cen_instance.default.id}",
-					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
-					"transit_router_attachment_name":        name,
-					"transit_router_attachment_description": "tf-test",
-					"vpc_id":                                "${data.alicloud_vpcs.default.ids.0}",
+					"cen_id": "${alicloud_cen_transit_router.default.cen_id}",
+					"vpc_id": "${data.alicloud_vpcs.default.ids.0}",
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
@@ -63,72 +59,19 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cen_id":                                CHECKSET,
-						"transit_router_id":                     CHECKSET,
-						"transit_router_attachment_name":        name,
-						"transit_router_attachment_description": "tf-test",
-						"vpc_id":                                CHECKSET,
-						"zone_mappings.#":                       "2",
+						"cen_id":          CHECKSET,
+						"vpc_id":          CHECKSET,
+						"zone_mappings.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
-							"zone_id":    "${data.alicloud_vswitches.default_master.vswitches.0.zone_id}",
-						},
-					},
+					"auto_publish_route_enabled": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"zone_mappings.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${data.alicloud_vswitches.default.vswitches.0.id}",
-							"zone_id":    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"zone_mappings.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_type": "VPC",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_type": "VPC",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"transit_router_attachment_description": "desp1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"transit_router_attachment_description": "desp1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"transit_router_attachment_name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"transit_router_attachment_name": name + "update",
+						"auto_publish_route_enabled": "true",
 					}),
 				),
 			},
@@ -143,19 +86,74 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_attachment_description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_attachment_description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
+							"zone_id":    "${data.alicloud_vswitches.default_master.vswitches.0.zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${data.alicloud_vswitches.default.vswitches.0.id}",
+							"zone_id":    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "TransitRouterVpcAttachment",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "TransitRouterVpcAttachment",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
+func TestAccAliCloudCenTransitRouterVpcAttachment_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
 	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterVpcAttachmentMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouterVpcAttachment")
@@ -163,24 +161,26 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCenTransitRouterVpcAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterVpcAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cen_id":                                "${alicloud_cen_instance.default.id}",
-					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
-					"transit_router_attachment_name":        name,
-					"transit_router_attachment_description": "tf-test",
+					"cen_id":                                "${alicloud_cen_transit_router.default.cen_id}",
 					"vpc_id":                                "${data.alicloud_vpcs.default.ids.0}",
+					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
+					"resource_type":                         "VPC",
+					"payment_type":                          "PayAsYouGo",
+					"vpc_owner_id":                          "${data.alicloud_account.default.id}",
+					"auto_publish_route_enabled":            "true",
+					"transit_router_attachment_name":        name,
+					"transit_router_attachment_description": name,
 					"zone_mappings": []map[string]interface{}{
 						{
 							"vswitch_id": "${data.alicloud_vswitches.default_master.vswitches.0.id}",
@@ -191,12 +191,6 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 							"zone_id":    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 						},
 					},
-					"dry_run":                         "false",
-					"resource_type":                   "VPC",
-					"route_table_association_enabled": "false",
-					"route_table_propagation_enabled": "false",
-					"vpc_owner_id":                    "${data.alicloud_account.default.id}",
-					"payment_type":                    "PayAsYouGo",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "TransitRouterVpcAttachment",
@@ -205,17 +199,15 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cen_id":                                CHECKSET,
-						"transit_router_id":                     CHECKSET,
-						"transit_router_attachment_name":        name,
-						"transit_router_attachment_description": "tf-test",
 						"vpc_id":                                CHECKSET,
-						"zone_mappings.#":                       "2",
-						"dry_run":                               "false",
+						"transit_router_id":                     CHECKSET,
 						"resource_type":                         "VPC",
-						"route_table_association_enabled":       "false",
-						"route_table_propagation_enabled":       "false",
-						"vpc_owner_id":                          CHECKSET,
 						"payment_type":                          "PayAsYouGo",
+						"vpc_owner_id":                          CHECKSET,
+						"auto_publish_route_enabled":            "true",
+						"transit_router_attachment_name":        name,
+						"transit_router_attachment_description": name,
+						"zone_mappings.#":                       "2",
 						"tags.%":                                "2",
 						"tags.Created":                          "TF",
 						"tags.For":                              "TransitRouterVpcAttachment",
@@ -223,127 +215,24 @@ func TestAccAlicloudCenTransitRouterVpcAttachment_basic1(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF_Update",
-						"For":     "TransitRouterVpcAttachment_Update",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF_Update",
-						"tags.For":     "TransitRouterVpcAttachment_Update",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCenTransitRouterVpcAttachment_basic2(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCenTransitRouterVpcAttachment")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccCenTransitRouterVpcAttachment%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence1)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.CenTransitRouterVpcAttachmentSupportRegions)
-		},
-
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cen_id":                                "${alicloud_cen_instance.default.id}",
-					"transit_router_id":                     "${alicloud_cen_transit_router.default.transit_router_id}",
-					"transit_router_attachment_name":        name,
-					"transit_router_attachment_description": name,
-					"vpc_id":                                "${alicloud_vpc.default.id}",
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${alicloud_vswitch.default.id}",
-							"zone_id":    "${alicloud_vswitch.default.zone_id}",
-						},
-					},
-					"dry_run":                         "false",
-					"resource_type":                   "VPC",
-					"route_table_association_enabled": "false",
-					"route_table_propagation_enabled": "false",
-					"vpc_owner_id":                    "${data.alicloud_account.default.id}",
-					"payment_type":                    "PayAsYouGo",
-					"auto_publish_route_enabled":      "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"cen_id":                                CHECKSET,
-						"transit_router_id":                     CHECKSET,
-						"transit_router_attachment_name":        name,
-						"transit_router_attachment_description": name,
-						"vpc_id":                                CHECKSET,
-						"zone_mappings.#":                       "1",
-						"dry_run":                               "false",
-						"resource_type":                         "VPC",
-						"route_table_association_enabled":       "false",
-						"route_table_propagation_enabled":       "false",
-						"vpc_owner_id":                          CHECKSET,
-						"payment_type":                          "PayAsYouGo",
-						"auto_publish_route_enabled":            "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_publish_route_enabled": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_publish_route_enabled": "false",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "route_table_association_enabled", "route_table_propagation_enabled", "transit_router_id"},
-			},
-		},
-	})
+var AliCloudCenTransitRouterVpcAttachmentMap = map[string]string{
+	"transit_router_id":            CHECKSET,
+	"resource_type":                CHECKSET,
+	"payment_type":                 CHECKSET,
+	"vpc_owner_id":                 CHECKSET,
+	"transit_router_attachment_id": CHECKSET,
+	"status":                       CHECKSET,
 }
 
-var AlicloudCenTransitRouterVpcAttachmentMap = map[string]string{
-	"cen_id":                                CHECKSET,
-	"dry_run":                               NOSET,
-	"resource_type":                         "VPC",
-	"route_table_association_enabled":       NOSET,
-	"route_table_propagation_enabled":       NOSET,
-	"status":                                CHECKSET,
-	"transit_router_attachment_description": CHECKSET,
-	"transit_router_attachment_name":        CHECKSET,
-	"transit_router_id":                     CHECKSET,
-	"vpc_id":                                CHECKSET,
-	"vpc_owner_id":                          CHECKSET,
-	"zone_mappings.#":                       "2",
-}
-
-func AlicloudCenTransitRouterVpcAttachmentBasicDependence(name string) string {
+func AliCloudCenTransitRouterVpcAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -381,43 +270,7 @@ func AlicloudCenTransitRouterVpcAttachmentBasicDependence(name string) string {
 `, name)
 }
 
-func AlicloudCenTransitRouterVpcAttachmentBasicDependence1(name string) string {
-	return fmt.Sprintf(`
-	variable "name" {
-  		default = "%s"
-	}
-
-	data "alicloud_account" "default" {
-	}
-
-	data "alicloud_zones" "default" {
-  		available_resource_creation = "VSwitch"
-	}
-
-	resource "alicloud_vpc" "default" {
-  		vpc_name   = var.name
-  		cidr_block = "172.16.0.0/12"
-	}
-
-	resource "alicloud_vswitch" "default" {
-  		vswitch_name = var.name
-  		vpc_id       = alicloud_vpc.default.id
-		cidr_block   = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-		zone_id      = data.alicloud_zones.default.zones.0.id
-	}
-
-	resource "alicloud_cen_instance" "default" {
-  		cen_instance_name = var.name
-	}
-
-	resource "alicloud_cen_transit_router" "default" {
-  		transit_router_name = var.name
-  		cen_id              = alicloud_cen_instance.default.id
-	}
-`, name)
-}
-
-func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
+func TestUnitAliCloudCenTransitRouterVpcAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cen_transit_router_vpc_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cen_transit_router_vpc_attachment"].Schema).Data(nil, nil)
@@ -525,7 +378,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -542,7 +395,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentCreate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -559,7 +412,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentCreate(dCreate, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -577,7 +430,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudCenTransitRouterVpcAttachmentUpdate(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -612,7 +465,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -647,7 +500,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -662,7 +515,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -679,7 +532,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -699,7 +552,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 		patcheDescribeCenTransitRouterVpcAttachment := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenTransitRouterVpcAttachment", func(*CbnService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeCenTransitRouterVpcAttachment.Reset()
 		assert.Nil(t, err)
@@ -717,7 +570,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -733,7 +586,7 @@ func TestUnitAlicloudCenTransitRouterVpcAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCenTransitRouterVpcAttachmentRead(d, rawClient)
+		err := resourceAliCloudCenTransitRouterVpcAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
