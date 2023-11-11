@@ -32,9 +32,10 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 				Optional: true,
 			},
 			"connect_bandwidth": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(100, 10240),
+				Computed:     true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -78,6 +79,7 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 			"service_support_ipv6": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -91,6 +93,7 @@ func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
 			"zone_affinity_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}

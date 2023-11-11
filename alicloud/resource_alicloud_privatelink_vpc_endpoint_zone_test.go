@@ -22,7 +22,7 @@ import (
 )
 
 // Currently, Private network slb can only be created through the console.
-func SkipTestAccAlicloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_zone.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointZoneMap)
@@ -37,6 +37,7 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SlbPrivateNetSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -46,8 +47,8 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointZone_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.default.id}",
-					"vswitch_id":  "${data.alicloud_vswitches.default.ids.0}",
-					"zone_id":     "eu-central-1a",
+					"vswitch_id":  "${alicloud_vswitch.default.id}",
+					"zone_id":     "${alicloud_vswitch.default.zone_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{}),
@@ -69,31 +70,52 @@ var AlicloudPrivatelinkVpcEndpointZoneMap = map[string]string{
 
 func AlicloudPrivatelinkVpcEndpointZoneBasicDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	     name_regex = "^default-NODELETING$"
+	data "alicloud_slb_zones" "default" {}
+
+	resource "alicloud_vpc" "default" {
+	  description = "test-terraform-service"
+	  cidr_block  = "10.0.0.0/8"
+	  vpc_name    = "%[1]s"
 	}
+	
+	resource "alicloud_vswitch" "default" {
+	  vpc_id     = alicloud_vpc.default.id
+	  zone_id    = data.alicloud_slb_zones.default.zones.0.id
+	  cidr_block = "10.1.0.0/16"
+	}
+
+	resource "alicloud_slb_load_balancer" "default" {
+	  load_balancer_name = "%[1]s"
+	  load_balancer_spec  = "slb.s2.small"
+      address_type = "intranet"
+      instance_charge_type = "PayBySpec"
+      vswitch_id = alicloud_vswitch.default.id
+      master_zone_id = data.alicloud_slb_zones.default.zones.0.id
+      slave_zone_id = data.alicloud_slb_zones.default.zones.1.id
+	}
+
 	data "alicloud_vswitches" "default" {
 	 	 is_default = true
 	}
 	resource "alicloud_security_group" "default" {
 	 name = "%[1]s"
 	 description = "privatelink test security group"
-	 vpc_id = data.alicloud_vpcs.default.ids.0
+	 vpc_id = alicloud_vpc.default.id
 	}
 	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
-	service_description = "test for privatelink connection"
-	connect_bandwidth = 103
-	auto_accept_connection = false
+	  service_description   = "test for privatelink connection"
+	  service_resource_type = "slb"
+      auto_accept_connection = false
 	}
 	resource "alicloud_privatelink_vpc_endpoint_service_resource" "default" {
 	 service_id    =  "${alicloud_privatelink_vpc_endpoint_service.default.id}"
-	 resource_id   =  "lb-gw8nuyxxxx"
+	 resource_id   =  "${alicloud_slb_load_balancer.default.id}"
 	 resource_type = "slb"
 	}
 	resource "alicloud_privatelink_vpc_endpoint" "default" {
 	 service_id = alicloud_privatelink_vpc_endpoint_service_resource.default.service_id
-	 vpc_id = data.alicloud_vpcs.default.ids.0
-	 security_group_id = [alicloud_security_group.default.id]
+	 vpc_id = alicloud_vpc.default.id
+	 security_group_ids = [alicloud_security_group.default.id]
 	 vpc_endpoint_name = "%[1]s"
 	 depends_on = [alicloud_privatelink_vpc_endpoint_service.default]
 	}
@@ -171,7 +193,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointZoneCreate(dInit, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointZoneCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -196,7 +218,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointZoneCreate(dInit, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointZoneCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -215,7 +237,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudPrivatelinkVpcEndpointZoneUpdate(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointZoneUpdate(dExisted, rawClient)
 	assert.NotNil(t, err)
 
 	// Read
@@ -245,7 +267,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointZoneRead(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointZoneRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -264,7 +286,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointZoneDelete(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointZoneDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -292,7 +314,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointZoneDelete(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointZoneDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -302,3 +324,140 @@ func TestUnitAlicloudPrivatelinkVpcEndpointZone(t *testing.T) {
 		}
 	}
 }
+
+// Test PrivateLink VpcEndpointZone. >>> Resource test cases, automatically generated.
+// Case 4898
+func TestAccAliCloudPrivateLinkVpcEndpointZone_basic4898(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_zone.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointZoneMap4898)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointZone")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointzone%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointZoneBasicDependence4898)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":     "${data.alicloud_nlb_zones.default.zones.0.id}",
+					"endpoint_id": "${alicloud_privatelink_vpc_endpoint.defaulti9F95i.id}",
+					"vswitch_id":  "${alicloud_vswitch.defaultmEwUAc.id}",
+					"eni_ip":      "10.1.0.245",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":     CHECKSET,
+						"endpoint_id": CHECKSET,
+						"vswitch_id":  CHECKSET,
+						"eni_ip":      "10.1.0.245",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudPrivateLinkVpcEndpointZoneMap4898 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudPrivateLinkVpcEndpointZoneBasicDependence4898(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "defaultbFzA4a" {
+  description = "test-terraform"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+
+}
+
+resource "alicloud_vswitch" "defaultmEwUAc" {
+  vpc_id     = alicloud_vpc.defaultbFzA4a.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_security_group" "default1FTFrP" {
+  name = var.name
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "defaultr0WBYX" {
+  service_description   = "test-zejun-service"
+  connect_bandwidth     = "3072"
+  service_resource_type = "nlb"
+}
+
+resource "alicloud_privatelink_vpc_endpoint" "defaulti9F95i" {
+  vpc_id     = alicloud_vpc.defaultbFzA4a.id
+  service_id = alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id
+  security_group_ids = [alicloud_security_group.default1FTFrP.id]
+}
+
+resource "alicloud_vpc" "defaultVpcService" {
+  description = "test-terraform-service"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+
+}
+
+resource "alicloud_vswitch" "defaultuYH1VC" {
+  vpc_id     = alicloud_vpc.defaultVpcService.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "defaultTJZ8ud" {
+  vpc_id     = alicloud_vpc.defaultVpcService.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "10.10.0.0/16"
+}
+
+resource "alicloud_nlb_load_balancer" "defaultyuY5jZ" {
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultuYH1VC.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultTJZ8ud.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+  load_balancer_name = var.name
+
+  vpc_id       = alicloud_vpc.defaultVpcService.id
+  address_type = "Intranet"
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service_resource" "defaultdTPOne" {
+  zone_id       = data.alicloud_nlb_zones.default.zones.0.id
+  resource_id   = alicloud_nlb_load_balancer.defaultyuY5jZ.id
+  resource_type = "nlb"
+  service_id    = alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id
+}
+
+
+`, name)
+}
+
+// Test PrivateLink VpcEndpointZone. <<< Resource test cases, automatically generated.

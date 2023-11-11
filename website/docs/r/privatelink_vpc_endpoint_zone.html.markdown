@@ -2,14 +2,13 @@
 subcategory: "Private Link"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_privatelink_vpc_endpoint_zone"
-sidebar_current: "docs-alicloud-resource-privatelink-vpc-endpoint-zone"
 description: |-
   Provides a Alicloud Private Link Vpc Endpoint Zone resource.
 ---
 
 # alicloud_privatelink_vpc_endpoint_zone
 
-Provides a Private Link Vpc Endpoint Zone resource.
+Provides a Private Link Vpc Endpoint Zone resource. 
 
 For information about Private Link Vpc Endpoint Zone and how to use it, see [What is Vpc Endpoint Zone](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-addzonetovpcendpoint).
 
@@ -80,25 +79,25 @@ resource "alicloud_privatelink_vpc_endpoint_zone" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `dry_run` - (Optional) The dry run.
-* `endpoint_id` - (Required, ForceNew) The ID of the Vpc Endpoint.
-* `vswitch_id` - (Required, ForceNew) The VSwitch id.
-* `zone_id` - (Optional, Computed, ForceNew) The Zone Id.
+* `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
+  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `endpoint_id` - (Required, ForceNew) The endpoint ID.
+* `eni_ip` - (Optional, ForceNew, Computed, Available since v1.212.0) The IP address of the endpoint ENI.
+* `vswitch_id` - (Required, ForceNew) The ID of the vSwitch in the zone. .
+* `zone_id` - (Optional, ForceNew) The zone ID.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Vpc Endpoint Zone. The value is formatted `<endpoint_id>:<zone_id>`.
-* `status` - Status.
+* `id` - The ID of the resource supplied above.The value is formulated as `<endpoint_id>:<zone_id>`.
+* `status` - The state of the zone. 
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 4 mins) Used when create the Vpc Endpoint Zone.
-* `delete` - (Defaults to 4 mins) Used when delete the Vpc Endpoint Zone.
+* `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Zone.
+* `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Zone.
 
 ## Import
 

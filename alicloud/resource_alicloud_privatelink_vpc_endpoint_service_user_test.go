@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPrivatelinkVpcEndpointServiceUser_basic(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointServiceUser_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service_user.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceUserMap)
@@ -153,7 +153,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceUserCreate(dInit, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceUserCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -178,7 +178,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceUserCreate(dInit, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceUserCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -197,7 +197,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceUserUpdate(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceUserUpdate(dExisted, rawClient)
 	assert.NotNil(t, err)
 
 	// Read
@@ -227,7 +227,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceUserRead(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceUserRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -246,7 +246,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceUserDelete(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceUserDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -274,7 +274,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceUserDelete(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceUserDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -285,3 +285,66 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 	}
 
 }
+
+// Test PrivateLink VpcEndpointServiceUser. >>> Resource test cases, automatically generated.
+// Case 4876
+func TestAccAliCloudPrivateLinkVpcEndpointServiceUser_basic4876(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service_user.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceUserMap4876)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointServiceUser")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointserviceuser%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceUserBasicDependence4876)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_id":    "1419992691371925",
+					"service_id": "${alicloud_privatelink_vpc_endpoint_service.defaultSaMoag.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_id":    "1419992691371925",
+						"service_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudPrivateLinkVpcEndpointServiceUserMap4876 = map[string]string{}
+
+func AlicloudPrivateLinkVpcEndpointServiceUserBasicDependence4876(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "defaultSaMoag" {
+  service_description   = "test-zejun"
+  service_resource_type = "nlb"
+}
+
+
+`, name)
+}
+
+// Test PrivateLink VpcEndpointServiceUser. <<< Resource test cases, automatically generated.

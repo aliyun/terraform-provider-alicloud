@@ -876,6 +876,11 @@ func GetFunc(level int) string {
 	return strings.TrimPrefix(filepath.Ext(runtime.FuncForPC(pc).Name()), ".")
 }
 
+func ParseResourceIds(id string) (parts []string, err error) {
+	parts = strings.Split(id, ":")
+	return parts, err
+}
+
 func ParseResourceId(id string, length int) (parts []string, err error) {
 	parts = strings.Split(id, ":")
 
