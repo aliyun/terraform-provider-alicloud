@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -11,18 +13,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudPrivatelinkVpcEndpointZone() *schema.Resource {
+func resourceAliCloudPrivateLinkVpcEndpointZone() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPrivatelinkVpcEndpointZoneCreate,
-		Read:   resourceAlicloudPrivatelinkVpcEndpointZoneRead,
-		Update: resourceAlicloudPrivatelinkVpcEndpointZoneUpdate,
-		Delete: resourceAlicloudPrivatelinkVpcEndpointZoneDelete,
+		Create: resourceAliCloudPrivateLinkVpcEndpointZoneCreate,
+		Read:   resourceAliCloudPrivateLinkVpcEndpointZoneRead,
+		Update: resourceAliCloudPrivateLinkVpcEndpointZoneUpdate,
+		Delete: resourceAliCloudPrivateLinkVpcEndpointZoneDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(6 * time.Minute),
-			Delete: schema.DefaultTimeout(4 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
@@ -32,6 +35,12 @@ func resourceAlicloudPrivatelinkVpcEndpointZone() *schema.Resource {
 			"endpoint_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"eni_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"status": {
@@ -46,50 +55,54 @@ func resourceAlicloudPrivatelinkVpcEndpointZone() *schema.Resource {
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudPrivatelinkVpcEndpointZoneCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	privatelinkService := PrivatelinkService{client}
-	var response map[string]interface{}
+
 	action := "AddZoneToVpcEndpoint"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewPrivatelinkClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	query["EndpointId"] = d.Get("endpoint_id")
+	query["ZoneId"] = d.Get("zone_id")
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	request["VSwitchId"] = d.Get("vswitch_id")
+	if v, ok := d.GetOk("eni_ip"); ok {
+		request["ip"] = v
+	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-
-	request["EndpointId"] = d.Get("endpoint_id")
-	request["RegionId"] = client.RegionId
-	if v, ok := d.GetOk("zone_id"); ok {
-		request["ZoneId"] = v
-	}
-
-	vswitchId := Trim(d.Get("vswitch_id").(string))
-	if vswitchId != "" {
+	if query["ZoneId"] == "" {
 		vpcService := VpcService{client}
-		vsw, err := vpcService.DescribeVswitch(vswitchId)
+		vsw, err := vpcService.DescribeVswitch(request["VSwitchId"].(string))
 		if err != nil {
 			return WrapError(err)
 		}
-		request["VSwitchId"] = vswitchId
-		if request["ZoneId"] == nil {
-			request["ZoneId"] = vsw["ZoneId"]
-		}
+		query["ZoneId"] = vsw["ZoneId"]
 	}
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied", "EndpointLocked", "EndpointOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -98,70 +111,84 @@ func resourceAlicloudPrivatelinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zone", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["EndpointId"], ":", request["ZoneId"]))
-	stateConf := BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privatelinkService.PrivatelinkVpcEndpointZoneStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", query["EndpointId"], query["ZoneId"]))
+
+	privateLinkServiceV2 := PrivateLinkServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Wait", "Connected"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudPrivatelinkVpcEndpointZoneRead(d, meta)
+	return resourceAliCloudPrivateLinkVpcEndpointZoneRead(d, meta)
 }
-func resourceAlicloudPrivatelinkVpcEndpointZoneRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudPrivateLinkVpcEndpointZoneRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	privatelinkService := PrivatelinkService{client}
-	object, err := privatelinkService.DescribePrivatelinkVpcEndpointZone(d.Id())
+	privateLinkServiceV2 := PrivateLinkServiceV2{client}
+
+	objectRaw, err := privateLinkServiceV2.DescribePrivateLinkVpcEndpointZone(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_privatelink_vpc_endpoint_zone privatelinkService.DescribePrivatelinkVpcEndpointZone Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_privatelink_vpc_endpoint_zone DescribePrivateLinkVpcEndpointZone Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
+	d.Set("eni_ip", objectRaw["EniIp"])
+	d.Set("status", objectRaw["ZoneStatus"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
 	d.Set("endpoint_id", parts[0])
 	d.Set("zone_id", parts[1])
-	d.Set("status", object["ZoneStatus"])
-	d.Set("vswitch_id", object["VSwitchId"])
 	return nil
 }
-func resourceAlicloudPrivatelinkVpcEndpointZoneUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudPrivatelinkVpcEndpointZoneRead(d, meta)
+
+func resourceAliCloudPrivateLinkVpcEndpointZoneUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Vpc Endpoint Zone.")
+	return nil
 }
-func resourceAlicloudPrivatelinkVpcEndpointZoneDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	action := "RemoveZoneFromVpcEndpoint"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewPrivatelinkClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"EndpointId": parts[0],
-		"ZoneId":     parts[1],
-	}
+	request = make(map[string]interface{})
+	query["EndpointId"] = parts[0]
+	query["ZoneId"] = parts[1]
+	request["RegionId"] = client.RegionId
+
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["RegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 10*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EndpointConnectionOperationDenied", "EndpointLocked", "EndpointOperationDenied"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -170,11 +197,18 @@ func resourceAlicloudPrivatelinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	privateLinkServiceV2 := PrivateLinkServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, privateLinkServiceV2.PrivateLinkVpcEndpointZoneStateRefreshFunc(d.Id(), "ZoneId", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

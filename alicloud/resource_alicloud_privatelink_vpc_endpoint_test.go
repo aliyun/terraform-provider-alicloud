@@ -108,7 +108,7 @@ func testSweepPrivatelinkVpcEndpoint(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpoint_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointMap)
@@ -323,7 +323,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointCreate(dInit, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -349,7 +349,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointCreate(dInit, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -376,7 +376,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointUpdate(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateVpcEndpointAttribute
@@ -413,7 +413,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointUpdate(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -467,7 +467,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointUpdate(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointUpdate(dExisted, rawClient)
 		patches.Reset()
 
 		switch errorCode {
@@ -522,7 +522,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointUpdate(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -561,7 +561,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointRead(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -580,7 +580,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointDelete(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "EndpointOperationDenied", "nil", "EndpointNotFound"}
@@ -602,7 +602,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointDelete(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -613,3 +613,393 @@ func TestUnitAlicloudPrivatelinkVpcEndpoint(t *testing.T) {
 	}
 
 }
+
+// Test PrivateLink VpcEndpoint. >>> Resource test cases, automatically generated.
+// Case 4793
+func TestAccAliCloudPrivateLinkVpcEndpoint_basic4793(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointMap4793)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpoint%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointBasicDependence4793)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_id":        "${alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id}",
+					"vpc_id":            "${alicloud_vpc.defaultbFzA4a.id}",
+					"vpc_endpoint_name": name,
+					"security_group_ids": []string{
+						"${alicloud_security_group.default1FTFrP.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_id":        CHECKSET,
+						"vpc_id":            CHECKSET,
+						"vpc_endpoint_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_description": "test-endpoint-zejun",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_description": "test-endpoint-zejun",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{
+						"${alicloud_security_group.default1FTFrP.id}", "${alicloud_security_group.defaultHtejEL.id}", "${alicloud_security_group.default97JOJ3.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_description": "test-endpoint-zejun1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_description": "test-endpoint-zejun1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{
+						"${alicloud_security_group.defaultHtejEL.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_description": "test-endpoint-zejun",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_description": "test-endpoint-zejun",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{
+						"${alicloud_security_group.default1FTFrP.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_description": "test-endpoint-zejun1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_description": "test-endpoint-zejun1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_ids": []string{
+						"${alicloud_security_group.defaultHtejEL.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_ids.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name":             name + "_update",
+					"vpc_id":                        "${alicloud_vpc.defaultbFzA4a.id}",
+					"endpoint_description":          "test-endpoint-zejun",
+					"service_id":                    "${alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id}",
+					"service_name":                  "${alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.vpc_endpoint_service_name}",
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"endpoint_type":                 "Interface",
+					"zone_private_ip_address_count": "1",
+					"security_group_ids": []string{
+						"${alicloud_security_group.default1FTFrP.id}", "${alicloud_security_group.defaultHtejEL.id}", "${alicloud_security_group.default97JOJ3.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name":             name + "_update",
+						"vpc_id":                        CHECKSET,
+						"endpoint_description":          "test-endpoint-zejun",
+						"service_id":                    CHECKSET,
+						"service_name":                  CHECKSET,
+						"resource_group_id":             CHECKSET,
+						"endpoint_type":                 "Interface",
+						"zone_private_ip_address_count": "1",
+						"security_group_ids.#":          "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "protected_enabled"},
+			},
+		},
+	})
+}
+
+var AlicloudPrivateLinkVpcEndpointMap4793 = map[string]string{
+	"endpoint_domain":          CHECKSET,
+	"bandwidth":                CHECKSET,
+	"connection_status":        CHECKSET,
+	"status":                   CHECKSET,
+	"create_time":              CHECKSET,
+	"endpoint_business_status": CHECKSET,
+}
+
+func AlicloudPrivateLinkVpcEndpointBasicDependence4793(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultbFzA4a" {
+  description = "test-terraform"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+
+}
+
+resource "alicloud_security_group" "default1FTFrP" {
+  name = var.name
+
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
+}
+
+resource "alicloud_security_group" "defaultHtejEL" {
+  name = var.name
+
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
+}
+
+resource "alicloud_security_group" "default97JOJ3" {
+  name = var.name
+
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "defaultr0WBYX" {
+  service_description   = "test-zejun-service"
+  connect_bandwidth     = "3072"
+  service_resource_type = "nlb"
+}
+
+
+`, name)
+}
+
+// Case 4793  twin
+func TestAccAliCloudPrivateLinkVpcEndpoint_basic4793_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointMap4793)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpoint%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointBasicDependence4793)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_endpoint_name":             name,
+					"vpc_id":                        "${alicloud_vpc.defaultbFzA4a.id}",
+					"endpoint_description":          "test-endpoint-zejun1",
+					"service_id":                    "${alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.id}",
+					"service_name":                  "${alicloud_privatelink_vpc_endpoint_service.defaultr0WBYX.vpc_endpoint_service_name}",
+					"resource_group_id":             "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"endpoint_type":                 "Interface",
+					"zone_private_ip_address_count": "1",
+					"security_group_ids": []string{
+						"${alicloud_security_group.defaultHtejEL.id}", "${alicloud_security_group.default97JOJ3.id}"},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_endpoint_name":             name,
+						"vpc_id":                        CHECKSET,
+						"endpoint_description":          "test-endpoint-zejun1",
+						"service_id":                    CHECKSET,
+						"service_name":                  CHECKSET,
+						"resource_group_id":             CHECKSET,
+						"endpoint_type":                 "Interface",
+						"zone_private_ip_address_count": "1",
+						"security_group_ids.#":          "2",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "protected_enabled"},
+			},
+		},
+	})
+}
+
+// Test PrivateLink VpcEndpoint. <<< Resource test cases, automatically generated.

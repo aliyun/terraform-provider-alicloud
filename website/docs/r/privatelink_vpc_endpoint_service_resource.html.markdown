@@ -2,14 +2,13 @@
 subcategory: "Private Link"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_privatelink_vpc_endpoint_service_resource"
-sidebar_current: "docs-alicloud-resource-privatelink-vpc-endpoint-service-resource"
 description: |-
   Provides a Alicloud Private Link Vpc Endpoint Service Resource resource.
 ---
 
 # alicloud_privatelink_vpc_endpoint_service_resource
 
-Provides a Private Link Vpc Endpoint Service Resource resource.
+Provides a Private Link Vpc Endpoint Service Resource resource. Endpoint service resource.
 
 For information about Private Link Vpc Endpoint Service Resource and how to use it, see [What is Vpc Endpoint Service Resource](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-attachresourcetovpcendpointservice).
 
@@ -73,28 +72,32 @@ resource "alicloud_privatelink_vpc_endpoint_service_resource" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `dry_run` - (Optional) The dry run.
-* `resource_id` - (Required, ForceNew) The ID of Resource.
-* `resource_type` - (Required, ForceNew) The Type of Resource.
-* `service_id` - (Required, ForceNew) The ID of Vpc Endpoint Service.
+* `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
+  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error code is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `resource_id` - (Required, ForceNew) The service resource ID.
+* `resource_type` - (Required, ForceNew) Service resource type, value:
+  - **slb**: indicates that the service resource type is Classic Load Balancer (CLB).
+  - **alb**: indicates that the service resource type is Application Load Balancer (ALB).
+  - **nlb**: indicates that the service resource type is Network Load Balancer (NLB).
+* `service_id` - (Required, ForceNew) The endpoint service ID.
+* `zone_id` - (Optional, ForceNew, Computed, Available since v1.212.0) The ID of the zone to which the service resource belongs. (valid when the resource type is nlb/alb).
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Vpc Endpoint Service Resource. The value is formatted `<service_id>:<resource_id>`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<service_id>:<resource_id>:<zone_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 4 mins) Used when create the Vpc Endpoint Service Resource.
+* `create` - (Defaults to 5 mins) Used when create the Vpc Endpoint Service Resource.
+* `delete` - (Defaults to 5 mins) Used when delete the Vpc Endpoint Service Resource.
 
 ## Import
 
 Private Link Vpc Endpoint Service Resource can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_privatelink_vpc_endpoint_service_resource.example <service_id>:<resource_id>
+$ terraform import alicloud_privatelink_vpc_endpoint_service_resource.example <service_id>:<resource_id>:<zone_id>
 ```

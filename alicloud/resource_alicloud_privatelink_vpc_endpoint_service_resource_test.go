@@ -11,6 +11,7 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +20,7 @@ import (
 )
 
 // Currently, Private network slb can only be created through the console.
-func SkipTestAccAlicloudPrivatelinkVpcEndpointServiceResource_basic(t *testing.T) {
+func TestAccAliCloudPrivatelinkVpcEndpointServiceResource_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service_resource.default"
 	ra := resourceAttrInit(resourceId, AlicloudPrivatelinkVpcEndpointServiceResourceMap)
@@ -32,6 +33,7 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointServiceResource_basic(t *testing.T
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.SlbPrivateNetSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -41,13 +43,13 @@ func SkipTestAccAlicloudPrivatelinkVpcEndpointServiceResource_basic(t *testing.T
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_id":    "${alicloud_privatelink_vpc_endpoint_service.default.id}",
-					"resource_id":   "lb-gw8nuyxxxxxxxx",
+					"resource_id":   "${alicloud_slb_load_balancer.default.id}",
 					"resource_type": "slb",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"service_id":    CHECKSET,
-						"resource_id":   "lb-gw8nuyxxxxxxxx",
+						"resource_id":   CHECKSET,
 						"resource_type": "slb",
 					}),
 				),
@@ -66,18 +68,38 @@ var AlicloudPrivatelinkVpcEndpointServiceResourceMap = map[string]string{}
 
 func AlicloudPrivatelinkVpcEndpointServiceResourceBasicDependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
+	variable "name" {
+	  default = "%s"
 	}
-	resource "alicloud_security_group" "default" {
-	  name        = "tf-testAcc-for-privatelink"
-	  description = "privatelink test security group"
-	  vpc_id      = data.alicloud_vpcs.default.ids.0
+	
+	data "alicloud_slb_zones" "default" {}
+
+	resource "alicloud_vpc" "default" {
+	  description = "test-terraform-service"
+	  cidr_block  = "10.0.0.0/8"
+	  vpc_name    = var.name
 	}
+	
+	resource "alicloud_vswitch" "default" {
+	  vpc_id     = alicloud_vpc.default.id
+	  zone_id    = data.alicloud_slb_zones.default.zones.0.id
+	  cidr_block = "10.1.0.0/16"
+	}
+
 	resource "alicloud_privatelink_vpc_endpoint_service" "default" {
-	 service_description = "%s"
-	 connect_bandwidth = 103
-     auto_accept_connection = false
+	  service_description   = "test-zejun"
+	  service_resource_type = "slb"
+      auto_accept_connection = false
+	}
+
+	resource "alicloud_slb_load_balancer" "default" {
+	  load_balancer_name = "${var.name}"
+	  load_balancer_spec  = "slb.s2.small"
+      address_type = "intranet"
+      instance_charge_type = "PayBySpec"
+      vswitch_id = alicloud_vswitch.default.id
+      master_zone_id = data.alicloud_slb_zones.default.zones.0.id
+      slave_zone_id = data.alicloud_slb_zones.default.zones.1.id
 	}
 `, name)
 }
@@ -149,7 +171,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceResourceCreate(dInit, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceResourceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -174,7 +196,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceResourceCreate(dInit, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceResourceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -193,7 +215,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceResourceUpdate(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceResourceUpdate(dExisted, rawClient)
 	assert.NotNil(t, err)
 
 	// Read
@@ -223,7 +245,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceResourceRead(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceResourceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -242,7 +264,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudPrivatelinkVpcEndpointServiceResourceDelete(dExisted, rawClient)
+	err = resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -270,7 +292,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudPrivatelinkVpcEndpointServiceResourceDelete(dExisted, rawClient)
+		err := resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -281,3 +303,108 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceResource(t *testing.T) {
 	}
 
 }
+
+// Test PrivateLink VpcEndpointServiceResource. >>> Resource test cases, automatically generated.
+// Case 5022
+func TestAccAliCloudPrivateLinkVpcEndpointServiceResource_basic5022(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_privatelink_vpc_endpoint_service_resource.default"
+	ra := resourceAttrInit(resourceId, AlicloudPrivateLinkVpcEndpointServiceResourceMap5022)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &PrivateLinkServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribePrivateLinkVpcEndpointServiceResource")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sprivatelinkvpcendpointserviceresource%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence5022)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_id":   "${alicloud_nlb_load_balancer.defaultJB9ul9.id}",
+					"resource_type": "nlb",
+					"service_id":    "${alicloud_privatelink_vpc_endpoint_service.defaultQtVkqH.id}",
+					"zone_id":       "${data.alicloud_nlb_zones.default.zones.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_id":   CHECKSET,
+						"resource_type": "nlb",
+						"service_id":    CHECKSET,
+						"zone_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudPrivateLinkVpcEndpointServiceResourceMap5022 = map[string]string{
+	"zone_id": CHECKSET,
+}
+
+func AlicloudPrivateLinkVpcEndpointServiceResourceBasicDependence5022(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_nlb_zones" "default" {}
+
+resource "alicloud_vpc" "defaultvVpc" {
+  description = "test"
+  cidr_block  = "10.0.0.0/8"
+  vpc_name    = var.name
+
+}
+
+resource "alicloud_vswitch" "defaultVSwitch1" {
+  vpc_id     = alicloud_vpc.defaultvVpc.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  cidr_block = "10.1.0.0/16"
+}
+
+resource "alicloud_vswitch" "defaultVSwitch2" {
+  vpc_id     = alicloud_vpc.defaultvVpc.id
+  zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  cidr_block = "10.10.0.0/16"
+}
+
+resource "alicloud_nlb_load_balancer" "defaultJB9ul9" {
+  load_balancer_name = var.name
+
+  vpc_id = alicloud_vpc.defaultvVpc.id
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultVSwitch1.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.defaultVSwitch2.id
+    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
+  }
+  address_type = "Intranet"
+}
+
+resource "alicloud_privatelink_vpc_endpoint_service" "defaultQtVkqH" {
+  service_description   = "test-zejun"
+  service_resource_type = "nlb"
+}
+
+
+`, name)
+}
+
+// Test PrivateLink VpcEndpointServiceResource. <<< Resource test cases, automatically generated.

@@ -98,6 +98,7 @@ func resourceAlicloudNlbLoadBalancer() *schema.Resource {
 			"deletion_protection_reason": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return !d.Get("deletion_protection_enabled").(bool)
 				},
@@ -111,6 +112,7 @@ func resourceAlicloudNlbLoadBalancer() *schema.Resource {
 			"modification_protection_reason": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("modification_protection_status"); ok && v.(string) == "ConsoleProtection" {
 						return false

@@ -33,33 +33,39 @@ resource "alicloud_privatelink_vpc_endpoint_service" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auto_accept_connection` - (Optional) Whether to automatically accept terminal node connections.
-* `connect_bandwidth` - (Optional) The connection bandwidth.
-* `dry_run` - (Optional) Whether to pre-check this request only. Default to: `false`
-* `payer` - (Optional, ForceNew) The payer type. Valid Value: `EndpointService`, `Endpoint`. Default to: `Endpoint`.
-* `resource_group_id` - (Optional, Computed, Available since v1.212.0) The ID of the resource group.
-* `service_description` - (Optional) The description of the terminal node service.
-* `service_resource_type` - (Optional, ForceNew, Available since v1.212.0) The service type of resource. Valid values:
-  - **slb**: indicates that the service resource type is classic load balancer (clb).
-  - **alb**: indicates that the service resource type is application load balancer (alb).
-  - **nlb**: indicates that the service resource type is network load balancer (nlb).
-* `service_support_ipv6` - (Optional, Available since v1.212.0) Whether the endpoint supports IPv6. Value:
-  - **true**: Yes.
-  - **false** (default): No.
-* `tags` - (Optional, Map, Available since v1.212.0) The tag of the resource.
-* `zone_affinity_enabled` - (Optional, Available since v1.212.0) Whether to support the nearby resolution of the available area. Valid values:
-  - **true**: Yes.
-  - **false**: No.
+* `auto_accept_connection` - (Optional) Indicates whether the endpoint service automatically accepts endpoint connection requests. Valid values:
+  - **true**
+  - **false**.
+* `connect_bandwidth` - (Optional, Computed) The default bandwidth of the endpoint connection. Valid values: 100 to 10240. Unit: Mbit/s.
+* `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request.
+  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `payer` - (Optional, ForceNew, Computed) The payer of the endpoint service. Valid values:
+  - **Endpoint**: the service consumer.
+  - **EndpointService**: the service provider.
+* `resource_group_id` - (Optional, Computed, Available since v1.212.0) The resource group ID.
+* `service_description` - (Optional) The description of the endpoint service.
+* `service_resource_type` - (Optional, ForceNew, Computed, Available since v1.212.0) Service resource type, value:
+  - **slb**: indicates that the service resource type is Classic Load Balancer (CLB).
+  - **alb**: indicates that the service resource type is Application Load Balancer (ALB).
+  - **nlb**: indicates that the service resource type is Network Load Balancer (NLB).
+* `service_support_ipv6` - (Optional, Computed, Available since v1.212.0) Specifies whether to enable IPv6 for the endpoint service. Valid values:
+  - **true**
+  - **false (default)**.
+* `tags` - (Optional, Map, Available since v1.212.0) The list of tags.
+* `zone_affinity_enabled` - (Optional, Computed, Available since v1.212.0) Specifies whether to first resolve the domain name of the nearest endpoint that is associated with the endpoint service. Valid values:
+  - **true**
+  - **false (default)**.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The creation time of the resource.
-* `service_business_status` - The business status of Vpc Endpoint Service.
-* `service_domain` - Service Domain.
-* `status` - The status of the resource.
-* `vpc_endpoint_service_name` - VpcEndpointServiceName.
+* `create_time` - The time when the endpoint service was created.
+* `service_business_status` - The service state of the endpoint service. 
+* `service_domain` - The domain name of the endpoint service.
+* `status` - The state of the endpoint service. 
+* `vpc_endpoint_service_name` - The name of the endpoint service.
 
 ## Timeouts
 

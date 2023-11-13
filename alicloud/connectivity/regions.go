@@ -276,3 +276,5 @@ var VPCRouteTableAttachmentSupportRegions = []Region{Hangzhou}
 var AckOneSupportRegions = []Region{Hangzhou, Hongkong}
 var RocketMQSupportRegions = []Region{ChengDu, USWest1}
 var EcsNetworkInterfaceIpPrefixSupportRegions = []Region{Hangzhou}
+var PrivateLinkSupportRegions = []Region{Hangzhou}
+var SlbPrivateNetSupportRegions = []Region{EUWest1}
