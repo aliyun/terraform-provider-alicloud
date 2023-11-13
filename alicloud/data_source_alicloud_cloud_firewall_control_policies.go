@@ -9,20 +9,46 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCloudFirewallControlPolicies() *schema.Resource {
+func dataSourceAliCloudCloudFirewallControlPolicies() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCloudFirewallControlPoliciesRead,
+		Read: dataSourceAliCloudCloudFirewallControlPoliciesRead,
 		Schema: map[string]*schema.Schema{
+			"direction": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"in", "out"}, false),
+			},
+			"acl_uuid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"acl_action": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"accept", "drop", "log"}, false),
+				ValidateFunc: StringInSlice([]string{"accept", "drop", "log"}, false),
 			},
-			"acl_uuid": {
+			"destination": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"ip_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"proto": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"TCP", " UDP", "ANY", "ICMP"}, false),
+			},
+			"source": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -32,52 +58,20 @@ func dataSourceAlicloudCloudFirewallControlPolicies() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"destination": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"direction": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"in", "out"}, false),
-			},
-			"ip_version": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
 			"lang": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"en", "zh"}, false),
+				ValidateFunc: StringInSlice([]string{"en", "zh"}, false),
 			},
-			"proto": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{" TCP", " UDP", "ANY", "ICMP"}, false),
-			},
-			"source": {
+			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
-			},
-			"source_ip": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
-			},
-			"output_file": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 			"policies": {
 				Type:     schema.TypeList,
@@ -88,11 +82,15 @@ func dataSourceAlicloudCloudFirewallControlPolicies() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"acl_action": {
+						"acl_uuid": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"acl_uuid": {
+						"direction": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"acl_action": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -142,10 +140,6 @@ func dataSourceAlicloudCloudFirewallControlPolicies() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"direction": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"dns_result": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -190,51 +184,64 @@ func dataSourceAlicloudCloudFirewallControlPolicies() *schema.Resource {
 					},
 				},
 			},
+			"source_ip": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Removed:  "Field `upgrade_type` has been removed from provider version 1.212.1",
+			},
 		},
 	}
 }
 
-func dataSourceAlicloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "DescribeControlPolicy"
 	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["CurrentPage"] = 1
+
+	request["Direction"] = d.Get("direction")
+
 	if v, ok := d.GetOk("acl_action"); ok {
 		request["AclAction"] = v
 	}
+
 	if v, ok := d.GetOk("acl_uuid"); ok {
 		request["AclUuid"] = v
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
+
 	if v, ok := d.GetOk("destination"); ok {
 		request["Destination"] = v
 	}
-	request["Direction"] = d.Get("direction")
+
 	if v, ok := d.GetOk("ip_version"); ok {
 		request["IpVersion"] = v
 	}
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
+
 	if v, ok := d.GetOk("proto"); ok {
 		request["Proto"] = v
 	}
+
 	if v, ok := d.GetOk("source"); ok {
 		request["Source"] = v
 	}
-	if v, ok := d.GetOk("source_ip"); ok {
-		request["SourceIp"] = v
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
-	request["PageSize"] = PageSizeLarge
-	request["CurrentPage"] = 1
+
+	if v, ok := d.GetOk("lang"); ok {
+		request["Lang"] = v
+	}
+
 	var objects []map[string]interface{}
 	var response map[string]interface{}
 	conn, err := client.NewCloudfwClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -248,33 +255,47 @@ func dataSourceAlicloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 				}
 				return resource.NonRetryableError(err)
 			}
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cloud_firewall_control_policies", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Policys", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Policys", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
+
 			objects = append(objects, item)
 		}
+
 		if len(result) < PageSizeLarge {
 			break
 		}
+
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
+
 	ids := make([]string, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                      fmt.Sprint(object["AclUuid"], ":", object["Direction"]),
+			"id":                      fmt.Sprintf("%v:%v", object["AclUuid"], object["Direction"]),
+			"acl_uuid":                fmt.Sprint(object["AclUuid"]),
+			"direction":               fmt.Sprint(object["Direction"]),
 			"acl_action":              object["AclAction"],
-			"acl_uuid":                object["AclUuid"],
 			"application_id":          object["ApplicationId"],
 			"application_name":        object["ApplicationName"],
 			"description":             object["Description"],
@@ -286,7 +307,6 @@ func dataSourceAlicloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 			"destination_group_cidrs": object["DestinationGroupCidrs"],
 			"destination_group_type":  object["DestinationGroupType"],
 			"destination_type":        object["DestinationType"],
-			"direction":               object["Direction"],
 			"dns_result":              object["DnsResult"],
 			"dns_result_time":         fmt.Sprint(object["DnsResultTime"]),
 			"hit_times":               fmt.Sprint(object["HitTimes"]),
@@ -298,11 +318,13 @@ func dataSourceAlicloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 			"source_group_type":       object["SourceGroupType"],
 			"source_type":             object["SourceType"],
 		}
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -310,6 +332,7 @@ func dataSourceAlicloudCloudFirewallControlPoliciesRead(d *schema.ResourceData, 
 	if err := d.Set("policies", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
