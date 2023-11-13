@@ -286,7 +286,7 @@ func getTestCaseAttr(filePath string, resourceName string,
 					if len(attrStr) != 0 {
 						attrSlice := strings.Split(attrStr, ",")
 						for _, v := range attrSlice {
-							if len(v) != 0 {
+							if len(v) != 0 && v != "dry_run" {
 								(*testIgnoreSet).Add(v)
 							}
 						}
@@ -547,18 +547,18 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 }
 
 func testAll(diff *diffparser.Diff) {
-    file, err := os.Open("filename.txt")
-    if err != nil {
-        return
-    }
-    defer file.Close()
+	file, err := os.Open("filename.txt")
+	if err != nil {
+		return
+	}
+	defer file.Close()
 
-    scanner := bufio.NewScanner(file)
-    diff.Files = make([]*diffparser.DiffFile, 0, 800)
-    line := 0
-    for scanner.Scan() {
-        text := scanner.Text()
-        diff.Files = append(diff.Files, &diffparser.DiffFile{NewName: "alicloud/" + text})
-        line++
-    }
+	scanner := bufio.NewScanner(file)
+	diff.Files = make([]*diffparser.DiffFile, 0, 800)
+	line := 0
+	for scanner.Scan() {
+		text := scanner.Text()
+		diff.Files = append(diff.Files, &diffparser.DiffFile{NewName: "alicloud/" + text})
+		line++
+	}
 }
