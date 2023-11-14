@@ -355,6 +355,8 @@ func (s *RdsService) RefreshPgHbaConf(d *schema.ResourceData, attribute string) 
 					"address":     item2["Address"],
 					"user":        item2["User"],
 					"method":      item2["Method"],
+					"option":      item2["Option"],
+					"mask":        item2["Mask"],
 				}
 				if item2["mask"] != nil && item2["mask"] != "" {
 					mapping["mask"] = item2["mask"]
@@ -1517,7 +1519,30 @@ func (s *RdsService) RdsDBInstanceStateRefreshFunc(id string, failStates []strin
 		return object, fmt.Sprint(object["DBInstanceStatus"]), nil
 	}
 }
+func (s *RdsService) RdsDBInstanceNodeIdRefreshFunc(id string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		describeDBInstanceHAConfigObject, err := s.DescribeDBInstanceHAConfig(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		hostInstanceInfos := describeDBInstanceHAConfigObject["HostInstanceInfos"].(map[string]interface{})["NodeInfo"].([]interface{})
+		var nodeId string
+		for _, val := range hostInstanceInfos {
+			item := val.(map[string]interface{})
+			nodeType := item["NodeType"].(string)
+			if nodeType == "Master" {
+				nodeId = item["NodeId"].(string)
+				break // 停止遍历
+			}
+		}
+		return describeDBInstanceHAConfigObject, fmt.Sprint(nodeId), nil
+	}
 
+}
 func (s *RdsService) RdsTaskStateRefreshFunc(id string, taskAction string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeTasks(id)
