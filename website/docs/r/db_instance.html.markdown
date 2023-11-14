@@ -293,7 +293,6 @@ resource "alicloud_db_instance" "example" {
   db_instance_storage_type = "local_ssd"
   zone_id                  = data.alicloud_db_zones.example.zones.0.id
   zone_id_slave_a          = data.alicloud_db_zones.example.zones.1.id
-  zone_id_slave_b          = data.alicloud_db_zones.example.zones.1.id
 }
 ```
 
@@ -307,6 +306,7 @@ variable "name" {
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 data "alicloud_db_zones" "example" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -368,6 +368,7 @@ variable "name" {
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 data "alicloud_db_zones" "example" {
   engine                   = "PostgreSQL"
   engine_version           = "14.0"
@@ -422,6 +423,7 @@ variable "name" {
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 data "alicloud_db_zones" "example" {
   engine                   = "SQLServer"
   engine_version           = "2019_std_sl"
@@ -518,7 +520,7 @@ The following arguments are supported:
   - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
 
-* `db_time_zone` - (Optional, Available in 1.136.0+) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
+* `db_time_zone` - (Optional, ForceNew, Available in 1.136.0+) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
   - If you set the `Engine` parameter to MySQL.
     - This time zone of the instance is in UTC. Valid values: -12:59 to +13:00.
     - You can specify this parameter when the instance is equipped with local SSDs. For example, you can specify the time zone to Asia/Hong_Kong. For more information about time zones, see [Time zones](https://www.alibabacloud.com/help/doc-detail/297356.htm).
@@ -607,7 +609,7 @@ The following arguments are supported:
 
 -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
-* `zone_id_slave_b`- (Optional, ForceNew, Available in 1.101.0+) The region ID of the log instance if you create a log instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
+* `zone_id_slave_b`- (Removed since v1.214.0) The parameter 'zone_id_slave_b' has been removed from provider version v1.214.0.
 * `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions. Valid values: 
   `Open`: turn on SSL encryption; 
   `Close`: turn off SSL encryption; 
@@ -706,6 +708,13 @@ The following arguments are supported:
 * `role_arn` - (ForceNew, Optional, Available in 1.208.0+) The Alibaba Cloud Resource Name (ARN) of the RAM role.
 * `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values: ["Up", "Down", "TempUpgrade", "Serverless"]
 
+
+* `node_id` - (Optional, Available in v1.214.0+) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
+* `force` - (Optional, ForceNew, Available in v1.214.0+) Specifies whether to enable forcible switching. Valid values:
+  - Yes
+  - No
+
+
 ### `parameters`
 
 The parameters mapping supports the following:
@@ -735,10 +744,10 @@ The pg_hba_conf mapping supports the following:
 
 The babelfish_config mapping supports the following:
 
-* `babelfish_enabled` - (Required) specifies whether to enable the Babelfish for the instance. If you set this parameter to **true**, you enable Babelfish for the instance. If you leave this parameter empty, you disable Babelfish for the instance.
-* `migration_mode` - (Required) The migration mode of the instance. Valid values: **single-db** and **multi-db**.
-* `master_username` - (Required) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
-* `master_user_password` - (Required) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
+* `babelfish_enabled` - (Required, ForceNew) specifies whether to enable the Babelfish for the instance. If you set this parameter to **true**, you enable Babelfish for the instance. If you leave this parameter empty, you disable Babelfish for the instance.
+* `migration_mode` - (Required, ForceNew) The migration mode of the instance. Valid values: **single-db** and **multi-db**.
+* `master_username` - (Required, ForceNew) The name of the administrator account. The name can contain lowercase letters, digits, and underscores (_). It must start with a letter and end with a letter or digit. It can be up to 63 characters in length and cannot start with pg.
+* `master_user_password` - (Required, ForceNew) The password of the administrator account. The password must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It must be 8 to 32 characters in length. The password can contain any of the following characters:! @ # $ % ^ & * () _ + - =
 
 ### `serverless_config`
 

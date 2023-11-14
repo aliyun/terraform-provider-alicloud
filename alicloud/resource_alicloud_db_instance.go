@@ -99,6 +99,16 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Default:          1,
 				DiffSuppressFunc: PostPaidAndRenewDiffSuppressFunc,
 			},
+			"force": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Yes", "No"}, false),
+			},
+			"node_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -109,6 +119,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			"db_time_zone": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 				Computed: true,
 			},
 
@@ -289,19 +300,23 @@ func resourceAliCloudDBInstance() *schema.Resource {
 						"babelfish_enabled": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"migration_mode": {
 							Type:         schema.TypeString,
 							Required:     true,
+							ForceNew:     true,
 							ValidateFunc: StringInSlice([]string{"single-db", "multi-db"}, false),
 						},
 						"master_username": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"master_user_password": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 					},
 				},
@@ -396,6 +411,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+				Removed:  "The parameter 'zone_id_slave_b' has been removed from provider version v1.214.0.",
 			},
 			"ca_type": {
 				Type:     schema.TypeString,
@@ -1106,7 +1122,51 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	if d.HasChanges("node_id") {
+		action := "SwitchDBInstanceHA"
+		request := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+			"NodeId":       d.Get("node_id"),
+			"SourceIp":     client.SourceIp,
+		}
+		if v, ok := d.GetOk("force"); ok && v.(string) != "" {
+			request["Force"] = v
+		}
+		if v, ok := d.GetOk("effective_time"); ok && v.(string) != "" {
+			request["EffectiveTime"] = v
+		}
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
 
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		// wait instance status is running after modifying
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		nodeId := d.Get("node_id").(string)
+		stateConfNodeId := BuildStateConf([]string{}, []string{nodeId}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceNodeIdRefreshFunc(d.Id()))
+		if _, err := stateConfNodeId.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("node_id")
+		d.SetPartial("force")
+	}
 	if d.HasChanges("ha_config", "manual_ha_time") {
 		action := "ModifyHASwitchConfig"
 		request := map[string]interface{}{
@@ -1583,6 +1643,20 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
+	describeDBInstanceHAConfigObject, err := rdsService.DescribeDBInstanceHAConfig(d.Id())
+	hostInstanceInfos := describeDBInstanceHAConfigObject["HostInstanceInfos"].(map[string]interface{})["NodeInfo"].([]interface{})
+	var nodeId string
+	for _, val := range hostInstanceInfos {
+		item := val.(map[string]interface{})
+		nodeType := item["NodeType"].(string)
+		if nodeType == "Master" {
+			nodeId = item["NodeId"].(string)
+			break // 停止遍历
+		}
+	}
+	if err != nil {
+		return WrapError(err)
+	}
 
 	var privateIpAddress string
 
@@ -1594,7 +1668,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 	d.Set("private_ip_address", privateIpAddress)
-
+	d.Set("node_id", nodeId)
 	d.Set("storage_auto_scale", d.Get("storage_auto_scale"))
 	d.Set("storage_threshold", d.Get("storage_threshold"))
 	d.Set("storage_upper_bound", d.Get("storage_upper_bound"))
