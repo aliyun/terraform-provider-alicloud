@@ -139,7 +139,9 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 			{
 				Config: testAlicloudFCTriggerLog(testTriggerLogTemplate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"config": CHECKSET,
+					}),
 				),
 			},
 			{
@@ -151,7 +153,9 @@ func TestAccAlicloudFCTrigger_log(t *testing.T) {
 			{
 				Config: testAlicloudFCTriggerLogUpdate(testTriggerLogTemplateUpdate, testFCLogRoleTemplate, testFCLogPolicyTemplate, name),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
+					testAccCheck(map[string]string{
+						"config": CHECKSET,
+					}),
 				),
 			},
 		},
@@ -386,7 +390,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 resource "alicloud_ram_role" "default" {
@@ -514,7 +518,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 
@@ -611,7 +615,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 
@@ -654,45 +658,49 @@ resource "alicloud_ram_role_policy_attachment" "default" {
 }
 
 var testTriggerLogTemplate = `
-    {
-        "sourceConfig": {
-            "logstore": "${alicloud_log_store.default.name}"
-        },
-        "jobConfig": {
-            "maxRetryTime": 3,
-            "triggerInterval": 60
-        },
-        "functionParameter": {
-            "a": "b",
-            "c": "d"
-        },
-        "logConfig": {
-            "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.default1.name}"
-        },
-        "enable": true
-    }
+	{
+		"sourceConfig":{
+			"logstore":"${alicloud_log_store.default.name}",
+			"startTime":null
+		},
+		"jobConfig":{
+			"maxRetryTime":3,
+			"triggerInterval":60
+		},
+		"functionParameter":{
+			"a":"b",
+			"c":"d"
+		},
+		"logConfig":{
+			"project":"${alicloud_log_project.default.name}",
+			"logstore":"${alicloud_log_store.default1.name}"
+		},
+		"enable":true,
+		"targetConfig":null
+	}
 `
 
 var testTriggerLogTemplateUpdate = `
-    {
-        "sourceConfig": {
-            "logstore": "${alicloud_log_store.default.name}"
-        },
-        "jobConfig": {
-            "maxRetryTime": 4,
-            "triggerInterval": 100
-        },
-        "functionParameter": {
-            "a": "bb",
-            "c": "dd"
-        },
-        "logConfig": {
-            "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.default1.name}"
-        },
-        "enable": true
-    }
+	{
+		"sourceConfig":{
+			"logstore":"${alicloud_log_store.default.name}",
+			"startTime":null
+		},
+		"jobConfig":{
+			"maxRetryTime":4,
+			"triggerInterval":100
+		},
+		"functionParameter":{
+            "a":"bb",
+            "c":"dd"
+		},
+		"logConfig":{
+			"project":"${alicloud_log_project.default.name}",
+			"logstore":"${alicloud_log_store.default1.name}"
+		},
+		"enable":true,
+		"targetConfig":null
+	}
 `
 var testFCLogPolicyTemplate = `
     {
@@ -780,7 +788,6 @@ var testFCcdnRoleTemplate = `
    "Statement": [
       {
          "Action": "cdn:Describe*",
-         "Resource": "*",
          "Effect": "Allow",
 		 "Principal": {
            "Service": [
@@ -793,58 +800,138 @@ var testFCcdnRoleTemplate = `
 `
 
 var testTriggerEventBridgeWithDefaultSourceTemplate = `
-    {
-        "triggerEnable": false,
-		"asyncInvocationType": false,
-      	"eventRuleFilterPattern": "{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
-      	"eventSourceConfig": {
-			"eventSourceType": "Default"
-      	}
+{
+    "triggerEnable":false,
+    "asyncInvocationType":false,
+    "eventSourceConfig":{
+        "eventSourceType":"Default",
+        "eventSourceParameters":null
+    },
+    "eventRuleFilterPattern":"{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
+    "eventSinkConfig":{
+        "deliveryOption":{
+            "mode":"event-driven",
+            "eventSchema":"CloudEvents",
+            "concurrency":null
+        }
+    },
+    "runOptions":{
+        "batchWindow":null,
+        "retryStrategy":{
+            "PushRetryStrategy":"BACKOFF_RETRY"
+        },
+        "deadLetterQueue":null,
+        "maximumTasks":null,
+        "errorsTolerance":"ALL",
+        "mode":"event-driven"
     }
+}
 `
 
 var testTriggerEventBridgeWithDefaultSourceTemplateUpdate = `
-    {
-        "triggerEnable": true,
-		"asyncInvocationType": true,
-      	"eventRuleFilterPattern": "{}",
-      	"eventSourceConfig": {
-			"eventSourceType": "Default"
-      	}
-    }
+	{
+		"triggerEnable":true,
+		"asyncInvocationType":true,
+		"eventSourceConfig":{
+			"eventSourceType":"Default",
+			"eventSourceParameters":null
+		},
+		"eventRuleFilterPattern":"{}",
+		"eventSinkConfig":{
+			"deliveryOption":{
+				"mode":"event-driven",
+				"eventSchema":"CloudEvents",
+				"concurrency":null
+			}
+		},
+		"runOptions":{
+			"batchWindow":null,
+			"retryStrategy":{
+				"PushRetryStrategy":"BACKOFF_RETRY"
+			},
+			"deadLetterQueue":null,
+			"maximumTasks":null,
+			"errorsTolerance":"ALL",
+			"mode":"event-driven"
+		}
+	}
 `
 
 var testTriggerEventBridgeWithMNSSourceTemplate = `
-    {
-        "triggerEnable": false,
-		"asyncInvocationType": false,
-      	"eventRuleFilterPattern": "{}",
-      	"eventSourceConfig": {
-			"eventSourceType": "MNS",
-			"eventSourceParameters": {
-				"sourceMNSParameters": {
-					"QueueName": "test",
-					"IsBase64Decode": false
-				}
+	{
+		"triggerEnable":false,
+		"asyncInvocationType":false,
+		"eventSourceConfig":{
+			"eventSourceType":"MNS",
+			"eventSourceParameters":{
+				"sourceMNSParameters":{
+					"QueueName":"test",
+					"IsBase64Decode":false
+				},
+				"sourceRocketMQParameters":null,
+				"sourceRabbitMQParameters":null,
+				"sourceKafkaParameters":null,
+				"sourceDTSParameters":null,
+				"sourceMQTTParameters":null
 			}
-      	}
-    }
+		},
+		"eventRuleFilterPattern":"{}",
+		"eventSinkConfig":{
+			"deliveryOption":{
+				"mode":"event-driven",
+				"eventSchema":"CloudEvents",
+				"concurrency":null
+			}
+		},
+		"runOptions":{
+			"batchWindow":null,
+			"retryStrategy":{
+				"PushRetryStrategy":"BACKOFF_RETRY"
+			},
+			"deadLetterQueue":null,
+			"maximumTasks":null,
+			"errorsTolerance":"ALL",
+			"mode":"event-driven"
+		}
+	}
 `
 var testTriggerEventBridgeWithMNSSourceTemplateUpdate = `
-    {
-        "triggerEnable": true,
-		"asyncInvocationType": true,
-      	"eventRuleFilterPattern": "{}",
-      	"eventSourceConfig": {
-			"eventSourceType": "MNS",
-			"eventSourceParameters": {
-				"sourceMNSParameters": {
-					"QueueName": "test-1",
-					"IsBase64Decode": true
-				}
+	{
+		"triggerEnable":true,
+		"asyncInvocationType":true,
+		"eventSourceConfig":{
+			"eventSourceType":"MNS",
+			"eventSourceParameters":{
+				"sourceMNSParameters":{
+					"QueueName":"test-1",
+					"IsBase64Decode":true
+				},
+				"sourceRocketMQParameters":null,
+				"sourceRabbitMQParameters":null,
+				"sourceKafkaParameters":null,
+				"sourceDTSParameters":null,
+				"sourceMQTTParameters":null
 			}
-      	}
-    }
+		},
+		"eventRuleFilterPattern":"{}",
+		"eventSinkConfig":{
+			"deliveryOption":{
+				"mode":"event-driven",
+				"eventSchema":"CloudEvents",
+				"concurrency":null
+			}
+		},
+		"runOptions":{
+			"batchWindow":null,
+			"retryStrategy":{
+				"PushRetryStrategy":"BACKOFF_RETRY"
+			},
+			"deadLetterQueue":null,
+			"maximumTasks":null,
+			"errorsTolerance":"ALL",
+			"mode":"event-driven"
+		}
+	}
 `
 
 func testAlicloudFCTriggerCdnEvents(trigger, role, policy, name string) string {
@@ -892,7 +979,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 resource "alicloud_ram_role" "default" {
@@ -976,7 +1063,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 resource "alicloud_ram_role" "default" {
@@ -1020,6 +1107,10 @@ variable "name" {
   default = "%v"
 }
 
+resource "alicloud_event_bridge_service_linked_role" "service_linked_role" {
+  product_name = "AliyunServiceRoleForEventBridgeSendToFC"
+}
+
 data "alicloud_regions" "default" {
   current = true
 }
@@ -1052,7 +1143,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 
@@ -1107,7 +1198,7 @@ resource "alicloud_fc_function" "default" {
   oss_bucket = "${alicloud_oss_bucket.default.id}"
   oss_key = "${alicloud_oss_bucket_object.default.key}"
   memory_size = 512
-  runtime = "python2.7"
+  runtime = "python3.9"
   handler = "hello.handler"
 }
 

@@ -400,7 +400,7 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 					"role": "${alicloud_ram_role.default.arn}",
 					"vpc_config": []map[string]interface{}{
 						{
-							"vswitch_ids":       []string{"${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}"},
+							"vswitch_ids":       []string{"${alicloud_vswitch.default.id}"},
 							"security_group_id": "${alicloud_security_group.default.id}",
 						},
 					},
@@ -619,6 +619,8 @@ variable "name" {
     default = "%s"
 }
 
+data "alicloud_fc_zones" "default" {}
+
 resource "alicloud_log_project" "default" {
     name = "${var.name}"
 }
@@ -628,13 +630,21 @@ resource "alicloud_log_store" "default" {
     name = "${var.name}"
 }
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  vpc_name   = "${var.name}"
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id       = "${alicloud_vpc.default.id}"
+  cidr_block   = "172.16.0.0/21"
+  zone_id      = "${data.alicloud_fc_zones.default.zones.0.id}"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_security_group" "default" {
   name = "${var.name}"
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+  vpc_id = "${alicloud_vpc.default.id}"
 }
 
 resource "alicloud_nas_file_system" "this" {
@@ -651,7 +661,7 @@ resource "alicloud_nas_mount_target" "this" {
   count = 2
   access_group_name = alicloud_nas_access_group.this.access_group_name
   file_system_id = alicloud_nas_file_system.this.id
-  vswitch_id = data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0
+  vswitch_id = alicloud_vswitch.default.id
 }
 
 locals {
