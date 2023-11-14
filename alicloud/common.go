@@ -2,7 +2,9 @@ package alicloud
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -1590,4 +1592,10 @@ func expandSingletonToList(singleton interface{}) []interface{} {
 	vs := make([]interface{}, 0)
 	vs = append(vs, singleton)
 	return vs
+}
+
+func MD5(b []byte) string {
+	ctx := md5.New()
+	ctx.Write(b)
+	return hex.EncodeToString(ctx.Sum(nil))
 }

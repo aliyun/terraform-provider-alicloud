@@ -288,7 +288,6 @@ func resourceAliCloudSlsProjectDelete(d *schema.ResourceData, meta interface{}) 
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	hostMap := make(map[string]*string)
 	conn, err := client.NewSlsClient()
 	if err != nil {
@@ -297,12 +296,11 @@ func resourceAliCloudSlsProjectDelete(d *schema.ResourceData, meta interface{}) 
 	request = make(map[string]interface{})
 	hostMap["project"] = StringPointer(d.Id())
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("DeleteProject", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(genRoaParam("DeleteProject", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
