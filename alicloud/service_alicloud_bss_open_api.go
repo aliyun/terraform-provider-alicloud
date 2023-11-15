@@ -116,8 +116,12 @@ func (s *BssOpenApiService) QueryAvailableInstancesWithoutProductType(id, instan
 				request["ProductCode"] = productCodeIntl
 				return resource.RetryableError(err)
 			}
+			return resource.NonRetryableError(err)
 		}
-		resp, _ := jsonpath.Get("$.Data.InstanceList", response)
+		resp, err := jsonpath.Get("$.Data.InstanceList", response)
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
 		if len(resp.([]interface{})) < 1 {
 			request["ProductCode"] = productCodeIntl
 			conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
