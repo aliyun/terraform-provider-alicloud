@@ -112,7 +112,7 @@ func testSweepDBFSInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDBFSInstance_basic0(t *testing.T) {
+func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dbfs_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudDBFSInstanceMap0)
@@ -236,7 +236,7 @@ func TestAccAlicloudDBFSInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"delete_snapshot", "snapshot_id"},
+				ImportStateVerifyIgnore: []string{"delete_snapshot"},
 			},
 		},
 	})
@@ -249,33 +249,328 @@ func AlicloudDBFSInstanceBasicDependence0(name string) string {
 variable "name" {
   default = "%s"
 }
+
+locals {
+  zone_id = "cn-hangzhou-i"
+}
+data "alicloud_instance_types" "example" {
+  availability_zone    = local.zone_id
+  instance_type_family = "ecs.g7se"
+}
+data "alicloud_images" "example" {
+  instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
+  name_regex    = "^aliyun_2"
+  owners        = "system"
+}
+
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
 }
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids[0]
-  zone_id = "cn-hangzhou-i"
+  zone_id = local.zone_id
 }
-resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = "tf test"
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
+
+resource "alicloud_security_group" "example" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids[0]
 }
-data "alicloud_images" "default" {
-  owners      = "system"
-  name_regex  = "^centos_8"
-  most_recent = true
-}
+
 resource "alicloud_instance" "default" {
-  image_id          = data.alicloud_images.default.images[0].id
-  instance_name     = var.name
-  instance_type     = "ecs.g7se.large"
-  availability_zone = "cn-hangzhou-i"
-  vswitch_id        = data.alicloud_vswitches.default.ids[0]
+  availability_zone    = local.zone_id
+  instance_name        = var.name
+  image_id             = data.alicloud_images.example.images.1.id
+  instance_type        = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
+  security_groups      = [alicloud_security_group.example.id]
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
   system_disk_category = "cloud_essd"
-  security_groups = [
-    alicloud_security_group.default.id
-  ]
 }
 `, name)
 }
+
+// Test Dbfs DbfsInstance. >>> Resource test cases, automatically generated.
+// Case 5069
+func TestAccAliCloudDbfsDbfsInstance_basic5069(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dbfs_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DbfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDbfsDbfsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"category": "enterprise",
+					"zone_id":  "cn-hangzhou-i",
+					"size":     "20",
+					"fs_name":  "rmc-test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category": "enterprise",
+						"zone_id":  "cn-hangzhou-i",
+						"size":     "20",
+						"fs_name":  "rmc-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"performance_level": "PL1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"used_scene": "MongoDB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"used_scene": "MongoDB",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "dbfs.small",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "dbfs.small",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"advanced_features": "{\\\"memorySize\\\":1024,\\\"pageCacheSize\\\":128,\\\"cpuCoreCount\\\":0.5}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"advanced_features": "{\"memorySize\":1024,\"pageCacheSize\":128,\"cpuCoreCount\":0.5}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"size": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"size": "20",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fs_name": "rmc-test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"fs_name": "rmc-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fs_name": "rmc-new-name",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"fs_name": "rmc-new-name",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"used_scene": "PostgreSQL ",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"used_scene": "PostgreSQL ",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "dbfs.medium",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "dbfs.medium",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"size": "960",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"size": "960",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"performance_level": "PL2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"performance_level": "PL2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"advanced_features": "{\\\"memorySize\\\":512,\\\"pageCacheSize\\\":128,\\\"cpuCoreCount\\\":0.5}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"advanced_features": "{\"memorySize\":512,\"pageCacheSize\":128,\"cpuCoreCount\":0.5}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"category":                "enterprise",
+					"zone_id":                 "cn-hangzhou-i",
+					"size":                    "20",
+					"performance_level":       "PL1",
+					"fs_name":                 "rmc-test",
+					"used_scene":              "MongoDB",
+					"instance_type":           "dbfs.small",
+					"raid_stripe_unit_number": "2",
+					"advanced_features":       "{\\\"memorySize\\\":1024,\\\"pageCacheSize\\\":128,\\\"cpuCoreCount\\\":0.5}",
+					"kms_key_id":              "00000000-0000-0000-0000-000000000000",
+					"snapshot_id":             "none",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category":                "enterprise",
+						"zone_id":                 "cn-hangzhou-i",
+						"size":                    "20",
+						"performance_level":       "PL1",
+						"fs_name":                 "rmc-test",
+						"used_scene":              "MongoDB",
+						"instance_type":           "dbfs.small",
+						"raid_stripe_unit_number": "2",
+						"advanced_features":       "{\"memorySize\":1024,\"pageCacheSize\":128,\"cpuCoreCount\":0.5}",
+						"kms_key_id":              "00000000-0000-0000-0000-000000000000",
+						"snapshot_id":             "none",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_snapshot"},
+			},
+		},
+	})
+}
+
+var AlicloudDbfsDbfsInstanceMap5069 = map[string]string{
+	"status":            CHECKSET,
+	"performance_level": "PL1",
+	"create_time":       CHECKSET,
+	"snapshot_id":       "none",
+	"advanced_features": "{}",
+}
+
+func AlicloudDbfsDbfsInstanceBasicDependence5069(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 5069  twin
+func TestAccAliCloudDbfsDbfsInstance_basic5069_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dbfs_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudDbfsDbfsInstanceMap5069)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DbfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDbfsDbfsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdbfsdbfsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDbfsDbfsInstanceBasicDependence5069)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DBFSSystemSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"category":                "enterprise",
+					"zone_id":                 "cn-hangzhou-i",
+					"size":                    "960",
+					"performance_level":       "PL2",
+					"fs_name":                 "rmc-new-name",
+					"used_scene":              "PostgreSQL ",
+					"instance_type":           "dbfs.medium",
+					"raid_stripe_unit_number": "2",
+					"advanced_features":       "{\\\"memorySize\\\":512,\\\"pageCacheSize\\\":128,\\\"cpuCoreCount\\\":0.5}",
+					"kms_key_id":              "00000000-0000-0000-0000-000000000000",
+					"snapshot_id":             "none",
+					"encryption":              "true",
+					"delete_snapshot":         "true",
+					"enable_raid":             "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"category":                "enterprise",
+						"zone_id":                 "cn-hangzhou-i",
+						"size":                    "960",
+						"performance_level":       "PL2",
+						"fs_name":                 "rmc-new-name",
+						"used_scene":              "PostgreSQL ",
+						"instance_type":           "dbfs.medium",
+						"raid_stripe_unit_number": "2",
+						"advanced_features":       "{\"memorySize\":512,\"pageCacheSize\":128,\"cpuCoreCount\":0.5}",
+						"kms_key_id":              "00000000-0000-0000-0000-000000000000",
+						"snapshot_id":             "none",
+						"encryption":              "true",
+						"delete_snapshot":         "true",
+						"enable_raid":             "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"delete_snapshot"},
+			},
+		},
+	})
+}
+
+// Test Dbfs DbfsInstance. <<< Resource test cases, automatically generated.

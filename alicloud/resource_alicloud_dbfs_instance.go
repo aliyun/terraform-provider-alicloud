@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -9,35 +10,101 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDbfsInstance() *schema.Resource {
+func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDbfsInstanceCreate,
-		Read:   resourceAlicloudDbfsInstanceRead,
-		Update: resourceAlicloudDbfsInstanceUpdate,
-		Delete: resourceAlicloudDbfsInstanceDelete,
+		Create: resourceAliCloudDbfsDbfsInstanceCreate,
+		Read:   resourceAliCloudDbfsDbfsInstanceRead,
+		Update: resourceAliCloudDbfsDbfsInstanceUpdate,
+		Delete: resourceAliCloudDbfsDbfsInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(15 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"advanced_features": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"category": {
 				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
+				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"standard"}, false),
+				ValidateFunc: StringInSlice([]string{"standard", "enterprise"}, false),
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"delete_snapshot": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"enable_raid": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"fs_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"fs_name", "instance_name"},
+			},
+			"instance_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"dbfs.small", "dbfs.medium", "dbfs.large "}, false),
+			},
+			"kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"performance_level": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+			},
+			"raid_stripe_unit_number": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: IntBetween(2, 8),
+			},
+			"size": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: IntBetween(20, 262144),
+			},
+			"snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"used_scene": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"MySQL 5.7", "PostgreSQL ", "MongoDB", "DataCube"}, false),
+			},
+			"tags": tagsSchema(),
 			"ecs_list": {
 				Type:       schema.TypeSet,
 				Optional:   true,
@@ -51,100 +118,84 @@ func resourceAlicloudDbfsInstance() *schema.Resource {
 					},
 				},
 			},
-			"enable_raid": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"encryption": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"instance_name": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"kms_key_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"performance_level": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
-			},
-			"raid_stripe_unit_number": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-			},
-			"size": {
-				Type:     schema.TypeInt,
-				Required: true,
-			},
-			"snapshot_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"tags": tagsSchema(),
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"instance_name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'instance_name' has been deprecated since provider version 1.212.0. New field 'fs_name' instead.",
+			},
 		},
 	}
 }
 
-func resourceAlicloudDbfsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDbfsDbfsInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateDbfs"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewDbfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["Category"] = d.Get("category")
-	if v, ok := d.GetOkExists("delete_snapshot"); ok {
-		request["DeleteSnapshot"] = v
-	}
-	if v, ok := d.GetOkExists("enable_raid"); ok {
-		request["EnableRaid"] = v
-	}
-	if v, ok := d.GetOkExists("encryption"); ok {
-		request["Encryption"] = v
-	}
-	request["FsName"] = d.Get("instance_name")
-	if v, ok := d.GetOk("kms_key_id"); ok {
-		request["KMSKeyId"] = v
-	}
-	if v, ok := d.GetOk("performance_level"); ok {
-		request["PerformanceLevel"] = v
-	}
-	if v, ok := d.GetOk("raid_stripe_unit_number"); ok {
-		request["RaidStripeUnitNumber"] = v
-	}
+	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("instance_name"); ok {
+		request["FsName"] = v
+	}
+
+	if v, ok := d.GetOk("fs_name"); ok {
+		request["FsName"] = v
+	}
+	request["Category"] = d.Get("category")
+	request["ZoneId"] = d.Get("zone_id")
 	request["SizeG"] = d.Get("size")
 	if v, ok := d.GetOk("snapshot_id"); ok {
 		request["SnapshotId"] = v
 	}
-	request["ZoneId"] = d.Get("zone_id")
-	request["ClientToken"] = buildClientToken("CreateDbfs")
+	if v, ok := d.GetOkExists("delete_snapshot"); ok {
+		request["DeleteSnapshot"] = v
+	}
+	if v, ok := d.GetOk("performance_level"); ok {
+		request["PerformanceLevel"] = v
+	}
+	if v, ok := d.GetOkExists("enable_raid"); ok {
+		request["EnableRaid"] = v
+	}
+	if v, ok := d.GetOk("raid_stripe_unit_number"); ok {
+		request["RaidStripeUnitNumber"] = v
+	}
+	if v, ok := d.GetOk("kms_key_id"); ok {
+		request["KMSKeyId"] = v
+	}
+	if v, ok := d.GetOkExists("encryption"); ok {
+		request["Encryption"] = v
+	}
+	if v, ok := d.GetOk("used_scene"); ok {
+		request["UsedScene"] = v
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+	if v, ok := d.GetOk("advanced_features"); ok {
+		request["AdvancedFeatures"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -152,36 +203,58 @@ func resourceAlicloudDbfsInstanceCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dbfs_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["FsId"]))
-	dbfsService := DbfsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"unattached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
+
+	dbfsServiceV2 := DbfsServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"unattached"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDbfsInstanceUpdate(d, meta)
+	return resourceAliCloudDbfsDbfsInstanceRead(d, meta)
 }
-func resourceAlicloudDbfsInstanceRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDbfsDbfsInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dbfsService := DbfsService{client}
-	object, err := dbfsService.DescribeDbfsInstance(d.Id())
+	dbfsServiceV2 := DbfsServiceV2{client}
+
+	objectRaw, err := dbfsServiceV2.DescribeDbfsDbfsInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dbfs_instance dbfsService.DescribeDbfsInstance Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dbfs_instance DescribeDbfsDbfsInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("category", object["Category"])
-	if ecsListList, ok := object["EcsList"]; ok && ecsListList != nil {
+
+	d.Set("advanced_features", objectRaw["AdvancedFeatures"])
+	d.Set("category", objectRaw["Category"])
+	d.Set("create_time", objectRaw["CreatedTime"])
+	d.Set("enable_raid", objectRaw["EnableRaid"])
+	d.Set("encryption", objectRaw["Encryption"])
+	d.Set("fs_name", objectRaw["FsName"])
+	d.Set("instance_type", objectRaw["InstanceType"])
+	d.Set("kms_key_id", objectRaw["KMSKeyId"])
+	d.Set("performance_level", objectRaw["PerformanceLevel"])
+	d.Set("raid_stripe_unit_number", objectRaw["RaidStrip"])
+	d.Set("size", objectRaw["SizeG"])
+	d.Set("snapshot_id", objectRaw["SnapshotId"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("used_scene", objectRaw["UsedScene"])
+	d.Set("zone_id", objectRaw["ZoneId"])
+	d.Set("tags", tagsToMap(objectRaw["Tags"]))
+
+	d.Set("instance_name", d.Get("fs_name"))
+	if ecsListList, ok := objectRaw["EcsList"]; ok && ecsListList != nil {
 		ecsListMaps := make([]map[string]interface{}, 0)
 		for _, ecsListListItem := range ecsListList.([]interface{}) {
 			if ecsListListItemMap, ok := ecsListListItem.(map[string]interface{}); ok {
@@ -191,42 +264,42 @@ func resourceAlicloudDbfsInstanceRead(d *schema.ResourceData, meta interface{}) 
 			d.Set("ecs_list", ecsListMaps)
 		}
 	}
-
-	d.Set("enable_raid", object["EnableRaid"])
-	d.Set("encryption", object["Encryption"])
-	d.Set("kms_key_id", object["KMSKeyId"])
-	d.Set("performance_level", object["PerformanceLevel"])
-	if v, ok := object["SizeG"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("size", formatInt(v))
-	}
-	d.Set("status", object["Status"])
-	d.Set("tags", tagsToMap(object["Tags"]))
-	d.Set("zone_id", object["ZoneId"])
-	d.Set("instance_name", object["FsName"])
 	return nil
 }
-func resourceAlicloudDbfsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	d.Partial(true)
 
+func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"FsId": d.Id(),
+	d.Partial(true)
+	action := "RenameDbfs"
+	conn, err := client.NewDbfsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if !d.IsNewResource() && d.HasChange("instance_name") {
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["FsId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("instance_name") {
 		update = true
+		request["FsName"] = d.Get("instance_name")
 	}
-	request["FsName"] = d.Get("instance_name")
+
+	if d.HasChange("fs_name") {
+		update = true
+		request["FsName"] = d.Get("fs_name")
+	}
+
 	if update {
-		action := "RenameDbfs"
-		conn, err := client.NewDbfsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -234,31 +307,35 @@ func resourceAlicloudDbfsInstanceUpdate(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("instance_name")
+		d.SetPartial("fs_name")
 	}
 	update = false
-	resizeDbfsReq := map[string]interface{}{
-		"FsId": d.Id(),
+	action = "ResizeDbfs"
+	conn, err = client.NewDbfsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if !d.IsNewResource() && d.HasChange("size") {
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["FsId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("size") {
 		update = true
 	}
-	resizeDbfsReq["NewSizeG"] = d.Get("size")
+	request["NewSizeG"] = d.Get("size")
 	if update {
-		action := "ResizeDbfs"
-		conn, err := client.NewDbfsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, resizeDbfsReq, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -266,18 +343,104 @@ func resourceAlicloudDbfsInstanceUpdate(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, resizeDbfsReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		dbfsService := DbfsService{client}
-		stateConf := BuildStateConf([]string{}, []string{"attached"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
+		dbfsServiceV2 := DbfsServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("size"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "SizeG", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("size")
+	}
+	update = false
+	action = "UpdateDbfs"
+	conn, err = client.NewDbfsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["FsId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("used_scene") {
+		update = true
+		request["UsedScene"] = d.Get("used_scene")
+	}
+
+	if d.HasChange("instance_type") {
+		update = true
+		request["InstanceType"] = d.Get("instance_type")
+	}
+
+	if d.HasChange("advanced_features") {
+		update = true
+		request["AdvancedFeatures"] = d.Get("advanced_features")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("used_scene")
+		d.SetPartial("instance_type")
+		d.SetPartial("advanced_features")
+	}
+	update = false
+	action = "ModifyPerformanceLevel"
+	conn, err = client.NewDbfsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["FsId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("performance_level") {
+		update = true
+		request["PerformanceLevel"] = d.Get("performance_level")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("performance_level")
 	}
 
 	if d.HasChange("tags") {
@@ -458,24 +621,30 @@ func resourceAlicloudDbfsInstanceUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("ecs_list")
 	}
 	d.Partial(false)
-	return resourceAlicloudDbfsInstanceRead(d, meta)
+	return resourceAliCloudDbfsDbfsInstanceRead(d, meta)
 }
-func resourceAlicloudDbfsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDbfsDbfsInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	dbfsService := DbfsService{client}
 	action := "DeleteDbfs"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewDbfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"FsId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	query["FsId"] = d.Id()
+	request["RegionId"] = client.RegionId
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-18"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -483,22 +652,34 @@ func resourceAlicloudDbfsInstanceDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, dbfsService.DbfsInstanceStateRefreshFunc(d.Id(), []string{}))
+
+	dbfsServiceV2 := DbfsServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
+
 func convertDbfsInstancePaymentTypeResponse(source string) string {
+	switch source {
+	case "postpaid":
+		return "PayAsYouGo"
+	}
+	return source
+}
+
+func convertDbfsDBFSInfoPayTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "postpaid":
 		return "PayAsYouGo"
