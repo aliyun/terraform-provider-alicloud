@@ -2,12 +2,97 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
+	"strings"
 	"testing"
 
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func testSweepRocketMq(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "error getting Alicloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+		"tf_test_",
+		"tf-test-",
+		"testAcc",
+	}
+
+	action := "/instances"
+	request := make(map[string]interface{})
+	query := make(map[string]*string)
+	query["pageNumber"] = tea.String("1")
+	query["pageSize"] = tea.String("200")
+	var response map[string]interface{}
+	conn, err := client.NewRocketmqClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
+	if err != nil {
+		log.Printf("[ERROR] Failed to retrieve ons instance in service list: %s", err)
+	}
+	resp, err := jsonpath.Get("$.body.data.list", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.body.data.list", response)
+	}
+
+	result, _ := resp.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		name := item["instanceName"].(string)
+		skip := true
+		if !sweepAll() {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(name), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping rocketmq instance: %s ", name)
+				continue
+			}
+		}
+		log.Printf("[INFO] delete rocketmq instance: %s ", name)
+
+		conn, err := client.NewRocketmqClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		action = fmt.Sprintf("/instances/%s", item["instanceId"])
+		query := make(map[string]*string)
+		body := make(map[string]interface{})
+		if err != nil {
+			return WrapError(err)
+		}
+		request = make(map[string]interface{})
+		request["instanceId"] = item["instanceId"]
+
+		body = request
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		if err != nil {
+			log.Printf("[ERROR] Failed to delete rocketmq instance (%s): %s", name, err)
+		}
+	}
+
+	return nil
+}
 
 // Test Rocketmq Instance. >>> Resource test cases, automatically generated.
 // Case 4665
