@@ -856,6 +856,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_compute_nest_service_instances":                   dataSourceAlicloudComputeNestServiceInstances(),
 			"alicloud_vpc_flow_log_service":                             dataSourceAliCloudVpcFlowLogService(),
 			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
+			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ack_one_cluster":                                      resourceAliCloudAckOneCluster(),
