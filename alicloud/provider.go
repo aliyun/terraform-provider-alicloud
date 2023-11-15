@@ -1345,7 +1345,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_open_search_app_group":                                 resourceAlicloudOpenSearchAppGroup(),
 			"alicloud_graph_database_db_instance":                            resourceAlicloudGraphDatabaseDbInstance(),
 			"alicloud_arms_prometheus_alert_rule":                            resourceAlicloudArmsPrometheusAlertRule(),
-			"alicloud_dbfs_instance":                                         resourceAlicloudDbfsInstance(),
+			"alicloud_dbfs_instance":                                         resourceAliCloudDbfsDbfsInstance(),
 			"alicloud_rdc_organization":                                      resourceAlicloudRdcOrganization(),
 			"alicloud_eais_instance":                                         resourceAlicloudEaisInstance(),
 			"alicloud_sae_ingress":                                           resourceAlicloudSaeIngress(),
