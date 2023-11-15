@@ -98,7 +98,7 @@ func testSweepBastionhostInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
+func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
@@ -129,7 +129,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 					"license_code":       "bhah_ent_50_asset",
 					"plan_code":          "cloudbastion",
 					"storage":            "5",
-					"bandwidth":          "5",
+					"bandwidth":          "10",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
@@ -197,14 +197,14 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
-						"For":     "acceptance test",
+						"For":     "acceptance-test",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
+						"tags.For":     "acceptance-test",
 					}),
 				),
 			},
@@ -212,7 +212,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
 						"Created": "TF",
-						"For":     "acceptance test",
+						"For":     "acceptance-test",
 						"Updated": "TF",
 					},
 				}),
@@ -220,7 +220,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"tags.%":       "3",
 						"tags.Created": "TF",
-						"tags.For":     "acceptance test",
+						"tags.For":     "acceptance-test",
 						"tags.Updated": "TF",
 					}),
 				),
@@ -255,7 +255,7 @@ func TestAccAlicloudBastionhostInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
+func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
@@ -286,11 +286,11 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 					"period":               "1",
 					"plan_code":            "cloudbastion",
 					"storage":              "5",
-					"bandwidth":            "5",
+					"bandwidth":            "10",
 					"description":          "${var.name}",
 					"vswitch_id":           "${local.vswitch_id}",
 					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
-					"enable_public_access": "true",
+					"enable_public_access": "false",
 					"public_white_list":    []string{"192.168.0.0/16"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -299,7 +299,7 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 						"period":               "1",
 						"plan_code":            "cloudbastion",
 						"security_group_ids.#": "1",
-						"enable_public_access": "true",
+						"enable_public_access": "false",
 						"public_white_list.#":  "1",
 						"public_white_list.0":  "192.168.0.0/16",
 					}),
@@ -307,11 +307,11 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable_public_access": "false",
+					"enable_public_access": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enable_public_access": "false",
+						"enable_public_access": "true",
 					}),
 				),
 			},
@@ -336,7 +336,7 @@ func TestAccAlicloudBastionhostInstance_PublicAccess(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudBastionhostInstance_basic1(t *testing.T) {
+func TestAccAliCloudBastionhostInstance_basic1(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
@@ -407,13 +407,13 @@ func TestAccAlicloudBastionhostInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "plan_code", "storage", "bandwidth"},
+				ImportStateVerifyIgnore: []string{"period", "storage", "bandwidth"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing.T) {
+func TestAccAliCloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
@@ -444,7 +444,7 @@ func TestAccAlicloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing
 					"license_code":       "bhah_ent_50_asset",
 					"plan_code":          "cloudbastion",
 					"storage":            "5",
-					"bandwidth":          "5",
+					"bandwidth":          "10",
 					"period":             "1",
 					"vswitch_id":         "${local.vswitch_id}",
 					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},

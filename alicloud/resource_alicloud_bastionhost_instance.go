@@ -507,7 +507,8 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("security_group_ids")
 	}
 
-	if d.HasChange("enable_public_access") {
+	_, ok := d.GetOkExists("enable_public_access")
+	if d.HasChange("enable_public_access") || (d.IsNewResource() && ok) {
 		client := meta.(*connectivity.AliyunClient)
 		BastionhostService := YundunBastionhostService{client}
 		instance, err := BastionhostService.DescribeBastionhostInstance(d.Id())
