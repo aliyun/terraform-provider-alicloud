@@ -7,11 +7,12 @@ description: |-
   Provides a Alicloud Log Dashboard resource.
 ---
 
-# alicloud\_log\_dashboard
+# alicloud_log_dashboard
+
 The dashboard is a real-time data analysis platform provided by the log service. You can display frequently used query and analysis statements in the form of charts and save statistical charts to the dashboard.
 [Refer to details](https://www.alibabacloud.com/help/doc-detail/102530.htm).
 
--> **NOTE:** Available in 1.86.0, parameter "action" in char_list is supported since 1.164.0+. 
+-> **NOTE:** Available since v1.86.0.
 
 ## Example Usage
 
@@ -40,7 +41,12 @@ resource "alicloud_log_store" "example" {
 resource "alicloud_log_dashboard" "example" {
   project_name   = alicloud_log_project.example.name
   dashboard_name = "terraform-example"
-  attribute      = "{\"type\":\"grid\"}"
+  display_name   = "terraform-example"
+  attribute      = <<EOF
+  {
+    "type":"grid"
+  }
+EOF
   char_list      = <<EOF
   [
     {
@@ -73,7 +79,6 @@ EOF
 }
 ```
 
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -81,19 +86,20 @@ The following arguments are supported:
 * `project_name` - (Required, ForceNew) The name of the log project. It is the only in one Alicloud account.
 * `dashboard_name` - (Required, ForceNew) The name of the Log Dashboard.
 * `char_list` - (Required) Configuration of charts in the dashboard.
+  **Note:** From version 1.164.0, `char_list` can set parameter "action".
 * `display_name` - (Optional) Dashboard alias.
-* `attribute` - (Optional, Available in 1.183.0+) Dashboard attribute.
+* `attribute` - (Optional, Available since v1.183.0) Dashboard attribute.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the Log Dashboard. It sames as its name.
+* `id` - The resource ID in terraform of Log Dashboard. It formats as `<project_name>:<dashboard_name>`.
 
 ## Import
 
-Log Dashboard can be imported using the id or name, e.g.
+Log Dashboard can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_log_dashboard.example tf-project:tf-logstore:tf-dashboard
+$ terraform import alicloud_log_dashboard.example <project_name>:<dashboard_name>
 ```
