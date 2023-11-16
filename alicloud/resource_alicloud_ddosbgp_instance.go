@@ -108,7 +108,7 @@ func resourceAlicloudDdosbgpInstanceCreate(d *schema.ResourceData, meta interfac
 
 	instanceId := response.Data.InstanceId
 	if !response.Success {
-		return WrapError(Error(response.Message))
+		return WrapErrorf(Error(response.Message), RequestIdMsg, response.RequestId)
 	}
 	d.SetId(instanceId)
 

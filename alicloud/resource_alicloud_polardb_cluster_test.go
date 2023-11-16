@@ -683,7 +683,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"pay_type":               "PostPaid",
 					"db_node_count":          "2",
 					"db_node_class":          "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":             "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
 					"zone_id":                "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
 					"creation_category":      "Normal",
 					"loose_polar_log_bin":    "ON",
@@ -1618,12 +1618,16 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 		default = "%s"
 	}
 
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+		vpc_name   = var.name
+		cidr_block = "10.4.0.0/16"
 	}
-	data "alicloud_vswitches" "default" {
+	  
+	resource "alicloud_vswitch" "default" {
+		vswitch_name = var.name
+		cidr_block   = "10.4.0.0/24"
+		vpc_id       = alicloud_vpc.default.id
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 
     data "alicloud_polardb_parameter_groups" "default" {
@@ -1645,7 +1649,7 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)
