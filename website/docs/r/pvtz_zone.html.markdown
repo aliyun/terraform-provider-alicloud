@@ -7,11 +7,13 @@ description: |-
   Provides a Alicloud Private Zone resource.
 ---
 
-# alicloud\_pvtz\_zone
+# alicloud_pvtz_zone
 
 Provides a Private Zone resource.
 
 -> **NOTE:** Terraform will auto Create a Private Zone while it uses `alicloud_pvtz_zone` to build a Private Zone resource.
+
+-> **NOTE:** Available since v1.13.0.
 
 ## Example Usage
 
@@ -19,7 +21,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_pvtz_zone" "foo" {
-  zone_name = "foo.test.com"
+  zone_name = "foo.example.com"
 }
 ```
 ## Argument Reference
@@ -37,9 +39,10 @@ The following arguments are supported:
 * `lang` - (Optional, Available in 1.69.0+) The language. Valid values: "zh", "en", "jp".
 * `resource_group_id` - (Optional, ForceNew, Available in v1.86.0+) The Id of resource group which the Private Zone belongs.
 * `sync_status` - (Optional, Available in 1.146.0+) The status of the host synchronization task. Valid values:  `ON`,`OFF`. **NOTE:** You can update the `sync_status` to enable/disable the host synchronization task.
-* `user_info` - (Optional, Available in 1.146.0+) The user information of the host synchronization task. The details see Block `user_info`.
+* `user_info` - (Optional, Available in 1.146.0+) The user information of the host synchronization task. See [`user_info`](#user_info) below.
+* `tags` - (Optional, Map) The tags of the Private Zone.
 
-#### user_info
+### `user_info`
 
 The user_info supports the following:
 * `user_id` - (Optional, Available in 1.146.0+) The user ID belonging to the region is used for cross-account synchronization scenarios.
@@ -53,6 +56,8 @@ The following attributes are exported:
 * `id` - The ID of the Private Zone.
 * `record_count` - The count of the Private Zone Record.
 * `is_ptr` - Whether the Private Zone is ptr.
+* `creation_time` - (Removed since v1.107.0+) The create time of the Private Zone.
+* `update_time` - (Removed since v1.107.0+) The update time of the Private Zone.
 
 ## Import
 
