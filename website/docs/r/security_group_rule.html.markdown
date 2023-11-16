@@ -7,12 +7,14 @@ description: |-
   Provides a Alicloud Security Group Rule resource.
 ---
 
-# alicloud\_security\_group\_rule
+# alicloud_security_group_rule
 
 Provides a security group rule resource.
 Represents a single `ingress` or `egress` group rule, which can be added to external Security Groups.
 
 -> **NOTE:**  `nic_type` should set to `intranet` when security group type is `vpc` or specifying the `source_security_group_id`. In this situation it does not distinguish between intranet and internet, the rule is effective on them both.
+
+-> **NOTE:** Available since v0.1.0.
 
 
 ## Example Usage
@@ -46,7 +48,7 @@ The following arguments are supported:
 
 * `type` - (Required, ForceNew) The type of rule being created. Valid options are `ingress` (inbound) or `egress` (outbound).
 * `ip_protocol` - (Required, ForceNew) The protocol. Can be `tcp`, `udp`, `icmp`, `gre` or `all`.
-* `port_range` - (ForceNew) The range of port numbers relevant to the IP protocol. Default to "-1/-1". When the protocol is tcp or udp, each side port number range from 1 to 65535 and '-1/-1' will be invalid.
+* `port_range` - (Optional, ForceNew) The range of port numbers relevant to the IP protocol. Default to "-1/-1". When the protocol is tcp or udp, each side port number range from 1 to 65535 and '-1/-1' will be invalid.
   For example, `1/200` means that the range of the port numbers is 1-200. Other protocols' 'port_range' can only be "-1/-1", and other values will be invalid.
 * `security_group_id` - (Required, ForceNew) The security group to apply this rule to.
 * `nic_type` - (Optional, ForceNew) Network type, can be either `internet` or `intranet`, the default value is `internet`.
@@ -65,7 +67,5 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the security group rule
-* `type` - The type of rule, `ingress` or `egress`
-* `port_range` - The range of port numbers
-* `ip_protocol` - The protocol of the security group rule
+* `id` - The ID of the security group rule. The value is formulated as `<security_group_id>:<type>:<ip_protocol>:<port_range>:<nic_type>:<real_ip>:<policy>:<priority>`. The real_ip may be one of the following field: `cidr_ip`, `source_security_group_id`, `prefix_list_id`, `ipv6_cidr_ip`. 
+
