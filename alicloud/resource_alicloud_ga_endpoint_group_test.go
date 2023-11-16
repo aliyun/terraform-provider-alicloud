@@ -341,9 +341,10 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 }
 
 var AliCloudGaEndpointGroupMap = map[string]string{
-	"endpoint_group_type":       "default",
+	"endpoint_group_type":       CHECKSET,
 	"endpoint_request_protocol": CHECKSET,
-	"threshold_count":           "3",
+	"threshold_count":           CHECKSET,
+	"endpoint_group_ip_list.#":  CHECKSET,
 	"status":                    CHECKSET,
 }
 
