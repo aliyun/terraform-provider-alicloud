@@ -189,6 +189,7 @@ for fileName in ${changeFiles[@]}; do
     allExample["${docsDir}"]=1
 
     #get example
+    IFS=""
     cat ${docsDir} | while read line; do
       exampleFileName="resource_alicloud_${resourceName}_example_${count}"
       if [[ $docsDir =~ "website/docs/d" ]]; then
