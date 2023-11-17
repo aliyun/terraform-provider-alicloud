@@ -859,6 +859,8 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_resource_manager_saved_query":                         resourceAliCloudResourceManagerSavedQuery(),
+			"alicloud_threat_detection_sas_trail":                           resourceAliCloudThreatDetectionSasTrail(),
+			"alicloud_threat_detection_image_event_operation":               resourceAliCloudThreatDetectionImageEventOperation(),
 			"alicloud_ack_one_cluster":                                      resourceAliCloudAckOneCluster(),
 			"alicloud_drds_polardbx_instance":                               resourceAliCloudDrdsPolardbxInstance(),
 			"alicloud_gpdb_backup_policy":                                   resourceAliCloudGpdbBackupPolicy(),
