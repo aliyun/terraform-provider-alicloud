@@ -11,9 +11,11 @@ description: |-
 
 Provides a Vpc Vpc resource. A VPC instance creates a VPC. You can fully control your own VPC, such as selecting IP address ranges, configuring routing tables, and gateways. You can use Alibaba cloud resources such as cloud servers, apsaradb for RDS, and load balancer in your own VPC. 
 
+-> **NOTE:** Available since v1.0.0.
+
 -> **NOTE:** This resource will auto build a router and a route table while it uses `alicloud_vpc` to build a vpc resource. 
 
--> **NOTE:** Currently, the IPv4 / IPv6 dual-stack VPC function is under public testing. Only the following regions support IPv4 / IPv6 dual-stack VPC: `cn-hangzhou`, `cn-shanghai`, `cn-shenzhen`, `cn-beijing`, `cn-huhehaote`, `cn-hongkong` and `ap-southeast-1`, and need to apply for public beta qualification. To use, please [submit an application](https://help.aliyun.com/document_detail/100334.html).
+-> **NOTE:** Currently, the IPv4 / IPv6 dual-stack VPC function is under public testing. Only the following regions support IPv4 / IPv6 dual-stack VPC: `cn-hangzhou`, `cn-shanghai`, `cn-shenzhen`, `cn-beijing`, `cn-huhehaote`, `cn-hongkong` and `ap-southeast-1`, and need to apply for public beta qualification. To use, please [submit an application](https://www.alibabacloud.com/help/en/vpc/getting-started/create-a-vpc-with-an-ipv6-cidr-block).
 
 ## Module Support
 
@@ -68,7 +70,6 @@ The following arguments are supported:
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated from v1.119.0+) Field 'name' has been deprecated from provider version 1.119.0. New field 'vpc_name' instead.
-* `router_table_id` - (Deprecated from v1.206.0+) Field 'router_table_id' has been deprecated from provider version 1.206.0. New field 'route_table_id' instead.
 
 
 ## Attributes Reference
@@ -83,11 +84,12 @@ The following attributes are exported:
     - **ChinaMobile**: China Mobile (single line).
     - **ChinaUnicom**: China Unicom (single line).
     - **ChinaTelecom**: China Telecom (single line).
+* `router_table_id` - (Deprecated since v1.206.0+) Field 'router_table_id' has been deprecated from provider version 1.206.0. New field 'route_table_id' instead.
 * `route_table_id` - The route table ID of the router created by default on VPC creation.
 * `router_id` - The ID of the router created by default on VPC creation.
 * `status` - The status of the VPC. Valid values:  **Pending**: The VPC is being configured. **Available**: The VPC is available.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Vpc.

@@ -83,10 +83,8 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Computed: true,
 			},
 			"route_table_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"router_table_id"},
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"router_id": {
 				Type:     schema.TypeString,
@@ -125,7 +123,6 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 			},
 			"router_table_id": {
 				Type:       schema.TypeString,
-				Optional:   true,
 				Computed:   true,
 				Deprecated: "Field 'router_table_id' has been deprecated from provider version 1.206.0. New field 'route_table_id' instead.",
 			},
@@ -589,7 +586,7 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "OperationFailed.QueryCenIpv6Status", "IncorrectStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectVpcStatus"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
