@@ -46,13 +46,17 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed: true,
 			},
 			"image_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				AtLeastOneOf: []string{"image_id", "launch_template_id", "launch_template_name"},
+				Optional:     true,
+				Computed:     true,
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
+				AtLeastOneOf: []string{"instance_type", "launch_template_id", "launch_template_name"},
+				Computed:     true,
 			},
 			"credit_specification": {
 				Type:     schema.TypeString,
@@ -64,9 +68,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				}, false),
 			},
 			"security_groups": {
-				Type:     schema.TypeSet,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Required: true,
+				Type:         schema.TypeSet,
+				Elem:         &schema.Schema{Type: schema.TypeString},
+				Computed:     true,
+				Optional:     true,
+				AtLeastOneOf: []string{"security_groups", "launch_template_id", "launch_template_name"},
 			},
 			"allocate_public_ip": {
 				Type:       schema.TypeBool,
@@ -76,24 +82,26 @@ func resourceAliCloudInstance() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "ECS-Instance",
 				ValidateFunc: StringLenBetween(2, 128),
+				Computed:     true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringLenBetween(2, 256),
+				Computed:     true,
 			},
 			"internet_charge_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ValidateFunc:     StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
-				Default:          PayByTraffic,
 				DiffSuppressFunc: ecsInternetDiffSuppressFunc,
+				Computed:         true,
 			},
 			"internet_max_bandwidth_in": {
 				Type:             schema.TypeInt,
@@ -105,7 +113,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			"internet_max_bandwidth_out": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  0,
+				Computed: true,
 			},
 			"host_name": {
 				Type:     schema.TypeString,
@@ -133,7 +141,9 @@ func resourceAliCloudInstance() *schema.Resource {
 			"io_optimized": {
 				Type:       schema.TypeString,
 				Optional:   true,
+				Computed:   true,
 				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
+				Removed:    "Attribute 'io_optimized' has been removed from provider version 1.213.1.",
 			},
 			"is_outdated": {
 				Type:     schema.TypeBool,
@@ -141,25 +151,27 @@ func resourceAliCloudInstance() *schema.Resource {
 			},
 			"system_disk_category": {
 				Type:         schema.TypeString,
-				Default:      DiskCloudEfficiency,
 				Optional:     true,
 				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
 			},
 			"system_disk_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringLenBetween(2, 128),
 			},
 			"system_disk_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"system_disk_size": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  40,
+				Computed: true,
 			},
 			"system_disk_performance_level": {
 				Type:             schema.TypeString,
@@ -181,6 +193,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeBool,
 				ForceNew: true,
 				Optional: true,
+				Computed: true,
 			},
 			"system_disk_kms_key_id": {
 				Type:     schema.TypeString,
@@ -293,6 +306,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"private_ip": {
 				Type:     schema.TypeString,
@@ -302,12 +316,13 @@ func resourceAliCloudInstance() *schema.Resource {
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-				Default:      PostPaid,
 			},
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
 				ValidateFunc: validation.Any(
 					IntBetween(1, 9),
 					IntInSlice([]int{12, 24, 36, 48, 60})),
@@ -361,6 +376,13 @@ func resourceAliCloudInstance() *schema.Resource {
 			"user_data": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if (d.Get("user_data") != "" && new == "") && (d.Get("launch_template_name").(string) != "" ||
+						d.Get("launch_template_id").(string) != "") {
+						return true
+					}
+					return false
+				},
 			},
 			"role_name": {
 				Type:             schema.TypeString,
@@ -387,6 +409,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:             schema.TypeFloat,
 				Optional:         true,
 				ForceNew:         true,
+				Computed:         true,
 				DiffSuppressFunc: ecsSpotPriceLimitDiffSuppressFunc,
 			},
 			"deletion_protection": {
@@ -405,6 +428,7 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 				ValidateFunc: StringInSlice([]string{
 					string(ActiveSecurityEnhancementStrategy),
 					string(DeactiveSecurityEnhancementStrategy),
@@ -417,6 +441,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				//ValidateFunc: ValidateRFC3339TimeString(true),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if (d.Get("auto_release_time") != "" && new == "") && (d.Get("launch_template_name").(string) != "" ||
+						d.Get("launch_template_id").(string) != "") {
+						return true
+					}
 					if d.Get("instance_charge_type").(string) == "PrePaid" {
 						return true
 					}
@@ -446,6 +474,13 @@ func resourceAliCloudInstance() *schema.Resource {
 			"deployment_set_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if (d.Get("deployment_set_id") != "" && new == "") && (d.Get("launch_template_name").(string) != "" ||
+						d.Get("launch_template_id").(string) != "") {
+						return true
+					}
+					return false
+				},
 			},
 			"deployment_set_group_no": {
 				Type:     schema.TypeString,
@@ -561,6 +596,21 @@ func resourceAliCloudInstance() *schema.Resource {
 				ForceNew:      true,
 				ConflictsWith: []string{"spot_strategy", "spot_price_limit"},
 			},
+			"launch_template_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"launch_template_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"launch_template_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -578,8 +628,14 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	request["InstanceType"] = d.Get("instance_type")
-	request["ImageId"] = d.Get("image_id")
+
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+
+	if v, ok := d.GetOk("image_id"); ok {
+		request["ImageId"] = v
+	}
 
 	if v, ok := d.GetOk("availability_zone"); ok {
 		request["ZoneId"] = v
@@ -597,10 +653,12 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.PerformanceLevel"] = v
 	}
 
+	request["SystemDisk.Category"] = "cloud_efficiency"
 	if v, ok := d.GetOk("system_disk_category"); ok {
 		request["SystemDisk.Category"] = v
 	}
 
+	request["SystemDisk.Size"] = 40
 	if v, ok := d.GetOk("system_disk_size"); ok {
 		request["SystemDisk.Size"] = v
 	}
@@ -635,6 +693,7 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	request["InstanceName"] = "ECS-Instance"
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceName"] = v
 	}
@@ -651,10 +710,22 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["Description"] = v
 	}
 
+	if v, ok := d.GetOk("launch_template_name"); ok {
+		request["LaunchTemplateName"] = v
+	}
+	if v, ok := d.GetOk("launch_template_id"); ok {
+		request["LaunchTemplateId"] = v
+	}
+	if v, ok := d.GetOk("launch_template_version"); ok {
+		request["LaunchTemplateVersion"] = v
+	}
+
+	request["InternetChargeType"] = "PayByTraffic"
 	if v, ok := d.GetOk("internet_charge_type"); ok {
 		request["InternetChargeType"] = v
 	}
 
+	request["InternetMaxBandwidthOut"] = 0
 	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
 		request["InternetMaxBandwidthOut"] = v
 	}
@@ -691,6 +762,7 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		}
 	}
 
+	request["InstanceChargeType"] = "PostPaid"
 	if v, ok := d.GetOk("instance_charge_type"); ok {
 		request["InstanceChargeType"] = v
 	}
@@ -763,6 +835,7 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		disksMaps := make([]map[string]interface{}, 0)
 		disks := v.([]interface{})
 		for _, rew := range disks {
+
 			disksMap := make(map[string]interface{})
 			item := rew.(map[string]interface{})
 
@@ -844,7 +917,7 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	request["IoOptimized"] = "optimized"
-	if d.Get("is_outdated").(bool) == true {
+	if d.Get("is_outdated").(bool) {
 		request["IoOptimized"] = "none"
 	}
 
@@ -903,6 +976,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 
 		return WrapError(err)
 	}
+
 	var disk ecs.Disk
 	disk, err = ecsService.DescribeInstanceSystemDisk(d.Id(), instance.ResourceGroupId, d.Get("system_disk_id").(string))
 	if err != nil {
@@ -1008,6 +1082,8 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		} else {
 			d.Set("user_data", userDataResponse.UserData)
 		}
+	} else {
+		d.Set("user_data", "")
 	}
 
 	if len(instance.VpcAttributes.VSwitchId) > 0 && (!d.IsNewResource() || d.HasChange("role_name")) {
@@ -1937,38 +2013,49 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	update := false
 	reboot := false
-	request := ecs.CreateModifyInstanceAttributeRequest()
-	request.InstanceId = d.Id()
+	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "ModifyInstanceAttribute"
+	request := make(map[string]interface{})
+	conn, err := client.NewEcsClient()
+	if err != nil {
+		return reboot, WrapError(err)
+	}
+
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	request["InstanceId"] = d.Id()
 
 	if d.HasChange("instance_name") {
 		d.SetPartial("instance_name")
-		request.InstanceName = d.Get("instance_name").(string)
+		request["InstanceName"] = d.Get("instance_name").(string)
 		update = true
 	}
 
 	if d.HasChange("description") {
 		d.SetPartial("description")
-		request.Description = d.Get("description").(string)
+		request["Description"] = d.Get("description").(string)
 		update = true
 	}
 
 	if d.HasChange("user_data") {
 		d.SetPartial("user_data")
-		if v, ok := d.GetOk("user_data"); ok && v.(string) != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
-			if base64DecodeError == nil {
-				request.UserData = v.(string)
-			} else {
-				request.UserData = base64.StdEncoding.EncodeToString([]byte(v.(string)))
-			}
+		v := d.Get("user_data")
+		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
+		if base64DecodeError == nil {
+			request["UserData"] = v.(string)
+		} else {
+			request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 		}
+
 		update = true
 		reboot = true
 	}
 
 	if d.HasChange("host_name") {
 		d.SetPartial("host_name")
-		request.HostName = d.Get("host_name").(string)
+		request["HostName"] = d.Get("host_name").(string)
 		update = true
 		reboot = true
 	}
@@ -1976,7 +2063,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
 		if v := d.Get("password").(string); v != "" {
 			d.SetPartial("password")
-			request.Password = v
+			request["Password"] = v
 			update = true
 			reboot = true
 		}
@@ -1986,7 +2073,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 			if err != nil {
 				return reboot, WrapError(err)
 			}
-			request.Password = decryptResp
+			request["Password"] = decryptResp
 			d.SetPartial("kms_encrypted_password")
 			d.SetPartial("kms_encryption_context")
 			update = true
@@ -1996,36 +2083,36 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	if d.HasChange("deletion_protection") {
 		d.SetPartial("deletion_protection")
-		request.DeletionProtection = requests.NewBoolean(d.Get("deletion_protection").(bool))
+		request["DeletionProtection"] = requests.NewBoolean(d.Get("deletion_protection").(bool))
 		update = true
 	}
 
 	if d.HasChange("credit_specification") {
 		d.SetPartial("credit_specification")
-		request.CreditSpecification = d.Get("credit_specification").(string)
+		request["CreditSpecification"] = d.Get("credit_specification").(string)
 		update = true
 	}
 
-	client := meta.(*connectivity.AliyunClient)
 	if update {
-		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-				return ecsClient.ModifyInstanceAttribute(request)
-			})
+		wait := incrementalWait(1*time.Minute, 1*time.Minute)
+		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
-					time.Sleep(time.Minute)
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidChargeType.ValueNotSupported"}) {
+					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
-			return reboot, WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			return reboot, WrapErrorf(err, DefaultErrorMsg, "alicloud_instance", action, AlibabaCloudSdkGoERROR)
 		}
 	}
+
 	return reboot, nil
 }
 
