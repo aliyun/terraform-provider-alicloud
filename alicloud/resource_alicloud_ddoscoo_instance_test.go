@@ -234,11 +234,11 @@ func testSweepDdoscooInstances(region string) error {
 	return nil
 }
 
-func TestAccAliCloudDdoscooInstance_basic(t *testing.T) {
+func TestAccAliCloudDdoscooInstance_basic0(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicMap)
+	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -267,7 +267,12 @@ func TestAccAliCloudDdoscooInstance_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":              name,
+						"base_bandwidth":    "30",
+						"bandwidth":         "30",
+						"service_bandwidth": "100",
+						"port_count":        "50",
+						"domain_count":      "50",
 					}),
 				),
 			},
@@ -362,11 +367,11 @@ func TestAccAliCloudDdoscooInstance_basic(t *testing.T) {
 
 }
 
-func TestAccAliCloudDdoscooInstance_basicTwin(t *testing.T) {
+func TestAccAliCloudDdoscooInstance_basic0_twin(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicMap)
+	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -395,11 +400,19 @@ func TestAccAliCloudDdoscooInstance_basicTwin(t *testing.T) {
 					"edition_sale":      "coop",
 					"address_type":      "Ipv6",
 					"bandwidth_mode":    "2",
+					"product_type":      "ddoscoo",
 					"period":            "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":              name,
+						"base_bandwidth":    "30",
+						"bandwidth":         "30",
+						"service_bandwidth": "100",
+						"port_count":        "50",
+						"domain_count":      "50",
+						"edition_sale":      "coop",
+						"address_type":      "Ipv6",
 					}),
 				),
 			},
@@ -414,11 +427,11 @@ func TestAccAliCloudDdoscooInstance_basicTwin(t *testing.T) {
 
 }
 
-func TestAccAliCloudDdoscooInstance_intl(t *testing.T) {
+func TestAccAliCloudDdoscooInstance_basic0_intl(t *testing.T) {
 	var v ddoscoo.Instance
 	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceSupportedRegions)
 	resourceId := "alicloud_ddoscoo_instance.default"
-	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicMap)
+	ra := resourceAttrInit(resourceId, ddosCooInstanceBasicMap)
 	serviceFunc := func() interface{} {
 		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
@@ -449,7 +462,13 @@ func TestAccAliCloudDdoscooInstance_intl(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name": name,
+						"name":              name,
+						"base_bandwidth":    "30",
+						"bandwidth":         "30",
+						"service_bandwidth": "100",
+						"port_count":        "50",
+						"domain_count":      "50",
+						"edition_sale":      "coop",
 					}),
 				),
 			},
@@ -505,11 +524,11 @@ func TestAccAliCloudDdoscooInstance_intl(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_count": "60",
+					"domain_count": "55",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_count": "60",
+						"domain_count": "55",
 					}),
 				),
 			},
@@ -543,10 +562,155 @@ func TestAccAliCloudDdoscooInstance_intl(t *testing.T) {
 	})
 }
 
-var ddoscooInstanceBasicMap = map[string]string{
-	"edition_sale": CHECKSET,
-	"address_type": CHECKSET,
-	"ip":           CHECKSET,
+func TestAccAliCloudDdoscooInstance_basic1_dip(t *testing.T) {
+	var v ddoscoo.Instance
+	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
+	resourceId := "alicloud_ddoscoo_instance.default"
+	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicDipMap)
+	serviceFunc := func() interface{} {
+		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"port_count":       "50",
+					"domain_count":     "50",
+					"normal_bandwidth": "100",
+					"normal_qps":       "500",
+					"product_plan":     "0",
+					"function_version": "0",
+					"product_type":     "ddosDip",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"port_count":       "50",
+						"domain_count":     "50",
+						"normal_bandwidth": "100",
+						"normal_qps":       "500",
+						"product_plan":     "0",
+						"function_version": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudDdoscooInstance_basic1_dip_intl(t *testing.T) {
+	var v ddoscoo.Instance
+	testAccPreCheckWithRegions(t, true, connectivity.DdoscooInstanceIntlSupportedRegions)
+	resourceId := "alicloud_ddoscoo_instance.default"
+	ra := resourceAttrInit(resourceId, ddoscooInstanceBasicDipMap)
+	serviceFunc := func() interface{} {
+		return &DdoscooService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDdoscooInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"port_count":       "5",
+					"domain_count":     "10",
+					"normal_bandwidth": "100",
+					"normal_qps":       "500",
+					"product_plan":     "3",
+					"function_version": "0",
+					"product_type":     "ddosDip",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"port_count":       "5",
+						"domain_count":     "10",
+						"normal_bandwidth": "100",
+						"normal_qps":       "500",
+						"product_plan":     "3",
+						"function_version": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"product_type", "bandwidth_mode", "period"},
+			},
+		},
+	})
+
+}
+
+var ddosCooInstanceBasicMap = map[string]string{
+	"normal_bandwidth": CHECKSET,
+	"normal_qps":       CHECKSET,
+	"edition_sale":     CHECKSET,
+	"product_plan":     CHECKSET,
+	"address_type":     CHECKSET,
+	"function_version": CHECKSET,
+	"ip":               CHECKSET,
+}
+
+var ddoscooInstanceBasicDipMap = map[string]string{
+	"normal_bandwidth": CHECKSET,
+	"normal_qps":       CHECKSET,
+	"product_plan":     CHECKSET,
+	"address_type":     CHECKSET,
+	"function_version": CHECKSET,
+	"ip":               CHECKSET,
 }
 
 func resourceDdoscooInstanceDependence(name string) string {

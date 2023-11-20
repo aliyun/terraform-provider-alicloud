@@ -112,6 +112,7 @@ var MongoDBClassicNoSupportedRegions = []Region{Huhehaote, Zhangjiakou, APSouthE
 var MongoDBMultiAzSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, EUCentral1}
 var DdoscooSupportedRegions = []Region{Hangzhou, APSouthEast1}
 var DdoscooInstanceSupportedRegions = []Region{Hangzhou}
+var DdoscooInstanceIntlSupportedRegions = []Region{APSouthEast1}
 var DdosbgpSupportedRegions = []Region{Hangzhou, Beijing, Shenzhen, Qingdao, Shanghai, Zhangjiakou, Huhehaote}
 var TagPolicySupportRegions = []Region{Shanghai}
 var MetaTagSupportRegions = []Region{Hangzhou}

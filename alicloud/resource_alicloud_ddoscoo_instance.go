@@ -31,18 +31,6 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Required:     true,
 				ValidateFunc: StringLenBetween(1, 64),
 			},
-			"base_bandwidth": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"bandwidth": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"service_bandwidth": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
 			"port_count": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -51,6 +39,33 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"base_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"service_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"normal_bandwidth": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"normal_qps": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"edition_sale": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -58,10 +73,12 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"coop"}, false),
 			},
-			"product_type": {
+			"product_plan": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"ddoscoo", "ddoscoo_intl"}, false),
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1", "2", "3"}, false),
 			},
 			"address_type": {
 				Type:         schema.TypeString,
@@ -74,6 +91,18 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"0", "1", "2"}, false),
+			},
+			"function_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"product_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ddoscoo", "ddoscoo_intl", "ddosDip"}, false),
 			},
 			"period": {
 				Type:         schema.TypeInt,
@@ -110,21 +139,6 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 	})
 
 	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "BaseBandwidth",
-		"Value": d.Get("base_bandwidth").(string),
-	})
-
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "Bandwidth",
-		"Value": d.Get("bandwidth").(string),
-	})
-
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "ServiceBandwidth",
-		"Value": d.Get("service_bandwidth").(string),
-	})
-
-	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "PortCount",
 		"Value": d.Get("port_count").(string),
 	})
@@ -133,6 +147,41 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		"Code":  "DomainCount",
 		"Value": d.Get("domain_count").(string),
 	})
+
+	if v, ok := d.GetOk("base_bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "BaseBandwidth",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOk("bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Bandwidth",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOk("service_bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "ServiceBandwidth",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOk("normal_bandwidth"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "NormalBandwidth",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOk("normal_qps"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "NormalQps",
+			"Value": v,
+		})
+	}
 
 	if v, ok := d.GetOk("edition_sale"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -143,6 +192,13 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "Edition",
 			"Value": "coop",
+		})
+	}
+
+	if v, ok := d.GetOk("product_plan"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "ProductPlan",
+			"Value": v,
 		})
 	}
 
@@ -160,7 +216,15 @@ func resourceAliCloudDdoscooInstanceCreate(d *schema.ResourceData, meta interfac
 		})
 	}
 
+	if v, ok := d.GetOk("function_version"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "FunctionVersion",
+			"Value": v,
+		})
+	}
+
 	request["Parameter"] = parameterMapList
+
 	if v, ok := d.GetOk("product_type"); ok {
 		request["ProductType"] = v
 	} else {
@@ -219,7 +283,7 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	ddoscooService := DdoscooService{client}
 
-	insInfo, err := ddoscooService.DescribeDdoscooInstance(d.Id())
+	instanceInfo, err := ddoscooService.DescribeDdoscooInstance(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
@@ -228,7 +292,7 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	specInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
+	instanceSpecInfo, err := ddoscooService.DescribeDdoscooInstanceSpec(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
@@ -237,15 +301,28 @@ func resourceAliCloudDdoscooInstanceRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	d.Set("name", insInfo["Remark"])
-	d.Set("edition_sale", convertEditionResponse(formatInt(insInfo["Edition"])))
-	d.Set("address_type", insInfo["IpVersion"])
-	d.Set("base_bandwidth", specInfo["BaseBandwidth"])
-	d.Set("bandwidth", specInfo["ElasticBandwidth"])
-	d.Set("service_bandwidth", specInfo["BandwidthMbps"])
-	d.Set("port_count", specInfo["PortLimit"])
-	d.Set("domain_count", specInfo["DomainLimit"])
-	d.Set("ip", insInfo["Ip"])
+	instanceExtInfo, err := ddoscooService.DescribeDdoscooInstanceExt(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	d.Set("name", instanceInfo["Remark"])
+	d.Set("port_count", instanceSpecInfo["PortLimit"])
+	d.Set("domain_count", instanceSpecInfo["DomainLimit"])
+	d.Set("base_bandwidth", instanceSpecInfo["BaseBandwidth"])
+	d.Set("bandwidth", instanceSpecInfo["ElasticBandwidth"])
+	d.Set("service_bandwidth", instanceSpecInfo["BandwidthMbps"])
+	d.Set("normal_bandwidth", instanceExtInfo["NormalBandwidth"])
+	d.Set("normal_qps", instanceSpecInfo["QpsLimit"])
+	d.Set("edition_sale", convertEditionResponse(formatInt(instanceInfo["Edition"])))
+	d.Set("product_plan", instanceExtInfo["ProductPlan"])
+	d.Set("address_type", instanceInfo["IpVersion"])
+	d.Set("function_version", instanceExtInfo["FunctionVersion"])
+	d.Set("ip", instanceInfo["Ip"])
 
 	return nil
 }
