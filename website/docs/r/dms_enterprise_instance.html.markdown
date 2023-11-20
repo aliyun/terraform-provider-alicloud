@@ -88,7 +88,7 @@ resource "alicloud_db_account" "default" {
 
 resource "alicloud_dms_enterprise_instance" "default" {
   tid               = data.alicloud_dms_user_tenants.default.ids.0
-  instance_type     = "MySQL"
+  instance_type     = "mysql"
   instance_source   = "RDS"
   network_type      = "VPC"
   env_type          = "dev"
@@ -98,10 +98,12 @@ resource "alicloud_dms_enterprise_instance" "default" {
   database_password = alicloud_db_account.default.account_password
   instance_name     = var.name
   dba_uid           = data.alicloud_account.current.id
-  safe_rule         = "自由操作"
-  query_timeout     = 60
-  export_timeout    = 600
-  ecs_region        = data.alicloud_regions.default.regions.0.id
+  # The value of safe_rule can be queried through the interface: https://www.alibabacloud.com/help/en/dms/developer-reference/api-dms-enterprise-2018-11-01-liststandardgroups
+  safe_rule      = "904496"
+  use_dsql       = 1
+  query_timeout  = 60
+  export_timeout = 600
+  ecs_region     = data.alicloud_regions.default.regions.0.id
 }
 ```
 ## Argument Reference
