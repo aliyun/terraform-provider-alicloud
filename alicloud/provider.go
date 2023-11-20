@@ -500,7 +500,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ssl_certificates_service_certificates":            dataSourceAlicloudSslCertificatesServiceCertificates(),
 			"alicloud_arms_alert_contacts":                              dataSourceAlicloudArmsAlertContacts(),
 			"alicloud_event_bridge_rules":                               dataSourceAlicloudEventBridgeRules(),
-			"alicloud_cloud_firewall_control_policies":                  dataSourceAlicloudCloudFirewallControlPolicies(),
+			"alicloud_cloud_firewall_control_policies":                  dataSourceAliCloudCloudFirewallControlPolicies(),
 			"alicloud_sae_namespaces":                                   dataSourceAlicloudSaeNamespaces(),
 			"alicloud_sae_config_maps":                                  dataSourceAlicloudSaeConfigMaps(),
 			"alicloud_alb_security_policies":                            dataSourceAlicloudAlbSecurityPolicies(),
