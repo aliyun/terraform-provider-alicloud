@@ -281,9 +281,6 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 		if strings.Contains(words[2], "Deprecated") {
 			result.Deprecated = "Deprecated since"
 		}
-		if strings.Contains(words[2], "Removed") {
-			result.Removed = "Removed since"
-		}
 		return &result
 	}
 	if phase == "Attribute" && len(words) >= 3 {
@@ -291,9 +288,6 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 			result.Name = rootName + "." + words[1]
 		} else {
 			result.Name = words[1]
-		}
-		if strings.Contains(words[2], "Removed") {
-			result.Removed = "Removed since"
 		}
 		if strings.Contains(words[2], "Deprecated") {
 			result.Deprecated = "Deprecated since"
@@ -322,6 +316,9 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 			continue
 		}
 		attributeDocsValue, ok := resourceAttributeFromDocs[attributeKey]
+		if attributeValue.Removed != "" {
+			continue
+		}
 		if !ok {
 			isConsistent = false
 			log.Errorf("'%v' is not found in the docs", attributeKey)
@@ -330,13 +327,6 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 			if attributeDocsValue.Deprecated == "" {
 				isConsistent = false
 				log.Errorf("'%v' should be marked as Deprecated in the document description", attributeKey)
-			}
-			continue
-		}
-		if attributeValue.Removed != "" {
-			if attributeDocsValue.Removed == "" {
-				isConsistent = false
-				log.Errorf("'%v' should be marked as Removed in the document description", attributeKey)
 			}
 			continue
 		}
