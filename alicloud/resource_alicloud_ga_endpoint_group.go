@@ -122,8 +122,8 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 			},
 			"port_overrides": {
 				Type:     schema.TypeList,
-				MaxItems: 1,
 				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"endpoint_port": {
@@ -136,6 +136,11 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 						},
 					},
 				},
+			},
+			"endpoint_group_ip_list": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -316,6 +321,7 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
+	d.Set("endpoint_group_ip_list", object["EndpointGroupIpList"])
 	d.Set("status", object["State"])
 	d.Set("threshold_count", formatInt(object["ThresholdCount"]))
 	d.Set("traffic_percentage", formatInt(object["TrafficPercentage"]))
