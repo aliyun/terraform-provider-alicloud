@@ -232,7 +232,7 @@ func testSweepFCServices(region string) error {
 	return nil
 }
 
-func TestAccAlicloudFCServiceUpdate(t *testing.T) {
+func TestAccAliCloudFCServiceUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
@@ -364,11 +364,26 @@ func TestAccAlicloudFCServiceUpdate(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"TestKey1": "test-value1",
+						"TestKey2": "test-value2",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.TestKey1": "test-value1",
+						"tags.TestKey2": "test-value2",
+						"version":       "8",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
+func TestAccAliCloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	var v *fc.GetServiceOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)
@@ -543,7 +558,7 @@ func TestAccAlicloudFCServiceVpcAndNasUpdate(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudFCServiceMulti(t *testing.T) {
+func TestAccAliCloudFCServiceMulti(t *testing.T) {
 	var v *fc.GetServiceOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc%salicloudfcservice-%d", defaultRegionToTest, rand)

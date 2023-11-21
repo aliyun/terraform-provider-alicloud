@@ -252,6 +252,9 @@ resource "alicloud_fc_service" "default" {
     enable_instance_metrics = true
     enable_request_metrics  = true
   }
+  tags = {
+    "ExampleKey" = "example-value"
+  }
 }
 ```
 
@@ -273,6 +276,7 @@ The following arguments are supported:
 * `nas_config` - (Optional, available in 1.96.0+) Provide [NAS configuration](https://www.alibabacloud.com/help/doc-detail/87401.htm) to allow Function Compute Service to access your NAS resources. See [`nas_config`](#nas_config) below.
 * `tracing_config` - (Optional, available in 1.183.0+) Provide this to allow your Function Compute to report tracing information. Fields documented below. See [Function Compute Tracing Config](https://help.aliyun.com/document_detail/189805.html). `tracing_config` requires the following: (**NOTE:** If both `type` and `params` are empty, tracing_config is considered to be empty or unset.). See [`tracing_config`](#tracing_config) below.
 * `publish` - (Optional, available in 1.101.0+) Whether to publish creation/change as new Function Compute Service Version. Defaults to `false`.
+* `tags` - (Optional, available in 1.212.0+) Map for tagging resources.
 
 ### `log_config`
 
