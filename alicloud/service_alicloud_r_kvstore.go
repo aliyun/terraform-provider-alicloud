@@ -15,6 +15,7 @@ import (
 type R_kvstoreService struct {
 	client *connectivity.AliyunClient
 }
+
 type RKvstoreService struct {
 	client *connectivity.AliyunClient
 }
@@ -41,36 +42,43 @@ func (s *R_kvstoreService) DescribeInstanceSSL(id string) (object r_kvstore.Desc
 	return *response, nil
 }
 
-func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.SecurityIpGroup, err error) {
+func (s *R_kvstoreService) DescribeSecurityIps(id, securityIpGroupName string) (object r_kvstore.SecurityIpGroup, err error) {
 	request := r_kvstore.CreateDescribeSecurityIpsRequest()
 	request.RegionId = s.client.RegionId
-
 	request.InstanceId = id
 
 	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 		return r_kvstoreClient.DescribeSecurityIps(request)
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundMsg, ProviderERROR)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response, _ := raw.(*r_kvstore.DescribeSecurityIpsResponse)
 
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
 		return object, nil
-	} else {
-		for _, v := range response.SecurityIpGroups.SecurityIpGroup {
-			if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
-				continue
-			}
+	}
+
+	if securityIpGroupName == "" {
+		securityIpGroupName = "default"
+	}
+
+	for _, v := range response.SecurityIpGroups.SecurityIpGroup {
+		if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
+			continue
+		}
+
+		if v.SecurityIpGroupName == securityIpGroupName {
 			return v, nil
 		}
 	}
+
 	return response.SecurityIpGroups.SecurityIpGroup[0], nil
 }
 
@@ -708,4 +716,82 @@ func (s *RKvstoreService) DescribeEncryptionKey(id string) (object map[string]in
 	}
 	object = v.(map[string]interface{})
 	return object, nil
+}
+
+func (s *RKvstoreService) DescribeKvstoreParameterTemplates(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeParameterTemplates"
+
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	redisInstance, err := s.DescribeInstanceAttribute(id)
+	if err != nil {
+		if NotFoundError(err) {
+			// Set this to nil as if we didn't find anything.
+			return nil, nil
+		}
+		return nil, WrapError(err)
+	}
+
+	instanceId := fmt.Sprint(redisInstance["InstanceId"])
+	engineVersion := fmt.Sprint(redisInstance["EngineVersion"])
+	characterType := "logic"
+
+	if fmt.Sprint(redisInstance["ArchitectureType"]) == "standard" {
+		characterType = "normal"
+	}
+
+	request := map[string]interface{}{
+		"InstanceId":    instanceId,
+		"Engine":        "Redis",
+		"EngineVersion": engineVersion,
+		"CharacterType": characterType,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.Parameters.TemplateRecord", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Parameters.TemplateRecord", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	}
+
+	parameterTemplateList := resp.([]interface{})
+	parameterTemplatesMap := map[string]interface{}{}
+	for _, parameterTemplates := range parameterTemplateList {
+		parameterTemplatesArg := parameterTemplates.(map[string]interface{})
+
+		if parameterName, ok := parameterTemplatesArg["ParameterName"]; ok {
+			parameterTemplatesMap[fmt.Sprint(parameterName)] = true
+		}
+	}
+
+	//The EvictionPolicy might be deprecated in the future. New parameter maxmemory-policy instead.
+	parameterTemplatesMap["EvictionPolicy"] = true
+
+	return parameterTemplatesMap, nil
 }
