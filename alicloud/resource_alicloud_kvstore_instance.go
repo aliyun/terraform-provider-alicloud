@@ -90,6 +90,12 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"parameters"},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					fmt.Println("k：", k)
+					fmt.Println("old：", old)
+					fmt.Println("new：", new)
+					return false
+				},
 			},
 			"connection_domain": {
 				Type:     schema.TypeString,
@@ -292,8 +298,10 @@ func resourceAlicloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
+				MinItems: 1,
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type:         schema.TypeString,
+					ValidateFunc: StringLenAtLeast(1),
 				},
 			},
 			"srcdb_instance_id": {
@@ -1090,33 +1098,44 @@ func resourceAlicloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()
 	modifySecurityIpsReq.InstanceId = d.Id()
+	modifySecurityIpsReq.ModifyMode = "Cover"
+
 	if d.HasChange("security_ips") {
 		update = true
 	}
 	modifySecurityIpsReq.SecurityIps = convertListToCommaSeparate(d.Get("security_ips").(*schema.Set).List())
+
 	if d.HasChange("security_ip_group_attribute") {
 		update = true
-		modifySecurityIpsReq.SecurityIpGroupAttribute = d.Get("security_ip_group_attribute").(string)
+
+		if v, ok := d.GetOk("security_ip_group_attribute"); ok {
+			modifySecurityIpsReq.SecurityIpGroupAttribute = v.(string)
+		}
 	}
+
 	if d.HasChange("security_ip_group_name") {
 		update = true
-		modifySecurityIpsReq.SecurityIpGroupName = d.Get("security_ip_group_name").(string)
-	}
-	if update {
-		if _, ok := d.GetOk("modify_mode"); ok {
-			modifySecurityIpsReq.ModifyMode = convertModifyModeRequest(d.Get("modify_mode").(int))
+
+		if v, ok := d.GetOk("security_ip_group_name"); ok {
+			modifySecurityIpsReq.SecurityIpGroupName = v.(string)
 		}
+	}
+
+	if update {
 		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 			return r_kvstoreClient.ModifySecurityIps(modifySecurityIpsReq)
 		})
 		addDebug(modifySecurityIpsReq.GetActionName(), raw)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySecurityIpsReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 1*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("security_ips")
 		d.SetPartial("security_ip_group_attribute")
 		d.SetPartial("security_ip_group_name")
