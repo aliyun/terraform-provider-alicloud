@@ -204,6 +204,7 @@ Setting it to null can cancel automatic release feature, and the ECS instance wi
 * `ipv6_address_count` - (Optional, ForceNew, Computed, Available since 1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, ForceNew, Computed, Available since 1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 * `dedicated_host_id` - (Optional, ForceNew, Available since 1.201.0) The ID of the dedicated host on which to create the instance. If you set the DedicatedHostId parameter, the `spot_strategy` and `spot_price_limit` parameters cannot be set. This is because preemptible instances cannot be created on dedicated hosts.
+* `subnet_id` - (Removed since v1.210.0) The ID of the subnet. **NOTE:** Field `subnet_id` has been removed from provider version 1.210.0.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
