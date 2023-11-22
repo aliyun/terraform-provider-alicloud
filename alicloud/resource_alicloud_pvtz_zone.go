@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -54,6 +55,7 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"user_client_ip": {
 				Type:     schema.TypeString,
@@ -107,6 +109,7 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ON", "OFF"}, false),
 			},
+			"tags": tagsSchema(),
 		},
 	}
 }
@@ -181,6 +184,7 @@ func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("remark", object["Remark"])
 	d.Set("zone_name", object["ZoneName"])
 	d.Set("name", object["ZoneName"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 
 	if v, ok := object["SyncHostTask"]; ok && v != nil {
 		syncObject := v.(map[string]interface{})
@@ -199,6 +203,15 @@ func resourceAlicloudPvtzZoneRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("user_info", syncArray)
 		d.Set("sync_status", syncObject["Status"])
 	}
+
+	objectRaw, err := pvtzService.DescribeListTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	tagsMaps, _ := jsonpath.Get("$.TagResources", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
 	return nil
 }
 func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -342,6 +355,14 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		}
 		d.SetPartial("sync_status")
 		d.SetPartial("user_info")
+	}
+	update = false
+	if d.HasChange("tags") {
+		update = true
+		if err := pvtzService.SetResourceTags(d, "ZONE"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAlicloudPvtzZoneRead(d, meta)

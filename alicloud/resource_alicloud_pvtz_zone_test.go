@@ -103,7 +103,7 @@ func testSweepPvtzZones(region string) error {
 	return nil
 }
 
-func TestAccAlicloudPvtzZone_basic(t *testing.T) {
+func TestAccAliCloudPvtzZone_basic(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone.default"
@@ -149,7 +149,7 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"user_client_ip", "lang", "resource_group_id"},
+				ImportStateVerifyIgnore: []string{"user_client_ip", "lang"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -231,10 +231,52 @@ func TestAccAlicloudPvtzZone_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
 		},
 	})
 }
-func TestAccAlicloudPvtzZone_multi(t *testing.T) {
+func TestAccAliCloudPvtzZone_multi(t *testing.T) {
 	var v map[string]interface{}
 
 	resourceId := "alicloud_pvtz_zone.default.4"
@@ -274,7 +316,7 @@ func TestAccAlicloudPvtzZone_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudPvtzZone_syncTask(t *testing.T) {
+func TestAccAliCloudPvtzZone_syncTask(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_zone.default"
 	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
@@ -348,16 +390,70 @@ func TestAccAlicloudPvtzZone_syncTask(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":      name,
+					"zone_name": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":      name,
+						"zone_name": REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"resource_group_id"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudPvtzZone_syncTask1(t *testing.T) {
+func TestAccAliCloudPvtzZone_syncTask1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_pvtz_zone.default"
 	ra := resourceAttrInit(resourceId, pvtzZoneBasicMap)
@@ -415,6 +511,48 @@ func TestAccAlicloudPvtzZone_syncTask1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"sync_status": "OFF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
