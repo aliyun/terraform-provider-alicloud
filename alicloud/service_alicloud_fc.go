@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
@@ -416,6 +418,50 @@ func (s *FcService) DescribeFcFunctionAsyncInvokeConfig(id string) (*fc.GetFunct
 	addDebug("GetFunctionAsyncInvokeConfig", raw, requestInfo, request)
 	response, _ = raw.(*fc.GetFunctionAsyncInvokeConfigOutput)
 	return response, err
+}
+
+func (s *FcService) SetResourceTags(d *schema.ResourceData, resourceArn *string) error {
+	if d.HasChange("tags") {
+		added, removed := parsingTags(d)
+
+		removedTagKeys := make([]string, 0)
+		for _, v := range removed {
+			if !ignoredTags(v, "") {
+				removedTagKeys = append(removedTagKeys, v)
+			}
+		}
+
+		addedTags := make(map[string]string)
+		for k, v := range added {
+			addedTags[k] = v.(string)
+		}
+
+		if len(removedTagKeys) > 0 {
+			request := &fc.UnTagResourceInput{TagKeys: removedTagKeys, ResourceArn: resourceArn}
+			var requestInfo *fc.Client
+			raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				requestInfo = fcClient
+				return fcClient.UnTagResource(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "FcUnTagResource", FcGoSdk)
+			}
+			addDebug("FcUnTagResource", raw, requestInfo, request)
+		}
+		if len(addedTags) > 0 {
+			request := &fc.TagResourceInput{Tags: addedTags, ResourceArn: resourceArn}
+			var requestInfo *fc.Client
+			raw, err := s.client.WithFcClient(func(fcClient *fc.Client) (interface{}, error) {
+				requestInfo = fcClient
+				return fcClient.TagResource(request)
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "FcTagResource", FcGoSdk)
+			}
+			addDebug("FcTagResource", raw, requestInfo, request)
+		}
+	}
+	return nil
 }
 
 func (s *FcService) WaitForFcFunctionAsyncInvokeConfig(id string, status Status, timeout int) error {

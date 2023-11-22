@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -46,6 +47,7 @@ func resourceAlicloudFCService() *schema.Resource {
 				Optional: true,
 			},
 
+			"tags": tagsSchemaWithIgnore(),
 			"internet_access": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -271,6 +273,18 @@ func resourceAlicloudFCServiceCreate(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc_service", "PublishServiceVersion", FcGoSdk)
 		}
 	}
+	if _, ok := d.GetOk("tags"); ok {
+		resourceArn, err := parseResourceArn(d, meta)
+		if err != nil {
+			return WrapError(err)
+		}
+		fcService := FcService{client}
+
+		err = fcService.SetResourceTags(d, &resourceArn)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
 	return resourceAlicloudFCServiceRead(d, meta)
 }
 
@@ -292,6 +306,9 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("description", object.Description)
 	d.Set("internet_access", object.InternetAccess)
 	d.Set("role", object.Role)
+	if tags := object.Tags; tags != nil {
+		d.Set("tags", tagsToMap(tags))
+	}
 	var logConfigs []map[string]interface{}
 	if logconfig := object.LogConfig; logconfig != nil && *logconfig.Project != "" {
 		logConfigs = append(logConfigs, map[string]interface{}{
@@ -381,8 +398,21 @@ func resourceAlicloudFCServiceRead(d *schema.ResourceData, meta interface{}) err
 
 func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	d.Partial(true)
+
+	if d.HasChange("tags") {
+		fcService := FcService{client}
+		resourceArn, err := parseResourceArn(d, meta)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		err = fcService.SetResourceTags(d, &resourceArn)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
 	request := &fc.UpdateServiceInput{}
 
 	if d.HasChange("role") {
@@ -690,4 +720,17 @@ func parseTracingConfig(d *schema.ResourceData) (tracingConfig *fc.TracingConfig
 		}
 	}
 	return tracingConfig, nil
+}
+
+func parseResourceArn(d *schema.ResourceData, meta interface{}) (string, error) {
+	client := meta.(*connectivity.AliyunClient)
+
+	serviceName := d.Id()
+	region := client.RegionId
+	accountId, err := client.AccountId()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("acs:fc:%s:%s:services/%s", region, accountId, serviceName), nil
 }
