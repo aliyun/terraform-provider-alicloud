@@ -295,6 +295,9 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 		if strings.Contains(words[2], "Removed") {
 			result.Removed = "Removed since"
 		}
+		if strings.Contains(words[2], "Deprecated") {
+			result.Deprecated = "Deprecated since"
+		}
 		//result["Description"] = words[2]
 		return &result
 	}

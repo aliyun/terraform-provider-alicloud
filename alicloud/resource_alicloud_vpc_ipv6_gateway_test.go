@@ -119,7 +119,7 @@ func testSweepVpcIpv6Gateway(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCIpv6Gateway_basic0(t *testing.T) {
+func TestAccAliCloudVPCIpv6Gateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
@@ -619,7 +619,7 @@ func TestUnitAlicloudVPCIpv6Gateway(t *testing.T) {
 
 // Test Vpc Ipv6Gateway. >>> Resource test cases, automatically generated.
 // Case 1897
-func TestAccAlicloudVpcIpv6Gateway_basic1897(t *testing.T) {
+func TestAccAliCloudVpcIpv6Gateway_basic1897(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6GatewayMap1897)
@@ -837,7 +837,7 @@ resource "alicloud_resource_manager_resource_group" "changeRg" {
 }
 
 // Case 1897  twin
-func TestAccAlicloudVpcIpv6Gateway_basic1897_twin(t *testing.T) {
+func TestAccAliCloudVpcIpv6Gateway_basic1897_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcIpv6GatewayMap1897)
