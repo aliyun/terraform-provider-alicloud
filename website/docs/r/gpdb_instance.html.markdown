@@ -22,18 +22,21 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_gpdb_zones" "default" {}
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
+data "alicloud_resource_manager_resource_groups" "default" {
 }
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_gpdb_zones.default.ids.0
+
+data "alicloud_gpdb_zones" "default" {
+}
+
+data "alicloud_vpcs" "default" {
+  # You need to modify name_regex to an existing VPC under your account
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
 
 resource "alicloud_gpdb_instance" "default" {
@@ -46,14 +49,12 @@ resource "alicloud_gpdb_instance" "default" {
   zone_id               = data.alicloud_gpdb_zones.default.ids.0
   instance_network_type = "VPC"
   instance_spec         = "2C16G"
-  master_node_num       = 1
   payment_type          = "PayAsYouGo"
-  private_ip_address    = "1.1.1.1"
   seg_storage_type      = "cloud_essd"
   seg_node_num          = 4
   storage_size          = 50
-  vpc_id                = alicloud_vpc.default.id
-  vswitch_id            = alicloud_vswitch.default.id
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids.0
   ip_whitelist {
     security_ip_list = "127.0.0.1"
   }
@@ -85,9 +86,8 @@ The following arguments are supported:
 * `instance_group_count` - (Optional, ForceNew, Int) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
 * `payment_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
 * `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`. Valid values: `Year`, `Month`.
-* `private_ip_address` - (Optional) The private ip address.
 * `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
-* `master_node_num` - (Optional, Int) The number of Master nodes. Default value: `1`. Valid values: `1` to `2`. if it is not filled in, the default value is 1 Master node.
+* `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
 * `seg_node_num` - (Optional, Int) Calculate the number of nodes. Valid values: `2` to `512`. The value range of the high-availability version of the storage elastic mode is `4` to `512`, and the value must be a multiple of `4`. The value range of the basic version of the storage elastic mode is `2` to `512`, and the value must be a multiple of `2`. The-Serverless version has a value range of `2` to `512`. The value must be a multiple of `2`.
 -> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
 * `seg_storage_type` - (Optional) The seg storage type. Valid values: `cloud_essd`, `cloud_efficiency`.
@@ -109,6 +109,8 @@ The following arguments are supported:
 * `security_ip_list` - (Optional, List, Deprecated since v1.187.0) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.187.0) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
 * `availability_zone` - (Optional, ForceNew, Deprecated since v1.187.0) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
+* `master_node_num` - (Removed since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been removed from provider version 1.213.0.
+* `private_ip_address` - (Removed since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been removed from provider version 1.213.0.
 
 ### `ip_whitelist`
 
