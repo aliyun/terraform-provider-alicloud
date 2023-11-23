@@ -404,6 +404,16 @@ func convertListToCommaSeparate(configured []interface{}) string {
 	return result
 }
 
+func filterEmptyStrings(arr []interface{}) []interface{} {
+	var result []interface{}
+	for _, str := range arr {
+		if fmt.Sprint(str) != "" {
+			result = append(result, str)
+		}
+	}
+	return result
+}
+
 func convertBoolToString(configured bool) string {
 	return strconv.FormatBool(configured)
 }

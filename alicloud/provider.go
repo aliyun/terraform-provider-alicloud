@@ -875,6 +875,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_addon_release":                                   resourceAliCloudArmsAddonRelease(),
 			"alicloud_arms_env_feature":                                     resourceAliCloudArmsEnvFeature(),
 			"alicloud_arms_environment":                                     resourceAliCloudArmsEnvironment(),
+			"alicloud_hologram_instance":                                    resourceAliCloudHologramInstance(),
 			"alicloud_ack_one_cluster":                                      resourceAliCloudAckOneCluster(),
 			"alicloud_drds_polardbx_instance":                               resourceAliCloudDrdsPolardbxInstance(),
 			"alicloud_gpdb_backup_policy":                                   resourceAliCloudGpdbBackupPolicy(),
