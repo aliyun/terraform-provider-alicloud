@@ -9,11 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_custom_routing_endpoint_group_destination.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaCustomRoutingEndpointGroupDestinationMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaCustomRoutingEndpointGroupDestinationMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaCustomRoutingEndpointGroupDestination")
@@ -21,7 +21,7 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sGaCustomRoutingEndpointGroupDestination%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaCustomRoutingEndpointGroupDestinationBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaCustomRoutingEndpointGroupDestinationBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -91,24 +91,27 @@ func TestAccAlicloudGaCustomRoutingEndpointGroupDestination_basic0(t *testing.T)
 	})
 }
 
-var AlicloudGaCustomRoutingEndpointGroupDestinationMap = map[string]string{
+var AliCloudGaCustomRoutingEndpointGroupDestinationMap = map[string]string{
 	"accelerator_id": CHECKSET,
 	"listener_id":    CHECKSET,
 	"custom_routing_endpoint_group_destination_id": CHECKSET,
 	"status": CHECKSET,
 }
 
-func AlicloudGaCustomRoutingEndpointGroupDestinationBasicDependence0(name string) string {
+func AliCloudGaCustomRoutingEndpointGroupDestinationBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
 	}
+
 	data "alicloud_vpcs" "default" {
   		name_regex = "default-NODELETING"
 	}
+
 	data "alicloud_vswitches" "default" {
   		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
+
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
 	}
@@ -135,6 +138,7 @@ func AlicloudGaCustomRoutingEndpointGroupDestinationBasicDependence0(name string
     		to_port   = 16000
   		}
 	}
+
 	resource "alicloud_ga_custom_routing_endpoint_group" "default" {
   		accelerator_id                     = alicloud_ga_listener.default.accelerator_id
   		listener_id                        = alicloud_ga_listener.default.id
