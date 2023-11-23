@@ -270,6 +270,7 @@ func resourceAliCloudInstance() *schema.Resource {
 			"network_interfaces": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -277,6 +278,7 @@ func resourceAliCloudInstance() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
+							Computed: true,
 						},
 					},
 				},

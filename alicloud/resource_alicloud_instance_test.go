@@ -1370,10 +1370,9 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":        "${data.alicloud_images.default.images.0.id}",
-					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
-					"instance_type":   "${data.alicloud_instance_types.default.instance_types.0.id}",
-
+					"image_id":                      "${data.alicloud_images.default.images.0.id}",
+					"security_groups":               []string{"${alicloud_security_group.default.0.id}"},
+					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
 					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
 					"system_disk_category":          "cloud_efficiency",
 					"instance_name":                 "${var.name}",
@@ -1382,10 +1381,9 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 					"spot_price_limit":              "0",
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "${base64encode(\"I am the user data\")}",
-
-					"instance_charge_type": "PostPaid",
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
-					"role_name":            "${alicloud_ram_role.default.name}",
+					"instance_charge_type":          "PostPaid",
+					"vswitch_id":                    "${data.alicloud_vswitches.default.ids.0}",
+					"role_name":                     "${alicloud_ram_role.default.name}",
 					"data_disks": []map[string]string{
 						{
 							"name":   "${var.name}-1",
@@ -1429,11 +1427,10 @@ func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name,
-						"key_name":      name,
-						"role_name":     name,
-						"user_data":     "SSBhbSB0aGUgdXNlciBkYXRh",
-
+						"instance_name":                        name,
+						"key_name":                             name,
+						"role_name":                            name,
+						"user_data":                            "SSBhbSB0aGUgdXNlciBkYXRh",
 						"data_disks.#":                         "6",
 						"data_disks.0.name":                    name + "-1",
 						"data_disks.0.size":                    "20",
