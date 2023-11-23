@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaCustomRoutingEndpoint() *schema.Resource {
+func resourceAliCloudGaCustomRoutingEndpoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaCustomRoutingEndpointCreate,
-		Read:   resourceAlicloudGaCustomRoutingEndpointRead,
-		Update: resourceAlicloudGaCustomRoutingEndpointUpdate,
-		Delete: resourceAlicloudGaCustomRoutingEndpointDelete,
+		Create: resourceAliCloudGaCustomRoutingEndpointCreate,
+		Read:   resourceAliCloudGaCustomRoutingEndpointRead,
+		Update: resourceAliCloudGaCustomRoutingEndpointUpdate,
+		Delete: resourceAliCloudGaCustomRoutingEndpointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -70,7 +70,7 @@ func resourceAlicloudGaCustomRoutingEndpoint() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaCustomRoutingEndpointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -129,10 +129,10 @@ func resourceAlicloudGaCustomRoutingEndpointCreate(d *schema.ResourceData, meta 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaCustomRoutingEndpointRead(d, meta)
+	return resourceAliCloudGaCustomRoutingEndpointRead(d, meta)
 }
 
-func resourceAlicloudGaCustomRoutingEndpointRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -157,7 +157,7 @@ func resourceAlicloudGaCustomRoutingEndpointRead(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAlicloudGaCustomRoutingEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -221,10 +221,10 @@ func resourceAlicloudGaCustomRoutingEndpointUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
-	return resourceAlicloudGaCustomRoutingEndpointRead(d, meta)
+	return resourceAliCloudGaCustomRoutingEndpointRead(d, meta)
 }
 
-func resourceAlicloudGaCustomRoutingEndpointDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaCustomRoutingEndpointDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteCustomRoutingEndpoints"

@@ -96,7 +96,7 @@ The following arguments are supported:
 * `endpoint_group_id` - (Required, ForceNew) The ID of the endpoint group in which to create endpoints.
 * `endpoint` - (Required, ForceNew) The ID of the endpoint (vSwitch).
 * `type` - (Required, ForceNew) The backend service type of the endpoint. Valid values: `PrivateSubNet`.
-* `traffic_to_endpoint_policy` - (Optional, Computed) The access policy of traffic to the endpoint. Default value: `DenyAll`. Valid values:
+* `traffic_to_endpoint_policy` - (Optional) The access policy of traffic to the endpoint. Default value: `DenyAll`. Valid values:
   - `DenyAll`: denies all traffic to the endpoint.
   - `AllowAll`: allows all traffic to the endpoint.
   - `AllowCustom`: allows traffic only to specified destinations in the endpoint.

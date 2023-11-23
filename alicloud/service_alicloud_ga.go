@@ -1539,6 +1539,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpointGroupDestination(id string) (
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.Destination"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointGroupDestination", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1614,6 +1617,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpoint(id string) (object map[strin
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpoint", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1689,6 +1695,9 @@ func (s *GaService) DescribeGaCustomRoutingEndpointTrafficPolicy(id string) (obj
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NotExist.Policy"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:CustomRoutingEndpointTrafficPolicy", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

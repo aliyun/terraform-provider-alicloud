@@ -9,11 +9,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaCustomRoutingEndpoint_basic0(t *testing.T) {
+func TestAccAliCloudGaCustomRoutingEndpoint_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_custom_routing_endpoint.default"
-	ra := resourceAttrInit(resourceId, AlicloudGaCustomRoutingEndpointMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaCustomRoutingEndpointMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaCustomRoutingEndpoint")
@@ -21,7 +21,7 @@ func TestAccAlicloudGaCustomRoutingEndpoint_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sGaCustomRoutingEndpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGaCustomRoutingEndpointBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaCustomRoutingEndpointBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -32,17 +32,15 @@ func TestAccAlicloudGaCustomRoutingEndpoint_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_group_id":          "${alicloud_ga_custom_routing_endpoint_group.default.id}",
-					"endpoint":                   "${data.alicloud_vswitches.default.ids.0}",
-					"type":                       "PrivateSubNet",
-					"traffic_to_endpoint_policy": "DenyAll",
+					"endpoint_group_id": "${alicloud_ga_custom_routing_endpoint_group.default.id}",
+					"endpoint":          "${data.alicloud_vswitches.default.ids.0}",
+					"type":              "PrivateSubNet",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_group_id":          CHECKSET,
-						"endpoint":                   CHECKSET,
-						"type":                       "PrivateSubNet",
-						"traffic_to_endpoint_policy": "DenyAll",
+						"endpoint_group_id": CHECKSET,
+						"endpoint":          CHECKSET,
+						"type":              "PrivateSubNet",
 					}),
 				),
 			},
@@ -75,14 +73,61 @@ func TestAccAlicloudGaCustomRoutingEndpoint_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudGaCustomRoutingEndpointMap = map[string]string{
+func TestAccAliCloudGaCustomRoutingEndpoint_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_custom_routing_endpoint.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaCustomRoutingEndpointMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaCustomRoutingEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sGaCustomRoutingEndpoint%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaCustomRoutingEndpointBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_group_id":          "${alicloud_ga_custom_routing_endpoint_group.default.id}",
+					"endpoint":                   "${data.alicloud_vswitches.default.ids.0}",
+					"type":                       "PrivateSubNet",
+					"traffic_to_endpoint_policy": "AllowAll",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_group_id":          CHECKSET,
+						"endpoint":                   CHECKSET,
+						"type":                       "PrivateSubNet",
+						"traffic_to_endpoint_policy": "AllowAll",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudGaCustomRoutingEndpointMap = map[string]string{
 	"accelerator_id":             CHECKSET,
 	"listener_id":                CHECKSET,
 	"custom_routing_endpoint_id": CHECKSET,
+	"traffic_to_endpoint_policy": CHECKSET,
 	"status":                     CHECKSET,
 }
 
-func AlicloudGaCustomRoutingEndpointBasicDependence0(name string) string {
+func AliCloudGaCustomRoutingEndpointBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
