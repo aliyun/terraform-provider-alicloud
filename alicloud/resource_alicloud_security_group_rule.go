@@ -118,6 +118,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	var response map[string]interface{}
 	var cidrIp string
 	var sourceSecurityGroupId string
+	var prefixListId string
 	request := make(map[string]interface{})
 	conn, err := client.NewEcsClient()
 	if err != nil {
@@ -180,6 +181,7 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 	}
 
 	if v, ok := d.GetOk("prefix_list_id"); ok {
+		prefixListId = v.(string)
 		if direction == string(DirectionIngress) {
 			permissionsMap["SourcePrefixListId"] = v
 		} else {
@@ -267,7 +269,11 @@ func resourceAliyunSecurityGroupRuleCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", request["SecurityGroupId"], direction, permissionsMap["IpProtocol"], permissionsMap["PortRange"], permissionsMap["NicType"], cidrIp, permissionsMap["Policy"], permissionsMap["Priority"]))
+	if len(cidrIp) != 0 {
+		d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", request["SecurityGroupId"], direction, permissionsMap["IpProtocol"], permissionsMap["PortRange"], permissionsMap["NicType"], cidrIp, permissionsMap["Policy"], permissionsMap["Priority"]))
+	} else {
+		d.SetId(fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", request["SecurityGroupId"], direction, permissionsMap["IpProtocol"], permissionsMap["PortRange"], permissionsMap["NicType"], prefixListId, permissionsMap["Policy"], permissionsMap["Priority"]))
+	}
 
 	return resourceAliyunSecurityGroupRuleRead(d, meta)
 }

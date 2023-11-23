@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudECSSecurityGroupRuleBasic(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupRuleBasic(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRuleBasicMap)
@@ -72,7 +72,7 @@ func TestAccAlicloudECSSecurityGroupRuleBasic(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupEgressRule(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupEgressRule(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, map[string]string{
@@ -124,7 +124,7 @@ func TestAccAlicloudECSSecurityGroupEgressRule(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupRuleMulti(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupRuleMulti(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default.2"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRuleBasicMap)
@@ -157,7 +157,7 @@ func TestAccAlicloudECSSecurityGroupRuleMulti(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupRulePrefixList(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupRulePrefixList(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupRulePrefixList)
@@ -194,7 +194,7 @@ func TestAccAlicloudECSSecurityGroupRulePrefixList(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupEgressRuleIpv6(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupEgressRuleIpv6(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, map[string]string{
@@ -238,7 +238,7 @@ func TestAccAlicloudECSSecurityGroupEgressRuleIpv6(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupIngressRuleIpv6(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupIngressRuleIpv6(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupIngressRuleIpv6Map)
@@ -275,7 +275,7 @@ func TestAccAlicloudECSSecurityGroupIngressRuleIpv6(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupEgressRuleOtherIpv6(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupEgressRuleOtherIpv6(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, map[string]string{
@@ -320,7 +320,7 @@ func TestAccAlicloudECSSecurityGroupEgressRuleOtherIpv6(t *testing.T) {
 
 }
 
-func TestAccAlicloudECSSecurityGroupIngressRuleOtherIpv6(t *testing.T) {
+func TestAccAliCloudECSSecurityGroupIngressRuleOtherIpv6(t *testing.T) {
 	var v ecs.Permission
 	resourceId := "alicloud_security_group_rule.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityGroupIngressRuleIpv6Map)
