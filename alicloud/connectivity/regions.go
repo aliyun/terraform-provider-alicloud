@@ -278,3 +278,5 @@ var RocketMQSupportRegions = []Region{Hangzhou}
 var EcsNetworkInterfaceIpPrefixSupportRegions = []Region{Hangzhou}
 var PrivateLinkSupportRegions = []Region{Hangzhou}
 var SlbPrivateNetSupportRegions = []Region{EUWest1}
+var HologramSupportRegions = []Region{Hangzhou}
+var HologramSharedSupportRegions = []Region{Shanghai}
