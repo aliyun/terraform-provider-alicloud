@@ -11,7 +11,7 @@ description: |-
 
 Provides a GPDB DB Instance Plan resource.
 
-For information about GPDB DB Instance Plan and how to use it, see [What is DB Instance Plan](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/createdbinstanceplan).
+For information about GPDB DB Instance Plan and how to use it, see [What is DB Instance Plan](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/developer-reference/api-gpdb-2016-05-03-createdbinstanceplan).
 
 -> **NOTE:** Available since v1.189.0.
 
@@ -23,13 +23,18 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_gpdb_zones" "default" {}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
+data "alicloud_gpdb_zones" "default" {
+}
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
@@ -47,9 +52,7 @@ resource "alicloud_gpdb_instance" "default" {
   zone_id               = data.alicloud_gpdb_zones.default.ids.0
   instance_network_type = "VPC"
   instance_spec         = "2C16G"
-  master_node_num       = 1
   payment_type          = "PayAsYouGo"
-  private_ip_address    = "1.1.1.1"
   seg_storage_type      = "cloud_essd"
   seg_node_num          = 4
   storage_size          = 50
@@ -65,8 +68,8 @@ resource "alicloud_gpdb_db_instance_plan" "default" {
   plan_desc             = var.name
   plan_type             = "PauseResume"
   plan_schedule_type    = "Regular"
-  plan_start_date       = formatdate("YYYY-MM-DD'T'hh:mm'Z'", timeadd(timestamp(), "1h"))
-  plan_end_date         = formatdate("YYYY-MM-DD'T'hh:mm'Z'", timeadd(timestamp(), "24h"))
+  plan_start_date       = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "1h"))
+  plan_end_date         = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "24h"))
   plan_config {
     resume {
       plan_cron_time = "0 0 0 1/1 * ? "
