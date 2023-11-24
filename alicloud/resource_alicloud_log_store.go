@@ -3,6 +3,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"strings"
 	"time"
@@ -171,8 +172,18 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["logstoreName"] = d.Get("logstore_name")
-	request["project"] = d.Get("project_name")
+	if v, ok := d.GetOkExists("project_name"); ok {
+		hostMap["project"] = tea.String(v.(string))
+	}
+	if v, ok := d.GetOkExists("project"); ok {
+		hostMap["project"] = tea.String(v.(string))
+	}
+	if v, ok := d.GetOkExists("logstore_name"); ok {
+		request["logstoreName"] = v
+	}
+	if v, ok := d.GetOkExists("name"); ok {
+		request["logstoreName"] = v
+	}
 
 	request["shardCount"] = d.Get("shard_count")
 	if v, ok := d.GetOk("retention_period"); ok {
@@ -229,7 +240,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", request["project"], request["logstoreName"]))
+	d.SetId(fmt.Sprintf("%v:%v", *hostMap["project"], request["logstoreName"]))
 
 	return resourceAliCloudSlsLogStoreRead(d, meta)
 }
@@ -284,6 +295,9 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		encryptConfMaps = append(encryptConfMaps, encryptConfMap)
 	}
 	d.Set("encrypt_conf", encryptConfMaps)
+	parts := strings.Split(d.Id(), ":")
+	d.Set("project_name", parts[0])
+	d.Set("logstore_name", parts[1])
 
 	d.Set("project", d.Get("project_name"))
 	d.Set("name", d.Get("logstore_name"))
@@ -311,6 +325,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
 	hostMap = make(map[string]*string)
+	hostMap["project"] = tea.String(parts[0])
 	if d.HasChange("retention_period") {
 		update = true
 		request["ttl"] = d.Get("retention_period")
@@ -392,6 +407,7 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	query := make(map[string]*string)
 	hostMap := make(map[string]*string)
+	hostMap["project"] = tea.String(parts[0])
 	conn, err := client.NewSlsClient()
 	if err != nil {
 		return WrapError(err)

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/alibabacloud-go/tea/tea"
 	"strings"
 	"time"
 
@@ -263,6 +264,7 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	hostMap = make(map[string]*string)
+	hostMap["project"] = tea.String(parts[0])
 
 	body = request
 	runtime := util.RuntimeOptions{}
