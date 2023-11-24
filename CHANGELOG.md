@@ -1,59 +1,60 @@
-## 1.213.0 (Unreleased)
+## 1.214.0 (Unreleased)
+## 1.213.0 (November 24, 2023)
 
-- **New Resource:** `alicloud_arms_environment` [GH-6627]
-- **New Resource:** `alicloud_arms_addon_release` [GH-6627]
-- **New Resource:** `alicloud_arms_env_feature` [GH-6627]
-- **New Resource:** `alicloud_arms_env_pod_monitor` [GH-6627]
-- **New Resource:** `alicloud_arms_env_service_monitor` [GH-6627]
-- **New Resource:** `alicloud_arms_env_custom_job` [GH-6627]
-- **New Resource:** `alicloud_resource_manager_saved_query` [GH-6659]
-- **New Resource:** `alicloud_threat_detection_image_event_operation` [GH-6668]
-- **New Resource:** `alicloud_threat_detection_sas_trail` [GH-6668]
-- **New Resource:** `alicloud_ens_snapshot` [GH-6678]
-- **New Resource:** `alicloud_ens_disk` [GH-6678]
-- **New Resource:** `alicloud_ens_network` [GH-6678]
-- **New Resource:** `alicloud_ens_vswitch` [GH-6678]
-- **New Resource:** `alicloud_ens_load_balancer` [GH-6678]
-- **New Resource:** `alicloud_ens_security_group` [GH-6678]
-- **New Resource:** `alicloud_ens_eip` [GH-6678]
-- **New Resource:** `alicloud_hologram_instance` [GH-6682]
-- **New Datasource:** `alicloud_ga_endpoint_group_ip_address_cidr_blocks` [GH-6661]
+- **New Resource:** `alicloud_arms_environment` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_arms_addon_release` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_arms_env_feature` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_arms_env_pod_monitor` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_arms_env_service_monitor` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_arms_env_custom_job` ([#6627](https://github.com/aliyun/terraform-provider-alicloud/issues/6627))
+- **New Resource:** `alicloud_resource_manager_saved_query` ([#6659](https://github.com/aliyun/terraform-provider-alicloud/issues/6659))
+- **New Resource:** `alicloud_threat_detection_image_event_operation` ([#6668](https://github.com/aliyun/terraform-provider-alicloud/issues/6668))
+- **New Resource:** `alicloud_threat_detection_sas_trail` ([#6668](https://github.com/aliyun/terraform-provider-alicloud/issues/6668))
+- **New Resource:** `alicloud_ens_snapshot` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_disk` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_network` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_vswitch` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_load_balancer` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_security_group` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_ens_eip` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
+- **New Resource:** `alicloud_hologram_instance` ([#6682](https://github.com/aliyun/terraform-provider-alicloud/issues/6682))
+- **New Datasource:** `alicloud_ga_endpoint_group_ip_address_cidr_blocks` ([#6661](https://github.com/aliyun/terraform-provider-alicloud/issues/6661))
 
 ENHANCEMENTS:
 
-- resource/alicloud_ess_scaling_group: on_demand_base_capacity and on_demand_percentage_above_base_capacity support set zero & spot_instance_pools value range form [0-10] to [1-10]. [GH-6619]
-- resource/alicloud_instance: add new attribute network_interfaces. [GH-6624]
-- resource/alicloud_ecs_network_interface: Add ipv4 prefix. [GH-6637]
-- resource/alicloud_bastionhost_instance: check "enable_public_access" value before update. [GH-6639]
-- resource/alicloud_slb_server_group: modify weight range to [0,100]. [GH-6641]
-- resource/alicloud_gpdb_instance: Added the field master_cu; Removed the field master_node_num, private_ip_address. [GH-6644]
-- resource/alicloud_privatelink_vpc_endpoint: add new attributes endpoint_type, protected_enabled, resource_group_id, tags, zone_private_ip_address_count; resource/alicloud_privatelink_vpc_endpoint_connection: optimized code implementation; resource/alicloud_privatelink_vpc_endpoint_service: add new attributes resource_group_id, service_resource_type, service_support_ipv6, tags, zone_affinity_enabled; resource/alicloud_privatelink_vpc_endpoint_service_resource: add new attributes zone_id; resource/alicloud_privatelink_vpc_endpoint_service_user: optimized code implementation; resource/alicloud_privatelink_vpc_endpoint_zone: add new attribute eni_ip; resource/alicloud_nlb_load_balancer: mark computed tag for attribute. [GH-6647]
-- resource/alicloud_cen_transit_router_vpc_attachment: Added retry strategy for error code IncorrectStatus.VpcSwitch; Removed the field route_table_association_enabled, route_table_propagation_enabled. [GH-6648]
-- resource/alicloud_dbfs_instance: add attributes advanced_features,fs_name,instance_type,used_scene. [GH-6657]
-- resource/alicloud_security_group_rule: add prefix_list_id into ID. [GH-6662]
-- resource/alicloud_pvtz_zone: add tags for pvtz_zone. [GH-6663]
-- resource/alicloud_ga_endpoint_group: Added the field endpoint_group_ip_list. [GH-6666]
-- resource/alicloud_vpc: add expected errors' retry; resource/alicloud_vpc_ipv6_gateway: add expected errors' retry. [GH-6667]
-- resource/alicloud_fc_service: add tags attribute. [GH-6679]
-- resource/alicloud_ga_custom_routing_endpoint_group: Improved alicloud_ga_custom_routing_endpoint_group testcase; resource/alicloud_ga_custom_routing_endpoint_group_destination: Added error code NotExist.Destination; resource/alicloud_ga_custom_routing_endpoint: Added error code NotExist.EndPointGroup; resource/alicloud_ga_custom_routing_endpoint_traffic_policy: Added error code NotExist.Policy. [GH-6690]
-- resource/alicloud_polardb_cluster: Add maintain_time check, modification cluster protection lock. [GH-6696]
-- resource/alicloud_cen_transit_router_vpc_attachment: Fixed the field route_table_association_enabled, route_table_propagation_enabled from Removed to Deprecated; resource/alicloud_gpdb_instance: Fixed the field master_node_num, private_ip_address from Removed to Deprecated. [GH-6702]
-- docs: Fixed resource alicloud_log_dashboard document error. [GH-6665]
-- docs: fix dms_enterprise_instance example. [GH-6672]
-- docs: Fixed resource alicloud_gpdb_db_instance_plan document example error. [GH-6689]
-- docs: Removed ecs document invalid link. [GH-6691]
-- docs: fix block link. [GH-6694]
-- docs: Improved the document ga_endpoint_group, ga_endpoint_group_ip_address_cidr_blocks description. [GH-6703]
-- testcase: fix fc test case. [GH-6650]
-- testcase: fix bss openapi service. [GH-6652]
-- testcase: fix lindorm test case. [GH-6656]
+- resource/alicloud_ess_scaling_group: on_demand_base_capacity and on_demand_percentage_above_base_capacity support set zero & spot_instance_pools value range form [0-10] to [1-10]. ([#6619](https://github.com/aliyun/terraform-provider-alicloud/issues/6619))
+- resource/alicloud_instance: add new attribute network_interfaces. ([#6624](https://github.com/aliyun/terraform-provider-alicloud/issues/6624))
+- resource/alicloud_ecs_network_interface: Add ipv4 prefix. ([#6637](https://github.com/aliyun/terraform-provider-alicloud/issues/6637))
+- resource/alicloud_bastionhost_instance: check "enable_public_access" value before update. ([#6639](https://github.com/aliyun/terraform-provider-alicloud/issues/6639))
+- resource/alicloud_slb_server_group: modify weight range to [0,100]. ([#6641](https://github.com/aliyun/terraform-provider-alicloud/issues/6641))
+- resource/alicloud_gpdb_instance: Added the field master_cu; Removed the field master_node_num, private_ip_address. ([#6644](https://github.com/aliyun/terraform-provider-alicloud/issues/6644))
+- resource/alicloud_privatelink_vpc_endpoint: add new attributes endpoint_type, protected_enabled, resource_group_id, tags, zone_private_ip_address_count; resource/alicloud_privatelink_vpc_endpoint_connection: optimized code implementation; resource/alicloud_privatelink_vpc_endpoint_service: add new attributes resource_group_id, service_resource_type, service_support_ipv6, tags, zone_affinity_enabled; resource/alicloud_privatelink_vpc_endpoint_service_resource: add new attributes zone_id; resource/alicloud_privatelink_vpc_endpoint_service_user: optimized code implementation; resource/alicloud_privatelink_vpc_endpoint_zone: add new attribute eni_ip; resource/alicloud_nlb_load_balancer: mark computed tag for attribute. ([#6647](https://github.com/aliyun/terraform-provider-alicloud/issues/6647))
+- resource/alicloud_cen_transit_router_vpc_attachment: Added retry strategy for error code IncorrectStatus.VpcSwitch; Removed the field route_table_association_enabled, route_table_propagation_enabled. ([#6648](https://github.com/aliyun/terraform-provider-alicloud/issues/6648))
+- resource/alicloud_dbfs_instance: add attributes advanced_features,fs_name,instance_type,used_scene. ([#6657](https://github.com/aliyun/terraform-provider-alicloud/issues/6657))
+- resource/alicloud_security_group_rule: add prefix_list_id into ID. ([#6662](https://github.com/aliyun/terraform-provider-alicloud/issues/6662))
+- resource/alicloud_pvtz_zone: add tags for pvtz_zone. ([#6663](https://github.com/aliyun/terraform-provider-alicloud/issues/6663))
+- resource/alicloud_ga_endpoint_group: Added the field endpoint_group_ip_list. ([#6666](https://github.com/aliyun/terraform-provider-alicloud/issues/6666))
+- resource/alicloud_vpc: add expected errors' retry; resource/alicloud_vpc_ipv6_gateway: add expected errors' retry. ([#6667](https://github.com/aliyun/terraform-provider-alicloud/issues/6667))
+- resource/alicloud_fc_service: add tags attribute. ([#6679](https://github.com/aliyun/terraform-provider-alicloud/issues/6679))
+- resource/alicloud_ga_custom_routing_endpoint_group: Improved alicloud_ga_custom_routing_endpoint_group testcase; resource/alicloud_ga_custom_routing_endpoint_group_destination: Added error code NotExist.Destination; resource/alicloud_ga_custom_routing_endpoint: Added error code NotExist.EndPointGroup; resource/alicloud_ga_custom_routing_endpoint_traffic_policy: Added error code NotExist.Policy. ([#6690](https://github.com/aliyun/terraform-provider-alicloud/issues/6690))
+- resource/alicloud_polardb_cluster: Add maintain_time check, modification cluster protection lock. ([#6696](https://github.com/aliyun/terraform-provider-alicloud/issues/6696))
+- resource/alicloud_cen_transit_router_vpc_attachment: Fixed the field route_table_association_enabled, route_table_propagation_enabled from Removed to Deprecated; resource/alicloud_gpdb_instance: Fixed the field master_node_num, private_ip_address from Removed to Deprecated. ([#6702](https://github.com/aliyun/terraform-provider-alicloud/issues/6702))
+- docs: Fixed resource alicloud_log_dashboard document error. ([#6665](https://github.com/aliyun/terraform-provider-alicloud/issues/6665))
+- docs: fix dms_enterprise_instance example. ([#6672](https://github.com/aliyun/terraform-provider-alicloud/issues/6672))
+- docs: Fixed resource alicloud_gpdb_db_instance_plan document example error. ([#6689](https://github.com/aliyun/terraform-provider-alicloud/issues/6689))
+- docs: Removed ecs document invalid link. ([#6691](https://github.com/aliyun/terraform-provider-alicloud/issues/6691))
+- docs: fix block link. ([#6694](https://github.com/aliyun/terraform-provider-alicloud/issues/6694))
+- docs: Improved the document ga_endpoint_group, ga_endpoint_group_ip_address_cidr_blocks description. ([#6703](https://github.com/aliyun/terraform-provider-alicloud/issues/6703))
+- testcase: fix fc test case. ([#6650](https://github.com/aliyun/terraform-provider-alicloud/issues/6650))
+- testcase: fix bss openapi service. ([#6652](https://github.com/aliyun/terraform-provider-alicloud/issues/6652))
+- testcase: fix lindorm test case. ([#6656](https://github.com/aliyun/terraform-provider-alicloud/issues/6656))
 
 BUG FIXES:
 
-- resource/alicloud_log_project: fix illegal entry for GET request; resource/alicloud_fcv2_function: fix illegal entry for GET request and add content-md5 for request header. [GH-6643]
-- resource/alicloud_cs_kubernetes_permissions: fix create, read, update, delete bug; support import. [GH-6646]
-- resource/alicloud_instance: Fixed the diff error caused by field network_interfaces.0.network_interface_id. [GH-6687]
-- data-source/alicloud_cloud_firewall_control_policies: Fixed the read invalid error when using an international account. [GH-6653]
+- resource/alicloud_log_project: fix illegal entry for GET request; resource/alicloud_fcv2_function: fix illegal entry for GET request and add content-md5 for request header. ([#6643](https://github.com/aliyun/terraform-provider-alicloud/issues/6643))
+- resource/alicloud_cs_kubernetes_permissions: fix create, read, update, delete bug; support import. ([#6646](https://github.com/aliyun/terraform-provider-alicloud/issues/6646))
+- resource/alicloud_instance: Fixed the diff error caused by field network_interfaces.0.network_interface_id. ([#6687](https://github.com/aliyun/terraform-provider-alicloud/issues/6687))
+- data-source/alicloud_cloud_firewall_control_policies: Fixed the read invalid error when using an international account. ([#6653](https://github.com/aliyun/terraform-provider-alicloud/issues/6653))
 
 ## 1.212.0 (November 06, 2023)
 
