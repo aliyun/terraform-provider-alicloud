@@ -13,7 +13,7 @@ import (
 
 var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
 
-func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
+func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
@@ -43,6 +43,7 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
+					"endpoint_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{

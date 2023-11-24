@@ -1059,6 +1059,52 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_system": []map[string]interface{}{{
+						"db_endpoint_id":          "1",
+						"endpoint_type":           "Cluster",
+						"db_endpoint_description": "tf_endpoint_test",
+						"auto_add_new_nodes":      "Enable",
+						"read_write_mode":         "ReadWrite",
+						"endpoint_config": []map[string]interface{}{{
+							"consist_level": "0",
+						}},
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_system.#": "1",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"ssl_system": []map[string]interface{}{{
+			//			"db_endpoint_id":  "1",
+			//			"ssl_enabled":     "Enable",
+			//			"net_type":        "Private",
+			//			"ssl_auto_rotate": "Disable",
+			//		}},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"ssl_system.#": "1",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"ssl_system": []map[string]interface{}{{
+			//			"ssl_auto_rotate": "Enable",
+			//		}},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"ssl_system.#": "1",
+			//		}),
+			//	),
+			//},
 		},
 	})
 
