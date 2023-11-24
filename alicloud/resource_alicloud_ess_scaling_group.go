@@ -61,6 +61,13 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(0, 86400),
 			},
+			"scaling_policy": {
+				Type:         schema.TypeString,
+				ForceNew:     true,
+				Optional:     true,
+				Default:      "release",
+				ValidateFunc: validation.StringInSlice([]string{"release", "recycle", "forcerelease"}, false),
+			},
 			"vswitch_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -262,6 +269,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("launch_template_id", object["LaunchTemplateId"])
 	d.Set("launch_template_version", object["LaunchTemplateVersion"])
 	d.Set("group_type", object["GroupType"])
+	d.Set("scaling_policy", object["ScalingPolicy"])
 	d.Set("health_check_type", object["HealthCheckType"])
 
 	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
@@ -444,6 +452,7 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		"DefaultCooldown": d.Get("default_cooldown"),
 		"MultiAZPolicy":   d.Get("multi_az_policy"),
 		"GroupType":       d.Get("group_type"),
+		"ScalingPolicy":   d.Get("scaling_policy"),
 	}
 
 	slbService := SlbService{client}
