@@ -149,7 +149,7 @@ The endpoint_configurations supports the following:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Endpoint Group.
-* `endpoint_group_ip_list` - (Available since v1.213.0) The active endpoint IP addresses of the endpoint group.
+* `endpoint_group_ip_list` - (Available since v1.213.0) The active endpoint IP addresses of the endpoint group. `endpoint_group_ip_list` will change with the growth of network traffic. You can run `terraform apply` to query the latest CIDR blocks and IP addresses.
 * `status` - The status of the endpoint group.
 
 ## Timeouts
