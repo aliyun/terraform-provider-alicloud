@@ -326,14 +326,17 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	body = make(map[string]interface{})
 	hostMap = make(map[string]*string)
 	hostMap["project"] = tea.String(parts[0])
-	if d.HasChange("retention_period") {
-		update = true
-		request["ttl"] = d.Get("retention_period")
+	if v, ok := d.GetOk("ttl"); ok {
+		request["ttl"] = v
 	}
-
 	if d.HasChange("ttl") {
 		update = true
-		request["ttl"] = d.Get("ttl")
+	}
+	if v, ok := d.GetOk("retention_period"); ok {
+		request["ttl"] = v
+	}
+	if d.HasChange("retention_period") {
+		update = true
 	}
 
 	if d.HasChange("auto_split") {
