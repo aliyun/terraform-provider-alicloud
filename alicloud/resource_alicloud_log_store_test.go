@@ -440,3 +440,756 @@ var logStoreMap = map[string]string{
 	"name":    CHECKSET,
 	"project": CHECKSET,
 }
+
+// Test Sls LogStore. >>> Resource test cases, automatically generated.
+// Case 4844
+func TestAccAliCloudSlsLogStore_basic4844(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap4844)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence4844)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logstore_name": name,
+					"project_name":  "${alicloud_log_project.defaultbRFbyS.name}",
+					"ttl":           "20",
+					"shard_count":   "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logstore_name": name,
+						"project_name":  CHECKSET,
+						"ttl":           "20",
+						"shard_count":   "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "query",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "query",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_tracking": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"append_meta": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"append_meta": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ttl": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ttl": "20",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ttl": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ttl": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "11",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "11",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard": "17",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard": "17",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ttl": "29",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ttl": "29",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_split": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_split": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_tracking": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"append_meta": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"append_meta": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl":         "7",
+					"logstore_name":   name + "_update",
+					"project_name":    "${alicloud_log_project.defaultbRFbyS.name}",
+					"max_split_shard": "0",
+					"ttl":             "20",
+					"shard_count":     "2",
+					"mode":            "query",
+					"telemetry_type":  "None",
+					"enable_tracking": "true",
+					"append_meta":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl":         "7",
+						"logstore_name":   name + "_update",
+						"project_name":    CHECKSET,
+						"max_split_shard": "0",
+						"ttl":             "20",
+						"shard_count":     "2",
+						"mode":            "query",
+						"telemetry_type":  "None",
+						"enable_tracking": "true",
+						"append_meta":     "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSlsLogStoreMap4844 = map[string]string{
+	"create_time":  CHECKSET,
+	"encrypt_conf": CHECKSET,
+}
+
+func AlicloudSlsLogStoreBasicDependence4844(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "logstore_name" {
+  default = "logstore"
+}
+
+variable "project_name" {
+  default = "terraform-logstore-test"
+}
+
+resource "alicloud_log_project" "defaultbRFbyS" {
+  description = "terraform-logstore-test"
+  name        = var.name
+
+}
+
+
+`, name)
+}
+
+// Case 2644
+func TestAccAliCloudSlsLogStore_basic2644(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap2644)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence2644)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logstore_name": name,
+					"project_name":  "rdktestname",
+					"ttl":           "40",
+					"shard_count":   "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logstore_name": name,
+						"project_name":  "rdktestname",
+						"ttl":           "40",
+						"shard_count":   "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "35",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "35",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"append_meta": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"append_meta": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_split": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_split": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_tracking": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ttl": "40",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ttl": "40",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ttl": "50",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ttl": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "45",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "45",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"max_split_shard": "64",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_split_shard": "64",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logstore_name":   name + "_update",
+					"project_name":    "rdktestname",
+					"ttl":             "40",
+					"shard_count":     "2",
+					"hot_ttl":         "35",
+					"max_split_shard": "1",
+					"telemetry_type":  "None",
+					"append_meta":     "true",
+					"auto_split":      "true",
+					"enable_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logstore_name":   name + "_update",
+						"project_name":    "rdktestname",
+						"ttl":             "40",
+						"shard_count":     "2",
+						"hot_ttl":         "35",
+						"max_split_shard": "1",
+						"telemetry_type":  "None",
+						"append_meta":     "true",
+						"auto_split":      "true",
+						"enable_tracking": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSlsLogStoreMap2644 = map[string]string{
+	"create_time":  CHECKSET,
+	"encrypt_conf": CHECKSET,
+}
+
+func AlicloudSlsLogStoreBasicDependence2644(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 113
+func TestAccAliCloudSlsLogStore_basic113(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap113)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence113)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSlsLogStoreMap113 = map[string]string{
+	"create_time":  CHECKSET,
+	"encrypt_conf": CHECKSET,
+}
+
+func AlicloudSlsLogStoreBasicDependence113(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 453
+func TestAccAliCloudSlsLogStore_basic453(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap453)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence453)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudSlsLogStoreMap453 = map[string]string{
+	"create_time":  CHECKSET,
+	"encrypt_conf": CHECKSET,
+}
+
+func AlicloudSlsLogStoreBasicDependence453(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 4844  twin
+func TestAccAliCloudSlsLogStore_basic4844_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap4844)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence4844)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl":         "11",
+					"logstore_name":   name,
+					"project_name":    "${alicloud_log_project.defaultbRFbyS.name}",
+					"max_split_shard": "17",
+					"ttl":             "29",
+					"shard_count":     "2",
+					"auto_split":      "true",
+					"mode":            "standard",
+					"telemetry_type":  "None",
+					"enable_tracking": "true",
+					"append_meta":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl":         "11",
+						"logstore_name":   name,
+						"project_name":    CHECKSET,
+						"max_split_shard": "17",
+						"ttl":             "29",
+						"shard_count":     "2",
+						"auto_split":      "true",
+						"mode":            "standard",
+						"telemetry_type":  "None",
+						"enable_tracking": "true",
+						"append_meta":     "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 2644  twin
+func TestAccAliCloudSlsLogStore_basic2644_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap2644)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence2644)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"logstore_name":   name,
+					"project_name":    "rdktestname",
+					"ttl":             "50",
+					"shard_count":     "2",
+					"hot_ttl":         "45",
+					"max_split_shard": "64",
+					"telemetry_type":  "None",
+					"append_meta":     "true",
+					"auto_split":      "true",
+					"enable_tracking": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"logstore_name":   name,
+						"project_name":    "rdktestname",
+						"ttl":             "50",
+						"shard_count":     "2",
+						"hot_ttl":         "45",
+						"max_split_shard": "64",
+						"telemetry_type":  "None",
+						"append_meta":     "true",
+						"auto_split":      "true",
+						"enable_tracking": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 113  twin
+func TestAccAliCloudSlsLogStore_basic113_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap113)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence113)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 453  twin
+func TestAccAliCloudSlsLogStore_basic453_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap453)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SlsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSlsLogStore")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence453)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Sls LogStore. <<< Resource test cases, automatically generated.
