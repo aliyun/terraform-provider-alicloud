@@ -104,14 +104,14 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Computed: true,
 			},
 			"route_table_association_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'route_table_association_enabled' has been deprecated from provider version 1.192.0, and it has been removed from provider version 1.213.0. Please use the resource 'alicloud_cen_transit_router_route_table_association' instead.",
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead.",
 			},
 			"route_table_propagation_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'route_table_propagation_enabled' has been deprecated from provider version 1.192.0, and it has been removed from provider version 1.213.0. Please use the resource 'alicloud_cen_transit_router_route_table_propagation' instead.",
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead.",
 			},
 		},
 	}
@@ -159,6 +159,14 @@ func resourceAliCloudCenTransitRouterVpcAttachmentCreate(d *schema.ResourceData,
 
 	if v, ok := d.GetOk("transit_router_attachment_description"); ok {
 		request["TransitRouterAttachmentDescription"] = v
+	}
+
+	if v, ok := d.GetOkExists("route_table_association_enabled"); ok {
+		request["RouteTableAssociationEnabled"] = v
+	}
+
+	if v, ok := d.GetOkExists("route_table_propagation_enabled"); ok {
+		request["RouteTablePropagationEnabled"] = v
 	}
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
