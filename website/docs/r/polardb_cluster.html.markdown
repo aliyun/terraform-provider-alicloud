@@ -198,6 +198,8 @@ The following arguments are supported:
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
 * `db_node_id` - (Optional, Available since v1.211.2) The ID of the node or node subscript. Node subscript values: 1 to 15.
 * `hot_replica_mode` - (Optional, Available since v1.211.2) Indicates whether the hot standby feature is enabled. Valid values are `ON`, `OFF`. Only MySQL supports.
+* `endpoint_system` - (Optional, Type: list, Available since v1.213.0) endpoint_system defines how users can send requests to your API. See [`endpoint_system`](#endpoint_system) below.
+* `ssl_system` - (Optional, Type: list, Available since v1.213.0) ssl_system defines how users can send requests to your API. See [`ssl_system`](#ssl_system) below.
 
 
 ### `db_cluster_ip_array`
@@ -216,6 +218,31 @@ The parameters supports the following:
 
 * `name` - (Required) Kernel parameter name.
 * `value` - (Required) Kernel parameter value.
+
+
+### `endpoint_system`
+
+The endpoint_system supports the following:
+
+* `db_endpoint_id` - (Optional, Available since v1.213.0) The ID of the cluster endpoint or endpoint subscript. Endpoint subscript values: `0`, `1`. `0` refers to the `Primary` endpoint, `1` refers to the Cluster endpoint.
+* `db_endpoint_description` - (Optional, Available since v1.213.0) The name of the endpoint.
+* `auto_add_new_nodes` - (Optional, Available since v1.213.0) Whether the new node automatically joins the default cluster address. Valid values are `Enable`, `Disable`.
+* `read_write_mode` - (Optional, Available since v1.213.0) Read or write mode. Valid values are `ReadWrite`, `ReadOnly`.
+* `endpoint_type` - (Optional, Available since v1.213.0) Type of the endpoint. Valid values are `Cluster`, `Primary`.
+
+### `ssl_system`
+
+The ssl_system supports the following:
+
+* `db_endpoint_id` - (Optional, Available since v1.213.0) The ID of the cluster endpoint or endpoint subscript. Endpoint subscript values: `0`, `1`. `0` refers to the `Primary` endpoint, `1` refers to the Cluster endpoint.
+* `ssl_enabled` - (Optional, Available since v1.213.0) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
+* `ssl_connection_string` - (Optional, Available since v1.213.0) The SSL connection string.
+* `net_type` - (Optional, Available since v1.213.0) The network type of the endpoint address.
+* `ssl_expire_time` - (Optional, Available since v1.213.0) The time when the SSL certificate expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `ssl_auto_rotate` - (Optional, Available since v1.213.0) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.
+* `ssl_certificate_url` - (Optional, Available since v1.213.0) Specifies SSL certificate download link.  
+  **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm). For a PolarDB for PostgreSQL cluster or a PolarDB-O cluster, this parameter is not required, by default, SSL encryption is enabled for all endpoints.
+
 
 ## Attributes Reference
 
