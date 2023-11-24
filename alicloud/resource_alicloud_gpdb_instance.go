@@ -236,14 +236,16 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Deprecated:    "Field 'availability_zone' has been deprecated from version 1.187.0. Use 'zone_id' instead.",
 			},
 			"master_node_num": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field `master_node_num` has been removed from provider version 1.213.0.",
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Default:      1,
+				ValidateFunc: IntInSlice([]int{1, 2}),
+				Deprecated:   "Field `master_node_num` has been deprecated from provider version 1.213.0.",
 			},
 			"private_ip_address": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `private_ip_address` has been removed from provider version 1.213.0.",
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field `private_ip_address` has been deprecated from provider version 1.213.0.",
 			},
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -381,6 +383,14 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if v, ok := d.GetOk("master_node_num"); ok {
+		request["MasterNodeNum"] = v
+	}
+
+	if v, ok := d.GetOk("private_ip_address"); ok {
+		request["PrivateIpAddress"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -446,6 +456,7 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("description", object["DBInstanceDescription"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
+	d.Set("master_node_num", formatInt(object["MasterNodeNum"]))
 	d.Set("status", object["DBInstanceStatus"])
 
 	if v, ok := object["SegmentCounts"]; ok && fmt.Sprint(v) != "0" {
@@ -758,6 +769,43 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 		d.SetPartial("seg_node_num")
 		d.SetPartial("storage_size")
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+	request["RegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("master_node_num") {
+		update = true
+		if v, ok := d.GetOk("master_node_num"); ok {
+			request["UpgradeType"] = 2
+			request["MasterNodeNum"] = v
+		}
+	}
+	if update {
+		action := "UpgradeDBInstance"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("master_node_num")
 	}
 
 	update = false

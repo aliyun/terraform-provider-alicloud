@@ -109,8 +109,8 @@ The following arguments are supported:
 * `security_ip_list` - (Optional, List, Deprecated since v1.187.0) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.187.0) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
 * `availability_zone` - (Optional, ForceNew, Deprecated since v1.187.0) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
-* `master_node_num` - (Removed since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been removed from provider version 1.213.0.
-* `private_ip_address` - (Removed since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been removed from provider version 1.213.0.
+* `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been deprecated from provider version 1.213.0.
+* `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been deprecated from provider version 1.213.0.
 
 ### `ip_whitelist`
 
