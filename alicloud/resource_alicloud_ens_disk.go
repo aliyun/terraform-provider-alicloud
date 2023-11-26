@@ -57,7 +57,6 @@ func resourceAliCloudEnsDisk() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Computed: true,
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -173,7 +172,7 @@ func resourceAliCloudEnsDiskRead(d *schema.ResourceData, meta interface{}) error
 
 	e := jsonata.MustCompile("$number($.Size & '') / 1024")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("size", formatInt(evaluation))
+	d.Set("size", evaluation)
 
 	return nil
 }
@@ -317,6 +316,13 @@ func convertEnsDisksDisksDiskChargeTypeResponse(source interface{}) interface{} 
 	return source
 }
 func convertEnsDiskChargeTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	}
+	return source
+}
+func convertEnsInstanceChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
 		return "PostPaid"
