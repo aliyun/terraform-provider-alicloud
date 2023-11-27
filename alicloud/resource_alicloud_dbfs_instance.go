@@ -127,7 +127,7 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'instance_name' has been deprecated since provider version 1.212.0. New field 'fs_name' instead.",
+				Deprecated: "Field 'instance_name' has been deprecated since provider version 1.214.0. New field 'fs_name' instead.",
 			},
 		},
 	}
@@ -251,19 +251,8 @@ func resourceAliCloudDbfsDbfsInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("status", objectRaw["Status"])
 	d.Set("used_scene", objectRaw["UsedScene"])
 	d.Set("zone_id", objectRaw["ZoneId"])
-	d.Set("tags", tagsToMap(objectRaw["Tags"]))
 
 	d.Set("instance_name", d.Get("fs_name"))
-	if ecsListList, ok := objectRaw["EcsList"]; ok && ecsListList != nil {
-		ecsListMaps := make([]map[string]interface{}, 0)
-		for _, ecsListListItem := range ecsListList.([]interface{}) {
-			if ecsListListItemMap, ok := ecsListListItem.(map[string]interface{}); ok {
-				ecsListListItemMap["ecs_id"] = ecsListListItemMap["EcsId"]
-				ecsListMaps = append(ecsListMaps, ecsListListItemMap)
-			}
-			d.Set("ecs_list", ecsListMaps)
-		}
-	}
 	return nil
 }
 
@@ -664,7 +653,7 @@ func resourceAliCloudDbfsDbfsInstanceDelete(d *schema.ResourceData, meta interfa
 	}
 
 	dbfsServiceV2 := DbfsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
