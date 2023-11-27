@@ -49,6 +49,9 @@ func (s *DbfsServiceV2) DescribeDbfsDbfsInstance(id string) (object map[string]i
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.DBFS"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("DbfsInstance", id)), NotFoundMsg, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -72,6 +75,7 @@ func (s *DbfsServiceV2) DbfsDbfsInstanceStateRefreshFunc(id string, field string
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
