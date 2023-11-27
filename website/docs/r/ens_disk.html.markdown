@@ -12,7 +12,7 @@ Provides a ENS Disk resource. The disk. When you use it for the first time, plea
 
 For information about ENS Disk and how to use it, see [What is Disk](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createdisk).
 
--> **NOTE:** Available since v1.213.0.
+-> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
 
@@ -23,11 +23,16 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+
 resource "alicloud_ens_disk" "default" {
   category      = "cloud_ssd"
   size          = "20"
   payment_type  = "PayAsYouGo"
-  ens_region_id = "cn-chongqing-11"
+  ens_region_id = "cn-hangzhou-58"
 }
 ```
 
@@ -36,9 +41,9 @@ resource "alicloud_ens_disk" "default" {
 The following arguments are supported:
 * `category` - (Required, ForceNew) Types of disk instancesValues: cloud_efficiency (high-efficiency cloud disk),cloud_ssd (full Flash cloud disk),local_hdd (local HDD),local_ssd (local ssd).
 * `disk_name` - (Optional) Name of the disk instance.
-* `encrypted` - (Optional, ForceNew) Indicates whether the cloud disk is Encrypted. If Encrypted = true, the default service key is used when KMSKeyId is not entered. Value range:`true`, `false`(default).
+* `encrypted` - (Optional, ForceNew) Indicates whether the cloud disk is Encrypted. If Encrypted = true, the default service key is used when KMSKeyId is not entered.Value range:true: Yesfalse (default): No.
 * `ens_region_id` - (Required, ForceNew) Ens node IDExample value: cn-chengdu-telecom.
-* `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used by the cloud disk. If Encrypted is set to true, the service default key is used when KMSKeyId is empty.
+* `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used by the cloud disk.If Encrypted is set to true, the service default key is used when KMSKeyId is empty.
 * `payment_type` - (Required, ForceNew) Billing type of the disk instanceValue: PayAsYouGo.
 * `size` - (Optional) The size of the disk instance. Unit: GiB.
 * `snapshot_id` - (Optional, ForceNew) The ID of the snapshot used to create the cloud disk.
