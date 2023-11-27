@@ -125,7 +125,7 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"ttl": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Default:  30,
+				Computed: true,
 			},
 			"project": {
 				Type:       schema.TypeString,
@@ -144,7 +144,7 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 			"retention_period": {
 				Type:       schema.TypeInt,
 				Optional:   true,
-				Default:    30,
+				Computed:   true,
 				Deprecated: "Field 'retention_period' has been deprecated since provider version 1.213.0. New field 'ttl' instead.",
 			},
 			"max_split_shard_count": {
@@ -186,6 +186,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	request["shardCount"] = d.Get("shard_count")
+	request["ttl"] = 30
 	if v, ok := d.GetOk("retention_period"); ok {
 		request["ttl"] = v
 	}
@@ -268,7 +269,7 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("mode", objectRaw["mode"])
 	d.Set("shard_count", objectRaw["shardCount"])
 	d.Set("telemetry_type", objectRaw["telemetryType"])
-	d.Set("ttl", objectRaw["ttl"])
+	d.Set("ttl", formatInt(objectRaw["ttl"]))
 	d.Set("logstore_name", objectRaw["logstoreName"])
 	encryptConfMaps := make([]map[string]interface{}, 0)
 	encryptConfMap := make(map[string]interface{})
@@ -326,6 +327,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	body = make(map[string]interface{})
 	hostMap = make(map[string]*string)
 	hostMap["project"] = tea.String(parts[0])
+	request["ttl"] = 30
 	if v, ok := d.GetOk("ttl"); ok {
 		request["ttl"] = v
 	}
