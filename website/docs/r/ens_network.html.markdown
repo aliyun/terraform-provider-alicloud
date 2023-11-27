@@ -12,7 +12,7 @@ Provides a ENS Network resource.
 
 For information about ENS Network and how to use it, see [What is Network](https://www.alibabacloud.com/help/en/ens/developer-reference/api-createnetwork-1).
 
--> **NOTE:** Available since v1.213.0.
+-> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
 
@@ -31,26 +31,26 @@ provider "alicloud" {
 resource "alicloud_ens_network" "default" {
   network_name = var.name
 
-  description   = var.name
+  description   = "NetworkDescription_autotest"
   cidr_block    = "192.168.2.0/24"
-  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
+  ens_region_id = "cn-hangzhou-44"
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_block` - (Required, ForceNew) The network segment of the network. You can use the following network segments or a subset of them as the network segment: `10.0.0.0/8` (default), `172.16.0.0/12`, `192.168.0.0/16`.
-* `description` - (Optional) Description information.Rules:It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`. Example value: this is my first network.
+* `cidr_block` - (Required, ForceNew) The network segment of the network. You can use the following network segments or a subset of them as the network segment:10.0.0.0/8 (default)172.16.0.0/12192.168.0.0/16.
+* `description` - (Optional) Description information.Rules:It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with http:// or https://Example value: this is my first network.
 * `ens_region_id` - (Required, ForceNew) Ens node IDExample value: cn-beijing-telecom.
-* `network_name` - (Optional) Name of the network instanceThe naming rules are as follows: 1. Length is 2~128 English or Chinese characters; 2. It must start with a large or small letter or Chinese, not with `http://` and `https://`; 3. Can contain numbers, colons (:), underscores (_), or dashes (-).
+* `network_name` - (Optional) Name of the network instanceThe naming rules are as follows:1. Length is 2~128 English or Chinese characters2. It must start with a large or small letter or Chinese, not with http:// and https://3. Can contain numbers, colons (:), underscores (_), or dashes (-)Example value: abc.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - Creation time, timestamp (MS).
-* `status` - The status of the network instance. Pending: Configuring, Available: Available.
+* `status` - The status of the network instance. Pending: ConfiguringAvailable: Available.
 
 ## Timeouts
 
