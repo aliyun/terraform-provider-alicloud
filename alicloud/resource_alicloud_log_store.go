@@ -43,8 +43,10 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				Computed: true,
 			},
 			"enable_tracking": {
-				Type:     schema.TypeBool,
-				Optional: true,
+				Type:          schema.TypeBool,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"enable_web_tracking"},
 			},
 			"encrypt_conf": {
 				Type:     schema.TypeList,
@@ -131,27 +133,33 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'project' has been deprecated since provider version 1.213.0. New field 'project_name' instead.",
+				Deprecated: "Field 'project' has been deprecated since provider version 1.214.0. New field 'project_name' instead.",
 				ForceNew:   true,
 			},
 			"name": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'name' has been deprecated since provider version 1.213.0. New field 'logstore_name' instead.",
+				Deprecated: "Field 'name' has been deprecated since provider version 1.214.0. New field 'logstore_name' instead.",
 				ForceNew:   true,
 			},
 			"retention_period": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'retention_period' has been deprecated since provider version 1.213.0. New field 'ttl' instead.",
+				Deprecated: "Field 'retention_period' has been deprecated since provider version 1.214.0. New field 'ttl' instead.",
 			},
 			"max_split_shard_count": {
 				Type:       schema.TypeInt,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'max_split_shard_count' has been deprecated since provider version 1.213.0. New field 'max_split_shard' instead.",
+				Deprecated: "Field 'max_split_shard_count' has been deprecated since provider version 1.214.0. New field 'max_split_shard' instead.",
+			},
+			"enable_web_tracking": {
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'enable_web_tracking' has been deprecated since provider version 1.214.0. New field 'enable_tracking' instead.",
 			},
 		},
 	}
@@ -207,6 +215,10 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOkExists("append_meta"); ok {
 		request["appendMeta"] = v
 	}
+	if v, ok := d.GetOkExists("enable_web_tracking"); ok {
+		request["enable_tracking"] = v
+	}
+
 	if v, ok := d.GetOkExists("enable_tracking"); ok {
 		request["enable_tracking"] = v
 	}
@@ -304,6 +316,7 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("name", d.Get("logstore_name"))
 	d.Set("retention_period", d.Get("ttl"))
 	d.Set("max_split_shard_count", d.Get("max_split_shard"))
+	d.Set("enable_web_tracking", d.Get("enable_tracking"))
 	return nil
 }
 
@@ -331,6 +344,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("ttl"); ok {
 		request["ttl"] = v
 	}
+
 	if d.HasChange("ttl") {
 		update = true
 	}
@@ -359,6 +373,11 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("max_split_shard") {
 		update = true
 		request["maxSplitShard"] = d.Get("max_split_shard")
+	}
+
+	if d.HasChange("enable_web_tracking") {
+		update = true
+		request["enable_tracking"] = d.Get("enable_web_tracking")
 	}
 
 	if d.HasChange("enable_tracking") {

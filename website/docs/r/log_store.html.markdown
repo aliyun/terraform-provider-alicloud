@@ -12,7 +12,7 @@ Provides a SLS Log Store resource.
 
 For information about SLS Log Store and how to use it, see [What is Log Store](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available since v1.213.0.
+-> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
 
@@ -73,10 +73,11 @@ The following arguments are supported:
 * `ttl` - (Required) Ttl.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
-* `project` - (Deprecated since v1.213.0). Field 'project' has been deprecated from provider version 1.213.0. New field 'project_name' instead.
-* `name` - (Deprecated since v1.213.0). Field 'name' has been deprecated from provider version 1.213.0. New field 'logstore_name' instead.
-* `retention_period` - (Deprecated since v1.213.0). Field 'retention_period' has been deprecated from provider version 1.213.0. New field 'ttl' instead.
-* `max_split_shard_count` - (Deprecated since v1.213.0). Field 'max_split_shard_count' has been deprecated from provider version 1.213.0. New field 'max_split_shard' instead.
+* `project` - (Deprecated since v1.214.0). Field 'project' has been deprecated from provider version 1.214.0. New field 'project_name' instead.
+* `name` - (Deprecated since v1.214.0). Field 'name' has been deprecated from provider version 1.214.0. New field 'logstore_name' instead.
+* `retention_period` - (Deprecated since v1.214.0). Field 'retention_period' has been deprecated from provider version 1.214.0. New field 'ttl' instead.
+* `max_split_shard_count` - (Deprecated since v1.214.0). Field 'max_split_shard_count' has been deprecated from provider version 1.214.0. New field 'max_split_shard' instead.
+* `enable_web_tracking` - (Deprecated since v1.214.0). Field 'enable_web_tracking' has been deprecated from provider version 1.214.0. New field 'enable_tracking' instead.
 
 ## Attributes Reference
 
