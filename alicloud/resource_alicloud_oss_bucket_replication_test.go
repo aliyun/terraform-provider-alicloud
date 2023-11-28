@@ -30,7 +30,7 @@ func (s *OssServiceWrapper) DescribeOssBucketReplication(id string) (response st
 	return response, err
 }
 
-func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
+func TestAccAliCloudOssBucketReplicationBasic(t *testing.T) {
 	var v string
 
 	resourceId := "alicloud_oss_bucket_replication.default"
@@ -74,8 +74,9 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 					},
 					"destination": []map[string]interface{}{
 						{
-							"bucket":   "${local.bucket_dest}",
-							"location": "${local.location}",
+							"bucket":        "${local.bucket_dest}",
+							"location":      "${local.location}",
+							"transfer_type": "",
 						},
 					},
 					"sync_role": "${local.role_name}",
@@ -123,6 +124,72 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":                        "${local.bucket_src}",
+					"action":                        "PUT,DELETE",
+					"historical_object_replication": "enabled",
+					"prefix_set": []map[string]interface{}{
+						{
+							"prefixes": []string{
+								"1230",
+								"456",
+								"789",
+							},
+						},
+					},
+					"destination": []map[string]interface{}{
+						{
+							"bucket":        "${local.bucket_dest}",
+							"location":      "${local.location}",
+							"transfer_type": "",
+						},
+					},
+					"sync_role": "${local.role_name}",
+					"encryption_configuration": []map[string]interface{}{
+						{
+							"replica_kms_key_id": "${local.kms_key_id}",
+						},
+					},
+					"source_selection_criteria": []map[string]interface{}{
+						{
+							"sse_kms_encrypted_objects": []map[string]interface{}{
+								{
+									"status": "Enabled",
+								},
+							},
+						},
+					},
+					"progress": []map[string]interface{}{
+						{},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                        name + "-t-1",
+						"action":                        "PUT,DELETE",
+						"destination.#":                 "1",
+						"destination.0.bucket":          name + "-t-2",
+						"destination.0.location":        "oss-" + os.Getenv("ALICLOUD_REGION"),
+						"destination.0.transfer_type":   "",
+						"historical_object_replication": "enabled",
+						"rule_id":                       CHECKSET,
+						"status":                        CHECKSET,
+						"sync_role":                     name + "-t-ramrole",
+						"encryption_configuration.#":    "1",
+						"encryption_configuration.0.replica_kms_key_id":                  CHECKSET,
+						"source_selection_criteria.#":                                    "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.#":        "1",
+						"source_selection_criteria.0.sse_kms_encrypted_objects.0.status": "Enabled",
+						"prefix_set.#":            "1",
+						"prefix_set.0.prefixes.#": "3",
+						"prefix_set.0.prefixes.0": "1230",
+						"prefix_set.0.prefixes.1": "456",
+						"prefix_set.0.prefixes.2": "789",
+						"progress.#":              "1",
+					}),
+				),
 			},
 		},
 	})
