@@ -30,7 +30,7 @@ func resourceAliCloudCloudFirewallAddressBook() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip", "tag"}, false),
+				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag"}, false),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -131,7 +131,6 @@ func resourceAliCloudCloudFirewallAddressBookCreate(d *schema.ResourceData, meta
 		if fmt.Sprint(response["Message"]) == "not buy user" {
 			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
 			return resource.RetryableError(fmt.Errorf("%s", response))
-
 		}
 
 		return nil
@@ -210,6 +209,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("auto_add_tag_ecs") {
 		update = true
+
 		if v, ok := d.GetOkExists("auto_add_tag_ecs"); ok {
 			request["AutoAddTagEcs"] = v
 		}
@@ -217,6 +217,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("tag_relation") {
 		update = true
+
 		if v, ok := d.GetOk("tag_relation"); ok {
 			request["TagRelation"] = v
 		}
@@ -231,6 +232,7 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("ecs_tags") {
 		update = true
+
 		if v, ok := d.GetOk("ecs_tags"); ok {
 			for i, tagItem := range v.(*schema.Set).List() {
 				tagItemArg := tagItem.(map[string]interface{})
@@ -271,7 +273,6 @@ func resourceAliCloudCloudFirewallAddressBookUpdate(d *schema.ResourceData, meta
 			if fmt.Sprint(response["Message"]) == "not buy user" {
 				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
 				return resource.RetryableError(fmt.Errorf("%s", response))
-
 			}
 
 			return nil
@@ -324,7 +325,6 @@ func resourceAliCloudCloudFirewallAddressBookDelete(d *schema.ResourceData, meta
 		if fmt.Sprint(response["Message"]) == "not buy user" {
 			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
 			return resource.RetryableError(fmt.Errorf("%s", response))
-
 		}
 
 		return nil

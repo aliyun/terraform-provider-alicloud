@@ -79,8 +79,9 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 	}
 
 	request := map[string]interface{}{
-		"PageSize":    PageSizeLarge,
+		"GroupType":   "all",
 		"CurrentPage": 1,
+		"PageSize":    PageSizeLarge,
 	}
 
 	for {
