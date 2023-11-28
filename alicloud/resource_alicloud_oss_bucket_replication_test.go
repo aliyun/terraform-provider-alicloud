@@ -30,7 +30,7 @@ func (s *OssServiceWrapper) DescribeOssBucketReplication(id string) (response st
 	return response, err
 }
 
-func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
+func TestAccAliCloudOssBucketReplicationBasic(t *testing.T) {
 	var v string
 
 	resourceId := "alicloud_oss_bucket_replication.default"
@@ -74,8 +74,9 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 					},
 					"destination": []map[string]interface{}{
 						{
-							"bucket":   "${local.bucket_dest}",
-							"location": "${local.location}",
+							"bucket":        "${local.bucket_dest}",
+							"location":      "${local.location}",
+							"transfer_type": "",
 						},
 					},
 					"sync_role": "${local.role_name}",
@@ -92,6 +93,9 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 								},
 							},
 						},
+					},
+					"progress": []map[string]interface{}{
+						{},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -116,6 +120,7 @@ func TestAccAlicloudOssBucketReplicationBasic(t *testing.T) {
 						"prefix_set.0.prefixes.0": "1230",
 						"prefix_set.0.prefixes.1": "456",
 						"prefix_set.0.prefixes.2": "789",
+						"progress.#":              "1",
 					}),
 				),
 			},

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -501,11 +502,12 @@ func resourceAlicloudOssBucketReplicationCreate(d *schema.ResourceData, meta int
 	var xmlString string = string(bs[:])
 	var requestInfo *oss.Client
 	var replicationAlreadyExist bool
+	var respHeader http.Header
 
 	replicationAlreadyExist = false
 	raw, err := client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		requestInfo = ossClient
-		return nil, ossClient.PutBucketReplication(bucket, xmlString)
+		return nil, ossClient.PutBucketReplication(bucket, xmlString, oss.GetResponseHeader(&respHeader))
 	})
 	if err != nil {
 		if !IsExpectedErrors(err, []string{"BucketReplicationAlreadyExist"}) {
@@ -519,13 +521,22 @@ func resourceAlicloudOssBucketReplicationCreate(d *schema.ResourceData, meta int
 		"ReplicationAlreadyExist":  replicationAlreadyExist,
 	})
 
-	//OSS server does not return rule-id and only supports one rule currently, obtains rule id through GetBucketReplication
-	rc, err = retrieveReplicationRules(client, bucket)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, bucket, "retrieveReplicationRules", AliyunOssGoSdk)
+	var ruleId string
+	if respHeader != nil {
+		ruleId = respHeader.Get("x-oss-replication-rule-id")
+	} else {
+		ruleId = ""
+	}
+	if len(ruleId) == 0 {
+		//OSS server does not return rule-id and only supports one rule currently, obtains rule id through GetBucketReplication
+		rc, err = retrieveReplicationRules(client, bucket)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, bucket, "retrieveReplicationRules", AliyunOssGoSdk)
+		}
+		ruleId = rc.Rules[0].ID
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", bucket, COLON_SEPARATED, rc.Rules[0].ID))
+	d.SetId(fmt.Sprintf("%s%s%s", bucket, COLON_SEPARATED, ruleId))
 	return resourceAlicloudOssBucketReplicationRead(d, meta)
 }
 
