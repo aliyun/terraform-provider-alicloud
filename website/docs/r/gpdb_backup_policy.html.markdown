@@ -1,5 +1,5 @@
 ---
-subcategory: "GPDB"
+subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_backup_policy"
 description: |-

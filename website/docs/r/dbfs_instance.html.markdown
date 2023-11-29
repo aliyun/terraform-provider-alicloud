@@ -1,5 +1,5 @@
 ---
-subcategory: "DBFS"
+subcategory: "Database File System (DBFS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dbfs_instance"
 description: |-
