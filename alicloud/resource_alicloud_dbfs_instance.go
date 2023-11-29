@@ -127,7 +127,7 @@ func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'instance_name' has been deprecated since provider version 1.212.0. New field 'fs_name' instead.",
+				Deprecated: "Field 'instance_name' has been deprecated since provider version 1.214.0. New field 'fs_name' instead.",
 			},
 		},
 	}
@@ -664,7 +664,7 @@ func resourceAliCloudDbfsDbfsInstanceDelete(d *schema.ResourceData, meta interfa
 	}
 
 	dbfsServiceV2 := DbfsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, dbfsServiceV2.DbfsDbfsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

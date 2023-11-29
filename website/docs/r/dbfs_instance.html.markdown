@@ -1,5 +1,5 @@
 ---
-subcategory: "DBFS"
+subcategory: "Database File System (DBFS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dbfs_instance"
 description: |-
@@ -27,28 +27,36 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-resource "alicloud_dbfs_instance" "example" {
-  category          = "standard"
-  zone_id           = "cn-hangzhou-i"
-  performance_level = "PL1"
-  instance_name     = var.name
-  size              = 100
+
+resource "alicloud_dbfs_instance" "default" {
+  category                = "standard"
+  zone_id                 = "cn-hangzhou-i"
+  size                    = "20"
+  performance_level       = "PL1"
+  fs_name                 = "rmc-test"
+  used_scene              = "MongoDB"
+  instance_type           = "dbfs.small"
+  raid_stripe_unit_number = "2"
+  advanced_features       = "{\"memorySize\":1024,\"pageCacheSize\":128,\"cpuCoreCount\":0.5}"
+  kms_key_id              = "00000000-0000-0000-0000-000000000000"
+  snapshot_id             = "none"
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `advanced_features` - (Optional, Computed, Available since v1.212.0) The number of CPU cores and the upper limit of memory used by the database file storage instance.
+* `advanced_features` - (Optional, Computed) The number of CPU cores and the upper limit of memory used by the database file storage instance.
 * `category` - (Required, ForceNew) Category of database file system.
 * `delete_snapshot` - (Optional) Whether to delete the original snapshot after creating DBFS using the snapshot.
 * `enable_raid` - (Optional, ForceNew) Whether to create DBFS in RAID mode. If created in RAID mode, the capacity is at least 66GB.Valid values: true or false. Default value: false.
 * `encryption` - (Optional, ForceNew) Whether to encrypt DBFS.Valid values: true or false. Default value: false.
-* `fs_name` - (Required, Available since v1.212.0) Database file system name.
-* `instance_type` - (Optional, Available since v1.212.0) Instance type. Value range:
+* `fs_name` - (Required) Database file system name.
+* `instance_type` - (Optional) Instance type. Value range:
   - dbfs.small
   - dbfs.medium
   - dbfs.large (default)
+.
 * `kms_key_id` - (Optional, ForceNew) The ID of the KMS key used by DBFS.
 * `performance_level` - (Optional, Computed) When you create a DBFS instance, set the performance level of the DBFS instance. Value range:
   - PL0: single disk maximum random read-write IOPS 10000
@@ -58,21 +66,14 @@ The following arguments are supported:
 * `raid_stripe_unit_number` - (Optional, ForceNew) Number of strips. Required when the EnableRaid parameter is true.Value range: Currently, only 8 stripes are supported.
 * `size` - (Required) Size of database file system, unit GiB.
 * `snapshot_id` - (Optional, ForceNew, Computed) The ID of the snapshot used to create the DBFS instance.
-* `used_scene` - (Optional, Available since v1.212.0) The usage scenario of DBFS. Value range:
+* `used_scene` - (Optional) The usage scenario of DBFS. Value range:
   - MySQL 5.7
   - PostgreSQL
   - MongoDB.
 * `zone_id` - (Required, ForceNew) The ID of the zone to which the database file system belongs.
-* `ecs_list` - (Optional, Deprecated from v1.156.0) The collection of ECS instances mounted to the Database file system. See [`ecs_list`](#ecs_list) below.  **NOTE:** Field 'ecs_list' has been deprecated from provider version 1.156.0 and it will be removed in the future version. Please use the new resource 'alicloud_dbfs_instance_attachment' to attach ECS and DBFS. See [`ecs_list`](#ecs_list) below.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-
-### `ecs_list`
-
-The ecs_list supports the following:
-* `ecs_id` - (Optional) The ID of the ECS instance.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
-* `instance_name` - (Deprecated since v1.212.0). Field 'instance_name' has been deprecated from provider version 1.212.0. New field 'fs_name' instead.
+* `instance_name` - (Deprecated since v1.214.0). Field 'instance_name' has been deprecated from provider version 1.214.0. New field 'fs_name' instead.
 
 ## Attributes Reference
 
