@@ -1,5 +1,5 @@
 ---
-subcategory: "Hologram"
+subcategory: "Hologres (Hologram)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_hologram_instance"
 description: |-
