@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -283,16 +282,6 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"snapshot_backup_type": "Flash",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"snapshot_backup_type": "Flash",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"ssl_action": "Open",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -333,22 +322,23 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tde_status":     "enabled",
-					"encryptor_name": "aes-256-cbc",
-					"encryption_key": "${alicloud_kms_key.default.id}",
-					"role_arn":       "acs:ram::" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":role/aliyunrdsinstanceencryptiondefaultrole",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tde_status":     "enabled",
-						"encryptor_name": "aes-256-cbc",
-						"encryption_key": CHECKSET,
-						"role_arn":       CHECKSET,
-					}),
-				),
-			},
+			// There is an OpenAPI bug
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tde_status":     "enabled",
+			//		"encryptor_name": "aes-256-cbc",
+			//		"encryption_key": "${alicloud_kms_key.default.id}",
+			//		"role_arn":       "acs:ram::" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":role/aliyunrdsinstanceencryptiondefaultrole",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tde_status":     "enabled",
+			//			"encryptor_name": "aes-256-cbc",
+			//			"encryption_key": CHECKSET,
+			//			"role_arn":       CHECKSET,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
@@ -539,11 +529,21 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_interval": "15",
+					"backup_retention_period": "7",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_interval": "15",
+						"backup_retention_period": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_interval": "-1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_interval": "-1",
 					}),
 				),
 			},
@@ -687,6 +687,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"backup_time":               "11:00Z-12:00Z",
 					"backup_period":             []string{"Wednesday"},
+					"backup_retention_period":   "7",
 					"backup_interval":           "15",
 					"snapshot_backup_type":      "Flash",
 					"ssl_action":                "Open",
@@ -727,6 +728,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 						"resource_group_id":         CHECKSET,
 						"backup_time":               "11:00Z-12:00Z",
 						"backup_period.#":           "1",
+						"backup_retention_period":   "7",
 						"backup_interval":           "15",
 						"snapshot_backup_type":      "Flash",
 						"ssl_status":                "Open",
@@ -750,22 +752,23 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 }
 
 var AliCloudMongoDBInstanceMap = map[string]string{
-	"storage_engine":      CHECKSET,
-	"storage_type":        CHECKSET,
-	"vpc_id":              CHECKSET,
-	"vswitch_id":          CHECKSET,
-	"zone_id":             CHECKSET,
-	"replication_factor":  CHECKSET,
-	"network_type":        CHECKSET,
-	"readonly_replicas":   CHECKSET,
-	"resource_group_id":   CHECKSET,
-	"backup_time":         CHECKSET,
-	"backup_interval":     CHECKSET,
-	"maintain_start_time": CHECKSET,
-	"maintain_end_time":   CHECKSET,
-	"retention_period":    CHECKSET,
-	"replica_set_name":    CHECKSET,
-	"ssl_status":          CHECKSET,
+	"storage_engine":          CHECKSET,
+	"storage_type":            CHECKSET,
+	"vpc_id":                  CHECKSET,
+	"vswitch_id":              CHECKSET,
+	"zone_id":                 CHECKSET,
+	"replication_factor":      CHECKSET,
+	"network_type":            CHECKSET,
+	"readonly_replicas":       CHECKSET,
+	"resource_group_id":       CHECKSET,
+	"backup_time":             CHECKSET,
+	"backup_retention_period": CHECKSET,
+	"backup_interval":         CHECKSET,
+	"maintain_start_time":     CHECKSET,
+	"maintain_end_time":       CHECKSET,
+	"retention_period":        CHECKSET,
+	"replica_set_name":        CHECKSET,
+	"ssl_status":              CHECKSET,
 }
 
 func AliCloudMongoDBInstanceBasicDependence0(name string) string {

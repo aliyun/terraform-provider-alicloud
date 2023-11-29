@@ -726,6 +726,10 @@ func (s *MongoDBService) MotifyMongoDBBackupPolicy(d *schema.ResourceData) error
 	request["PreferredBackupTime"] = backupTime
 	request["PreferredBackupPeriod"] = backupPeriod
 
+	if v, ok := d.GetOkExists("backup_retention_period"); ok {
+		request["BackupRetentionPeriod"] = v
+	}
+
 	if v, ok := d.GetOk("backup_interval"); ok {
 		request["BackupInterval"] = v
 	}

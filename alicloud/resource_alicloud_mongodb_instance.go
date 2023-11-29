@@ -181,6 +181,11 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"backup_retention_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"backup_interval": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -537,6 +542,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
+	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
@@ -921,13 +927,14 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_interval") || d.HasChange("snapshot_backup_type") {
+	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_interval") || d.HasChange("snapshot_backup_type") {
 		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
 
 		d.SetPartial("backup_time")
 		d.SetPartial("backup_period")
+		d.SetPartial("backup_retention_period")
 		d.SetPartial("backup_interval")
 		d.SetPartial("snapshot_backup_type")
 	}
