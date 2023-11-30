@@ -21,8 +21,9 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tfexample"
+  default = "tf-example"
 }
+
 resource "alicloud_resource_manager_resource_share" "example" {
   resource_share_name = var.name
 }
@@ -39,14 +40,16 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Resource Share.
-* `resource_share_owner` - The owner of resource share.
-* `status` - The status of resource share.
+* `resource_share_owner` - The owner of the Resource Share.
+* `status` - The status of the Resource Share.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `delete` - (Defaults to 11 mins) Used when delete the Resource Share.
+* `create` - (Defaults to 5 mins) Used when create the Resource Share.
+* `update` - (Defaults to 5 mins) Used when update the Resource Share.
+* `delete` - (Defaults to 15 mins) Used when delete the Resource Share.
 
 ## Import
 

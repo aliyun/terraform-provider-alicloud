@@ -19,10 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerResourceShare_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_share.default"
-	ra := resourceAttrInit(resourceId, AlicloudResourceManagerResourceShareMap)
+	ra := resourceAttrInit(resourceId, AliCloudResourceManagerResourceShareMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ResourcesharingService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeResourceManagerResourceShare")
@@ -30,13 +30,11 @@ func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccResourceManagerResourceShare%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudResourceManagerResourceShareBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudResourceManagerResourceShareBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			testAccPreCheckEnterpriseAccountEnabled(t)
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  nil,
@@ -52,11 +50,6 @@ func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_share_name": name + "update",
 				}),
@@ -66,24 +59,29 @@ func TestAccAlicloudResourceManagerResourceShare_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
 
-var AlicloudResourceManagerResourceShareMap = map[string]string{
+var AliCloudResourceManagerResourceShareMap0 = map[string]string{
 	"resource_share_owner": CHECKSET,
-	"status":               "Active",
+	"status":               CHECKSET,
 }
 
-func AlicloudResourceManagerResourceShareBasicDependence(name string) string {
+func AliCloudResourceManagerResourceShareBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
+	variable "name" {
+		default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
+func TestUnitAliCloudResourceManagerResourceShare(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_resource_manager_resource_share"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_resource_manager_resource_share"].Schema).Data(nil, nil)
@@ -154,7 +152,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareCreate(dInit, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -182,7 +180,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareCreate(dInit, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -209,7 +207,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareUpdate(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateResourceShare
@@ -247,7 +245,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareUpdate(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -286,7 +284,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareRead(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -305,7 +303,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudResourceManagerResourceShareDelete(dExisted, rawClient)
+	err = resourceAliCloudResourceManagerResourceShareDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -340,7 +338,7 @@ func TestUnitAlicloudResourceManagerResourceShare(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudResourceManagerResourceShareDelete(dExisted, rawClient)
+		err := resourceAliCloudResourceManagerResourceShareDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
