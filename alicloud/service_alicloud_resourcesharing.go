@@ -16,36 +16,68 @@ type ResourcesharingService struct {
 
 func (s *ResourcesharingService) DescribeResourceManagerResourceShare(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListResourceShares"
+
 	conn, err := s.client.NewRessharingClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListResourceShares"
+
 	request := map[string]interface{}{
-		"RegionId":         s.client.RegionId,
-		"ResourceShareIds": []string{id},
 		"ResourceOwner":    "Self",
+		"ResourceShareIds": []string{id},
+		"MaxResults":       1,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return
-	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.ResourceShares", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceShares", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
-	} else {
-		if v.([]interface{})[0].(map[string]interface{})["ResourceShareId"].(string) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager", id)), NotFoundWithResponse, response)
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-10"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.ResourceShares", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceShares", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceShare", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ResourceShareId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceShare", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
@@ -65,6 +97,7 @@ func (s *ResourcesharingService) ResourceManagerResourceShareStateRefreshFunc(id
 				return object, object["ResourceShareStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ResourceShareStatus"].(string)))
 			}
 		}
+
 		return object, object["ResourceShareStatus"].(string), nil
 	}
 }
