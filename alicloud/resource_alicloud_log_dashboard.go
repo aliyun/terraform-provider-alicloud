@@ -143,18 +143,45 @@ func resourceAlicloudLogDashboardRead(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 	}
+
+	// 先取出charts
 	charts := dashboard["charts"].([]interface{})
+	// 字段清理
 	for k, v := range charts {
+		// 将charts中的action字段删除
 		if action, actionOK := v.(map[string]interface{})["action"]; actionOK {
 			if action == nil {
 				delete(charts[k].(map[string]interface{}), "action")
 			}
 		}
+		// 如果有basicOptions字段请basicOptions中的displayName字段存在，则将display字段中的displayName字段删除
+		var display, basicOptions interface{}
+		var ok bool
+		if display, ok = v.(map[string]interface{})["display"]; !ok {
+			continue
+		} else if basicOptions, ok = display.(map[string]interface{})["basicOptions"]; !ok {
+			continue
+		} else if _, ok = basicOptions.(map[string]interface{})["displayName"]; !ok {
+			continue
+		} else if _, ok = display.(map[string]interface{})["displayName"]; ok {
+			delete(display.(map[string]interface{}), "displayName")
+		}
 	}
-	sort.Slice(charts, func(i, j int) bool {
-		return charts[i].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64) < charts[j].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64)
+
+	// 再将charts按照yPos排序
+	sort.SliceStable(charts, func(i, j int) bool {
+		yi := charts[i].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64)
+		yj := charts[j].(map[string]interface{})["display"].(map[string]interface{})["yPos"].(float64)
+		xi := charts[i].(map[string]interface{})["display"].(map[string]interface{})["xPos"].(float64)
+		xj := charts[j].(map[string]interface{})["display"].(map[string]interface{})["xPos"].(float64)
+		if yj != yi {
+			return yi < yj
+		}
+		return xi < xj
 	})
-	charlist, err := json.Marshal(dashboard["charts"])
+
+	// 最后将charts转为json字符串
+	charlist, err := json.Marshal(charts)
 	if err != nil {
 		return WrapError(err)
 	}
