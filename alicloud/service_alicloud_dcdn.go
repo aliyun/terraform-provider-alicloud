@@ -124,44 +124,68 @@ func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string)
 
 func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeDcdnDomainConfigs"
+
 	conn, err := s.client.NewDcdnClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
+
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
-	action := "DescribeDcdnDomainConfigs"
+
 	request := map[string]interface{}{
 		"DomainName":    parts[0],
 		"FunctionNames": parts[1],
+		"ConfigId":      parts[2],
 	}
-	if parts[2] != "" {
-		request["ConfigId"] = parts[2]
-	}
+
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("DcdnDomainConfig", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
+
+	resp, err := jsonpath.Get("$.DomainConfigs.DomainConfig", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DomainConfigs.DomainConfig", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DCDN:DomainConfig", id)), NotFoundWithResponse, response)
-	} else if len(v.([]interface{})) > 0 {
-		object = v.([]interface{})[0].(map[string]interface{})
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundWithResponse, response)
 	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["FunctionName"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["ConfigId"]) == parts[2] {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
