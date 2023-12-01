@@ -120,7 +120,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
+				ValidateFunc: IntBetween(0, 1024),
 			},
 			"credit_specification": {
 				Type:     schema.TypeString,
