@@ -3518,7 +3518,7 @@ func (client *AliyunClient) NewSasClient() (*rpc.Client, error) {
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = "sas.aliyuncs.com"
+			endpoint = "tds.aliyuncs.com"
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
