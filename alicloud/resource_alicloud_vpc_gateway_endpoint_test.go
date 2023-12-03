@@ -10,11 +10,11 @@ import (
 )
 
 // Test Vpc GatewayEndpoint. >>> Resource test cases, automatically generated.
-// Case 3630
-func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
+// Case 3621
+func TestAccAlicloudVpcGatewayEndpoint_basic3621(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_gateway_endpoint.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3630)
+	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3621)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcGatewayEndpoint")
@@ -22,7 +22,7 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcgatewayendpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcGatewayEndpointBasicDependence3630)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcGatewayEndpointBasicDependence3621)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -34,15 +34,15 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                "${alicloud_vpc.defaultVpc.id}",
-					"service_name":          "${var.domain}",
+					"service_name":          "${var.demoin}",
+					"vpc_id":                "${alicloud_vpc.defaultvpc.id}",
 					"gateway_endpoint_name": name,
 					"policy_document":       "{ \\\"Version\\\" : \\\"1\\\", \\\"Statement\\\" : [ { \\\"Effect\\\" : \\\"Allow\\\", \\\"Resource\\\" : [ \\\"*\\\" ], \\\"Action\\\" : [ \\\"*\\\" ], \\\"Principal\\\" : [ \\\"*\\\" ] } ] }",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":                CHECKSET,
 						"service_name":          CHECKSET,
+						"vpc_id":                CHECKSET,
 						"gateway_endpoint_name": name,
 						"policy_document":       "{ \"Version\" : \"1\", \"Statement\" : [ { \"Effect\" : \"Allow\", \"Resource\" : [ \"*\" ], \"Action\" : [ \"*\" ], \"Principal\" : [ \"*\" ] } ] }",
 					}),
@@ -70,11 +70,12 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"policy_document": "{ \\\"Version\\\" : \\\"1\\\", \\\"Statement\\\" : [ { \\\"Effect\\\" : \\\"Allow\\\", \\\"Resource\\\" : [ \\\"*\\\" ], \\\"Action\\\" : [ \\\"*\\\" ], \\\"Principal\\\" : [ \\\"*\\\" ] } ] }",
+					"route_tables": []string{
+						"${alicloud_route_table.defaultRt.id}", "${alicloud_route_table.defaultrt1.id}", "${alicloud_route_table.defaultrt2.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"policy_document": "{ \"Version\" : \"1\", \"Statement\" : [ { \"Effect\" : \"Allow\", \"Resource\" : [ \"*\" ], \"Action\" : [ \"*\" ], \"Principal\" : [ \"*\" ] } ] }",
+						"route_tables.#": "3",
 					}),
 				),
 			},
@@ -122,19 +123,21 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"gateway_endpoint_descrption": "test-gateway-endpoint",
 					"gateway_endpoint_name":       name + "_update",
-					"vpc_id":                      "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
-					"service_name":                "${var.domain}",
+					"service_name":                "${var.demoin}",
+					"vpc_id":                      "${alicloud_vpc.defaultvpc.id}",
 					"policy_document":             "{ \\\"Version\\\" : \\\"1\\\", \\\"Statement\\\" : [ { \\\"Effect\\\" : \\\"Allow\\\", \\\"Resource\\\" : [ \\\"*\\\" ], \\\"Action\\\" : [ \\\"*\\\" ], \\\"Principal\\\" : [ \\\"*\\\" ] } ] }",
+					"resource_group_id":           "${alicloud_vpc.defaultvpc.resource_group_id}",
+					"route_tables":                []string{},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"gateway_endpoint_descrption": "test-gateway-endpoint",
 						"gateway_endpoint_name":       name + "_update",
-						"vpc_id":                      CHECKSET,
-						"resource_group_id":           CHECKSET,
 						"service_name":                CHECKSET,
+						"vpc_id":                      CHECKSET,
 						"policy_document":             "{ \"Version\" : \"1\", \"Statement\" : [ { \"Effect\" : \"Allow\", \"Resource\" : [ \"*\" ], \"Action\" : [ \"*\" ], \"Principal\" : [ \"*\" ] } ] }",
+						"resource_group_id":           CHECKSET,
+						"route_tables.#":              "0",
 					}),
 				),
 			},
@@ -190,37 +193,52 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 	})
 }
 
-var AlicloudVpcGatewayEndpointMap3630 = map[string]string{
+var AlicloudVpcGatewayEndpointMap3621 = map[string]string{
 	"status":      CHECKSET,
 	"create_time": CHECKSET,
 }
 
-func AlicloudVpcGatewayEndpointBasicDependence3630(name string) string {
+func AlicloudVpcGatewayEndpointBasicDependence3621(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
 }
 
-variable "domain" {
+variable "demoin" {
   default = "com.aliyun.cn-hangzhou.oss"
 }
 
-resource "alicloud_vpc" "defaultVpc" {
-  description = "tf-example"
+resource "alicloud_vpc" "defaultvpc" {
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
+resource "alicloud_route_table" "defaultRt" {
+  vpc_id      = alicloud_vpc.defaultvpc.id
+  description = "tf-testacc"
+}
+
+resource "alicloud_route_table" "defaultrt1" {
+  vpc_id      = alicloud_vpc.defaultvpc.id
+  description = "tf-testacc1"
+}
+
+resource "alicloud_route_table" "defaultrt2" {
+  vpc_id      = alicloud_vpc.defaultvpc.id
+  description = "tf-testacc2"
+}
+
+
 `, name)
 }
 
-// Case 3630  twin
-func TestAccAlicloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
+// Case 3621  twin
+func TestAccAlicloudVpcGatewayEndpoint_basic3621_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_gateway_endpoint.default"
-	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3630)
+	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3621)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcGatewayEndpoint")
@@ -228,7 +246,7 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcgatewayendpoint%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcGatewayEndpointBasicDependence3630)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcGatewayEndpointBasicDependence3621)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -242,10 +260,12 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"gateway_endpoint_descrption": "test-mod-description",
 					"gateway_endpoint_name":       name,
-					"vpc_id":                      "${alicloud_vpc.defaultVpc.id}",
-					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"service_name":                "${var.domain}",
+					"service_name":                "${var.demoin}",
+					"vpc_id":                      "${alicloud_vpc.defaultvpc.id}",
 					"policy_document":             "{ \\\"Version\\\" : \\\"1\\\", \\\"Statement\\\" : [ { \\\"Effect\\\" : \\\"Deny\\\", \\\"Resource\\\" : [ \\\"*\\\" ], \\\"Action\\\" : [ \\\"*\\\" ], \\\"Principal\\\" : [ \\\"*\\\" ] } ] }",
+					"resource_group_id":           "${alicloud_vpc.defaultvpc.resource_group_id}",
+					"route_tables": []string{
+						"${alicloud_route_table.defaultRt.id}", "${alicloud_route_table.defaultrt1.id}", "${alicloud_route_table.defaultrt2.id}"},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "Test",
@@ -255,13 +275,24 @@ func TestAccAlicloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"gateway_endpoint_descrption": "test-mod-description",
 						"gateway_endpoint_name":       name,
-						"vpc_id":                      CHECKSET,
-						"resource_group_id":           CHECKSET,
 						"service_name":                CHECKSET,
+						"vpc_id":                      CHECKSET,
 						"policy_document":             "{ \"Version\" : \"1\", \"Statement\" : [ { \"Effect\" : \"Deny\", \"Resource\" : [ \"*\" ], \"Action\" : [ \"*\" ], \"Principal\" : [ \"*\" ] } ] }",
+						"resource_group_id":           CHECKSET,
+						"route_tables.#":              "3",
 						"tags.%":                      "2",
 						"tags.Created":                "TF",
 						"tags.For":                    "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"route_tables": []string{},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"route_tables.#": "0",
 					}),
 				),
 			},

@@ -12,6 +12,8 @@ Provides a VPC Gateway Endpoint Route Table Attachment resource. VPC gateway nod
 
 For information about VPC Gateway Endpoint Route Table Attachment and how to use it, see [What is Gateway Endpoint Route Table Attachment](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/311148).
 
+-> **NOTE:** The resource should not be used with the argument `route_tables` of `alicloud_vpc_gateway_endpoint` at the same time.
+
 -> **NOTE:** Available since v1.208.0.
 
 ## Example Usage
