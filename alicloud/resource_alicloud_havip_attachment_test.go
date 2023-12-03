@@ -173,19 +173,32 @@ func TestAccAliCloudVPCHavipAttachment_basic1(t *testing.T) {
 					"havip_id":      "${alicloud_havip.foo.id}",
 					"instance_id":   "${alicloud_instance.foo.id}",
 					"instance_type": "EcsInstance",
+					"force":         "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"havip_id":      CHECKSET,
 						"instance_id":   CHECKSET,
 						"instance_type": "EcsInstance",
+						"force":         "true",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"force": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
@@ -312,15 +325,16 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count = 1
-  memory_size = 2
+  availability_zone                 = data.alicloud_zones.default.zones.0.id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
-  owners = "system"
+  owners      = "system"
 }
 
 resource "alicloud_vpc" "foo" {
@@ -374,15 +388,16 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_instance_types" "default" {
-   availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  cpu_core_count = 1
-  memory_size = 2
+  availability_zone                 = data.alicloud_zones.default.zones.0.id
+  system_disk_category              = "cloud_efficiency"
+  cpu_core_count                    = 4
+  minimum_eni_ipv6_address_quantity = 1
 }
 
 data "alicloud_images" "default" {
-  name_regex = "^ubuntu"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
-  owners = "system"
+  owners      = "system"
 }
 
 resource "alicloud_vpc" "foo" {

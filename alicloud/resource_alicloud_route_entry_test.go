@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCRouteEntryInstance(t *testing.T) {
+func TestAccAliCloudVPCRouteEntryInstance(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -52,7 +52,7 @@ func TestAccAlicloudVPCRouteEntryInstance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCRouteEntryInterface(t *testing.T) {
+func TestAccAliCloudVPCRouteEntryInterface(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -87,7 +87,7 @@ func TestAccAlicloudVPCRouteEntryInterface(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCRouteEntryNatGateway(t *testing.T) {
+func TestAccAliCloudVPCRouteEntryNatGateway(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -122,7 +122,7 @@ func TestAccAlicloudVPCRouteEntryNatGateway(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCRouteEntryMulti(t *testing.T) {
+func TestAccAliCloudVPCRouteEntryMulti(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default.4"
@@ -158,7 +158,7 @@ func TestAccAlicloudVPCRouteEntryMulti(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCRouteEntryInstance_Ipv6(t *testing.T) {
+func TestAccAliCloudVPCRouteEntryInstance_Ipv6(t *testing.T) {
 	var v *vpc.RouteEntry
 	rand := acctest.RandIntRange(1000, 9999)
 	resourceId := "alicloud_route_entry.default"
@@ -461,10 +461,10 @@ func testAccRouteEntryConfig_instance_ipv6(rand int) string {
 	}
 
 	data "alicloud_instance_types" "default" {
-  		availability_zone                 = "${data.alicloud_zones.default.zones.0.id}"
-  		cpu_core_count                    = 2
-  		minimum_eni_ipv6_address_quantity = 2
-  		system_disk_category              = "cloud_essd"
+		availability_zone                 = "${data.alicloud_zones.default.zones.0.id}"
+		system_disk_category              = "cloud_efficiency"
+		cpu_core_count                    = 4
+		minimum_eni_ipv6_address_quantity = 1
 	}
 
 	data "alicloud_images" "default" {
@@ -501,7 +501,7 @@ func testAccRouteEntryConfig_instance_ipv6(rand int) string {
   		instance_type              = "${data.alicloud_instance_types.default.instance_types.0.id}"
   		internet_charge_type       = "PayByTraffic"
   		internet_max_bandwidth_out = 5
-  		system_disk_category       = "cloud_essd"
+  		system_disk_category       = "cloud_efficiency"
   		image_id                   = "${data.alicloud_images.default.images.0.id}"
   		instance_name              = "${var.name}"
   		ipv6_address_count         = 1
