@@ -209,7 +209,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	dbClusterSSL, err := polarDBService.DescribePolarDBClusterSSL(d)
+	dbClusterSSL, err := polarDBService.DescribePolarDBClusterSSL(dbClusterId)
 
 	var sslConnectionString string
 	var sslExpireTime string

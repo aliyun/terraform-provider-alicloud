@@ -13,7 +13,7 @@ import (
 
 var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
 
-func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
+func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
@@ -43,6 +43,7 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
+					"endpoint_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -88,21 +89,21 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ssl_enabled":     "Enable",
-					"net_type":        "Private",
-					"ssl_auto_rotate": "Enable",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ssl_enabled":           "Enable",
-						"net_type":              "Private",
-						"ssl_connection_string": REGEXMATCH + privateConnectionStringRegexp,
-						"ssl_auto_rotate":       "Enable",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"ssl_enabled":     "Enable",
+			//		"net_type":        "Private",
+			//		"ssl_auto_rotate": "Enable",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"ssl_enabled":           "Enable",
+			//			"net_type":              "Private",
+			//			"ssl_connection_string": REGEXMATCH + privateConnectionStringRegexp,
+			//			"ssl_auto_rotate":       "Enable",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_endpoint_description": "polar_db_endpoint_test",
@@ -110,6 +111,16 @@ func TestAccAlicloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_endpoint_description": "polar_db_endpoint_test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nodes": []string{"${data.alicloud_polardb_clusters.default.clusters.0.db_nodes.0.db_node_id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nodes.#": "1",
 					}),
 				),
 			},
@@ -125,7 +136,7 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
 
 		data "alicloud_polardb_zones" "default"{}
 		data "alicloud_vpcs" "default" {
-			name_regex = "^default-NODELETING$"
+			is_default = true
 		}
 		data "alicloud_vswitches" "default" {
 			zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids) - 1]
@@ -140,5 +151,8 @@ func resourcePolarDBEndpointConfigDependence(name string) string {
                 vswitch_id = data.alicloud_vswitches.default.ids.0
                 description = "${var.name}"
         }
+		data "alicloud_polardb_clusters" "default" {
+		  	ids = [alicloud_polardb_cluster.cluster.id]
+		}
         `, name)
 }

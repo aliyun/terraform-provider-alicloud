@@ -441,6 +441,178 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"endpoint_system": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"db_endpoint_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"db_endpoint_description": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"auto_add_new_nodes": {
+							Type:         schema.TypeString,
+							ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+							Optional:     true,
+							Computed:     true,
+						},
+						"read_write_mode": {
+							Type:         schema.TypeString,
+							ValidateFunc: StringInSlice([]string{"ReadWrite", "ReadOnly"}, false),
+							Optional:     true,
+							Computed:     true,
+						},
+						"endpoint_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"endpoint_config": {
+							Type:     schema.TypeList,
+							MaxItems: 1,
+							Computed: true,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"trx_split_aggressive": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"enable_tp_sql_to_apnode": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"master_accept_reads": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"enable_htap_imci": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"distributed_transaction": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"consist_timeout_action": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"sql_rewrite": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"connection_persist": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"parallel_workers_policy": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"enable_overload_throttle": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"max_parallel_degree": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"consist_level": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"enable_sql_template": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"consist_timeout": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"load_balance_policy": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+									"load_balance_strategy": {
+										Type:     schema.TypeString,
+										Computed: true,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"ssl_system": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"endpoint_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"ssl_enabled": {
+							Type:         schema.TypeString,
+							ValidateFunc: StringInSlice([]string{"Enable", "Disable", "Update"}, false),
+							Optional:     true,
+							Computed:     true,
+						},
+						"ssl_connection_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"net_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"Public", "Private", "Inner"}, false),
+						},
+						"ssl_expire_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ssl_auto_rotate": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
+						},
+						"ssl_certificate_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"db_endpoint_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1202,6 +1374,18 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			d.SetPartial("db_node_id")
 		}
 	}
+	// endpoint
+	if d.HasChange("endpoint_system") {
+		if err := polarDBService.ModifyDBClusterEndpointInfo(d); err != nil {
+			return WrapError(err)
+		}
+	}
+	// ssl
+	if d.HasChange("ssl_system") {
+		if err := polarDBService.ModifyDBClusterSSLInfo(d); err != nil {
+			return WrapError(err)
+		}
+	}
 
 	d.Partial(false)
 	return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -1285,9 +1469,190 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
+	if connectionString == "" {
+		//兼容一下云产品新逻辑，有集群地址返回集群地址的链接串和端口，没有就返回主地址的
+		for _, endpoint := range endpoints {
+			if endpoint.EndpointType == "Primary" {
+				for _, item := range endpoint.AddressItems {
+					if item.NetType == "Private" {
+						connectionString = item.ConnectionString
+						port = item.Port
+						break
+					}
+				}
+			}
+		}
+	}
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
+	endpointIdList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("endpoint_system"); ok {
+		endpointSystem := v.(*schema.Set).List()
+		rebuildEndpointSystem := make([]map[string]interface{}, 0)
+		if len(endpointSystem) >= 1 {
+			// 多个入参中数组排序
+			if len(endpointSystem) > 1 {
+				rebuildEndpointSystem = make([]map[string]interface{}, 2)
+				for _, n := range endpointSystem {
+					if "Cluster" == n.(map[string]interface{})["endpoint_type"] {
+						rebuildEndpointSystem[1] = map[string]interface{}{
+							"db_endpoint_description": n.(map[string]interface{})["db_endpoint_description"],
+							"auto_add_new_nodes":      n.(map[string]interface{})["auto_add_new_nodes"],
+							"read_write_mode":         n.(map[string]interface{})["read_write_mode"],
+							"endpoint_type":           n.(map[string]interface{})["endpoint_type"],
+							"nodes":                   n.(map[string]interface{})["nodes"],
+							"endpoint_config":         n.(map[string]interface{})["endpoint_config"],
+						}
+					}
+					if "Primary" == n.(map[string]interface{})["endpoint_type"] {
+						rebuildEndpointSystem[0] = map[string]interface{}{
+							"db_endpoint_description": n.(map[string]interface{})["db_endpoint_description"],
+							"auto_add_new_nodes":      n.(map[string]interface{})["auto_add_new_nodes"],
+							"read_write_mode":         n.(map[string]interface{})["read_write_mode"],
+							"endpoint_type":           n.(map[string]interface{})["endpoint_type"],
+							"nodes":                   n.(map[string]interface{})["nodes"],
+							"endpoint_config":         n.(map[string]interface{})["endpoint_config"],
+						}
+					}
+				}
+			}
+			// 1个入参
+			if len(rebuildEndpointSystem) < 1 {
+				rebuildEndpointSystem = make([]map[string]interface{}, 1)
+				for i, item := range endpointSystem {
+					if value, ok := item.(map[string]interface{}); ok {
+						rebuildEndpointSystem[i] = value
+					}
+				}
+			}
+			// 通过修改入参获取 endpointId
+			for _, e := range rebuildEndpointSystem {
+				endpointType := e["endpoint_type"].(string)
+				if endpointType == "" {
+					continue
+				}
+				newEndpoint := map[string]interface{}{}
+				if endpointType != "" {
+					for _, v := range endpoints {
+						if endpointType == v.EndpointType {
+							newEndpoint["db_endpoint_id"] = v.DBEndpointId
+							endpointIdList = append(endpointIdList, newEndpoint)
+						}
+					}
+				}
+			}
+		}
+	}
+	endpointItems := make([]map[string]interface{}, 0)
+	for _, endpoint := range endpoints {
+		if len(endpointIdList) > 0 {
+			for _, newEndpoint := range endpointIdList {
+				if endpoint.DBEndpointId == newEndpoint["db_endpoint_id"] {
+					childEndpoint := map[string]interface{}{
+						"db_endpoint_id":          newEndpoint["db_endpoint_id"],
+						"db_endpoint_description": endpoint.DBEndpointDescription,
+						"auto_add_new_nodes":      endpoint.AutoAddNewNodes,
+						"read_write_mode":         endpoint.ReadWriteMode,
+						"endpoint_type":           endpoint.EndpointType,
+						"endpoint_config":         convertPolarDBEndpointConfigSetToMap(endpoint.EndpointConfig),
+					}
+					endpointItems = append(endpointItems, childEndpoint)
+				}
+			}
+		} else {
+			if endpoint.EndpointType != "Custom" {
+				childEndpoint := map[string]interface{}{
+					"db_endpoint_id":          endpoint.DBEndpointId,
+					"db_endpoint_description": endpoint.DBEndpointDescription,
+					"auto_add_new_nodes":      endpoint.AutoAddNewNodes,
+					"read_write_mode":         endpoint.ReadWriteMode,
+					"endpoint_type":           endpoint.EndpointType,
+					"endpoint_config":         convertPolarDBEndpointConfigSetToMap(endpoint.EndpointConfig),
+				}
+				endpointItems = append(endpointItems, childEndpoint)
+			}
+		}
+	}
+	d.Set("endpoint_system", endpointItems)
 
+	sslEndpointIdList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("ssl_system"); ok {
+		SSLSystem := v.(*schema.Set).List()
+		rebuildSSLSystem := make([]map[string]interface{}, 0)
+		if len(SSLSystem) >= 1 {
+			if len(SSLSystem) > 1 {
+				rebuildSSLSystem = make([]map[string]interface{}, 2)
+			} else {
+				rebuildSSLSystem = make([]map[string]interface{}, 1)
+			}
+			for i, item := range SSLSystem {
+				if value, ok := item.(map[string]interface{}); ok {
+					rebuildSSLSystem[i] = value
+				}
+			}
+			for _, e := range rebuildSSLSystem {
+				endpointType := e["endpoint_type"].(string)
+				if endpointType == "" {
+					continue
+				}
+				netType := e["net_type"].(string)
+				newEndpoint := map[string]interface{}{}
+				for _, v := range endpoints {
+					if endpointType == v.EndpointType {
+						newEndpoint["db_endpoint_id"] = v.DBEndpointId
+						newEndpoint["net_type"] = netType
+						newEndpoint["endpoint_type"] = endpointType
+						sslEndpointIdList = append(sslEndpointIdList, newEndpoint)
+					}
+				}
+			}
+		}
+	}
+	dbClusterSSL, err := polarDBService.DescribePolarDBClusterSSL(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	sslItems := make([]map[string]interface{}, 0)
+	childSSL := map[string]interface{}{}
+	if dbClusterSSL.SSLAutoRotate != "" {
+		childSSL["ssl_auto_rotate"] = dbClusterSSL.SSLAutoRotate
+	}
+	if len(dbClusterSSL.Items) > 0 {
+		for _, item := range dbClusterSSL.Items {
+			if len(sslEndpointIdList) > 0 {
+				for _, sslNewEndpoint := range sslEndpointIdList {
+					if item.DBEndpointId == sslNewEndpoint["db_endpoint_id"] {
+						childSSL["endpoint_type"] = sslNewEndpoint["endpoint_type"]
+						childSSL["db_endpoint_id"] = sslNewEndpoint["db_endpoint_id"]
+						childSSL["net_type"] = sslNewEndpoint["net_type"]
+						childSSL["ssl_connection_string"] = item.SSLConnectionString
+						childSSL["ssl_expire_time"] = item.SSLExpireTime
+						sslEnabled := convertPolarDBSSLEnableResponse(item.SSLEnabled)
+						childSSL["ssl_enabled"] = sslEnabled
+						if "Enable" == sslEnabled {
+							childSSL["ssl_certificate_url"] = "https://apsaradb-public.oss-ap-southeast-1.aliyuncs.com/ApsaraDB-CA-Chain.zip?file=ApsaraDB-CA-Chain.zip&regionId=" + polarDBService.client.RegionId
+						} else {
+							childSSL["ssl_certificate_url"] = ""
+						}
+						sslItems = append(sslItems, childSSL)
+					}
+				}
+			} else {
+				childSSL["db_endpoint_id"] = item.DBEndpointId
+				childSSL["ssl_connection_string"] = item.SSLConnectionString
+				childSSL["ssl_expire_time"] = item.SSLExpireTime
+				sslEnabled := convertPolarDBSSLEnableResponse(item.SSLEnabled)
+				childSSL["ssl_enabled"] = sslEnabled
+				if "Enable" == sslEnabled {
+					childSSL["ssl_certificate_url"] = "https://apsaradb-public.oss-ap-southeast-1.aliyuncs.com/ApsaraDB-CA-Chain.zip?file=ApsaraDB-CA-Chain.zip&regionId=" + polarDBService.client.RegionId
+				} else {
+					childSSL["ssl_certificate_url"] = ""
+				}
+				sslItems = append(sslItems, childSSL)
+			}
+		}
+	}
+	d.Set("ssl_system", sslItems)
 	d.Set("vswitch_id", clusterAttribute.VSwitchId)
 	d.Set("pay_type", getChargeType(clusterAttribute.PayType))
 	d.Set("id", clusterAttribute.DBClusterId)
@@ -1370,11 +1735,14 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if v, ok := clusterTDEStatus["TDERegion"]; ok {
 		tdeRegion = fmt.Sprint(v)
 	}
-	roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), tdeRegion)
-	if err != nil {
-		return WrapError(err)
+	// 判断当前 TDE 是否已开启, 开启了再调用该接口
+	if "Disabled" != clusterTDEStatus["TDEStatus"].(string) {
+		roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), tdeRegion)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("role_arn", roleArnObj["RoleArn"])
 	}
-	d.Set("role_arn", roleArnObj["RoleArn"])
 	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -1744,4 +2112,49 @@ func IsContain(items []string, item string) bool {
 		}
 	}
 	return false
+}
+
+func convertPolarDBNodesSetToString(sources string) []string {
+	tempMap := make(map[string]string)
+	for _, source := range strings.Split(sources, COMMA_SEPARATED) {
+		tempMap[source] = source
+	}
+	var result []string
+	if len(tempMap) > 0 {
+		for key := range tempMap {
+			result = append(result, key)
+		}
+	}
+	return result
+}
+
+func convertPolarDBEndpointConfigSetToMap(source string) []map[string]interface{} {
+	var endpointConfig = make(map[string]interface{})
+	err := json.Unmarshal([]byte(source), &endpointConfig)
+	if err != nil {
+		return nil
+	}
+	var newEndpointConfig []map[string]interface{}
+	if endpointConfig != nil {
+		mapping := map[string]interface{}{
+			"trx_split_aggressive":     endpointConfig["TrxSplitAggressive"],
+			"enable_tp_sql_to_apnode":  endpointConfig["EnableTpsqlToApnode"],
+			"master_accept_reads":      endpointConfig["MasterAcceptReads"],
+			"enable_htap_imci":         endpointConfig["EnableHtapImci"],
+			"distributed_transaction":  endpointConfig["DistributedTransaction"],
+			"consist_timeout_action":   endpointConfig["ConsistTimeoutAction"],
+			"sql_rewrite":              endpointConfig["SQLRewrite"],
+			"connection_persist":       endpointConfig["ConnectionPersist"],
+			"parallel_workers_policy":  endpointConfig["ParallelWorkersPolicy"],
+			"enable_overload_throttle": endpointConfig["EnableOverloadThrottle"],
+			"max_parallel_degree":      endpointConfig["MaxParallelDegree"],
+			"consist_level":            endpointConfig["ConsistLevel"],
+			"enable_sql_template":      endpointConfig["EnableSqlTemplate"],
+			"consist_timeout":          endpointConfig["ConsistTimeout"],
+			"load_balance_policy":      endpointConfig["LoadBalancePolicy"],
+			"load_balance_strategy":    endpointConfig["LoadBalanceStrategy"],
+		}
+		newEndpointConfig = append(newEndpointConfig, mapping)
+	}
+	return newEndpointConfig
 }

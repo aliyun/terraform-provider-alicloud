@@ -556,7 +556,24 @@ func (s *PolarDBService) DescribePolarDBInstanceNetInfo(id string) ([]polardb.DB
 		return nil, WrapErrorf(Error(GetNotFoundMessage("DBInstanceNetInfo", id)), NotFoundMsg, ProviderERROR)
 	}
 
-	return response.Items, nil
+	// 排序，Primary在先，Cluster在后
+	var endpoints []polardb.DBEndpoint
+	for _, endpoint := range response.Items {
+		if endpoint.EndpointType == "Primary" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	for _, endpoint := range response.Items {
+		if endpoint.EndpointType == "Cluster" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	for _, endpoint := range response.Items {
+		if endpoint.EndpointType == "Custom" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	return endpoints, nil
 }
 
 func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBEndpoint, error) {
@@ -596,13 +613,7 @@ func (s *PolarDBService) DescribePolarDBClusterEndpoint(id string) (*polardb.DBE
 	return &response.Items[0], nil
 }
 
-func (s *PolarDBService) DescribePolarDBClusterSSL(d *schema.ResourceData) (ssl *polardb.DescribeDBClusterSSLResponse, err error) {
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	dbClusterId := parts[0]
-
+func (s *PolarDBService) DescribePolarDBClusterSSL(dbClusterId string) (ssl *polardb.DescribeDBClusterSSLResponse, err error) {
 	request := polardb.CreateDescribeDBClusterSSLRequest()
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = dbClusterId
@@ -1612,6 +1623,116 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 	return nil
 }
 
+func (s *PolarDBService) ModifyDBClusterEndpointInfo(d *schema.ResourceData) error {
+	o, n := d.GetChange("endpoint_system")
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	if len(add) > 0 {
+		for _, i := range add {
+			pack := i.(map[string]interface{})
+			endpointType := pack["endpoint_type"].(string)
+			dbEndpointId := ""
+			if endpointType != "" {
+				endpointAttribute, err := s.DescribePolarDBInstanceNetInfo(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+				for _, v := range endpointAttribute {
+					if endpointType == v.EndpointType {
+						dbEndpointId = v.DBEndpointId
+					}
+				}
+			}
+			request := polardb.CreateModifyDBClusterEndpointRequest()
+			request.RegionId = s.client.RegionId
+			request.DBClusterId = d.Id()
+			request.DBEndpointId = dbEndpointId
+			request.DBEndpointDescription = pack["db_endpoint_description"].(string)
+			request.ReadWriteMode = pack["read_write_mode"].(string)
+			request.AutoAddNewNodes = pack["auto_add_new_nodes"].(string)
+			if v := pack["endpoint_config"].([]interface{}); len(v) > 0 {
+				request.EndpointConfig = expandEndpointsConfig(v)
+			} else {
+				request.EndpointConfig = ""
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterEndpoint(request)
+				})
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			if err := s.WaitForCluster(d.Id(), Running, DefaultTimeoutMedium); err != nil {
+				return WrapError(err)
+			}
+		}
+		d.SetPartial("endpoint_system")
+	}
+	return nil
+}
+func (s *PolarDBService) ModifyDBClusterSSLInfo(d *schema.ResourceData) error {
+	o, n := d.GetChange("ssl_system")
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	if len(add) > 0 {
+		for _, i := range add {
+			pack := i.(map[string]interface{})
+			endpointType := pack["endpoint_type"].(string)
+			dbEndpointId := ""
+			if endpointType != "" {
+				endpointAttribute, err := s.DescribePolarDBInstanceNetInfo(d.Id())
+				if err != nil {
+					return WrapError(err)
+				}
+				for _, v := range endpointAttribute {
+					if endpointType == v.EndpointType {
+						dbEndpointId = v.DBEndpointId
+					}
+				}
+			}
+			modifySSLRequest := polardb.CreateModifyDBClusterSSLRequest()
+			modifySSLRequest.DBClusterId = d.Id()
+			modifySSLRequest.DBEndpointId = dbEndpointId
+			modifySSLRequest.SSLEnabled = pack["ssl_enabled"].(string)
+			modifySSLRequest.NetType = pack["net_type"].(string)
+			modifySSLRequest.SSLAutoRotate = pack["ssl_auto_rotate"].(string)
+			if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+				raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(modifySSLRequest.GetActionName(), raw, modifySSLRequest.RpcRequest, modifySSLRequest)
+				return nil
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySSLRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			// wait cluster status change from SSL_MODIFYING to Running
+			stateConf := BuildStateConf([]string{"SSL_MODIFYING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, s.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+		d.SetPartial("ssl_system")
+	}
+	return nil
+}
+
 func (s *PolarDBService) DescribeDBClusterAccessWhitelist(id string) (instance *polardb.DescribeDBClusterAccessWhitelistResponse, err error) {
 	request := polardb.CreateDescribeDBClusterAccessWhitelistRequest()
 	request.RegionId = s.client.RegionId
@@ -1838,4 +1959,67 @@ func (s *PolarDBService) DescribeDBClusterServerlessConfig(id string) (object ma
 	object = v.(map[string]interface{})
 
 	return object, nil
+}
+
+func expandEndpointsConfig(param []interface{}) string {
+	rebuildConfig := make([]map[string]interface{}, 0)
+	for _, v := range param {
+		if m, ok := v.(map[string]interface{}); ok {
+			config := map[string]interface{}{}
+			if m["trx_split_aggressive"].(string) != "" {
+				config["TrxSplitAggressive"] = m["trx_split_aggressive"].(string)
+			}
+			if m["enable_tp_sql_to_apnode"].(string) != "" {
+				config["EnableTpsqlToApnode"] = m["enable_tp_sql_to_apnode"].(string)
+			}
+			if m["master_accept_reads"].(string) != "" {
+				config["MasterAcceptReads"] = m["master_accept_reads"].(string)
+			}
+			if m["enable_htap_imci"].(string) != "" {
+				config["EnableHtapImci"] = m["enable_htap_imci"].(string)
+			}
+			if m["distributed_transaction"].(string) != "" {
+				config["DistributedTransaction"] = m["distributed_transaction"].(string)
+			}
+			if m["consist_timeout_action"].(string) != "" {
+				config["ConsistTimeoutAction"] = m["consist_timeout_action"].(string)
+			}
+			if m["sql_rewrite"].(string) != "" {
+				config["SQLRewrite"] = m["sql_rewrite"].(string)
+			}
+			if m["connection_persist"].(string) != "" {
+				config["ConnectionPersist"] = m["connection_persist"].(string)
+			}
+			if m["parallel_workers_policy"].(string) != "" {
+				config["ParallelWorkersPolicy"] = m["parallel_workers_policy"].(string)
+			}
+			if m["enable_overload_throttle"].(string) != "" {
+				config["EnableOverloadThrottle"] = m["enable_overload_throttle"].(string)
+			}
+			if m["max_parallel_degree"].(string) != "" {
+				config["MaxParallelDegree"] = m["max_parallel_degree"].(string)
+			}
+			if m["consist_level"].(string) != "" {
+				config["ConsistLevel"] = m["consist_level"].(string)
+			}
+			if m["enable_sql_template"].(string) != "" {
+				config["EnableSqlTemplate"] = m["enable_sql_template"].(string)
+			}
+			if m["consist_timeout"].(string) != "" {
+				config["ConsistTimeout"] = m["consist_timeout"].(string)
+			}
+			if m["load_balance_policy"].(string) != "" {
+				config["LoadBalancePolicy"] = m["load_balance_policy"].(string)
+			}
+			if m["load_balance_strategy"].(string) != "" {
+				config["LoadBalanceStrategy"] = m["load_balance_strategy"].(string)
+			}
+			rebuildConfig = append(rebuildConfig, config)
+		}
+	}
+	jsonString, err := json.Marshal(rebuildConfig[0])
+	if err != nil {
+		return ""
+	}
+	return string(jsonString)
 }
