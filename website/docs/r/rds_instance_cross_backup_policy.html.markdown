@@ -18,6 +18,10 @@ For information about RDS cross region backup settings and how to use them, see 
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

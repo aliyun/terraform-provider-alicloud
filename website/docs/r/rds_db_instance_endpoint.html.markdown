@@ -16,6 +16,10 @@ Provide RDS cluster instance endpoint connection resources, see [What is RDS DB 
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "tf-example"
 }

@@ -20,6 +20,10 @@ For information about VPC Vbr Ha and how to use it, see [What is Vbr Ha](https:/
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

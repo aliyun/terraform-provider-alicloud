@@ -18,6 +18,10 @@ Information about RDS MySQL cluster endpoint address and how to use it, see [Wha
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -89,7 +93,7 @@ resource "alicloud_rds_db_instance_endpoint" "default" {
 }
 
 resource "alicloud_rds_db_instance_endpoint_address" "default" {
-  db_instance_id           = alicloud_db_instance.default.db_instance_id
+  db_instance_id           = alicloud_db_instance.default.id
   db_instance_endpoint_id  = alicloud_rds_db_instance_endpoint.default.db_instance_endpoint_id
   connection_string_prefix = "tf-example-prefix"
   port                     = "3306"

@@ -16,6 +16,10 @@ Provide RDS cluster instance to increase node resources, see [What is RDS DB Nod
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "tf-example"
 }

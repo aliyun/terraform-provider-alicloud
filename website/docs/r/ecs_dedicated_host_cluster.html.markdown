@@ -7,20 +7,20 @@ description: |-
   Provides a Alicloud ECS Dedicated Host Cluster resource.
 ---
 
-# alicloud\_ecs\_dedicated\_host\_cluster
+# alicloud_ecs_dedicated_host_cluster
 
 Provides a ECS Dedicated Host Cluster resource.
 
 For information about ECS Dedicated Host Cluster and how to use it, see [What is Dedicated Host Cluster](https://www.alibabacloud.com/help/en/doc-detail/184667.html).
 
--> **NOTE:** Available in v1.146.0+.
+-> **NOTE:** Available since v1.146.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_zones" example {}
+data "alicloud_zones" "example" {}
 
 resource "alicloud_ecs_dedicated_host_cluster" "example" {
   dedicated_host_cluster_name = "example_value"
@@ -31,7 +31,6 @@ resource "alicloud_ecs_dedicated_host_cluster" "example" {
     For    = "DDH_Cluster_Test",
   }
 }
-
 ```
 
 ## Argument Reference

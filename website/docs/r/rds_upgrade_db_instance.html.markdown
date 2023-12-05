@@ -20,6 +20,9 @@ For information about RDS Upgrade DB Instance and how to use it, see [What is Ap
 ### Create a RDS MySQL upgrade instance
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 
 data "alicloud_db_zones" "example" {
   engine                   = "PostgreSQL"
