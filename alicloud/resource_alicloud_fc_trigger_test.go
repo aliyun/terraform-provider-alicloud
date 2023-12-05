@@ -197,7 +197,7 @@ func TestAccAlicloudFCTrigger_mnsTopic(t *testing.T) {
 
 func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
 	var v *fc.GetTriggerOutput
-	rand := acctest.RandIntRange(10000, 999999)
+	rand := acctest.RandIntRange(100000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s-%d", defaultRegionToTest, rand)
 	var basicMap = map[string]string{
 		"service":       CHECKSET,
@@ -217,7 +217,7 @@ func TestAccAlicloudFCTrigger_cdn_events(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -265,7 +265,7 @@ func TestAccAlicloudFCTrigger_eventbridge_With_Default_EventSource(t *testing.T)
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -312,7 +312,7 @@ func TestAccAlicloudFCTrigger_eventbridge_With_MNS_EventSource(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
@@ -804,24 +804,19 @@ var testTriggerEventBridgeWithDefaultSourceTemplate = `
     "triggerEnable":false,
     "asyncInvocationType":false,
     "eventSourceConfig":{
-        "eventSourceType":"Default",
-        "eventSourceParameters":null
+        "eventSourceType":"Default"
     },
     "eventRuleFilterPattern":"{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
     "eventSinkConfig":{
         "deliveryOption":{
             "mode":"event-driven",
-            "eventSchema":"CloudEvents",
-            "concurrency":null
+            "eventSchema":"CloudEvents"
         }
     },
     "runOptions":{
-        "batchWindow":null,
         "retryStrategy":{
             "PushRetryStrategy":"BACKOFF_RETRY"
         },
-        "deadLetterQueue":null,
-        "maximumTasks":null,
         "errorsTolerance":"ALL",
         "mode":"event-driven"
     }
@@ -829,109 +824,86 @@ var testTriggerEventBridgeWithDefaultSourceTemplate = `
 `
 
 var testTriggerEventBridgeWithDefaultSourceTemplateUpdate = `
-	{
-		"triggerEnable":true,
-		"asyncInvocationType":true,
-		"eventSourceConfig":{
-			"eventSourceType":"Default",
-			"eventSourceParameters":null
-		},
-		"eventRuleFilterPattern":"{}",
-		"eventSinkConfig":{
-			"deliveryOption":{
-				"mode":"event-driven",
-				"eventSchema":"CloudEvents",
-				"concurrency":null
-			}
-		},
-		"runOptions":{
-			"batchWindow":null,
-			"retryStrategy":{
-				"PushRetryStrategy":"BACKOFF_RETRY"
-			},
-			"deadLetterQueue":null,
-			"maximumTasks":null,
-			"errorsTolerance":"ALL",
-			"mode":"event-driven"
-		}
-	}
+{
+    "triggerEnable":true,
+    "asyncInvocationType":true,
+    "eventSourceConfig":{
+        "eventSourceType":"Default"
+    },
+    "eventRuleFilterPattern":"{}",
+    "eventSinkConfig":{
+        "deliveryOption":{
+            "mode":"event-driven",
+            "eventSchema":"CloudEvents"
+        }
+    },
+    "runOptions":{
+        "retryStrategy":{
+            "PushRetryStrategy":"BACKOFF_RETRY"
+        },
+        "errorsTolerance":"ALL",
+        "mode":"event-driven"
+    }
+}
 `
 
 var testTriggerEventBridgeWithMNSSourceTemplate = `
-	{
-		"triggerEnable":false,
-		"asyncInvocationType":false,
-		"eventSourceConfig":{
-			"eventSourceType":"MNS",
-			"eventSourceParameters":{
-				"sourceMNSParameters":{
-					"QueueName":"test",
-					"IsBase64Decode":false
-				},
-				"sourceRocketMQParameters":null,
-				"sourceRabbitMQParameters":null,
-				"sourceKafkaParameters":null,
-				"sourceDTSParameters":null,
-				"sourceMQTTParameters":null
-			}
-		},
-		"eventRuleFilterPattern":"{}",
-		"eventSinkConfig":{
-			"deliveryOption":{
-				"mode":"event-driven",
-				"eventSchema":"CloudEvents",
-				"concurrency":null
-			}
-		},
-		"runOptions":{
-			"batchWindow":null,
-			"retryStrategy":{
-				"PushRetryStrategy":"BACKOFF_RETRY"
-			},
-			"deadLetterQueue":null,
-			"maximumTasks":null,
-			"errorsTolerance":"ALL",
-			"mode":"event-driven"
-		}
-	}
+{
+    "triggerEnable":false,
+    "asyncInvocationType":false,
+    "eventSourceConfig":{
+        "eventSourceType":"MNS",
+        "eventSourceParameters":{
+            "sourceMNSParameters":{
+                "QueueName":"test",
+                "IsBase64Decode":false
+            }
+        }
+    },
+    "eventRuleFilterPattern":"{}",
+    "eventSinkConfig":{
+        "deliveryOption":{
+            "mode":"event-driven",
+            "eventSchema":"CloudEvents"
+        }
+    },
+    "runOptions":{
+        "retryStrategy":{
+            "PushRetryStrategy":"BACKOFF_RETRY"
+        },
+        "errorsTolerance":"ALL",
+        "mode":"event-driven"
+    }
+}
 `
 var testTriggerEventBridgeWithMNSSourceTemplateUpdate = `
-	{
-		"triggerEnable":true,
-		"asyncInvocationType":true,
-		"eventSourceConfig":{
-			"eventSourceType":"MNS",
-			"eventSourceParameters":{
-				"sourceMNSParameters":{
-					"QueueName":"test-1",
-					"IsBase64Decode":true
-				},
-				"sourceRocketMQParameters":null,
-				"sourceRabbitMQParameters":null,
-				"sourceKafkaParameters":null,
-				"sourceDTSParameters":null,
-				"sourceMQTTParameters":null
-			}
-		},
-		"eventRuleFilterPattern":"{}",
-		"eventSinkConfig":{
-			"deliveryOption":{
-				"mode":"event-driven",
-				"eventSchema":"CloudEvents",
-				"concurrency":null
-			}
-		},
-		"runOptions":{
-			"batchWindow":null,
-			"retryStrategy":{
-				"PushRetryStrategy":"BACKOFF_RETRY"
-			},
-			"deadLetterQueue":null,
-			"maximumTasks":null,
-			"errorsTolerance":"ALL",
-			"mode":"event-driven"
-		}
-	}
+{
+    "triggerEnable":true,
+    "asyncInvocationType":true,
+    "eventSourceConfig":{
+        "eventSourceType":"MNS",
+        "eventSourceParameters":{
+            "sourceMNSParameters":{
+                "QueueName":"test-1",
+                "IsBase64Decode":true
+            }
+        }
+    },
+    "eventRuleFilterPattern":"{}",
+    "eventSinkConfig":{
+        "deliveryOption":{
+            "mode":"event-driven",
+            "eventSchema":"CloudEvents"
+        }
+    },
+    "runOptions":{
+        "retryStrategy":{
+            "PushRetryStrategy":"BACKOFF_RETRY"
+        },
+        "errorsTolerance":"ALL",
+        "mode":"event-driven"
+    }
+}
 `
 
 func testAlicloudFCTriggerCdnEvents(trigger, role, policy, name string) string {

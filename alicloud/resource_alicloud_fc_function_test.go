@@ -603,7 +603,7 @@ php server.php`)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, dependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

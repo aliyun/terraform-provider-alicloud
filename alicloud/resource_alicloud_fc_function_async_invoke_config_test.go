@@ -385,6 +385,10 @@ resource "alicloud_fc_service" "default" {
 resource "alicloud_oss_bucket" "default" {
   bucket = var.name
 }
+provider "alicloud" {
+  alias  = "hangzhou"
+  region = "cn-hangzhou"
+}
 resource "alicloud_oss_bucket_object" "default" {
   bucket = alicloud_oss_bucket.default.id
   key = "fc/hello.zip"
@@ -406,9 +410,11 @@ resource "alicloud_fc_function" "default" {
   depends_on = ["alicloud_mns_queue.default", "alicloud_mns_topic.default"]
 }
 resource "alicloud_mns_queue" "default" {
+    provider = alicloud.hangzhou
 	name = var.name
 }
 resource "alicloud_mns_topic" "default" {
+    provider = alicloud.hangzhou
 	name = var.name
 }
 resource "alicloud_ram_role" "default" {

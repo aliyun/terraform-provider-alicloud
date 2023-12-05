@@ -186,8 +186,8 @@ func testSweepFCCustomDomain(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.FCCustomDomainSupportRegions)
+func TestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.FCV2FunctionSupportRegions)
 	var v *fc.GetCustomDomainOutput
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testacc-%s-alicloudfccustomdomain-%d-cd", defaultRegionToTest, rand)
@@ -208,7 +208,7 @@ func SkipTestAccAlicloudFCCustomDomainUpdate(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceFcCustomDomainConfigDependence)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions) },
+		PreCheck:     func() { testAccPreCheckWithRegions(t, true, connectivity.FCV2FunctionSupportRegions) },
 		Providers:    testAccProviders,
 		CheckDestroy: rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{

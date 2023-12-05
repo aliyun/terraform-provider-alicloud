@@ -6,13 +6,12 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func SkipTestAccAlicloudVPCNetworkAclEntries_basic(t *testing.T) {
+func TestAccAlicloudVPCNetworkAclEntries_basic(t *testing.T) {
 	resourceId := "alicloud_network_acl_entries.default"
 	ra := resourceAttrInit(resourceId, testAccNaclEntriesCheckMap)
 	rand := acctest.RandInt()
@@ -144,16 +143,7 @@ func testAccCheckNetworkAclEntriesDestroy(s *terraform.State) error {
 		}
 		networkAclId := parts[0]
 
-		object, err := vpcService.DescribeNetworkAcl(networkAclId)
-		vpcResource := []vpc.Resource{}
-		resources, _ := object["Resources"].(map[string]interface{})["Resource"].([]interface{})
-		for _, e := range resources {
-			item := e.(map[string]interface{})
-			vpcResource = append(vpcResource, vpc.Resource{
-				ResourceId:   item["ResourceId"].(string),
-				ResourceType: item["ResourceType"].(string),
-			})
-		}
+		_, err = vpcService.DescribeNetworkAcl(networkAclId)
 		if err != nil {
 			if NotFoundError(err) {
 				continue
