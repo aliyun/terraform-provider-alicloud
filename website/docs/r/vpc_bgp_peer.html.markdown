@@ -20,6 +20,10 @@ For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](htt
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

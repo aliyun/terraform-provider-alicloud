@@ -20,6 +20,10 @@ For information about VPC Public Ip Address Pool Cidr Block and how to use it, s
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

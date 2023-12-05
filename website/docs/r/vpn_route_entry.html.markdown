@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud VPN Route Entry resource.
 ---
 
-# alicloud\_vpn_route_entry
+# alicloud_vpn_route_entry
 
 Provides a VPN Route Entry resource.
 
 -> **NOTE:** Terraform will build vpn route entry instance while it uses `alicloud_vpn_route_entry` to build a VPN Route Entry resource.
 
--> **NOTE:** Available in 1.57.0+.
+-> **NOTE:** Available since v1.57.0+.
 
 For information about VPN Route Entry and how to use it, see [What is VPN Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127250.html).
 
@@ -23,34 +23,34 @@ For information about VPN Route Entry and how to use it, see [What is VPN Route 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = "terraform-example"
-  cidr_block = "10.1.0.0/21"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
-
-resource "alicloud_vswitch" "default" {
-  vswitch_name = "terraform-example"
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "10.1.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_vpn_gateway" "default" {
   name                 = "terraform-example"
-  vpc_id               = alicloud_vpc.default.id
+  vpc_id               = data.alicloud_vpcs.default.ids.0
   bandwidth            = 10
   instance_charge_type = "PrePaid"
   enable_ssl           = false
-  vswitch_id           = alicloud_vswitch.default.id
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_vpn_connection" "default" {
-  name                = "terraform-example"
+  name                = var.name
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
   vpn_gateway_id      = alicloud_vpn_gateway.default.id
   local_subnet        = ["192.168.2.0/24"]
@@ -58,7 +58,7 @@ resource "alicloud_vpn_connection" "default" {
 }
 
 resource "alicloud_vpn_customer_gateway" "default" {
-  name       = "terraform-example"
+  name       = var.name
   ip_address = "192.168.1.1"
 }
 
@@ -88,7 +88,7 @@ The following attributes are exported:
 * `route_entry_type` - (Available in 1.161.0+) The type of the vpn route entry.
 * `status` - (Available in 1.161.0+) The status of the vpn route entry.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.161.0+.
 

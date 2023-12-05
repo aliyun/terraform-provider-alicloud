@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud VPN connection resource.
 ---
 
-# alicloud\_vpn\_connection
+# alicloud_vpn_connection
 
 Provides a VPN connection resource.
 
@@ -16,46 +16,50 @@ Provides a VPN connection resource.
 
 For information about VPN connection and how to use it, see [What is vpn connection](https://www.alibabacloud.com/help/en/doc-detail/120390.html).
 
+-> **NOTE:** Available since v1.14.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_zones" "foo" {
+variable "name" {
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "foo" {
-  vpc_name   = "terraform-example"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
-
-resource "alicloud_vswitch" "foo" {
-  vswitch_name = "terraform-example"
-  cidr_block   = "172.16.0.0/21"
-  vpc_id       = alicloud_vpc.foo.id
-  zone_id      = data.alicloud_zones.foo.zones.0.id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_vpn_gateway" "foo" {
-  name                 = "terraform-example"
-  vpc_id               = alicloud_vpc.foo.id
+  name                 = var.name
+  vpc_id               = data.alicloud_vpcs.default.ids.0
   bandwidth            = "10"
   enable_ssl           = true
   instance_charge_type = "PrePaid"
   description          = "test_create_description"
-  vswitch_id           = alicloud_vswitch.foo.id
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_vpn_customer_gateway" "foo" {
-  name        = "terraform-example"
+  name        = var.name
   ip_address  = "42.104.22.210"
-  description = "terraform-example"
+  description = var.name
 }
 
 resource "alicloud_vpn_connection" "foo" {
-  name                = "terraform-example"
+  name                = var.name
   vpn_gateway_id      = alicloud_vpn_gateway.foo.id
   customer_gateway_id = alicloud_vpn_customer_gateway.foo.id
   local_subnet        = ["172.16.0.0/24", "172.16.1.0/24"]
@@ -90,14 +94,14 @@ The following arguments are supported:
 * `local_subnet` - (Required, Type:Set) The CIDR block of the VPC to be connected with the local data center. This parameter is used for phase-two negotiation.
 * `remote_subnet` - (Required, Type:Set) The CIDR block of the local data center. This parameter is used for phase-two negotiation.
 * `effect_immediately` - (Optional) Whether to delete a successfully negotiated IPsec tunnel and initiate a negotiation again. Valid value:true,false.
-* `ike_config` - (Optional) The configurations of phase-one negotiation. See the following `Block ike_config`.
-* `ipsec_config` - (Optional) The configurations of phase-two negotiation. See the following `Block ipsec_config`.
-* `health_check_config` - (Optional, Computed, Available in 1.161.0+.) The health check configurations. See the following `Block health_check_config`.
+* `ike_config` - (Optional) The configurations of phase-one negotiation. See [`ike_config`](#ike_config) below.
+* `ipsec_config` - (Optional) The configurations of phase-two negotiation. See [`ipsec_config`](#ipsec_config) below.
+* `health_check_config` - (Optional, Computed, Available in 1.161.0+.) The health check configurations. See [`health_check_config`](#health_check_config) below.
 * `enable_dpd` - (Optional, Computed, Available in 1.161.0+.) Specifies whether to enable the dead peer detection (DPD) feature. Valid values: `true`(default), `false`.
 * `enable_nat_traversal` - (Optional, Computed, Available in 1.161.0+.) Specifies whether to enable NAT traversal. Valid values: `true`(default), `false`.
-* `bgp_config` - (Optional, Computed, Available in 1.161.0+.) The configurations of the BGP routing protocol. See the following `Block bgp_config`.
+* `bgp_config` - (Optional, Computed, Available in 1.161.0+.) The configurations of the BGP routing protocol. See [`bgp_config`](#bgp_config) below.
 
-### Block ike_config
+### `ike_config`
 
 The ike_config mapping supports the following:
 
@@ -111,7 +115,7 @@ The ike_config mapping supports the following:
 * `ike_local_id` - (Optional, Computed) The identification of the VPN gateway.
 * `ike_remote_id` - (Optional, Computed) The identification of the customer gateway.
 
-### Block ipsec_config
+### `ipsec_config`
 
 The ipsec_config mapping supports the following:
 
@@ -120,7 +124,7 @@ The ipsec_config mapping supports the following:
 * `ipsec_pfs` - (Optional) The Diffie-Hellman key exchange algorithm used by phase-two negotiation. Valid value: group1 | group2 | group5 | group14 | group24| disabled. Default value: group2
 * `ipsec_lifetime` - (Optional)  The SA lifecycle as the result of phase-two negotiation. The valid value is [0, 86400], the unit is second and the default value is 86400.
 
-### Block health_check_config
+### `health_check_config`
 
 The health_check_config mapping supports the following:
 
@@ -130,7 +134,7 @@ The health_check_config mapping supports the following:
 * `interval` - (Optional, Computed) The interval between two consecutive health checks. Unit: seconds.
 * `retry` - (Optional, Computed)  The maximum number of health check retries.
 
-### Block bgp_config
+### `bgp_config`
 
 The bgp_config mapping supports the following:
 
@@ -145,10 +149,8 @@ The following attributes are exported:
 
 * `id` - The ID of the VPN connection id.
 * `status` - The status of VPN connection.
-* `ike_config` - The configurations of phase-one negotiation.
-* `ipsec_config` - The configurations of phase-two negotiation.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.161.0+.
 

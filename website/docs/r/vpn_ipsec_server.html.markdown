@@ -7,50 +7,53 @@ description: |-
   Provides a Alicloud VPN Ipsec Server resource.
 ---
 
-# alicloud\_vpn\_ipsec\_server
+# alicloud_vpn_ipsec_server
 
 Provides a VPN Ipsec Server resource.
 
 For information about VPN Ipsec Server and how to use it, see [What is Ipsec Server](https://www.alibabacloud.com/help/en/doc-detail/205454.html).
 
--> **NOTE:** Available in v1.161.0+.
+-> **NOTE:** Available since v1.161.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-data "alicloud_zones" "foo" {
+variable "name" {
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "foo" {
-  vpc_name   = "terraform-example"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vswitch_name = "terraform-example"
-  cidr_block   = "172.16.0.0/21"
-  vpc_id       = alicloud_vpc.foo.id
-  zone_id      = data.alicloud_zones.foo.zones.0.id
-}
-
-resource "alicloud_vpn_gateway" "foo" {
-  name                 = "terraform-example"
-  vpc_id               = alicloud_vpc.foo.id
+resource "alicloud_vpn_gateway" "default" {
+  name                 = var.name
+  vpc_id               = data.alicloud_vpcs.default.ids.0
   bandwidth            = "10"
   enable_ssl           = true
+  description          = var.name
   instance_charge_type = "PrePaid"
-  description          = "terraform-example"
-  vswitch_id           = alicloud_vswitch.foo.id
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
 }
 
 resource "alicloud_vpn_ipsec_server" "foo" {
   client_ip_pool    = "10.0.0.0/24"
-  ipsec_server_name = "terraform-example"
+  ipsec_server_name = var.name
   local_subnet      = "192.168.0.0/24"
-  vpn_gateway_id    = alicloud_vpn_gateway.foo.id
+  vpn_gateway_id    = alicloud_vpn_gateway.default.id
   psk_enabled       = true
 }
 ```
@@ -67,10 +70,10 @@ The following arguments are supported:
 * `psk` - (Optional) The pre-shared key. The pre-shared key is used to authenticate the VPN gateway and the client. By default, the system generates a random string that is 16 bits in length. You can also specify the pre-shared key. It can contain at most 100 characters.
 * `psk_enabled` - (Optional) Whether to enable the pre-shared key authentication method. The value is only `true`, which indicates that the pre-shared key authentication method is enabled.
 * `vpn_gateway_id` - (Required, ForceNew) The ID of the VPN gateway.
-* `ike_config` - (Optional) The configuration of Phase 1 negotiations. See the following `Block ike_config`.
-* `ipsec_config` - (Optional) The configuration of Phase 2 negotiations. See the following `Block ipsec_config`.
+* `ike_config` - (Optional) The configuration of Phase 1 negotiations. See [`ike_config`](#ike_config) below.
+* `ipsec_config` - (Optional) The configuration of Phase 2 negotiations. See [`ipsec_config`](#ipsec_config) below.
 
-#### Block ike_config
+### `ike_config`
 
 The ike_config supports the following:
 
@@ -83,7 +86,7 @@ The ike_config supports the following:
 * `local_id` - (Optional) The identifier of the IPsec server. The value can be a fully qualified domain name (FQDN) or an IP address. The default value is the public IP address of the VPN gateway.
 * `remote_id` - (Optional) The identifier of the customer gateway. The value can be an FQDN or an IP address. By default, this parameter is not specified.
 
-#### Block ipsec_config
+### `ipsec_config`
 
 The ipsec_config supports the following:
 
@@ -98,7 +101,7 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Ipsec Server.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

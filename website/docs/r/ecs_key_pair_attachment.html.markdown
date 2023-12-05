@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Key Pair Attachment resource.
 ---
 
-# alicloud\_ecs\_key\_pair\_attachment
+# alicloud_ecs_key_pair_attachment
 
 Provides a ECS Key Pair Attachment resource.
 
 For information about ECS Key Pair Attachment and how to use it, see [What is Key Pair Attachment](https://www.alibabacloud.com/help/en/doc-detail/51775.htm).
 
--> **NOTE:** Available in v1.121.0+.
+-> **NOTE:** Available since v1.121.0+.
 
 ## Example Usage
 
@@ -63,7 +63,7 @@ resource "alicloud_instance" "example" {
 }
 
 resource "alicloud_ecs_key_pair" "example" {
-  key_pair_name = "terraform-example"
+  key_pair_name = "tf-example"
 }
 
 resource "alicloud_ecs_key_pair_attachment" "example" {
@@ -76,12 +76,13 @@ resource "alicloud_ecs_key_pair_attachment" "example" {
 
 The following arguments are supported:
 
-* `key_pair_name` - (Required, ForceNew) The name of key pair used to bind.
+* `key_pair_name` - (Optional, ForceNew) The name of key pair used to bind.
+* `key_name` - (Deprecated since v1.121.0+) New field 'key_pair_name' instead.
 * `force` - (Optional, ForceNew) Set it to true and it will reboot instances which attached with the key pair to make key pair affect immediately.
 * `instance_ids` - (Required, ForceNew) The list of ECS instance's IDs.
 
 ## Attributes Reference
-
+ 
 The following attributes are exported:
 
 * `id` - The resource ID of Key Pair Attachment. The value is formatted `<key_pair_name>:<instance_ids>`.

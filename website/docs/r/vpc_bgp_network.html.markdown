@@ -20,6 +20,10 @@ For information about VPC Bgp Network and how to use it, see [What is Bgp Networ
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

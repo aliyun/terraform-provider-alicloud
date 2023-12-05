@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud VPN gateway resource.
 ---
 
-# alicloud\_vpn_gateway
+# alicloud_vpn_gateway
 
 Provides a VPN gateway resource.
 
@@ -17,36 +17,40 @@ Provides a VPN gateway resource.
 
 For information about VPN gateway and how to use it, see [What is VPN gateway](https://www.alibabacloud.com/help/en/doc-detail/120365.html).
 
+-> **NOTE:** Available since v1.13.0+.
+
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 
-data "alicloud_zones" "foo" {
+data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "foo" {
-  vpc_name   = "terraform-example"
-  cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "foo" {
-  vswitch_name = "terraform-example"
-  cidr_block   = "172.16.0.0/21"
-  vpc_id       = alicloud_vpc.foo.id
-  zone_id      = data.alicloud_zones.foo.zones.0.id
-}
-
-resource "alicloud_vpn_gateway" "foo" {
-  name                 = "terraform-example"
-  vpc_id               = alicloud_vpc.foo.id
+resource "alicloud_vpn_gateway" "default" {
+  name                 = var.name
+  vpc_id               = data.alicloud_vpcs.default.ids.0
   bandwidth            = "10"
   enable_ssl           = true
+  description          = var.name
   instance_charge_type = "PrePaid"
-  description          = "test_create_description"
-  vswitch_id           = alicloud_vswitch.foo.id
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
 }
 ```
 
@@ -63,7 +67,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The name of the VPN. Defaults to null.
 * `vpc_id` - (Required, ForceNew) The VPN belongs the vpc_id, the field can't be changed.
-* `instance_charge_type` - (ForceNew) The charge type for instance. If it is an international site account, the valid value is PostPaid, otherwise PrePaid. 
+* `instance_charge_type` - (Optional, ForceNew) The charge type for instance. If it is an international site account, the valid value is PostPaid, otherwise PrePaid. 
                                 Default to PostPaid. 
 * `period` - (Optional) The filed is only required while the InstanceChargeType is PrePaid. Valid values: [1-9, 12, 24, 36]. Default to 1. 
 * `bandwidth` - (Required, ForceNew) The value should be 10, 100, 200. if the user is postpaid, otherwise it can be 5, 10, 20, 50, 100, 200.
@@ -97,7 +101,7 @@ The following attributes are exported:
 * `business_status` - The business status of the VPN gateway.
 
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.160.0+.
 

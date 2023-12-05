@@ -7,11 +7,11 @@ description: |-
   Provides a Alicloud VPN Pbr Route Entry resource.
 ---
 
-# alicloud\_vpn\_pbr\_route\_entry
+# alicloud_vpn_pbr_route_entry
 
 Provides a VPN Pbr Route Entry resource.
 
--> **NOTE:** Available in 1.162.0+.
+-> **NOTE:** Available since v1.162.0+.
 
 For information about VPN Pbr Route Entry and how to use it, see [What is VPN Pbr Route Entry](https://www.alibabacloud.com/help/en/doc-detail/127248.html).
 
@@ -41,7 +41,7 @@ resource "alicloud_vpn_connection" "default" {
   remote_subnet       = ["192.168.3.0/24"]
 }
 
-resource alicloud_vpn_pbr_route_entry default {
+resource "alicloud_vpn_pbr_route_entry" "default" {
   vpn_gateway_id = data.alicloud_vpn_gateways.default.ids.0
   route_source   = "192.168.1.0/24"
   route_dest     = "10.0.0.0/24"
@@ -68,7 +68,7 @@ The following attributes are exported:
 * `id` - The id of the vpn pbr route entry. The value formats as `<vpn_gateway_id>:<next_hop>:<route_source>:<route_dest>`.
 * `status` - The status of the vpn pbr route entry.
 
-#### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
