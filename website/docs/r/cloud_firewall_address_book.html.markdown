@@ -37,7 +37,8 @@ resource "alicloud_cloud_firewall_address_book" "example" {
 
 The following arguments are supported:
 * `group_name` - (Required) The name of the Address Book.
-* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `tag`.
+* `group_type` - (Required, ForceNew) The type of the Address Book. Valid values: `ip`, `ipv6`, `domain`, `port`, `tag`.
+**NOTE:** From version 1.213.1, `group_type` can be set to `ipv6`, `domain`, `port`.
 * `description` - (Required) The description of the Address Book.
 * `auto_add_tag_ecs` - (Optional, Int) Whether you want to automatically add new matching tags of the ECS IP address to the Address Book. Valid values: `0`, `1`.
 * `tag_relation` - (Optional) The logical relation among the ECS tags that to be matched. Default value: `and`. Valid values:
