@@ -11,7 +11,7 @@ description: |-
 
 Provides a VPC Bgp Peer resource.
 
-For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
+For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](https://www.alibabacloud.com/help/en/express-connect/developer-reference/api-vpc-2016-04-28-createbgppeer-efficiency-channels).
 
 -> **NOTE:** Available since v1.153.0.
 
@@ -20,16 +20,27 @@ For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](htt
 Basic Usage
 
 ```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
+
+provider "alicloud" {
+  region = var.region
+}
+
 data "alicloud_express_connect_physical_connections" "example" {
   name_regex = "^preserved-NODELETING"
 }
+
 resource "random_integer" "vlan_id" {
   max = 2999
   min = 1
 }
+
 resource "alicloud_express_connect_virtual_border_router" "example" {
   local_gateway_ip           = "10.0.0.1"
   peer_gateway_ip            = "10.0.0.2"
@@ -43,20 +54,20 @@ resource "alicloud_express_connect_virtual_border_router" "example" {
 }
 
 resource "alicloud_vpc_bgp_group" "example" {
+  router_id      = alicloud_express_connect_virtual_border_router.example.id
+  peer_asn       = 1111
+  is_fake_asn    = true
   auth_key       = "YourPassword+12345678"
   bgp_group_name = var.name
   description    = var.name
-  peer_asn       = 1111
-  router_id      = alicloud_express_connect_virtual_border_router.example.id
-  is_fake_asn    = true
 }
 
 resource "alicloud_vpc_bgp_peer" "example" {
-  bfd_multi_hop   = "10"
   bgp_group_id    = alicloud_vpc_bgp_group.example.id
-  enable_bfd      = true
-  ip_version      = "IPV4"
   peer_ip_address = "1.1.1.1"
+  ip_version      = "IPV4"
+  enable_bfd      = true
+  bfd_multi_hop   = "10"
 }
 ```
 
@@ -64,26 +75,26 @@ resource "alicloud_vpc_bgp_peer" "example" {
 
 The following arguments are supported:
 
-* `bfd_multi_hop` - (Optional) The BFD hop count. Valid values: `1` to `255`. **NOTE:** The attribute is valid when the attribute `enable_bfd` is `true`. The parameter specifies the maximum number of network devices that a packet can traverse from the source to the destination. You can set a proper value based on the factors that affect the physical connection.
 * `bgp_group_id` - (Required, ForceNew) The ID of the BGP group.
-* `enable_bfd` - (Optional) Specifies whether to enable the Bidirectional Forwarding Detection (BFD) feature.
+* `peer_ip_address` - (Optional) The IP address of the Bgp Peer.
 * `ip_version` - (Optional, ForceNew) The IP version.
-* `peer_ip_address` - (Optional) The IP address of the BGP peer.
+* `enable_bfd` - (Optional, Bool) Specifies whether to enable the Bidirectional Forwarding Detection (BFD) feature.
+* `bfd_multi_hop` - (Optional, Int) The BFD hop count. Valid values: `1` to `255`. **NOTE:** The attribute is valid when the attribute `enable_bfd` is `true`. The parameter specifies the maximum number of network devices that a packet can traverse from the source to the destination. You can set a proper value based on the factors that affect the physical connection.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Bgp Peer.
-* `status` - The status of the BGP peer.
+* `status` - The status of the Bgp Peer.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Bgp Peer.
-* `delete` - (Defaults to 5 mins) Used when delete the Bgp Peer.
 * `update` - (Defaults to 5 mins) Used when update the Bgp Peer.
+* `delete` - (Defaults to 5 mins) Used when delete the Bgp Peer.
 
 ## Import
 

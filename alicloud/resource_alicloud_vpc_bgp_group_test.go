@@ -42,7 +42,7 @@ func testSweepVpcBgpGroup(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		log.Printf("[ERROR] getting Alicloud client: %s", err)
+		log.Printf("[ERROR] getting AliCloud client: %s", err)
 		return nil
 	}
 	client := rawClient.(*connectivity.AliyunClient)
@@ -121,11 +121,11 @@ func testSweepVpcBgpGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
+func TestAccAliCloudVPCBgpGroup_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudVPCBgpGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudVPCBgpGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcBgpGroup")
@@ -133,7 +133,7 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcbgpgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCBgpGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCBgpGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -144,35 +144,13 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"router_id":      "${alicloud_express_connect_virtual_border_router.default.id}",
-					"peer_asn":       "1111",
-					"bgp_group_name": "${var.name}",
+					"router_id": "${alicloud_express_connect_virtual_border_router.default.id}",
+					"peer_asn":  "1111",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"router_id":      CHECKSET,
-						"peer_asn":       "1111",
-						"bgp_group_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"bgp_group_name": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"bgp_group_name": name + "_update",
+						"router_id": CHECKSET,
+						"peer_asn":  "1111",
 					}),
 				),
 			},
@@ -186,13 +164,24 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 					}),
 				),
 			},
+			//Public cloud does not support setting local_asn
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"local_asn": "64513",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"local_asn": "64513",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"local_asn": "64513",
+					"is_fake_asn": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"local_asn": "64513",
+						"is_fake_asn": "true",
 					}),
 				),
 			},
@@ -208,19 +197,21 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":    "${var.name}",
-					"peer_asn":       "1111",
-					"local_asn":      "64512",
-					"bgp_group_name": "${var.name}",
-					"auth_key":       "YourPassword+12345678",
+					"bgp_group_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":    name,
-						"peer_asn":       "1111",
-						"local_asn":      "64512",
 						"bgp_group_name": name,
-						"auth_key":       "YourPassword+12345678",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
 					}),
 				),
 			},
@@ -232,11 +223,12 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
+
+func TestAccAliCloudVPCBgpGroup_basic0_twin(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudVPCBgpGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudVPCBgpGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeVpcBgpGroup")
@@ -244,7 +236,7 @@ func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%svpcbgpgroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPCBgpGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudVPCBgpGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -255,23 +247,24 @@ func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":    "${var.name}",
-					"router_id":      "${alicloud_express_connect_virtual_border_router.default.id}",
-					"peer_asn":       "1111",
-					"bgp_group_name": "${var.name}",
-					"local_asn":      "64512",
-					"auth_key":       "YourPassword+12345678",
+					"router_id": "${alicloud_express_connect_virtual_border_router.default.id}",
+					"peer_asn":  "1111",
+					//Public cloud does not support setting local_asn
+					//"local_asn":      "64512",
 					"is_fake_asn":    "true",
+					"auth_key":       "YourPassword+12345678",
+					"bgp_group_name": name,
+					"description":    name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":    name,
-						"router_id":      CHECKSET,
-						"peer_asn":       "1111",
-						"bgp_group_name": name,
-						"local_asn":      "64512",
-						"auth_key":       "YourPassword+12345678",
+						"router_id": CHECKSET,
+						"peer_asn":  "1111",
+						//"local_asn":      "64512",
 						"is_fake_asn":    "true",
+						"auth_key":       "YourPassword+12345678",
+						"bgp_group_name": name,
+						"description":    name,
 					}),
 				),
 			},
@@ -284,35 +277,37 @@ func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudVPCBgpGroupMap0 = map[string]string{
-	"status": CHECKSET,
+var AliCloudVPCBgpGroupMap0 = map[string]string{
+	"local_asn":   CHECKSET,
+	"is_fake_asn": CHECKSET,
+	"status":      CHECKSET,
 }
 
-func AlicloudVPCBgpGroupBasicDependence0(name string) string {
+func AliCloudVPCBgpGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_express_connect_physical_connections" "default" {
-	name_regex = "^preserved-NODELETING"
-}
+	data "alicloud_express_connect_physical_connections" "default" {
+  		name_regex = "^preserved-NODELETING"
+	}
 
-resource "alicloud_express_connect_virtual_border_router" "default" {
-  local_gateway_ip           = "10.0.0.1"
-  peer_gateway_ip            = "10.0.0.2"
-  peering_subnet_mask        = "255.255.255.252"
-  physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
-  virtual_border_router_name = var.name
-  vlan_id                    = %d
-  min_rx_interval            = 1000
-  min_tx_interval            = 1000
-  detect_multiplier          = 10
-}
+	resource "alicloud_express_connect_virtual_border_router" "default" {
+  		local_gateway_ip           = "10.0.0.1"
+  		peer_gateway_ip            = "10.0.0.2"
+  		peering_subnet_mask        = "255.255.255.252"
+  		physical_connection_id     = data.alicloud_express_connect_physical_connections.default.connections.0.id
+  		virtual_border_router_name = var.name
+  		vlan_id                    = %d
+  		min_rx_interval            = 1000
+  		min_tx_interval            = 1000
+  		detect_multiplier          = 10
+	}
 `, name, acctest.RandIntRange(1, 2999))
 }
 
-func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
+func TestUnitAliCloudVPCBgpGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_vpc_bgp_group"].Schema).Data(nil, nil)
@@ -404,7 +399,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcBgpGroupCreate(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -421,7 +416,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupCreate(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -438,7 +433,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupCreate(dCreate, rawClient)
+		err := resourceAliCloudVpcBgpGroupCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -456,7 +451,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudVpcBgpGroupUpdate(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -491,7 +486,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcBgpGroupUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -528,7 +523,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 		patcheDescribeVpcVbrHa := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeVpcBgpGroup", func(*VpcService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudVpcBgpGroupUpdate(resourceData1, rawClient)
+		err := resourceAliCloudVpcBgpGroupUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeVpcVbrHa.Reset()
 		assert.NotNil(t, err)
@@ -544,7 +539,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudVpcBgpGroupDelete(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -561,7 +556,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupDelete(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -581,7 +576,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 		patcheDescribeVpcVbrHa := gomonkey.ApplyMethod(reflect.TypeOf(&VpcService{}), "DescribeVpcBgpGroup", func(*VpcService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudVpcBgpGroupDelete(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeVpcVbrHa.Reset()
 		assert.NotNil(t, err)
@@ -599,7 +594,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupDelete(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -616,7 +611,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupRead(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -632,7 +627,7 @@ func TestUnitAlicloudVPCBgpGroup(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudVpcBgpGroupRead(d, rawClient)
+		err := resourceAliCloudVpcBgpGroupRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
