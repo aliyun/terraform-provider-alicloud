@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
@@ -34,6 +33,16 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"dedicated_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"data_check_configure": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"checkpoint": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -44,7 +53,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small"}, false),
+				ValidateFunc: StringInSlice([]string{"xxlarge", "xlarge", "large", "medium", "small"}, false),
 			},
 			"data_initialization": {
 				Type:     schema.TypeBool,
@@ -66,7 +75,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Forward", "Reverse"}, false),
+				ValidateFunc: StringInSlice([]string{"Forward", "Reverse"}, false),
 			},
 			"db_list": {
 				Type:     schema.TypeString,
@@ -78,16 +87,18 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Computed: true,
 			},
 			"source_endpoint_instance_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"CEN", "DG", "DISTRIBUTED_DMSLOGICDB", "ECS", "EXPRESS", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"AS400", "DB2", "DMSPOLARDB", "HBASE", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "POSTGRESQL", "TERADATA", "POLARDB_PG"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"source_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -138,17 +149,24 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"source_endpoint_vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"destination_endpoint_instance_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"ads", "ADS", "CEN", "DATAHUB", "DG", "ECS", "EXPRESS", "GREENPLUM", "MONGODB", "OTHER", "PolarDB", "POLARDBX20", "RDS"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_engine_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL"}, false),
+				Type:             schema.TypeString,
+				Required:         true,
+				ForceNew:         true,
+				ValidateFunc:     StringInSlice([]string{"ADB20", "ADS", "ADB30", "AS400", "DATAHUB", "DB2", "GREENPLUM", "KAFKA", "MONGODB", "MSSQL", "MySQL", "ORACLE", "PolarDB", "POLARDBX20", "POLARDB_O", "PostgreSQL", "POLARDB_PG"}, true),
+				DiffSuppressFunc: UpperLowerCaseDiffSuppressFunc,
 			},
 			"destination_endpoint_instance_id": {
 				Type:     schema.TypeString,
@@ -189,6 +207,21 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"destination_endpoint_owner_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"destination_endpoint_role": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"dts_bis_label": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"delay_notice": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -218,7 +251,7 @@ func resourceAlicloudDtsSynchronizationJob() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Synchronizing", "Suspending"}, false),
+				ValidateFunc: StringInSlice([]string{"Synchronizing", "Suspending"}, false),
 			},
 		},
 	}
@@ -326,6 +359,24 @@ func resourceAlicloudDtsSynchronizationJobCreate(d *schema.ResourceData, meta in
 	}
 	if v, ok := d.GetOk("source_endpoint_user_name"); ok {
 		request["SourceEndpointUserName"] = v
+	}
+	if v, ok := d.GetOk("dedicated_cluster_id"); ok {
+		request["DedicatedClusterId"] = v
+	}
+	if v, ok := d.GetOk("data_check_configure"); ok {
+		request["DataCheckConfigure"] = v
+	}
+	if v, ok := d.GetOk("source_endpoint_vswitch_id"); ok {
+		request["SourceEndpointVSwitchID"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_owner_id"); ok {
+		request["DestinationEndpointOwnerID"] = v
+	}
+	if v, ok := d.GetOk("destination_endpoint_role"); ok {
+		request["DestinationEndpointRole"] = v
+	}
+	if v, ok := d.GetOk("dts_bis_label"); ok {
+		request["DtsBisLabel"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
@@ -755,6 +806,10 @@ func resourceAlicloudDtsSynchronizationJobStatusFlow(d *schema.ResourceData, met
 
 func convertSourceEndpointEngineNameUppercaseResponse(source interface{}) interface{} {
 	switch source {
+	case "polardb_pg":
+		return "POLARDB_PG"
+	case "express":
+		return "EXPRESS"
 	case "PostgreSQL":
 		return "POSTGRESQL"
 	case "MongoDB":

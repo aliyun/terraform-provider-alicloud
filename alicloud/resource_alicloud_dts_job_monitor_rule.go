@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -41,13 +39,13 @@ func resourceAlicloudDtsJobMonitorRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Y", "N"}, false),
+				ValidateFunc: StringInSlice([]string{"Y", "N"}, false),
 			},
 			"type": {
 				Type:         schema.TypeString,
 				ForceNew:     true,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"delay", "error"}, false),
+				ValidateFunc: StringInSlice([]string{"delay", "error"}, false),
 			},
 		},
 	}

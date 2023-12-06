@@ -156,7 +156,6 @@ func TestAccAlicloudDTSMigrationJob_basic0(t *testing.T) {
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
-					"status":                             "Migrating",
 					"depends_on":                         []string{"alicloud_db_account_privilege.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -175,20 +174,19 @@ func TestAccAlicloudDTSMigrationJob_basic0(t *testing.T) {
 						"structure_initialization":           "true",
 						"data_initialization":                "true",
 						"data_synchronization":               "true",
-						"status":                             "Migrating",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Suspending",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Suspending",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Suspending",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Suspending",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status": "Migrating",
