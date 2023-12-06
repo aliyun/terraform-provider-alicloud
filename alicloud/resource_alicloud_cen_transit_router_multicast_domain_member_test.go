@@ -9,11 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Case 1
-func TestAccAlicloudCenTransitRouterMulticastDomainMember_basic1906(t *testing.T) {
+func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_multicast_domain_member.default"
-	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterMulticastDomainMemberMap1906)
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMulticastDomainMemberMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCenTransitRouterMulticastDomainMember")
@@ -22,7 +21,7 @@ func TestAccAlicloudCenTransitRouterMulticastDomainMember_basic1906(t *testing.T
 	rand := acctest.RandIntRange(10000, 99999)
 	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
 	name := fmt.Sprintf("tf-testacc%sCenTransitRouterMulticastDomainMember%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterMulticastDomainMemberBasicDependence1906)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterMulticastDomainMemberBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -33,75 +32,146 @@ func TestAccAlicloudCenTransitRouterMulticastDomainMember_basic1906(t *testing.T
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                             "${data.alicloud_vpcs.default.ids.0}",
-					"transit_router_multicast_domain_id": "${data.alicloud_cen_transit_router_multicast_domains.default.ids.0}",
-					"network_interface_id":               "${alicloud_ecs_network_interface.default.id}",
+					"transit_router_multicast_domain_id": "${alicloud_cen_transit_router_multicast_domain_association.default.transit_router_multicast_domain_id}",
 					"group_ip_address":                   "224.0.0.8",
+					"network_interface_id":               "${alicloud_ecs_network_interface.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":                             CHECKSET,
 						"transit_router_multicast_domain_id": CHECKSET,
-						"network_interface_id":               CHECKSET,
 						"group_ip_address":                   CHECKSET,
+						"network_interface_id":               CHECKSET,
 					}),
 				),
-			}, {
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudCenTransitRouterMulticastDomainMemberMap1906 = map[string]string{}
+func TestAccAliCloudCenTransitRouterMulticastDomainMember_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_multicast_domain_member.default"
+	ra := resourceAttrInit(resourceId, AliCloudCenTransitRouterMulticastDomainMemberMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CbnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterMulticastDomainMember")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	checkoutSupportedRegions(t, true, connectivity.CENTransitRouterMulticastDomainMemberSupportRegions)
+	name := fmt.Sprintf("tf-testacc%sCenTransitRouterMulticastDomainMember%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCenTransitRouterMulticastDomainMemberBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"transit_router_multicast_domain_id": "${alicloud_cen_transit_router_multicast_domain_association.default.transit_router_multicast_domain_id}",
+					"group_ip_address":                   "224.0.0.8",
+					"network_interface_id":               "${alicloud_ecs_network_interface.default.id}",
+					"vpc_id":                             "${alicloud_cen_transit_router_vpc_attachment.default.vpc_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"transit_router_multicast_domain_id": CHECKSET,
+						"group_ip_address":                   CHECKSET,
+						"network_interface_id":               CHECKSET,
+						"vpc_id":                             CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 
-func AlicloudCenTransitRouterMulticastDomainMemberBasicDependence1906(name string) string {
+var AliCloudCenTransitRouterMulticastDomainMemberMap0 = map[string]string{}
+
+func AliCloudCenTransitRouterMulticastDomainMemberBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-data "alicloud_zones" "default" {
-  available_resource_creation = "Instance"
-}
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
-}
-resource "alicloud_ecs_network_interface" "default" {
-  network_interface_name = var.name
-  vswitch_id             = data.alicloud_vswitches.default.ids.0
-  security_group_ids     = [alicloud_security_group.default.id]
-  description            = "Basic test"
-  primary_ip_address     = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)
-  tags = {
-    Created = "TF",
-    For     = "Test",
-  }
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
-}
-data "alicloud_cen_instances" "default" {
-  name_regex = "no-deleting-cen"
-}
-data "alicloud_cen_transit_routers" "default" {
-  cen_id     = data.alicloud_cen_instances.default.instances.0.id
-  name_regex = "no-deleting-cen"
-}
-data "alicloud_cen_transit_router_multicast_domains" "default" {
-  transit_router_id = data.alicloud_cen_transit_routers.default.transit_routers.0.transit_router_id
-  name_regex        = "no-deleting-cen"
-}
+	variable "name" {
+		default = "%s"
+	}
 
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = "cn-hangzhou-i"
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vswitch.default.vpc_id
+	}
+
+	resource "alicloud_ecs_network_interface" "default" {
+  		vswitch_id         = alicloud_vswitch.default.id
+  		security_group_ids = [alicloud_security_group.default.id]
+	}
+
+	resource "alicloud_cen_instance" "default" {
+  		cen_instance_name = var.name
+	}
+
+	resource "alicloud_cen_bandwidth_package" "default" {
+  		bandwidth                  = 5
+  		cen_bandwidth_package_name = var.name
+  		geographic_region_a_id     = "China"
+  		geographic_region_b_id     = "China"
+	}
+
+	resource "alicloud_cen_bandwidth_package_attachment" "default" {
+  		instance_id          = alicloud_cen_instance.default.id
+  		bandwidth_package_id = alicloud_cen_bandwidth_package.default.id
+	}
+
+	resource "alicloud_cen_transit_router" "default" {
+  		cen_id            = alicloud_cen_bandwidth_package_attachment.default.instance_id
+  		support_multicast = true
+	}
+
+	resource "alicloud_cen_transit_router_multicast_domain" "default" {
+  		transit_router_id                           = alicloud_cen_transit_router.default.transit_router_id
+  		transit_router_multicast_domain_name        = var.name
+  		transit_router_multicast_domain_description = var.name
+	}
+
+	resource "alicloud_cen_transit_router_vpc_attachment" "default" {
+  		cen_id                                = alicloud_cen_transit_router.default.cen_id
+  		transit_router_id                     = alicloud_cen_transit_router_multicast_domain.default.transit_router_id
+  		vpc_id                                = alicloud_vswitch.default.vpc_id
+  		transit_router_attachment_description = var.name
+  		transit_router_attachment_name        = var.name
+  		zone_mappings {
+    		vswitch_id = alicloud_vswitch.default.id
+    		zone_id    = alicloud_vswitch.default.zone_id
+  		}
+	}
+
+	resource "alicloud_cen_transit_router_multicast_domain_association" "default" {
+  		transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.default.id
+  		transit_router_attachment_id       = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachment_id
+  		vswitch_id                         = alicloud_vswitch.default.id
+	}
 `, name)
 }

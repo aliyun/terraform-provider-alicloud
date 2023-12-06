@@ -23,24 +23,38 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
-data "alicloud_cen_transit_router_available_resources" "default" {}
+
+data "alicloud_cen_transit_router_available_resources" "default" {
+}
+
 locals {
   zone = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]
 }
+
 resource "alicloud_vpc" "example" {
   vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
+
 resource "alicloud_vswitch" "example" {
   vswitch_name = var.name
   cidr_block   = "192.168.1.0/24"
   vpc_id       = alicloud_vpc.example.id
   zone_id      = local.zone
 }
+
 resource "alicloud_security_group" "example" {
   name   = var.name
   vpc_id = alicloud_vpc.example.id
 }
+
+resource "alicloud_ecs_network_interface" "example" {
+  network_interface_name = var.name
+  vswitch_id             = alicloud_vswitch.example.id
+  primary_ip_address     = cidrhost(alicloud_vswitch.example.cidr_block, 100)
+  security_group_ids     = [alicloud_security_group.example.id]
+}
+
 resource "alicloud_cen_instance" "example" {
   cen_instance_name = var.name
 }
@@ -72,13 +86,6 @@ resource "alicloud_cen_transit_router_multicast_domain_association" "example" {
   vswitch_id                         = alicloud_vswitch.example.id
 }
 
-resource "alicloud_ecs_network_interface" "example" {
-  network_interface_name = var.name
-  vswitch_id             = alicloud_vswitch.example.id
-  primary_ip_address     = cidrhost(alicloud_vswitch.example.cidr_block, 100)
-  security_group_ids     = [alicloud_security_group.example.id]
-}
-
 resource "alicloud_cen_transit_router_multicast_domain_member" "example" {
   vpc_id                             = alicloud_vpc.example.id
   transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain_association.example.transit_router_multicast_domain_id
@@ -90,22 +97,24 @@ resource "alicloud_cen_transit_router_multicast_domain_member" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-* `group_ip_address` - (Required, ForceNew) The IP address of the multicast group to which the multicast member belongs. If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
-* `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast member belongs.
-* `vpc_id` - (Optional, ForceNew) The VPC to which the ENI of the multicast member belongs. This field is mandatory for VPCs owned by another accounts.
-* `network_interface_id` - (Required, ForceNew) The ID of the ENI.
-* `dry_run` - (Optional) Specifies whether only to precheck the request.
 
+* `transit_router_multicast_domain_id` - (Required, ForceNew) The ID of the multicast domain to which the multicast member belongs.
+* `group_ip_address` - (Required, ForceNew) The IP address of the multicast group to which the multicast member belongs. If the multicast group you specified does not exist in the current multicast domain, the system will automatically create a new multicast group for you in the current multicast domain.
+* `network_interface_id` - (Required, ForceNew) The ID of the ENI.
+* `vpc_id` - (Optional, ForceNew) The VPC to which the ENI of the multicast member belongs. This field is mandatory for VPCs owned by another accounts.
+* `dry_run` - (Optional, Bool) Specifies whether only to precheck the request.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.The value is formulated as `<transit_router_multicast_domain_id>:<group_ip_address>:<network_interface_id>`.
-* `status` - The status of the resource
+
+* `id` - The `key` of the resource supplied above. It formats as `<transit_router_multicast_domain_id>:<group_ip_address>:<network_interface_id>`.
+* `status` - The status of the Transit Router Multicast Domain Member.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 10 mins) Used when create the Transit Router Multicast Domain Member.
 * `delete` - (Defaults to 10 mins) Used when delete the Transit Router Multicast Domain Member.
 

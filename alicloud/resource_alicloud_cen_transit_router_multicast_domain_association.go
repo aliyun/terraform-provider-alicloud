@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCenTransitRouterMulticastDomainAssociation() *schema.Resource {
+func resourceAliCloudCenTransitRouterMulticastDomainAssociation() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenTransitRouterMulticastDomainAssociationCreate,
-		Read:   resourceAlicloudCenTransitRouterMulticastDomainAssociationRead,
-		Delete: resourceAlicloudCenTransitRouterMulticastDomainAssociationDelete,
+		Create: resourceAliCloudCenTransitRouterMulticastDomainAssociationCreate,
+		Read:   resourceAliCloudCenTransitRouterMulticastDomainAssociationRead,
+		Delete: resourceAliCloudCenTransitRouterMulticastDomainAssociationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,7 +46,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainAssociation() *schema.Resour
 	}
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
@@ -70,7 +70,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -91,16 +91,16 @@ func resourceAlicloudCenTransitRouterMulticastDomainAssociationCreate(d *schema.
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterMulticastDomainAssociationRead(d, meta)
+	return resourceAliCloudCenTransitRouterMulticastDomainAssociationRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 
 	object, err := cbnService.DescribeCenTransitRouterMulticastDomainAssociation(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -115,7 +115,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainAssociationRead(d *schema.Re
 	return nil
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainAssociationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	action := "DisassociateTransitRouterMulticastDomain"
