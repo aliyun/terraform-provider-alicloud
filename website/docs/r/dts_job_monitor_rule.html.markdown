@@ -120,11 +120,15 @@ resource "alicloud_dts_migration_job" "example" {
   destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
   destination_endpoint_user_name     = alicloud_rds_account.example.1.name
   destination_endpoint_password      = alicloud_rds_account.example.1.account_password
-  db_list                            = "{\"${alicloud_db_database.example.0.name}\":{\"name\":\"${alicloud_db_database.example.1.name}\",\"all\":true}}"
-  structure_initialization           = true
-  data_initialization                = true
-  data_synchronization               = true
-  status                             = "Migrating"
+  db_list = jsonencode(
+    {
+      "${alicloud_db_database.example.0.name}" = { name = alicloud_db_database.example.1.name, all = true }
+    }
+  )
+  structure_initialization = true
+  data_initialization      = true
+  data_synchronization     = true
+  status                   = "Migrating"
 }
 
 resource "alicloud_dts_job_monitor_rule" "example" {

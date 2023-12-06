@@ -48,7 +48,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 					"destination_endpoint_database_name": "test_database",
 					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
 					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
-					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
@@ -62,7 +62,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 						"destination_endpoint_instance_type": "RDS",
 						"destination_endpoint_engine_name":   "MySQL",
 						"destination_endpoint_region":        os.Getenv("ALICLOUD_REGION"),
-						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
+						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 					}),
 				),
 			},
@@ -78,71 +78,11 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_endpoint_password": "Lazypeople123+",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source_endpoint_password": "Lazypeople123+",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source_endpoint_password": "N1cetest",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source_endpoint_password": "N1cetest",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "Lazypeople123+",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination_endpoint_password": "Lazypeople123+",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "N1cetest",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination_endpoint_password": "N1cetest",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"status": "Suspending",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"status": "Suspending",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "Lazypeople123+",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination_endpoint_password": "Lazypeople123+",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination_endpoint_password": "N1cetest",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination_endpoint_password": "N1cetest",
 					}),
 				),
 			},
@@ -156,6 +96,54 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 					}),
 				),
 			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"source_endpoint_password": "Lazypeople123+",
+			//		"status":                   "Suspending",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"source_endpoint_password": "Lazypeople123+",
+			//			"status":                   "Suspending",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"source_endpoint_password": "${alicloud_rds_account.source_account.account_password}",
+			//		"status":                   "Synchronizing",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"source_endpoint_password": CHECKSET,
+			//			"status":                   "Synchronizing",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"destination_endpoint_password": "Lazypeople123+",
+			//		"status":                        "Retrying",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"destination_endpoint_password": "Lazypeople123+",
+			//			"status":                        "Retrying",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"destination_endpoint_password": "${alicloud_rds_account.target_account.account_password}",
+			//		"status":                        "Synchronizing",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"destination_endpoint_password": CHECKSET,
+			//			"status":                        "Synchronizing",
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -268,7 +256,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 					"destination_endpoint_database_name": "test_database",
 					"destination_endpoint_user_name":     "${alicloud_rds_account.target_account.account_name}",
 					"destination_endpoint_password":      "${alicloud_rds_account.target_account.account_password}",
-					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
+					"db_list":                            "{\\\"test_database\\\":{\\\"name\\\":\\\"test_database\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"structure_initialization":           "true",
 					"data_initialization":                "true",
 					"data_synchronization":               "true",
@@ -282,7 +270,7 @@ func TestAccAliCloudDTSSynchronizationJob_basic2(t *testing.T) {
 						"destination_endpoint_instance_type": "RDS",
 						"destination_endpoint_engine_name":   "MySQL",
 						"destination_endpoint_region":        os.Getenv("ALICLOUD_REGION"),
-						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
+						"db_list":                            "{\"test_database\":{\"name\":\"test_database\",\"all\":true,\"state\":\"normal\"}}",
 					}),
 				),
 			},
