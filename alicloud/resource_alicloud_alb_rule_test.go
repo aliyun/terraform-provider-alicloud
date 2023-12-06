@@ -288,6 +288,40 @@ func TestAccAliCloudALBRule_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_actions": []map[string]interface{}{
 						{
+							"remove_header_config": []map[string]interface{}{
+								{
+									"key": "tf-remove-header",
+								},
+							},
+							"order": "3",
+							"type":  "RemoveHeader",
+						},
+						{
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${alicloud_alb_server_group.default.id}",
+											"weight":          "1",
+										},
+									},
+								},
+							},
+							"order": "9",
+							"type":  "ForwardGroup",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_actions.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_actions": []map[string]interface{}{
+						{
 							"rewrite_config": []map[string]interface{}{
 								{
 									"host":  "www.test.com",
@@ -340,7 +374,8 @@ func TestAccAliCloudALBRule_basic0(t *testing.T) {
 						{
 							"traffic_limit_config": []map[string]interface{}{
 								{
-									"qps": "120",
+									"qps":        "120",
+									"per_ip_qps": "120",
 								},
 							},
 							"order": "1",
@@ -617,6 +652,45 @@ func TestAccAliCloudALBRule_basic1(t *testing.T) {
 						"priority":          "666",
 						"direction":         "Response",
 						"rule_actions.#":    "1",
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_conditions": []map[string]interface{}{
+						{
+							"response_header_config": []map[string]interface{}{
+								{
+									"key":    "Port",
+									"values": []string{"5006"},
+								},
+							},
+							"type": "ResponseHeader",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_conditions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_conditions": []map[string]interface{}{
+						{
+							"response_status_code_config": []map[string]interface{}{
+								{
+									"values": []string{"500"},
+								},
+							},
+							"type": "ResponseStatusCode",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
 						"rule_conditions.#": "1",
 					}),
 				),

@@ -272,6 +272,14 @@ func resourceAliCloudAlbListener() *schema.Resource {
 							Optional: true,
 							Computed: true,
 						},
+						"x_forwarded_for_client_source_ips_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"x_forwarded_for_client_source_ips_trusted": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"x_forwarded_for_client_cert_subject_dn_alias": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -492,6 +500,8 @@ func resourceAliCloudAlbListenerCreate(d *schema.ResourceData, meta interface{})
 			xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
 			xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
 			xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
+			xforwardedForConfigMap["XForwardedForClientSourceIpsEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_source_ips_enabled"]
+			xforwardedForConfigMap["XForwardedForClientSourceIpsTrusted"] = xforwardedForConfigArg["x_forwarded_for_client_source_ips_trusted"]
 			xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
 			xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
 			xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
@@ -674,6 +684,8 @@ func resourceAliCloudAlbListenerRead(d *schema.ResourceData, meta interface{}) e
 		xforwardedForConfigMap["x_forwarded_for_client_cert_finger_print_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertFingerprintEnabled"]
 		xforwardedForConfigMap["x_forwarded_for_client_cert_subject_dn_alias"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNAlias"]
 		xforwardedForConfigMap["x_forwarded_for_client_cert_subject_dn_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientCertSubjectDNEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_source_ips_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientSourceIpsEnabled"]
+		xforwardedForConfigMap["x_forwarded_for_client_source_ips_trusted"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientSourceIpsTrusted"]
 		xforwardedForConfigMap["x_forwarded_for_client_src_port_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForClientSrcPortEnabled"]
 		xforwardedForConfigMap["x_forwarded_for_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForEnabled"]
 		xforwardedForConfigMap["x_forwarded_for_proto_enabled"] = xforwardedForConfig.(map[string]interface{})["XForwardedForProtoEnabled"]
@@ -874,6 +886,8 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 				xforwardedForConfigMap["XForwardedForClientCertFingerprintEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_finger_print_enabled"]
 				xforwardedForConfigMap["XForwardedForClientCertSubjectDNAlias"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_alias"]
 				xforwardedForConfigMap["XForwardedForClientCertSubjectDNEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_cert_subject_dn_enabled"]
+				xforwardedForConfigMap["XForwardedForClientSourceIpsEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_source_ips_enabled"]
+				xforwardedForConfigMap["XForwardedForClientSourceIpsTrusted"] = xforwardedForConfigArg["x_forwarded_for_client_source_ips_trusted"]
 				xforwardedForConfigMap["XForwardedForClientSrcPortEnabled"] = xforwardedForConfigArg["x_forwarded_for_client_src_port_enabled"]
 				xforwardedForConfigMap["XForwardedForEnabled"] = xforwardedForConfigArg["x_forwarded_for_enabled"]
 				xforwardedForConfigMap["XForwardedForProtoEnabled"] = xforwardedForConfigArg["x_forwarded_for_proto_enabled"]
@@ -883,9 +897,7 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 
 			updateListenerAttributeReq["XForwardedForConfig"] = xforwardedForConfigMap
 		}
-	}
-
-	if !d.IsNewResource() && d.HasChange("xforwarded_for_config") {
+	} else if !d.IsNewResource() && d.HasChange("xforwarded_for_config") {
 		update = true
 		if v, ok := d.GetOk("xforwarded_for_config"); ok {
 			xforwardedForConfigMap := map[string]interface{}{}

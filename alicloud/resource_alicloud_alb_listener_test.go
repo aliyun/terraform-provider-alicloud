@@ -728,6 +728,8 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							"x_forwarded_for_proto_enabled":                     "true",
 							"x_forwarded_for_slb_id_enabled":                    "true",
 							"x_forwarded_for_slb_port_enabled":                  "true",
+							"x_forwarded_for_client_source_ips_enabled":         "true",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
 						},
 					},
 				}),
@@ -766,6 +768,8 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							"x_forwarded_for_proto_enabled":                     "true",
 							"x_forwarded_for_slb_id_enabled":                    "true",
 							"x_forwarded_for_slb_port_enabled":                  "true",
+							"x_forwarded_for_client_source_ips_enabled":         "false",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
 						},
 					},
 				}),
@@ -792,12 +796,194 @@ func TestAccAliCloudALBListener_basic3(t *testing.T) {
 							"x_forwarded_for_proto_enabled":                     "false",
 							"x_forwarded_for_slb_id_enabled":                    "false",
 							"x_forwarded_for_slb_port_enabled":                  "false",
+							"x_forwarded_for_client_source_ips_enabled":         "true",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.2.0/24",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudALBListener_basic4(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_listener.default"
+	ra := resourceAttrInit(resourceId, AliCloudALBListenerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbListener")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1, 1000)
+	name := fmt.Sprintf("tf-testaccalblistener%d", rand)
+	port := fmt.Sprintf("%d", acctest.RandIntRange(1, 1000))
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudALBListenerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_id":     "${local.load_balancer_id}",
+					"listener_protocol":    "HTTPS",
+					"listener_port":        port,
+					"listener_description": "tf-testAccListener_new",
+					"default_actions": []map[string]interface{}{
+						{
+							"type": "ForwardGroup",
+							"forward_group_config": []map[string]interface{}{
+								{
+									"server_group_tuples": []map[string]interface{}{
+										{
+											"server_group_id": "${local.server_group_id}",
+										},
+									},
+								},
+							},
+						},
+					},
+					"certificates": []map[string]interface{}{
+						{
+							"certificate_id": "${local.certificate_id}",
+						},
+					},
+					"acl_config": []map[string]interface{}{
+						{
+							"acl_type": "White",
+							"acl_relations": []map[string]interface{}{
+								{
+									"acl_id": "${alicloud_alb_acl.default.0.id}",
+								},
+							},
+						},
+					},
+					"gzip_enabled":       "true",
+					"http2_enabled":      "true",
+					"idle_timeout":       "20",
+					"request_timeout":    "60",
+					"security_policy_id": "tls_cipher_policy_1_0",
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_223451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "true",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_223452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "true",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_223453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "true",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_223454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "true",
+							"x_forwarded_for_client_src_port_enabled":           "true",
+							"x_forwarded_for_enabled":                           "true",
+							"x_forwarded_for_proto_enabled":                     "true",
+							"x_forwarded_for_slb_id_enabled":                    "true",
+							"x_forwarded_for_slb_port_enabled":                  "true",
+							"x_forwarded_for_client_source_ips_enabled":         "true",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_id":         CHECKSET,
+						"listener_protocol":        "HTTPS",
+						"listener_port":            port,
+						"listener_description":     "tf-testAccListener_new",
+						"default_actions.#":        "1",
+						"certificates.#":           "1",
+						"acl_config.#":             "1",
+						"gzip_enabled":             "true",
+						"http2_enabled":            "true",
+						"idle_timeout":             "20",
+						"request_timeout":          "60",
+						"security_policy_id":       "tls_cipher_policy_1_0",
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "true",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "true",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "true",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "true",
+							"x_forwarded_for_client_src_port_enabled":           "true",
+							"x_forwarded_for_enabled":                           "true",
+							"x_forwarded_for_proto_enabled":                     "true",
+							"x_forwarded_for_slb_id_enabled":                    "true",
+							"x_forwarded_for_slb_port_enabled":                  "true",
+							"x_forwarded_for_client_source_ips_enabled":         "false",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.1.0/24",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"x_forwarded_for_config": []map[string]interface{}{
+						{
+							"x_forwarded_for_client_cert_client_verify_alias":   "test_client-verify-alias_123451",
+							"x_forwarded_for_client_cert_client_verify_enabled": "false",
+							"x_forwarded_for_client_cert_finger_print_alias":    "test_client-verify-alias_123452",
+							"x_forwarded_for_client_cert_finger_print_enabled":  "false",
+							"x_forwarded_for_client_cert_issuer_dn_alias":       "test_client-verify-alias_123453",
+							"x_forwarded_for_client_cert_issuer_dn_enabled":     "false",
+							"x_forwarded_for_client_cert_subject_dn_alias":      "test_client-verify-alias_123454",
+							"x_forwarded_for_client_cert_subject_dn_enabled":    "false",
+							"x_forwarded_for_client_src_port_enabled":           "false",
+							"x_forwarded_for_enabled":                           "false",
+							"x_forwarded_for_proto_enabled":                     "false",
+							"x_forwarded_for_slb_id_enabled":                    "false",
+							"x_forwarded_for_slb_port_enabled":                  "false",
+							"x_forwarded_for_client_source_ips_enabled":         "true",
+							"x_forwarded_for_client_source_ips_trusted":         "192.168.2.0/24",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"x_forwarded_for_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"quic_config": []map[string]interface{}{
+						{
+							"quic_upgrade_enabled": "true",
+							"quic_listener_id":     "${alicloud_alb_listener.quic.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"quic_config.#": "1",
 					}),
 				),
 			},
@@ -1026,5 +1212,24 @@ EOF
   		certificate_id         = join("", [alicloud_ssl_certificates_service_certificate.default.id, "-%s"])
   		certificate_id_update  = join("-", [alicloud_ssl_certificates_service_certificate.update.id, "%s"])
 	}
+
+	resource "alicloud_alb_listener" "quic" {
+	  load_balancer_id     = local.load_balancer_id
+	  listener_protocol    = "QUIC"
+	  listener_port        = 443
+	  listener_description = var.name
+	  certificates {
+		certificate_id = local.certificate_id_update
+	  }
+	  default_actions {
+		type = "ForwardGroup"
+		forward_group_config {
+		  server_group_tuples {
+			server_group_id = local.server_group_id
+		  }
+		}
+	  }
+	}
+
 `, name, defaultRegionToTest, defaultRegionToTest)
 }

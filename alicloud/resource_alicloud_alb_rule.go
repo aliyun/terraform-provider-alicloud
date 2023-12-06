@@ -65,7 +65,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors"}, false),
+							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixedResponse", "Rewrite", "InsertHeader", "TrafficLimit", "TrafficMirror", "Cors", "RemoveHeader"}, false),
 						},
 						"fixed_response_config": {
 							Type:     schema.TypeSet,
@@ -165,6 +165,20 @@ func resourceAliCloudAlbRule() *schema.Resource {
 								},
 							},
 						},
+						"remove_header_config": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
+									},
+								},
+							},
+						},
 						"redirect_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -233,6 +247,11 @@ func resourceAliCloudAlbRule() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"qps": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										ValidateFunc: IntBetween(1, 100000),
+									},
+									"per_ip_qps": {
 										Type:         schema.TypeInt,
 										Optional:     true,
 										ValidateFunc: IntBetween(1, 100000),
@@ -324,7 +343,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "QueryString", "Method", "Cookie", "SourceIp"}, false),
+							ValidateFunc: StringInSlice([]string{"Host", "Path", "Header", "QueryString", "Method", "Cookie", "SourceIp", "ResponseHeader", "ResponseStatusCode"}, false),
 						},
 						"cookie_config": {
 							Type:     schema.TypeSet,
@@ -364,6 +383,39 @@ func resourceAliCloudAlbRule() *schema.Resource {
 										Optional:     true,
 										ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
 									},
+									"values": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"response_header_config": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"key": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringMatch(regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`), "The name of the header. The name must be 1 to 40 characters in length and can contain letters, digits, underscores (_), and hyphens (-)."),
+									},
+									"values": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"response_status_code_config": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
 									"values": {
 										Type:     schema.TypeSet,
 										Optional: true,
@@ -549,6 +601,13 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 			ruleActionsMap["InsertHeaderConfig"] = insertHeaderConfigMap
 		}
 
+		removeHeaderConfigMap := map[string]interface{}{}
+		for _, removeHeaderConfig := range ruleActionsArg["remove_header_config"].(*schema.Set).List() {
+			removeHeaderConfigArg := removeHeaderConfig.(map[string]interface{})
+			insertHeaderConfigMap["Key"] = removeHeaderConfigArg["key"]
+			ruleActionsMap["RemoveHeaderConfig"] = removeHeaderConfigMap
+		}
+
 		redirectConfigMap := map[string]interface{}{}
 		for _, redirectConfig := range ruleActionsArg["redirect_config"].(*schema.Set).List() {
 			redirectConfigArg := redirectConfig.(map[string]interface{})
@@ -574,7 +633,8 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 		if len(trafficLimitConfigList) > 0 {
 			trafficLimitConfigArg := trafficLimitConfigList[0].(map[string]interface{})
 			ruleActionsMap["TrafficLimitConfig"] = map[string]interface{}{
-				"QPS": trafficLimitConfigArg["qps"],
+				"QPS":      trafficLimitConfigArg["qps"],
+				"PerIpQps": trafficLimitConfigArg["per_ip_qps"],
 			}
 		}
 
@@ -664,6 +724,21 @@ func resourceAliCloudAlbRuleCreate(d *schema.ResourceData, meta interface{}) err
 			headerConfigMap["Key"] = headerConfigArg["key"]
 			headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
 			ruleConditionsMap["HeaderConfig"] = headerConfigMap
+		}
+
+		responseHeaderConfigMap := map[string]interface{}{}
+		for _, headerConfig := range ruleConditionsArg["response_header_config"].(*schema.Set).List() {
+			headerConfigArg := headerConfig.(map[string]interface{})
+			headerConfigMap["Key"] = headerConfigArg["key"]
+			headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+			ruleConditionsMap["ResponseHeaderConfig"] = responseHeaderConfigMap
+		}
+
+		responseStatusCodeMap := map[string]interface{}{}
+		for _, headerConfig := range ruleConditionsArg["response_status_code_config"].(*schema.Set).List() {
+			headerConfigArg := headerConfig.(map[string]interface{})
+			responseStatusCodeMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+			ruleConditionsMap["ResponseStatusCodeConfig"] = responseStatusCodeMap
 		}
 
 		hostConfigMap := map[string]interface{}{}
@@ -846,6 +921,18 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 				}
 			}
 
+			if removeHeaderConfig, ok := ruleActionsArg["RemoveHeaderConfig"]; ok {
+				removeHeaderConfigArg := removeHeaderConfig.(map[string]interface{})
+				if len(removeHeaderConfigArg) > 0 {
+					removeHeaderConfigMaps := make([]map[string]interface{}, 0)
+					removeHeaderConfigMap := make(map[string]interface{}, 0)
+					removeHeaderConfigMap["key"] = removeHeaderConfigArg["Key"]
+					removeHeaderConfigMaps = append(removeHeaderConfigMaps, removeHeaderConfigMap)
+					ruleActionsMap["remove_header_config"] = removeHeaderConfigMaps
+					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+				}
+			}
+
 			if redirectConfig, ok := ruleActionsArg["RedirectConfig"]; ok {
 				redirectConfigArg := redirectConfig.(map[string]interface{})
 				if len(redirectConfigArg) > 0 {
@@ -883,6 +970,7 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					trafficLimitConfigMaps := make([]map[string]interface{}, 0)
 					trafficLimitConfigMap := make(map[string]interface{}, 0)
 					trafficLimitConfigMap["qps"] = trafficLimitConfigArg["QPS"]
+					trafficLimitConfigMap["per_ip_qps"] = trafficLimitConfigArg["PerIpQps"]
 					trafficLimitConfigMaps = append(trafficLimitConfigMaps, trafficLimitConfigMap)
 					ruleActionsMap["traffic_limit_config"] = trafficLimitConfigMaps
 					ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
@@ -985,7 +1073,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					cookieConfigMap["values"] = valuesMaps
 					cookieConfigMaps = append(cookieConfigMaps, cookieConfigMap)
 					ruleConditionsMap["cookie_config"] = cookieConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
 
@@ -998,7 +1085,29 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					headerConfigMap["key"] = headerConfigArg["Key"]
 					headerConfigMaps = append(headerConfigMaps, headerConfigMap)
 					ruleConditionsMap["header_config"] = headerConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
+				}
+			}
+
+			if headerConfig, ok := ruleConditionsArg["ResponseHeaderConfig"]; ok {
+				headerConfigArg := headerConfig.(map[string]interface{})
+				if len(headerConfigArg) > 0 {
+					headerConfigMaps := make([]map[string]interface{}, 0)
+					headerConfigMap := map[string]interface{}{}
+					headerConfigMap["values"] = headerConfigArg["Values"].([]interface{})
+					headerConfigMap["key"] = headerConfigArg["Key"]
+					headerConfigMaps = append(headerConfigMaps, headerConfigMap)
+					ruleConditionsMap["response_header_config"] = headerConfigMaps
+				}
+			}
+
+			if headerConfig, ok := ruleConditionsArg["ResponseStatusCodeConfig"]; ok {
+				headerConfigArg := headerConfig.(map[string]interface{})
+				if len(headerConfigArg) > 0 {
+					headerConfigMaps := make([]map[string]interface{}, 0)
+					headerConfigMap := map[string]interface{}{}
+					headerConfigMap["values"] = headerConfigArg["Values"].([]interface{})
+					headerConfigMaps = append(headerConfigMaps, headerConfigMap)
+					ruleConditionsMap["response_status_code_config"] = headerConfigMaps
 				}
 			}
 
@@ -1018,7 +1127,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					queryStringConfigMap["values"] = queryStringValuesMaps
 					queryStringConfigMaps = append(queryStringConfigMaps, queryStringConfigMap)
 					ruleConditionsMap["query_string_config"] = queryStringConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
 
@@ -1030,7 +1138,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					hostConfigMap["values"] = hostConfigArg["Values"].([]interface{})
 					hostConfigMaps = append(hostConfigMaps, hostConfigMap)
 					ruleConditionsMap["host_config"] = hostConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
 
@@ -1042,7 +1149,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					methodConfigMap["values"] = methodConfigArg["Values"].([]interface{})
 					methodConfigMaps = append(methodConfigMaps, methodConfigMap)
 					ruleConditionsMap["method_config"] = methodConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
 
@@ -1054,7 +1160,6 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					pathConfigMap["values"] = pathConfigArg["Values"].([]interface{})
 					pathConfigMaps = append(pathConfigMaps, pathConfigMap)
 					ruleConditionsMap["path_config"] = pathConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
 
@@ -1066,9 +1171,10 @@ func resourceAliCloudAlbRuleRead(d *schema.ResourceData, meta interface{}) error
 					sourceIpConfigMap["values"] = sourceIpConfigArg["Values"].([]interface{})
 					sourceIpConfigMaps = append(sourceIpConfigMaps, sourceIpConfigMap)
 					ruleConditionsMap["source_ip_config"] = sourceIpConfigMaps
-					ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 				}
 			}
+
+			ruleConditionsMaps = append(ruleConditionsMaps, ruleConditionsMap)
 		}
 
 		d.Set("rule_conditions", ruleConditionsMaps)
@@ -1162,6 +1268,13 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			ruleActionsMap["InsertHeaderConfig"] = insertHeaderConfigMap
 		}
 
+		removeHeaderConfigMap := map[string]interface{}{}
+		for _, removeHeaderConfig := range ruleActionsArg["remove_header_config"].(*schema.Set).List() {
+			removeHeaderConfigArg := removeHeaderConfig.(map[string]interface{})
+			removeHeaderConfigMap["Key"] = removeHeaderConfigArg["key"]
+			ruleActionsMap["RemoveHeaderConfig"] = removeHeaderConfigMap
+		}
+
 		redirectConfigMap := map[string]interface{}{}
 		for _, redirectConfig := range ruleActionsArg["redirect_config"].(*schema.Set).List() {
 			redirectConfigArg := redirectConfig.(map[string]interface{})
@@ -1187,7 +1300,8 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 		if len(trafficLimitConfigList) > 0 {
 			trafficLimitConfigArg := trafficLimitConfigList[0].(map[string]interface{})
 			ruleActionsMap["TrafficLimitConfig"] = map[string]interface{}{
-				"QPS": trafficLimitConfigArg["qps"],
+				"QPS":      trafficLimitConfigArg["qps"],
+				"PerIpQps": trafficLimitConfigArg["per_ip_qps"],
 			}
 		}
 
@@ -1280,6 +1394,21 @@ func resourceAliCloudAlbRuleUpdate(d *schema.ResourceData, meta interface{}) err
 			headerConfigMap["Key"] = headerConfigArg["key"]
 			headerConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
 			ruleConditionsMap["HeaderConfig"] = headerConfigMap
+		}
+
+		responseHeaderConfigMap := map[string]interface{}{}
+		for _, headerConfig := range ruleConditionsArg["response_header_config"].(*schema.Set).List() {
+			headerConfigArg := headerConfig.(map[string]interface{})
+			responseHeaderConfigMap["Key"] = headerConfigArg["key"]
+			responseHeaderConfigMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+			ruleConditionsMap["ResponseHeaderConfig"] = responseHeaderConfigMap
+		}
+
+		responseStatusCodeMap := map[string]interface{}{}
+		for _, headerConfig := range ruleConditionsArg["response_status_code_config"].(*schema.Set).List() {
+			headerConfigArg := headerConfig.(map[string]interface{})
+			responseStatusCodeMap["Values"] = headerConfigArg["values"].(*schema.Set).List()
+			ruleConditionsMap["ResponseStatusCodeConfig"] = responseStatusCodeMap
 		}
 
 		hostConfigMap := map[string]interface{}{}
