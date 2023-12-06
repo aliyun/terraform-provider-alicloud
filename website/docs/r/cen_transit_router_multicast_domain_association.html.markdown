@@ -23,14 +23,19 @@ Basic Usage
 variable "name" {
   default = "tf_example"
 }
-data "alicloud_cen_transit_router_available_resources" "default" {}
+
+data "alicloud_cen_transit_router_available_resources" "default" {
+}
+
 locals {
   zone = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[1]
 }
+
 resource "alicloud_vpc" "example" {
   vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
+
 resource "alicloud_vswitch" "example" {
   vswitch_name = var.name
   cidr_block   = "192.168.1.0/24"

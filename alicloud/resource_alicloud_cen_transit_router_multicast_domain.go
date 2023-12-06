@@ -11,12 +11,12 @@ import (
 	"time"
 )
 
-func resourceAlicloudCenTransitRouterMulticastDomain() *schema.Resource {
+func resourceAliCloudCenTransitRouterMulticastDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCenTransitRouterMulticastDomainCreate,
-		Read:   resourceAlicloudCenTransitRouterMulticastDomainRead,
-		Update: resourceAlicloudCenTransitRouterMulticastDomainUpdate,
-		Delete: resourceAlicloudCenTransitRouterMulticastDomainDelete,
+		Create: resourceAliCloudCenTransitRouterMulticastDomainCreate,
+		Read:   resourceAliCloudCenTransitRouterMulticastDomainRead,
+		Update: resourceAliCloudCenTransitRouterMulticastDomainUpdate,
+		Delete: resourceAliCloudCenTransitRouterMulticastDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -48,7 +48,7 @@ func resourceAlicloudCenTransitRouterMulticastDomain() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
@@ -77,7 +77,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceDat
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Operation.Blocking"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -98,16 +98,16 @@ func resourceAlicloudCenTransitRouterMulticastDomainCreate(d *schema.ResourceDat
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCenTransitRouterMulticastDomainUpdate(d, meta)
+	return resourceAliCloudCenTransitRouterMulticastDomainUpdate(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 
 	object, err := cbnService.DescribeCenTransitRouterMulticastDomain(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -129,7 +129,7 @@ func resourceAlicloudCenTransitRouterMulticastDomainRead(d *schema.ResourceData,
 	return nil
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
@@ -200,10 +200,10 @@ func resourceAlicloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceDat
 
 	d.Partial(false)
 
-	return resourceAlicloudCenTransitRouterMulticastDomainRead(d, meta)
+	return resourceAliCloudCenTransitRouterMulticastDomainRead(d, meta)
 }
 
-func resourceAlicloudCenTransitRouterMulticastDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCenTransitRouterMulticastDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	action := "DeleteTransitRouterMulticastDomain"
