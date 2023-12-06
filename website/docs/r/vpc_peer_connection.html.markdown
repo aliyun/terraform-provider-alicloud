@@ -57,7 +57,6 @@ resource "alicloud_vpc_peer_connection" "default" {
 }
 ```
 
-
 ## Argument Reference
 
 The following arguments are supported:
@@ -79,8 +78,6 @@ The following arguments are supported:
 * `status` - (Optional, Computed) The status of the resource.
 * `tags` - (Optional, Map, Available since v1.207.0) The tags of PrefixList.
 * `vpc_id` - (Required, ForceNew) You must create a VPC ID on the initiator of a VPC peer connection.
-
-
 
 ## Attributes Reference
 

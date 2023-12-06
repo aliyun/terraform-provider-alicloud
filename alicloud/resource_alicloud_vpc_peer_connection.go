@@ -88,11 +88,13 @@ func resourceAliCloudVpcPeerConnection() *schema.Resource {
 }
 
 func resourceAliCloudVpcPeerConnectionCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateVpcPeerConnection"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcpeerClient()
 	if err != nil {
 		return WrapError(err)
@@ -113,15 +115,20 @@ func resourceAliCloudVpcPeerConnectionCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("peer_connection_name"); ok {
 		request["Name"] = v
 	}
+	if v, ok := d.GetOk("bandwidth"); ok {
+		request["Bandwidth"] = v
+	}
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -172,18 +179,21 @@ func resourceAliCloudVpcPeerConnectionRead(d *schema.ResourceData, meta interfac
 	d.Set("peer_connection_name", objectRaw["Name"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
+
 	acceptingVpc1RawObj, _ := jsonpath.Get("$.AcceptingVpc", objectRaw)
 	acceptingVpc1Raw := make(map[string]interface{})
 	if acceptingVpc1RawObj != nil {
 		acceptingVpc1Raw = acceptingVpc1RawObj.(map[string]interface{})
 	}
 	d.Set("accepting_vpc_id", acceptingVpc1Raw["VpcId"])
+
 	vpc1RawObj, _ := jsonpath.Get("$.Vpc", objectRaw)
 	vpc1Raw := make(map[string]interface{})
 	if vpc1RawObj != nil {
 		vpc1Raw = vpc1RawObj.(map[string]interface{})
 	}
 	d.Set("vpc_id", vpc1Raw["VpcId"])
+
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -194,6 +204,7 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyVpcPeerConnection"
@@ -202,7 +213,7 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
+	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("description") {
@@ -210,7 +221,7 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 		request["Description"] = d.Get("description")
 	}
 
-	if d.HasChange("bandwidth") {
+	if !d.IsNewResource() && d.HasChange("bandwidth") {
 		update = true
 		request["Bandwidth"] = d.Get("bandwidth")
 	}
@@ -224,9 +235,11 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 		request["DryRun"] = v
 	}
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -258,19 +271,22 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["ResourceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	request["ResourceType"] = "PeerConnection"
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
 
 	request["ResourceType"] = "PeerConnection"
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -305,7 +321,7 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
+				query = make(map[string]interface{})
 				request["InstanceId"] = d.Id()
 				request["ClientToken"] = buildClientToken(action)
 				if v, ok := d.GetOk("resource_group_id"); ok {
@@ -314,9 +330,11 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 				if v, ok := d.GetOkExists("dry_run"); ok {
 					request["DryRun"] = v
 				}
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -346,12 +364,14 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
+				query = make(map[string]interface{})
 				request["InstanceId"] = d.Id()
 				request["ClientToken"] = buildClientToken(action)
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -377,9 +397,7 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 		}
 	}
 
-	update = false
 	if d.HasChange("tags") {
-		update = true
 		vpcServiceV2 := VpcServiceV2{client}
 		if err := vpcServiceV2.SetVpcPeerResourceTags(d, "PeerConnection"); err != nil {
 			return WrapError(err)
@@ -393,16 +411,15 @@ func resourceAliCloudVpcPeerConnectionUpdate(d *schema.ResourceData, meta interf
 func resourceAliCloudVpcPeerConnectionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteVpcPeerConnection"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcpeerClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["InstanceId"] = d.Id()
 
 	request["ClientToken"] = buildClientToken(action)
@@ -410,9 +427,11 @@ func resourceAliCloudVpcPeerConnectionDelete(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

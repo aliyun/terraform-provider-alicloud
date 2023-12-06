@@ -1635,7 +1635,6 @@ func (s *VpcServiceV2) VpcDhcpOptionsSetStateRefreshFunc(id string, field string
 // DescribeVpcPeerConnection <<< Encapsulated get interface for Vpc PeerConnection.
 
 func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -1647,12 +1646,13 @@ func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["InstanceId"] = id
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1664,9 +1664,10 @@ func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]i
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnection", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnection", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -1684,7 +1685,9 @@ func (s *VpcServiceV2) VpcPeerConnectionStateRefreshFunc(id string, field string
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -1705,6 +1708,7 @@ func (s *VpcServiceV2) SetVpcPeerResourceTags(d *schema.ResourceData, resourceTy
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -1720,7 +1724,7 @@ func (s *VpcServiceV2) SetVpcPeerResourceTags(d *schema.ResourceData, resourceTy
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
@@ -1729,9 +1733,11 @@ func (s *VpcServiceV2) SetVpcPeerResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
@@ -1757,7 +1763,7 @@ func (s *VpcServiceV2) SetVpcPeerResourceTags(d *schema.ResourceData, resourceTy
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
@@ -1769,9 +1775,11 @@ func (s *VpcServiceV2) SetVpcPeerResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 				request["ClientToken"] = buildClientToken(action)
 
 				if err != nil {
