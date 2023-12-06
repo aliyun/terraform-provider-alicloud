@@ -95,7 +95,7 @@ The access_log_config supports the following:
 ### `load_balancer_billing_config`
 
 The load_balancer_billing_config supports the following:
-* `pay_type` - (Required, ForceNew) Pay Type.
+* `pay_type` - (Required, ForceNew) Pay Type. Valid values: `PayAsYouGo`. **Note:** provider changes the payment type to `PayAsYouGo`, while the actual parameter on api is `PostPay`.
 
 ### `modification_protection_config`
 

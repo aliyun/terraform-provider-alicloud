@@ -194,6 +194,8 @@ The x_forwarded_for_config supports the following:
 * `x_forwarded_for_proto_enabled` - (Optional) Indicates Whether the X-Forwarded-Proto Header Field Is Used to Obtain the Server Load Balancer Instance Snooping Protocols.
 * `x_forwarded_for_slb_id_enabled` - (Optional) Indicates Whether the SLB-ID Header Field Is Used to Obtain the Load Balancing Instance Id.
 * `x_forwarded_for_slb_port_enabled` - (Optional) Indicates Whether the X-Forwarded-Port Header Field Is Used to Obtain the Server Load Balancer Instance Listening Port.
+* `x_forwarded_for_client_source_ips_enabled` - (Optional) Whether to use the X-Forwarded-Client-Ip header to obtain the source IP address of the server load balancer instance. Value: true, false. Note HTTP, HTTPS, and QUIC listeners support this parameter. The function corresponding to this parameter is not open by default. Please contact the account manager if you need to use it.
+* `x_forwarded_for_client_source_ips_trusted` - (Optional) Specify the trusted proxy IP. Application-oriented load balancing ALB will traverse the X-Forwarded-For from back to front, and select the first IP that is not in the trusted IP list as the real client IP, which will be used for the source IP speed limit.
 
 ### `xforwarded_for_config`
 

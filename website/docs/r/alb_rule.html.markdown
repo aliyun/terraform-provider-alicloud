@@ -144,13 +144,14 @@ The following arguments are supported:
 The rule_actions supports the following:
 
 * `order` - (Required, Int) The order of the forwarding rule actions. Valid values: `1` to `50000`. The actions are performed in ascending order. You cannot leave this parameter empty. Each value must be unique.
-* `type` - (Required) The action type. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `TrafficLimit`, `TrafficMirror` and `Cors`.
+* `type` - (Required) The action type. Valid values: `ForwardGroup`, `Redirect`, `FixedResponse`, `Rewrite`, `InsertHeader`, `RemoveHeader`, `TrafficLimit`, `TrafficMirror` and `Cors`.
   **Note:** The preceding actions can be classified into two types:  `FinalType`: A forwarding rule can contain only one `FinalType` action, which is executed last. This type of action can contain only one `ForwardGroup`, `Redirect` or `FixedResponse` action. `ExtType`: A forwarding rule can contain one or more `ExtType` actions, which are executed before `FinalType` actions and need to coexist with the `FinalType` actions. This type of action can contain multiple `InsertHeader` actions or one `Rewrite` action.
   **NOTE:** The `TrafficLimit` and `TrafficMirror` option is available since 1.162.0.
   **NOTE:** From version 1.205.0, `type` can be set to `Cors`.
 * `fixed_response_config` - (Optional, Set) The configuration of the fixed response. See [`fixed_response_config`](#rule_actions-fixed_response_config) below.
 * `forward_group_config` - (Optional, Set) The forward response action within ALB. See [`forward_group_config`](#rule_actions-forward_group_config) below.
 * `insert_header_config` - (Optional, Set) The configuration of the inserted header field. See [`insert_header_config`](#rule_actions-insert_header_config) below.
+* `remove_header_config` - (Optional, Set) The configuration of the inserted header field. See [`remove_header_config`](#rule_actions-remove_header_config) below.
 * `redirect_config` - (Optional, Set) The configuration of the external redirect action. See [`redirect_config`](#rule_actions-redirect_config) below.
 * `rewrite_config` - (Optional, Set) The redirect action within ALB. See [`rewrite_config`](#rule_actions-rewrite_config) below.
 * `traffic_limit_config` - (Optional, Set, Available since v1.162.0) The Flow speed limit. See [`traffic_limit_config`](#rule_actions-traffic_limit_config) below.
@@ -205,6 +206,14 @@ The insert_header_config supports the following:
   - `ReferenceHeader`: uses a field of the user request header.
   - `SystemDefined`: a system value.
 
+### `rule_actions-remove_header_config`
+
+The remove_header_config supports the following:
+
+* `key` - (Optional) The name of the removed header field. It can be 1 to 40 characters in length and supports upper and lower case letters a to z, numbers, underscores (_), and dashes (-). Header field names cannot be used repeatedly in RemoveHeader. 
+  * Request Direction: The header name cannot be set to the following fields (case insensitive):slb-id, slb-ip, x-forwarded-for, x-forwarded-proto, x-forwarded-eip, x-forwarded-port, x-forwarded-client-srcport, connection, upgrade, content-length, transfer-encoding, keep-alive, te, host, cookie, remoteip, and authority. 
+  * Response Direction: The header name cannot be set to the following fields (case insensitive):connection, upgrade, content-length, transfer-encoding.
+
 ### `rule_actions-redirect_config`
 
 The redirect_config supports the following:
@@ -229,6 +238,7 @@ The rewrite_config supports the following:
 The traffic_limit_config supports the following:
 
 * `qps` - (Optional, Int) The Number of requests per second. Valid values: `1` to `100000`.
+* `per_ip_qps` - (Optional, Int) The number of requests per second for a single IP address. Value range: 1~1000000. Note: If the QPS parameter is also configured, the value of the PerIpQps parameter must be smaller than the value of the QPS parameter.
 
 ### `rule_actions-traffic_mirror_config`
 
@@ -272,8 +282,12 @@ The rule_conditions supports the following:
   - `Method`: Request are forwarded based on the request method.
   - `Cookie`: Requests are forwarded based on the cookie.
   - `SourceIp`: Requests are forwarded based on the source ip. **NOTE:** The `SourceIp` option is available since 1.162.0.
+  - `ResponseHeader`: Response header. **NOTE:** The `SourceIp` option is available since 1.213.1.
+  - `ResponseStatusCode`: Response status code. **NOTE:** The `SourceIp` option is available since 1.213.1.
 * `cookie_config` - (Optional, Set) The configuration of the cookie. See See [`cookie_config`](#rule_conditions-cookie_config) below.
 * `header_config` - (Optional, Set) The configuration of the header field. See [`header_config`](#rule_conditions-header_config) below.
+* `response_header_config` - (Optional, Set) The configuration of the header field. See [`response_header_config`](#rule_conditions-response_header_config) below.
+* `response_status_code_config` - (Optional, Set) The configuration of the header field. See [`response_status_code_config`](#rule_conditions-response_status_code_config) below.
 * `host_config` - (Optional, Set) The configuration of the host field. See [`host_config`](#rule_conditions-host_config) below.
 * `method_config` - (Optional, Set) The configuration of the request method. See [`method_config`](#rule_conditions-method_config) below.
 * `path_config` - (Optional, Set) The configuration of the path for the request to be forwarded. See [`path_config`](#rule_conditions-path_config) below.
@@ -299,6 +313,19 @@ The header_config supports the following:
 
 * `key` - (Optional) The key of the header field. The key must be 1 to 40 characters in length, and can contain letters, digits, hyphens (-) and underscores (_). The key does not support Cookie or Host.
 * `values` - (Optional, List) The value of the header field. The value must be 1 to 128 characters in length, and can contain lowercase letters, printable ASCII characters whose values are ch >= 32 && ch < 127, asterisks (*), and question marks (?). The value cannot start or end with a space.
+
+### `rule_conditions-response_header_config`
+
+The response_header_config supports the following:
+
+* `key` - (Optional) The key of the header field. The key must be 1 to 40 characters in length, and can contain letters, digits, hyphens (-) and underscores (_). The key does not support Cookie or Host.
+* `values` - (Optional, List) The value of the header field. The value must be 1 to 128 characters in length, and can contain lowercase letters, printable ASCII characters whose values are ch >= 32 && ch < 127, asterisks (*), and question marks (?). The value cannot start or end with a space.
+
+### `rule_conditions-response_status_code_config`
+
+The response_status_code_config supports the following:
+
+* `values` - (Optional, List) Response status code list.
 
 ### `rule_conditions-host_config`
 
