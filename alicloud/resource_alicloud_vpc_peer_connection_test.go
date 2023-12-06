@@ -317,6 +317,26 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"status": "Activated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Activated",
+					}),
+				),
+			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Rejected",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Rejected",
+			//		}),
+			//	),
+			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"peer_connection_name": "${var.name}",
 					"description":          "${var.name}",
 				}),
