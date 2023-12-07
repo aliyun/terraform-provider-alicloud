@@ -20,6 +20,7 @@ data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
   pay_type   = "PostPaid"
+  category   = "Normal"
 }
 
 resource "alicloud_vpc" "default" {
@@ -77,7 +78,6 @@ The following arguments are supported:
 * `log_backup_another_region_region` - (Optional, Available in 1.207.0+) The region in which you want to store cross-region log backups. For information about regions that support the cross-region backup feature, see [Overview.](https://www.alibabacloud.com/help/en/polardb/latest/backup-and-restoration-overview)
 * `log_backup_another_region_retention_period` - (Optional, Available in 1.207.0+) The retention period of cross-region log backups. Default value: OFF. Valid values are `0`, `30 to 7300`, `-1`.
   -> **NOTE:** Note When you create a cluster, the default value of this parameter is 0.
-* `enable_backup_log` - (Optional, Available in 1.207.0+) Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
 * `backup_retention_period` - (Optional) Cluster backup retention days, Fixed for 7 days, not modified.
 
 ## Attributes Reference
@@ -85,6 +85,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The current backup policy resource ID. It is same as 'db_cluster_id'.
+* `enable_backup_log` - Indicates whether the log backup feature was enabled. Valid values are `0`, `1`. `1` By default, the log backup feature is enabled and cannot be disabled.
 
 ## Import
 

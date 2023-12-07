@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPolarDBBackupPolicy(t *testing.T) {
+func TestAccAliCloudPolarDBBackupPolicy(t *testing.T) {
 	var v *polardb.DescribeBackupPolicyResponse
 	resourceId := "alicloud_polardb_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -93,7 +93,7 @@ func TestAccAlicloudPolarDBBackupPolicy(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudPolarDBNewBackupPolicy(t *testing.T) {
+func TestAccAliCloudPolarDBNewBackupPolicy(t *testing.T) {
 	var v *polardb.DescribeBackupPolicyResponse
 	resourceId := "alicloud_polardb_backup_policy.default"
 	serverFunc := func() interface{} {
@@ -147,12 +147,14 @@ func TestAccAlicloudPolarDBNewBackupPolicy(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"data_level1_backup_retention_period": "7",
+					"backup_retention_period":             "7",
 					"data_level1_backup_time":             "10:00Z-11:00Z",
 					"data_level1_backup_period":           []string{"Tuesday", "Wednesday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"data_level1_backup_retention_period": "7",
+						"backup_retention_period":             "7",
 						"data_level1_backup_time":             "10:00Z-11:00Z",
 						"data_level1_backup_period.#":         "2",
 					}),
