@@ -45,7 +45,8 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, List) A list of Address Book IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results Address Book name.
-* `group_type` - (Optional, ForceNew) The type of the Address Book. Valid values: `ip`, `tag`.
+* `group_type` - (Optional, ForceNew) The type of the Address Book. Valid values: `ip`, `ipv6`, `domain`, `port`, `tag`.
+  **NOTE:** From version 1.213.1, `group_type` can be set to `ipv6`, `domain`, `port`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

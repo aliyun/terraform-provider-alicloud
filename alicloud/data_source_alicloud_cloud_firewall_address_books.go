@@ -34,7 +34,7 @@ func dataSourceAliCloudCloudFirewallAddressBooks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ip", "tag"}, false),
+				ValidateFunc: StringInSlice([]string{"ip", "ipv6", "domain", "port", "tag"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
