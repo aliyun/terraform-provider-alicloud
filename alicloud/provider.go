@@ -437,7 +437,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_tsdb_instances":                                   dataSourceAlicloudTsdbInstances(),
 			"alicloud_tsdb_zones":                                       dataSourceAlicloudTsdbZones(),
 			"alicloud_ga_bandwidth_packages":                            dataSourceAlicloudGaBandwidthPackages(),
-			"alicloud_ga_endpoint_groups":                               dataSourceAlicloudGaEndpointGroups(),
+			"alicloud_ga_endpoint_groups":                               dataSourceAliCloudGaEndpointGroups(),
 			"alicloud_brain_industrial_pid_organizations":               dataSourceAlicloudBrainIndustrialPidOrganizations(),
 			"alicloud_ga_ip_sets":                                       dataSourceAlicloudGaIpSets(),
 			"alicloud_ga_forwarding_rules":                              dataSourceAlicloudGaForwardingRules(),
