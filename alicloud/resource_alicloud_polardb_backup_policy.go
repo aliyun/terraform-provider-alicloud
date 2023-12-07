@@ -60,7 +60,7 @@ func resourceAlicloudPolarDBBackupPolicy() *schema.Resource {
 			"data_level1_backup_retention_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(3, 14),
+				ValidateFunc: IntBetween(3, 30),
 				Computed:     true,
 			},
 			"data_level2_backup_retention_period": {
@@ -138,10 +138,8 @@ func resourceAlicloudPolarDBBackupPolicy() *schema.Resource {
 					IntBetween(30, 7300)),
 			},
 			"enable_backup_log": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntInSlice([]int{0, 1}),
-				Computed:     true,
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 		},
 	}
