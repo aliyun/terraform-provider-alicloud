@@ -24,7 +24,7 @@ func init() {
 func testSweepClickhouseDbCLuster(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -92,10 +92,10 @@ func testSweepClickhouseDbCLuster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudClickHouseDBCluster_basic0(t *testing.T) {
+func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeClickHouseDbCluster")
@@ -103,7 +103,7 @@ func TestAccAlicloudClickHouseDBCluster_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -123,7 +123,7 @@ func TestAccAlicloudClickHouseDBCluster_basic0(t *testing.T) {
 					"payment_type":            "PayAsYouGo",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -190,10 +190,10 @@ func TestAccAlicloudClickHouseDBCluster_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudClickHouseDBCluster_basic1(t *testing.T) {
+func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeClickHouseDbCluster")
@@ -201,7 +201,7 @@ func TestAccAlicloudClickHouseDBCluster_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -221,7 +221,7 @@ func TestAccAlicloudClickHouseDBCluster_basic1(t *testing.T) {
 					"payment_type":            "PayAsYouGo",
 					"db_node_storage":         "500",
 					"storage_type":            "cloud_essd_pl2",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -288,10 +288,10 @@ func TestAccAlicloudClickHouseDBCluster_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
+func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeClickHouseDbCluster")
@@ -299,7 +299,7 @@ func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -319,7 +319,7 @@ func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
 					"payment_type":            "PayAsYouGo",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"db_cluster_access_white_list": []map[string]interface{}{
 						{
 							"db_cluster_ip_array_name": "test1",
@@ -371,10 +371,10 @@ func TestAccAlicloudClickHouseDBCluster_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudClickHouseDBCluster_basic3(t *testing.T) {
+func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeClickHouseDbCluster")
@@ -382,7 +382,7 @@ func TestAccAlicloudClickHouseDBCluster_basic3(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sclic  khousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -431,10 +431,10 @@ func TestAccAlicloudClickHouseDBCluster_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
+func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AlicloudClickHouseDBClusterMap0)
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeClickHouseDbCluster")
@@ -442,7 +442,7 @@ func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudClickHouseDBClusterBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -462,8 +462,8 @@ func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
 					"payment_type":            "PayAsYouGo",
 					"db_node_storage":         "100",
 					"storage_type":            "cloud_essd",
-					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
-					"vpc_id":                  "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":                  "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -489,7 +489,7 @@ func TestAccAlicloudClickHouseDBCluster_VpcId(t *testing.T) {
 	})
 }
 
-var AlicloudClickHouseDBClusterMap0 = map[string]string{
+var AliCloudClickHouseDBClusterMap0 = map[string]string{
 	"db_cluster_version":      CHECKSET,
 	"category":                CHECKSET,
 	"db_cluster_class":        CHECKSET,
@@ -502,22 +502,47 @@ var AlicloudClickHouseDBClusterMap0 = map[string]string{
 	"port":                    CHECKSET,
 }
 
-func AlicloudClickHouseDBClusterBasicDependence0(name string) string {
+func AliCloudClickHouseDBClusterBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-data "alicloud_click_house_regions" "default" {	
-  current = true
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_click_house_regions" "default" {
+  		current = true
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+	}
+`, name)
 }
 
-data "alicloud_vpcs" "default"	{
-  name_regex = "default-NODELETING"
-}
+func AliCloudClickHouseDBClusterBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_vswitches" "default" {
-  vpc_id = "${data.alicloud_vpcs.default.ids.0}"
-  zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
-}
-variable "name" {
-  default = "%s"
-}
+	data "alicloud_click_house_regions" "default" {
+  		current = true
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+	}
 `, name)
 }
