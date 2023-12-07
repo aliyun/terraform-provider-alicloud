@@ -1287,6 +1287,20 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
+	if connectionString == "" {
+		// Compatible with the new logic of cloud products, if there is a cluster address, return the connection_string and port of the cluster address, and if not, return the primary address
+		for _, endpoint := range endpoints {
+			if endpoint.EndpointType == "Primary" {
+				for _, item := range endpoint.AddressItems {
+					if item.NetType == "Private" {
+						connectionString = item.ConnectionString
+						port = item.Port
+						break
+					}
+				}
+			}
+		}
+	}
 	d.Set("connection_string", connectionString)
 	d.Set("port", port)
 
@@ -1372,11 +1386,14 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if v, ok := clusterTDEStatus["TDERegion"]; ok {
 		tdeRegion = fmt.Sprint(v)
 	}
-	roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), tdeRegion)
-	if err != nil {
-		return WrapError(err)
+	// Check if the current TDE is enabled, and then call the interface if it is enabled
+	if "Disabled" != clusterTDEStatus["TDEStatus"].(string) {
+		roleArnObj, err := polarDBService.CheckKMSAuthorized(d.Id(), tdeRegion)
+		if err != nil {
+			return WrapError(err)
+		}
+		d.Set("role_arn", roleArnObj["RoleArn"])
 	}
-	d.Set("role_arn", roleArnObj["RoleArn"])
 	securityGroups, err := polarDBService.DescribeDBSecurityGroups(d.Id())
 	if err != nil {
 		return WrapError(err)
