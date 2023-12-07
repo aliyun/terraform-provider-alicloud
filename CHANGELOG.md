@@ -1,27 +1,30 @@
-## 1.213.1 (Unreleased)
+## 1.214.0 (Unreleased)
+## 1.213.1 (December 07, 2023)
 
 ENHANCEMENTS:
 
-- resource/alicloud_instance: add launchTemplateId, launchTemplateName, launchTemplateVersion. [GH-6704]
-- resource/alicloud_dbfs_instance: add resource not found code. [GH-6714]
-- resource/alicloud_cloud_firewall_address_book: Supported group_type set to ipv6, domain, port. [GH-6718]
-- resource/alicloud_dcdn_domain_config: Fixed the create error caused by resource id. [GH-6722]
-- resource/alicloud_resource_manager_resource_share: Added retry strategy. [GH-6723]
-- resource/alicloud_alb_listener: add new attribute x_forwarded_for_client_source_ips_enabled, x_forwarded_for_client_source_ips_trusted; resource/alicloud_alb_rule: add new attribute per_ip_qps, response_header_config, response_status_code_config. [GH-6724]
-- resource/alicloud_mongodb_instance: Added the field backup_retention_period. [GH-6725]
-- resource/alicloud_dts_subscription_job: add paytype mapping; resource/alicloud_dts_synchronization_job: optimize validation function; resource/alicloud_dts_migration_job: optimize validation function; resource/alicloud_dts_job_monitor_rule: optimize validation function. [GH-6731]
-- resource/alicloud_cen_transit_router_multicast_domain: Added retry strategy for error code Operation.Blocking; resource/alicloud_cen_transit_router_multicast_domain_member: Added error code IllegalParam.TransitRouterMulticastDomainId; resource/alicloud_cen_transit_router_multicast_domain_association: Added retry strategy for error code Operation.Blocking. [GH-6734]
-- resource/alicloud_vpc_peer_connection: support bandwidth can be specified during creation. [GH-6738]
-- data-source/alicloud_ga_endpoint_groups: Added the field endpoint_group_ip_list. [GH-6739]
-- data-source/alicloud_cloud_firewall_address_books: Supported group_type set to ipv6, domain, port. [GH-6740]
-- docs: fix subcategory. [GH-6721]
-- testcase: Fixed cen test case. [GH-6730]
-- testcase: fix fc test case. [GH-6733]
-- testcase: Fixed ClickHouse test case. [GH-6741]
+- resource/alicloud_polardb_cluster: modify tde and connection_string bug fixed ([#6729](https://github.com/aliyun/terraform-provider-alicloud/issues/6729))
+- resource/alicloud_instance: add launchTemplateId, launchTemplateName, launchTemplateVersion. ([#6704](https://github.com/aliyun/terraform-provider-alicloud/issues/6704))
+- resource/alicloud_dbfs_instance: add resource not found code. ([#6714](https://github.com/aliyun/terraform-provider-alicloud/issues/6714))
+- resource/alicloud_cloud_firewall_address_book: Supported group_type set to ipv6, domain, port. ([#6718](https://github.com/aliyun/terraform-provider-alicloud/issues/6718))
+- resource/alicloud_dcdn_domain_config: Fixed the create error caused by resource id. ([#6722](https://github.com/aliyun/terraform-provider-alicloud/issues/6722))
+- resource/alicloud_resource_manager_resource_share: Added retry strategy. ([#6723](https://github.com/aliyun/terraform-provider-alicloud/issues/6723))
+- resource/alicloud_alb_listener: add new attribute x_forwarded_for_client_source_ips_enabled, x_forwarded_for_client_source_ips_trusted; resource/alicloud_alb_rule: add new attribute per_ip_qps, response_header_config, response_status_code_config. ([#6724](https://github.com/aliyun/terraform-provider-alicloud/issues/6724))
+- resource/alicloud_mongodb_instance: Added the field backup_retention_period. ([#6725](https://github.com/aliyun/terraform-provider-alicloud/issues/6725))
+- resource/alicloud_dts_subscription_job: add paytype mapping; resource/alicloud_dts_synchronization_job: optimize validation function; resource/alicloud_dts_migration_job: optimize validation function; resource/alicloud_dts_job_monitor_rule: optimize validation function. ([#6731](https://github.com/aliyun/terraform-provider-alicloud/issues/6731))
+- resource/alicloud_cen_transit_router_multicast_domain: Added retry strategy for error code Operation.Blocking; resource/alicloud_cen_transit_router_multicast_domain_member: Added error code IllegalParam.TransitRouterMulticastDomainId; resource/alicloud_cen_transit_router_multicast_domain_association: Added retry strategy for error code Operation.Blocking. ([#6734](https://github.com/aliyun/terraform-provider-alicloud/issues/6734))
+- resource/alicloud_vpc_peer_connection: support bandwidth can be specified during creation. ([#6738](https://github.com/aliyun/terraform-provider-alicloud/issues/6738))
+- resource/alicloud_db_instance: Add rds mysql HA switch ([#6655](https://github.com/aliyun/terraform-provider-alicloud/issues/6655))
+- data-source/alicloud_ga_endpoint_groups: Added the field endpoint_group_ip_list. ([#6739](https://github.com/aliyun/terraform-provider-alicloud/issues/6739))
+- data-source/alicloud_cloud_firewall_address_books: Supported group_type set to ipv6, domain, port. ([#6740](https://github.com/aliyun/terraform-provider-alicloud/issues/6740))
+- docs: fix subcategory. ([#6721](https://github.com/aliyun/terraform-provider-alicloud/issues/6721))
+- testcase: Fixed cen test case. ([#6730](https://github.com/aliyun/terraform-provider-alicloud/issues/6730))
+- testcase: fix fc test case. ([#6733](https://github.com/aliyun/terraform-provider-alicloud/issues/6733))
+- testcase: Fixed ClickHouse test case. ([#6741](https://github.com/aliyun/terraform-provider-alicloud/issues/6741))
 
 BUG FIXES:
 
-- resource/alicloud_security_center_service_linked_role: Fixed the sas endpoint error. [GH-6728]
+- resource/alicloud_security_center_service_linked_role: Fixed the sas endpoint error. ([#6728](https://github.com/aliyun/terraform-provider-alicloud/issues/6728))
 
 ## 1.213.0 (November 24, 2023)
 

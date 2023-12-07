@@ -609,7 +609,7 @@ The following arguments are supported:
 
 -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available in 1.101.0+) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
-* `zone_id_slave_b`- (Removed since v1.214.0) The parameter 'zone_id_slave_b' has been removed from provider version v1.214.0.
+* `zone_id_slave_b`- (Removed since v1.213.1) The parameter 'zone_id_slave_b' has been removed from provider version v1.213.1.
 * `ssl_action` - (Optional, Available in v1.90.0+) Actions performed on SSL functions. Valid values: 
   `Open`: turn on SSL encryption; 
   `Close`: turn off SSL encryption; 
@@ -709,8 +709,8 @@ The following arguments are supported:
 * `direction` - (Optional, Available since v1.209.1) The instance configuration type. Valid values: ["Up", "Down", "TempUpgrade", "Serverless"]
 
 
-* `node_id` - (Optional, Available in v1.214.0+) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
-* `force` - (Optional, ForceNew, Available in v1.214.0+) Specifies whether to enable forcible switching. Valid values:
+* `node_id` - (Optional, Available in v1.213.1+) The globally unique identifier (GUID) of the secondary instance. You can call the DescribeDBInstanceHAConfig operation to query the GUID of the secondary instance.
+* `force` - (Optional, ForceNew, Available in v1.213.1+) Specifies whether to enable forcible switching. Valid values:
   - Yes
   - No
 
