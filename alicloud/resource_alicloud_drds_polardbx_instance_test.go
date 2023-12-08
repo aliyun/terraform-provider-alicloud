@@ -373,6 +373,7 @@ func TestAccAliCloudDrdsPolardbxInstance_basic4497_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DRDSPolarDbxSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
