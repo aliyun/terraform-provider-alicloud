@@ -490,7 +490,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupServerAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudNlbServerGroupServerAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -513,7 +513,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupServerAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudNlbServerGroupServerAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -539,7 +539,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupServerAttachmentUpdate(dExisted, rawClient)
+	err = resourceAliCloudNlbServerGroupServerAttachmentUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// UpdateServerGroupServersAttribute
@@ -579,7 +579,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupServerAttachmentUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupServerAttachmentUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -623,7 +623,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupServerAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupServerAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -641,7 +641,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupServerAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudNlbServerGroupServerAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -669,7 +669,7 @@ func TestUnitAlicloudNlbServerGroupServerAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupServerAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupServerAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

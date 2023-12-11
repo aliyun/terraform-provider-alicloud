@@ -383,7 +383,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyCreate(dInit, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -406,7 +406,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyCreate(dInit, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -433,7 +433,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyUpdate(dExisted, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -482,7 +482,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -526,7 +526,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyRead(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -545,7 +545,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyDelete(dExisted, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -576,7 +576,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyDelete(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

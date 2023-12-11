@@ -10,9 +10,9 @@ description: |-
 
 Provides a NLB Loadbalancer Common Bandwidth Package Attachment resource. Bandwidth Package Operation.
 
-For information about NLB Loadbalancer Common Bandwidth Package Attachment and how to use it, see [What is Loadbalancer Common Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/nlb-instances-change).
+For information about NLB Loadbalancer Common Bandwidth Package Attachment and how to use it, see [What is Loadbalancer Common Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available since v1.209.0.
+-> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
 
@@ -20,71 +20,68 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_nlb_zones" "default" {}
-resource "alicloud_vpc" "default" {
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "10.0.0.0/16"
   vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_nlb_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "default1" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.1.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_nlb_zones.default.zones.1.id
+
 }
 
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+resource "alicloud_vswitch" "vswtich" {
+  vpc_id     = alicloud_vpc.vpc.id
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "10.0.1.0/24"
 }
 
-resource "alicloud_nlb_load_balancer" "default" {
-  load_balancer_name = var.name
-  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+resource "alicloud_vswitch" "vswtich2" {
+  vpc_id     = alicloud_vpc.vpc.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "10.0.2.0/24"
+}
+
+resource "alicloud_nlb_load_balancer" "nlb" {
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vswtich.id
+    zone_id    = alicloud_vswitch.vswtich.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vswtich2.id
+    zone_id    = alicloud_vswitch.vswtich2.zone_id
+  }
   load_balancer_type = "Network"
+  vpc_id             = alicloud_vpc.vpc.id
   address_type       = "Internet"
   address_ip_version = "Ipv4"
-  vpc_id             = alicloud_vpc.default.id
-  tags = {
-    Created = "TF",
-    For     = "example",
-  }
-  zone_mappings {
-    vswitch_id = alicloud_vswitch.default.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
-  }
-  zone_mappings {
-    vswitch_id = alicloud_vswitch.default1.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
-  }
 }
 
-resource "alicloud_common_bandwidth_package" "default" {
-  bandwidth              = 2
-  internet_charge_type   = "PayByBandwidth"
-  bandwidth_package_name = var.name
-  description            = var.name
+resource "alicloud_common_bandwidth_package" "cbwp" {
+  description          = "nlb-tf-test"
+  bandwidth            = "1000"
+  internet_charge_type = "PayByBandwidth"
 }
+
 
 resource "alicloud_nlb_loadbalancer_common_bandwidth_package_attachment" "default" {
-  bandwidth_package_id = alicloud_common_bandwidth_package.default.id
-  load_balancer_id     = alicloud_nlb_load_balancer.default.id
+  load_balancer_id     = alicloud_nlb_load_balancer.nlb.id
+  bandwidth_package_id = alicloud_common_bandwidth_package.cbwp.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth_package_id` - (Required, ForceNew) The ID of the bound shared bandwidth package.
-* `load_balancer_id` - (Required, ForceNew) The ID of the network-based server load balancer instance.
+* `bandwidth_package_id` - (Required, ForceNew, Available since v1.209.0) The ID of the bound shared bandwidth package.
+* `load_balancer_id` - (Required, ForceNew, Available since v1.209.0) The ID of the network-based server load balancer instance.
 
 ## Attributes Reference
 

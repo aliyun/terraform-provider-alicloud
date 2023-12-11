@@ -467,7 +467,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupCreate(dInit, rawClient)
+	err = resourceAliCloudNlbServerGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -490,7 +490,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupCreate(dInit, rawClient)
+		err := resourceAliCloudNlbServerGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -517,7 +517,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupUpdate(dExisted, rawClient)
+	err = resourceAliCloudNlbServerGroupUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -585,7 +585,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -637,7 +637,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -701,7 +701,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -765,7 +765,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -809,7 +809,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupRead(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -828,7 +828,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbServerGroupDelete(dExisted, rawClient)
+	err = resourceAliCloudNlbServerGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -859,7 +859,7 @@ func TestUnitAccAlicloudNlbServerGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbServerGroupDelete(dExisted, rawClient)
+		err := resourceAliCloudNlbServerGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
