@@ -859,6 +859,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_ipv6_address":                                     resourceAliCloudVpcIpv6Address(),
 			"alicloud_ens_security_group":                                   resourceAliCloudEnsSecurityGroup(),
 			"alicloud_ens_vswitch":                                          resourceAliCloudEnsVswitch(),
 			"alicloud_ens_load_balancer":                                    resourceAliCloudEnsLoadBalancer(),
