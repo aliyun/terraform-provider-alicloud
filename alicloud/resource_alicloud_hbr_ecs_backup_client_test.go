@@ -246,7 +246,6 @@ variable "name" {
 }
 
 data "alicloud_instances" "default" {
-  name_regex = "no-deleteing-hbr-ecs-backup-plan"
   status     = "Running"
 }
 

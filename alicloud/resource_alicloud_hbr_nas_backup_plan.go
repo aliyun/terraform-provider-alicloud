@@ -385,6 +385,7 @@ func resourceAlicloudHbrNasBackupPlanDelete(d *schema.ResourceData, meta interfa
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
+		time.Sleep(1 * time.Minute)
 	}
 	return nil
 }

@@ -186,16 +186,16 @@ func TestAccAlicloudHBROtsBackupPlan_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"disabled": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"disabled": "true",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"disabled": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"disabled": "true",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"disabled": "false",

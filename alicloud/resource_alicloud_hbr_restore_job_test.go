@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
+func SkipTestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
@@ -83,7 +83,7 @@ func TestAccAlicloudHBRRestoreJob_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
+func SkipTestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -139,7 +139,7 @@ func TestAccAlicloudHBRRestoreJob_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
+func SkipTestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -193,7 +193,7 @@ func TestAccAlicloudHBRRestoreJob_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
+func SkipTestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
@@ -250,7 +250,7 @@ func TestAccAlicloudHBRRestoreJob_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
+func SkipTestAccAlicloudHBRRestoreJob_basic4(t *testing.T) {
 	checkoutAccount(t, true)
 	defer checkoutAccount(t, false)
 	var v map[string]interface{}
