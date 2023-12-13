@@ -58,7 +58,7 @@ jobs:
       -
         name: Prepare versions
         run: |
-          ossutil cp oss://shinnyterraform/providers/v1/shinnytech/alicloud/versions versions
+          ossutil cp oss://shinny-terraform/providers/v1/shinnytech/alicloud/versions versions
           export VERSION=${{ github.ref_name }}
           cat versions | jq --arg VERSION $VERSION 'del(.versions[] | select(.version==$VERSION))' | jq --arg VERSION $VERSION '.versions[.versions| length] |= . +{version:$VERSION,protocols:["5.0"],platform:[{os:"linux",arch:"amd64"}]}' > versions.new
 
@@ -75,11 +75,11 @@ jobs:
       -
         name: Upload files
         run: |
-          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM
-          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS.sig oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM.sig
-          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip oss://shinnyterraform/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip
-          ossutil cp -f amd64.new oss://shinnyterraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/amd64
-          ossutil cp -f versions.new oss://shinnyterraform/providers/v1/shinnytech/alicloud/versions
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS oss://shinny-terraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_SHA256SUMS.sig oss://shinny-terraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/SHA256SUM.sig
+          ossutil cp -f dist/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip oss://shinny-terraform/terraform-provider-alicloud_${{ github.ref_name }}_linux_amd64.zip
+          ossutil cp -f amd64.new oss://shinny-terraform/providers/v1/shinnytech/alicloud/${{ github.ref_name }}/download/linux/amd64
+          ossutil cp -f versions.new oss://shinny-terraform/providers/v1/shinnytech/alicloud/versions
           
           
           
