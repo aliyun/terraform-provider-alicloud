@@ -23,53 +23,59 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
 data "alicloud_zones" "default" {
-  available_resource_creation = "Instance"
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
 }
+
 data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-  cpu_core_count    = 1
-  memory_size       = 2
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  instance_type_family = "ecs.sn1ne"
 }
+
 data "alicloud_images" "default" {
-  owners     = "system"
-  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
+  owners      = "system"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
+  cidr_block = "192.168.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_security_group" "default" {
-  name        = var.name
-  description = "New security group"
-  vpc_id      = alicloud_vpc.default.id
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone          = data.alicloud_zones.default.zones.0.id
-  instance_name              = var.name
-  host_name                  = var.name
-  internet_max_bandwidth_out = 10
   image_id                   = data.alicloud_images.default.images.0.id
   instance_type              = data.alicloud_instance_types.default.instance_types.0.id
-  security_groups            = [alicloud_security_group.default.id]
+  instance_name              = var.name
+  security_groups            = alicloud_security_group.default.*.id
+  internet_charge_type       = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  instance_charge_type       = "PostPaid"
+  system_disk_category       = "cloud_efficiency"
   vswitch_id                 = alicloud_vswitch.default.id
 }
 
 resource "alicloud_ddos_basic_threshold" "example" {
-  pps           = 60000
-  bps           = 100
-  internet_ip   = alicloud_instance.default.public_ip
-  instance_id   = alicloud_instance.default.id
   instance_type = "ecs"
+  instance_id   = alicloud_instance.default.id
+  internet_ip   = alicloud_instance.default.public_ip
+  bps           = 100
+  pps           = 60000
 }
 ```
 
@@ -77,17 +83,17 @@ resource "alicloud_ddos_basic_threshold" "example" {
 
 The following arguments are supported:
 
-* `bps` - (Required) Specifies the traffic scrubbing threshold. Unit: Mbit/s. The traffic scrubbing threshold cannot exceed the peak inbound or outbound Internet traffic, whichever is larger, of the asset.
-* `instance_id` - (Required, ForceNew) The ID of the instance.
 * `instance_type` - (Required, ForceNew) The type of the Instance. Valid values: `ecs`,`slb`,`eip`.
+* `instance_id` - (Required, ForceNew) The ID of the instance.
 * `internet_ip` - (Required, ForceNew) The IP address of the public IP address asset.
+* `bps` - (Required) Specifies the traffic scrubbing threshold. Unit: Mbit/s. The traffic scrubbing threshold cannot exceed the peak inbound or outbound Internet traffic, whichever is larger, of the asset.
 * `pps` - (Required) The current message number cleaning threshold. Unit: pps.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Threshold. The value formats as `<instance_type>:<instance_id>:<internet_ip>`.
+* `id` - The resource ID of Threshold. It formats as `<instance_type>:<instance_id>:<internet_ip>`.
 * `max_bps` - Maximum flow cleaning threshold. Unit: Mbps.
 * `max_pps` - The maximum number of messages cleaning threshold. Unit: pps.
 
@@ -97,7 +103,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 1 mins) Used when creating the Ddos Threshold.
 * `update` - (Defaults to 1 mins) Used when updating the Ddos Threshold.
-
 
 ## Import
 
