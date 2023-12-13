@@ -783,7 +783,7 @@ func (s *PolarDBService) WaitForPolarDBInstance(id string, status Status, timeou
 	return nil
 }
 
-func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeout int) error {
+func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix, oldPort string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
 		object, err := s.DescribePolarDBConnection(id)
@@ -791,7 +791,8 @@ func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeo
 			return WrapError(err)
 		}
 		parts := strings.Split(object.ConnectionString, ".")
-		if prefix == parts[0] {
+		port := object.Port
+		if prefix == parts[0] && oldPort == port {
 			break
 		}
 
