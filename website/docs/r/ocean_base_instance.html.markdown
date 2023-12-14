@@ -76,10 +76,23 @@ Two types are currently supported:
   - cloud_essd_pl0: cloud disk ESSD pl0. The default value is cloud_essd_pl1.
 * `instance_class` - (Required) Cluster specification information.
 Four packages are currently supported:
-  - 8C32GB:8 cores 32GB.
-  - 14C70GB (default):14 cores 70GB.
-  - 30C180GB:30 cores 180GB.
-  - 62C400GB:62 cores 400GB.
+  - 4C16GB：4cores 16GB
+  - 8C32GB：8cores 32GB
+  - 14C70GB：14cores 70GB
+  - 24C120GB：24cores 120GB
+  - 30C180GB：30cores 180GB
+  - 62C400GB：62cores 400GB
+  - 104C600GB：104cores 600GB
+  - 16C70GB：16cores 70GB
+  - 32C160GB：32cores 160GB
+  - 64C380GB：64cores 380GB
+  - 20C32GB：20cores 32GB
+  - 40C64GB：40cores 64GB
+  - 16C32GB：16cores 32GB
+  - 32C70GB：32cores 70GB
+  - 64C180GB：64cores 180GB
+  - 32C180GB：32cores 180GB
+  - 64C400GB：64cores 400GB.
 * `instance_name` - (Optional, Computed) OceanBase cluster name.The length is 1 to 20 English or Chinese characters.If this parameter is not specified, the default value is the InstanceId of the cluster.
 * `node_num` - (Optional, Computed) The number of nodes in the cluster. If the deployment mode is n-n-n, the number of nodes is n * 3.
 * `ob_version` - (Optional, ForceNew, Computed, Available since v1.210.0) The OceanBase Server version number.
