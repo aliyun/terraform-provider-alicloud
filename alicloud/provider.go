@@ -869,6 +869,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_network":                                          resourceAliCloudEnsNetwork(),
 			"alicloud_ens_snapshot":                                         resourceAliCloudEnsSnapshot(),
 			"alicloud_ens_disk":                                             resourceAliCloudEnsDisk(),
+			"alicloud_realtime_compute_vvp_instance":                        resourceAliCloudRealtimeComputeVvpInstance(),
 			"alicloud_resource_manager_saved_query":                         resourceAliCloudResourceManagerSavedQuery(),
 			"alicloud_threat_detection_sas_trail":                           resourceAliCloudThreatDetectionSasTrail(),
 			"alicloud_threat_detection_image_event_operation":               resourceAliCloudThreatDetectionImageEventOperation(),
