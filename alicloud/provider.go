@@ -859,6 +859,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_realtime_compute_vvp_instance":                        resourceAliCloudRealtimeComputeVvpInstance(),
 			"alicloud_threat_detection_oss_scan_config":                     resourceAliCloudThreatDetectionOssScanConfig(),
 			"alicloud_threat_detection_malicious_file_whitelist_config":     resourceAliCloudThreatDetectionMaliciousFileWhitelistConfig(),
 			"alicloud_adb_lake_account":                                     resourceAliCloudAdbLakeAccount(),
