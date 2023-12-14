@@ -29,7 +29,7 @@ func init() {
 func testSweepSLBs(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -135,10 +135,10 @@ func testSweepSLBs(region string) error {
 	return nil
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic0(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSlbLoadBalancer")
@@ -146,7 +146,7 @@ func TestAccAlicloudSLBLoadBalancer_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSlbLoadBalancerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -307,7 +307,7 @@ func TestAccAlicloudSLBLoadBalancer_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudSlbLoadBalancerMap0 = map[string]string{
+var AliCloudSlbLoadBalancerMap0 = map[string]string{
 	"address":                        CHECKSET,
 	"address_ip_version":             "ipv4",
 	"address_type":                   "internet",
@@ -328,18 +328,18 @@ var AlicloudSlbLoadBalancerMap0 = map[string]string{
 	"vswitch_id":                     "",
 }
 
-func AlicloudSlbLoadBalancerBasicDependence0(name string) string {
+func AliCloudSlbLoadBalancerBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancer_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap1)
+	ra := resourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSlbLoadBalancer")
@@ -347,7 +347,7 @@ func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSlbLoadBalancerBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -362,7 +362,7 @@ func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
 					"address_type":       "intranet",
 					"load_balancer_name": "${var.name}",
 					"load_balancer_spec": "slb.s1.small",
-					"vswitch_id":         "${data.alicloud_vswitches.default.ids[0]}",
+					"vswitch_id":         "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -480,7 +480,7 @@ func TestAccAlicloudSLBLoadBalancer_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudSlbLoadBalancerMap1 = map[string]string{
+var AliCloudSlbLoadBalancerMap1 = map[string]string{
 	"address":                        CHECKSET,
 	"address_ip_version":             "ipv4",
 	"address_type":                   "intranet",
@@ -500,30 +500,35 @@ var AlicloudSlbLoadBalancerMap1 = map[string]string{
 	"vswitch_id":                     CHECKSET,
 }
 
-func AlicloudSlbLoadBalancerBasicDependence1(name string) string {
+func AliCloudSlbLoadBalancerBasicDependence1(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_vpcs" "default"{
-	name_regex = "default-NODELETING"
-}
-data "alicloud_slb_zones" "default" {
-	available_slb_address_type = "vpc"
-}
 
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_slb_zones.default.zones.0.id
-}
+	data "alicloud_slb_zones" "default" {
+		available_slb_address_type = "vpc"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_slb_zones.default.zones.0.id
+	}
 `, name)
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancer_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap2)
+	ra := resourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap2)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSlbLoadBalancer")
@@ -531,7 +536,7 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence2)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSlbLoadBalancerBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -546,8 +551,8 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 					"address_type":                   "intranet",
 					"load_balancer_name":             name,
 					"specification":                  "slb.s1.small",
-					"vswitch_id":                     "${data.alicloud_vswitches.default.ids[0]}",
-					"address":                        "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"address":                        "${cidrhost(alicloud_vswitch.default.cidr_block, 1)}",
 					"master_zone_id":                 "${data.alicloud_slb_zones.default.zones.0.master_zone_id}",
 					"modification_protection_status": "ConsoleProtection",
 					"modification_protection_reason": name,
@@ -580,10 +585,10 @@ func TestAccAlicloudSLBLoadBalancer_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic3(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancer_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSlbLoadBalancer")
@@ -591,7 +596,7 @@ func TestAccAlicloudSLBLoadBalancer_basic3(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSlbLoadBalancerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -635,10 +640,10 @@ func TestAccAlicloudSLBLoadBalancer_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudSLBLoadBalancer_basic4(t *testing.T) {
+func TestAccAliCloudSLBLoadBalancer_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_slb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlbLoadBalancerMap2)
+	ra := resourceAttrInit(resourceId, AliCloudSlbLoadBalancerMap2)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSlbLoadBalancer")
@@ -646,7 +651,7 @@ func TestAccAlicloudSLBLoadBalancer_basic4(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlbLoadBalancerBasicDependence2)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSlbLoadBalancerBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -660,8 +665,8 @@ func TestAccAlicloudSLBLoadBalancer_basic4(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"address_type":         "intranet",
 					"load_balancer_name":   name,
-					"vswitch_id":           "${data.alicloud_vswitches.default.ids[0]}",
-					"address":              "${cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 1)}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"address":              "${cidrhost(alicloud_vswitch.default.cidr_block, 1)}",
 					"master_zone_id":       "${data.alicloud_slb_zones.default.zones.0.master_zone_id}",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"slave_zone_id":        "${data.alicloud_slb_zones.default.zones.0.slave_zone_id}",
@@ -795,7 +800,7 @@ func TestAccAlicloudSLBLoadBalancer_basic4(t *testing.T) {
 	})
 }
 
-var AlicloudSlbLoadBalancerMap2 = map[string]string{
+var AliCloudSlbLoadBalancerMap2 = map[string]string{
 	"address_ip_version":   "ipv4",
 	"address_type":         "intranet",
 	"bandwidth":            CHECKSET,
@@ -808,32 +813,34 @@ var AlicloudSlbLoadBalancerMap2 = map[string]string{
 	"tags.#":               "0",
 }
 
-func AlicloudSlbLoadBalancerBasicDependence2(name string) string {
+func AliCloudSlbLoadBalancerBasicDependence2(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
  
-data "alicloud_slb_zones" "default" {
-	available_slb_address_type = "vpc"
-	slave_zone_id = data.alicloud_zones.default.ids.0
-}
+	data "alicloud_slb_zones" "default" {
+		available_slb_address_type = "vpc"
+		slave_zone_id = data.alicloud_zones.default.ids.0
+	}
 
-data "alicloud_resource_manager_resource_groups" "default" {
-	name_regex = "^default$"
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_slb_zones.default.zones.0.id
-}
-
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_slb_zones.default.zones.0.id
+	}
 `, name)
 }
