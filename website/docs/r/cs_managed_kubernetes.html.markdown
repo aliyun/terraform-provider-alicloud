@@ -305,7 +305,7 @@ for example:
 The following arguments are supported in the `addons` configuration block:
 
 * `name` - (Optional) This parameter specifies the name of the component.
-* `config` - (Optional) If this parameter is left empty, no configurations are required.
+* `config` - (Optional) If this parameter is left empty, no configurations are required. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional) It specifies the version of the component.
 * `disabled` - (Optional) It specifies whether to disable automatic installation. 
 
@@ -328,6 +328,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
     content {
       name     = lookup(addons.value, "name", var.cluster_addons)
       config   = lookup(addons.value, "config", var.cluster_addons)
+      version  = lookup(addons.value, "version", var.cluster_addons)
       disabled = lookup(addons.value, "disabled", var.cluster_addons)
     }
   }
@@ -452,14 +453,12 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
 
   default = [
     {
       "name"     = "arms-prometheus",
       "config"   = "",
-      "disabled": true,
     }
   ]
 }
@@ -469,13 +468,11 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
   default = [
     {
       "name"     = "ack-node-problem-detector",
       "config"   = "{\"sls_project_name\":\"\"}",
-      "disabled": true,
     }
   ]
 }
@@ -484,13 +481,11 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
   default = [
     {
       "name"     = "alicloud-monitor-controller",
       "config"   = "{\"group_contact_ids\":\"[159]\"}",
-      "disabled": true,
     }
   ]
 }
