@@ -37,14 +37,14 @@ func TestAccAlicloudAdsResourceGroup_basic2004(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"group_name":    "${var.name}",
 					"group_type":    "batch",
-					"node_num":      "0",
+					"node_num":      "1",
 					"db_cluster_id": "${alicloud_adb_db_cluster.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"group_name":    CHECKSET,
 						"group_type":    "batch",
-						"node_num":      "0",
+						"node_num":      "1",
 						"db_cluster_id": CHECKSET,
 					}),
 				),
@@ -101,19 +101,25 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_adb_db_cluster" "default" {
+  compute_resource    = "48Core192GBNEW"
   db_cluster_category = "MixedStorage"
-  mode                = "flexible"
-  compute_resource    = "32Core128GB"
-  payment_type        = "PayAsYouGo"
-  vswitch_id          = alicloud_vswitch.vswitch.id
+  db_node_class       = "E32"
+  db_node_count       = 1
+  db_node_storage     = 100
   description         = var.name
-  maintain_time       = "23:00Z-00:00Z"
+  elastic_io_resource = 2
+  maintain_time       = "04:00Z-05:00Z"
+  mode                = "flexible"
+  payment_type        = "PayAsYouGo"
+  resource_group_id   = data.alicloud_resource_manager_resource_groups.default.ids.0
+  security_ips        = ["10.168.1.12", "10.168.1.11"]
+  vpc_id              = data.alicloud_vpcs.default.ids.0
+  vswitch_id          = alicloud_vswitch.vswitch.id
+  zone_id             = data.alicloud_adb_zones.zones_ids.zones[0].id
   tags = {
-    Created = "TF-update"
-    For     = "acceptance-test-update"
+    Created = "TF",
+    For     = "example",
   }
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  security_ips      = ["10.168.1.12", "10.168.1.11"]
 }
 
 `, name)

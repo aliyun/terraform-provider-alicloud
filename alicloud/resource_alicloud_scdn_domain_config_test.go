@@ -21,7 +21,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
+func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)

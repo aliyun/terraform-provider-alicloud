@@ -619,20 +619,28 @@ func resourceEDASK8sSlbAttachmentConfigDependence(name string) string {
 		}
 		
 		resource "alicloud_cs_managed_kubernetes" "default" {
-		  worker_instance_types = [data.alicloud_instance_types.default.instance_types.0.id]
-		  name = var.name
-          cluster_spec = "ack.pro.small"
-		  worker_vswitch_ids = [alicloud_vswitch.default.id]
-		  worker_number = 				"2"
-		  password =                    "Test12345"
-		  pod_cidr =                   	"172.20.0.0/16"
-		  service_cidr =               	"172.21.0.0/20"
-		  worker_disk_size =            "50"
-		  worker_disk_category =        "cloud_ssd"
-		  worker_data_disk_size =       "20"
-		  worker_data_disk_category =   "cloud_ssd"
-		  worker_instance_charge_type = "PostPaid"
-		  slb_internet_enabled =        "true"
+		  name_prefix          = var.name
+		  cluster_spec         = "ack.pro.small"
+		  worker_vswitch_ids   = [alicloud_vswitch.default.id]
+		  new_nat_gateway      = false
+		  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+		  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+		  slb_internet_enabled = true
+		}
+
+		resource "alicloud_key_pair" "default" {
+		  key_pair_name = var.name
+		}
+
+		resource "alicloud_cs_kubernetes_node_pool" "default" {
+		  name                 = "desired_size"
+		  cluster_id           = alicloud_cs_managed_kubernetes.default.id
+		  vswitch_ids          = [alicloud_vswitch.default.id]
+		  instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
+		  system_disk_category = "cloud_efficiency"
+		  system_disk_size     = 40
+		  key_name             = alicloud_key_pair.default.key_name
+		  desired_size         = 2
 		}
 		
 		resource "alicloud_edas_k8s_cluster" "default" {
