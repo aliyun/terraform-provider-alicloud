@@ -847,6 +847,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_auto_snap_shot_policies":                     dataSourceAlicloudDbfsAutoSnapShotPolicies(),
 			"alicloud_cen_transit_route_table_aggregations":             dataSourceAlicloudCenTransitRouteTableAggregations(),
 			"alicloud_arms_prometheis":                                  dataSourceAlicloudArmsPrometheis(),
+			"alicloud_arms_prometheus":                                  dataSourceAlicloudArmsPrometheis(),
 			"alicloud_ocean_base_instances":                             dataSourceAlicloudOceanBaseInstances(),
 			"alicloud_chatbot_agents":                                   dataSourceAlicloudChatbotAgents(),
 			"alicloud_arms_integration_exporters":                       dataSourceAlicloudArmsIntegrationExporters(),

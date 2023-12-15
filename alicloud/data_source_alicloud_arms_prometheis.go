@@ -36,6 +36,11 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"tags": tagsSchemaForceNew(),
 			"output_file": {
 				Type:     schema.TypeString,
@@ -84,6 +89,42 @@ func dataSourceAlicloudArmsPrometheis() *schema.Resource {
 							Computed: true,
 						},
 						"grafana_instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"remote_read_intra_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"remote_read_inter_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"remote_write_intra_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"remote_write_inter_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"push_gate_way_intra_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"push_gate_way_inter_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"http_api_intra_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"http_api_inter_url": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"auth_token": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -205,6 +246,27 @@ func dataSourceAlicloudArmsPrometheisRead(d *schema.ResourceData, meta interface
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["ClusterName"])
+
+		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
+			s = append(s, mapping)
+			continue
+		}
+		id := fmt.Sprint(fmt.Sprint(object["ClusterId"]))
+		client := meta.(*connectivity.AliyunClient)
+		armsService := ArmsService{client}
+		object, err := armsService.DescribeArmsPrometheus(id)
+		if err != nil {
+			return WrapError(err)
+		}
+		mapping["remote_read_intra_url"] = object["RemoteReadIntraUrl"]
+		mapping["remote_read_inter_url"] = object["RemoteReadInterUrl"]
+		mapping["remote_write_intra_url"] = object["RemoteWriteIntraUrl"]
+		mapping["remote_write_inter_url"] = object["RemoteWriteInterUrl"]
+		mapping["push_gate_way_intra_url"] = object["PushGateWayIntraUrl"]
+		mapping["push_gate_way_inter_url"] = object["PushGateWayInterUrl"]
+		mapping["http_api_intra_url"] = object["HttpApiIntraUrl"]
+		mapping["http_api_inter_url"] = object["HttpApiInterUrl"]
+		mapping["auth_token"] = object["AuthToken"]
 		s = append(s, mapping)
 	}
 
