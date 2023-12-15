@@ -7,19 +7,50 @@ description: |-
     Provides a list of VPNs which owned by an Alicloud account.
 ---
 
-# alicloud\_vpn_gateways
+# alicloud_vpn_gateways
 
 The VPNs data source lists a number of VPNs resource information owned by an Alicloud account.
+
+-> **NOTE:** Available since v1.18.0.
 
 ## Example Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vpn_gateway" "default" {
+  name                 = var.name
+  vpc_id               = data.alicloud_vpcs.default.ids.0
+  bandwidth            = "10"
+  enable_ssl           = true
+  enable_ipsec         = true
+  instance_charge_type = "PrePaid"
+  description          = var.name
+  vswitch_id           = data.alicloud_vswitches.default.ids.0
+  network_type         = "public"
+}
+
 data "alicloud_vpn_gateways" "vpn_gateways" {
-  vpc_id                   = "fake-vpc-id"
-  ids                      = ["fake-vpn-id1", "fake-vpn-id2"]
+  vpc_id                   = data.alicloud_vpcs.default.ids.0
+  ids                      = [alicloud_vpn_gateway.default.id]
   status                   = "Active"
   business_status          = "Normal"
-  name_regex               = "testAcc*"
+  name_regex               = "tf-example"
   include_reservation_data = true
   output_file              = "/tmp/vpns"
 }
@@ -29,14 +60,14 @@ data "alicloud_vpn_gateways" "vpn_gateways" {
 
 The following arguments are supported:
 
-* `vpc_id` - (Optional) Use the VPC ID as the search key.
-* `ids` - (Optional) IDs of the VPN.
-* `status` - (Optional) Limit search to specific status - valid value is "Init", "Provisioning", "Active", "Updating", "Deleting".
-* `business_status` - (Optional) Limit search to specific business status - valid value is "Normal", "FinancialLocked".
-* `name_regex` - (Optional) A regex string of VPN name.
+* `vpc_id` - (Optional, ForceNew) Use the VPC ID as the search key.
+* `ids` - (Optional, ForceNew) IDs of the VPN.
+* `status` - (Optional, ForceNew) Limit search to specific status - valid value is "Init", "Provisioning", "Active", "Updating", "Deleting".
+* `business_status` - (Optional, ForceNew) Limit search to specific business status - valid value is "Normal", "FinancialLocked".
+* `name_regex` - (Optional, ForceNew) A regex string of VPN name.
 * `output_file` - (Optional) Save the result to the file.
-* `enable_ipsec` - (Optional, Available 1.161.0+, has been deprecated from provider version 1.193.0, it will be removed in the future version.) Indicates whether the IPsec-VPN feature is enabled.
-* `include_reservation_data` - (Optional, Available 1.193.0+) Include ineffective ordering data.
+* `enable_ipsec` - (Deprecated, Optional, Available 1.161.0+, has been deprecated from provider version 1.193.0, it will be removed in the future version.) Indicates whether the IPsec-VPN feature is enabled.
+* `include_reservation_data` - (Optional, ForceNew, Available 1.193.0+) Include ineffective ordering data.
 
 ## Attributes Reference
 
