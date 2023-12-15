@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -270,7 +271,6 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 			"enable_ssl":           object["SslVpn"],
 			"ssl_connections":      object["SslMaxConnections"],
 			"network_type":         object["NetworkType"],
-			"auto_propagate":       object["AutoPropagate"],
 		}
 		if v, ok := object["CreateTime"]; ok {
 			createTime, err := v.(json.Number).Int64()
@@ -288,6 +288,12 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 				mapping["end_time"] = TimestampToStr(endTime)
 			}
 		}
+		if v, ok := object["AutoPropagate"]; ok {
+			if valueBool, ok := v.(bool); ok {
+				mapping["auto_propagate"] = strconv.FormatBool(valueBool)
+			}
+		}
+
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["Name"])
 		s = append(s, mapping)
