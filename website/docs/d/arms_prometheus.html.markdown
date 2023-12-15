@@ -1,19 +1,17 @@
 ---
 subcategory: "Application Real-Time Monitoring Service (ARMS)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_arms_prometheis"
-sidebar_current: "docs-alicloud-datasource-arms-prometheis"
+page_title: "Alicloud: alicloud_arms_prometheus"
+sidebar_current: "docs-alicloud-datasource-arms-prometheus"
 description: |-
-  Provides a list of Arms Prometheis to the user.
+  Provides a list of Arms Prometheus to the user.
 ---
 
-# alicloud\_arms\_prometheis
+# alicloud\_arms\_prometheus
 
-This data source provides the Arms Prometheis of the current Alibaba Cloud user.
+This data source provides the Arms Prometheus of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.203.0.
-
--> **DEPRECATED:** This resource has been renamed to [alicloud_ecs_disk](https://www.terraform.io/docs/providers/alicloud/d/arms_prometheus) from version 1.214.0.
+-> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
 
@@ -53,12 +51,12 @@ resource "alicloud_arms_prometheus" "default" {
   }
 }
 
-data "alicloud_arms_prometheis" "nameRegex" {
+data "alicloud_arms_prometheus" "nameRegex" {
   name_regex = "${alicloud_arms_prometheus.default.cluster_name}"
 }
 
-output "arms_prometheis_id" {
-  value = data.alicloud_arms_prometheis.nameRegex.prometheis.0.id
+output "arms_prometheus_id" {
+  value = data.alicloud_arms_prometheus.nameRegex.prometheis.0.id
 }
 ```
 
