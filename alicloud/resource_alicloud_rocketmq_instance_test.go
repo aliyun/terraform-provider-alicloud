@@ -94,6 +94,94 @@ func testSweepRocketMq(region string) error {
 	return nil
 }
 
+func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rocketmq_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap4101)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRocketmqInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence4101)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.RocketMQSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+					"product_info": []map[string]interface{}{
+						{
+							"msg_process_spec":       "rmq.p2.4xlarge",
+							"send_receive_ratio":     "0.3",
+							"message_retention_time": "70",
+						},
+					},
+					"service_code": "rmq",
+					"series_code":  "professional",
+					"network_info": []map[string]interface{}{
+						{
+							"vpc_info": []map[string]interface{}{
+								{
+									"vpc_id":     "${alicloud_vpc.createVPC.id}",
+									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+								},
+							},
+							"internet_info": []map[string]interface{}{
+								{
+									"internet_spec": "disable",
+									"flow_out_type": "uninvolved",
+								},
+							},
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"sub_series_code":   "cluster_ha",
+					"remark":            "自动化测试购买使用11",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"software": []map[string]interface{}{
+						{
+							"maintain_time": "02:00-06:00",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"service_code":      "rmq",
+						"series_code":       "professional",
+						"payment_type":      "PayAsYouGo",
+						"sub_series_code":   "cluster_ha",
+						"remark":            "自动化测试购买使用11",
+						"resource_group_id": CHECKSET,
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 // Test Rocketmq Instance. >>> Resource test cases, automatically generated.
 // Case 4665
 func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
