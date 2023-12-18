@@ -31,7 +31,7 @@ func TestAccAliCloudCloudMonitorServiceHybridDoubleWrite_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"source_namespace": "${alicloud_cms_namespace.default.id}",
+					"source_namespace": "${alicloud_cms_namespace.source.id}",
 					"source_user_id":   "${data.alicloud_account.default.id}",
 					"namespace":        "${alicloud_cms_namespace.default.id}",
 					"user_id":          "${data.alicloud_account.default.id}",
