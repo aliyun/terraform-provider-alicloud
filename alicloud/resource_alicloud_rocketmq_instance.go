@@ -278,11 +278,11 @@ func resourceAliCloudRocketmqInstanceCreate(d *schema.ResourceData, meta interfa
 			internetInfo["flowOutType"] = nodeNative3
 		}
 		nodeNative4, _ := jsonpath.Get("$[0].internet_info[0].flow_out_bandwidth", v)
-		if nodeNative4 != "" {
+		if nodeNative4 != "" && internetInfo["internetSpec"] == "enable" {
 			internetInfo["flowOutBandwidth"] = nodeNative4
 		}
 		nodeNative5, _ := jsonpath.Get("$[0].internet_info[0].ip_whitelist", v)
-		if nodeNative5 != "" {
+		if nodeNative5 != "" && internetInfo["internetSpec"] == "enable" {
 			internetInfo["ipWhitelist"] = nodeNative5
 		}
 		objectDataLocalMap["internetInfo"] = internetInfo
@@ -795,7 +795,7 @@ func resourceAliCloudRocketmqInstanceDelete(d *schema.ResourceData, meta interfa
 	}
 
 	rocketmqServiceV2 := RocketmqServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Minute, rocketmqServiceV2.RocketmqInstanceStateRefreshFunc(d.Id(), "status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
