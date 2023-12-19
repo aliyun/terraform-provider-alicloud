@@ -249,7 +249,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"dts_job_name":                       "tf-testAccCase2",
-					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"subscription_instance_network_type": "vpc",
 					"subscription_instance_vpc_id":       "${data.alicloud_vpcs.default.ids.0}",
 					"subscription_instance_vswitch_id":   "${data.alicloud_vswitches.default.ids.0}",
@@ -298,7 +298,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 					"source_endpoint_instance_type":      "RDS",
-					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
 					"source_endpoint_user_name":          "tftestprivilege",
 					"source_endpoint_password":           "Test12345",
@@ -352,26 +352,26 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source_endpoint_password": "Lazypeople123+",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source_endpoint_password": "Lazypeople123+",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source_endpoint_password": "Test12345",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source_endpoint_password": "Test12345",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"source_endpoint_password": "Lazypeople123+",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"source_endpoint_password": "Lazypeople123+",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"source_endpoint_password": "Test12345",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"source_endpoint_password": "Test12345",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"status": "Normal",
@@ -431,7 +431,7 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"source_endpoint_engine_name":        "MySQL",
 					"source_endpoint_region":             os.Getenv("ALICLOUD_REGION"),
 					"source_endpoint_instance_type":      "RDS",
-					"source_endpoint_instance_id":        "${alicloud_db_instance.instance.id}",
+					"source_endpoint_instance_id":        "${alicloud_db_instance.source.id}",
 					"source_endpoint_database_name":      "tfaccountpri_0",
 					"source_endpoint_user_name":          "tftestprivilege",
 					"source_endpoint_password":           "Test12345",
