@@ -274,16 +274,19 @@ func (s *EcsService) DescribeSecurityGroup(id string) (group ecs.DescribeSecurit
 	request := ecs.CreateDescribeSecurityGroupAttributeRequest()
 	request.SecurityGroupId = id
 	request.RegionId = s.client.RegionId
+
 	raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.DescribeSecurityGroupAttribute(request)
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidSecurityGroupId.NotFound"}) {
 			err = WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response, _ := raw.(*ecs.DescribeSecurityGroupAttributeResponse)
 	if response.SecurityGroupId != id {
 		err = WrapErrorf(Error(GetNotFoundMessage("Security Group", id)), NotFoundMsg, ProviderERROR, response.RequestId)
