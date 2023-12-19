@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud ECS Prefix List resource.
 ---
 
-# alicloud\_ecs\_prefix\_list\
+# alicloud_ecs_prefix_list
 
 Provides a ECS Prefix List resource.
 
