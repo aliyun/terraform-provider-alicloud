@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
+func TestAccAliCloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
 	var v *polardb.Address
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	name := fmt.Sprintf("tf-testAccPolarDBconnection%s", rand)
@@ -51,11 +51,6 @@ func TestAccAlicloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"connection_prefix": "tf-testacc",
 				}),
@@ -64,6 +59,21 @@ func TestAccAlicloudPolarDBEndpointAddressConfigUpdate(t *testing.T) {
 						"connection_prefix": "tf-testacc",
 					}),
 				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"port": "3307",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"port": "3307",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
