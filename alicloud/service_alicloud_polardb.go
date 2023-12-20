@@ -361,7 +361,7 @@ func (s *PolarDBService) DescribePolarDBAccountPrivilege(id string) (account *po
 func (s *PolarDBService) WaitForPolarDBConnection(id string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribePolarDBConnection(id)
+		object, err := s.DescribePolarDBConnectionV2(id, "Public")
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -495,6 +495,42 @@ func (s *PolarDBService) WaitForPolarDBEndpoints(d *schema.ResourceData, status 
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
+}
+
+func (s *PolarDBService) DescribePolarDBConnectionV2(id string, netType string) (*polardb.Address, error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	deadline := time.Now().Add(time.Duration(DefaultIntervalLong) * time.Second)
+	for {
+		object, err := s.DescribePolarDBInstanceNetInfo(parts[0])
+
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return nil, WrapError(err)
+		}
+
+		if object != nil {
+			for _, o := range object {
+				if o.DBEndpointId == parts[1] {
+					for _, p := range o.AddressItems {
+						if p.NetType == netType {
+							return &p, nil
+						}
+					}
+				}
+			}
+		}
+		time.Sleep(DefaultIntervalMini * time.Second)
+		if time.Now().After(deadline) {
+			break
+		}
+	}
+
+	return nil, WrapErrorf(Error(GetNotFoundMessage("DBConnection", id)), NotFoundMsg, ProviderERROR)
 }
 
 func (s *PolarDBService) DescribePolarDBConnection(id string) (*polardb.Address, error) {
@@ -786,15 +822,17 @@ func (s *PolarDBService) WaitForPolarDBInstance(id string, status Status, timeou
 	return nil
 }
 
-func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeout int) error {
+func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix, newPort string, netType string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 	for {
-		object, err := s.DescribePolarDBConnection(id)
+		object, err := s.DescribePolarDBConnectionV2(id, netType)
 		if err != nil {
 			return WrapError(err)
 		}
 		parts := strings.Split(object.ConnectionString, ".")
-		if prefix == parts[0] {
+		port := object.Port
+
+		if (newPort == "" || newPort == port) && (prefix == "" || prefix == parts[0]) {
 			break
 		}
 
@@ -804,6 +842,14 @@ func (s *PolarDBService) WaitForPolarDBConnectionPrefix(id, prefix string, timeo
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
+}
+
+func (s *PolarDBService) fillingPolarDBEndpointSslCertificateUrl(sslEnabled string, d *schema.ResourceData) {
+	if sslEnabled == "Enable" {
+		d.Set("ssl_certificate_url", "https://apsaradb-public.oss-ap-southeast-1.aliyuncs.com/ApsaraDB-CA-Chain.zip?file=ApsaraDB-CA-Chain.zip&regionId="+s.client.RegionId)
+	} else {
+		d.Set("ssl_certificate_url", "")
+	}
 }
 
 func (s *PolarDBService) RefreshEndpointConfig(d *schema.ResourceData) error {
