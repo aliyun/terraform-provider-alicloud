@@ -11,16 +11,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-var privateConnectionStringRegexp = "^[a-z-A-Z-0-9]+.rwlb.([a-z-A-Z-0-9]+.){0,1}rds.aliyuncs.com"
-
-func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
+func TestAccAliCloudPolarDBClusterEndpointConfigUpdate(t *testing.T) {
 	var v *polardb.DBEndpoint
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
+	name := fmt.Sprintf("tf-testAccPolarDBClusterEndpoint-%s", rand)
 	var basicMap = map[string]string{
 		"db_cluster_id": CHECKSET,
 	}
-	resourceId := "alicloud_polardb_endpoint.default"
+	resourceId := "alicloud_polardb_cluster_endpoint.default"
 	ra := resourceAttrInit(resourceId, basicMap)
 	serviceFunc := func() interface{} {
 		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -28,7 +26,7 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterEndpoint")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBEndpointConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBClusterEndpointConfigDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,11 +41,10 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
-					"endpoint_type": "Custom",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_type": "Custom",
+						"endpoint_type": "Cluster",
 					}),
 				),
 			},
@@ -68,6 +65,18 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"read_write_mode": "ReadWrite",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_config": map[string]string{
+						"ConsistLevel": "1",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_config.ConsistLevel": "1",
 					}),
 				),
 			},
@@ -128,18 +137,6 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"endpoint_config": map[string]string{
-						"ConsistLevel": "1",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_config.ConsistLevel": "1",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -149,12 +146,12 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 	})
 }
 
-func resourcePolarDBEndpointConfigDependence(name string) string {
+func resourcePolarDBClusterEndpointConfigDependence(name string) string {
 	return fmt.Sprintf(`
         variable "name" {
-                default = "%s"
+			default = "%s"
         }
-
+		
 		data "alicloud_polardb_zones" "default"{}
 		data "alicloud_vpcs" "default" {
 			name_regex = "^default-NODELETING$"

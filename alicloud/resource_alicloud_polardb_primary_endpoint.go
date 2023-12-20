@@ -1,24 +1,22 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
-	"regexp"
-	"strings"
-	"time"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"regexp"
+	"strings"
+	"time"
 )
 
-func resourceAlicloudPolarDBEndpoint() *schema.Resource {
+func resourceAlicloudPolarDBPrimaryEndpoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudPolarDBEndpointCreate,
-		Read:   resourceAlicloudPolarDBEndpointRead,
-		Update: resourceAlicloudPolarDBEndpointUpdate,
-		Delete: resourceAlicloudPolarDBEndpointDelete,
+		Create: resourceAlicloudPolarDBPrimaryEndpointCreate,
+		Read:   resourceAlicloudPolarDBPrimaryEndpointRead,
+		Update: resourceAlicloudPolarDBPrimaryEndpointUpdate,
+		Delete: resourceAlicloudPolarDBPrimaryEndpointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -30,33 +28,7 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 				Required: true,
 			},
 			"endpoint_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Custom", "Primary", "Cluster"}, false),
-				Default:      "Custom",
-			},
-			"nodes": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"read_write_mode": {
-				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"ReadWrite", "ReadOnly"}, false),
-				Optional:     true,
-				Computed:     true,
-			},
-			"auto_add_new_nodes": {
-				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
-				Optional:     true,
-				Computed:     true,
-			},
-			"endpoint_config": {
-				Type:     schema.TypeMap,
-				Optional: true,
+				Type:     schema.TypeString,
 				Computed: true,
 			},
 			"ssl_enabled": {
@@ -109,77 +81,41 @@ func resourceAlicloudPolarDBEndpoint() *schema.Resource {
 	}
 }
 
-func resourceAlicloudPolarDBEndpointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudPolarDBPrimaryEndpointCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	polarDBService := PolarDBService{client}
 	clusterId := d.Get("db_cluster_id").(string)
-	endpointType := d.Get("endpoint_type").(string)
-	dbEndpointDescription := d.Get("db_endpoint_description").(string)
-	request := polardb.CreateCreateDBClusterEndpointRequest()
+	request := polardb.CreateDescribeDBClusterEndpointsRequest()
+
 	request.RegionId = client.RegionId
 	request.DBClusterId = clusterId
-	request.EndpointType = endpointType
-	request.DBEndpointDescription = dbEndpointDescription
-	if nodes, ok := d.GetOk("nodes"); ok {
-		nodes := expandStringList(nodes.(*schema.Set).List())
-		dbNodes := strings.Join(nodes, ",")
-		request.Nodes = dbNodes
-	}
-	if readWriteMode, ok := d.GetOk("read_write_mode"); ok {
-		request.ReadWriteMode = readWriteMode.(string)
-	}
-	if autoAddNewNodes, ok := d.GetOk("auto_add_new_nodes"); ok {
-		request.AutoAddNewNodes = autoAddNewNodes.(string)
-	}
-	if endpointConfig, ok := d.GetOk("endpoint_config"); ok {
-		endpointConfig, err := json.Marshal(endpointConfig)
-		if err != nil {
-			return WrapError(err)
-		}
-		request.EndpointConfig = string(endpointConfig)
-	}
 
-	enpoints, err := polarDBService.DescribePolarDBInstanceNetInfo(clusterId)
-	if err != nil {
-		return WrapError(err)
-	}
-	oldEndpoints := make([]interface{}, 0)
-	for _, value := range enpoints {
-		oldEndpoints = append(oldEndpoints, value.DBEndpointId)
-	}
-	oldEndpointIds := schema.NewSet(schema.HashString, oldEndpoints)
-
-	var raw interface{}
-	err = resource.Retry(8*time.Minute, func() *resource.RetryError {
-		raw, err = client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.CreateDBClusterEndpoint(request)
-		})
-		if err != nil {
-			OperationDeniedDBStatus = append(OperationDeniedDBStatus, "ClusterEndpoint.StatusNotValid")
-			if IsExpectedErrors(err, OperationDeniedDBStatus) {
-				return resource.RetryableError(err)
-			}
-
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
+	raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+		return polardbClient.DescribeDBClusterEndpoints(request)
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_polardb_endpoint", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_polardb_primary_endpoint", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
-	dbEndpointId, err := polarDBService.WaitForPolarDBEndpoints(d, Active, oldEndpointIds, DefaultTimeoutMedium)
-	if err != nil {
-		return WrapError(err)
-	}
-	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, dbEndpointId))
+	response, _ := raw.(*polardb.DescribeDBClusterEndpointsResponse)
 
-	return resourceAlicloudPolarDBEndpointUpdate(d, meta)
+	var endpoints []polardb.DBEndpoint
+	for _, item := range response.Items {
+		if item.EndpointType == "Primary" {
+			endpoints = append(endpoints, item)
+		}
+	}
+
+	if len(endpoints) == 0 {
+		return WrapError(fmt.Errorf("PolarDB Cluster %s does not have primary endpoint", clusterId))
+	}
+
+	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, endpoints[0].DBEndpointId))
+
+	return resourceAlicloudPolarDBPrimaryEndpointUpdate(d, meta)
 }
 
-func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudPolarDBPrimaryEndpointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 	parts, errParse := ParseResourceId(d.Id(), 2)
@@ -191,7 +127,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	object, err := polarDBService.DescribePolarDBClusterEndpoint(d.Id())
 
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -201,24 +137,6 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	d.Set("db_endpoint_id", dbEndpointId)
 	d.Set("endpoint_type", object.EndpointType)
 	d.Set("db_endpoint_description", object.DBEndpointDescription)
-	nodes := strings.Split(object.Nodes, ",")
-	d.Set("nodes", nodes)
-
-	var autoAddNewNodes string
-	var readWriteMode string
-	if object.EndpointType == "Primary" {
-		autoAddNewNodes = "Disable"
-		readWriteMode = "ReadWrite"
-	} else {
-		autoAddNewNodes = object.AutoAddNewNodes
-		readWriteMode = object.ReadWriteMode
-	}
-	d.Set("auto_add_new_nodes", autoAddNewNodes)
-	d.Set("read_write_mode", readWriteMode)
-
-	if err = polarDBService.RefreshEndpointConfig(d); err != nil {
-		return WrapError(err)
-	}
 
 	dbClusterSSL, err := polarDBService.DescribePolarDBClusterSSL(d)
 
@@ -253,6 +171,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	if err := d.Set("ssl_auto_rotate", sslAutoRotate); err != nil {
 		return WrapError(err)
 	}
+
 	polarDBService.fillingPolarDBEndpointSslCertificateUrl(sslEnabled, d)
 
 	privateAdress, err := polarDBService.DescribePolarDBConnectionV2(d.Id(), "Private")
@@ -272,7 +191,7 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudPolarDBPrimaryEndpointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	polarDBService := PolarDBService{client}
 
@@ -282,36 +201,13 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 	}
 	dbClusterId := parts[0]
 	dbEndpointId := parts[1]
-
-	if d.HasChanges("nodes", "read_write_mode", "auto_add_new_nodes", "endpoint_config", "db_endpoint_description") {
+	if d.HasChange("db_endpoint_description") {
 		modifyEndpointRequest := polardb.CreateModifyDBClusterEndpointRequest()
 		modifyEndpointRequest.RegionId = client.RegionId
 		modifyEndpointRequest.DBClusterId = dbClusterId
 		modifyEndpointRequest.DBEndpointId = dbEndpointId
 
 		configItem := make(map[string]string)
-		if d.HasChange("nodes") {
-			nodes := expandStringList(d.Get("nodes").(*schema.Set).List())
-			dbNodes := strings.Join(nodes, ",")
-			modifyEndpointRequest.Nodes = dbNodes
-			configItem["Nodes"] = dbNodes
-		}
-		if d.HasChange("read_write_mode") {
-			modifyEndpointRequest.ReadWriteMode = d.Get("read_write_mode").(string)
-			configItem["ReadWriteMode"] = d.Get("read_write_mode").(string)
-		}
-		if d.HasChange("auto_add_new_nodes") {
-			modifyEndpointRequest.AutoAddNewNodes = d.Get("auto_add_new_nodes").(string)
-			configItem["AutoAddNewNodes"] = d.Get("auto_add_new_nodes").(string)
-		}
-		if d.HasChange("endpoint_config") {
-			endpointConfig, err := json.Marshal(d.Get("endpoint_config"))
-			if err != nil {
-				return WrapError(err)
-			}
-			modifyEndpointRequest.EndpointConfig = string(endpointConfig)
-			configItem["EndpointConfig"] = string(endpointConfig)
-		}
 		if d.HasChange("db_endpoint_description") {
 			modifyEndpointRequest.DBEndpointDescription = d.Get("db_endpoint_description").(string)
 			configItem["DBEndpointDescription"] = d.Get("db_endpoint_description").(string)
@@ -321,7 +217,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 				return polarDBClient.ModifyDBClusterEndpoint(modifyEndpointRequest)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
+				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -354,7 +250,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
+				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
@@ -391,7 +287,7 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 					return polarDBClient.ModifyDBEndpointAddress(request)
 				})
 				if err != nil {
-					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
+					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
 						return resource.RetryableError(err)
 					}
 					return resource.NonRetryableError(err)
@@ -413,66 +309,10 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 	}
-	return resourceAlicloudPolarDBEndpointRead(d, meta)
+	return resourceAlicloudPolarDBPrimaryEndpointRead(d, meta)
 }
 
-func resourceAlicloudPolarDBEndpointDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	polarDBService := PolarDBService{client}
-
-	parts, errParse := ParseResourceId(d.Id(), 2)
-	if errParse != nil {
-		return WrapError(errParse)
-	}
-	object, err := polarDBService.DescribePolarDBClusterEndpoint(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-	if object.EndpointType != "Custom" {
-		return WrapErrorf(Error(fmt.Sprintf("%s type endpoint can not be deleted.", object.EndpointType)), DefaultErrorMsg, d.Id(), "DeleteDBClusterEndpoint", ProviderERROR)
-	}
-
-	request := polardb.CreateDeleteDBClusterEndpointRequest()
-	request.RegionId = client.RegionId
-	request.DBClusterId = parts[0]
-	request.DBEndpointId = parts[1]
-
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.DeleteDBClusterEndpoint(request)
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied.DBClusterStatus", "EndpointStatus.NotSupport", "ClusterEndpoint.StatusNotValid", "MaxscaleCheckResult.Code"}) {
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		return nil
-	})
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound", "InvalidCurrentConnectionString.NotFound", "AtLeastOneNetTypeExists"}) {
-			return nil
-		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	endpointIds := schema.NewSet(schema.HashString, make([]interface{}, 0))
-	dbEndpoint, err := polarDBService.WaitForPolarDBEndpoints(d, Deleted, endpointIds, DefaultTimeoutMedium)
-	if dbEndpoint != "" || err != nil {
-		return WrapErrorf(err, DeleteTimeoutMsg, d.Id(), request.GetActionName(), ProviderERROR)
-	}
+func resourceAlicloudPolarDBPrimaryEndpointDelete(d *schema.ResourceData, meta interface{}) error {
+	//  Terraform can not destroy it..
 	return nil
-}
-
-func convertPolarDBSSLEnableResponse(source string) string {
-	switch source {
-	case "Enabled":
-		return "Enable"
-	}
-	return "Disable"
 }
