@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudLogDashboard_basic(t *testing.T) {
+func TestAccAliCloudLogDashboard_basic(t *testing.T) {
 	var Dashboard *sls.Dashboard
 	resourceId := "alicloud_log_dashboard.default"
 	ra := resourceAttrInit(resourceId, logDashboardMap)
@@ -24,9 +24,7 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 	name := fmt.Sprintf("tf-testacclogdashboard-%d", rand)
 	displayname := fmt.Sprintf("dashboard_displayname-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogDashboardDependence)
-
 	resource.Test(t, resource.TestCase{
-
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
@@ -36,14 +34,14 @@ func TestAccAlicloudLogDashboard_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name":   name,
+					"project_name":   "${alicloud_log_project.default.name}",
 					"dashboard_name": "dashboard_name",
 					"display_name":   displayname,
 					"char_list":      `[{\"title\":\"new_title\",\"type\":\"map\",\"search\":{\"logstore\":\"new_logstore\",\"topic\":\"new_topic\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"end\":\"now\"},\"display\":{\"xAxis\":[\"province\"],\"yAxis\":[\"aini\"],\"xPos\":0,\"yPos\":0,\"width\":10,\"height\":12,\"displayName\":\"xixihaha911\"}}]`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"project_name":   name,
+						"project_name":   CHECKSET,
 						"dashboard_name": "dashboard_name",
 						"display_name":   displayname,
 						"char_list":      "[{\"display\":{\"displayName\":\"xixihaha911\",\"height\":12,\"width\":10,\"xAxis\":[\"province\"],\"xPos\":0,\"yAxis\":[\"aini\"],\"yPos\":0},\"search\":{\"end\":\"now\",\"logstore\":\"new_logstore\",\"query\":\"method:  GET  | select  ip_to_province(remote_addr) as province , count(1) as pv group by province order by pv desc \",\"start\":\"-86400s\",\"topic\":\"new_topic\"},\"title\":\"new_title\",\"type\":\"map\"}]",
@@ -118,17 +116,19 @@ var logDashboardMap = map[string]string{}
 func resourceLogDashboardDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-	    default = "%s"
+  		default = "%s"
 	}
+
 	resource "alicloud_log_project" "default" {
-	    name = "${var.name}"
-	    description = "tf unit test"
+  		name        = var.name
+  		description = "tf unit test"
 	}
+
 	resource "alicloud_log_store" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
-	    retention_period = "3000"
-	    shard_count = 1
+  		project          = alicloud_log_project.default.name
+  		name             = var.name
+  		retention_period = "3000"
+  		shard_count      = 1
 	}
-	`, name)
+`, name)
 }

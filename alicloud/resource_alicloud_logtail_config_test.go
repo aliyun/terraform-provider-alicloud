@@ -22,7 +22,7 @@ func init() {
 func testSweepLogConfigs(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -79,7 +79,7 @@ func testSweepLogConfigs(region string) error {
 	return nil
 }
 
-func TestAccAlicloudLogTail_basic(t *testing.T) {
+func TestAccAliCloudLogTail_basic(t *testing.T) {
 	var v *sls.LogConfig
 	resourceId := "alicloud_logtail_config.default"
 	ra := resourceAttrInit(resourceId, logTailMap)
@@ -92,7 +92,6 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacclogtailconfig-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogTailDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -130,12 +129,12 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"input_type":   "file",
-					"input_detail": `{\"autoExtend\":true,\"discardUnmatch\":true,\"enableRawLog\":true,\"fileEncoding\":\"utf8\",\"filePattern\":\"*\",\"key\":[\"test\",\"test2\"],\"logPath\":\"/logPath\",\"logType\":\"delimiter_log\",\"maxDepth\":999,\"quote\":\"\\\"\",\"separator\":\",\",\"timeKey\":\"test\",\"topicFormat\":\"default\"}`,
+					"input_detail": `{\"autoExtend\":true,\"discardUnmatch\":true,\"enableRawLog\":true,\"fileEncoding\":\"utf8\",\"filePattern\":\"*\",\"key\":[\"test\",\"test2\"],\"logPath\":\"/logPath\",\"logType\":\"delimiter_log\",\"maxDepth\":999,\"quote\":\"\\\"\",\"separator\":\",\",\"timeKey\":\"\",\"topicFormat\":\"default\"}`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"input_type":   "file",
-						"input_detail": "{\"autoExtend\":true,\"discardUnmatch\":true,\"enableRawLog\":true,\"fileEncoding\":\"utf8\",\"filePattern\":\"*\",\"key\":[\"test\",\"test2\"],\"logPath\":\"/logPath\",\"logType\":\"delimiter_log\",\"maxDepth\":999,\"quote\":\"\\\"\",\"separator\":\",\",\"timeKey\":\"test\",\"topicFormat\":\"default\"}",
+						"input_detail": "{\"autoExtend\":true,\"discardUnmatch\":true,\"enableRawLog\":true,\"fileEncoding\":\"utf8\",\"filePattern\":\"*\",\"key\":[\"test\",\"test2\"],\"logPath\":\"/logPath\",\"logType\":\"delimiter_log\",\"maxDepth\":999,\"quote\":\"\\\"\",\"separator\":\",\",\"timeKey\":\"\",\"topicFormat\":\"default\"}",
 					}),
 				),
 			},
@@ -166,7 +165,7 @@ func TestAccAlicloudLogTail_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLogTail_plugin(t *testing.T) {
+func TestAccAliCloudLogTail_plugin(t *testing.T) {
 	var v *sls.LogConfig
 	resourceId := "alicloud_logtail_config.default"
 	ra := resourceAttrInit(resourceId, logTailMap)
@@ -179,7 +178,6 @@ func TestAccAlicloudLogTail_plugin(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacclogtailconfig-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogTailDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -242,7 +240,7 @@ func TestAccAlicloudLogTail_plugin(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudLogTail_multi(t *testing.T) {
+func TestAccAliCloudLogTail_multi(t *testing.T) {
 	var v *sls.LogConfig
 	resourceId := "alicloud_logtail_config.default.4"
 	ra := resourceAttrInit(resourceId, logTailMap)
@@ -255,7 +253,6 @@ func TestAccAlicloudLogTail_multi(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacclogtailconfig-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogTailDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -284,22 +281,24 @@ func TestAccAlicloudLogTail_multi(t *testing.T) {
 
 func resourceLogTailDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-resource "alicloud_log_project" "default"{
-	name = "${var.name}"
-	description = "create by terraform"
-}
-resource "alicloud_log_store" "default"{
-  	project = "${alicloud_log_project.default.name}"
-  	name = "${var.name}"
-  	retention_period = 3650
-  	shard_count = 3
-  	auto_split = true
-  	max_split_shard_count = 60
-  	append_meta = true
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name        = var.name
+  		description = "create by terraform"
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project               = alicloud_log_project.default.name
+  		name                  = var.name
+  		retention_period      = 3650
+  		shard_count           = 3
+  		auto_split            = true
+  		max_split_shard_count = 60
+  		append_meta           = true
+	}
 `, name)
 }
 

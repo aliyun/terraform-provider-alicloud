@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
+func TestAccAliCloudLogOssShipper_basic(t *testing.T) {
 	var v *sls.Shipper
 	resourceId := "alicloud_log_oss_shipper.default"
 	ra := resourceAttrInit(resourceId, logOssShipperMap)
@@ -34,8 +34,8 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"project_name":    name,
-					"logstore_name":   name,
+					"project_name":    "${alicloud_log_store.default.project}",
+					"logstore_name":   "${alicloud_log_store.default.name}",
 					"shipper_name":    "test_shipper",
 					"oss_bucket":      "test_bucket",
 					"oss_prefix":      "",
@@ -191,19 +191,21 @@ func TestAccAlicloudLogOssShipper_basic(t *testing.T) {
 func resourceLogOssShipperConfigDependence(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
-	    default = "%s"
+  		default = "%s"
 	}
+
 	resource "alicloud_log_project" "default" {
-	    name = "${var.name}"
-	    description = "tf unit test"
+  		name        = var.name
+  		description = "tf unit test"
 	}
+
 	resource "alicloud_log_store" "default" {
-	    project = "${alicloud_log_project.default.name}"
-	    name = "${var.name}"
-	    retention_period = "3000"
-	    shard_count = 1
+  		project          = alicloud_log_project.default.name
+  		name             = var.name
+  		retention_period = "3000"
+  		shard_count      = 1
 	}
-	`, name)
+`, name)
 }
 
 var logOssShipperMap = map[string]string{
