@@ -1055,7 +1055,16 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 		logpopconn.AppendUserAgent(Provider, providerVersion)
 		logpopconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		logpopconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
-		logpopconn.Domain = "sls.aliyuncs.com"
+		endpoint := client.config.LogEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, LOGCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		logpopconn.Domain = endpoint + "/open-api"
 		client.logpopconn = logpopconn
 	}
 
