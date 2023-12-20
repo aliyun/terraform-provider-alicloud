@@ -1313,95 +1313,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) (err
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
 		run = true
-		instance, errDesc := ecsService.DescribeInstance(d.Id())
-		if errDesc != nil {
-			return WrapError(errDesc)
-		}
-		if statusUpdate && targetExist && target == string(Stopped) || instance.Status == string(Running) {
-			// 如果因为update而停止，无论是否成功都需要重新开机
-			defer func() {
-				if targetExist && target == string(Running) {
-					startRequest := ecs.CreateStartInstanceRequest()
-					startRequest.InstanceId = d.Id()
-
-					err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-						raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-							return ecsClient.StartInstance(startRequest)
-						})
-						if err != nil {
-							if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
-								time.Sleep(time.Second)
-								return resource.RetryableError(err)
-							}
-							return resource.NonRetryableError(err)
-						}
-						addDebug(startRequest.GetActionName(), raw)
-						return nil
-					})
-
-					if err != nil {
-						errUpdate = WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-					}
-					// Start instance sometimes costs more than 8 minutes when os type is centos.
-					stateConf := &resource.StateChangeConf{
-						Pending:    []string{"Pending", "Starting", "Stopped"},
-						Target:     []string{"Running"},
-						Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
-						Timeout:    d.Timeout(schema.TimeoutUpdate),
-						Delay:      5 * time.Second,
-						MinTimeout: 3 * time.Second,
-					}
-
-					if _, err = stateConf.WaitForState(); err != nil {
-						errUpdate = WrapErrorf(err, IdMsg, d.Id())
-					}
-				}
-			}()
-			stopRequest := ecs.CreateStopInstanceRequest()
-			stopRequest.RegionId = client.RegionId
-			stopRequest.InstanceId = d.Id()
-			stopRequest.ForceStop = requests.NewBoolean(false)
-			if v, ok := d.GetOk("stopped_mode"); ok {
-				stopRequest.StoppedMode = v.(string)
-			}
-			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
-				raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
-					return ecsClient.StopInstance(stopRequest)
-				})
-				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
-						time.Sleep(time.Second)
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				addDebug(stopRequest.GetActionName(), raw)
-				return nil
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), stopRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
-
-			if _, err = stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
-		}
-		if _, err := modifyInstanceImage(d, meta, run); err != nil {
-			return WrapError(err)
-		}
-
-		if _, err := modifyVpcAttribute(d, meta, run); err != nil {
-			return WrapError(err)
-		}
-
-		if _, err := modifyInstanceType(d, meta, run); err != nil {
-			return WrapError(err)
-		}
-
-		if d.HasChange("status") {
-			d.SetPartial("status")
-		}
+		return WrapError(updateInstanceAsStopped(d, meta, run, target.(string), ecsService, client))
 	}
 
 	if err := modifyInstanceNetworkSpec(d, meta); err != nil {
@@ -2284,6 +2196,99 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
+	}
+	return nil
+}
+
+func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, run bool, target string, ecsService EcsService, client *connectivity.AliyunClient) (errUpdate error) {
+	instance, errDesc := ecsService.DescribeInstance(d.Id())
+	if errDesc != nil {
+		return WrapError(errDesc)
+	}
+	if instance.Status == string(Running) {
+		// 如果因为update而停止，无论是否成功都需要重新开机
+		defer func() {
+			if target == string(Running) {
+				startRequest := ecs.CreateStartInstanceRequest()
+				startRequest.InstanceId = d.Id()
+
+				err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+					raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+						return ecsClient.StartInstance(startRequest)
+					})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
+							time.Sleep(time.Second)
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(startRequest.GetActionName(), raw)
+					return nil
+				})
+
+				if err != nil {
+					errUpdate = WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+				// Start instance sometimes costs more than 8 minutes when os type is centos.
+				stateConf := &resource.StateChangeConf{
+					Pending:    []string{"Pending", "Starting", "Stopped"},
+					Target:     []string{"Running"},
+					Refresh:    ecsService.InstanceStateRefreshFunc(d.Id(), []string{}),
+					Timeout:    d.Timeout(schema.TimeoutUpdate),
+					Delay:      5 * time.Second,
+					MinTimeout: 3 * time.Second,
+				}
+
+				if _, err = stateConf.WaitForState(); err != nil {
+					errUpdate = WrapErrorf(err, IdMsg, d.Id())
+				}
+			}
+		}()
+		stopRequest := ecs.CreateStopInstanceRequest()
+		stopRequest.RegionId = client.RegionId
+		stopRequest.InstanceId = d.Id()
+		stopRequest.ForceStop = requests.NewBoolean(false)
+		if v, ok := d.GetOk("stopped_mode"); ok {
+			stopRequest.StoppedMode = v.(string)
+		}
+		err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.StopInstance(stopRequest)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus"}) {
+					time.Sleep(time.Second)
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(stopRequest.GetActionName(), raw)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), stopRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{"Pending", "Running", "Stopping"}, []string{"Stopped"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+
+		if _, err = stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	if _, err := modifyInstanceImage(d, meta, run); err != nil {
+		return WrapError(err)
+	}
+
+	if _, err := modifyVpcAttribute(d, meta, run); err != nil {
+		return WrapError(err)
+	}
+
+	if _, err := modifyInstanceType(d, meta, run); err != nil {
+		return WrapError(err)
+	}
+
+	if d.HasChange("status") {
+		d.SetPartial("status")
 	}
 	return nil
 }
