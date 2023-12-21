@@ -71,6 +71,7 @@ func resourceAliCloudOssBucketRefererCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	var hostMap map[string]interface{}
 	query := make(map[string]interface{})
+	hostMap = make(map[string]interface{})
 	conn, err := client.NewOssClient()
 	if err != nil {
 		return WrapError(err)

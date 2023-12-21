@@ -32,13 +32,15 @@ func TestAccAliCloudOssBucketReferer_basic4937(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket_name":         "qd-api-test",
-					"allow_empty_referer": "true",
+					"bucket_name":                 name,
+					"allow_empty_referer":         "true",
+					"allow_truncate_query_string": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bucket_name":         "qd-api-test",
-						"allow_empty_referer": "true",
+						"bucket_name":                 name,
+						"allow_empty_referer":         "true",
+						"allow_truncate_query_string": "true",
 					}),
 				),
 			},
@@ -200,6 +202,10 @@ variable "name" {
     default = "%s"
 }
 
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+  acl    = "private"
+}
 
 `, name)
 }
