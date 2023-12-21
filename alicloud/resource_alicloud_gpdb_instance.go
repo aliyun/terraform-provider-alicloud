@@ -391,6 +391,10 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["PrivateIpAddress"] = v
 	}
 
+	if v, ok := d.GetOkExists("ssl_enabled"); ok && v.(int) == 1 {
+		request["EnableSSL"] = true
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -886,7 +890,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	request = map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
-	if d.HasChange("ssl_enabled") {
+	if !d.IsNewResource() && d.HasChange("ssl_enabled") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("ssl_enabled"); ok {
