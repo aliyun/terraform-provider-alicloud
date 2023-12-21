@@ -74,6 +74,7 @@ func (s *ResourceManagerServiceV2) ResourceManagerSavedQueryStateRefreshFunc(id 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
