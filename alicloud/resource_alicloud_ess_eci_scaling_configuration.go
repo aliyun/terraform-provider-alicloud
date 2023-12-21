@@ -253,6 +253,15 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Type:     schema.TypeBool,
 										Optional: true,
 									},
+									"mount_propagation": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: validation.StringInSlice([]string{"None", "HostToCotainer", "Bidirectional"}, false),
+									},
+									"sub_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 								},
 							},
 						},
@@ -705,6 +714,8 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+			VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+			VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 		Containers[i]["Command"] = ContainersMap["commands"]
@@ -939,9 +950,11 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					for _, volumeMountsValue := range m1["VolumeMounts"].([]interface{}) {
 						volumeMounts := volumeMountsValue.(map[string]interface{})
 						volumeMountsMap := map[string]interface{}{
-							"mount_path": volumeMounts["MountPath"],
-							"name":       volumeMounts["Name"],
-							"read_only":  volumeMounts["ReadOnly"],
+							"mount_path":        volumeMounts["MountPath"],
+							"name":              volumeMounts["Name"],
+							"read_only":         volumeMounts["ReadOnly"],
+							"mount_propagation": volumeMounts["MountPropagation"],
+							"sub_path":          volumeMounts["SubPath"],
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1335,6 +1348,8 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
 			}
 			Containers[i]["VolumeMount"] = VolumeMounts
 		}

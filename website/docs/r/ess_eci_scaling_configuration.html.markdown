@@ -267,6 +267,8 @@ The volume_mount supports the following:
   data in the volume.
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
+* `mount_propagation` - (Optional, Available in v1.211.1+) Default to `None`.Optional values: None, HostToCotainer,Bidirectional.
+* `sub_path` - (Optional, Available in v1.211.1+) The subdirectory of volume. 
 
 ### `acr_registry_infos`
 
