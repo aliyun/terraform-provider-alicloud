@@ -603,12 +603,12 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 					replicaSetsItemMap["replica_set_role"] = replicaSetRole
 				}
 
-				if networkType, ok := replicaSetsArg["ConnectionDomain"]; ok {
-					replicaSetsItemMap["connection_domain"] = networkType
+				if connectionDomain, ok := replicaSetsArg["ConnectionDomain"]; ok {
+					replicaSetsItemMap["connection_domain"] = connectionDomain
 				}
 
-				if networkType, ok := replicaSetsArg["ConnectionPort"]; ok {
-					replicaSetsItemMap["connection_port"] = networkType
+				if connectionPort, ok := replicaSetsArg["ConnectionPort"]; ok {
+					replicaSetsItemMap["connection_port"] = connectionPort
 				}
 
 				replicaSetsMaps = append(replicaSetsMaps, replicaSetsItemMap)
@@ -921,14 +921,14 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 			d.SetPartial("kms_encryption_context")
 		}
 
-		err := ddsService.ResetAccountPassword(d, accountPassword)
+		err := ddsService.ResetAccountPassword(d, accountPassword, "instance")
 		if err != nil {
 			return WrapError(err)
 		}
 	}
 
 	if d.HasChange("backup_time") || d.HasChange("backup_period") || d.HasChange("backup_retention_period") || d.HasChange("backup_interval") || d.HasChange("snapshot_backup_type") {
-		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
+		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
 			return WrapError(err)
 		}
 
