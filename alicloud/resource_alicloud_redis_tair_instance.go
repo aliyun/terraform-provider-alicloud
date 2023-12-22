@@ -102,7 +102,7 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: IntBetween(1, 256),
+				ValidateFunc: IntBetween(0, 256),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -259,7 +259,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	d.Set("port", objectRaw["Port"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("secondary_zone_id", objectRaw["SecondaryZoneId"])
-	d.Set("shard_count", objectRaw["ShardCount"])
+	if objectRaw["ShardCount"] != 0 {
+		d.Set("shard_count", objectRaw["ShardCount"])
+	}
 	d.Set("status", objectRaw["InstanceStatus"])
 	d.Set("storage_performance_level", convertRedisInstancesDBInstanceAttributeStorageTypeResponse(objectRaw["StorageType"]))
 	d.Set("storage_size_gb", formatInt(objectRaw["Storage"]))
