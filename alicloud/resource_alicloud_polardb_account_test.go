@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
+func TestAccAliCloudPolarDBAccount_update(t *testing.T) {
 	var v *polardb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
@@ -43,10 +43,14 @@ func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
-					"account_name":     "tftestnormal",
-					"account_password": "YourPassword_123",
-					"account_type":     "Normal",
+					"db_cluster_id":          "${alicloud_polardb_cluster.cluster.id}",
+					"account_name":           "tftestnormal",
+					"account_password":       "YourPassword_123",
+					"account_type":           "Normal",
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -56,7 +60,7 @@ func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -94,7 +98,7 @@ func TestAccAlicloudPolarDBAccount_update(t *testing.T) {
 	})
 
 }
-func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
+func TestAccAliCloudPolarDBAccount_update_forSuper(t *testing.T) {
 	var v *polardb.DBAccount
 	rand := acctest.RandIntRange(10000, 999999)
 	name := fmt.Sprintf("tf-testAccdbaccount-%d", rand)
@@ -126,10 +130,14 @@ func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_polardb_cluster.cluster.id}",
-					"account_name":     "tftestsuper",
-					"account_password": "YourPassword_123",
-					"account_type":     "Super",
+					"db_cluster_id":          "${alicloud_polardb_cluster.cluster.id}",
+					"account_name":           "tftestsuper",
+					"account_password":       "YourPassword_123",
+					"account_type":           "Super",
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -139,7 +147,7 @@ func TestAccAlicloudPolarDBAccount_update_forSuper(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -199,5 +207,25 @@ func resourcePolarDBAccountConfigDependence(name string) string {
         db_node_class     = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
 		vswitch_id = local.vswitch_id
 		description = "${var.name}"
-	}`, PolarDBCommonTestCase, name)
+	}
+
+	data "alicloud_kms_keys" "default" {
+		  status = "Enabled"
+		}
+
+	resource "alicloud_kms_key" "default" {
+	  count = length(data.alicloud_kms_keys.default.ids) > 0 ? 0 : 1
+	  description = var.name
+	  status = "Enabled"
+	  pending_window_in_days = 7
+	}
+
+	resource "alicloud_kms_ciphertext" "default" {
+	  key_id = length(data.alicloud_kms_keys.default.ids) > 0 ? data.alicloud_kms_keys.default.ids.0 : concat(alicloud_kms_key.default.*.id, [""])[0]
+	  plaintext = "YourPassword1234"
+	  encryption_context = {
+		"name" = var.name
+	  }
+	}
+`, PolarDBCommonTestCase, name)
 }
