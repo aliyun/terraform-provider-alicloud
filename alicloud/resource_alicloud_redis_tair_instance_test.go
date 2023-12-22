@@ -889,19 +889,15 @@ func TestAccAliCloudRedisTairInstance_basic4491_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"force_upgrade":             "false",
-					"auto_renew":                "false",
 					"port":                      "6379",
 					"payment_type":              "PayAsYouGo",
 					"instance_type":             "tair_essd",
-					"zone_id":                   "${alicloud_vswitch.default.zone_id}",
-					"period":                    "9",
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones.1.id}",
 					"instance_class":            "tair.essd.standard.xlarge",
 					"tair_instance_name":        name,
-					"auto_renew_period":         "1",
-					"secondary_zone_id":         "${alicloud_vswitch.default.zone_id}",
-					"vswitch_id":                "${alicloud_vswitch.default.id}",
-					"vpc_id":                    "${alicloud_vswitch.default.vpc_id}",
+					"secondary_zone_id":         "${data.alicloud_kvstore_zones.default.zones.1.id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"vpc_id":                    "${data.alicloud_vpcs.default.ids.0}",
 					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"storage_performance_level": "PL1",
 					"storage_size_gb":           "20",
@@ -912,14 +908,12 @@ func TestAccAliCloudRedisTairInstance_basic4491_twin(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"auto_renew":                "false",
 						"port":                      "6379",
 						"payment_type":              "PayAsYouGo",
 						"instance_type":             "tair_essd",
 						"zone_id":                   CHECKSET,
 						"instance_class":            "tair.essd.standard.xlarge",
 						"tair_instance_name":        name,
-						"auto_renew_period":         "1",
 						"secondary_zone_id":         CHECKSET,
 						"vswitch_id":                CHECKSET,
 						"vpc_id":                    CHECKSET,
@@ -961,20 +955,17 @@ provider "alicloud" {
 }
 
 data "alicloud_kvstore_zones" "default" {
-  product_type = "Tair_essd"
+  product_type         = "Tair_essd"
   instance_charge_type = "PostPaid"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "192.168.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "192.168.0.0/24"
-  zone_id      = data.alicloud_kvstore_zones.default.zones.1.id
-  vpc_id       = alicloud_vpc.default.id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.1.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {

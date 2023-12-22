@@ -32,44 +32,37 @@ data "alicloud_kvstore_zones" "default" {
   instance_charge_type = "PostPaid"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "192.168.0.0/24"
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "192.168.0.0/24"
-  zone_id      = data.alicloud_kvstore_zones.default.zones.1.id
-  vpc_id       = alicloud_vpc.default.id
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_kvstore_zones.default.zones.1.id
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 resource "alicloud_redis_tair_instance" "default" {
-  instance_class            = "tair.essd.standard.xlarge"
-  secondary_zone_id         = alicloud_vswitch.default.zone_id
-  resource_group_id         = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  storage_performance_level = "PL1"
   payment_type              = "PayAsYouGo"
-  auto_renew                = "false"
-  storage_size_gb           = "20"
-  vpc_id                    = alicloud_vswitch.default.vpc_id
-  force_upgrade             = "false"
-  instance_type             = "tair_essd"
-  zone_id                   = alicloud_vswitch.default.zone_id
-  period                    = "9"
-  port                      = "6379"
+  instance_class            = "tair.essd.standard.xlarge"
+  zone_id                   = data.alicloud_kvstore_zones.default.zones.1.id
   tair_instance_name        = var.name
-  vswitch_id                = alicloud_vswitch.default.id
-  auto_renew_period         = "1"
+  vswitch_id                = data.alicloud_vswitches.default.ids.0
+  storage_performance_level = "PL1"
+  port                      = "6379"
+  secondary_zone_id         = data.alicloud_kvstore_zones.default.zones.1.id
+  resource_group_id         = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  storage_size_gb           = "20"
+  vpc_id                    = data.alicloud_vpcs.default.ids.0
+  instance_type             = "tair_essd"
 }
 ```
 
 ### Deleting `alicloud_redis_tair_instance` or removing it from your configuration
 
-The `alicloud_redis_tair_instance` resource allows you to manage `payment_type = "Subscription"` instance, but Terraform cannot destroy it.
+The `alicloud_redis_tair_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
@@ -79,7 +72,7 @@ The following arguments are supported:
 * `auto_renew` - (Optional) Specifies whether to enable auto-renewal for the instance. Default value: false. Valid values: true(enables auto-renewal), false(disables auto-renewal).
 * `auto_renew_period` - (Optional) The subscription duration that is supported by auto-renewal. Unit: months. Valid values: 1, 2, 3, 6, and 12. This parameter is required only if the AutoRenew parameter is set to true.
 * `effective_time` - (Optional) The time when to change the configurations. Default value: Immediately. Valid values: Immediately (The configurations are immediately changed), MaintainTime (The configurations are changed within the maintenance window).
-* `engine_version` - (Optional, Computed) The database engine version of the instance. Default value: 1.0. The default version is developed by Alibaba Cloud and compatible with Redis 5.0.
+* `engine_version` - (Optional, Computed) Database version. Default value: 1.0.  Rules for transferring parameters of different tair product types:  tair_rdb:  Compatible with the Redis5.0 and Redis6.0 protocols, and is transmitted to 5.0 or 6.0. tair_scm: The Tair persistent memory is compatible with the Redis6.0 protocol and is passed 1.0. tair_essd: The disk (ESSD/SSD) is compatible with the Redis4.0 and Redis6.0 protocols, and is transmitted to 1.0 and 2.0 respectively.
 * `force_upgrade` - (Optional) Specifies whether to forcefully change the configurations of the instance. Default value: true. Valid values: false (The system does not forcefully change the configurations), true (The system forcefully changes the configurations).
 * `instance_class` - (Required) The instance type of the instance. For more information, see [Instance types](https://www.alibabacloud.com/help/en/apsaradb-for-redis/latest/instance-types).
 * `instance_type` - (Required, ForceNew) The storage medium of the instance. Valid values: tair_rdb, tair_scm, tair_essd.
