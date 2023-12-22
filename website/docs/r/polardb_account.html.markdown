@@ -11,7 +11,7 @@ description: |-
 
 Provides a PolarDB account resource and used to manage databases.
 
--> **NOTE:** Available in v1.67.0+. 
+-> **NOTE:** Available since v1.67.0. 
 
 ## Example Usage
 
@@ -20,6 +20,7 @@ data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
   pay_type   = "PostPaid"
+  category   = "Normal"
 }
 
 resource "alicloud_vpc" "default" {

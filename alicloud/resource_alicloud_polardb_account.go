@@ -181,7 +181,7 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 				return polarDBClient.ModifyAccountDescription(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					time.Sleep(DefaultIntervalShort * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -230,7 +230,7 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 				return polarDBClient.ModifyAccountPassword(request)
 			})
 			if err != nil {
-				if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+				if IsExpectedErrors(err, OperationDeniedDBStatus) {
 					time.Sleep(DefaultIntervalShort * time.Second)
 					return resource.RetryableError(err)
 				}
@@ -266,7 +266,7 @@ func resourceAlicloudPolarDBAccountDelete(d *schema.ResourceData, meta interface
 			return polarDBClient.DeleteAccount(request)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ConcurrentTaskExceeded"}) {
+			if IsExpectedErrors(err, OperationDeniedDBStatus) {
 				time.Sleep(DefaultIntervalShort * time.Second)
 				return resource.RetryableError(err)
 			}
