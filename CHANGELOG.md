@@ -1,4 +1,48 @@
 ## 1.214.0 (Unreleased)
+
+- **New Resource:** `alicloud_adb_lake_account` [GH-6737]
+- **New Resource:** `alicloud_threat_detection_oss_scan_config` [GH-6749]
+- **New Resource:** `alicloud_threat_detection_malicious_file_whitelist_config` [GH-6749]
+- **New Resource:** `alicloud_realtime_compute_vvp_instance` [GH-6758]
+- **New Resource:** `alicloud_quotas_template_applications` [GH-6760]
+- **New Datasource:** `alicloud_quotas_template_applications` [GH-6772]
+
+ENHANCEMENTS:
+
+- client: update sls pop endpoint to log endpoint. [GH-6779]
+- resource/resource/alicloud_alb_load_balancer: add computed tag for bandwidth_package_id; testcase: fix alb_listener_additional_certificate_attachment. [GH-6585]
+- resource/alicloud_ddoscoo_instance: Added the field normal_bandwidth, normal_qps, product_plan, function_version. [GH-6673]
+- resource/alicloud_polardb_account: add CreateAccount error retry;alicloud/resource_alicloud_polardb_account_test: add test kms_encrypted_password and kms_encryption_context. [GH-6685]
+- resource/alicloud_ess_scaling_configuration: Update internet_max_bandwidth_out range. [GH-6727]
+- resource/alicloud_adb_db_cluster_lake_version: modify delete asynchronous check time. [GH-6737]
+- resource/alicloud_polardb_backup_policy: Data_level1_backup_retention_period support 3-30. [GH-6747]
+- resource/alicloud_ddos_basic_threshold: Fixed alicloud_ddos_basic_threshold test case. [GH-6761]
+- resource/alicloud_ocean_base_instance: add type for instance_class. [GH-6767]
+- resource/alicloud_security_group: Added the filed name validate limit. [GH-6778]
+- resource/alicloud_gpdb_instance: support specify parameter ssl_enabled while creating instance. [GH-6784]
+- resource/alicloud_redis_tair_instance: ignore shard_count zero value while import. [GH-6788]
+- resource/alicloud_redis_tair_instance: ignore shard_count zero value while import. [GH-6790]
+- data-source/alicloud_arms_prometheis: add new attributes. [GH-6752]
+- data-source/alicloud_vpn_gateways: modify auto_propagate as bool. [GH-6770]
+- docs: fix examples. [GH-6732]
+- docs: fix resource/ecs_prefix_list title. [GH-6777]
+- docs: fix the docs example. [GH-6785]
+- docs: modify resource/alicloud_resource_manager_saved_query description. [GH-6786]
+- testcase: fix hbr test case. [GH-6753]
+- testcase: Fixed alicloud_click_house_account test case. [GH-6762]
+- testcase: Fixed Drds test case. [GH-6765]
+- testcase: Fixed slb test case. [GH-6766]
+- testcase: fix adb test case. [GH-6768]
+- testcase: resource/alicloud_mns_topic_subscription add queue type case. [GH-6771]
+- testcase: fix dbfs testcase. [GH-6777]
+- testcase: Fixed ecs test case. [GH-6781]
+- testcase: Fixed sls test case. [GH-6782]
+- Revert "resource/alicloud_cs_kubernetes_permissions: fix create, read, update, delete bug; support import". [GH-6769]
+
+BUG FIXES:
+
+- resource/alicloud_rocketmq_instance: fix internet_spec property assignment dependency. [GH-6773]
+
 ## 1.213.1 (December 07, 2023)
 
 ENHANCEMENTS:
