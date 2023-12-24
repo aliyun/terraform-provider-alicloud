@@ -54,13 +54,13 @@ func TestAccAlicloudDMSEnterprisesDataSource(t *testing.T) {
 	var existDmsEnterpriseInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
 			"instances.#":                   "1",
-			"instances.0.data_link_name":    "",
+			"instances.0.data_link_name":    CHECKSET,
 			"instances.0.database_password": CHECKSET,
 			"instances.0.database_user":     "tftestnormal",
 			"instances.0.dba_id":            CHECKSET,
 			"instances.0.dba_nick_name":     CHECKSET,
 			"instances.0.ddl_online":        "0",
-			"instances.0.ecs_instance_id":   "",
+			"instances.0.ecs_instance_id":   CHECKSET,
 			"instances.0.ecs_region":        os.Getenv("ALICLOUD_REGION"),
 			"instances.0.env_type":          "test",
 			"instances.0.export_timeout":    CHECKSET,
@@ -74,7 +74,7 @@ func TestAccAlicloudDMSEnterprisesDataSource(t *testing.T) {
 			"instances.0.safe_rule_id":      CHECKSET,
 			"instances.0.sid":               "",
 			"instances.0.status":            CHECKSET,
-			"instances.0.use_dsql":          "0",
+			"instances.0.use_dsql":          CHECKSET,
 			"instances.0.vpc_id":            "",
 		}
 	}

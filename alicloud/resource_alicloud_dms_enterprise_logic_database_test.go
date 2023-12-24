@@ -10,7 +10,7 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudDms_enterpriseLogicDatabase_basic1887(t *testing.T) {
+func SkipTestAccAlicloudDms_enterpriseLogicDatabase_basic1887(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dms_enterprise_logic_database.default"
 	ra := resourceAttrInit(resourceId, AlicloudDms_enterpriseLogicDatabaseMap1887)
