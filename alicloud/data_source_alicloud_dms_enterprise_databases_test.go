@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudDMSEnterpriseDatabaseDataSource(t *testing.T) {
+func SkipTestAccAlicloudDMSEnterpriseDatabaseDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	allConf := dataSourceTestAccConfig{

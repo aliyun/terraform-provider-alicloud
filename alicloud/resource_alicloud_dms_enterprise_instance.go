@@ -154,6 +154,7 @@ func resourceAlicloudDmsEnterpriseInstance() *schema.Resource {
 			"use_dsql": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntInSlice([]int{0, 1}),
 			},
 			"vpc_id": {

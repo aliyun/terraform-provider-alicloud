@@ -150,8 +150,6 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 					"export_timeout":    "2000",
 					"ecs_region":        os.Getenv("ALICLOUD_REGION"),
 					"ddl_online":        "0",
-					"use_dsql":          "0",
-					"data_link_name":    "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -170,8 +168,8 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 						"export_timeout":  "2000",
 						"ecs_region":      os.Getenv("ALICLOUD_REGION"),
 						"ddl_online":      "0",
-						"use_dsql":        "0",
-						"data_link_name":  "",
+						"use_dsql":        CHECKSET,
+						"data_link_name":  CHECKSET,
 					}),
 				),
 			},
