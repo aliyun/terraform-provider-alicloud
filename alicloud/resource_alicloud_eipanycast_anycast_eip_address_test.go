@@ -2,10 +2,13 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -18,6 +21,109 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func init() {
+	resource.AddTestSweepers("alicloud_eipanycast_anycast_eip_address", &resource.Sweeper{
+		Name: "alicloud_eipanycast_anycast_eip_address",
+		F:    testSweepEipanycastAnycastEipAddress,
+	})
+}
+
+func testSweepEipanycastAnycastEipAddress(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return fmt.Errorf("error getting Alicloud client: %s", err)
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+
+	// delete all resource.
+	prefixes := []string{}
+	conn, err := client.NewEipanycastClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	action := "ListAnycastEipAddresses"
+	request := map[string]interface{}{
+		"MaxResults": PageSizeLarge,
+	}
+	addressIds := make([]string, 0)
+	var response map[string]interface{}
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Println("List Eip Address Failed!", err)
+			return nil
+		}
+		resp, err := jsonpath.Get("$.AnycastList", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.AnycastList", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			skip := false
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(strings.ToLower(fmt.Sprint(item["Name"])), strings.ToLower(prefix)) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Eip Address: %v (%v)", item["Name"], item["AnycastId"])
+				continue
+			}
+			addressIds = append(addressIds, fmt.Sprint(item["AnycastId"]))
+		}
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
+	}
+	for _, addressId := range addressIds {
+		log.Printf("[INFO] Deleting Eip Address: (%s)", addressId)
+		action := "ReleaseAnycastEipAddress"
+		conn, err := client.NewEipanycastClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		request := map[string]interface{}{
+			"AnycastId": addressId,
+		}
+		request["RegionId"] = client.RegionId
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(time.Minute*9, func() *resource.RetryError {
+			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil {
+			log.Printf("[ERROR] Failed To Delete Eip Address : %s", err)
+		}
+		log.Printf("[INFO] Delete Eip Address Success : %s", addressId)
+	}
+	return nil
+}
 
 func TestAccAlicloudEipanycastAnycastEipAddress_basic(t *testing.T) {
 	var v map[string]interface{}
