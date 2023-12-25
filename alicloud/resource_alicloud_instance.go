@@ -1312,8 +1312,7 @@ func resourceAliyunInstanceUpdate(d *schema.ResourceData, meta interface{}) (err
 		statusUpdate = false
 	}
 	if imageUpdate || vpcUpdate || passwordUpdate || typeUpdate || statusUpdate {
-		run = true
-		return WrapError(updateInstanceAsStopped(d, meta, run, target.(string), ecsService, client))
+		return WrapError(updateInstanceAsStopped(d, meta, target.(string), ecsService, client))
 	}
 
 	if err := modifyInstanceNetworkSpec(d, meta); err != nil {
@@ -2200,7 +2199,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, run bool, target string, ecsService EcsService, client *connectivity.AliyunClient) (errUpdate error) {
+func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, target string, ecsService EcsService, client *connectivity.AliyunClient) (errUpdate error) {
 	instance, errDesc := ecsService.DescribeInstance(d.Id())
 	if errDesc != nil {
 		return WrapError(errDesc)
@@ -2228,7 +2227,10 @@ func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, run bool,
 				})
 
 				if err != nil {
-					errUpdate = WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+					if errUpdate != nil {
+						errUpdate = WrapErrorf(err, DefaultErrorMsg, d.Id(), startRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+					}
+					return
 				}
 				// Start instance sometimes costs more than 8 minutes when os type is centos.
 				stateConf := &resource.StateChangeConf{
@@ -2241,7 +2243,10 @@ func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, run bool,
 				}
 
 				if _, err = stateConf.WaitForState(); err != nil {
-					errUpdate = WrapErrorf(err, IdMsg, d.Id())
+					if errUpdate != nil {
+						errUpdate = WrapErrorf(err, IdMsg, d.Id())
+					}
+					return
 				}
 			}
 		}()
@@ -2275,15 +2280,15 @@ func updateInstanceAsStopped(d *schema.ResourceData, meta interface{}, run bool,
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	if _, err := modifyInstanceImage(d, meta, run); err != nil {
+	if _, err := modifyInstanceImage(d, meta, true); err != nil {
 		return WrapError(err)
 	}
 
-	if _, err := modifyVpcAttribute(d, meta, run); err != nil {
+	if _, err := modifyVpcAttribute(d, meta, true); err != nil {
 		return WrapError(err)
 	}
 
-	if _, err := modifyInstanceType(d, meta, run); err != nil {
+	if _, err := modifyInstanceType(d, meta, true); err != nil {
 		return WrapError(err)
 	}
 
