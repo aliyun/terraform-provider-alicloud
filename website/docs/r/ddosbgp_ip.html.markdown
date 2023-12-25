@@ -20,6 +20,10 @@ For information about Ddos Bgp Ip and how to use it, see [What is Ip](https://ww
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "tf-example"
 }

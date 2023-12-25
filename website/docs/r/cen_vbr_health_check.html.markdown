@@ -21,6 +21,9 @@ For information about CEN VBR HealthCheck and how to use it, see [Manage CEN VBR
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "terraform-example"
 }

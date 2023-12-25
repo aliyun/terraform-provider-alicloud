@@ -20,6 +20,10 @@ For information about Anti-DDoS Pro Domain Resource and how to use it, see [What
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud DBaudit Instance Resource.
 ---
 
-# alicloud\_yundun_dbaudit_instance
+# alicloud_yundun_dbaudit_instance
 
 Cloud DBaudit instance resource ("Yundun_dbaudit" is the short term of this product).
 
 -> **NOTE:** The endpoint of bssopenapi used only support "business.aliyuncs.com" at present.
 
--> **NOTE:** Available in 1.62.0+ .
+-> **NOTE:** Available since v1.62.0+.
 
 -> **NOTE:** In order to destroy Cloud DBaudit instance , users are required to apply for white list first
 
@@ -26,13 +26,26 @@ provider "alicloud" {
   endpoints {
     bssopenapi = "business.aliyuncs.com"
   }
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "default-NODELETING"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_yundun_dbaudit_instance" "default" {
-  description = "Terraform-test"
+  description = "tf-example"
   plan_code   = "alpha.professional"
   period      = "1"
-  vswitch_id  = "v-testVswitch"
+  vswitch_id  = data.alicloud_vswitches.default.ids.0
 }
 ```
 
