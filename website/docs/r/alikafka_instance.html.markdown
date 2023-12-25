@@ -114,14 +114,14 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Instance.
 * `end_point` - The EndPoint to access the kafka instance.
-* `topic_num_of_buy` - (Available since v1.213.1) The number of purchased topics.
-* `topic_used` - (Available since v1.213.1) The number of used topics.
-* `topic_left` - (Available since v1.213.1) The number of available topics.
-* `partition_used` - (Available since v1.213.1) The number of used partitions.
-* `partition_left` - (Available since v1.213.1) The number of available partitions.
-* `group_used` - (Available since v1.213.1) The number of used groups.
-* `group_left` - (Available since v1.213.1) The number of available groups.
-* `is_partition_buy` - (Available since v1.213.1) The method that you use to purchase partitions.
+* `topic_num_of_buy` - (Available since v1.214.1) The number of purchased topics.
+* `topic_used` - (Available since v1.214.1) The number of used topics.
+* `topic_left` - (Available since v1.214.1) The number of available topics.
+* `partition_used` - (Available since v1.214.1) The number of used partitions.
+* `partition_left` - (Available since v1.214.1) The number of available partitions.
+* `group_used` - (Available since v1.214.1) The number of used groups.
+* `group_left` - (Available since v1.214.1) The number of available groups.
+* `is_partition_buy` - (Available since v1.214.1) The method that you use to purchase partitions.
 * `status` - The status of the instance.
 
 ## Timeouts
