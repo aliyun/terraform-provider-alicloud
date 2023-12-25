@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudAlikafkaConsumerGroup() *schema.Resource {
@@ -33,7 +32,7 @@ func resourceAlicloudAlikafkaConsumerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -125,6 +124,7 @@ func resourceAlicloudAlikafkaConsumerGroupUpdate(d *schema.ResourceData, meta in
 
 func resourceAlicloudAlikafkaConsumerGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	alikafkaService := AlikafkaService{client}
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -159,6 +159,10 @@ func resourceAlicloudAlikafkaConsumerGroupDelete(d *schema.ResourceData, meta in
 	}
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, alikafkaService.AliKafkaConsumerStateRefreshFunc(d.Id(), "ServiceStatus", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }

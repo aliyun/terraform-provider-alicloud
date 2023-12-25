@@ -21,37 +21,44 @@ Provides an ALIKAFKA topic resource, see [What is Alikafka topic ](https://www.a
 Basic Usage
 
 ```terraform
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+variable "name" {
+  default = "terraform-example"
 }
 
-resource "alicloud_vpc" "default" {
-  cidr_block = "172.16.0.0/12"
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "172.16.0.0/24"
-  zone_id    = data.alicloud_zones.default.zones[0].id
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name          = "tf-example"
-  partition_num = "50"
-  disk_type     = "1"
-  disk_size     = "500"
-  deploy_type   = "5"
-  io_max        = "20"
-  vswitch_id    = alicloud_vswitch.default.id
+  name           = var.name
+  partition_num  = 50
+  disk_type      = 1
+  disk_size      = 500
+  deploy_type    = 5
+  io_max         = 20
+  vswitch_id     = data.alicloud_vswitches.default.ids.0
+  security_group = alicloud_security_group.default.id
 }
 
 resource "alicloud_alikafka_topic" "default" {
+  remark        = "alicloud_alikafka_topic_remark"
   instance_id   = alicloud_alikafka_instance.default.id
-  topic         = "example-topic"
+  topic         = var.name
   local_topic   = "false"
   compact_topic = "false"
-  partition_num = "12"
-  remark        = "dafault_kafka_topic_remark"
+  partition_num = "6"
 }
 ```
 
@@ -60,7 +67,7 @@ resource "alicloud_alikafka_topic" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) InstanceId of your Kafka resource, the topic will create in this instance.
-* `topic` - (Required, ForceNew) Name of the topic. Two topics on a single instance cannot have the same name. The length cannot exceed 64 characters.
+* `topic` - (Required, ForceNew) Name of the topic. Two topics on a single instance cannot have the same name. The length cannot exceed 249 characters.
 * `local_topic` - (Optional, ForceNew) Whether the topic is localTopic or not.
 * `compact_topic` - (Optional, ForceNew) Whether the topic is compactTopic or not. Compact topic must be a localTopic.
 * `partition_num` - (Optional) The number of partitions of the topic. The number should between 1 and 48.

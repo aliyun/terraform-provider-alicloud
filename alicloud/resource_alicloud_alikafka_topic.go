@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -38,7 +36,7 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 249),
 			},
 			"local_topic": {
 				Type:     schema.TypeBool,
@@ -56,12 +54,12 @@ func resourceAlicloudAlikafkaTopic() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Default:      12,
-				ValidateFunc: validation.IntBetween(0, 360),
+				ValidateFunc: IntBetween(0, 360),
 			},
 			"remark": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
 			},
 			"tags": tagsSchema(),
 		},
@@ -273,6 +271,9 @@ func resourceAlicloudAlikafkaTopicDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, alikafkaService.AliKafkaTopicStateRefreshFunc(d.Id(), "Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return WrapError(alikafkaService.WaitForAlikafkaTopic(d.Id(), Deleted, DefaultTimeoutMedium))
 }
