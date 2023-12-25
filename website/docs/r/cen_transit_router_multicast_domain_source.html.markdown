@@ -20,84 +20,100 @@ For information about Cen Transit Router Multicast Domain Source and how to use 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf_example"
 }
-data "alicloud_cen_transit_router_available_resources" "default" {}
-locals {
-  master_zone = data.alicloud_cen_transit_router_available_resources.default.resources[0].master_zones[2]
-  slave_zone  = data.alicloud_cen_transit_router_available_resources.default.resources[0].slave_zones[1]
+
+data "alicloud_cen_transit_router_available_resources" "default" {
 }
-resource "alicloud_vpc" "example" {
+
+resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "192.168.0.0/16"
 }
-resource "alicloud_vswitch" "example_master" {
+
+resource "alicloud_vswitch" "default_master" {
   vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
   cidr_block   = "192.168.1.0/24"
-  vpc_id       = alicloud_vpc.example.id
-  zone_id      = local.master_zone
+  zone_id      = "cn-hangzhou-i"
 }
-resource "alicloud_vswitch" "example_slave" {
+
+resource "alicloud_vswitch" "default_slave" {
   vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
   cidr_block   = "192.168.2.0/24"
-  vpc_id       = alicloud_vpc.example.id
-  zone_id      = local.slave_zone
+  zone_id      = "cn-hangzhou-j"
 }
 
-resource "alicloud_security_group" "example" {
-  name   = var.name
-  vpc_id = alicloud_vpc.example.id
-}
-resource "alicloud_cen_instance" "example" {
+resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
+  protection_level  = "REDUCED"
 }
 
-resource "alicloud_cen_transit_router" "example" {
-  transit_router_name = var.name
-  cen_id              = alicloud_cen_instance.example.id
-  support_multicast   = true
+resource "alicloud_cen_transit_router" "default" {
+  cen_id            = alicloud_cen_instance.default.id
+  support_multicast = true
 }
 
-resource "alicloud_cen_transit_router_multicast_domain" "example" {
-  transit_router_id                    = alicloud_cen_transit_router.example.transit_router_id
-  transit_router_multicast_domain_name = var.name
-}
-
-resource "alicloud_cen_transit_router_vpc_attachment" "example" {
-  cen_id                                = alicloud_cen_instance.example.id
-  transit_router_id                     = alicloud_cen_transit_router.example.transit_router_id
-  vpc_id                                = alicloud_vpc.example.id
+resource "alicloud_cen_transit_router_vpc_attachment" "default" {
+  cen_id            = alicloud_cen_instance.default.id
+  transit_router_id = alicloud_cen_transit_router.default.transit_router_id
+  vpc_id            = alicloud_vpc.default.id
+  zone_mappings {
+    zone_id    = alicloud_vswitch.default_master.zone_id
+    vswitch_id = alicloud_vswitch.default_master.id
+  }
+  zone_mappings {
+    zone_id    = alicloud_vswitch.default_slave.zone_id
+    vswitch_id = alicloud_vswitch.default_slave.id
+  }
   transit_router_attachment_name        = var.name
   transit_router_attachment_description = var.name
-
-  zone_mappings {
-    zone_id    = local.master_zone
-    vswitch_id = alicloud_vswitch.example_master.id
-  }
-  zone_mappings {
-    zone_id    = local.slave_zone
-    vswitch_id = alicloud_vswitch.example_slave.id
-  }
 }
 
-resource "alicloud_cen_transit_router_multicast_domain_association" "example" {
-  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.example.id
-  transit_router_attachment_id       = alicloud_cen_transit_router_vpc_attachment.example.transit_router_attachment_id
-  vswitch_id                         = alicloud_vswitch.example_master.id
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
 }
 
-resource "alicloud_ecs_network_interface" "example" {
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
+
+resource "alicloud_cen_transit_router_multicast_domain" "default" {
+  transit_router_id                           = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_multicast_domain_name        = var.name
+  transit_router_multicast_domain_description = var.name
+}
+
+resource "alicloud_ecs_network_interface" "default" {
   network_interface_name = var.name
-  vswitch_id             = alicloud_vswitch.example_master.id
-  primary_ip_address     = cidrhost(alicloud_vswitch.example_master.cidr_block, 100)
-  security_group_ids     = [alicloud_security_group.example.id]
+  vswitch_id             = alicloud_vswitch.default_master.id
+  security_group_ids     = [alicloud_security_group.default.id]
+  description            = "Basic test"
+  primary_ip_address     = cidrhost(alicloud_vswitch.default_master.cidr_block, 100)
+  tags = {
+    Created = "TF",
+    For     = "Test",
+  }
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+}
+
+resource "alicloud_cen_transit_router_multicast_domain_association" "default" {
+  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain.default.id
+  transit_router_attachment_id       = alicloud_cen_transit_router_vpc_attachment.default.transit_router_attachment_id
+  vswitch_id                         = alicloud_vswitch.default_master.id
 }
 
 resource "alicloud_cen_transit_router_multicast_domain_source" "example" {
-  vpc_id                             = alicloud_vpc.example.id
-  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain_association.example.transit_router_multicast_domain_id
-  network_interface_id               = alicloud_ecs_network_interface.example.id
+  vpc_id                             = alicloud_vpc.default.id
+  transit_router_multicast_domain_id = alicloud_cen_transit_router_multicast_domain_association.default.transit_router_multicast_domain_id
+  network_interface_id               = alicloud_ecs_network_interface.default.id
   group_ip_address                   = "239.1.1.1"
 }
 ```

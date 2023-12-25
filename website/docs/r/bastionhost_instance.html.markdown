@@ -33,7 +33,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = var.name
+  name_regex = "^default-NODELETING$"
   cidr_block = "10.4.0.0/16"
 }
 
@@ -68,7 +68,7 @@ data "alicloud_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = var.name
+  name_regex = "^default-NODELETING$"
   cidr_block = "10.4.0.0/16"
 }
 

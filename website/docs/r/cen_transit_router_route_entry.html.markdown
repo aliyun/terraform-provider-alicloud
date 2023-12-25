@@ -18,6 +18,9 @@ Provides a CEN transit router route entry resource.[What is Cen Transit Router R
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf_example"
 }

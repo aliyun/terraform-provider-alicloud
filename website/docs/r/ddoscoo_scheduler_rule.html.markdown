@@ -18,6 +18,10 @@ Provides a DdosCoo Scheduler Rule resource. For information about DdosCoo Schedu
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

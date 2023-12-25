@@ -25,20 +25,19 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
   cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
+data "alicloud_vswitches" "default" {
+  cidr_block = "10.4.0.0/24"
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
-  vpc_id = alicloud_vpc.default.id
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_bastionhost_instance" "default" {
   description        = var.name
@@ -47,7 +46,7 @@ resource "alicloud_bastionhost_instance" "default" {
   storage            = "5"
   bandwidth          = "5"
   period             = "1"
-  vswitch_id         = alicloud_vswitch.default.id
+  vswitch_id         = data.alicloud_vswitches.default.ids[0]
   security_group_ids = [alicloud_security_group.default.id]
 }
 

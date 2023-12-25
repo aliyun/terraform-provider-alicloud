@@ -80,7 +80,7 @@ resource "alicloud_alb_server_group" "default" {
 
 resource "alicloud_alb_listener" "default" {
   load_balancer_id     = alicloud_alb_load_balancer.default.id
-  listener_protocol    = "HTTPS"
+  listener_protocol    = "HTTP"
   listener_port        = 8081
   listener_description = var.name
   default_actions {

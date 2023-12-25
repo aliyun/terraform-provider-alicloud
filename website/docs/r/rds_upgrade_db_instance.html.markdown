@@ -41,25 +41,19 @@ data "alicloud_db_instance_classes" "example" {
   instance_charge_type     = "PostPaid"
 }
 
-data "alicloud_vpcs" "example" {
-  name_regex = "^default-NODELETING$"
+data "alicloud_rds_cross_regions" "example" {
 }
 
-data "alicloud_vswitches" "example" {
-  vpc_id  = data.alicloud_vpcs.example.ids.0
-  zone_id = data.alicloud_db_zones.example.ids.0
+resource "alicloud_vpc" "example" {
+  vpc_name   = "terraform-example"
+  cidr_block = "172.16.0.0/16"
 }
 
 resource "alicloud_vswitch" "example" {
-  count        = length(data.alicloud_vswitches.example.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.example.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.example.vpcs[0].cidr_block, 8, 4)
-  zone_id      = data.alicloud_db_zones.example.ids.0
+  vpc_id       = alicloud_vpc.example.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_db_zones.example.zones.0.id
   vswitch_name = "terraform-example"
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.example.ids) > 0 ? data.alicloud_vswitches.example.ids[0] : concat(alicloud_vswitch.example.*.id, [""])[0]
 }
 
 resource "alicloud_db_instance" "example" {
@@ -70,7 +64,7 @@ resource "alicloud_db_instance" "example" {
   instance_storage         = data.alicloud_db_instance_classes.example.instance_classes.0.storage_range.min
   instance_charge_type     = "Postpaid"
   instance_name            = "terraform-example"
-  vswitch_id               = local.vswitch_id
+  vswitch_id               = alicloud_vswitch.example.id
   monitoring_period        = "60"
 }
 
@@ -85,8 +79,7 @@ resource "alicloud_rds_upgrade_db_instance" "example" {
   switch_over              = "false"
   payment_type             = "PayAsYouGo"
   db_instance_description  = "terraform-example"
-  vswitch_id               = local.vswitch_id
-  resource_group_id        = alicloud_db_instance.example.resource_group_id
+  vswitch_id               = alicloud_vswitch.example.id
 }
 ```
 

@@ -19,6 +19,10 @@ For information about EIP Segment Address and how to use it, see [What is Segmen
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }
