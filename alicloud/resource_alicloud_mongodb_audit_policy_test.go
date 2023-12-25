@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_audit_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBAuditPolicyMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBAuditPolicyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongodbAuditPolicy")
@@ -31,7 +31,7 @@ func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc-mongodbauditpolicy-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongoDBAuditPolicyBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBAuditPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -81,39 +81,43 @@ func TestAccAlicloudMongoDBAuditPolicy_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudMongoDBAuditPolicyMap0 = map[string]string{
+var AliCloudMongoDBAuditPolicyMap0 = map[string]string{
 	"storage_period": NOSET,
 	"db_instance_id": CHECKSET,
 }
 
-func AlicloudMongoDBAuditPolicyBasicDependence0(name string) string {
+func AliCloudMongoDBAuditPolicyBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_mongodb_zones" "default" {}
+	data "alicloud_mongodb_zones" "default" {
+	}
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_mongodb_zones.default.zones.0.id
-}
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_mongodb_zones.default.zones.0.id
+	}
 
-resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
-  db_instance_class   = "dds.mongo.mid"
-  db_instance_storage = 10
-  name                = var.name
-  vswitch_id          = data.alicloud_vswitches.default.ids[0]
-  tags = {
-    Created = "TF"
-    For     = "acceptance test"
-  }
-}
+	resource "alicloud_mongodb_instance" "default" {
+  		engine_version      = "4.2"
+  		db_instance_class   = "dds.mongo.mid"
+  		db_instance_storage = 10
+  		vswitch_id          = alicloud_vswitch.default.id
+  		name                = var.name
+  		tags = {
+    		Created = "TF"
+    		For     = "acceptance test"
+  		}
+	}
 `, name)
 }
 
