@@ -1192,3 +1192,36 @@ func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string,
 		return object, fmt.Sprint(object[attribute]), nil
 	}
 }
+func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAliKafkaConsumerGroup(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+
+			if fmt.Sprint(object[attribute]) == failState {
+				return object, fmt.Sprint(object[attribute]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[attribute])))
+			}
+		}
+		return object, fmt.Sprint(object[attribute]), nil
+	}
+}
+func (s *AlikafkaService) AliKafkaTopicStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlikafkaTopic(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		return object, "existing", nil
+	}
+}

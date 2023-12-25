@@ -113,7 +113,7 @@ func testSweepAlikafkaConsumerGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
+func TestAccAliCloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 	var v *alikafka.ConsumerVO
 	resourceId := "alicloud_alikafka_consumer_group.default"
@@ -210,7 +210,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudAlikafkaConsumerGroup_basic1(t *testing.T) {
+func TestAccAliCloudAlikafkaConsumerGroup_basic1(t *testing.T) {
 	var v *alikafka.ConsumerVO
 	resourceId := "alicloud_alikafka_consumer_group.default"
 	ra := resourceAttrInit(resourceId, alikafkaConsumerGroupBasicMap)
@@ -254,7 +254,7 @@ func TestAccAlicloudAlikafkaConsumerGroup_basic1(t *testing.T) {
 
 }
 
-func TestAccAlicloudAlikafkaConsumerGroup_multi(t *testing.T) {
+func TestAccAliCloudAlikafkaConsumerGroup_multi(t *testing.T) {
 
 	var v *alikafka.ConsumerVO
 	resourceId := "alicloud_alikafka_consumer_group.default.4"

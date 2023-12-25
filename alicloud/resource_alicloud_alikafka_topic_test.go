@@ -105,7 +105,7 @@ func testSweepAlikafkaTopic(region string) error {
 	return nil
 }
 
-func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
+func TestAccAliCloudAlikafkaTopic_basic(t *testing.T) {
 
 	var v *alikafka.TopicVO
 	resourceId := "alicloud_alikafka_topic.default"
@@ -266,7 +266,7 @@ func TestAccAlicloudAlikafkaTopic_basic(t *testing.T) {
 
 }
 
-func TestAccAlicloudAlikafkaTopic_multi(t *testing.T) {
+func TestAccAliCloudAlikafkaTopic_multi(t *testing.T) {
 
 	var v *alikafka.TopicVO
 	resourceId := "alicloud_alikafka_topic.default.4"
