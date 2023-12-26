@@ -102,6 +102,7 @@ The following arguments are supported:
 * `eip_bandwidth` - (Optional) Eip bandwidth.
 * `ingress_bandwidth` - (Optional) Ingress bandwidth.
 * `egress_bandwidth` - (Optional) egress bandwidth.
+* `ipv6_address_count` - (Optional, Available since 1.214.0) The number of IPv6 addresses.
 * `host_name` - (Optional) Hostname of an ECI instance.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECI instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot

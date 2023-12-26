@@ -116,6 +116,10 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"tags": tagsSchema(),
 			"acr_registry_infos": {
 				Type:     schema.TypeSet,
@@ -576,6 +580,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["HostName"] = d.Get("host_name")
 	request["IngressBandwidth"] = d.Get("ingress_bandwidth")
 	request["EgressBandwidth"] = d.Get("egress_bandwidth")
+	request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
 	request["SpotStrategy"] = d.Get("spot_strategy")
 
 	if v, ok := d.GetOk("spot_price_limit"); ok {
@@ -836,6 +841,7 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("host_name", o["HostName"])
 	d.Set("ingress_bandwidth", o["IngressBandwidth"])
 	d.Set("egress_bandwidth", o["EgressBandwidth"])
+	d.Set("ipv6_address_count", o["Ipv6AddressCount"])
 	d.Set("tags", o["Tags"])
 	d.Set("spot_strategy", o["SpotStrategy"])
 	if o["spot_price_limit"] != nil {
@@ -1199,6 +1205,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	if d.HasChange("egress_bandwidth") {
 		update = true
 		request["EgressBandwidth"] = d.Get("egress_bandwidth")
+	}
+	if d.HasChange("ipv6_address_count") {
+		update = true
+		request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
 	}
 	if d.HasChange("tags") {
 		update = true
