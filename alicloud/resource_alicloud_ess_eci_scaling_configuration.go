@@ -84,8 +84,28 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"image_snapshot_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"ram_role_name": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"termination_grace_period_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"auto_match_image_cache": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"ipv6_address_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"active_deadline_seconds": {
+				Type:     schema.TypeInt,
 				Optional: true,
 			},
 			"spot_strategy": {
@@ -113,6 +133,14 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"egress_bandwidth": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"ephemeral_storage": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"load_balancer_weight": {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
@@ -169,6 +197,21 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"security_context_capability_adds": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
+						"security_context_read_only_root_file_system": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"security_context_run_as_user": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
 						"ports": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -195,6 +238,10 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Optional: true,
 									},
 									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"field_ref_field_path": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
@@ -357,10 +404,25 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				},
 			},
 			"init_containers": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"security_context_capability_adds": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
+						"security_context_read_only_root_file_system": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"security_context_run_as_user": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
 						"ports": {
 							Type:     schema.TypeSet,
 							Optional: true,
@@ -387,6 +449,10 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Optional: true,
 									},
 									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"field_ref_field_path": {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
@@ -577,6 +643,13 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["IngressBandwidth"] = d.Get("ingress_bandwidth")
 	request["EgressBandwidth"] = d.Get("egress_bandwidth")
 	request["SpotStrategy"] = d.Get("spot_strategy")
+	request["ImageSnapshotId"] = d.Get("image_snapshot_id")
+	request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
+	request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
+	request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
+	request["ActiveDeadlineSeconds"] = d.Get("active_deadline_seconds")
+	request["EphemeralStorage"] = d.Get("ephemeral_storage")
+	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 
 	if v, ok := d.GetOk("spot_price_limit"); ok {
 		request["SpotPriceLimit"] = strconv.FormatFloat(v.(float64), 'f', 2, 64)
@@ -637,6 +710,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			EnvironmentVars[i] = make(map[string]interface{})
 			EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 			EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+			EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 		}
 		Containers[i]["EnvironmentVar"] = EnvironmentVars
 		Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
@@ -647,6 +721,9 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["Name"] = ContainersMap["name"]
 		Containers[i]["Image"] = ContainersMap["image"]
 		Containers[i]["ImagePullPolicy"] = ContainersMap["image_pull_policy"]
+		Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
+		Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
+		Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 
 		Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
 		if ContainersMap["readiness_probe_period_seconds"] != 0 {
@@ -705,15 +782,17 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+			VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+			VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 		Containers[i]["Command"] = ContainersMap["commands"]
 	}
 	request["Container"] = Containers
 
-	if v, ok := d.GetOk("init_containers"); ok {
-		InitContainers := make([]map[string]interface{}, len(v.(*schema.Set).List()))
-		for i, v := range v.(*schema.Set).List() {
+	if _, ok := d.GetOk("init_containers"); ok {
+		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").([]interface{})))
+		for i, v := range d.Get("init_containers").([]interface{}) {
 			InitContainersMap := v.(map[string]interface{})
 			InitContainers[i] = make(map[string]interface{})
 			Ports := make([]map[string]interface{}, len(InitContainersMap["ports"].(*schema.Set).List()))
@@ -730,6 +809,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				EnvironmentVars[i]["FieldRefFieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 			}
 			InitContainers[i]["InitContainerEnvironmentVar"] = EnvironmentVars
 			InitContainers[i]["WorkingDir"] = InitContainersMap["working_dir"]
@@ -740,6 +820,9 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			InitContainers[i]["Name"] = InitContainersMap["name"]
 			InitContainers[i]["Image"] = InitContainersMap["image"]
 			InitContainers[i]["ImagePullPolicy"] = InitContainersMap["image_pull_policy"]
+			InitContainers[i]["SecurityContext.Capability.Add"] = InitContainersMap["security_context_capability_adds"]
+			InitContainers[i]["SecurityContext.ReadOnlyRootFilesystem"] = InitContainersMap["security_context_read_only_root_file_system"]
+			InitContainers[i]["SecurityContext.RunAsUser"] = InitContainersMap["security_context_run_as_user"]
 			VolumeMounts := make([]map[string]interface{}, len(InitContainersMap["volume_mounts"].(*schema.Set).List()))
 			for i, VolumeMountsValue := range InitContainersMap["volume_mounts"].(*schema.Set).List() {
 				VolumeMountsMap := VolumeMountsValue.(map[string]interface{})
@@ -747,6 +830,8 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
 			}
 			InitContainers[i]["InitContainerVolumeMount"] = VolumeMounts
 			InitContainers[i]["Command"] = InitContainersMap["commands"]
@@ -830,12 +915,19 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("resource_group_id", o["ResourceGroupId"])
 	d.Set("dns_policy", o["DnsPolicy"])
 	d.Set("enable_sls", o["SlsEnable"])
+	d.Set("image_snapshot_id", o["ImageSnapshotId"])
 	d.Set("ram_role_name", o["RamRoleName"])
+	d.Set("termination_grace_period_seconds", o["TerminationGracePeriodSeconds"])
+	d.Set("auto_match_image_cache", o["AutoMatchImageCache"])
+	d.Set("ipv6_address_count", o["Ipv6AddressCount"])
+	d.Set("active_deadline_seconds", o["ActiveDeadlineSeconds"])
 	d.Set("auto_create_eip", o["AutoCreateEip"])
 	d.Set("eip_bandwidth", o["EipBandwidth"])
 	d.Set("host_name", o["HostName"])
 	d.Set("ingress_bandwidth", o["IngressBandwidth"])
 	d.Set("egress_bandwidth", o["EgressBandwidth"])
+	d.Set("ephemeral_storage", o["EphemeralStorage"])
+	d.Set("load_balancer_weight", o["LoadBalancerWeight"])
 	d.Set("tags", o["Tags"])
 	d.Set("spot_strategy", o["SpotStrategy"])
 	if o["spot_price_limit"] != nil {
@@ -878,15 +970,18 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 		for _, v := range containersList {
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
-					"working_dir":       m1["WorkingDir"],
-					"args":              m1["Args"],
-					"cpu":               m1["Cpu"],
-					"gpu":               m1["Gpu"],
-					"memory":            m1["Memory"],
-					"name":              m1["Name"],
-					"image":             m1["Image"],
-					"image_pull_policy": m1["ImagePullPolicy"],
-					"commands":          m1["Commands"],
+					"security_context_capability_adds":            m1["SecurityContextCapabilityAdds"],
+					"security_context_read_only_root_file_system": m1["SecurityContextReadOnlyRootFilesystem"],
+					"security_context_run_as_user":                m1["SecurityContextRunAsUser"],
+					"working_dir":                                 m1["WorkingDir"],
+					"args":                                        m1["Args"],
+					"cpu":                                         m1["Cpu"],
+					"gpu":                                         m1["Gpu"],
+					"memory":                                      m1["Memory"],
+					"name":                                        m1["Name"],
+					"image":                                       m1["Image"],
+					"image_pull_policy":                           m1["ImagePullPolicy"],
+					"commands":                                    m1["Commands"],
 
 					"readiness_probe_exec_commands":         m1["ReadinessProbeExecCommands"],
 					"readiness_probe_period_seconds":        m1["ReadinessProbePeriodSeconds"],
@@ -915,8 +1010,9 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					for _, environmentVarsValue := range m1["EnvironmentVars"].([]interface{}) {
 						environmentVars := environmentVarsValue.(map[string]interface{})
 						environmentVarsMap := map[string]interface{}{
-							"key":   environmentVars["Key"],
-							"value": environmentVars["Value"],
+							"key":                  environmentVars["Key"],
+							"value":                environmentVars["Value"],
+							"field_ref_field_path": environmentVars["FieldRefFieldPath"],
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -961,23 +1057,27 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 		for _, v := range initContainersList {
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
-					"working_dir":       m1["WorkingDir"],
-					"args":              m1["InitContainerArgs"],
-					"cpu":               m1["Cpu"],
-					"gpu":               m1["Gpu"],
-					"memory":            m1["Memory"],
-					"image":             m1["Image"],
-					"image_pull_policy": m1["ImagePullPolicy"],
-					"name":              m1["Name"],
-					"commands":          m1["InitContainerCommands"],
+					"security_context_capability_adds":            m1["SecurityContextCapabilityAdds"],
+					"security_context_read_only_root_file_system": m1["SecurityContextReadOnlyRootFilesystem"],
+					"security_context_run_as_user":                m1["SecurityContextRunAsUser"],
+					"working_dir":                                 m1["WorkingDir"],
+					"args":                                        m1["InitContainerArgs"],
+					"cpu":                                         m1["Cpu"],
+					"gpu":                                         m1["Gpu"],
+					"memory":                                      m1["Memory"],
+					"image":                                       m1["Image"],
+					"image_pull_policy":                           m1["ImagePullPolicy"],
+					"name":                                        m1["Name"],
+					"commands":                                    m1["InitContainerCommands"],
 				}
 				if m1["InitContainerEnvironmentVars"] != nil {
 					environmentVarsMaps := make([]map[string]interface{}, 0)
 					for _, environmentVarsValue := range m1["InitContainerEnvironmentVars"].([]interface{}) {
 						environmentVars := environmentVarsValue.(map[string]interface{})
 						environmentVarsMap := map[string]interface{}{
-							"key":   environmentVars["Key"],
-							"value": environmentVars["Value"],
+							"key":                  environmentVars["Key"],
+							"value":                environmentVars["Value"],
+							"field_ref_field_path": environmentVars["FieldRefFieldPath"],
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -1168,9 +1268,29 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["EnableSls"] = d.Get("enable_sls")
 	}
+	if d.HasChange("image_snapshot_id") {
+		update = true
+		request["ImageSnapshotId"] = d.Get("image_snapshot_id")
+	}
 	if d.HasChange("ram_role_name") {
 		update = true
 		request["RamRoleName"] = d.Get("ram_role_name")
+	}
+	if d.HasChange("termination_grace_period_seconds") {
+		update = true
+		request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
+	}
+	if d.HasChange("auto_match_image_cache") {
+		update = true
+		request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
+	}
+	if d.HasChange("ipv6_address_count") {
+		update = true
+		request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
+	}
+	if d.HasChange("active_deadline_seconds") {
+		update = true
+		request["ActiveDeadlineSeconds"] = d.Get("active_deadline_seconds")
 	}
 	if d.HasChange("spot_strategy") {
 		update = true
@@ -1199,6 +1319,14 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	if d.HasChange("egress_bandwidth") {
 		update = true
 		request["EgressBandwidth"] = d.Get("egress_bandwidth")
+	}
+	if d.HasChange("ephemeral_storage") {
+		update = true
+		request["EphemeralStorage"] = d.Get("ephemeral_storage")
+	}
+	if d.HasChange("load_balancer_weight") {
+		update = true
+		request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 	}
 	if d.HasChange("tags") {
 		update = true
@@ -1250,6 +1378,9 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		for i, ContainersValue := range d.Get("containers").([]interface{}) {
 			ContainersMap := ContainersValue.(map[string]interface{})
 			Containers[i] = make(map[string]interface{})
+			Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
+			Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
+			Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
 			Containers[i]["Arg"] = ContainersMap["args"]
 			Containers[i]["Cpu"] = ContainersMap["cpu"]
@@ -1316,6 +1447,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 			}
 			Containers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -1343,8 +1475,8 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 
 	if d.HasChange("init_containers") {
 		update = true
-		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").(*schema.Set).List()))
-		for i, InitContainersValue := range d.Get("init_containers").(*schema.Set).List() {
+		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").([]interface{})))
+		for i, InitContainersValue := range d.Get("init_containers").([]interface{}) {
 			InitContainersMap := InitContainersValue.(map[string]interface{})
 			InitContainers[i] = make(map[string]interface{})
 			InitContainers[i]["WorkingDir"] = InitContainersMap["working_dir"]
@@ -1356,6 +1488,9 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			InitContainers[i]["Image"] = InitContainersMap["image"]
 			InitContainers[i]["ImagePullPolicy"] = InitContainersMap["image_pull_policy"]
 			InitContainers[i]["Command"] = InitContainersMap["commands"]
+			InitContainers[i]["SecurityContext.Capability.Add"] = InitContainersMap["security_context_capability_adds"]
+			InitContainers[i]["SecurityContext.ReadOnlyRootFilesystem"] = InitContainersMap["security_context_read_only_root_file_system"]
+			InitContainers[i]["SecurityContext.RunAsUser"] = InitContainersMap["security_context_run_as_user"]
 
 			EnvironmentVars := make([]map[string]interface{}, len(InitContainersMap["environment_vars"].(*schema.Set).List()))
 			for i, EnvironmentVarsValue := range InitContainersMap["environment_vars"].(*schema.Set).List() {
@@ -1363,6 +1498,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				EnvironmentVars[i]["FieldRef.FieldPath"] = EnvironmentVarsMap["field_ref_field_path"]
 			}
 			InitContainers[i]["InitContainerEnvironmentVar"] = EnvironmentVars
 
