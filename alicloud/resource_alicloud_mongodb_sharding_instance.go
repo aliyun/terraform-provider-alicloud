@@ -68,6 +68,7 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				ForceNew: true,
 				Optional: true,
+				Computed: true,
 			},
 			"name": {
 				Type:         schema.TypeString,
