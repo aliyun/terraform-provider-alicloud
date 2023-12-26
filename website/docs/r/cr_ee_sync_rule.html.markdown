@@ -25,6 +25,11 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
+data "alicloud_regions" "default" {
+  current = true
+}
+
 resource "alicloud_cr_ee_instance" "source" {
   payment_type   = "Subscription"
   period         = 1
@@ -33,6 +38,7 @@ resource "alicloud_cr_ee_instance" "source" {
   instance_type  = "Advanced"
   instance_name  = "${var.name}-source"
 }
+
 resource "alicloud_cr_ee_instance" "target" {
   payment_type   = "Subscription"
   period         = 1
@@ -48,6 +54,7 @@ resource "alicloud_cr_ee_namespace" "source" {
   auto_create        = false
   default_visibility = "PUBLIC"
 }
+
 resource "alicloud_cr_ee_namespace" "target" {
   instance_id        = alicloud_cr_ee_instance.target.id
   name               = var.name
@@ -63,6 +70,7 @@ resource "alicloud_cr_ee_repo" "source" {
   repo_type   = "PUBLIC"
   detail      = "this is a public repo"
 }
+
 resource "alicloud_cr_ee_repo" "target" {
   instance_id = alicloud_cr_ee_instance.target.id
   namespace   = alicloud_cr_ee_namespace.target.name
@@ -70,10 +78,6 @@ resource "alicloud_cr_ee_repo" "target" {
   summary     = "this is summary of my new repo"
   repo_type   = "PUBLIC"
   detail      = "this is a public repo"
-}
-
-data "alicloud_regions" "default" {
-  current = true
 }
 
 resource "alicloud_cr_ee_sync_rule" "default" {
@@ -93,29 +97,38 @@ resource "alicloud_cr_ee_sync_rule" "default" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) ID of Container Registry Enterprise Edition source instance.
-* `namespace_name` - (Required, ForceNew) Name of Container Registry Enterprise Edition source namespace. It can contain 2 to 30 characters.
-* `name` - (Required, ForceNew) Name of Container Registry Enterprise Edition sync rule.
+* `instance_id` - (Required, ForceNew) The ID of the Container Registry Enterprise Edition source instance.
+* `namespace_name` - (Required, ForceNew) The name of the Container Registry Enterprise Edition source namespace. It can contain 2 to 30 characters.
+* `target_instance_id` - (Required, ForceNew) The ID of the Container Registry Enterprise Edition target instance to be synchronized.
+* `target_namespace_name` - (Required, ForceNew) The name of the Container Registry Enterprise Edition target namespace to be synchronized. It can contain 2 to 30 characters.
 * `target_region_id` - (Required, ForceNew) The target region to be synchronized.
-* `target_instance_id` - (Required, ForceNew) ID of Container Registry Enterprise Edition target instance to be synchronized.
-* `target_namespace_name` - (Required, ForceNew) Name of Container Registry Enterprise Edition target namespace to be synchronized. It can contain 2 to 30 characters.
+* `name` - (Required, ForceNew) The name of the Container Registry Enterprise Edition sync rule.
 * `tag_filter` - (Required, ForceNew) The regular expression used to filter image tags for synchronization in the source repository.
-* `repo_name` - (Optional, ForceNew) Name of the source repository which should be set together with `target_repo_name`, if empty means that the synchronization scope is the entire namespace level.
-* `target_repo_name` - (Optional, ForceNew) Name of the target repository.
-* `rule_id` - (Optional, ForceNew) The uuid of Container Registry Enterprise Edition sync rule.
+* `repo_name` - (Optional, ForceNew) The name of the source repository which should be set together with `target_repo_name`, if empty means that the synchronization scope is the entire namespace level.
+* `target_repo_name` - (Optional, ForceNew) The name of the target repository.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource id of Container Registry Enterprise Edition sync rule. The value is in format `{instance_id}:{namespace_name}:{rule_id}`.
-* `sync_direction` - `FROM` or `TO`, the direction of synchronization. `FROM` means source instance, `TO` means target instance.
-* `sync_scope` - `REPO` or `NAMESPACE`,the scope that the synchronization rule applies.
+* `id` - The resource ID in terraform of Container Registry Enterprise Edition sync rule. It formats as `<instance_id>:<namespace_name>:<rule_id>`.
+* `rule_id` - (Optional, ForceNew) The ID of the synchronization rule.
+* `sync_direction` - The direction of the synchronization rule.
+* `sync_scope` - The scope of the synchronization rule.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.214.1.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Enterprise Edition sync rule.
+* `delete` - (Defaults to 5 mins) Used when delete the Enterprise Edition sync rule.
 
 ## Import
 
-Container Registry Enterprise Edition sync rule can be imported using the id. Format to `{instance_id}:{namespace_name}:{rule_id}`, e.g.
+Container Registry Enterprise Edition sync rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cr_ee_sync_rule.default `cri-xxx:my-namespace:crsr-yyy`
+$ terraform import alicloud_cr_ee_sync_rule.example <instance_id>:<namespace_name>:<rule_id>
 ```
