@@ -38,7 +38,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 		CheckDestroy: testAccCheckKVStoreBackupPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpc(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -49,7 +49,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				ImportStateVerify: true,
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdatePeriod(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_period.#": "3",
@@ -57,7 +57,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateTime(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time": "11:00Z-12:00Z",
@@ -65,7 +65,7 @@ func TestAccAlicloudKVStoreRedisBackupPolicy_vpc(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore2Dot8)),
+				Config: testAccKVStoreBackupPolicy_vpcUpdateAll(KVStoreCommonTestCase, string(KVStoreRedis), redisInstanceClassForTest, string(KVStore4Dot0)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"backup_time":     "12:00Z-13:00Z",
