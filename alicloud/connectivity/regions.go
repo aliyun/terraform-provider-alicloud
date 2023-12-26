@@ -281,3 +281,4 @@ var PrivateLinkSupportRegions = []Region{Hangzhou}
 var SlbPrivateNetSupportRegions = []Region{EUWest1}
 var HologramSupportRegions = []Region{Hangzhou}
 var HologramSharedSupportRegions = []Region{Shanghai}
+var KvStoreSupportRegions = []Region{Hangzhou}

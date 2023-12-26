@@ -25,6 +25,7 @@ func TestAccAlicloudKVStoreAccount_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KvStoreSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -114,6 +115,7 @@ func TestAccAlicloudKVStoreAccount_basic_v5(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KvStoreSupportRegions)
 		},
 
 		IDRefreshName: resourceId,
@@ -201,11 +203,19 @@ func KvstoreAccountBasicdependence(name string) string {
 	variable "name" {
 		default = "%v"
 	}
+	data "alicloud_vpcs" "default" {
+	  name_regex = "^default-NODELETING$"
+	}
+	data "alicloud_vswitches" "default" {
+	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 	resource "alicloud_kvstore_instance" "default" {
 		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_class = "redis.master.small.default"
 		instance_name  = var.name
 		engine_version = "4.0"
+        vswitch_id = data.alicloud_vswitches.default.ids.0
 	}
 	`, name)
 }
@@ -218,11 +228,19 @@ func KvstoreAccountBasicdependenceV5(name string) string {
 	variable "name" {
 		default = "%v"
 	}
+	data "alicloud_vpcs" "default" {
+	  name_regex = "^default-NODELETING$"
+	}
+	data "alicloud_vswitches" "default" {
+	  zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
+	  vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 	resource "alicloud_kvstore_instance" "default" {
 		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
 		instance_class = "redis.master.small.default"
 		instance_name  = var.name
 		engine_version = "5.0"
+        vswitch_id = data.alicloud_vswitches.default.ids.0
 	}
 	`, name)
 }
