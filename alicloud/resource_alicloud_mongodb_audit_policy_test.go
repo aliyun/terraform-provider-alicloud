@@ -104,7 +104,7 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_mongodb_instance" "default" {
-  engine_version      = "3.4"
+  engine_version      = "4.2"
   db_instance_class   = "dds.mongo.mid"
   db_instance_storage = 10
   name                = var.name

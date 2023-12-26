@@ -84,7 +84,7 @@ The following arguments are supported:
 * `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. System default to 1.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB sharding instance does not support multiple-zone.
 If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
-* `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `vswitch_id` - (Optional, Computed, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
 * `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.

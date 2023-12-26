@@ -231,11 +231,11 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_",
+					"account_password": "YourPasswordUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword_",
+						"account_password": "YourPasswordUpdate",
 					}),
 				),
 			},
@@ -336,7 +336,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":             name,
-					"account_password": "YourPassword_123",
+					"account_password": "YourPassword123",
 					"security_ip_list": []string{"10.168.1.12", "10.168.1.13"},
 					"backup_period":    []string{"Tuesday", "Wednesday"},
 					"backup_time":      "10:00Z-11:00Z",
@@ -364,7 +364,7 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                           name,
-						"account_password":               "YourPassword_123",
+						"account_password":               "YourPassword123",
 						"security_ip_list.#":             "2",
 						"backup_period.#":                "2",
 						"backup_time":                    "10:00Z-11:00Z",
@@ -499,11 +499,11 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPassword_",
+					"account_password": "YourPasswordUpdate",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPassword_",
+						"account_password": "YourPasswordUpdate",
 					}),
 				),
 			},
@@ -604,7 +604,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":             name,
-					"account_password": "YourPassword_123",
+					"account_password": "YourPassword123",
 					"security_ip_list": []string{"10.168.1.12", "10.168.1.13"},
 					"backup_period":    []string{"Tuesday", "Wednesday"},
 					"backup_time":      "10:00Z-11:00Z",
@@ -632,7 +632,7 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                           name,
-						"account_password":               "YourPassword_123",
+						"account_password":               "YourPassword123",
 						"security_ip_list.#":             "2",
 						"backup_period.#":                "2",
 						"backup_time":                    "10:00Z-11:00Z",
