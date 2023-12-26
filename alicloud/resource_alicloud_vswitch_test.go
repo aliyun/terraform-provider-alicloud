@@ -142,7 +142,7 @@ func testSweepVSwitches(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCVSwitch_basic(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -240,7 +240,7 @@ func TestAccAlicloudVPCVSwitch_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCVSwitch_basic1(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -288,7 +288,7 @@ func TestAccAlicloudVPCVSwitch_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCVSwitch_basic2(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -346,7 +346,7 @@ func TestAccAlicloudVPCVSwitch_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCVSwitch_basic3(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -398,7 +398,7 @@ func TestAccAlicloudVPCVSwitch_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCVSwitch_basic4(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -480,7 +480,7 @@ func TestAccAlicloudVPCVSwitch_basic4(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCVSwitch_basic5(t *testing.T) {
+func TestAccAliCloudVPCVSwitch_basic5(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVswitchMap0)
@@ -1011,7 +1011,7 @@ func TestUnitAlicloudVPCVSwitch(t *testing.T) {
 
 // Test Vpc Vswitch. >>> Resource test cases, automatically generated.
 // Case 3078
-func TestAccAlicloudVpcVswitch_basic3078(t *testing.T) {
+func TestAccAliCloudVpcVswitch_basic3078(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchMap3078)
@@ -1171,7 +1171,7 @@ data "alicloud_zones" "default" {
 }
 
 // Case 3078  twin
-func TestAccAlicloudVpcVswitch_basic3078_twin(t *testing.T) {
+func TestAccAliCloudVpcVswitch_basic3078_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vswitch.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcVswitchMap3078)
