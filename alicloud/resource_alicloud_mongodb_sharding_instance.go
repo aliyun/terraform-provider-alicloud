@@ -9,82 +9,99 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
+func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongoDBShardingInstanceCreate,
-		Read:   resourceAlicloudMongoDBShardingInstanceRead,
-		Update: resourceAlicloudMongoDBShardingInstanceUpdate,
-		Delete: resourceAlicloudMongoDBShardingInstanceDelete,
+		Create: resourceAliCloudMongoDBShardingInstanceCreate,
+		Read:   resourceAliCloudMongoDBShardingInstanceRead,
+		Update: resourceAliCloudMongoDBShardingInstanceUpdate,
+		Delete: resourceAliCloudMongoDBShardingInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(30 * time.Minute),
 			Update: schema.DefaultTimeout(30 * time.Minute),
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"engine_version": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
+				ForceNew: true,
 			},
 			"storage_engine": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"WiredTiger", "RocksDB"}, false),
 				Optional:     true,
-				Computed:     true,
 				ForceNew:     true,
-			},
-			"instance_charge_type": {
-				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
-				Optional:     true,
 				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"WiredTiger", "RocksDB"}, false),
 			},
-			"period": {
-				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
-				Optional:         true,
-				Computed:         true,
-				DiffSuppressFunc: PostPaidDiffSuppressFunc,
+			"protocol_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"mongodb", "dynamodb"}, false),
+			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
-			"vswitch_id": {
+			"security_group_id": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Optional: true,
 				Computed: true,
+			},
+			"network_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Classic", "VPC"}, false),
 			},
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
+			},
+			"instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{string(PrePaid), string(PostPaid)}, false),
+			},
+			"period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
 			"security_ip_list": {
 				Type:     schema.TypeSet,
+				Optional: true,
+				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-				Optional: true,
-			},
-			"security_group_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
 			},
 			"account_password": {
 				Type:      schema.TypeString,
@@ -99,37 +116,74 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     schema.TypeString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem: schema.TypeString,
 			},
-			"tde_status": {
-				Type: schema.TypeString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return old != "" || d.Get("engine_version").(string) < "4.0"
-				},
-				ValidateFunc: validation.StringInSlice([]string{"enabled"}, false),
-				Optional:     true,
-			},
-			"backup_period": {
-				Type:     schema.TypeSet,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+			"resource_group_id": {
+				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"backup_time": {
 				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice(BACKUP_TIME, false),
 				Optional:     true,
 				Computed:     true,
+				ValidateFunc: StringInSlice(BACKUP_TIME, false),
 			},
-			"retention_period": {
-				Type:     schema.TypeInt,
+			"backup_period": {
+				Type:     schema.TypeSet,
+				Optional: true,
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"tde_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"enabled"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("engine_version").(string) < "4.0"
+				},
+			},
+			"tags": tagsSchema(),
+			"mongo_list": {
+				Type:     schema.TypeList,
+				Required: true,
+				MinItems: 2,
+				MaxItems: 32,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"node_class": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						//Computed
+						"node_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connect_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"shard_list": {
-				Type: schema.TypeList,
+				Type:     schema.TypeList,
+				Required: true,
+				MinItems: 2,
+				MaxItems: 32,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"node_class": {
@@ -143,8 +197,8 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 						"readonly_replicas": {
 							Type:         schema.TypeInt,
 							Optional:     true,
-							ValidateFunc: validation.IntBetween(0, 5),
 							Computed:     true,
+							ValidateFunc: IntBetween(0, 5),
 						},
 						//Computed
 						"node_id": {
@@ -153,77 +207,21 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 						},
 					},
 				},
-				Required: true,
-				MinItems: 2,
-				MaxItems: 32,
 			},
-			"mongo_list": {
-				Type: schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"node_class": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						//Computed
-						"node_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"connect_string": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-					},
-				},
-				Required: true,
-				MinItems: 2,
-				MaxItems: 32,
-			},
-			"order_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
-			},
-			"tags": tagsSchema(),
-			"auto_renew": {
-				Type:     schema.TypeBool,
-				Optional: true,
+			"retention_period": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"config_server_list": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"max_iops": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"connect_string": {
+						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"node_class": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"max_connections": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"port": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"node_description": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -231,40 +229,41 @@ func resourceAlicloudMongoDBShardingInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"node_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"connect_string": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"max_connections": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"max_iops": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
-			"network_type": {
+			"order_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Classic", "VPC"}, false),
-			},
-			"protocol_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"mongodb", "dynamodb"}, false),
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				ForceNew: true,
-				Optional: true,
-				Computed: true,
+				ValidateFunc: StringInSlice([]string{"UPGRADE", "DOWNGRADE"}, false),
 			},
 		},
 	}
 }
 
-func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ddsService := MongoDBService{client}
 	var response map[string]interface{}
 	action := "CreateShardingDBInstance"
 	request := make(map[string]interface{})
@@ -276,63 +275,27 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	request["Engine"] = "MongoDB"
-	if v, ok := d.GetOk("zone_id"); ok {
-		request["ZoneId"] = v
-	}
-	if v, ok := d.GetOk("engine_version"); ok {
-		request["EngineVersion"] = v
-	}
-	if v, ok := d.GetOk("name"); ok {
-		request["DBInstanceDescription"] = v
-	}
-
-	request["AccountPassword"] = d.Get("account_password").(string)
-	if request["AccountPassword"] == "" {
-		if v := d.Get("kms_encrypted_password").(string); v != "" {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-			if err != nil {
-				return WrapError(err)
-			}
-			request["AccountPassword"] = decryptResp
-		}
-	}
-
-	if v, ok := d.GetOk("shard_list"); ok {
-		shardListMaps := make([]map[string]interface{}, 0)
-		shardList := v.([]interface{})
-		for _, rew := range shardList {
-			shardListMap := make(map[string]interface{})
-			item := rew.(map[string]interface{})
-			shardListMap["Class"] = item["node_class"]
-			shardListMap["Storage"] = item["node_storage"]
-			shardListMap["ReadonlyReplicas"] = item["readonly_replicas"]
-			shardListMaps = append(shardListMaps, shardListMap)
-		}
-		request["ReplicaSet"] = shardListMaps
-	}
-
-	if v, ok := d.GetOk("mongo_list"); ok {
-		mongoListMaps := make([]map[string]interface{}, 0)
-		mongoList := v.([]interface{})
-		for _, rew := range mongoList {
-			mongoListMap := make(map[string]interface{})
-			item := rew.(map[string]interface{})
-			mongoListMap["Class"] = item["node_class"]
-			mongoListMaps = append(mongoListMaps, mongoListMap)
-		}
-		request["Mongos"] = mongoListMaps
-	}
 	request["ConfigServer"] = []map[string]interface{}{{"Class": "dds.cs.mid", "Storage": 20}}
+	request["EngineVersion"] = d.Get("engine_version")
 
-	if v, ok := d.GetOk("network_type"); ok {
-		request["NetworkType"] = v
+	if v, ok := d.GetOk("storage_engine"); ok {
+		request["StorageEngine"] = v
 	}
+
+	if v, ok := d.GetOk("protocol_type"); ok {
+		request["ProtocolType"] = v
+	}
+
 	if v, ok := d.GetOk("vpc_id"); ok {
 		request["VpcId"] = v
 	}
+
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
+	}
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
 	}
 
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
@@ -356,13 +319,24 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 			request["VpcId"] = vsw.VpcId
 		}
 	}
+
+	if v, ok := d.GetOk("network_type"); ok {
+		request["NetworkType"] = v
+	}
+
 	if request["NetworkType"] == nil && request["VSwitchId"] != nil {
 		request["NetworkType"] = "VPC"
 	}
+
+	if v, ok := d.GetOk("name"); ok {
+		request["DBInstanceDescription"] = v
+	}
+
 	if v, ok := d.GetOk("instance_charge_type"); ok {
 		request["ChargeType"] = v
-		if vv, ok := d.GetOk("period"); ok && PayType(v.(string)) == PrePaid {
-			request["Period"] = vv
+
+		if period, ok := d.GetOk("period"); ok && PayType(v.(string)) == PrePaid {
+			request["Period"] = period
 		}
 	}
 
@@ -371,22 +345,62 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		request["SecurityIPList"] = strings.Join(expandStringList(v.(*schema.Set).List()), COMMA_SEPARATED)
 	}
 
-	if v, ok := d.GetOk("auto_renew"); ok {
-		request["AutoRenew"] = strconv.FormatBool(v.(bool))
+	if v, ok := d.GetOk("account_password"); ok {
+		request["AccountPassword"] = v
+	} else if v, ok := d.GetOk("kms_encrypted_password"); ok {
+		kmsService := KmsService{client}
+		decryptResp, err := kmsService.Decrypt(v.(string), d.Get("kms_encryption_context").(map[string]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["AccountPassword"] = decryptResp
 	}
-	if v, ok := d.GetOk("storage_engine"); ok {
-		request["StorageEngine"] = v
-	}
-	if v, ok := d.GetOk("protocol_type"); ok {
-		request["ProtocolType"] = v
-	}
+
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
 
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		request["AutoRenew"] = strconv.FormatBool(v.(bool))
+	}
+
+	mongoList := d.Get("mongo_list")
+	mongoListMaps := make([]map[string]interface{}, 0)
+	for _, mongoLists := range mongoList.([]interface{}) {
+		mongoListMap := map[string]interface{}{}
+		mongoListArg := mongoLists.(map[string]interface{})
+
+		mongoListMap["Class"] = mongoListArg["node_class"]
+
+		mongoListMaps = append(mongoListMaps, mongoListMap)
+	}
+
+	request["Mongos"] = mongoListMaps
+
+	shardList := d.Get("shard_list")
+	shardListMaps := make([]map[string]interface{}, 0)
+	for _, shardLists := range shardList.([]interface{}) {
+		shardListMap := map[string]interface{}{}
+		shardListArg := shardLists.(map[string]interface{})
+
+		shardListMap["Class"] = shardListArg["node_class"]
+		shardListMap["Storage"] = shardListArg["node_storage"]
+
+		if readonlyReplicas, ok := shardListArg["readonly_replicas"]; ok {
+			shardListMap["ReadonlyReplicas"] = readonlyReplicas
+		}
+
+		shardListMaps = append(shardListMaps, shardListMap)
+	}
+
+	request["ReplicaSet"] = shardListMaps
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -397,205 +411,237 @@ func resourceAlicloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_sharding_instance", action, AlibabaCloudSdkGoERROR)
 	}
+
 	d.SetId(fmt.Sprint(response["DBInstanceId"]))
 
-	ddsService := MongoDBService{client}
 	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongoDBShardingInstanceUpdate(d, meta)
+	return resourceAliCloudMongoDBShardingInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
 
-	instance, err := ddsService.DescribeMongoDBShardingInstance(d.Id())
+	object, err := ddsService.DescribeMongoDBShardingInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
+	d.Set("engine_version", object["EngineVersion"])
+	d.Set("storage_engine", object["StorageEngine"])
+	d.Set("protocol_type", object["ProtocolType"])
+	d.Set("vpc_id", object["VPCId"])
+	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("zone_id", object["ZoneId"])
+	d.Set("network_type", object["NetworkType"])
+	d.Set("name", object["DBInstanceDescription"])
+	d.Set("instance_charge_type", object["ChargeType"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+
+	groupIp, err := ddsService.DescribeMongoDBShardingSecurityGroupId(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if len(groupIp) > 0 {
+		if groupIpItem, ok := groupIp[0].(map[string]interface{}); ok {
+			d.Set("security_group_id", groupIpItem["SecurityGroupId"])
+		}
+	}
+
+	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
+		period, err := computePeriodByUnit(object["CreationTime"], object["ExpireTime"], d.Get("period").(int), "Month")
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.Set("period", period)
+	}
+
+	securityIpList, err := ddsService.DescribeMongoDBShardingSecurityIps(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("security_ip_list", securityIpList)
+
 	backupPolicy, err := ddsService.DescribeMongoDBShardingBackupPolicy(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
 	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
 	d.Set("retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
-
-	d.Set("name", instance["DBInstanceDescription"])
-	d.Set("resource_group_id", instance["ResourceGroupId"])
-	d.Set("engine_version", instance["EngineVersion"])
-	d.Set("network_type", instance["NetworkType"])
-	d.Set("storage_engine", instance["StorageEngine"])
-	d.Set("protocol_type", instance["ProtocolType"])
-	d.Set("zone_id", instance["ZoneId"])
-	d.Set("vpc_id", instance["VPCId"])
-	d.Set("instance_charge_type", instance["ChargeType"])
-	if instance["ChargeType"] == "PrePaid" {
-		period, err := computePeriodByUnit(instance["CreationTime"], instance["ExpireTime"], d.Get("period").(int), "Month")
-		if err != nil {
-			return WrapError(err)
-		}
-		d.Set("period", period)
-	}
-	d.Set("vswitch_id", instance["VSwitchId"])
-
-	if v, ok := instance["MongosList"]; ok {
-		mongosMaps := make([]map[string]interface{}, 0)
-		mongosList := v.(map[string]interface{})
-		if v, ok := mongosList["MongosAttribute"]; ok {
-			if mongosAttributeList, ok := v.([]interface{}); ok && len(mongosAttributeList) > 0 {
-				for _, mongosMap := range mongosAttributeList {
-					item := mongosMap.(map[string]interface{})
-					mongo := map[string]interface{}{
-						"node_class":     item["NodeClass"],
-						"node_id":        item["NodeId"],
-						"port":           formatInt(item["Port"]),
-						"connect_string": item["ConnectSting"],
-					}
-					mongosMaps = append(mongosMaps, mongo)
-				}
-				d.Set("mongo_list", mongosMaps)
-			}
-		}
-	}
-
-	if v, ok := instance["ShardList"]; ok {
-		shardMaps := make([]map[string]interface{}, 0)
-		shardList := v.(map[string]interface{})
-		if v, ok := shardList["ShardAttribute"]; ok {
-			if shardAttributeList, ok := v.([]interface{}); ok && len(shardAttributeList) > 0 {
-				for _, shardMap := range shardAttributeList {
-					item := shardMap.(map[string]interface{})
-					shard := map[string]interface{}{
-						"node_id":           item["NodeId"],
-						"node_storage":      formatInt(item["NodeStorage"]),
-						"node_class":        item["NodeClass"],
-						"readonly_replicas": formatInt(item["ReadonlyReplicas"]),
-					}
-					shardMaps = append(shardMaps, shard)
-				}
-				d.Set("shard_list", shardMaps)
-			}
-		}
-	}
 
 	tdeInfo, err := ddsService.DescribeMongoDBShardingTDEInfo(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("tde_Status", tdeInfo["TDEStatus"])
 
-	ips, err := ddsService.DescribeMongoDBShardingSecurityIps(d.Id())
-	if err != nil {
-		return WrapError(err)
+	d.Set("tde_status", tdeInfo["TDEStatus"])
+
+	if v, ok := object["Tags"].(map[string]interface{}); ok {
+		d.Set("tags", tagsToMap(v["Tag"]))
 	}
 
-	d.Set("security_ip_list", ips)
-	groupIp, err := ddsService.DescribeMongoDBShardingSecurityGroupId(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-	if len(groupIp) > 0 {
-		d.Set("security_group_id", groupIp[0].(map[string]interface{})["SecurityGroupId"])
-	}
+	if MongosListMap, ok := object["MongosList"].(map[string]interface{}); ok && MongosListMap != nil {
+		if MongosList, ok := MongosListMap["MongosAttribute"]; ok && MongosList != nil {
+			MongosListMaps := make([]map[string]interface{}, 0)
+			for _, MongosLists := range MongosList.([]interface{}) {
+				MongosListItemMap := make(map[string]interface{})
+				MongosListArg := MongosLists.(map[string]interface{})
 
-	d.Set("tags", tagsToMap(instance["Tags"].(map[string]interface{})["Tag"]))
-
-	if v, ok := instance["ConfigserverList"]; ok {
-		configserverMaps := make([]map[string]interface{}, 0)
-		configserverList := v.(map[string]interface{})
-		if v, ok := configserverList["ConfigserverAttribute"]; ok {
-			if configserverAttributeList, ok := v.([]interface{}); ok && len(configserverAttributeList) > 0 {
-				for _, configserverMap := range configserverAttributeList {
-					item := configserverMap.(map[string]interface{})
-					configserver := map[string]interface{}{
-						"max_iops":         item["MaxIOPS"],
-						"connect_string":   item["ConnectString"],
-						"node_class":       item["NodeClass"],
-						"max_connections":  item["MaxConnections"],
-						"port":             formatInt(item["Port"]),
-						"node_description": item["NodeDescription"],
-						"node_id":          item["NodeId"],
-						"node_storage":     item["NodeStorage"],
-					}
-					configserverMaps = append(configserverMaps, configserver)
+				if nodeClass, ok := MongosListArg["NodeClass"]; ok {
+					MongosListItemMap["node_class"] = nodeClass
 				}
-				d.Set("config_server_list", configserverMaps)
+
+				if nodeId, ok := MongosListArg["NodeId"]; ok {
+					MongosListItemMap["node_id"] = nodeId
+				}
+
+				if connectSting, ok := MongosListArg["ConnectSting"]; ok {
+					MongosListItemMap["connect_string"] = connectSting
+				}
+
+				if port, ok := MongosListArg["Port"]; ok {
+					MongosListItemMap["port"] = formatInt(port)
+				}
+
+				MongosListMaps = append(MongosListMaps, MongosListItemMap)
 			}
+
+			d.Set("mongo_list", MongosListMaps)
+		}
+	}
+
+	if shardListMap, ok := object["ShardList"].(map[string]interface{}); ok && shardListMap != nil {
+		if shardList, ok := shardListMap["ShardAttribute"]; ok && shardList != nil {
+			shardListMaps := make([]map[string]interface{}, 0)
+			for _, shardLists := range shardList.([]interface{}) {
+				shardListItemMap := make(map[string]interface{})
+				shardListArg := shardLists.(map[string]interface{})
+
+				if nodeClass, ok := shardListArg["NodeClass"]; ok {
+					shardListItemMap["node_class"] = nodeClass
+				}
+
+				if nodeStorage, ok := shardListArg["NodeStorage"]; ok {
+					shardListItemMap["node_storage"] = formatInt(nodeStorage)
+				}
+
+				if readonlyReplicas, ok := shardListArg["ReadonlyReplicas"]; ok {
+					shardListItemMap["readonly_replicas"] = formatInt(readonlyReplicas)
+				}
+
+				if nodeId, ok := shardListArg["NodeId"]; ok {
+					shardListItemMap["node_id"] = nodeId
+				}
+
+				shardListMaps = append(shardListMaps, shardListItemMap)
+			}
+
+			d.Set("shard_list", shardListMaps)
+		}
+	}
+
+	if configServerListMap, ok := object["ConfigserverList"].(map[string]interface{}); ok && configServerListMap != nil {
+		if configServerList, ok := configServerListMap["ConfigserverAttribute"]; ok && configServerList != nil {
+			configServerListMaps := make([]map[string]interface{}, 0)
+			for _, configServerLists := range configServerList.([]interface{}) {
+				configServerListItemMap := make(map[string]interface{})
+				configServerListArg := configServerLists.(map[string]interface{})
+
+				if nodeId, ok := configServerListArg["NodeId"]; ok {
+					configServerListItemMap["node_id"] = nodeId
+				}
+
+				if nodeClass, ok := configServerListArg["NodeClass"]; ok {
+					configServerListItemMap["node_class"] = nodeClass
+				}
+
+				if nodeStorage, ok := configServerListArg["NodeStorage"]; ok {
+					configServerListItemMap["node_storage"] = nodeStorage
+				}
+
+				if nodeDescription, ok := configServerListArg["NodeDescription"]; ok {
+					configServerListItemMap["node_description"] = nodeDescription
+				}
+
+				if connectString, ok := configServerListArg["ConnectString"]; ok {
+					configServerListItemMap["connect_string"] = connectString
+				}
+
+				if port, ok := configServerListArg["Port"]; ok {
+					configServerListItemMap["port"] = formatInt(port)
+				}
+
+				if maxConnections, ok := configServerListArg["MaxConnections"]; ok {
+					configServerListItemMap["max_connections"] = maxConnections
+				}
+
+				if maxIOPS, ok := configServerListArg["MaxIOPS"]; ok {
+					configServerListItemMap["max_iops"] = maxIOPS
+				}
+
+				configServerListMaps = append(configServerListMaps, configServerListItemMap)
+			}
+
+			d.Set("config_server_list", configServerListMaps)
 		}
 	}
 
 	return nil
 }
 
-func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
-	conn, err := client.NewDdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var response map[string]interface{}
 	d.Partial(true)
 
-	if d.HasChange("backup_time") || d.HasChange("backup_period") {
-		if err := ddsService.MotifyMongoDBBackupPolicy(d); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("backup_time")
-		d.SetPartial("backup_period")
+	update := false
+	modifySecurityGroupConfigurationReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
 	}
-	if d.HasChange("tde_status") {
-		var response map[string]interface{}
-		action := "ModifyDBInstanceTDE"
-		request := make(map[string]interface{})
-		request["RegionId"] = client.RegionId
-		request["DBInstanceId"] = d.Id()
-		request["TDEStatus"] = d.Get("tde_status").(string)
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		addDebug(action, response, request)
-		d.SetPartial("tde_status")
+
+	if d.HasChange("security_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("security_group_id"); ok {
+		modifySecurityGroupConfigurationReq["SecurityGroupId"] = v.(string)
+	}
+
+	if update {
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-	}
 
-	if d.HasChange("security_group_id") {
-		var response map[string]interface{}
 		action := "ModifySecurityGroupConfiguration"
-		request := make(map[string]interface{})
-		request["RegionId"] = client.RegionId
-		request["DBInstanceId"] = d.Id()
-		request["SecurityGroupId"] = d.Get("security_group_id").(string)
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
 
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifySecurityGroupConfigurationReq, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InstanceStatusInvalid"}) || NeedRetry(err) {
 					wait()
@@ -605,74 +651,40 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
-		addDebug(action, response, request)
+		addDebug(action, response, modifySecurityGroupConfigurationReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		d.SetPartial("security_group_id")
 	}
 
-	if err := ddsService.setInstanceTags(d); err != nil {
-		return WrapError(err)
+	update = false
+	modifyDBInstanceDescriptionReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
 	}
 
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
+	if !d.IsNewResource() && d.HasChange("name") {
+		update = true
+	}
+	if v, ok := d.GetOk("name"); ok {
+		modifyDBInstanceDescriptionReq["DBInstanceDescription"] = v
 	}
 
-	if d.HasChange("resource_group_id") {
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapError(err)
-			}
-			action := "ModifyResourceGroup"
-			request := map[string]interface{}{
-				"DBInstanceId":    d.Id(),
-				"ResourceGroupId": v,
-				"RegionId":        client.RegionId,
-			}
-			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-			addDebug(action, response, request)
-			d.SetPartial("resource_group_id")
-		}
-	}
-
-	if d.HasChange("shard_list") {
-		state, diff := d.GetChange("shard_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
-		if err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("shard_list")
-	}
-
-	if d.HasChange("mongo_list") {
-		state, diff := d.GetChange("mongo_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeMongos, state.([]interface{}), diff.([]interface{}))
-		if err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("mongo_list")
-	}
-
-	if d.HasChange("name") {
-		var response map[string]interface{}
+	if update {
 		action := "ModifyDBInstanceDescription"
-		request := make(map[string]interface{})
-		request["RegionId"] = client.RegionId
-		request["DBInstanceId"] = d.Id()
-		if v, ok := d.GetOk("name"); ok {
-			request["DBInstanceDescription"] = v
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
 		}
 
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceDescriptionReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -682,36 +694,64 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
+		addDebug(action, response, modifyDBInstanceDescriptionReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
+
 		d.SetPartial("name")
 	}
 
-	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
-		var accountPassword string
-		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
-			d.SetPartial("account_password")
-		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
-			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
-			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
-			if err != nil {
-				return WrapError(err)
-			}
-			accountPassword = decryptResp
-			d.SetPartial("kms_encrypted_password")
-			d.SetPartial("kms_encryption_context")
-		}
-
-		err := ddsService.ResetAccountPassword(d, accountPassword)
+	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
+		action := "TransformToPrePaid"
+		conn, err := client.NewDdsClient()
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("account_password")
+
+		transformToPrePaidReq := map[string]interface{}{
+			"InstanceId": d.Id(),
+		}
+
+		transformToPrePaidReq["AutoPay"] = requests.NewBoolean(true)
+		transformToPrePaidReq["Period"] = requests.NewInteger(d.Get("period").(int))
+
+		if v, ok := d.GetOkExists("auto_renew"); ok {
+			transformToPrePaidReq["AutoRenew"] = strconv.FormatBool(v.(bool))
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, transformToPrePaidReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, transformToPrePaidReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		// wait instance status is running after modifying
+		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("instance_charge_type")
+		d.SetPartial("period")
 	}
 
-	if d.HasChange("security_ip_list") {
+	if !d.IsNewResource() && d.HasChange("security_ip_list") {
 		ipList := expandStringList(d.Get("security_ip_list").(*schema.Set).List())
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
 		// default disable connect from outside
@@ -722,21 +762,63 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		if err := ddsService.ModifyMongoDBSecurityIps(d, ipstr); err != nil {
 			return WrapError(err)
 		}
+
 		d.SetPartial("security_ip_list")
 	}
-	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
-		var response map[string]interface{}
-		action := "TransformToPrePaid"
-		prePaidRequest := make(map[string]interface{})
-		prePaidRequest["InstanceId"] = d.Id()
-		prePaidRequest["AutoPay"] = requests.NewBoolean(true)
-		prePaidRequest["Period"] = requests.NewInteger(d.Get("period").(int))
-		if v, ok := d.GetOk("auto_renew"); ok {
-			prePaidRequest["AutoRenew"] = strconv.FormatBool(v.(bool))
+
+	if !d.IsNewResource() && (d.HasChange("account_password") || d.HasChange("kms_encrypted_password")) {
+		var accountPassword string
+		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
+			d.SetPartial("account_password")
+		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
+			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
+			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+
+			accountPassword = decryptResp
+
+			d.SetPartial("kms_encrypted_password")
+			d.SetPartial("kms_encryption_context")
 		}
+
+		err := ddsService.ResetAccountPassword(d, accountPassword, "shardingInstance")
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	update = false
+	modifyResourceGroupReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		modifyResourceGroupReq["ResourceGroupId"] = v
+	}
+
+	if update {
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		action := "ModifyResourceGroup"
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, prePaidRequest, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyResourceGroupReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -746,44 +828,128 @@ func resourceAlicloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			}
 			return nil
 		})
+		addDebug(action, response, modifyResourceGroupReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, prePaidRequest)
-		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{"DBInstanceClassChanging", "DBInstanceNetTypeChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 0, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+
+		d.SetPartial("resource_group_id")
+	}
+
+	if d.HasChange("backup_time") || d.HasChange("backup_period") {
+		if err := ddsService.ModifyMongoDBBackupPolicy(d); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("backup_time")
+		d.SetPartial("backup_period")
+	}
+
+	if d.HasChange("tde_status") {
+		action := "ModifyDBInstanceTDE"
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		modifyDBInstanceTDEReq := map[string]interface{}{
+			"RegionId":     client.RegionId,
+			"DBInstanceId": d.Id(),
+		}
+
+		if v, ok := d.GetOk("tde_status"); ok {
+			modifyDBInstanceTDEReq["TDEStatus"] = v
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceTDEReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceTDEReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("period")
+
+		d.SetPartial("tde_status")
 	}
+
+	if err := ddsService.setInstanceTags(d); err != nil {
+		return WrapError(err)
+	}
+
+	if !d.IsNewResource() && d.HasChange("mongo_list") {
+		state, diff := d.GetChange("mongo_list")
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeMongos, state.([]interface{}), diff.([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("mongo_list")
+	}
+
+	if !d.IsNewResource() && d.HasChange("shard_list") {
+		state, diff := d.GetChange("shard_list")
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("shard_list")
+	}
+
 	d.Partial(false)
-	return resourceAlicloudMongoDBShardingInstanceRead(d, meta)
+
+	return resourceAliCloudMongoDBShardingInstanceRead(d, meta)
 }
 
-func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	if d.Get("instance_charge_type").(string) == string(PrePaid) {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudMongoDBShardingInstance. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
-	}
+func resourceAliCloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ddsService := MongoDBService{client}
-
 	action := "DeleteDBInstance"
 	var response map[string]interface{}
+
 	conn, err := client.NewDdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
+	object, err := ddsService.DescribeMongoDBShardingInstance(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if fmt.Sprint(object["ChargeType"]) == "PrePaid" {
+		log.Printf("[WARN] Cannot destroy resourceAliCloudMongoDBShardingInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	request := map[string]interface{}{
 		"DBInstanceId": d.Id(),
 		"RegionId":     client.RegionId,
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -796,12 +962,16 @@ func resourceAlicloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{"Creating", "Deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
-	_, err = stateConf.WaitForState()
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }

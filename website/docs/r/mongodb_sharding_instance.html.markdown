@@ -2,23 +2,23 @@
 subcategory: "MongoDB"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_mongodb_sharding_instance"
-sidebar_current: "docs-alicloud-resource-mongodb-instance"
+sidebar_current: "docs-alicloud-resource-mongodb-sharding-instance"
 description: |-
   Provides a MongoDB sharding instance resource.
 ---
 
 # alicloud_mongodb_sharding_instance
 
-Provides a MongoDB sharding instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services. 
+Provides a MongoDB Sharding Instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/26558.htm)
 
 -> **NOTE:** Available since v1.40.0.
 
--> **NOTE:**  The following regions don't support create Classic network MongoDB sharding instance.
-[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`] 
+-> **NOTE:**  The following regions don't support create Classic network MongoDB Sharding Instance.
+[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
 
--> **NOTE:**  Create MongoDB Sharding instance or change instance type and storage would cost 10~20 minutes. Please make full preparation
+-> **NOTE:**  Create MongoDB Sharding instance or change instance type and storage would cost 10~20 minutes. Please make full preparation.
 
 ## Example Usage
 
@@ -28,11 +28,15 @@ You can see detail product introduction [here](https://www.alibabacloud.com/help
 variable "name" {
   default = "terraform-example"
 }
-data "alicloud_mongodb_zones" "default" {}
+
+data "alicloud_mongodb_zones" "default" {
+}
+
 locals {
   index   = length(data.alicloud_mongodb_zones.default.zones) - 1
   zone_id = data.alicloud_mongodb_zones.default.zones[local.index].id
 }
+
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "172.17.3.0/24"
@@ -46,10 +50,16 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_mongodb_sharding_instance" "default" {
-  zone_id        = local.zone_id
-  vswitch_id     = alicloud_vswitch.default.id
   engine_version = "4.2"
+  vswitch_id     = alicloud_vswitch.default.id
+  zone_id        = local.zone_id
   name           = var.name
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
+  mongo_list {
+    node_class = "dds.mongos.mid"
+  }
   shard_list {
     node_class   = "dds.shard.mid"
     node_storage = "10"
@@ -59,117 +69,98 @@ resource "alicloud_mongodb_sharding_instance" "default" {
     node_storage      = "20"
     readonly_replicas = "1"
   }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
-  mongo_list {
-    node_class = "dds.mongos.mid"
-  }
 }
 ```
 
 ## Module Support
 
-You can use to the existing [mongodb-sharding module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb-sharding/alicloud) 
-to create a MongoDB sharding instance resource one-click.
+You can use to the existing [mongodb-sharding module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb-sharding/alicloud)
+to create a MongoDB Sharding Instance resource one-click.
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/doc-detail/61884.htm) `EngineVersion`. 
-* `storage_engine` (Optional, ForceNew) Storage engine: WiredTiger or RocksDB. System Default value: WiredTiger.
-* `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
-* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`,System default to `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
-* `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. System default to 1.
-* `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB sharding instance does not support multiple-zone.
-If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
-* `vswitch_id` - (Optional, Computed, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/doc-detail/61884.htm) `EngineVersion`.
+* `storage_engine` (Optional, ForceNew) The storage engine of the instance. Default value: `WiredTiger`. Valid values: `WiredTiger`, `RocksDB`.
+* `protocol_type` - (Optional, ForceNew, Available since v1.161.0) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
+* `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
+* `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
+* `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. MongoDB Sharding Instance does not support multiple-zone.
+  If it is a multi-zone and `vswitch_id` is specified, the vswitch must in one of them.
+* `security_group_id` - (Optional, Available since v1.76.0) The Security Group ID of ECS.
+* `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic` or `VPC`.
+* `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
+* `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version v1.141.0.
+* `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
+* `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
-* `kms_encrypted_password` - (Optional, Available in 1.57.1+) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
-* `kms_encryption_context` - (Optional, MapString, Available in 1.57.1+) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
-* `security_group_id` - (Optional, Available in 1.76.0+) The Security Group ID of ECS.
-* `tde_status` - (Optional, Available in 1.76.0+) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0+.
-* `mongo_list` - (Required) The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
-* `shard_list` - (Required) the shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
-* `backup_period` - (Optional, Available in 1.42.0+) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
-* `backup_time` - (Optional, Available in 1.42.0+) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
-* `order_type` - (Optional, Available in v1.134.0+) The type of configuration changes performed. Default value: DOWNGRADE. Valid values:
-  * UPGRADE: The specifications are upgraded.
-  * DOWNGRADE: The specifications are downgraded. 
-    Note: This parameter is only applicable to instances when `instance_charge_type` is PrePaid.
-* `auto_renew` - (Optional, Available in v1.141.0+) Auto renew for prepaid, true of false. Default is false.
+* `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
+* `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
+* `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
+* `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
+* `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
+* `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+* `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
+* `mongo_list` - (Required, Set) The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
+* `shard_list` - (Required, Set) the shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `network_type` - (Optional, ForceNew, Available in v1.161.0+) The network type of the instance. Valid values:`Classic` or `VPC`. Default value: `Classic`.
-* `vpc_id` - (Optional, ForceNew, Available in v1.161.0+) The ID of the VPC. -> **NOTE:** This parameter is valid only when NetworkType is set to VPC.
-* `protocol_type` - (Optional, ForceNew, Available in v1.161.0+) The type of the access protocol. Valid values: `mongodb` or `dynamodb`.
-* `resource_group_id` - (Optional, Available in v1.161.0+) The ID of the Resource Group.
-* `config_server_list` - The node information list of config server. See [`config_server_list`](#config_server_list) below.
+* `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
+  - `UPGRADE`: The specifications are upgraded.
+  - `DOWNGRADE`: The specifications are downgraded.
+    **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
 
 ### `mongo_list`
 
-The mongo_list supports the following: 
+The mongo_list supports the following:
 
-* `node_class` -(Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
-* `node_id` - (Optional) The ID of the mongo-node.
-* `connect_string` - (Optional) Mongo node connection string.
-* `port` - (Optional) Mongo node port.
+* `node_class` -(Required) The instance type of the mongo node. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
 
 ### `shard_list`
 
-The shard_list supports the following: 
+The shard_list supports the following:
 
-* `node_class` - (Required) Node specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
-* `node_storage` - (Required)
-    - Custom storage space; value range: [10, 1,000]
-    - 10-GB increments. Unit: GB.
-* `readonly_replicas` - (Optional, Available in 1.126.0+) The number of read-only nodes in shard node. Valid values: 0 to 5. Default value: 0.
-* `node_id` - (Optional) The ID of the shard-node.
-
-### `config_server_list`
-
-The config_server_list supports the following: 
-
-* `max_iops` - (Optional) The maximum IOPS of the Config Server node.
-* `connect_string` - (Optional) The connection address of the Config Server node.
-* `node_class` - (Optional) The node class of the Config Server node.
-* `max_connections` - (Optional) The max connections of the Config Server node.
-* `port` - (Optional) The connection port of the Config Server node.
-* `node_description` - (Optional) The description of the Config Server node.
-* `node_id` - (Optional) The ID of the Config Server node.
-* `node_storage` - (Optional) The node storage of the Config Server node.
-
+* `node_class` - (Required) The instance type of the shard node. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
+* `node_storage` - (Required, Int) The storage space of the shard node.
+  - Custom storage space; value range: [10, 1,000]
+  - 10-GB increments. Unit: GB.
+* `readonly_replicas` - (Optional, Int, Available since v1.126.0) The number of read-only nodes in shard node Default value: `0`. Valid values: `0` to `5`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the MongoDB.
-* `retention_period` - Instance data backup retention days. **NOTE:** Available in 1.42.0+.
-* `config_server_list` - The node information list of config server. 
-    * `max_iops` - The maximum IOPS of the Config Server node.
-    * `connect_string` - The connection address of the Config Server node.
-    * `node_class` - The node class of the Config Server node.
-    * `max_connections` - The max connections of the Config Server node.
-    * `port` - The connection port of the Config Server node.
-    * `node_description` - The description of the Config Server node.
-    * `node_id` - The ID of the Config Server node.
-    * `node_storage` - The node storage of the Config Server node.
+* `id` - The resource ID in terraform of Sharding Instance.
+* `retention_period` - (Available since v1.42.0) Instance data backup retention days.
+* `mongo_list` - The mongo nodes of the instance.
+  * `node_id` - The ID of the mongo node.
+  * `connect_string` - The endpoint of the mongo node.
+  * `port` - The port number that is used to connect to the mongo node.
+* `shard_list` - The information of the shard node.
+  * `node_id` - The ID of the shard node.
+* `config_server_list` - The information of the ConfigServer nodes.
+  * `node_id` - The ID of the Config Server node.
+  * `node_class` - The node class of the Config Server node.
+  * `node_storage` - The node storage of the Config Server node.
+  * `node_description` - The description of the Config Server node.
+  * `connect_string` - The connection address of the Config Server node.
+  * `port` - The connection port of the Config Server node.
+  * `max_connections` - The max connections of the Config Server node.
+  * `max_iops` - The maximum IOPS of the Config Server node.
 
 ## Timeouts
 
--> **NOTE:** Available in 1.126.0+.
+-> **NOTE:** Available since v1.126.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 30 mins) Used when creating the MongoDB instance (until it reaches the initial `Running` status).
-* `update` - (Defaults to 30 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).
-* `delete` - (Defaults to 30 mins) Used when terminating the MongoDB instance.
+* `create` - (Defaults to 30 mins) Used when creating the Sharding Instance (until it reaches the initial `Running` status).
+* `update` - (Defaults to 30 mins) Used when updating the Sharding Instance (until it reaches the initial `Running` status).
+* `delete` - (Defaults to 30 mins) Used when deleting the Sharding Instance.
 
 ## Import
 
-MongoDB can be imported using the id, e.g.
+MongoDB Sharding Instance can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_mongodb_sharding_instance.example dds-bp1291daeda44195

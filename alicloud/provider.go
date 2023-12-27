@@ -945,7 +945,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_rds_instance_cross_backup_policy":                     resourceAlicloudRdsInstanceCrossBackupPolicy(),
 			"alicloud_rds_ddr_instance":                                     resourceAlicloudRdsDdrInstance(),
 			"alicloud_mongodb_instance":                                     resourceAliCloudMongoDBInstance(),
-			"alicloud_mongodb_sharding_instance":                            resourceAlicloudMongoDBShardingInstance(),
+			"alicloud_mongodb_sharding_instance":                            resourceAliCloudMongoDBShardingInstance(),
 			"alicloud_gpdb_instance":                                        resourceAliCloudGpdbInstance(),
 			"alicloud_gpdb_elastic_instance":                                resourceAlicloudGpdbElasticInstance(),
 			"alicloud_gpdb_connection":                                      resourceAlicloudGpdbConnection(),

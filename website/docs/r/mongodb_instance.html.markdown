@@ -9,14 +9,14 @@ description: |-
 
 # alicloud_mongodb_instance
 
-Provides a MongoDB instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services. 
+Provides a MongoDB instance resource supports replica set instances only. the MongoDB provides stable, reliable, and automatic scalable database services.
 It offers a full range of database solutions, such as disaster recovery, backup, recovery, monitoring, and alarms.
 You can see detail product introduction [here](https://www.alibabacloud.com/help/doc-detail/26558.htm)
 
 -> **NOTE:** Available since v1.37.0.
 
 -> **NOTE:**  The following regions don't support create Classic network MongoDB instance.
-[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`] 
+[`cn-zhangjiakou`,`cn-huhehaote`,`ap-southeast-2`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`me-east-1`,`ap-northeast-1`,`eu-west-1`]
 
 -> **NOTE:**  Create MongoDB instance or change instance type and storage would cost 5~10 minutes. Please make full preparation
 
@@ -65,7 +65,7 @@ resource "alicloud_mongodb_instance" "default" {
 
 ## Module Support
 
-You can use to the existing [mongodb module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb/alicloud) 
+You can use to the existing [mongodb module](https://registry.terraform.io/modules/terraform-alicloud-modules/mongodb/alicloud)
 to create a MongoDB instance resource one-click.
 
 ## Argument Reference
@@ -74,7 +74,7 @@ The following arguments are supported:
 
 * `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`.
 * `db_instance_class` - (Required) Instance specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
-* `db_instance_storage` - (Required) User-defined DB instance storage space.Unit: GB. Value range:
+* `db_instance_storage` - (Required, Int) User-defined DB instance storage space.Unit: GB. Value range:
   - Custom storage space.
   - 10-GB increments.
 * `storage_engine` (Optional, ForceNew) The storage engine of the instance. Default value: `WiredTiger`. Valid values: `WiredTiger`, `RocksDB`.
@@ -87,18 +87,18 @@ The following arguments are supported:
 * `secondary_zone_id` - (Optional, ForceNew, Available since v1.199.0) Configure the available area where the slave node (Secondary node) is located to realize multi-available area deployment. **NOTE:** This parameter value cannot be the same as `zone_id` and `hidden_zone_id` parameter values.
 * `hidden_zone_id` - (Optional, ForceNew, Available since v1.199.0) Configure the zone where the hidden node is located to deploy multiple zones. **NOTE:** This parameter value cannot be the same as `zone_id` and `secondary_zone_id` parameter values.
 * `security_group_id` - (Optional, Available since v1.73.0) The Security Group ID of ECS.
-* `replication_factor` - (Optional) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
+* `replication_factor` - (Optional, Int) Number of replica set nodes. Valid values: `1`, `3`, `5`, `7`.
 * `network_type` - (Optional, ForceNew, Available since v1.161.0) The network type of the instance. Valid values:`Classic`, `VPC`.
-* `name` - (Optional) The name of DB instance. It a string of 2 to 256 characters.
+* `name` - (Optional) The name of DB instance. It must be 2 to 256 characters in length.
 * `instance_charge_type` - (Optional) The billing method of the instance. Default value: `PostPaid`. Valid values: `PrePaid`, `PostPaid`. **NOTE:** It can be modified from `PostPaid` to `PrePaid` after version 1.63.0.
-* `period` - (Optional) The duration that you will buy DB instance (in month). It is valid when instance_charge_type is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
-* `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
+* `period` - (Optional, Int) The duration that you will buy DB instance (in month). It is valid when `instance_charge_type` is `PrePaid`. Default value: `1`. Valid values: [1~9], 12, 24, 36.
+* `security_ip_list` - (Optional, List) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]).
 * `account_password` - (Optional, Sensitive) Password of the root account. It is a string of 6 to 32 characters and is composed of letters, numbers, and underlines.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a instance. If the `account_password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `encrypted` - (Optional, ForceNew, Bool, Available since v1.212.0) Whether to enable cloud disk encryption. Default value: `false`. Valid values: `true`, `false`.
 * `cloud_disk_encryption_key` - (Optional, ForceNew, Available since v1.212.0) The ID of the encryption key.
-* `readonly_replicas` - (Optional, Available since v1.199.0) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
+* `readonly_replicas` - (Optional, Int, Available since v1.199.0) The number of read-only nodes in the replica set instance. Default value: 0. Valid values: 0 to 5.
 * `resource_group_id` - (Optional, Available since v1.161.0) The ID of the Resource Group.
 * `auto_renew` - (Optional, Bool, Available since v1.141.0) Auto renew for prepaid. Default value: `false`. Valid values: `true`, `false`.
   -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
@@ -158,11 +158,11 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 30 mins) Used when creating the MongoDB instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the MongoDB instance (until it reaches the initial `Running` status).
-* `delete` - (Defaults to 30 mins) Used when terminating the MongoDB instance.
+* `delete` - (Defaults to 30 mins) Used when deleting the MongoDB instance.
 
 ## Import
 
-MongoDB can be imported using the id, e.g.
+MongoDB instance can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_mongodb_instance.example dds-bp1291daeda44194
