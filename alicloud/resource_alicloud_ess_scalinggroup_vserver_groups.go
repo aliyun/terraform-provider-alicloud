@@ -263,7 +263,6 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapError(err)
 		}
-		request["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -320,7 +319,6 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapError(err)
 		}
-		request["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
