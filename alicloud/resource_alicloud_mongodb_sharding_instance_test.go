@@ -231,11 +231,11 @@ func TestAccAlicloudMongoDBShardingInstance_classic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPasswordUpdate",
+					"account_password": "YourPassword123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPasswordUpdate",
+						"account_password": "YourPassword123",
 					}),
 				),
 			},
@@ -499,11 +499,11 @@ func TestAccAlicloudMongoDBShardingInstance_vpc(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"account_password": "YourPasswordUpdate",
+					"account_password": "YourPassword123",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"account_password": "YourPasswordUpdate",
+						"account_password": "YourPassword123",
 					}),
 				),
 			},
