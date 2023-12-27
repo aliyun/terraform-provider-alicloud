@@ -75,21 +75,12 @@ variable "name" {
 }
 data "alicloud_account" "current" {}
 
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "8.0"
-	instance_charge_type = "PostPaid"
-	category = "HighAvailability"
-	db_instance_storage_type = "cloud_essd"
-}
+data "alicloud_db_zones" "default" {}
 
 data "alicloud_db_instance_classes" "default" {
-	zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "8.0"
-	category = "HighAvailability"
-	db_instance_storage_type = "cloud_essd"
-	instance_charge_type = "PostPaid"
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+  engine               = "MySQL"
+  engine_version       = "5.6"
 }
 
 data "alicloud_vpcs" "default" {
@@ -106,18 +97,12 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_db_instance" "instance" {
-	engine = "MySQL"
-	engine_version = "8.0"
-	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
-	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
-	vswitch_id       = data.alicloud_vswitches.default.ids.0
-	instance_name    = var.name
-	security_ips     = ["100.104.5.0/24","192.168.0.6"]
-	tags = {
-		"key1" = "value1"
-		"key2" = "value2"
-	}
+  engine           = "MySQL"
+  engine_version   = "5.6"
+  instance_type    =  data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
+  instance_storage = "10"
+  vswitch_id       = data.alicloud_vswitches.default.ids[0]
+  instance_name    = var.name
 }
 
 resource "alicloud_db_account" "account" {
@@ -147,7 +132,7 @@ resource "alicloud_dms_enterprise_instance" "default" {
   export_timeout    =	 "2000"
   ecs_region        =	 "%s"
   ddl_online        =	 "0"
-  use_dsql          =	 "0"
+  use_dsql          =	 "1"
   data_link_name    =	 ""
 }
 `, name, defaultRegionToTest)

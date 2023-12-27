@@ -172,9 +172,6 @@ func dataSourceDmsEnterpriseInstancesConfigDependence(name string) string {
 	  query_timeout     =	 "70"
 	  export_timeout    =	 "2000"
 	  ecs_region        =	 "%s"
-	  ddl_online        =	 "0"
-	  use_dsql          =	 "0"
-	  data_link_name    =	 ""
 	}
 `, name, defaultRegionToTest)
 }
