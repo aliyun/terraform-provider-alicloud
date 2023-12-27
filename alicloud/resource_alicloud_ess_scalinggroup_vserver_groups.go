@@ -263,11 +263,11 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapError(err)
 		}
-		request["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			request["ClientToken"] = buildClientToken(action)
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"BackendServer.configuring"}) {
@@ -320,11 +320,11 @@ func detachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 		if err != nil {
 			return WrapError(err)
 		}
-		request["ClientToken"] = buildClientToken(action)
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			request["ClientToken"] = buildClientToken(action)
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
