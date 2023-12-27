@@ -229,7 +229,6 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 					"ecs_region":        os.Getenv("ALICLOUD_REGION"),
 					"ddl_online":        "0",
 					"use_dsql":          "0",
-					"data_link_name":    "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -249,7 +248,6 @@ func TestAccAlicloudDMSEnterprise(t *testing.T) {
 						"ecs_region":      os.Getenv("ALICLOUD_REGION"),
 						"ddl_online":      "0",
 						"use_dsql":        "0",
-						"data_link_name":  "",
 					}),
 				),
 			},

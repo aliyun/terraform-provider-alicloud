@@ -41,7 +41,6 @@ var existDMSEnterpriseProxyAccessMapFunc = func(rand int) map[string]string {
 		"accesses.0.user_id":         CHECKSET,
 		"accesses.0.user_name":       CHECKSET,
 		"accesses.0.user_uid":        CHECKSET,
-		"accesses.0.gmt_create":      "",
 	}
 }
 
