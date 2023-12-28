@@ -1,5 +1,5 @@
 ---
-subcategory: "SLS"
+subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_log_store"
 description: |-
