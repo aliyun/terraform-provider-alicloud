@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -20,23 +21,26 @@ func (s *OssServiceV2) DescribeOssBucketReferer(id string) (object map[string]in
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
-	var hostMap map[string]interface{}
-	action := "GetBucketReferer"
+	var query map[string]*string
+	var body map[string]interface{}
+	var hostMap map[string]*string
+	action := fmt.Sprintf("/?referer")
 	conn, err := client.NewOssClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	hostMap = make(map[string]interface{})
-	hostMap["bucket"] = id
+	body = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap = make(map[string]*string)
+	hostMap["bucket"] = StringPointer(id)
 
+	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-05-17"), StringPointer("AK"), query, request, &runtime)
+		response, err = conn.Execute(genRoaParam("GetBucketReferer", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {

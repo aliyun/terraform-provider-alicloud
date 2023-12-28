@@ -12,7 +12,7 @@ Provides a OSS Bucket Referer resource. Bucket Referer configuration.
 
 For information about OSS Bucket Referer and how to use it, see [What is Bucket Referer](https://www.alibabacloud.com/help/en/).
 
--> **NOTE:** Available since v1.214.0.
+-> **NOTE:** Available since v1.215.0.
 
 ## Example Usage
 

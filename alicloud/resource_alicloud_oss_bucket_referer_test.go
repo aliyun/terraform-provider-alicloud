@@ -32,7 +32,7 @@ func TestAccAliCloudOssBucketReferer_basic4937(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bucket_name":                 name,
+					"bucket_name":                 "${alicloud_oss_bucket.default.bucket}",
 					"allow_empty_referer":         "true",
 					"allow_truncate_query_string": "true",
 				}),
