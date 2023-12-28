@@ -1635,25 +1635,23 @@ func (s *VpcServiceV2) VpcDhcpOptionsSetStateRefreshFunc(id string, field string
 // DescribeVpcPeerConnection <<< Encapsulated get interface for Vpc PeerConnection.
 
 func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]interface{}, err error) {
-	client := s.client
-	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "GetVpcPeerConnectionAttribute"
-	conn, err := client.NewVpcpeerClient()
+
+	conn, err := s.client.NewVpcpeerClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["InstanceId"] = id
+
+	request := map[string]interface{}{
+		"InstanceId": id,
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1661,18 +1659,25 @@ func (s *VpcServiceV2) DescribeVpcPeerConnection(id string) (object map[string]i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("PeerConnection", id)), NotFoundMsg, response)
+			return nil, WrapErrorf(Error(GetNotFoundMessage("Vpc:PeerConnection", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
-	return response, nil
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
 }
 
 func (s *VpcServiceV2) VpcPeerConnectionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
