@@ -325,8 +325,12 @@ func parseConfig(resourceTest ResourceTest,
 				valueIndex := strings.Index(v, ":")
 
 				// "xxx:xxx",
-				if !attrRegex.MatchString(v) {
-					valueIndex = -1
+				if strings.Contains(v, ":") {
+					splitIndex := strings.Index(v, ":")
+					beforeCount := strings.Count(v[:splitIndex], "\"")
+					if beforeCount%2 != 0 {
+						valueIndex = -1
+					}
 				}
 
 				valueSuffix := string(v[len(v)-1])
@@ -338,17 +342,31 @@ func parseConfig(resourceTest ResourceTest,
 					valueStr = v[valueIndex+1 : len(v)-2]
 				}
 
-				// value with " " or ` `
-				if strings.HasPrefix(valueStr, "\"{") || strings.HasPrefix(valueStr, "`{") { //"{xxx}",  `{xxx}`,
-					valueStr = valueStr[1:len(valueStr)-1] + valueSuffix
-				} else if strings.HasPrefix(valueStr, "`") { //`xxx`,
-					valueStr = strings.ReplaceAll(valueStr, "\"", "")
+				// "xxx"+xx, "xxx"+xxx+"xxx, `xxx`+"xxx"+`xxx`
+				if strings.Contains(valueStr, "+") {
+					v := valueStr
+					index := strings.Index(v, "+")
+					for index != -1 {
+						beforeStr := v[:index]
+						beforeStr = strings.TrimSpace(beforeStr)
+						if strings.Count(beforeStr, "\"")%2 == 0 ||
+							(beforeStr[0] == '`' && beforeStr[len(beforeStr)-1] == '`') {
+							v = v[index+1:]
+							index = strings.Index(v, "+")
+						} else {
+							break
+						}
+					}
+					if index == -1 {
+						valueStr = strings.ReplaceAll(valueStr, "\"", "")
+						valueStr = strings.ReplaceAll(valueStr, "`", "")
+						valueStr = "\"" + valueStr + "\""
+					}
+				}
+
+				// `xxx`
+				if strings.HasPrefix(valueStr, "`") && strings.HasSuffix(valueStr, "`") {
 					valueStr = "\"" + valueStr[:len(valueStr)-1] + "\"" + valueSuffix
-				} else if !strings.HasPrefix(valueStr, "[]") &&
-					!strings.HasPrefix(valueStr, "map") &&
-					strings.Count(valueStr, "\"") >= 2 { //"xxx",  "xxx"+xx, "xxx"+xxx+"xxx", func("xxx"),
-					valueStr = strings.ReplaceAll(valueStr, "\"", "")
-					valueStr = "\"" + valueStr + "\"" + valueSuffix
 				} else {
 					valueStr += valueSuffix
 				}
@@ -364,8 +382,16 @@ func parseConfig(resourceTest ResourceTest,
 
 				// value with variable or func
 				if variableRegex.MatchString(valueStr) || valueFuncRegex.MatchString(valueStr) {
+					valueStr = strings.ReplaceAll(valueStr, "\\\"", "*")
 					valueStr = strings.ReplaceAll(valueStr, "\"", "")
 					valueStr = "\"" + valueStr + "\"" + valueSuffix
+				}
+
+				// "xxx/xxx", "xxx/"xxx"
+				if valueOnlySymbol.MatchString(valueStr) {
+					valueStr = strings.ReplaceAll(valueStr, "\\", "*")
+					valueStr = strings.ReplaceAll(valueStr, "\"", "*")
+					valueStr = "\"" + valueStr[1:len(valueStr)-1] + "\"" + valueSuffix
 				}
 
 				configSlice[i] = v[:valueIndex+1] + valueStr
@@ -375,16 +401,16 @@ func parseConfig(resourceTest ResourceTest,
 			configRune := []rune(configStr)
 
 			// match the bracket
-			if toCheck = bracketMatch(configRune); !toCheck {
+			if toCheck = bracketMatch(funcName, configIndex, configRune); !toCheck {
 				return toCheck
 			}
 
 			configStr = string(configRune)
 			jsonData := []byte(configStr)
 			var v interface{}
-			json.Unmarshal(jsonData, &v)
-			if v == nil {
-				log.Errorf("fail to unmarshal func %v's number %v config: \n%s", funcName, configIndex, configStr)
+			err := json.Unmarshal(jsonData, &v)
+			if err != nil {
+				log.Errorf("fail to unmarshal func %v's number %v config: \n%s\n%s", funcName, configIndex, configStr, err)
 				return false
 			}
 			data := v.(map[string]interface{})
@@ -397,7 +423,7 @@ func parseConfig(resourceTest ResourceTest,
 	return true
 }
 
-func bracketMatch(s []rune) bool {
+func bracketMatch(funcName string, configIndex int, s []rune) bool {
 	var stack []string
 
 	for i := 0; i < len(s); i++ {
@@ -413,7 +439,7 @@ func bracketMatch(s []rune) bool {
 		case "}", "]":
 			{
 				if len(stack) == 0 {
-					log.Errorf("fail to math bracket [ ],config:%s\n", string(s))
+					log.Errorf("fail to math bracket [ ] in func %s's number %d config:%s\n", funcName, configIndex, string(s))
 					return false
 				}
 				temp := stack[len(stack)-1]
@@ -462,13 +488,14 @@ var (
 	normalFuncRegex   = regexp.MustCompile("^func Test(.*)")
 	unitFuncRegex     = regexp.MustCompile("^func TestUnit(.*)")
 	standardFuncRegex = regexp.MustCompile("^func TestAccAliCloud(.*)")
-	configRegex       = regexp.MustCompile("(.*)Config:(.*)")
+	configRegex       = regexp.MustCompile("(^[\t]*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
 	ignoreRegex       = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
 	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
 	symbolRegex       = regexp.MustCompile(`\s`)
-	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|([+])")
+	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
 	valueFuncRegex    = regexp.MustCompile("[(].*[\"].*[\"].*[)]")
+	valueOnlySymbol   = regexp.MustCompile(`.*([^\\\"])(\\)([^\\\"]).*`)
 	bracket           = map[string]string{
 		"{": "}",
 		"[": "]",
@@ -481,7 +508,8 @@ var (
 		4: []string{"map[string]interface{}{", "{"},
 		5: []string{"map[string]string{", "{"},
 		6: []string{"\\n", ""},
-		7: []string{"\\", ""},
+		7: []string{"`${map(", "["},
+		8: []string{")}`", "]"},
 	}
 
 	isNameCorrect = true
@@ -558,7 +586,9 @@ func testAll(diff *diffparser.Diff) {
 	line := 0
 	for scanner.Scan() {
 		text := scanner.Text()
-		diff.Files = append(diff.Files, &diffparser.DiffFile{NewName: "alicloud/" + text})
+		if strings.HasPrefix(text, "resource_alicloud") {
+			diff.Files = append(diff.Files, &diffparser.DiffFile{NewName: "alicloud/" + text})
+		}
 		line++
 	}
 }
