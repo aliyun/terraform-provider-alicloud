@@ -40,6 +40,7 @@ func TestAccAlicloudPolarDBClusterDatabasesDataSource(t *testing.T) {
 			"databases.0.db_status":          CHECKSET,
 			"databases.0.engine":             CHECKSET,
 			"databases.0.accounts.#":         CHECKSET,
+			"databases.0.status":             "Running",
 		}
 	}
 

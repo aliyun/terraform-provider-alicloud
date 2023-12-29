@@ -84,6 +84,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `db_name` - Database name.
   * `db_status` - The status of database.
   * `engine` - The engine of database.
+  * `status` - The status of the polarDB database.
   * `accounts` - A list of accounts of database. Each element contains the following attributes.
       * `account_name` - Account name.
       * `account_status` - Account status.
