@@ -1,30 +1,31 @@
-## 1.214.1 (Unreleased)
+## 1.215.0 (Unreleased)
+## 1.214.1 (December 22, 2023)
 
 ENHANCEMENTS:
 
-- resource/alicloud_alikafka_instance: Added the field topic_num_of_buy, topic_used, topic_left, partition_used, partition_left, group_used, group_left, is_partition_buy. [GH-6763]
-- resource/alicloud_dms_enterprise_instance: mark use_dsql as computed property; testcase: fix dms testcase. [GH-6792]
-- resource/alicloud_alikafka_consumer_group: add deleting asynchronous status check; resource/alicloud_alikafka_topic: support 249 character for alikafka topic. [GH-6794]
-- resource/alicloud_mongodb_sharding_instance: mark vswitch_id as Computed property. [GH-6800]
-- resource/alicloud_ess_eci_scaling_configuration: add attributes: load_balancer_weight,ephemeral_storage,active_deadline_seconds,ipv6_address_count,image_snapshot_id,auto_match_image_cache,termination_grace_period_seconds,security_context_capability_adds,security_context_read_only_root_file_system,security_context_run_as_user,field_ref_field_path. [GH-6801]
-- resource/alicloud_ess_scalinggroup_vserver_groups: remove clientToken for same error code. [GH-6807]
-- resource/alicloud_log_store: adds new attributes. [GH-6810]
-- docs: fix examples. [GH-6795]
-- docs: Fixed Alikafka field's version error. [GH-6797]
-- docs: modify resource/alicloud_log_store category. [GH-6811]
-- testcase: add sweeper for eipanycast. [GH-6793]
-- testcase: rename case name for alikafka. [GH-6794]
-- testcase: fix redis testcae. [GH-6799]
-- testcase: fix mongodb testcae. [GH-6800]
-- testcase: fix mongodb testcae. [GH-6805]
-- testcase: fix dms testcae. [GH-6806]
-- testcase: fix mongodb testcae. [GH-6815]
-- testcase: fix apigateway testcae. [GH-6816]
+- resource/alicloud_alikafka_instance: Added the field topic_num_of_buy, topic_used, topic_left, partition_used, partition_left, group_used, group_left, is_partition_buy. ([#6763](https://github.com/aliyun/terraform-provider-alicloud/issues/6763))
+- resource/alicloud_dms_enterprise_instance: mark use_dsql as computed property; testcase: fix dms testcase. ([#6792](https://github.com/aliyun/terraform-provider-alicloud/issues/6792))
+- resource/alicloud_alikafka_consumer_group: add deleting asynchronous status check; resource/alicloud_alikafka_topic: support 249 character for alikafka topic. ([#6794](https://github.com/aliyun/terraform-provider-alicloud/issues/6794))
+- resource/alicloud_mongodb_sharding_instance: mark vswitch_id as Computed property. ([#6800](https://github.com/aliyun/terraform-provider-alicloud/issues/6800))
+- resource/alicloud_ess_eci_scaling_configuration: add attributes: load_balancer_weight,ephemeral_storage,active_deadline_seconds,ipv6_address_count,image_snapshot_id,auto_match_image_cache,termination_grace_period_seconds,security_context_capability_adds,security_context_read_only_root_file_system,security_context_run_as_user,field_ref_field_path. ([#6801](https://github.com/aliyun/terraform-provider-alicloud/issues/6801))
+- resource/alicloud_ess_scalinggroup_vserver_groups: remove clientToken for same error code. ([#6807](https://github.com/aliyun/terraform-provider-alicloud/issues/6807))
+- resource/alicloud_log_store: adds new attributes. ([#6810](https://github.com/aliyun/terraform-provider-alicloud/issues/6810))
+- docs: fix examples. ([#6795](https://github.com/aliyun/terraform-provider-alicloud/issues/6795))
+- docs: Fixed Alikafka field's version error. ([#6797](https://github.com/aliyun/terraform-provider-alicloud/issues/6797))
+- docs: modify resource/alicloud_log_store category. ([#6811](https://github.com/aliyun/terraform-provider-alicloud/issues/6811))
+- testcase: add sweeper for eipanycast. ([#6793](https://github.com/aliyun/terraform-provider-alicloud/issues/6793))
+- testcase: rename case name for alikafka. ([#6794](https://github.com/aliyun/terraform-provider-alicloud/issues/6794))
+- testcase: fix redis testcae. ([#6799](https://github.com/aliyun/terraform-provider-alicloud/issues/6799))
+- testcase: fix mongodb testcae. ([#6800](https://github.com/aliyun/terraform-provider-alicloud/issues/6800))
+- testcase: fix mongodb testcae. ([#6805](https://github.com/aliyun/terraform-provider-alicloud/issues/6805))
+- testcase: fix dms testcae. ([#6806](https://github.com/aliyun/terraform-provider-alicloud/issues/6806))
+- testcase: fix mongodb testcae. ([#6815](https://github.com/aliyun/terraform-provider-alicloud/issues/6815))
+- testcase: fix apigateway testcae. ([#6816](https://github.com/aliyun/terraform-provider-alicloud/issues/6816))
 
 BUG FIXES:
 
-- resource/alicloud_alikafka_instance: Fixed selected_zones invalid error. [GH-6763]
-- resource/alicloud_vpc_peer_connection: Fixed the create bug caused by field bandwidth; Improved alicloud_vpc_peer_connection testcase. [GH-6814]
+- resource/alicloud_alikafka_instance: Fixed selected_zones invalid error. ([#6763](https://github.com/aliyun/terraform-provider-alicloud/issues/6763))
+- resource/alicloud_vpc_peer_connection: Fixed the create bug caused by field bandwidth; Improved alicloud_vpc_peer_connection testcase. ([#6814](https://github.com/aliyun/terraform-provider-alicloud/issues/6814))
 
 ## 1.214.0 (December 22, 2023)
 
