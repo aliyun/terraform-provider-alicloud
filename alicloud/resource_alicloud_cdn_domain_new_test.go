@@ -116,7 +116,7 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name":       "xxxx.myalicdn.com",
+					"domain_name":       name,
 					"cdn_type":          "web",
 					"scope":             "domestic",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
@@ -130,7 +130,7 @@ func TestAccAlicloudCDNDomainNew_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name":       "xxxx.myalicdn.com",
+						"domain_name":       CHECKSET,
 						"scope":             "domestic",
 						"resource_group_id": CHECKSET,
 						"sources.#":         "1",
@@ -460,7 +460,7 @@ func TestAccAlicloudCdnDomain_basic3176(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scdndomain%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -472,7 +472,7 @@ func TestAccAlicloudCdnDomain_basic3176(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"domain_name": "wkk.pfytlm.xyz",
+					"domain_name": name,
 					"cdn_type":    "web",
 					"sources": []map[string]interface{}{
 						{
@@ -486,7 +486,7 @@ func TestAccAlicloudCdnDomain_basic3176(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"domain_name": "wkk.pfytlm.xyz",
+						"domain_name": CHECKSET,
 						"cdn_type":    "web",
 						"sources.#":   "1",
 					}),
@@ -577,7 +577,7 @@ func TestAccAlicloudCdnDomain_basic3176_twin(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scdndomain%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCdnDomainBasicDependence3176)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -590,7 +590,7 @@ func TestAccAlicloudCdnDomain_basic3176_twin(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"scope":       "domestic",
-					"domain_name": "wkk.pfytlm.xyz",
+					"domain_name": name,
 					"cdn_type":    "web",
 					"sources": []map[string]interface{}{
 						{
@@ -609,7 +609,7 @@ func TestAccAlicloudCdnDomain_basic3176_twin(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"scope":        "domestic",
-						"domain_name":  "wkk.pfytlm.xyz",
+						"domain_name":  CHECKSET,
 						"cdn_type":     "web",
 						"sources.#":    "1",
 						"tags.%":       "2",
