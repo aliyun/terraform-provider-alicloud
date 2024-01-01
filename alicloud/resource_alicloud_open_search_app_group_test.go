@@ -192,8 +192,8 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 					"quota": []map[string]interface{}{
 						{
 							"doc_size":         "20",
-							"compute_resource": "1000",
-							"spec":             "opensearch.share.compute",
+							"compute_resource": "40",
+							"spec":             "opensearch.share.common",
 						},
 					},
 				}),

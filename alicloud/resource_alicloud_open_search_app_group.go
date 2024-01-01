@@ -180,7 +180,7 @@ func resourceAlicloudOpenSearchAppGroupCreate(d *schema.ResourceData, meta inter
 	} else {
 		return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 	}
-	d.SetId(fmt.Sprint(response["result"].(map[string]interface{})["name"]))
+	d.SetId(fmt.Sprint(response["result"].(map[string]interface{})["instanceId"]))
 
 	return resourceAlicloudOpenSearchAppGroupUpdate(d, meta)
 }
