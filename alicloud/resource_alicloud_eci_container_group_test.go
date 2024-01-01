@@ -16,6 +16,48 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
+const ECI_EcsInstanceCommonTestCase = `
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
+}
+data "alicloud_instance_types" "default" {
+  availability_zone = "${data.alicloud_zones.default.zones.1.id}"
+  cpu_core_count    = 2
+  memory_size       = 4
+}
+
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu"
+  most_recent = true
+  owners      = "system"
+}
+resource "alicloud_vpc" "default" {
+  vpc_name       = "${var.name}"
+  cidr_block = "172.16.0.0/16"
+}
+resource "alicloud_vswitch" "default" {
+  vpc_id            = "${alicloud_vpc.default.id}"
+  cidr_block        = "172.16.0.0/24"
+  zone_id = "${data.alicloud_zones.default.zones.1.id}"
+  vswitch_name              = "${var.name}"
+}
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = "${alicloud_vpc.default.id}"
+}
+resource "alicloud_security_group_rule" "default" {
+  	type = "ingress"
+  	ip_protocol = "tcp"
+  	nic_type = "intranet"
+  	policy = "accept"
+  	port_range = "22/22"
+  	priority = 1
+  	security_group_id = "${alicloud_security_group.default.id}"
+  	cidr_ip = "172.16.0.0/24"
+}
+`
+
 func init() {
 	resource.AddTestSweepers(
 		"alicloud_eci_container_group",
@@ -102,9 +144,8 @@ func testSweepEciContainerGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -125,9 +166,10 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vswitches.default.vswitches.0.id}, ${data.alicloud_vswitches.default.vswitches.1.id}",
+					"container_group_name":   strings.ToLower(name),
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"auto_match_image_cache": "false",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -193,6 +235,11 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -216,8 +263,12 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"containers.#": "1",
-						"volumes.#":    "1",
+						"containers.#":      "1",
+						"volumes.#":         "1",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "Test",
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -228,31 +279,6 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"restart_policy": "OnFailure",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "Test",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -293,9 +319,8 @@ func TestAccAlicloudEciContainerGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -317,8 +342,8 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"containers": []map[string]interface{}{
 						{
@@ -350,7 +375,7 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 							"password":  "tftestacc",
 						},
 					},
-					"auto_match_image_cache": "true",
+					"auto_match_image_cache": "false",
 					"auto_create_eip":        "true",
 					"eip_bandwidth":          "5",
 					"cpu":                    "2",
@@ -375,15 +400,14 @@ func TestAccAlicloudEciContainerGroup_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "auto_match_image_cache", "eip_bandwidth", "auto_create_eip"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic2(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -404,9 +428,10 @@ func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"container_group_name":   strings.ToLower(name),
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"auto_match_image_cache": "false",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -461,7 +486,7 @@ func TestAccAlicloudEciContainerGroup_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
@@ -484,8 +509,8 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -516,7 +541,7 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 							"password":  "tftestacc",
 						},
 					},
-					"auto_match_image_cache": "true",
+					"auto_match_image_cache": "false",
 					"eip_instance_id":        "${alicloud_eip_address.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -535,15 +560,14 @@ func TestAccAlicloudEciContainerGroup_basic3(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "auto_match_image_cache", "eip_bandwidth", "auto_create_eip", "eip_instance_id"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -553,7 +577,7 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacceci-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence3_2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -564,9 +588,10 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"container_group_name":   strings.ToLower(name),
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"auto_match_image_cache": "false",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -626,8 +651,8 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 					},
 					"acr_registry_info": []map[string]interface{}{
 						{
-							"instance_name": "${alicloud_cr_ee_instance.default.instance_name}",
-							"instance_id":   "${alicloud_cr_ee_instance.default.id}",
+							"instance_name": "acr_test_name",
+							"instance_id":   "acr-1",
 							"domains":       []string{fmt.Sprintf("registry.%s.cr.aliyuncs.com", defaultRegionToTest)},
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -681,6 +706,14 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 							},
 						},
 					},
+					"acr_registry_info": []map[string]interface{}{
+						{
+							"instance_name": "acr_test_name_2",
+							"instance_id":   "acr-2",
+							"domains":       []string{"test"},
+							"region_id":     os.Getenv("ALICLOUD_REGION"),
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -698,9 +731,8 @@ func TestAccAlicloudEciContainerGroup_basic4(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
+func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.EciContainerGroupRegions)
 	resourceId := "alicloud_eci_container_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -721,9 +753,10 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.group.id}",
-					"vswitch_id":           "${data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0}",
+					"container_group_name":   strings.ToLower(name),
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"auto_match_image_cache": "false",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -787,8 +820,8 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 					},
 					"acr_registry_info": []map[string]interface{}{
 						{
-							"instance_name": "${alicloud_cr_ee_instance.default.instance_name}",
-							"instance_id":   "${alicloud_cr_ee_instance.default.id}",
+							"instance_name": "acr_test_name",
+							"instance_id":   "acr-1",
 							"domains":       []string{fmt.Sprintf("registry.%s.cr.aliyuncs.com", defaultRegionToTest)},
 							"region_id":     os.Getenv("ALICLOUD_REGION"),
 						},
@@ -821,9 +854,9 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 									"timeout_seconds":       "1",
 									"http_get": []map[string]interface{}{
 										{
-											"scheme": "HTTP",
+											"scheme": "HTTPS",
 											"path":   "/usr/local/bin",
-											"port":   "8080",
+											"port":   "8081",
 										},
 									},
 								},
@@ -837,9 +870,9 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 									"timeout_seconds":       "1",
 									"http_get": []map[string]interface{}{
 										{
-											"scheme": "HTTP",
+											"scheme": "HTTPS",
 											"path":   "/usr/",
-											"port":   "8080",
+											"port":   "8081",
 										},
 									},
 								},
@@ -863,6 +896,566 @@ func TestAccAlicloudEciContainerGroup_basic5(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eci_container_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEciContainerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"container_group_name": strings.ToLower(name),
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"containers": []map[string]interface{}{
+						{
+							"name":              strings.ToLower(name),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image_pull_policy": "IfNotPresent",
+							"commands":          []string{"/bin/sh"},
+							"args":              []string{"-c", "sleep 9999"},
+							"cpu":               "1",
+							"memory":            "2",
+							"gpu":               "0",
+							"working_dir":       "/home/1",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "UDP",
+									"port":     "800",
+								},
+							},
+							"security_context": []map[string]interface{}{
+								{
+									"capability": []map[string]interface{}{
+										{
+											"add": []string{"NET_ADMIN"},
+										},
+									},
+									"run_as_user": "0",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "container_n1",
+									"value": "container_v1",
+								},
+								{
+									"key": "container_n2",
+									"field_ref": []map[string]interface{}{
+										{
+											"field_path": "status.hostIP",
+										},
+									},
+								},
+							},
+							"liveness_probe": []map[string]interface{}{
+								{
+									"period_seconds":        "5",
+									"initial_delay_seconds": "5",
+									"success_threshold":     "1",
+									"failure_threshold":     "3",
+									"timeout_seconds":       "1",
+									"tcp_socket": []map[string]interface{}{
+										{
+											"port": "9090",
+										},
+									},
+								},
+							},
+							"readiness_probe": []map[string]interface{}{
+								{
+									"period_seconds":        "5",
+									"initial_delay_seconds": "5",
+									"success_threshold":     "1",
+									"failure_threshold":     "3",
+									"timeout_seconds":       "1",
+									"tcp_socket": []map[string]interface{}{
+										{
+											"port": "8080",
+										},
+									},
+								},
+							},
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"name":              "init-busybox",
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/busybox:1.30", defaultRegionToTest),
+							"image_pull_policy": "IfNotPresent",
+							"commands":          []string{"echo"},
+							"args":              []string{"hello initcontainer"},
+							"cpu":               "1",
+							"memory":            "2",
+							"gpu":               "0",
+							"working_dir":       "/home/2",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "TCP",
+									"port":     "80",
+								},
+							},
+							"security_context": []map[string]interface{}{
+								{
+									"capability": []map[string]interface{}{
+										{
+											"add": []string{"SYS_PTRACE"},
+										},
+									},
+									"run_as_user": "0",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "init_container_n1",
+									"value": "init_container_v1",
+								},
+								{
+									"key": "init_container_n2",
+									"field_ref": []map[string]interface{}{
+										{
+											"field_path": "status.podIP",
+										},
+									},
+								},
+							},
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "/tmp/test",
+									"read_only":  "false",
+									"name":       "empty1",
+								},
+							},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"name": "empty1",
+							"type": "EmptyDirVolume",
+						},
+					},
+					"host_aliases": []map[string]interface{}{
+						{
+							"ip":        "1.1.1.1",
+							"hostnames": []string{"hehe.com"},
+						},
+					},
+					"image_registry_credential": []map[string]interface{}{
+						{
+							"server":    fmt.Sprintf("registry-vpc.%s.aliyuncs.com/google_containers/etcd:3.4.3-0", defaultRegionToTest),
+							"user_name": name,
+							"password":  "tftestacc",
+						},
+					},
+					"auto_match_image_cache": "false",
+					"auto_create_eip":        "true",
+					"eip_bandwidth":          "5",
+					"cpu":                    "2",
+					"memory":                 "4",
+					"dns_config": []map[string]interface{}{
+						{
+							"name_servers": []string{"1.1.1.1"},
+							"searches":     []string{"aliyun.com"},
+							"options": []map[string]interface{}{
+								{
+									"name":  "ndots",
+									"value": "2",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"containers.#":         "1",
+						"init_containers.#":    "1",
+						"host_aliases.#":       "1",
+						"security_group_id":    CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"internet_ip":          CHECKSET,
+						"cpu":                  "2",
+						"memory":               "4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"containers": []map[string]interface{}{
+						{
+							"name":              strings.ToLower(name),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:perl", defaultRegionToTest),
+							"image_pull_policy": "Always",
+							"commands":          []string{"/bin/sh", "-c"},
+							"args":              []string{"sleep 9999"},
+							"cpu":               "1.5",
+							"memory":            "2.5",
+							"working_dir":       "/home/1-update",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "TCP",
+									"port":     "8000",
+								},
+							},
+							"security_context": []map[string]interface{}{
+								{
+									"capability": []map[string]interface{}{
+										{
+											"add": []string{"SYS_PTRACE"},
+										},
+									},
+									"run_as_user": "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "container_n1_update",
+									"value": "container_v1_update",
+								},
+								{
+									"key": "container_n2",
+									"field_ref": []map[string]interface{}{
+										{
+											"field_path": "status.podIP",
+										},
+									},
+								},
+							},
+							"liveness_probe": []map[string]interface{}{
+								{
+									"period_seconds":        "10",
+									"initial_delay_seconds": "10",
+									"success_threshold":     "1",
+									"failure_threshold":     "6",
+									"timeout_seconds":       "2",
+									"tcp_socket": []map[string]interface{}{
+										{
+											"port": "1010",
+										},
+									},
+								},
+							},
+							"readiness_probe": []map[string]interface{}{
+								{
+									"period_seconds":        "10",
+									"initial_delay_seconds": "10",
+									"success_threshold":     "1",
+									"failure_threshold":     "6",
+									"timeout_seconds":       "2",
+									"tcp_socket": []map[string]interface{}{
+										{
+											"port": "2020",
+										},
+									},
+								},
+							},
+						},
+					},
+					"init_containers": []map[string]interface{}{
+						{
+							"name":              "init-busybox",
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/ubuntu:18.04", defaultRegionToTest),
+							"image_pull_policy": "Always",
+							"commands":          []string{"/bin/sh", "-c", "echo"},
+							"args":              []string{"hello initcontainer-update"},
+							"cpu":               "0.5",
+							"memory":            "1",
+							"working_dir":       "/home/2-update",
+							"ports": []map[string]interface{}{
+								{
+									"protocol": "UDP",
+									"port":     "8000",
+								},
+							},
+							"security_context": []map[string]interface{}{
+								{
+									"capability": []map[string]interface{}{
+										{
+											"add": []string{"SYS_CHROOT"},
+										},
+									},
+									"run_as_user": "1",
+								},
+							},
+							"environment_vars": []map[string]interface{}{
+								{
+									"key":   "init_container_n1_update",
+									"value": "init_container_v1_update",
+								},
+								{
+									"key": "init_container_n2_update",
+									"field_ref": []map[string]interface{}{
+										{
+											"field_path": "status.hostIP",
+										},
+									},
+								},
+							},
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "/tmp/test-update",
+									"read_only":  "true",
+									"name":       "empty1",
+								},
+							},
+						},
+					},
+
+					"volumes": []map[string]interface{}{
+						{
+							"name": "empty1",
+							"type": "EmptyDirVolume",
+						},
+					},
+					"dns_config": []map[string]interface{}{
+						{
+							"name_servers": []string{"2.2.2.2"},
+							"searches":     []string{"taobao.com"},
+							"options": []map[string]interface{}{
+								{
+									"name":  "com",
+									"value": "3",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"containers.#":         "1",
+						"init_containers.#":    "1",
+						"host_aliases.#":       "1",
+						"security_group_id":    CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"internet_ip":          CHECKSET,
+						"cpu":                  "2",
+						"memory":               "4",
+						"dns_config.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eci_container_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEciContainerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence4)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"container_group_name":   strings.ToLower(name),
+					"security_group_id":      "${alicloud_security_group.default.id}",
+					"auto_match_image_cache": "false",
+					"vswitch_id":             "${alicloud_vswitch.default.id}",
+					"zone_id":                "${data.alicloud_zones.default.zones.1.id}",
+					"instance_type":          "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"ram_role_name":          "${alicloud_ram_role.default.name}",
+					"security_context": []map[string]interface{}{
+						{
+							"sysctl": []map[string]interface{}{
+								{
+									"name":  "net.ipv4.ping_group_range",
+									"value": "1",
+								},
+							},
+						},
+					},
+					"containers": []map[string]interface{}{
+						{
+							"name":              strings.ToLower(name),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image_pull_policy": "IfNotPresent",
+							"commands":          []string{"/bin/sh", "-c", "sleep 9999"},
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "/tmp/nas",
+									"read_only":  "true",
+									"name":       "nfsVolume",
+								},
+								{
+									"mount_path": "/tmp/config",
+									"read_only":  "true",
+									"name":       "configFileVolume",
+								},
+								{
+									"mount_path": "/tmp/flex",
+									"read_only":  "true",
+									"name":       "flexVolume",
+								},
+								{
+									"mount_path": "/tmp/disk",
+									"read_only":  "true",
+									"name":       "diskVolume",
+								},
+							},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"name":                 "nfsVolume",
+							"type":                 "NFSVolume",
+							"nfs_volume_server":    "${alicloud_nas_mount_target.default.mount_target_domain}",
+							"nfs_volume_path":      "/",
+							"nfs_volume_read_only": "true",
+						},
+						{
+							"name": "configFileVolume",
+							"type": "ConfigFileVolume",
+							"config_file_volume_config_file_to_paths": []map[string]interface{}{
+								{
+									"content": "aGVsbG8gd29ybGQ=",
+									"path":    "config",
+								},
+							},
+						},
+						{
+							"name":                "flexVolume",
+							"type":                "FlexVolume",
+							"flex_volume_driver":  "alicloud/disk",
+							"flex_volume_options": "{\\\"volumeSize\\\":\\\"50\\\",\\\"tags\\\":\\\"test:eci\\\"}",
+							"flex_volume_fs_type": "ext4",
+						},
+						{
+							"name":                "diskVolume",
+							"type":                "DiskVolume",
+							"disk_volume_fs_type": "ext4",
+							"disk_volume_disk_id": "${alicloud_ecs_disk.default.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"containers.#":         "1",
+						"security_group_id":    CHECKSET,
+						"vswitch_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_context": []map[string]interface{}{
+						{
+							"sysctl": []map[string]interface{}{
+								{
+									"name":  "net.ipv4.ping_group_range",
+									"value": "0 10",
+								},
+							},
+						},
+					},
+					"containers": []map[string]interface{}{
+						{
+							"name":              strings.ToLower(name),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image_pull_policy": "IfNotPresent",
+							"commands":          []string{"/bin/sh", "-c", "sleep 9999"},
+							"volume_mounts": []map[string]interface{}{
+								{
+									"mount_path": "/tmp/nas",
+									"read_only":  "true",
+									"name":       "nfsVolume",
+								},
+								{
+									"mount_path": "/tmp/config",
+									"read_only":  "true",
+									"name":       "configFileVolume",
+								},
+								{
+									"mount_path": "/tmp/flex",
+									"read_only":  "true",
+									"name":       "flexVolume",
+								},
+							},
+						},
+					},
+					"volumes": []map[string]interface{}{
+						{
+							"name":                 "nfsVolume",
+							"type":                 "NFSVolume",
+							"nfs_volume_server":    "${alicloud_nas_mount_target.default.mount_target_domain}",
+							"nfs_volume_path":      "/",
+							"nfs_volume_read_only": "true",
+						},
+						{
+							"name": "configFileVolume",
+							"type": "ConfigFileVolume",
+							"config_file_volume_config_file_to_paths": []map[string]interface{}{
+								{
+									"content": "aGVsbG8gd29ybGQ=",
+									"path":    "config",
+								},
+							},
+						},
+						{
+							"name":                "flexVolume",
+							"type":                "FlexVolume",
+							"flex_volume_driver":  "alicloud/disk",
+							"flex_volume_options": "{\\\"volumeSize\\\":\\\"50\\\",\\\"tags\\\":\\\"test:eci\\\"}",
+							"flex_volume_fs_type": "ext4",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"containers.#":         "1",
+						"security_group_id":    CHECKSET,
+						"vswitch_id":           CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id"},
+			},
+		},
+	})
+}
+
 var AlicloudEciContainerGroupMap = map[string]string{
 	"resource_group_id": CHECKSET,
 	"restart_policy":    "Always",
@@ -871,82 +1464,112 @@ var AlicloudEciContainerGroupMap = map[string]string{
 
 func AlicloudEciContainerGroupBasicDependence(name string) string {
 	return fmt.Sprintf(`
+%s
 	variable "name" {
   		default = "%s"
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
-
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
-	}
-
-	data "alicloud_vswitches" "default" {
-  		vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-
-	resource "alicloud_security_group" "group" {
-  		name        = var.name
-  		description = "tf-eci-image-test"
-  		vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
-	}
-`, name)
+`, EcsInstanceCommonTestCase, name)
 }
 
 func AlicloudEciContainerGroupBasicDependence2(name string) string {
 	return fmt.Sprintf(`
+%s
 	variable "name" {
   		default = "%s"
-	}
-
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
-	}
-
-	data "alicloud_vswitches" "default" {
-  		ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
-	}
-
-	resource "alicloud_security_group" "group" {
-  		name        = var.name
-  		description = "tf-eci-image-test"
-  		vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
 	}
 
 	resource "alicloud_eip_address" "default" {
   		address_name = var.name
 	}
-`, name)
+`, EcsInstanceCommonTestCase, name)
 }
 
 func AlicloudEciContainerGroupBasicDependence3(name string) string {
 	return fmt.Sprintf(`
+%s
 	variable "name" {
   		default = "%s"
 	}
 
-	data "alicloud_vpcs" "default" {
-  		name_regex = "^default-NODELETING$"
+
+`, EcsInstanceCommonTestCase, name)
+}
+
+func AlicloudEciContainerGroupBasicDependence3_2(name string) string {
+	return fmt.Sprintf(`
+%s
+	variable "name" {
+  		default = "%s"
+	}
+`, EcsInstanceCommonTestCase, name)
+}
+
+func AlicloudEciContainerGroupBasicDependence4(name string) string {
+	return fmt.Sprintf(`
+%s
+
+	variable "storage_type" {
+  		default = "Capacity"
 	}
 
-	data "alicloud_vswitches" "default" {
-  		ids = [data.alicloud_vpcs.default.vpcs.0.vswitch_ids.0]
+	variable "name" {
+  		default = "%s"
 	}
 
-	resource "alicloud_security_group" "group" {
-  		name        = var.name
-  		description = "tf-eci-image-test"
-  		vpc_id      = data.alicloud_vpcs.default.vpcs.0.id
+	data "alicloud_nas_protocols" "default" {
+        type = "${var.storage_type}"
 	}
 
-	resource "alicloud_cr_ee_instance" "default" {
-  		period         = 1
-  		renew_period   = 0
-  		payment_type   = "Subscription"
-  		instance_type  = "Advanced"
-  		renewal_status = "ManualRenewal"
-  		instance_name  = var.name
+	resource "alicloud_ram_role" "default" {
+	  name = "${var.name}"
+	  document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": "sts:AssumeRole",
+			  "Effect": "Allow",
+			  "Principal": {
+				"Service": [
+				  "ecs.aliyuncs.com"
+				]
+			  }
+			}
+		  ],
+		  "Version": "1"
+		}
+	  EOF
+	  description = "this is a test"
+	  force = true
 	}
-`, name)
+
+	resource "alicloud_nas_file_system" "default" {
+	  description = "${var.name}"
+	  storage_type = "${var.storage_type}"
+	  protocol_type = "${data.alicloud_nas_protocols.default.protocols.1}"
+    }
+
+	resource "alicloud_nas_mount_target" "default" {
+	  file_system_id    = "${alicloud_nas_file_system.default.id}"
+  	  access_group_name = "DEFAULT_VPC_GROUP_NAME"
+  	  vswitch_id        = "${alicloud_vswitch.default.id}"
+	}
+
+	resource "alicloud_ecs_disk" "default" {
+		zone_id = "${data.alicloud_zones.default.zones.1.id}"
+		category = "cloud_efficiency"
+		description = "Test For Terraform"
+		disk_name = var.name
+		enable_auto_snapshot = "true"
+		encrypted = "true"
+		size = "500"
+		tags = {
+			Created     = "TF"
+			Environment = "Acceptance-test"
+		}
+}
+
+`, ECI_EcsInstanceCommonTestCase, name)
 }

@@ -63,11 +63,13 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeFloat,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"memory": {
 				Type:     schema.TypeFloat,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"ram_role_name": {
 				Type:     schema.TypeString,
@@ -88,6 +90,11 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"auto_match_image_cache": {
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  true,
+				ForceNew: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return true
+				},
 			},
 			"plain_http_registry": {
 				Type:     schema.TypeString,
@@ -117,6 +124,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Type:     schema.TypeString,
+							ForceNew: true,
 							Required: true,
 						},
 						"image": {
@@ -131,6 +139,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"gpu": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							ForceNew: true,
 							Default:  0,
 						},
 						"memory": {
@@ -165,18 +174,15 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"ports": {
 							Type:     schema.TypeList,
 							Optional: true,
-							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"port": {
 										Type:     schema.TypeInt,
 										Optional: true,
-										ForceNew: true,
 									},
 									"protocol": {
 										Type:     schema.TypeString,
 										Optional: true,
-										ForceNew: true,
 									},
 								},
 							},
@@ -194,6 +200,18 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"field_ref": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"field_path": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -209,6 +227,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									"name": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
 									},
 									"read_only": {
 										Type:     schema.TypeBool,
@@ -238,6 +257,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									},
 									"success_threshold": {
 										Type:     schema.TypeInt,
+										ForceNew: true,
 										Optional: true,
 									},
 									"failure_threshold": {
@@ -314,6 +334,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									},
 									"success_threshold": {
 										Type:     schema.TypeInt,
+										ForceNew: true,
 										Optional: true,
 									},
 									"failure_threshold": {
@@ -378,6 +399,34 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"security_context": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"capability": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"add": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+											},
+										},
+									},
+									"run_as_user": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -389,6 +438,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"name": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"cpu": {
 							Type:     schema.TypeFloat,
@@ -398,6 +448,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"gpu": {
 							Type:     schema.TypeInt,
 							Optional: true,
+							ForceNew: true,
 							Default:  0,
 						},
 						"memory": {
@@ -436,18 +487,15 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"ports": {
 							Type:     schema.TypeList,
 							Optional: true,
-							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"port": {
 										Type:     schema.TypeInt,
 										Optional: true,
-										ForceNew: true,
 									},
 									"protocol": {
 										Type:     schema.TypeString,
 										Optional: true,
-										ForceNew: true,
 									},
 								},
 							},
@@ -465,6 +513,18 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"field_ref": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"field_path": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
 								},
 							},
 						},
@@ -480,6 +540,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									"name": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
 									},
 									"read_only": {
 										Type:     schema.TypeBool,
@@ -496,6 +557,34 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"restart_count": {
 							Type:     schema.TypeInt,
 							Computed: true,
+						},
+						"security_context": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"capability": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"add": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Schema{
+														Type: schema.TypeString,
+													},
+												},
+											},
+										},
+									},
+									"run_as_user": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -541,12 +630,42 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			},
 			"eci_security_context": {
 				Type:     schema.TypeSet,
+				Removed:  "Field 'eci_security_context' has been removed from provider version ?",
 				Optional: true,
 				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"sysctls": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"name": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+									"value": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ForceNew: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"security_context": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				ForceNew: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"sysctl": {
 							Type:     schema.TypeList,
 							Optional: true,
 							ForceNew: true,
@@ -597,6 +716,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"name": {
 							Type:     schema.TypeString,
+							ForceNew: true,
 							Optional: true,
 						},
 						"type": {
@@ -627,32 +747,44 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 							ForceNew: true,
+							DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+								return old != "" && new != ""
+							},
 						},
 						"nfs_volume_path": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"nfs_volume_server": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"nfs_volume_read_only": {
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
+							ForceNew: true,
 						},
 						"config_file_volume_config_file_to_paths": {
 							Type:     schema.TypeList,
 							Optional: true,
+							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"content": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
+										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+											return old == "" && new != ""
+										},
 									},
 									"path": {
 										Type:     schema.TypeString,
 										Optional: true,
+										ForceNew: true,
 									},
 								},
 							},
@@ -683,7 +815,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"acr_registry_info": {
 				Type:     schema.TypeSet,
 				Optional: true,
-				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"instance_name": {
@@ -697,6 +828,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 						"region_id": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"domains": {
 							Type:     schema.TypeList,
@@ -748,6 +880,12 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			EnvironmentVars[i] = make(map[string]interface{})
 			EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 			EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+			for _, FieldRefValue := range EnvironmentVarsMap["field_ref"].([]interface{}) {
+				FieldRef := map[string]interface{}{}
+				FieldRefMap := FieldRefValue.(map[string]interface{})
+				FieldRef["FieldPath"] = FieldRefMap["field_path"]
+				EnvironmentVars[i]["FieldRef"] = FieldRef
+			}
 		}
 		Containers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -771,6 +909,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			VolumeMounts[i] = make(map[string]interface{})
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
+			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -842,6 +981,19 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			ReadinessProbe["TcpSocket"] = TcpSocketValue
 		}
 		Containers[i]["ReadinessProbe"] = ReadinessProbe
+		SecurityContext := map[string]interface{}{}
+		for _, SecurityContextValue := range ContainersMap["security_context"].([]interface{}) {
+			SecurityContextMap := SecurityContextValue.(map[string]interface{})
+			if SecurityContextMap["capability"] != nil {
+				for _, v := range SecurityContextMap["capability"].([]interface{}) {
+					CapabilityValue := map[string]interface{}{}
+					CapabilityValue["Add"] = v.(map[string]interface{})["add"]
+					SecurityContext["Capability"] = CapabilityValue
+				}
+			}
+			SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+		}
+		Containers[i]["SecurityContext"] = SecurityContext
 	}
 	request["Container"] = Containers
 
@@ -867,7 +1019,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			dnsConfigMap := make(map[string]interface{})
 			for _, dnsConfig := range v.(*schema.Set).List() {
 				dnsConfigArg := dnsConfig.(map[string]interface{})
-				dnsConfigMap["NameServers"] = dnsConfigArg["name_servers"]
+				dnsConfigMap["NameServer"] = dnsConfigArg["name_servers"]
 				if dnsConfigArg["options"] != nil {
 					optionsMaps := make([]map[string]interface{}, 0)
 					for _, options := range dnsConfigArg["options"].([]interface{}) {
@@ -877,9 +1029,9 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 						optionsMap["Value"] = optionsArg["value"]
 						optionsMaps = append(optionsMaps, optionsMap)
 					}
-					dnsConfigMap["Options"] = optionsMaps
+					dnsConfigMap["Option"] = optionsMaps
 				}
-				dnsConfigMap["Searches"] = dnsConfigArg["searches"]
+				dnsConfigMap["Search"] = dnsConfigArg["searches"]
 			}
 			request["DnsConfig"] = dnsConfigMap
 		}
@@ -902,6 +1054,26 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				}
 			}
 			request["EciSecurityContext"] = eciSecurityContextMap
+		}
+	}
+	if v, ok := d.GetOk("security_context"); ok {
+		if v != nil {
+			eciSecurityContextMap := make(map[string]interface{})
+			for _, eciSecurityContext := range v.(*schema.Set).List() {
+				eciSecurityContextArg := eciSecurityContext.(map[string]interface{})
+				if eciSecurityContextArg["sysctl"] != nil {
+					sysctlsMaps := make([]map[string]interface{}, 0)
+					for _, sysctls := range eciSecurityContextArg["sysctl"].([]interface{}) {
+						sysctlsMap := make(map[string]interface{})
+						sysctlsArg := sysctls.(map[string]interface{})
+						sysctlsMap["Name"] = sysctlsArg["name"]
+						sysctlsMap["Value"] = sysctlsArg["value"]
+						sysctlsMaps = append(sysctlsMaps, sysctlsMap)
+					}
+					eciSecurityContextMap["Sysctl"] = sysctlsMaps
+				}
+			}
+			request["SecurityContext"] = eciSecurityContextMap
 		}
 	}
 	if v, ok := d.GetOk("host_aliases"); ok {
@@ -930,6 +1102,12 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				for _, FieldRefValue := range EnvironmentVarsMap["field_ref"].([]interface{}) {
+					FieldRef := map[string]interface{}{}
+					FieldRefMap := FieldRefValue.(map[string]interface{})
+					FieldRef["FieldPath"] = FieldRefMap["field_path"]
+					EnvironmentVars[i]["FieldRef"] = FieldRef
+				}
 			}
 			InitContainers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -953,10 +1131,25 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				VolumeMounts[i] = make(map[string]interface{})
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
+				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
 			InitContainers[i]["WorkingDir"] = InitContainersMap["working_dir"]
+
+			SecurityContext := map[string]interface{}{}
+			for _, SecurityContextValue := range InitContainersMap["security_context"].([]interface{}) {
+				SecurityContextMap := SecurityContextValue.(map[string]interface{})
+				if SecurityContextMap["capability"] != nil {
+					for _, v := range SecurityContextMap["capability"].([]interface{}) {
+						CapabilityValue := map[string]interface{}{}
+						CapabilityValue["Add"] = v.(map[string]interface{})["add"]
+						SecurityContext["Capability"] = CapabilityValue
+					}
+				}
+				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			}
+			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
 		request["InitContainer"] = InitContainers
 
@@ -1014,6 +1207,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			Volumes[i]["FlexVolume.Options"] = VolumesMap["flex_volume_options"]
 			Volumes[i]["NFSVolume.Path"] = VolumesMap["nfs_volume_path"]
 			Volumes[i]["NFSVolume.Server"] = VolumesMap["nfs_volume_server"]
+			Volumes[i]["NFSVolume.ReadOnly"] = VolumesMap["nfs_volume_read_only"]
 			Volumes[i]["Name"] = VolumesMap["name"]
 			Volumes[i]["Type"] = VolumesMap["type"]
 		}
@@ -1040,10 +1234,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 		}
 		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
 	}
-
-	if v, ok := d.GetOk("auto_match_image_cache"); ok {
-		request["AutoMatchImageCache"] = v
-	}
+	request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
 	if v, ok := d.GetOkExists("auto_create_eip"); ok {
 		request["AutoCreateEip"] = v
 	}
@@ -1134,6 +1325,17 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 						environmentVarsMap := map[string]interface{}{
 							"key":   environmentVars["Key"],
 							"value": environmentVars["Value"],
+						}
+						if environmentVars["ValueFrom"] != nil {
+							fieldRefMaps := make([]map[string]interface{}, 0)
+							fieldRefValue := environmentVars["ValueFrom"].(map[string]interface{})["FieldRef"]
+							if fieldRefValue != nil && fieldRefValue.(map[string]interface{})["FieldPath"] != nil {
+								fieldRefMap := map[string]interface{}{
+									"field_path": fieldRefValue.(map[string]interface{})["FieldPath"],
+								}
+								fieldRefMaps = append(fieldRefMaps, fieldRefMap)
+								environmentVarsMap["field_ref"] = fieldRefMaps
+							}
 						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
@@ -1248,6 +1450,24 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					LivenessProbesMaps = append(LivenessProbesMaps, LivenessProbesMap)
 					temp1["liveness_probe"] = LivenessProbesMaps
 				}
+
+				if m1["SecurityContext"] != nil {
+					SecurityContextMaps := make([]map[string]interface{}, 0)
+					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
+					SecurityContextMap := map[string]interface{}{
+						"run_as_user": SecurityContextValue["RunAsUser"],
+					}
+					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
+						Capabilities := make([]map[string]interface{}, 0)
+						Capability := map[string]interface{}{
+							"add": SecurityContextValue["Capability"].(map[string]interface{})["Adds"],
+						}
+						Capabilities = append(Capabilities, Capability)
+						SecurityContextMap["capability"] = Capabilities
+					}
+					SecurityContextMaps = append(SecurityContextMaps, SecurityContextMap)
+					temp1["security_context"] = SecurityContextMaps
+				}
 				containers = append(containers, temp1)
 			}
 		}
@@ -1278,7 +1498,26 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	}
 	d.Set("dns_config", dnsConfigSli)
 
-	eciSecurityContextSli := make([]map[string]interface{}, 0)
+	//eciSecurityContextSli := make([]map[string]interface{}, 0)
+	//if len(object["EciSecurityContext"].(map[string]interface{})) > 0 {
+	//	eciSecurityContext := object["EciSecurityContext"]
+	//	eciSecurityContextMap := make(map[string]interface{})
+	//
+	//	sysctlsSli := make([]map[string]interface{}, 0)
+	//	if len(eciSecurityContext.(map[string]interface{})["Sysctls"].([]interface{})) > 0 {
+	//		for _, sysctls := range eciSecurityContext.(map[string]interface{})["Sysctls"].([]interface{}) {
+	//			sysctlsMap := make(map[string]interface{})
+	//			sysctlsMap["name"] = sysctls.(map[string]interface{})["Name"]
+	//			sysctlsMap["value"] = sysctls.(map[string]interface{})["Value"]
+	//			sysctlsSli = append(sysctlsSli, sysctlsMap)
+	//		}
+	//	}
+	//	eciSecurityContextMap["sysctls"] = sysctlsSli
+	//	eciSecurityContextSli = append(eciSecurityContextSli, eciSecurityContextMap)
+	//}
+	//d.Set("eci_security_context", eciSecurityContextSli)
+
+	securityContextSli := make([]map[string]interface{}, 0)
 	if len(object["EciSecurityContext"].(map[string]interface{})) > 0 {
 		eciSecurityContext := object["EciSecurityContext"]
 		eciSecurityContextMap := make(map[string]interface{})
@@ -1292,10 +1531,10 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 				sysctlsSli = append(sysctlsSli, sysctlsMap)
 			}
 		}
-		eciSecurityContextMap["sysctls"] = sysctlsSli
-		eciSecurityContextSli = append(eciSecurityContextSli, eciSecurityContextMap)
+		eciSecurityContextMap["sysctl"] = sysctlsSli
+		securityContextSli = append(securityContextSli, eciSecurityContextMap)
 	}
-	d.Set("eci_security_context", eciSecurityContextSli)
+	d.Set("security_context", securityContextSli)
 
 	hostAliases := make([]map[string]interface{}, 0)
 	if hostAliasesList, ok := object["HostAliases"].([]interface{}); ok {
@@ -1339,6 +1578,17 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 							"key":   environmentVars["Key"],
 							"value": environmentVars["Value"],
 						}
+						if environmentVars["ValueFrom"] != nil {
+							fieldRefMaps := make([]map[string]interface{}, 0)
+							fieldRefValue := environmentVars["ValueFrom"].(map[string]interface{})["FieldRef"]
+							if fieldRefValue != nil && fieldRefValue.(map[string]interface{})["FieldPath"] != nil {
+								fieldRefMap := map[string]interface{}{
+									"field_path": fieldRefValue.(map[string]interface{})["FieldPath"],
+								}
+								fieldRefMaps = append(fieldRefMaps, fieldRefMap)
+								environmentVarsMap["field_ref"] = fieldRefMaps
+							}
+						}
 						environmentVarsMaps = append(environmentVarsMaps, environmentVarsMap)
 					}
 					temp1["environment_vars"] = environmentVarsMaps
@@ -1367,6 +1617,23 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
 					temp1["volume_mounts"] = volumeMountsMaps
+				}
+				if m1["SecurityContext"] != nil {
+					SecurityContextMaps := make([]map[string]interface{}, 0)
+					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
+					SecurityContextMap := map[string]interface{}{
+						"run_as_user": SecurityContextValue["RunAsUser"],
+					}
+					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
+						Capabilities := make([]map[string]interface{}, 0)
+						Capability := map[string]interface{}{
+							"add": SecurityContextValue["Capability"].(map[string]interface{})["Adds"],
+						}
+						Capabilities = append(Capabilities, Capability)
+						SecurityContextMap["capability"] = Capabilities
+					}
+					SecurityContextMaps = append(SecurityContextMaps, SecurityContextMap)
+					temp1["security_context"] = SecurityContextMaps
 				}
 				initContainers = append(initContainers, temp1)
 
@@ -1435,8 +1702,104 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 		"ContainerGroupId": d.Id(),
 	}
 	request["RegionId"] = client.RegionId
-	if d.HasChange("containers") {
+	if d.HasChange("cpu") {
 		update = true
+		request["Cpu"] = d.Get("cpu")
+	}
+	if d.HasChange("dns_config") {
+		update = true
+		if d.Get("dns_config") != nil {
+			dnsConfigMap := make(map[string]interface{})
+			for _, dnsConfig := range d.Get("dns_config").(*schema.Set).List() {
+				dnsConfigArg := dnsConfig.(map[string]interface{})
+				dnsConfigMap["NameServer"] = dnsConfigArg["name_servers"]
+				if dnsConfigArg["options"] != nil {
+					optionsMaps := make([]map[string]interface{}, 0)
+					for _, options := range dnsConfigArg["options"].([]interface{}) {
+						optionsMap := make(map[string]interface{})
+						optionsArg := options.(map[string]interface{})
+						optionsMap["Name"] = optionsArg["name"]
+						optionsMap["Value"] = optionsArg["value"]
+						optionsMaps = append(optionsMaps, optionsMap)
+					}
+					dnsConfigMap["Option"] = optionsMaps
+				}
+				dnsConfigMap["Search"] = dnsConfigArg["searches"]
+			}
+			request["DnsConfig"] = dnsConfigMap
+		}
+	}
+
+	if d.HasChange("memory") {
+		update = true
+		request["Memory"] = d.Get("memory")
+	}
+	if d.HasChange("restart_policy") {
+		update = true
+		request["RestartPolicy"] = d.Get("restart_policy")
+	}
+	if d.HasChange("tags") {
+		update = true
+		count := 1
+		for key, value := range d.Get("tags").(map[string]interface{}) {
+			request[fmt.Sprintf("Tag.%d.Key", count)] = key
+			request[fmt.Sprintf("Tag.%d.Value", count)] = value
+			count++
+		}
+	}
+	if d.HasChange("volumes") {
+		update = true
+		Volumes := make([]map[string]interface{}, len(d.Get("volumes").([]interface{})))
+		for i, VolumesValue := range d.Get("volumes").([]interface{}) {
+			VolumesMap := VolumesValue.(map[string]interface{})
+			Volumes[i] = make(map[string]interface{})
+			ConfigFileVolumeConfigFileToPaths := make([]map[string]interface{}, len(VolumesMap["config_file_volume_config_file_to_paths"].([]interface{})))
+			for i, ConfigFileVolumeConfigFileToPathsValue := range VolumesMap["config_file_volume_config_file_to_paths"].([]interface{}) {
+				ConfigFileVolumeConfigFileToPathsMap := ConfigFileVolumeConfigFileToPathsValue.(map[string]interface{})
+				ConfigFileVolumeConfigFileToPaths[i] = make(map[string]interface{})
+				ConfigFileVolumeConfigFileToPaths[i]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
+				ConfigFileVolumeConfigFileToPaths[i]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
+			}
+			Volumes[i]["ConfigFileVolume.ConfigFileToPath"] = ConfigFileVolumeConfigFileToPaths
+
+			Volumes[i]["NFSVolume.Path"] = VolumesMap["nfs_volume_path"]
+			Volumes[i]["NFSVolume.Server"] = VolumesMap["nfs_volume_server"]
+			Volumes[i]["Name"] = VolumesMap["name"]
+			Volumes[i]["Type"] = VolumesMap["type"]
+		}
+		request["Volume"] = Volumes
+
+	}
+	if d.HasChange("image_registry_credential") {
+		update = true
+		if v, ok := d.GetOk("image_registry_credential"); ok {
+			imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+				imageRegisryCredentialMaps = append(imageRegisryCredentialMaps, map[string]interface{}{
+					"Password": obj["password"],
+					"Server":   obj["server"],
+					"UserName": obj["user_name"],
+				})
+			}
+			request["ImageRegistryCredential"] = imageRegisryCredentialMaps
+		}
+	}
+
+	if d.HasChange("resource_group_id") {
+		update = true
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request["ResourceGroupId"] = v
+		}
+	}
+	if d.HasChange("containers") || d.HasChange("init_containers") {
+		update = true
+	}
+
+	request["UpdateType"] = "IncrementalUpdate"
+
+	if update {
+
 		Containers := make([]map[string]interface{}, len(d.Get("containers").([]interface{})))
 		for i, ContainersValue := range d.Get("containers").([]interface{}) {
 			ContainersMap := ContainersValue.(map[string]interface{})
@@ -1450,6 +1813,12 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				for _, FieldRefValue := range EnvironmentVarsMap["field_ref"].([]interface{}) {
+					FieldRef := map[string]interface{}{}
+					FieldRefMap := FieldRefValue.(map[string]interface{})
+					FieldRef["FieldPath"] = FieldRefMap["field_path"]
+					EnvironmentVars[i]["FieldRef"] = FieldRef
+				}
 			}
 			Containers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -1473,6 +1842,7 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i] = make(map[string]interface{})
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
+				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
 			}
 			Containers[i]["VolumeMount"] = VolumeMounts
 
@@ -1545,39 +1915,23 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				ReadinessProbe["TcpSocket"] = TcpSocketValue
 			}
 			Containers[i]["ReadinessProbe"] = ReadinessProbe
+
+			SecurityContext := map[string]interface{}{}
+			for _, SecurityContextValue := range ContainersMap["security_context"].([]interface{}) {
+				SecurityContextMap := SecurityContextValue.(map[string]interface{})
+				if SecurityContextMap["capability"] != nil {
+					for _, v := range SecurityContextMap["capability"].([]interface{}) {
+						CapabilityValue := map[string]interface{}{}
+						CapabilityValue["Add"] = v.(map[string]interface{})["add"]
+						SecurityContext["Capability"] = CapabilityValue
+					}
+				}
+				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			}
+			Containers[i]["SecurityContext"] = SecurityContext
 		}
 		request["Container"] = Containers
 
-	}
-	if d.HasChange("cpu") {
-		update = true
-		request["Cpu"] = d.Get("cpu")
-	}
-	if d.HasChange("dns_config") {
-		update = true
-		if d.Get("dns_config") != nil {
-			dnsConfigMap := make(map[string]interface{})
-			for _, dnsConfig := range d.Get("dns_config").(*schema.Set).List() {
-				dnsConfigArg := dnsConfig.(map[string]interface{})
-				dnsConfigMap["NameServers"] = dnsConfigArg["name_servers"]
-				if dnsConfigArg["options"] != nil {
-					optionsMaps := make([]map[string]interface{}, 0)
-					for _, options := range dnsConfigArg["options"].([]interface{}) {
-						optionsMap := make(map[string]interface{})
-						optionsArg := options.(map[string]interface{})
-						optionsMap["Name"] = optionsArg["name"]
-						optionsMap["Value"] = optionsArg["value"]
-						optionsMaps = append(optionsMaps, optionsMap)
-					}
-					dnsConfigMap["Options"] = optionsMaps
-				}
-				dnsConfigMap["Searches"] = dnsConfigArg["searches"]
-			}
-			request["DnsConfig"] = dnsConfigMap
-		}
-	}
-	if d.HasChange("init_containers") {
-		update = true
 		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").([]interface{})))
 		for i, InitContainersValue := range d.Get("init_containers").([]interface{}) {
 			InitContainersMap := InitContainersValue.(map[string]interface{})
@@ -1591,6 +1945,12 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				EnvironmentVars[i] = make(map[string]interface{})
 				EnvironmentVars[i]["Key"] = EnvironmentVarsMap["key"]
 				EnvironmentVars[i]["Value"] = EnvironmentVarsMap["value"]
+				for _, FieldRefValue := range EnvironmentVarsMap["field_ref"].([]interface{}) {
+					FieldRef := map[string]interface{}{}
+					FieldRefMap := FieldRefValue.(map[string]interface{})
+					FieldRef["FieldPath"] = FieldRefMap["field_path"]
+					EnvironmentVars[i]["FieldRef"] = FieldRef
+				}
 			}
 			InitContainers[i]["EnvironmentVar"] = EnvironmentVars
 
@@ -1614,78 +1974,27 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				VolumeMounts[i] = make(map[string]interface{})
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
+				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
 			}
 			InitContainers[i]["VolumeMount"] = VolumeMounts
 
 			InitContainers[i]["WorkingDir"] = InitContainersMap["working_dir"]
+
+			SecurityContext := map[string]interface{}{}
+			for _, SecurityContextValue := range InitContainersMap["security_context"].([]interface{}) {
+				SecurityContextMap := SecurityContextValue.(map[string]interface{})
+				CapabilityValue := map[string]interface{}{}
+				for _, CapabilityValues := range SecurityContextMap["capability"].([]interface{}) {
+					CapabilityValueMap := CapabilityValues.(map[string]interface{})
+					CapabilityValue["Add"] = CapabilityValueMap["add"]
+				}
+				SecurityContext["Capability"] = CapabilityValue
+				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			}
+			InitContainers[i]["SecurityContext"] = SecurityContext
 		}
 		request["InitContainer"] = InitContainers
 
-	}
-	if d.HasChange("memory") {
-		update = true
-		request["Memory"] = d.Get("memory")
-	}
-	if d.HasChange("restart_policy") {
-		update = true
-		request["RestartPolicy"] = d.Get("restart_policy")
-	}
-	if d.HasChange("tags") {
-		update = true
-		count := 1
-		for key, value := range d.Get("tags").(map[string]interface{}) {
-			request[fmt.Sprintf("Tag.%d.Key", count)] = key
-			request[fmt.Sprintf("Tag.%d.Value", count)] = value
-			count++
-		}
-	}
-	if d.HasChange("volumes") {
-		update = true
-		Volumes := make([]map[string]interface{}, len(d.Get("volumes").([]interface{})))
-		for i, VolumesValue := range d.Get("volumes").([]interface{}) {
-			VolumesMap := VolumesValue.(map[string]interface{})
-			Volumes[i] = make(map[string]interface{})
-			ConfigFileVolumeConfigFileToPaths := make([]map[string]interface{}, len(VolumesMap["config_file_volume_config_file_to_paths"].([]interface{})))
-			for i, ConfigFileVolumeConfigFileToPathsValue := range VolumesMap["config_file_volume_config_file_to_paths"].([]interface{}) {
-				ConfigFileVolumeConfigFileToPathsMap := ConfigFileVolumeConfigFileToPathsValue.(map[string]interface{})
-				ConfigFileVolumeConfigFileToPaths[i] = make(map[string]interface{})
-				ConfigFileVolumeConfigFileToPaths[i]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
-				ConfigFileVolumeConfigFileToPaths[i]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
-			}
-			Volumes[i]["ConfigFileVolume.ConfigFileToPath"] = ConfigFileVolumeConfigFileToPaths
-
-			Volumes[i]["NFSVolume.Path"] = VolumesMap["nfs_volume_path"]
-			Volumes[i]["NFSVolume.Server"] = VolumesMap["nfs_volume_server"]
-			Volumes[i]["Name"] = VolumesMap["name"]
-			Volumes[i]["Type"] = VolumesMap["type"]
-		}
-		request["Volume"] = Volumes
-
-	}
-	if d.HasChange("image_registry_credential") {
-		update = true
-		if v, ok := d.GetOk("image_registry_credential"); ok {
-			imageRegisryCredentialMaps := make([]map[string]interface{}, 0)
-			for _, raw := range v.(*schema.Set).List() {
-				obj := raw.(map[string]interface{})
-				imageRegisryCredentialMaps = append(imageRegisryCredentialMaps, map[string]interface{}{
-					"Password": obj["password"],
-					"Server":   obj["server"],
-					"UserName": obj["user_name"],
-				})
-			}
-			request["ImageRegistryCredential"] = imageRegisryCredentialMaps
-		}
-	}
-
-	if d.HasChange("resource_group_id") {
-		update = true
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			request["ResourceGroupId"] = v
-		}
-	}
-
-	if update {
 		action := "UpdateContainerGroup"
 		conn, err := client.NewEciClient()
 		if err != nil {
