@@ -21,7 +21,7 @@ import (
 func TestAccAliCloudServiceMeshUserPermission_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_service_mesh_user_permission.default"
-	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshUserPermissionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeUserPermissions")
