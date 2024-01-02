@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAlidnsAddressPool_basic0(t *testing.T) {
+func TestAccAliCloudAlidnsAddressPool_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alidns_address_pool.default"
 	checkoutSupportedRegions(t, true, connectivity.AlidnsSupportRegions)
@@ -104,7 +104,7 @@ func TestAccAlicloudAlidnsAddressPool_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAlidnsAddressPool_basic1(t *testing.T) {
+func TestAccAliCloudAlidnsAddressPool_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alidns_address_pool.default"
 	checkoutSupportedRegions(t, true, connectivity.AlidnsSupportRegions)
