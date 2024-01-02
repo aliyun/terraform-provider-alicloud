@@ -89,6 +89,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6 h1:b0SCK7Y4WUllc8podpyYA7LE665irOzxcr+KLHRHSII=
 github.com/alibabacloud-go/alibabacloud-gateway-fc-util v0.0.6/go.mod h1:H0RPHXHP/ICfEQrKzQcCqXI15jcV4zaDPCOAmh3U9O8=
+github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.8 h1:OwmhPx7TvgXfND+GNYZFjtW+QqBLiQI81HpQilz5Jmw=
+github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.8/go.mod h1:RgHMTDy/Wmj/D6oSyLYp9WaKLovmjg5ikrRLp8UHDzo=
 github.com/alibabacloud-go/alibabacloud-gateway-sls v0.0.6 h1:LmBsV3DRJJyGP7GhP+OZONFuyvYPI9t3yvEj8dXVkOM=
 github.com/alibabacloud-go/alibabacloud-gateway-sls v0.0.6/go.mod h1:w1LdOGxFI7W3KSG8j2zruZUCknYZw8zW4QRpi+V4lOQ=
 github.com/alibabacloud-go/alibabacloud-gateway-sls-util v0.0.1 h1:l2sAkhQvmgEqXSZsC0ILaYvPpktFNhj5i6St/UVSPrE=
@@ -126,6 +128,8 @@ github.com/alibabacloud-go/tea v1.1.11/go.mod h1:/tmnEaQMyb4Ky1/5D+SE1BAsa5zj/Ke
 github.com/alibabacloud-go/tea v1.1.17/go.mod h1:nXxjm6CIFkBhwW4FQkNrolwbfon8Svy6cujmKFUq98A=
 github.com/alibabacloud-go/tea v1.1.19 h1:Xroq0M+pr0mC834Djj3Fl4ZA8+GGoA0i7aWse1vmgf4=
 github.com/alibabacloud-go/tea v1.1.19/go.mod h1:nXxjm6CIFkBhwW4FQkNrolwbfon8Svy6cujmKFUq98A=
+github.com/alibabacloud-go/tea-oss-utils v1.1.0 h1:y65crjjcZ2Pbb6UZtC2deuIZHDVTS3IaDWE7M9nVLRc=
+github.com/alibabacloud-go/tea-oss-utils v1.1.0/go.mod h1:PFCF12e9yEKyBUIn7X1IrF/pNjvxgkHy0CgxX4+xRuY=
 github.com/alibabacloud-go/tea-roa v1.3.4 h1:afc1MrB9d5euBR5cxQTZ5Erswshguf1KSZmyttxJSTU=
 github.com/alibabacloud-go/tea-roa v1.3.4/go.mod h1:eja7Dg6m9p0X9XUL4LH3BeXjGf74gJGgecA8FUyzP70=
 github.com/alibabacloud-go/tea-roa-utils v1.1.5 h1:BkZAywim4piCeTA9qmRTq9gkcOI3Gltu3VobZwegnUE=
@@ -142,10 +146,12 @@ github.com/alibabacloud-go/tea-utils v1.4.5 h1:h0/6Xd2f3bPE4XHTvkpjwxowIwRCJAJOq
 github.com/alibabacloud-go/tea-utils v1.4.5/go.mod h1:KNcT0oXlZZxOXINnZBs6YvgOd5aYp9U67G+E3R8fcQw=
 github.com/alibabacloud-go/tea-utils/v2 v2.0.0/go.mod h1:U5MTY10WwlquGPS34DOeomUGBB0gXbLueiq5Trwu0C4=
 github.com/alibabacloud-go/tea-utils/v2 v2.0.1/go.mod h1:U5MTY10WwlquGPS34DOeomUGBB0gXbLueiq5Trwu0C4=
+github.com/alibabacloud-go/tea-utils/v2 v2.0.3/go.mod h1:sj1PbjPodAVTqGTA3olprfeeqqmwD0A5OQz94o9EuXQ=
 github.com/alibabacloud-go/tea-utils/v2 v2.0.4 h1:SoFgjJuO7pze88j9RBJNbKb7AgTS52O+J5ITxc00lCs=
 github.com/alibabacloud-go/tea-utils/v2 v2.0.4/go.mod h1:sj1PbjPodAVTqGTA3olprfeeqqmwD0A5OQz94o9EuXQ=
-github.com/alibabacloud-go/tea-xml v1.1.2 h1:oLxa7JUXm2EDFzMg+7oRsYc+kutgCVwm+bZlhhmvW5M=
 github.com/alibabacloud-go/tea-xml v1.1.2/go.mod h1:Rq08vgCcCAjHyRi/M7xlHKUykZCEtyBy9+DPF6GgEu8=
+github.com/alibabacloud-go/tea-xml v1.1.3 h1:7LYnm+JbOq2B+T/B0fHC4Ies4/FofC4zHzYtqw7dgt0=
+github.com/alibabacloud-go/tea-xml v1.1.3/go.mod h1:Rq08vgCcCAjHyRi/M7xlHKUykZCEtyBy9+DPF6GgEu8=
 github.com/aliyun/alibaba-cloud-sdk-go v1.62.590 h1:Cvekl0SVm0+gHPBdhdA3XA/ZghLOThyof4GaPLz7c1I=
 github.com/aliyun/alibaba-cloud-sdk-go v1.62.590/go.mod h1:CJJYa1ZMxjlN/NbXEwmejEnBkhi0DV+Yb3B2lxf+74o=
 github.com/aliyun/aliyun-datahub-sdk-go v0.1.5 h1:c2TFcJ5PjkqkHr2use7Av2wHB8jVgoKxX1gmLDsysR4=
@@ -1020,6 +1026,7 @@ golang.org/x/time v0.0.0-20180412165947-fbb02b2291d2/go.mod h1:tRJNPiyCQ0inRvYxb
 golang.org/x/time v0.0.0-20181108054448-85acf8d2951c/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20190308202827-9d24e82272b4/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20191024005414-555d28b269f0/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
+golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac h1:7zkz7BUtwNFFqcowJ+RIgu2MaV/MapERkDIy+mwPyjs=
 golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=

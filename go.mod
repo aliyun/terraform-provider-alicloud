@@ -37,6 +37,7 @@ require (
 )
 
 require (
+	github.com/alibabacloud-go/alibabacloud-gateway-oss v0.0.8
 	github.com/alibabacloud-go/alibabacloud-gateway-sls v0.0.6
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
@@ -67,9 +68,10 @@ require (
 	github.com/alibabacloud-go/debug v0.0.0-20190504072949-9472017b5c68 // indirect
 	github.com/alibabacloud-go/endpoint-util v1.1.0 // indirect
 	github.com/alibabacloud-go/openapi-util v0.1.0 // indirect
+	github.com/alibabacloud-go/tea-oss-utils v1.1.0 // indirect
 	github.com/alibabacloud-go/tea-roa-utils v1.1.5 // indirect
 	github.com/alibabacloud-go/tea-rpc-utils v1.1.2 // indirect
-	github.com/alibabacloud-go/tea-xml v1.1.2 // indirect
+	github.com/alibabacloud-go/tea-xml v1.1.3 // indirect
 	github.com/andybalholm/brotli v1.0.1 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v12 v12.0.0 // indirect

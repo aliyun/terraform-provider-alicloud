@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v3/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -5176,4 +5177,40 @@ func (client *AliyunClient) NewRealtimecomputeClient() (*rpc.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
+}
+
+func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
+	config := &openapi.Config{
+		AccessKeyId:     tea.String(client.config.AccessKey),
+		AccessKeySecret: tea.String(client.config.SecretKey),
+		SecurityToken:   tea.String(client.config.SecurityToken),
+	}
+
+	productCode := "oss"
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+
+	config.Endpoint = tea.String(endpoint)
+	openapiClient, _err := openapi.NewClient(config)
+	if _err != nil {
+		return nil, _err
+	}
+	openapiClient.Spi, _err = ossclient.NewClient()
+	if _err != nil {
+		return nil, _err
+	}
+
+	return openapiClient, nil
 }
