@@ -313,11 +313,13 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_storage": "50",
+					"effective_time":      "Immediately",
 					"order_type":          "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "50",
+						"effective_time":      "Immediately",
 						"order_type":          "UPGRADE",
 					}),
 				),
@@ -373,7 +375,7 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
 			},
 		},
 	})
@@ -590,11 +592,13 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_storage": "50",
+					"effective_time":      "Immediately",
 					"order_type":          "UPGRADE",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_storage": "50",
+						"effective_time":      "Immediately",
 						"order_type":          "UPGRADE",
 					}),
 				),
@@ -633,7 +637,7 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
 			},
 		},
 	})
@@ -745,7 +749,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "order_type", "parameters", "replica_sets"},
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
 			},
 		},
 	})

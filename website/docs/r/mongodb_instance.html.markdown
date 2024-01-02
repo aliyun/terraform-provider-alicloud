@@ -115,6 +115,7 @@ The following arguments are supported:
   - `Update`: update SSL certificate.
 * `maintain_start_time` - (Optional, Available since v1.56.0) The start time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.56.0) The end time of the operation and maintenance time period of the instance, in the format of HH:mmZ (UTC time).
+* `effective_time` - (Optional, Available since v1.215.0) The time when the changed configurations take effect. Valid values: `Immediately`, `MaintainTime`.
 * `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
