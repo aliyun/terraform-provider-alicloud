@@ -23,6 +23,7 @@ func resourceAlicloudLogOssShipper() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		DeprecationMessage: "alicloud_log_oss_shipper is deprecated, use alicloud_log_oss_export instead.",
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
