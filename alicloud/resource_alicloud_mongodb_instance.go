@@ -213,6 +213,11 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"effective_time": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Immediately", "MaintainTime"}, false),
+			},
 			"order_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -655,6 +660,13 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOkExists("readonly_replicas"); ok {
 		modifyDBInstanceSpecReq["ReadonlyReplicas"] = strconv.Itoa(v.(int))
+	}
+
+	if d.HasChange("effective_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("effective_time"); ok {
+		modifyDBInstanceSpecReq["EffectiveTime"] = v
 	}
 
 	if d.HasChange("order_type") {
