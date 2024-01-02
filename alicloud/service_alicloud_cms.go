@@ -38,45 +38,65 @@ func (s *CmsService) BuildCmsAlarmRequest(id string) *requests.CommonRequest {
 
 func (s *CmsService) DescribeAlarm(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeMetricRuleList"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeMetricRuleList"
+
 	request := map[string]interface{}{
 		"RuleIds": id,
 	}
 
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(6*time.Minute, func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InternalError", "ResourceNotFound"}) {
-			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, _ := jsonpath.Get("$.Alarms.Alarm", response)
-	if v == nil {
-		return object, nil
+
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ALB", id)), NotFoundWithResponse, response)
+
+	resp, err := jsonpath.Get("$.Alarms.Alarm", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Alarms.Alarm", response)
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["RuleId"]) == id {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:Alarm", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
