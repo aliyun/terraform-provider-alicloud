@@ -107,6 +107,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 			"qualifier": {
 				Type:         schema.TypeString,
 				Optional:     true,
+				Default:      "LATEST",
 				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 
@@ -157,9 +158,7 @@ func resourceAlicloudFCTriggerCreate(d *schema.ResourceData, meta interface{}) e
 		TriggerType:    StringPointer(d.Get("type").(string)),
 		InvocationRole: StringPointer(d.Get("role").(string)),
 		TriggerConfig:  config,
-	}
-	if v, ok := d.GetOk("qualifier"); ok && v.(string) != "" {
-		object.Qualifier = StringPointer(v.(string))
+		Qualifier:      StringPointer(d.Get("qualifier").(string)),
 	}
 	if v, ok := d.GetOk("source_arn"); ok && v.(string) != "" {
 		object.SourceARN = StringPointer(v.(string))
