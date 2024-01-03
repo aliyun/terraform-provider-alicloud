@@ -118,6 +118,12 @@ func resourceAlicloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta inter
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
+	cmsService := CmsService{client}
+	stateConf := BuildStateConf([]string{}, []string{"FINISH"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cmsService.CmsDynamicTagGroupStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return resourceAlicloudCmsDynamicTagGroupRead(d, meta)
 }
 

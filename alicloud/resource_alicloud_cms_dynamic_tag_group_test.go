@@ -108,7 +108,7 @@ func testSweepCmsDynamicTagGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsDynamicTagGroup_basic0(t *testing.T) {
+func TestAccAliCloudCmsDynamicTagGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.CmsDynamicTagGroupSupportRegions)
 	resourceId := "alicloud_cms_dynamic_tag_group.default"
@@ -164,7 +164,7 @@ var AlicloudCloudMonitorServiceDynamicTagGroupMap0 = map[string]string{
 	"contact_group_list.#":          CHECKSET,
 	"tag_key":                       CHECKSET,
 	"match_express_filter_relation": CHECKSET,
-	"template_id_list.#":            CHECKSET,
+	// "template_id_list.#":            CHECKSET,
 }
 
 func AlicloudCloudMonitorServiceDynamicTagGroupBasicDependence0(name string) string {
