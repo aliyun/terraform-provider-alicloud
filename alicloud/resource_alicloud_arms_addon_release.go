@@ -47,7 +47,6 @@ func resourceAliCloudArmsAddonRelease() *schema.Resource {
 			"aliyun_lang": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 				ForceNew: true,
 			},
 			"create_time": {
@@ -113,17 +112,12 @@ func resourceAliCloudArmsAddonReleaseCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_addon_release", action, AlibabaCloudSdkGoERROR)
 	}
-	code, _ := jsonpath.Get("$.Code", response)
-	if fmt.Sprint(code) != "200" {
-		log.Printf("[DEBUG] Resource alicloud_arms_addon_release InstallAddon Failed!!! %s", response)
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_arms_addon_release", action, AlibabaCloudSdkGoERROR, response)
-	}
 
-	environmentId, _ := jsonpath.Get("$.Data.EnvironmentId", response)
-	releaseName, _ := jsonpath.Get("$.Data.ReleaseName", response)
-	d.SetId(fmt.Sprintf("%v:%v", environmentId, releaseName))
+	DataEnvironmentId, _ := jsonpath.Get("$.Data.EnvironmentId", response)
+	DataReleaseName, _ := jsonpath.Get("$.Data.ReleaseName", response)
+	d.SetId(fmt.Sprintf("%v:%v", DataEnvironmentId, DataReleaseName))
 
-	return resourceAliCloudArmsAddonReleaseRead(d, meta)
+	return resourceAliCloudArmsAddonReleaseUpdate(d, meta)
 }
 
 func resourceAliCloudArmsAddonReleaseRead(d *schema.ResourceData, meta interface{}) error {
@@ -141,6 +135,7 @@ func resourceAliCloudArmsAddonReleaseRead(d *schema.ResourceData, meta interface
 	}
 
 	d.Set("values", objectRaw["Config"])
+
 	release1RawObj, _ := jsonpath.Get("$.Release", objectRaw)
 	release1Raw := make(map[string]interface{})
 	if release1RawObj != nil {
@@ -152,6 +147,10 @@ func resourceAliCloudArmsAddonReleaseRead(d *schema.ResourceData, meta interface
 	d.Set("create_time", release1Raw["CreateTime"])
 	d.Set("addon_release_name", release1Raw["ReleaseName"])
 	d.Set("environment_id", release1Raw["EnvironmentId"])
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("environment_id", parts[0])
+	d.Set("addon_release_name", parts[1])
 
 	return nil
 }
