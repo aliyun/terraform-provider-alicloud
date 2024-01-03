@@ -104,19 +104,13 @@ variable "region" {
 variable "name" {
   default = "tf-testAccAlicloudRIConnection_basic%d"
 }
-resource "alicloud_vpc" "foo" {
-  name = "${var.name}"
-  cidr_block = "172.16.0.0/12"
-}
-resource "alicloud_vpc" "bar" {
-  provider = "alicloud"
-  name = "${var.name}"
-  cidr_block = "192.168.0.0/16"
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING"
 }
 resource "alicloud_router_interface" "initiate" {
   opposite_region = "${var.region}"
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.foo.router_id}"
+  router_id = "${data.alicloud_vpcs.default.vpcs.0.router_id}"
   role = "InitiatingSide"
   specification = "Large.2"
   name = "${var.name}"
@@ -127,7 +121,7 @@ resource "alicloud_router_interface" "opposite" {
   provider = "alicloud"
   opposite_region = "${var.region}"
   router_type = "VRouter"
-  router_id = "${alicloud_vpc.bar.router_id}"
+  router_id = "${data.alicloud_vpcs.default.vpcs.1.router_id}"
   role = "AcceptingSide"
   specification = "Large.1"
   name = "${var.name}-opposite"

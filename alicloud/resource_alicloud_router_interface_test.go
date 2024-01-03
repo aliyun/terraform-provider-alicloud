@@ -296,9 +296,8 @@ variable "name" {
 	default = "tf-testAccRouterInterfaceConfig%d"
 }
 
-resource "alicloud_vpc" "default" {
-	name = "${var.name}"
-	cidr_block = "172.16.0.0/12"
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING"
 }
 
 data "alicloud_regions" "default" {
@@ -309,7 +308,7 @@ resource "alicloud_router_interface" "default" {
 	count = 3
 	opposite_region = "${data.alicloud_regions.default.regions.0.id}"
 	router_type = "VRouter"
-	router_id = "${alicloud_vpc.default.router_id}"
+	router_id = "${data.alicloud_vpcs.default.vpcs.0.router_id}"
 	role = "AcceptingSide"
     instance_charge_type = "PostPaid"
 	name = "${var.name}"
