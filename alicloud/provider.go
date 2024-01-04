@@ -1490,7 +1490,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecp_instance":                                          resourceAlicloudEcpInstance(),
 			"alicloud_dcdn_ipa_domain":                                       resourceAlicloudDcdnIpaDomain(),
 			"alicloud_sddp_data_limit":                                       resourceAlicloudSddpDataLimit(),
-			"alicloud_ecs_image_component":                                   resourceAlicloudEcsImageComponent(),
+			"alicloud_ecs_image_component":                                   resourceAliCloudEcsImageComponent(),
 			"alicloud_sae_application_scaling_rule":                          resourceAlicloudSaeApplicationScalingRule(),
 			"alicloud_sae_grey_tag_route":                                    resourceAliCloudSaeGreyTagRoute(),
 			"alicloud_ecs_snapshot_group":                                    resourceAlicloudEcsSnapshotGroup(),

@@ -1,19 +1,18 @@
 ---
-subcategory: "ECS"
+subcategory: "Ecs"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ecs_image_component"
-sidebar_current: "docs-alicloud-resource-ecs-image-component"
 description: |-
-  Provides a Alicloud ECS Image Component resource.
+  Provides a Alicloud Ecs Image Component resource.
 ---
 
-# alicloud\_ecs\_image\_component
+# alicloud_ecs_image_component
 
-Provides a ECS Image Component resource.
+Provides a Ecs Image Component resource. 
 
-For information about ECS Image Component and how to use it, see [What is Image Component](https://www.alibabacloud.com/help/en/doc-detail/200424.htm).
+For information about Ecs Image Component and how to use it, see [What is Image Component](https://www.alibabacloud.com/help/en/doc-detail/200424.htm).
 
--> **NOTE:** Available in v1.159.0+.
+-> **NOTE:** Available since v1.159.0.
 
 ## Example Usage
 
@@ -40,24 +39,30 @@ resource "alicloud_ecs_image_component" "example" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `component_type` - (Optional, ForceNew, Computed) The type of the image component. Only image building components are supported. Valid values: `Build`.
-* `content` - (Required, ForceNew) The content of the image component. The content can consist of up to 127 commands.
-* `description` - (Optional, ForceNew) The description of the image component. The description must be `2` to `256` characters in length and cannot start with `http://` or `https://`.
-* `image_component_name` - (Optional, Computed, ForceNew) The name of the image component. The name must be `2` to `128` characters in length. It must start with a letter and cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-).
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which to assign the image component.
-* `system_type` - (Optional, ForceNew, Computed) The operating system type supported by the image component. Only Linux is supported. Valid values: `Linux`.
-* `tags` - (Optional, ForceNew) A mapping of tags to assign to the resource.
+* `component_type` - (Optional, ForceNew, Computed) The component type. Currently, only mirror build components are supported. Value: Build.  Default value: Build.
+* `content` - (Required, ForceNew) Component content.
+* `description` - (Optional, ForceNew) Describe the information.
+* `image_component_name` - (Optional, ForceNew, Computed) The component name. The name must be 2 to 128 characters in length and must start with an uppercase letter or a Chinese character. It cannot start with http:// or https. Can contain Chinese, English, numbers, half-length colons (:), underscores (_), half-length periods (.), or dashes (-).  Note: If Name is not set, the return value of ImageComponentId is used by default.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group.
+* `system_type` - (Optional, ForceNew, Computed) The operating system supported by the component. Currently, only Linux systems are supported. Value: Linux.  Default value: Linux.
+* `tags` - (Optional, Map) List of label key-value pairs.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - Component creation time.
 
-* `id` - The resource ID in terraform of Image Component.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Image Component.
+* `delete` - (Defaults to 5 mins) Used when delete the Image Component.
+* `update` - (Defaults to 5 mins) Used when update the Image Component.
 
 ## Import
 
-ECS Image Component can be imported using the id, e.g.
+Ecs Image Component can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_ecs_image_component.example <id>
