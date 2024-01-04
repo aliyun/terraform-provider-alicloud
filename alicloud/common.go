@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -1596,6 +1597,43 @@ func genRoaParam(action, method, version, path string) *openapi.Params {
 		ReqBodyType: tea.String("formData"),
 		BodyType:    tea.String("json"),
 	}
+}
+
+func genXmlParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		ReqBodyType: tea.String("xml"),
+		BodyType:    tea.String("xml"),
+	}
+}
+
+type MyMap map[string]interface{}
+
+type xmlMapEntry struct {
+	XMLName xml.Name
+	Value   interface{} `xml:",chardata"`
+}
+
+func (m MyMap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	if len(m) == 0 {
+		return nil
+	}
+
+	err := e.EncodeToken(start)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range m {
+		e.Encode(xmlMapEntry{XMLName: xml.Name{Local: k}, Value: v})
+	}
+
+	return e.EncodeToken(start.End())
 }
 
 func expandSingletonToList(singleton interface{}) []interface{} {
