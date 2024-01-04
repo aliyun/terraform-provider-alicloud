@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaAccelerator() *schema.Resource {
+func resourceAliCloudGaAccelerator() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaAcceleratorCreate,
-		Read:   resourceAlicloudGaAcceleratorRead,
-		Update: resourceAlicloudGaAcceleratorUpdate,
-		Delete: resourceAlicloudGaAcceleratorDelete,
+		Create: resourceAliCloudGaAcceleratorCreate,
+		Read:   resourceAliCloudGaAcceleratorRead,
+		Update: resourceAliCloudGaAcceleratorUpdate,
+		Delete: resourceAliCloudGaAcceleratorDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -69,10 +69,6 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
-			"auto_renew_duration": {
-				Type:     schema.TypeInt,
-				Optional: true,
-			},
 			"renewal_status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -81,6 +77,11 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 					string(RenewAutoRenewal),
 					string(RenewNormal),
 					string(RenewNotRenewal)}, false),
+			},
+			"auto_renew_duration": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"promotion_option_no": {
 				Type:     schema.TypeString,
@@ -103,7 +104,7 @@ func resourceAlicloudGaAccelerator() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -120,6 +121,7 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 
 	request["RegionId"] = client.RegionId
 	request["AutoPay"] = true
+	request["ClientToken"] = buildClientToken("CreateAccelerator")
 
 	if v, ok := d.GetOk("spec"); ok {
 		request["Spec"] = v
@@ -153,7 +155,6 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	request["ClientToken"] = buildClientToken("CreateAccelerator")
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_accelerator", action, AlibabaCloudSdkGoERROR)
@@ -167,10 +168,10 @@ func resourceAlicloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAcceleratorUpdate(d, meta)
+	return resourceAliCloudGaAcceleratorUpdate(d, meta)
 }
 
-func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -198,11 +199,11 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
+	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
+
 	if v, ok := describeAcceleratorAutoRenewAttributeObject["AutoRenewDuration"]; ok && fmt.Sprint(v) != "0" {
 		d.Set("auto_renew_duration", formatInt(v))
 	}
-
-	d.Set("renewal_status", describeAcceleratorAutoRenewAttributeObject["RenewalStatus"])
 
 	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "accelerator")
 	if err != nil {
@@ -214,7 +215,7 @@ func resourceAlicloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	return nil
 }
 
-func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -234,18 +235,18 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		"AcceleratorId": d.Id(),
 	}
 
-	if d.HasChange("auto_renew_duration") {
-		update = true
-	}
-	if v, ok := d.GetOk("auto_renew_duration"); ok {
-		request["AutoRenewDuration"] = v
-	}
-
 	if d.HasChange("renewal_status") {
 		update = true
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
+	}
+
+	if d.HasChange("auto_renew_duration") {
+		update = true
+	}
+	if v, ok := d.GetOk("auto_renew_duration"); ok {
+		request["AutoRenewDuration"] = v
 	}
 
 	if update {
@@ -275,8 +276,8 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("auto_renew_duration")
 		d.SetPartial("renewal_status")
+		d.SetPartial("auto_renew_duration")
 	}
 
 	update = false
@@ -436,10 +437,10 @@ func resourceAlicloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 
 	d.Partial(false)
 
-	return resourceAlicloudGaAcceleratorRead(d, meta)
+	return resourceAliCloudGaAcceleratorRead(d, meta)
 }
 
-func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteAccelerator"
@@ -460,7 +461,7 @@ func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{
 	}
 
 	if fmt.Sprint(object["InstanceChargeType"]) == "PREPAY" {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudGaAccelerator. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resourceAliCloudGaAccelerator. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 
@@ -475,7 +476,7 @@ func resourceAlicloudGaAcceleratorDelete(d *schema.ResourceData, meta interface{
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

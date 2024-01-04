@@ -45,21 +45,22 @@ The following arguments are supported:
 * `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
-* `cross_border_mode` - (Optional, Available since v1.208.1) The type of cross-border acceleration. Default value: `bgpPro`. Valid values: `bgpPro`, `private`.
+**NOTE:** `cross_border_status` is valid only when `bandwidth_billing_type` is set to `CDT`.
+* `cross_border_mode` - (Optional, Available since v1.208.1) The type of cross-border acceleration. Default value: `bgpPro`. Valid values: `bgpPro`, `private`. **NOTE:** `cross_border_mode` is valid only when `cross_border_status` is set to `true`.
 * `duration` - (Optional, Int) The subscription duration.
-    * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
-    * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
+  * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are 1 to 9.
+  * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are 1 to 3.
 * `pricing_cycle`- (Optional, Available since v1.150.0) The billing cycle of the GA instance. Default value: `Month`. Valid values:
   - `Month`: billed on a monthly basis.
   - `Year`: billed on an annual basis.
 * `auto_use_coupon` - (Optional, Bool) Use coupons to pay bills automatically. Default value: `false`. Valid values:
   - `true`: Use.
   - `false`: Not used.
-* `auto_renew_duration` - (Optional, Int, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
 * `renewal_status` - (Optional, Available since v1.146.0) Whether to renew an accelerator automatically or not. Default value: `Normal`. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+* `auto_renew_duration` - (Optional, Int, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
 * `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
@@ -85,5 +86,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 Ga Accelerator can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_accelerator.example <accelerator_id>
+$ terraform import alicloud_ga_accelerator.example <id>
 ```
