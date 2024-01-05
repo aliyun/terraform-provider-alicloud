@@ -115,6 +115,11 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: IntBetween(0, 256),
 			},
+			"metering_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"mode": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -241,24 +246,24 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	}
 	objectDataLocalMap := make(map[string]interface{})
 	if v := d.Get("encrypt_conf"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].enable", v)
+		nodeNative, _ := jsonpath.Get("$[0].enable", d.Get("encrypt_conf"))
 		if nodeNative != "" {
 			objectDataLocalMap["enable"] = nodeNative
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].encrypt_type", v)
+		nodeNative1, _ := jsonpath.Get("$[0].encrypt_type", d.Get("encrypt_conf"))
 		if nodeNative1 != "" {
 			objectDataLocalMap["encrypt_type"] = nodeNative1
 		}
 		user_cmk_info := make(map[string]interface{})
-		nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
+		nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
 		if nodeNative2 != "" {
 			user_cmk_info["cmk_key_id"] = nodeNative2
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
+		nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
 		if nodeNative3 != "" {
 			user_cmk_info["arn"] = nodeNative3
 		}
-		nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
+		nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
 		if nodeNative4 != "" {
 			user_cmk_info["region_id"] = nodeNative4
 		}
@@ -299,7 +304,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 
 	d.SetId(fmt.Sprintf("%v:%v", *hostMap["project"], request["logstoreName"]))
 
-	return resourceAliCloudSlsLogStoreRead(d, meta)
+	return resourceAliCloudSlsLogStoreUpdate(d, meta)
 }
 
 func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) error {
@@ -355,6 +360,14 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		encryptConfMaps = append(encryptConfMaps, encryptConfMap)
 	}
 	d.Set("encrypt_conf", encryptConfMaps)
+
+	objectRaw, err = slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("metering_mode", objectRaw["meteringMode"])
+
 	parts := strings.Split(d.Id(), ":")
 	d.Set("project_name", parts[0])
 	d.Set("logstore_name", parts[1])
@@ -408,6 +421,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	var body map[string]interface{}
 	var hostMap map[string]*string
 	update := false
+	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	logstore := parts[1]
 	action := fmt.Sprintf("/logstores/%s", logstore)
@@ -421,40 +435,40 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	hostMap = make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 	hostMap["logstore"] = StringPointer(parts[1])
-	if d.HasChange("auto_split") {
+	if !d.IsNewResource() && d.HasChange("auto_split") {
 		update = true
 	}
 	request["autoSplit"] = d.Get("auto_split")
-	if d.HasChange("append_meta") {
+	if !d.IsNewResource() && d.HasChange("append_meta") {
 		update = true
 	}
 	request["appendMeta"] = d.Get("append_meta")
-	if d.HasChange("hot_ttl") {
+	if !d.IsNewResource() && d.HasChange("hot_ttl") {
 		update = true
 	}
 	request["hot_ttl"] = d.Get("hot_ttl")
-	if d.HasChange("mode") {
+	if !d.IsNewResource() && d.HasChange("mode") {
 		update = true
 	}
 	request["mode"] = d.Get("mode")
-	if d.HasChange("retention_period") {
+	if !d.IsNewResource() && d.HasChange("retention_period") {
 		update = true
 	}
 	request["ttl"] = 30
 	if v, ok := d.GetOk("retention_period"); ok {
 		request["ttl"] = v
 	}
-	if d.HasChange("max_split_shard_count") {
+	if !d.IsNewResource() && d.HasChange("max_split_shard_count") {
 		update = true
 	}
 	if v, ok := d.GetOk("max_split_shard_count"); ok {
 		request["maxSplitShard"] = v
 	}
-	if d.HasChange("enable_web_tracking") {
+	if !d.IsNewResource() && d.HasChange("enable_web_tracking") {
 		update = true
 	}
 	request["enable_tracking"] = d.Get("enable_web_tracking")
-	if d.HasChange("encrypt_conf") {
+	if !d.IsNewResource() && d.HasChange("encrypt_conf") {
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
@@ -505,8 +519,60 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		d.SetPartial("auto_split")
+		d.SetPartial("append_meta")
+		d.SetPartial("hot_ttl")
+		d.SetPartial("mode")
+		d.SetPartial("retention_period")
+		d.SetPartial("max_split_shard_count")
+		d.SetPartial("enable_web_tracking")
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	logstore = parts[1]
+	action = fmt.Sprintf("/logstores/%s/meteringmode", logstore)
+	conn, err = client.NewSlsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	hostMap = make(map[string]*string)
+	hostMap["project"] = StringPointer(parts[0])
+	hostMap["logstore"] = StringPointer(parts[1])
+
+	slsServiceV2 := SlsServiceV2{client}
+	objectRaw, _ := slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
+	if d.HasChange("metering_mode") && objectRaw["meteringMode"] != d.Get("metering_mode") {
+		update = true
+	}
+	request["meteringMode"] = d.Get("metering_mode")
+	body = request
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.Execute(genRoaParam("UpdateLogStoreMeteringMode", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("metering_mode")
 	}
 
+	d.Partial(false)
 	return resourceAliCloudSlsLogStoreRead(d, meta)
 }
 

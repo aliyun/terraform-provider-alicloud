@@ -103,6 +103,7 @@ The following arguments are supported:
 * `hot_ttl` - (Optional, Available since 1.202.0) The ttl of hot storage. Default to 30, at least 30, hot storage ttl must be less than ttl.
 * `logstore_name` - (Optional, ForceNew, Available since v1.215.0) The log store, which is unique in the same project. You need to specify one of the attributes: `logstore_name`, `name`.
 * `max_split_shard_count` - (Optional) The maximum number of shards for automatic split, which is in the range of 1 to 256. You must specify this parameter when autoSplit is true.
+* `metering_mode` - (Optional, Available since v1.215.0) Metering mode. The default metering mode of ChargeByFunction, ChargeByDataIngest traffic mode.
 * `mode` - (Optional, Computed, Available since 1.202.0) The mode of storage. Default to `standard`, must be `standard` or `query`, `lite`.
 * `project_name` - (Optional, ForceNew, Available since v1.215.0) The project name to the log store belongs. You need to specify one of the attributes: `project_name`, `project`.
 * `retention_period` - (Optional, Computed) The data retention time (in days). Valid values: [1-3650]. Default to 30. Log store data will be stored permanently when the value is 3650.
