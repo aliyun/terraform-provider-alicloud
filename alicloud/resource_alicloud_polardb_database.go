@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
@@ -44,6 +45,12 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+
+			"account_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -51,17 +58,30 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
+	polarDBService := PolarDBService{client}
 	request := polardb.CreateCreateDatabaseRequest()
 	request.RegionId = client.RegionId
 	request.DBClusterId = d.Get("db_cluster_id").(string)
 	request.DBName = d.Get("db_name").(string)
 	request.CharacterSetName = d.Get("character_set_name").(string)
 
+	cluster, err := polarDBService.DescribePolarDBCluster(request.DBClusterId)
+
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if cluster.DBType == "PostgreSQL" || cluster.DBType == "Oracle" {
+		request.AccountName = d.Get("account_name").(string)
+		request.Collate = "C"
+		request.Ctype = "C"
+	}
+
 	if v, ok := d.GetOk("db_description"); ok && v.(string) != "" {
 		request.DBDescription = v.(string)
 	}
 
-	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.CreateDatabase(request)
 		})
@@ -74,13 +94,14 @@ func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interfac
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
-
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", request.DBClusterId, COLON_SEPARATED, request.DBName))
-
+	if err := polarDBService.WaitForPolarDBDatabase(d.Id(), Running, DefaultLongTimeout); err != nil {
+		return WrapError(err)
+	}
 	return resourceAlicloudPolarDBDatabaseRead(d, meta)
 }
 
@@ -100,10 +121,20 @@ func resourceAlicloudPolarDBDatabaseRead(d *schema.ResourceData, meta interface{
 		d.SetId("")
 		return nil
 	}
+
+	cluster, err := polarDBService.DescribePolarDBCluster(parts[0])
+	if err != nil {
+		return WrapError(err)
+	}
+
 	d.Set("db_cluster_id", parts[0])
 	d.Set("db_name", object.DBName)
-	d.Set("character_set_name", object.CharacterSetName)
+	d.Set("character_set_name", strings.ToLower(object.CharacterSetName))
 	d.Set("db_description", object.DBDescription)
+
+	if cluster.DBType == "PostgreSQL" || cluster.DBType == "Oracle" {
+		d.Set("account_name", object.Accounts.Account[0].AccountName)
+	}
 
 	return nil
 }
