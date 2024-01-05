@@ -1,0 +1,77 @@
+---
+subcategory: "Express Connect"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_express_connect_ec_failover_test_job"
+description: |-
+  Provides a Alicloud Express Connect Ec Failover Test Job resource.
+---
+
+# alicloud_express_connect_ec_failover_test_job
+
+Provides a Express Connect Ec Failover Test Job resource. Express Connect Failover Test Job.
+
+For information about Express Connect Ec Failover Test Job and how to use it, see [What is Ec Failover Test Job](https://www.alibabacloud.com/help/zh/express-connect/developer-reference/api-vpc-2016-04-28-createfailovertestjob-efficiency-channels).
+
+-> **NOTE:** Available since v1.215.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_express_connect_physical_connections" "default" {
+  name_regex = "preserved-NODELETING"
+}
+
+resource "alicloud_express_connect_ec_failover_test_job" "default" {
+  description = var.name
+  job_type    = "StartNow"
+  resource_id = [
+    "${data.alicloud_express_connect_physical_connections.default.ids.0}",
+    "${data.alicloud_express_connect_physical_connections.default.ids.1}",
+    "${data.alicloud_express_connect_physical_connections.default.ids.2}"
+  ]
+  job_duration              = "1"
+  resource_type             = "PHYSICALCONNECTION"
+  ec_failover_test_job_name = var.name
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `description` - (Optional) Job description.
+* `ec_failover_test_job_name` - (Optional) Job name.
+* `job_duration` - (Required) Job duration.
+* `job_type` - (Required, ForceNew) Job type.
+* `resource_id` - (Required) Resource id list.
+* `resource_type` - (Required, ForceNew) Resource type.
+* `status` - (Optional, Computed) The status of the resource.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Ec Failover Test Job.
+* `delete` - (Defaults to 5 mins) Used when delete the Ec Failover Test Job.
+* `update` - (Defaults to 5 mins) Used when update the Ec Failover Test Job.
+
+## Import
+
+Express Connect Ec Failover Test Job can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_express_connect_ec_failover_test_job.example <id>
+```
