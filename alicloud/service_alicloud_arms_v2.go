@@ -265,10 +265,6 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			for i, key := range removedTagKeys {
-				request[fmt.Sprintf("TagKey.%d", i+1)] = key
-			}
-
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -856,3 +852,78 @@ func (s *ArmsServiceV2) ArmsSyntheticTaskStateRefreshFunc(id string, field strin
 }
 
 // DescribeArmsSyntheticTask >>> Encapsulated.
+
+// DescribeArmsGrafanaWorkspace <<< Encapsulated get interface for Arms GrafanaWorkspace.
+
+func (s *ArmsServiceV2) DescribeArmsGrafanaWorkspace(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "GetGrafanaWorkspace"
+	conn, err := client.NewArmsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["GrafanaWorkspaceId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-08-08"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
+	}
+
+	currentStatus := v.(map[string]interface{})["status"]
+	if currentStatus == "DeleteSucceed" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("GrafanaWorkspace", id)), NotFoundMsg, response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *ArmsServiceV2) ArmsGrafanaWorkspaceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeArmsGrafanaWorkspace(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeArmsGrafanaWorkspace >>> Encapsulated.
