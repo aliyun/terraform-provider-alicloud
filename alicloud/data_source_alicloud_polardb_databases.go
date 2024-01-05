@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -124,7 +125,7 @@ func dataSourceAlicloudPolarDBDatabasesRead(d *schema.ResourceData, meta interfa
 				nodes = append(nodes, nodeMap)
 			}
 			mapping := map[string]interface{}{
-				"character_set_name": item.CharacterSetName,
+				"character_set_name": strings.ToLower(item.CharacterSetName),
 				"db_description":     item.DBDescription,
 				"db_name":            item.DBName,
 				"db_status":          item.DBStatus,

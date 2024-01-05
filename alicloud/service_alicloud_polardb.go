@@ -682,6 +682,9 @@ func (s *PolarDBService) WaitForPolarDBDatabase(id string, status Status, timeou
 				if status == Deleted {
 					return nil
 				}
+				if status == Running {
+					continue
+				}
 			}
 			return WrapError(err)
 		}

@@ -8,24 +8,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudPolarDBClusterDatabasesDataSource(t *testing.T) {
+func TestAccAliCloudPolarDBClusterDatabasesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 
 	idConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+		existConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
 			"name_regex":    `"${alicloud_polardb_database.database.db_name}"`,
 		}),
-		fakeConfig: testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
+		fakeConfig: testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand, map[string]string{
 			"db_cluster_id": `"${alicloud_polardb_database.database.db_cluster_id}"`,
 			"name_regex":    `"^test1234"`,
 		}),
@@ -58,7 +58,7 @@ func TestAccAlicloudPolarDBClusterDatabasesDataSource(t *testing.T) {
 	PolarClusterCheckInfo.dataSourceTestCheck(t, rand, idConf, allConf)
 }
 
-func testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand int, attrMap map[string]string) string {
+func testAccCheckAliCloudPolarClusterDatabasesDataSourceConfig(rand int, attrMap map[string]string) string {
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
@@ -81,6 +81,7 @@ func testAccCheckAlicloudPolarClusterDatabasesDataSourceConfig(rand int, attrMap
 	  db_version        = "8.0"
       pay_type          = "PostPaid"
       db_node_class     = data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class
+      vswitch_id 		= local.vswitch_id
 	  description       = "${var.name}"
 	}
 

@@ -7,11 +7,11 @@ description: |-
   Provides a PolarDB database resource.
 ---
 
-# alicloud\_polardb\_database
+# alicloud_polardb_database
 
 Provides a PolarDB database resource. A database deployed in a PolarDB cluster. A PolarDB cluster can own multiple databases.
 
--> **NOTE:** Available in v1.66.0+.
+-> **NOTE:** Available since v1.66.0.
 
 ## Example Usage
 
@@ -20,6 +20,7 @@ data "alicloud_polardb_node_classes" "default" {
   db_type    = "MySQL"
   db_version = "8.0"
   pay_type   = "PostPaid"
+  category   = "Normal"
 }
 
 resource "alicloud_vpc" "default" {
@@ -55,8 +56,9 @@ The following arguments are supported:
 
 * `db_cluster_id` - (Required, ForceNew) The Id of cluster that can run database.
 * `db_name` - (Required, ForceNew) Name of the database requiring a uniqueness check. It may consist of lower case letters, numbers, and underlines, and must start with a letterand have no more than 64 characters.
-* `character_set_name` - (Optional,ForceNew) Character set. The value range is limited to the following: [ utf8, gbk, latin1, utf8mb4, Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ], default is "utf8" \(`utf8mb4` only supports versions 5.5 and 5.6\).
+* `character_set_name` - (Optional, ForceNew) Character set. The value range is limited to the following: [ utf8, gbk, latin1, utf8mb4, Chinese_PRC_CI_AS, Chinese_PRC_CS_AS, SQL_Latin1_General_CP1_CI_AS, SQL_Latin1_General_CP1_CS_AS, Chinese_PRC_BIN ], default is "utf8" \(`utf8mb4` only supports versions 5.5 and 5.6\).
 * `db_description` - (Optional) Database description. It must start with a Chinese character or English letter, cannot start with "http://" or "https://". It can include Chinese and English characters, underlines (_), hyphens (-), and numbers. The length must be 2-256 characters.
+* `account_name` - (Optional, ForceNew) Account name authorized to access the database. Only supports PostgreSQL.
 
 ## Attributes Reference
 
