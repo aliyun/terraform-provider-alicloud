@@ -109,13 +109,13 @@ The following arguments are supported:
 
 * `dry_run` - (Optional) The dry run.
 * `health_check_config` - (Optional) The configuration of health checks. See [`health_check_config`](#health_check_config) below for details.
-* `protocol` - (Optional, ForceNew) The server protocol. Valid values: ` HTTPS`, `HTTP`.
+* `protocol` - (Optional, ForceNew) The server protocol. Valid values: ` HTTPS`, `HTTP`. While `server_group_type` is `Fc` this parameter will not take effect.
 * `resource_group_id` - (Optional) The ID of the resource group.
 * `scheduler` - (Optional) The scheduling algorithm. Valid values: ` Sch`, ` Wlc`, `Wrr`.
 * `server_group_name` - (Optional) The name of the resource.
 * `servers` - (Optional) The backend server. See [`servers`](#servers) below for details.
 * `sticky_session_config` - (Optional, ForceNew) The configuration of the sticky session. See [`sticky_session_config`](#sticky_session_config) below for details.
-* `vpc_id` - (Optional, ForceNew) The ID of the VPC that you want to access.
+* `vpc_id` - (Optional, ForceNew) The ID of the VPC that you want to access. While `server_group_type` is `Fc` this parameter will not take effect.
 * `server_group_type` - (Optional, ForceNew, Available in v1.193.0+) The type of the server group. Valid values:
   - `Instance` (default): allows you add servers by specifying Ecs, Ens, or Eci.
   - `Ip`: allows you to add servers by specifying IP addresses.

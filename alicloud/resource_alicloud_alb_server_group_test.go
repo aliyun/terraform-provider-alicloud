@@ -577,7 +577,6 @@ func TestAccAlicloudALBServerGroup_Fc(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"server_group_type": "Fc",
-					"protocol":          "HTTP",
 					"server_group_name": "${var.name}",
 					"health_check_config": []map[string]interface{}{
 						{
@@ -593,7 +592,6 @@ func TestAccAlicloudALBServerGroup_Fc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"server_group_type":       "Fc",
-						"protocol":                "HTTP",
 						"server_group_name":       name,
 						"sticky_session_config.#": "1",
 						"health_check_config.#":   "1",
