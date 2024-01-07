@@ -26,6 +26,7 @@ func resourceAlicloudAlbServerGroup() *schema.Resource {
 			Delete: schema.DefaultTimeout(6 * time.Minute),
 			Update: schema.DefaultTimeout(6 * time.Minute),
 		},
+		CustomizeDiff: resourceAlbServerGroupCustomizeDiff,
 		Schema: map[string]*schema.Schema{
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -725,6 +726,20 @@ func resourceAlicloudAlbServerGroupDelete(d *schema.ResourceData, meta interface
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	return nil
+}
+
+func resourceAlbServerGroupCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+	groupType := diff.Get("server_group_type").(string)
+	if groupType == "Fc" {
+		// Fc load balancers do not support vpc_id, protocol
+		if diff.Get("vpc_id") != "" {
+			return fmt.Errorf("fc server group type do not support vpc_id")
+		}
+		if diff.Get("protocol") != "" {
+			return fmt.Errorf("fc server group type do not support protocol")
+		}
 	}
 	return nil
 }
