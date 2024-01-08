@@ -1647,3 +1647,18 @@ func MD5(b []byte) string {
 	ctx.Write(b)
 	return hex.EncodeToString(ctx.Sum(nil))
 }
+
+func ConvertTags(tagsMap map[string]interface{}) []map[string]interface{} {
+	tags := make([]map[string]interface{}, 0)
+	for key, value := range tagsMap {
+		if value != nil {
+			if v, ok := value.(string); ok {
+				tags = append(tags, map[string]interface{}{
+					"Key":   key,
+					"Value": v,
+				})
+			}
+		}
+	}
+	return tags
+}
