@@ -254,20 +254,23 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		if nodeNative1 != "" {
 			objectDataLocalMap["encrypt_type"] = nodeNative1
 		}
-		user_cmk_info := make(map[string]interface{})
-		nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
-		if nodeNative2 != "" {
-			user_cmk_info["cmk_key_id"] = nodeNative2
+		user_cmk_info_map, _ := jsonpath.Get("$[0].user_cmk_info[0]", v)
+		if !IsNil(user_cmk_info_map) {
+			user_cmk_info := make(map[string]interface{})
+			nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
+			if nodeNative2 != "" {
+				user_cmk_info["cmk_key_id"] = nodeNative2
+			}
+			nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
+			if nodeNative3 != "" {
+				user_cmk_info["arn"] = nodeNative3
+			}
+			nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
+			if nodeNative4 != "" {
+				user_cmk_info["region_id"] = nodeNative4
+			}
+			objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
-		if nodeNative3 != "" {
-			user_cmk_info["arn"] = nodeNative3
-		}
-		nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
-		if nodeNative4 != "" {
-			user_cmk_info["region_id"] = nodeNative4
-		}
-		objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		request["encrypt_conf"] = objectDataLocalMap
 	}
 
@@ -481,20 +484,23 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		if nodeNative1 != "" {
 			objectDataLocalMap["encrypt_type"] = nodeNative1
 		}
-		user_cmk_info := make(map[string]interface{})
-		nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
-		if nodeNative2 != "" {
-			user_cmk_info["cmk_key_id"] = nodeNative2
+		user_cmk_info_map, _ := jsonpath.Get("$[0].user_cmk_info[0]", v)
+		if !IsNil(user_cmk_info_map) {
+			user_cmk_info := make(map[string]interface{})
+			nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
+			if nodeNative2 != "" {
+				user_cmk_info["cmk_key_id"] = nodeNative2
+			}
+			nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
+			if nodeNative3 != "" {
+				user_cmk_info["arn"] = nodeNative3
+			}
+			nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
+			if nodeNative4 != "" {
+				user_cmk_info["region_id"] = nodeNative4
+			}
+			objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
-		if nodeNative3 != "" {
-			user_cmk_info["arn"] = nodeNative3
-		}
-		nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
-		if nodeNative4 != "" {
-			user_cmk_info["region_id"] = nodeNative4
-		}
-		objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		request["encrypt_conf"] = objectDataLocalMap
 	}
 

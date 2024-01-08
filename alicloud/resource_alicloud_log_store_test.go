@@ -470,6 +470,138 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
+	var v *sls.LogStore
+	resourceId := "alicloud_log_store.default"
+	ra := resourceAttrInit(resourceId, logStoreMap)
+	serviceFunc := func() interface{} {
+		return &LogService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-log-store-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceLogStoreConfigDependenceWithEncrypt)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"project":     "${alicloud_log_project.foo.name}",
+					"shard_count": "1",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "default",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":           name,
+						"project":        name,
+						"shard_count":    "1",
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "m4",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "${alicloud_kms_key.key.id}",
+									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
+									"region_id":  os.Getenv("ALICLOUD_REGION"),
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "false",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "${alicloud_kms_key.key.id}",
+									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
+									"region_id":  os.Getenv("ALICLOUD_REGION"),
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "${alicloud_kms_key.key.id}",
+									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
+									"region_id":  os.Getenv("ALICLOUD_REGION"),
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudLogStore_create_with_encrypt_enable(t *testing.T) {
 	var v *sls.LogStore
 	resourceId := "alicloud_log_store.default"
