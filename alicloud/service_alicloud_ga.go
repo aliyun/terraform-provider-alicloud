@@ -197,36 +197,52 @@ func (s *GaService) GaBandwidthPackageStateRefreshFunc(id string, failStates []s
 
 func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeEndpointGroup"
+
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeEndpointGroup"
+
 	request := map[string]interface{}{
 		"RegionId":        s.client.RegionId,
 		"EndpointGroupId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.EndPointGroup"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("GaEndpointGroup", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return nil, WrapErrorf(Error(GetNotFoundMessage("Ga:EndpointGroup", id)), NotFoundWithResponse, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	if object["State"] == nil {
-		err = WrapErrorf(Error(GetNotFoundMessage("GaEndpointGroup", id)), NotFoundMsg, ProviderERROR)
-		return object, err
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:EndpointGroup", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 

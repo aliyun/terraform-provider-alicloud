@@ -103,10 +103,13 @@ The following arguments are supported:
 -> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
 * `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid values: `HTTP`, `HTTPS`.
 -> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
-* `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
+* `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
+  - `true`: Enables the health check feature.
+  - `false`: Disables the health check feature.
 * `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
 * `health_check_port` - (Optional, Int) The port that is used for health checks.
 * `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
+* `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
 * `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
 * `name` - (Optional) The name of the endpoint group.
@@ -116,16 +119,9 @@ The following arguments are supported:
 -> **NOTE:** Port mapping is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. The listening port in the port map must be consistent with the listening port of the current listening instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
 
-### `port_overrides`
-
-The port_overrides supports the following: 
-
-* `endpoint_port` - (Optional, Int) Forwarding port.
-* `listener_port` - (Optional, Int) Listener port.
-
 ### `endpoint_configurations`
 
-The endpoint_configurations supports the following: 
+The endpoint_configurations supports the following:
 
 * `endpoint` - (Required) The IP address or domain name of Endpoint N in the endpoint group.
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
@@ -134,15 +130,22 @@ The endpoint_configurations supports the following:
   - `PublicIp`: an Alibaba Cloud public IP address.
   - `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance.
   - `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
--> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
+    -> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
--> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+  -> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
 * `enable_clientip_preservation` - (Optional, Bool) Indicates whether client IP addresses are reserved. Default Value: `false`. Valid values:
   - `true`: Client IP addresses are reserved.
   - `false`: Client IP addresses are not reserved.
+
+### `port_overrides`
+
+The port_overrides supports the following: 
+
+* `endpoint_port` - (Optional, Int) Forwarding port.
+* `listener_port` - (Optional, Int) Listener port.
 
 ## Attributes Reference
 
