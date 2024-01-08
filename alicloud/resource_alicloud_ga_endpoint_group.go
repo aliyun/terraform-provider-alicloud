@@ -54,8 +54,8 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
-			"health_check_interval_seconds": {
-				Type:     schema.TypeInt,
+			"health_check_enabled": {
+				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"health_check_path": {
@@ -70,6 +70,10 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"http", "https", "tcp"}, false),
+			},
+			"health_check_interval_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"threshold_count": {
 				Type:     schema.TypeInt,
@@ -174,15 +178,15 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["EndpointRequestProtocol"] = v
 	}
 
-	if v, ok := d.GetOk("health_check_interval_seconds"); ok {
-		request["HealthCheckIntervalSeconds"] = v
+	if v, ok := d.GetOkExists("health_check_enabled"); ok {
+		request["HealthCheckEnabled"] = v
 	}
 
 	if v, ok := d.GetOk("health_check_path"); ok {
 		request["HealthCheckPath"] = v
 	}
 
-	if v, ok := d.GetOk("health_check_port"); ok {
+	if v, ok := d.GetOkExists("health_check_port"); ok {
 		request["HealthCheckPort"] = v
 	}
 
@@ -190,11 +194,15 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["HealthCheckProtocol"] = v
 	}
 
-	if v, ok := d.GetOk("threshold_count"); ok {
+	if v, ok := d.GetOkExists("health_check_interval_seconds"); ok {
+		request["HealthCheckIntervalSeconds"] = v
+	}
+
+	if v, ok := d.GetOkExists("threshold_count"); ok {
 		request["ThresholdCount"] = v
 	}
 
-	if v, ok := d.GetOk("traffic_percentage"); ok {
+	if v, ok := d.GetOkExists("traffic_percentage"); ok {
 		request["TrafficPercentage"] = v
 	}
 
@@ -206,27 +214,47 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		request["Description"] = v
 	}
 
-	EndpointConfigurations := make([]map[string]interface{}, len(d.Get("endpoint_configurations").([]interface{})))
-	for i, EndpointConfigurationsValue := range d.Get("endpoint_configurations").([]interface{}) {
-		EndpointConfigurationsMap := EndpointConfigurationsValue.(map[string]interface{})
-		EndpointConfigurations[i] = make(map[string]interface{})
-		EndpointConfigurations[i]["Endpoint"] = EndpointConfigurationsMap["endpoint"]
-		EndpointConfigurations[i]["Type"] = EndpointConfigurationsMap["type"]
-		EndpointConfigurations[i]["Weight"] = EndpointConfigurationsMap["weight"]
-		EndpointConfigurations[i]["EnableProxyProtocol"] = EndpointConfigurationsMap["enable_proxy_protocol"]
-		EndpointConfigurations[i]["EnableClientIPPreservation"] = EndpointConfigurationsMap["enable_clientip_preservation"]
+	endpointConfigurations := d.Get("endpoint_configurations")
+	endpointConfigurationsMaps := make([]map[string]interface{}, 0)
+	for _, endpointConfigurationsList := range endpointConfigurations.([]interface{}) {
+		endpointConfigurationsMap := map[string]interface{}{}
+		endpointConfigurationsArg := endpointConfigurationsList.(map[string]interface{})
+
+		endpointConfigurationsMap["Endpoint"] = endpointConfigurationsArg["endpoint"]
+		endpointConfigurationsMap["Type"] = endpointConfigurationsArg["type"]
+		endpointConfigurationsMap["Weight"] = endpointConfigurationsArg["weight"]
+
+		if enableProxyProtocol, ok := endpointConfigurationsArg["enable_proxy_protocol"]; ok {
+			endpointConfigurationsMap["EnableProxyProtocol"] = enableProxyProtocol
+		}
+
+		if enableClientIPPreservation, ok := endpointConfigurationsArg["enable_clientip_preservation"]; ok {
+			endpointConfigurationsMap["EnableClientIPPreservation"] = enableClientIPPreservation
+		}
+
+		endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
 	}
-	request["EndpointConfigurations"] = EndpointConfigurations
+
+	request["EndpointConfigurations"] = endpointConfigurationsMaps
 
 	if v, ok := d.GetOk("port_overrides"); ok {
-		PortOverrides := make([]map[string]interface{}, len(v.([]interface{})))
-		for i, PortOverridesValue := range v.([]interface{}) {
-			PortOverridesMap := PortOverridesValue.(map[string]interface{})
-			PortOverrides[i] = make(map[string]interface{})
-			PortOverrides[i]["EndpointPort"] = PortOverridesMap["endpoint_port"]
-			PortOverrides[i]["ListenerPort"] = PortOverridesMap["listener_port"]
+		portOverridesMaps := make([]map[string]interface{}, 0)
+		for _, portOverrides := range v.([]interface{}) {
+			portOverridesMap := map[string]interface{}{}
+			portOverridesArg := portOverrides.(map[string]interface{})
+
+			if endpointPort, ok := portOverridesArg["endpoint_port"]; ok {
+				portOverridesMap["EndpointPort"] = endpointPort
+			}
+
+			if listenerPort, ok := portOverridesArg["listener_port"]; ok {
+				portOverridesMap["ListenerPort"] = listenerPort
+			}
+
+			portOverridesMaps = append(portOverridesMaps, portOverridesMap)
 		}
-		request["PortOverrides"] = PortOverrides
+
+		request["PortOverrides"] = portOverridesMaps
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -263,6 +291,7 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
+
 	object, err := gaService.DescribeGaEndpointGroup(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -272,59 +301,80 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object["Description"])
 
-	endpointConfigurations := make([]map[string]interface{}, 0)
-	if endpointConfigurationsList, ok := object["EndpointConfigurations"].([]interface{}); ok {
-		for _, v := range endpointConfigurationsList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"endpoint":                     m1["Endpoint"],
-					"type":                         m1["Type"],
-					"weight":                       m1["Weight"],
-					"enable_proxy_protocol":        m1["EnableProxyProtocol"],
-					"enable_clientip_preservation": m1["EnableClientIPPreservation"],
-				}
-				endpointConfigurations = append(endpointConfigurations, temp1)
-
-			}
-		}
-	}
-
-	if err := d.Set("endpoint_configurations", endpointConfigurations); err != nil {
-		return WrapError(err)
-	}
+	d.Set("accelerator_id", object["AcceleratorId"])
+	d.Set("listener_id", object["ListenerId"])
 	d.Set("endpoint_group_region", object["EndpointGroupRegion"])
-	d.Set("health_check_interval_seconds", formatInt(object["HealthCheckIntervalSeconds"]))
+	d.Set("endpoint_group_type", object["EndpointGroupType"])
+	d.Set("endpoint_request_protocol", object["EndpointRequestProtocol"])
+	d.Set("health_check_enabled", object["HealthCheckEnabled"])
 	d.Set("health_check_path", object["HealthCheckPath"])
 	d.Set("health_check_port", formatInt(object["HealthCheckPort"]))
 	d.Set("health_check_protocol", object["HealthCheckProtocol"])
-	d.Set("listener_id", object["ListenerId"])
+	d.Set("health_check_interval_seconds", formatInt(object["HealthCheckIntervalSeconds"]))
+	d.Set("threshold_count", formatInt(object["ThresholdCount"]))
+	d.Set("traffic_percentage", formatInt(object["TrafficPercentage"]))
 	d.Set("name", object["Name"])
-	d.Set("accelerator_id", object["AcceleratorId"])
-	d.Set("endpoint_group_type", object["EndpointGroupType"])
-	d.Set("endpoint_request_protocol", object["EndpointRequestProtocol"])
-	portOverrides := make([]map[string]interface{}, 0)
-	if portOverridesList, ok := object["PortOverrides"].([]interface{}); ok {
-		for _, v := range portOverridesList {
-			if m1, ok := v.(map[string]interface{}); ok {
-				temp1 := map[string]interface{}{
-					"endpoint_port": m1["EndpointPort"],
-					"listener_port": m1["ListenerPort"],
-				}
-				portOverrides = append(portOverrides, temp1)
+	d.Set("description", object["Description"])
 
+	if endpointConfigurations, ok := object["EndpointConfigurations"]; ok {
+		endpointConfigurationsMaps := make([]map[string]interface{}, 0)
+		for _, endpointConfigurationsList := range endpointConfigurations.([]interface{}) {
+			endpointConfigurationsArg := endpointConfigurationsList.(map[string]interface{})
+			endpointConfigurationsMap := make(map[string]interface{})
+
+			if endpoint, ok := endpointConfigurationsArg["Endpoint"]; ok {
+				endpointConfigurationsMap["endpoint"] = endpoint
 			}
+
+			if endpointType, ok := endpointConfigurationsArg["Type"]; ok {
+				endpointConfigurationsMap["type"] = endpointType
+			}
+
+			if weight, ok := endpointConfigurationsArg["Weight"]; ok {
+				endpointConfigurationsMap["weight"] = weight
+			}
+
+			if enableProxyProtocol, ok := endpointConfigurationsArg["EnableProxyProtocol"]; ok {
+				endpointConfigurationsMap["enable_proxy_protocol"] = enableProxyProtocol
+			}
+
+			if enableClientIPPreservation, ok := endpointConfigurationsArg["EnableClientIPPreservation"]; ok {
+				endpointConfigurationsMap["enable_clientip_preservation"] = enableClientIPPreservation
+			}
+
+			endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
+		}
+
+		if err := d.Set("endpoint_configurations", endpointConfigurationsMaps); err != nil {
+			return WrapError(err)
 		}
 	}
-	if err := d.Set("port_overrides", portOverrides); err != nil {
-		return WrapError(err)
+
+	if portOverrides, ok := object["PortOverrides"]; ok {
+		portOverridesMaps := make([]map[string]interface{}, 0)
+		for _, portOverridesList := range portOverrides.([]interface{}) {
+			portOverridesArg := portOverridesList.(map[string]interface{})
+			portOverridesMap := make(map[string]interface{})
+
+			if endpointPort, ok := portOverridesArg["EndpointPort"]; ok {
+				portOverridesMap["endpoint_port"] = endpointPort
+			}
+
+			if listenerPort, ok := portOverridesArg["ListenerPort"]; ok {
+				portOverridesMap["listener_port"] = listenerPort
+			}
+
+			portOverridesMaps = append(portOverridesMaps, portOverridesMap)
+		}
+
+		if err := d.Set("port_overrides", portOverridesMaps); err != nil {
+			return WrapError(err)
+		}
 	}
 
 	d.Set("endpoint_group_ip_list", object["EndpointGroupIpList"])
 	d.Set("status", object["State"])
-	d.Set("threshold_count", formatInt(object["ThresholdCount"]))
-	d.Set("traffic_percentage", formatInt(object["TrafficPercentage"]))
 
 	listTagResourcesObject, err := gaService.ListTagResources(d.Id(), "endpointgroup")
 	if err != nil {
@@ -338,61 +388,74 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 
 func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	gaService := GaService{client}
 	var response map[string]interface{}
-	update := false
-	request := map[string]interface{}{
-		"EndpointGroupId": d.Id(),
-	}
+	d.Partial(true)
 
 	if d.HasChange("tags") {
 		if err := gaService.SetResourceTags(d, "endpointgroup"); err != nil {
 			return WrapError(err)
 		}
+
 		d.SetPartial("tags")
 	}
 
-	request["RegionId"] = client.RegionId
-	request["EndpointGroupRegion"] = d.Get("endpoint_group_region")
+	update := false
+	request := map[string]interface{}{
+		"RegionId":            client.RegionId,
+		"ClientToken":         buildClientToken("UpdateEndpointGroup"),
+		"EndpointGroupRegion": d.Get("endpoint_group_region"),
+		"EndpointGroupId":     d.Id(),
+	}
 
-	if !d.IsNewResource() && d.HasChange("health_check_interval_seconds") {
+	if !d.IsNewResource() && d.HasChange("endpoint_request_protocol") {
 		update = true
-		request["HealthCheckIntervalSeconds"] = d.Get("health_check_interval_seconds")
+	}
+	if v, ok := d.GetOk("endpoint_request_protocol"); ok {
+		request["EndpointRequestProtocol"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("health_check_enabled") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("health_check_enabled"); ok {
+		request["HealthCheckEnabled"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_path") {
 		update = true
-		request["HealthCheckPath"] = d.Get("health_check_path")
+	}
+	if v, ok := d.GetOk("health_check_path"); ok {
+		request["HealthCheckPath"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_port") {
 		update = true
-		request["HealthCheckPort"] = d.Get("health_check_port")
+
+		if v, ok := d.GetOkExists("health_check_port"); ok {
+			request["HealthCheckPort"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_protocol") {
 		update = true
-		request["HealthCheckProtocol"] = d.Get("health_check_protocol")
+	}
+	if v, ok := d.GetOk("health_check_protocol"); ok {
+		request["HealthCheckProtocol"] = v
 	}
 
-	if !d.IsNewResource() && d.HasChange("name") {
+	if !d.IsNewResource() && d.HasChange("health_check_interval_seconds") {
 		update = true
-		request["Name"] = d.Get("name")
-	}
 
-	if !d.IsNewResource() && d.HasChange("description") {
-		update = true
-		request["Description"] = d.Get("description")
+		if v, ok := d.GetOkExists("health_check_interval_seconds"); ok {
+			request["HealthCheckIntervalSeconds"] = v
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("threshold_count") {
 		update = true
 	}
-	if v, ok := d.GetOk("threshold_count"); ok {
+	if v, ok := d.GetOkExists("threshold_count"); ok {
 		request["ThresholdCount"] = v
 	}
 
@@ -404,44 +467,80 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("name") {
+		update = true
+	}
+	if v, ok := d.GetOk("name"); ok {
+		request["Name"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
 	if !d.IsNewResource() && d.HasChange("endpoint_configurations") {
 		update = true
 	}
-	EndpointConfigurations := make([]map[string]interface{}, len(d.Get("endpoint_configurations").([]interface{})))
-	for i, EndpointConfigurationsValue := range d.Get("endpoint_configurations").([]interface{}) {
-		EndpointConfigurationsMap := EndpointConfigurationsValue.(map[string]interface{})
-		EndpointConfigurations[i] = make(map[string]interface{})
-		EndpointConfigurations[i]["Endpoint"] = EndpointConfigurationsMap["endpoint"]
-		EndpointConfigurations[i]["Type"] = EndpointConfigurationsMap["type"]
-		EndpointConfigurations[i]["Weight"] = EndpointConfigurationsMap["weight"]
-		EndpointConfigurations[i]["EnableProxyProtocol"] = EndpointConfigurationsMap["enable_proxy_protocol"]
-		EndpointConfigurations[i]["EnableClientIPPreservation"] = EndpointConfigurationsMap["enable_clientip_preservation"]
+	endpointConfigurations := d.Get("endpoint_configurations")
+	endpointConfigurationsMaps := make([]map[string]interface{}, 0)
+	for _, endpointConfigurationsList := range endpointConfigurations.([]interface{}) {
+		endpointConfigurationsMap := map[string]interface{}{}
+		endpointConfigurationsArg := endpointConfigurationsList.(map[string]interface{})
+
+		endpointConfigurationsMap["Endpoint"] = endpointConfigurationsArg["endpoint"]
+		endpointConfigurationsMap["Type"] = endpointConfigurationsArg["type"]
+		endpointConfigurationsMap["Weight"] = endpointConfigurationsArg["weight"]
+
+		if enableProxyProtocol, ok := endpointConfigurationsArg["enable_proxy_protocol"]; ok {
+			endpointConfigurationsMap["EnableProxyProtocol"] = enableProxyProtocol
+		}
+
+		if enableClientIPPreservation, ok := endpointConfigurationsArg["enable_clientip_preservation"]; ok {
+			endpointConfigurationsMap["EnableClientIPPreservation"] = enableClientIPPreservation
+		}
+
+		endpointConfigurationsMaps = append(endpointConfigurationsMaps, endpointConfigurationsMap)
 	}
-	request["EndpointConfigurations"] = EndpointConfigurations
+
+	request["EndpointConfigurations"] = endpointConfigurationsMaps
 
 	if !d.IsNewResource() && d.HasChange("port_overrides") {
 		update = true
 	}
-	PortOverrides := make([]map[string]interface{}, len(d.Get("port_overrides").([]interface{})))
-	for i, PortOverridesValue := range d.Get("port_overrides").([]interface{}) {
-		PortOverridesMap := PortOverridesValue.(map[string]interface{})
-		PortOverrides[i] = make(map[string]interface{})
-		PortOverrides[i]["EndpointPort"] = PortOverridesMap["endpoint_port"]
-		PortOverrides[i]["ListenerPort"] = PortOverridesMap["listener_port"]
-	}
-	request["PortOverrides"] = PortOverrides
+	if v, ok := d.GetOk("port_overrides"); ok {
+		portOverridesMaps := make([]map[string]interface{}, 0)
+		for _, portOverrides := range v.([]interface{}) {
+			portOverridesMap := map[string]interface{}{}
+			portOverridesArg := portOverrides.(map[string]interface{})
 
-	if update {
-		if v, ok := d.GetOk("endpoint_request_protocol"); ok {
-			request["EndpointRequestProtocol"] = v
+			if endpointPort, ok := portOverridesArg["endpoint_port"]; ok {
+				portOverridesMap["EndpointPort"] = endpointPort
+			}
+
+			if listenerPort, ok := portOverridesArg["listener_port"]; ok {
+				portOverridesMap["ListenerPort"] = listenerPort
+			}
+
+			portOverridesMaps = append(portOverridesMaps, portOverridesMap)
 		}
 
+		request["PortOverrides"] = portOverridesMaps
+	}
+
+	if update {
 		action := "UpdateEndpointGroup"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken("UpdateEndpointGroup")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || NeedRetry(err) {
@@ -463,17 +562,21 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("health_check_interval_seconds")
+		d.SetPartial("endpoint_request_protocol")
+		d.SetPartial("health_check_enabled")
 		d.SetPartial("health_check_path")
 		d.SetPartial("health_check_port")
 		d.SetPartial("health_check_protocol")
-		d.SetPartial("name")
-		d.SetPartial("description")
+		d.SetPartial("health_check_interval_seconds")
 		d.SetPartial("threshold_count")
 		d.SetPartial("traffic_percentage")
+		d.SetPartial("name")
+		d.SetPartial("description")
 		d.SetPartial("endpoint_configurations")
 		d.SetPartial("port_overrides")
 	}
+
+	d.Partial(false)
 
 	return resourceAliCloudGaEndpointGroupRead(d, meta)
 }
@@ -483,20 +586,22 @@ func resourceAliCloudGaEndpointGroupDelete(d *schema.ResourceData, meta interfac
 	gaService := GaService{client}
 	action := "DeleteEndpointGroup"
 	var response map[string]interface{}
+
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
+		"ClientToken":     buildClientToken("DeleteEndpointGroup"),
+		"AcceleratorId":   d.Get("accelerator_id"),
 		"EndpointGroupId": d.Id(),
 	}
 
-	request["AcceleratorId"] = d.Get("accelerator_id")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || NeedRetry(err) {

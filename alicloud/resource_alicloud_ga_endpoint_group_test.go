@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
+func TestAccAliCloudGaEndpointGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_endpoint_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaEndpointGroup")
@@ -31,7 +31,7 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -47,11 +47,9 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 					"endpoint_group_region": defaultRegionToTest,
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
-							"type":                         "PublicIp",
-							"weight":                       "20",
-							"enable_proxy_protocol":        "true",
-							"enable_clientip_preservation": "false",
+							"endpoint": "${alicloud_eip_address.default.0.ip_address}",
+							"type":     "PublicIp",
+							"weight":   "20",
 						},
 					},
 				}),
@@ -61,6 +59,106 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 						"listener_id":               CHECKSET,
 						"endpoint_group_region":     defaultRegionToTest,
 						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_request_protocol": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_request_protocol": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_path": "/healthCheck",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_path": "/healthCheck",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_port": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_port": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_protocol": "http",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_protocol": "http",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_interval_seconds": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_interval_seconds": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"threshold_count": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"threshold_count": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_percentage": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_percentage": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
 					}),
 				),
 			},
@@ -109,76 +207,6 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_request_protocol": "HTTP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_request_protocol": "HTTP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "EndpointGroup_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "EndpointGroup_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"health_check_interval_seconds": `5`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"health_check_interval_seconds": "5",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"health_check_path": "/healthcheckupdate",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"health_check_path": "/healthcheckupdate",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"health_check_port": `30`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"health_check_port": "30",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"health_check_protocol": "http",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"health_check_protocol": "http",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"port_overrides": []map[string]interface{}{
 						{
 							"endpoint_port": "10",
@@ -189,67 +217,6 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"port_overrides.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"threshold_count": `5`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"threshold_count": "5",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"traffic_percentage": `30`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"traffic_percentage": "30",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"endpoint_configurations": []map[string]interface{}{
-						{
-							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
-							"type":                         "PublicIp",
-							"weight":                       "20",
-							"enable_proxy_protocol":        "false",
-							"enable_clientip_preservation": "false",
-						},
-					},
-					"description":                   "EndpointGroup",
-					"health_check_interval_seconds": `3`,
-					"health_check_path":             "/healthcheck",
-					"health_check_port":             `20`,
-					"health_check_protocol":         "tcp",
-					"name":                          name,
-					"port_overrides": []map[string]interface{}{
-						{
-							"endpoint_port": "10",
-							"listener_port": "60",
-						},
-					},
-					"threshold_count":    `3`,
-					"traffic_percentage": `20`,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"endpoint_configurations.#":     "1",
-						"description":                   "EndpointGroup",
-						"health_check_interval_seconds": "3",
-						"health_check_path":             "/healthcheck",
-						"health_check_port":             "20",
-						"health_check_protocol":         "tcp",
-						"name":                          name,
-						"port_overrides.#":              "1",
-						"threshold_count":               "3",
-						"traffic_percentage":            "20",
 					}),
 				),
 			},
@@ -277,11 +244,11 @@ func TestAccAliCloudGaEndpointGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
+func TestAccAliCloudGaEndpointGroup_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_endpoint_group.default"
-	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaEndpointGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaEndpointGroup")
@@ -289,7 +256,7 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -300,10 +267,20 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"accelerator_id":        "${alicloud_ga_listener.default.accelerator_id}",
-					"listener_id":           "${alicloud_ga_listener.default.id}",
-					"endpoint_group_region": defaultRegionToTest,
-					"endpoint_group_type":   "virtual",
+					"accelerator_id":                "${alicloud_ga_listener.default.accelerator_id}",
+					"listener_id":                   "${alicloud_ga_listener.default.id}",
+					"endpoint_group_region":         defaultRegionToTest,
+					"endpoint_group_type":           "virtual",
+					"endpoint_request_protocol":     "HTTP",
+					"health_check_enabled":          "true",
+					"health_check_path":             "/healthCheck",
+					"health_check_port":             "30",
+					"health_check_protocol":         "http",
+					"health_check_interval_seconds": "5",
+					"threshold_count":               "5",
+					"traffic_percentage":            "30",
+					"name":                          name,
+					"description":                   name,
 					"endpoint_configurations": []map[string]interface{}{
 						{
 							"endpoint":                     "${alicloud_eip_address.default.0.ip_address}",
@@ -313,6 +290,12 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 							"enable_clientip_preservation": "false",
 						},
 					},
+					"port_overrides": []map[string]interface{}{
+						{
+							"endpoint_port": "10",
+							"listener_port": "60",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "EndpointGroup",
@@ -320,14 +303,25 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"accelerator_id":            CHECKSET,
-						"listener_id":               CHECKSET,
-						"endpoint_group_region":     defaultRegionToTest,
-						"endpoint_group_type":       "virtual",
-						"endpoint_configurations.#": "1",
-						"tags.%":                    "2",
-						"tags.Created":              "TF",
-						"tags.For":                  "EndpointGroup",
+						"accelerator_id":                CHECKSET,
+						"listener_id":                   CHECKSET,
+						"endpoint_group_region":         defaultRegionToTest,
+						"endpoint_group_type":           "virtual",
+						"endpoint_request_protocol":     "HTTP",
+						"health_check_enabled":          "true",
+						"health_check_path":             "/healthCheck",
+						"health_check_port":             "30",
+						"health_check_protocol":         "http",
+						"health_check_interval_seconds": "5",
+						"threshold_count":               "5",
+						"traffic_percentage":            "30",
+						"name":                          name,
+						"description":                   name,
+						"endpoint_configurations.#":     "1",
+						"port_overrides.#":              "1",
+						"tags.%":                        "2",
+						"tags.Created":                  "TF",
+						"tags.For":                      "EndpointGroup",
 					}),
 				),
 			},
@@ -340,7 +334,7 @@ func TestAccAliCloudGaEndpointGroup_basic01(t *testing.T) {
 	})
 }
 
-var AliCloudGaEndpointGroupMap = map[string]string{
+var AliCloudGaEndpointGroupMap0 = map[string]string{
 	"endpoint_group_type":       CHECKSET,
 	"endpoint_request_protocol": CHECKSET,
 	"threshold_count":           CHECKSET,
@@ -348,7 +342,7 @@ var AliCloudGaEndpointGroupMap = map[string]string{
 	"status":                    CHECKSET,
 }
 
-func AliCloudGaEndpointGroupBasicDependence(name string) string {
+func AliCloudGaEndpointGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -369,20 +363,19 @@ func AliCloudGaEndpointGroupBasicDependence(name string) string {
 	}
 
 	resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  		// Please run resource ga_accelerator test case to ensure this account has at least one accelerator before run this case.
   		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
   		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 	}
 
 	resource "alicloud_ga_listener" "default" {
+		accelerator_id  = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+		client_affinity = "SOURCE_IP"
+		protocol        = "HTTP"
+		name            = var.name
   		port_ranges {
     		from_port = "60"
     		to_port   = "60"
   		}
-  		accelerator_id  = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
-  		client_affinity = "SOURCE_IP"
-  		protocol        = "HTTP"
-  		name            = var.name
 	}
 
 	resource "alicloud_eip_address" "default" {
@@ -723,5 +716,4 @@ func TestUnitAliCloudGaEndpointGroup(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
-
 }
