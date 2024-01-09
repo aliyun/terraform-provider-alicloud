@@ -5053,21 +5053,15 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 		SecurityToken:   tea.String(client.config.SecurityToken),
 	}
 
-	productCode := "sls"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
+	endpoint := client.config.LogEndpoint
+	if endpoint == "" {
+		endpoint = loadEndpoint(client.config.RegionId, LOGCode)
+		if endpoint == "" {
 			endpoint = fmt.Sprintf("%s.log.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+	endpoint = strings.TrimPrefix(endpoint, "http://")
 
 	config.Endpoint = tea.String(endpoint)
 	openapiClient, _err := openapi.NewClient(config)
