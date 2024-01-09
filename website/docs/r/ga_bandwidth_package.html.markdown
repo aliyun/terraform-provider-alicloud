@@ -40,9 +40,9 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The type of the bandwidth packet. China station only supports return to basic. Valid values: `Basic`, `CrossDomain`.
 * `bandwidth_type` - (Optional) The bandwidth type of the bandwidth. Valid values: `Advanced`, `Basic`, `Enhanced`. If `type` is set to `Basic`, this parameter is required.
 -> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
-* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`.
+* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`. **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
-* `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`.
+* `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`. **NOTE:** `ratio` is valid only when `billing_type` is set to `PayBy95`.
 * `cbn_geographic_region_ida` - (Optional, ForceNew, Computed) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value: `China-mainland`.
 * `cbn_geographic_region_idb` - (Optional, ForceNew, Computed) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value: `Global`.
 * `auto_pay` - (Optional, Bool) Whether to pay automatically. Valid values:
