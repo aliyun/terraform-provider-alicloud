@@ -861,6 +861,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_arms_synthetic_task":                                  resourceAliCloudArmsSyntheticTask(),
 			"alicloud_express_connect_ec_failover_test_job":                 resourceAliCloudExpressConnectEcFailoverTestJob(),
 			"alicloud_realtime_compute_vvp_instance":                        resourceAliCloudRealtimeComputeVvpInstance(),
 			"alicloud_quotas_template_applications":                         resourceAliCloudQuotasTemplateApplications(),
