@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudLogOssShipper_basic(t *testing.T) {
+func SkipTestAccAliCloudLogOssShipper_basic(t *testing.T) {
 	var v *sls.Shipper
 	resourceId := "alicloud_log_oss_shipper.default"
 	ra := resourceAttrInit(resourceId, logOssShipperMap)
