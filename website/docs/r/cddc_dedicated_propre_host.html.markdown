@@ -148,13 +148,14 @@ Terraform cannot destroy resource `alicloud_cddc_dedicated_propre_host`. Terrafo
 ## Argument Reference
 
 The following arguments are supported:
+* `auto_pay` - (Optional, Available since v1.215.0) Whether to pay automatically when the host is created.
 * `auto_renew` - (Optional) Whether to enable automatic renewal. Valid values:
   - **true**: On
   - **false** (default): Off
 * `dedicated_host_group_id` - (Optional, ForceNew, Computed) You have a dedicated cluster ID.
 * `ecs_class_list` - (Required, ForceNew) ECS specifications. See [`ecs_class_list`](#ecs_class_list) below.
 * `ecs_deployment_set_id` - (Optional, ForceNew) The ID of the cloud server deployment set.
-* `ecs_host_name` - (Optional, ForceNew) Windows system: length of 2 to 15 characters, allowing the use of upper and lower case letters, numbers. You cannot use only numbers.Other operating systems (such as Linux): the length of 2 to 64 characters, allowing the use of dot (.) to separate characters into multiple segments, each segment allows the use of upper and lower case letters, numbers, but can not use continuous dot (.). Cannot start or end with a dot (.).
+* `ecs_host_name` - (Optional, ForceNew) Windows system: length of 2 to 15 characters, allowing the use of upper and lower case letters, numbers. You cannot use only numbers. Other operating systems (such as Linux): the length of 2 to 64 characters, allowing the use of dot (.) to separate characters into multiple segments, each segment allows the use of upper and lower case letters, numbers, but can not use continuous dot (.). Cannot start or end with a dot (.).
 * `ecs_instance_name` - (Optional, ForceNew) The instance name. It must be 2 to 128 characters in length and must start with an uppercase or lowercase letter or a Chinese character. It cannot start with http:// or https. Can contain Chinese, English, numbers, half-width colons (:), underscores (_), half-width periods (.), or dashes (-). The default value is the InstanceId of the instance.
 * `ecs_unique_suffix` - (Optional) Whether to automatically add an ordered suffix for HostName and InstanceName when creating multiple instances. The ordered suffix starts from 001 and cannot exceed 999. Value Description:
   - **true**: added.
@@ -168,6 +169,8 @@ When the HostName or InstanceName is set according to the specified sorting form
 Must be consistent with the parent resource cluster engine attributes.
 * `image_id` - (Optional, ForceNew) The ID of the custom image.
 -> **NOTE:**  If you need to use the default image, you do not need to fill it in.
+* `internet_charge_type` - (Optional, Available since v1.215.0) Network billing type. Value range: PayByBandwidth: Billing based on fixed bandwidth. PayByTraffic: charges by using the flow meter.
+* `internet_max_bandwidth_out` - (Optional, Available since v1.215.0) The maximum outbound bandwidth of the public network, in Mbit/s. Value range: 0~100.  Default value: 0. When set to greater than 0, a public IP is automatically created.
 * `key_pair_name` - (Optional, ForceNew) The key pair name.
 * `os_password` - (Optional) Host login password, which can be set later. The password must meet the following requirements:
   - Length is 8~30 characters.
@@ -181,7 +184,11 @@ Must be consistent with the parent resource cluster engine attributes.
 * `payment_type` - (Required, ForceNew) The Payment type. Currently, only **Subscription** is supported.
 * `period` - (Optional) Duration of purchase.
 * `period_type` - (Optional) The subscription type. Currently, only **Monthly** (subscription) is supported.
+* `resource_group_id` - (Optional, ForceNew, Computed, Available since v1.215.0) The ID of the resource group.
 * `security_group_id` - (Required, ForceNew) The ID of the security group.
+* `tags` - (Optional, ForceNew, Map, Available since v1.215.0) Host tag information.
+* `user_data` - (Optional, Available since v1.215.0) User-defined script data. The maximum size of the original data is 16kB.
+* `user_data_encoded` - (Optional, Available since v1.215.0) Whether custom data is encoded in Base64 format.
 * `vswitch_id` - (Required, ForceNew) The ID of the virtual switch.
 * `vpc_id` - (Required, ForceNew) VPCID of the VPC.
 
