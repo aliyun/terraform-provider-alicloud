@@ -99,6 +99,29 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 					},
 				},
 			},
+			"alarm_dimension": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MinItems: 1,
+				MaxItems: 1,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"dimension_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ValidateFunc: validation.StringInSlice([]string{
+								"rulePool",
+							}, false),
+						},
+						"dimension_value": {
+							Type:     schema.TypeString,
+							ForceNew: true,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -161,6 +184,8 @@ func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("target_value", targetValue)
 	d.Set("disable_scale_in", object.DisableScaleIn)
 	steps, err := flattenStepAdjustmentMappings(object.StepAdjustments.StepAdjustment)
+	alarmDimensions := flattenAlarmDimensionMappings(object.AlarmDimensions.AlarmDimension)
+	d.Set("alarm_dimension", alarmDimensions)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -223,6 +248,18 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request.Cooldown = requests.NewInteger(d.Get("cooldown").(int))
 		}
 	case string(TargetTrackingScalingRule):
+		//if d.HasChange("alarm_dimension") {
+		//	steps := make([]ess.ModifyScalingRuleAlarmDimension, 0)
+		//	for _, e := range d.Get("alarm_dimension").([]interface{}) {
+		//		pack := e.(map[string]interface{})
+		//		step := ess.ModifyScalingRuleAlarmDimension{
+		//			DimensionKey:   pack["dimension_key"].(string),
+		//			DimensionValue: pack["dimension_value"].(string),
+		//		}
+		//		steps = append(steps, step)
+		//	}
+		//	request.AlarmDimension = &steps
+		//}
 		if d.HasChange("metric_name") {
 			request.MetricName = d.Get("metric_name").(string)
 		}
@@ -315,6 +352,19 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOk("disable_scale_in"); ok {
 			request.DisableScaleIn = requests.NewBoolean(v.(bool))
 		}
+		v, ok := d.GetOk("alarm_dimension")
+		if ok {
+			steps := make([]ess.CreateScalingRuleAlarmDimension, 0)
+			for _, e := range v.([]interface{}) {
+				pack := e.(map[string]interface{})
+				step := ess.CreateScalingRuleAlarmDimension{
+					DimensionKey:   pack["dimension_key"].(string),
+					DimensionValue: pack["dimension_value"].(string),
+				}
+				steps = append(steps, step)
+			}
+			request.AlarmDimension = &steps
+		}
 	case string(StepScalingRule):
 		v, ok := d.GetOk("step_adjustment")
 		if v, ok := d.GetOk("adjustment_type"); ok && v.(string) != "" {
@@ -371,4 +421,16 @@ func flattenStepAdjustmentMappings(list []ess.StepAdjustment) ([]map[string]inte
 		result = append(result, l)
 	}
 	return result, nil
+}
+
+func flattenAlarmDimensionMappings(list []ess.AlarmDimension) []map[string]interface{} {
+	result := make([]map[string]interface{}, 0, len(list))
+	for _, i := range list {
+		l := map[string]interface{}{
+			"dimension_key":   i.DimensionKey,
+			"dimension_value": i.DimensionValue,
+		}
+		result = append(result, l)
+	}
+	return result
 }
