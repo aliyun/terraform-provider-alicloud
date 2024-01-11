@@ -18,8 +18,10 @@ For information about ess scaling rule, see [CreateScalingRule](https://www.alib
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+resource "random_integer" "default" {
+  count = 1
+  max   = 99999
+  min   = 10000
 }
 
 data "alicloud_zones" "default" {
@@ -40,7 +42,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  name       = var.name
+  name       = "terraform-example-${random_integer.default[0].result}"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -48,11 +50,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  vswitch_name = "terraform-example-${random_integer.default[0].result}"
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  name   = "terraform-example-${random_integer.default[0].result}"
   vpc_id = alicloud_vpc.default.id
 }
 
@@ -70,7 +72,7 @@ resource "alicloud_security_group_rule" "default" {
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "terraform-example-${random_integer.default[0].result}"
   vswitch_ids        = [alicloud_vswitch.default.id]
   removal_policies   = ["OldestInstance", "NewestInstance"]
 }
@@ -117,6 +119,8 @@ The following arguments are supported:
 * `disable_scale_in` - (Optional, Available in 1.58.0+) Indicates whether scale in by the target tracking policy is disabled. Default to false.
 * `step_adjustment` - (Optional, Available in 1.58.0+) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
 * `ari` - (Optional) The unique identifier of the scaling rule.
+* `alarm_dimension` - (Optional, ForceNew, Available in 1.215.0+) AlarmDimension for StepScalingRule. See [`alarm_dimension`](#alarm_dimension) below.
+
 
 ### `step_adjustment`
 
@@ -125,6 +129,14 @@ The stepAdjustment mapping supports the following:
 * `metric_interval_lower_bound` - (Optional) The lower bound of step.
 * `metric_interval_upper_bound` - (Optional) The upper bound of step.
 * `scaling_adjustment` - (Optional) The adjust value of step.
+
+### `alarm_dimension`
+
+The alarmDimension mapping supports the following:
+
+* `dimension_key` - (Optional) The dimension key of the metric.
+* `dimension_value` - (Optional, ForceNew) The dimension value of the metric.
+
 
 ## Attributes Reference
 
