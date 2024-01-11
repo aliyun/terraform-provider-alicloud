@@ -19,7 +19,6 @@ type CddcServiceV2 struct {
 // DescribeCddcDedicatedPropreHost <<< Encapsulated get interface for Cddc DedicatedPropreHost.
 
 func (s *CddcServiceV2) DescribeCddcDedicatedPropreHost(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -36,12 +35,14 @@ func (s *CddcServiceV2) DescribeCddcDedicatedPropreHost(id string) (object map[s
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DedicatedHostGroupName"] = parts[0]
-	query["EcsInstanceIds"] = fmt.Sprintf("[\"%s\"]", parts[1])
+	query["EcsInstanceIds"] = parts[1]
 	request["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -55,9 +56,6 @@ func (s *CddcServiceV2) DescribeCddcDedicatedPropreHost(id string) (object map[s
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DedicatedPropreHost", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -74,8 +72,9 @@ func (s *CddcServiceV2) CddcDedicatedPropreHostStateRefreshFunc(id string, field
 			return nil, "", WrapError(err)
 		}
 
-		sysDiskCapacity, _ := jsonpath.Get(field, object)
-		currentStatus := fmt.Sprint(sysDiskCapacity)
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))

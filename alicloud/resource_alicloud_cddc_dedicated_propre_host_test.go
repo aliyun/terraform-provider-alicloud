@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Cddc DedicatedPropreHost. >>> Resource test cases, automatically generated.
-// Case 4362
 func TestAccAliCloudCddcDedicatedPropreHost_basic4362(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_propre_host.default"
@@ -40,7 +38,7 @@ func TestAccAliCloudCddcDedicatedPropreHost_basic4362(t *testing.T) {
 					"ecs_zone_id":             "cn-hangzhou-i",
 					"payment_type":            "Subscription",
 					"ecs_deployment_set_id":   "${local.alicloud_ecs_deployment_set_id}",
-					"vpc_id":                  "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":                  "${local.vpc_id}",
 					"ecs_host_name":           "testTf",
 					"engine":                  "mysql",
 					"dedicated_host_group_id": "${local.dedicated_host_group_id}",
@@ -118,7 +116,7 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+  vpc_id  = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.groups.0.vpc_id : data.alicloud_vpcs.default.ids.0
   zone_id = "cn-hangzhou-i"
 }
 
@@ -162,7 +160,7 @@ data "alicloud_cddc_dedicated_host_groups" "default" {
 resource "alicloud_cddc_dedicated_host_group" "default" {
 	count = length(data.alicloud_cddc_dedicated_host_groups.default.ids) > 0 ? 0 : 1
 	engine = "MySQL"
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	vpc_id = local.vpc_id
 	cpu_allocation_ratio = 101
 	mem_allocation_ratio = 50
 	disk_allocation_ratio = 200
@@ -172,6 +170,7 @@ resource "alicloud_cddc_dedicated_host_group" "default" {
 	open_permission = true
 }
 locals {
+    vpc_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.groups.0.vpc_id : data.alicloud_vpcs.default.ids.0
     alicloud_security_group_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.ids.0 : concat(alicloud_security_group.default[*].id, [""])[0]
     alicloud_ecs_deployment_set_id = length(data.alicloud_ecs_deployment_sets.default.ids) > 0 ? data.alicloud_ecs_deployment_sets.default.sets.0.deployment_set_id : concat(alicloud_ecs_deployment_set.default[*].id, [""])[0]
     alicloud_key_pair_id = length(data.alicloud_key_pairs.default.ids) > 0 ? data.alicloud_key_pairs.default.ids.0 : concat(alicloud_key_pair.default[*].id, [""])[0]
@@ -204,21 +203,27 @@ func TestAccAliCloudCddcDedicatedPropreHost_basic4363(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"period_type":             "Monthly",
-					"auto_renew":              "false",
-					"period":                  "1",
-					"ecs_unique_suffix":       "false",
-					"password_inherit":        "false",
-					"ecs_instance_name":       "testTf",
-					"security_group_id":       "${local.alicloud_security_group_id}",
-					"vswitch_id":              "${data.alicloud_vswitches.default.ids.0}",
-					"ecs_zone_id":             "cn-hangzhou-i",
-					"payment_type":            "Subscription",
-					"ecs_deployment_set_id":   "${local.alicloud_ecs_deployment_set_id}",
-					"vpc_id":                  "${data.alicloud_vpcs.default.ids.0}",
-					"ecs_host_name":           "testTf",
-					"engine":                  "mysql",
-					"dedicated_host_group_id": "${local.dedicated_host_group_id}",
+					"period_type":                "Monthly",
+					"auto_renew":                 "false",
+					"period":                     "1",
+					"ecs_unique_suffix":          "false",
+					"password_inherit":           "false",
+					"ecs_instance_name":          "testTf",
+					"security_group_id":          "${local.alicloud_security_group_id}",
+					"vswitch_id":                 "${data.alicloud_vswitches.default.ids.0}",
+					"ecs_zone_id":                "cn-hangzhou-i",
+					"payment_type":               "Subscription",
+					"ecs_deployment_set_id":      "${local.alicloud_ecs_deployment_set_id}",
+					"vpc_id":                     "${local.vpc_id}",
+					"ecs_host_name":              "testTf",
+					"engine":                     "mysql",
+					"dedicated_host_group_id":    "${local.dedicated_host_group_id}",
+					"auto_pay":                   "true",
+					"user_data_encoded":          "true",
+					"user_data":                  "aGVsbG8gd29ybGQ=",
+					"internet_charge_type":       "PayByBandwidth",
+					"internet_max_bandwidth_out": "1",
+					"resource_group_id":          "${local.resource_group_id}",
 					"ecs_class_list": []map[string]interface{}{
 						{
 							"sys_disk_capacity":             "40",
@@ -233,6 +238,10 @@ func TestAccAliCloudCddcDedicatedPropreHost_basic4363(t *testing.T) {
 					},
 					"os_password": "YourPassword123!",
 					"image_id":    "m-bp1d13fxs1ymbvw1dk5g",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -261,7 +270,7 @@ func TestAccAliCloudCddcDedicatedPropreHost_basic4363(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "ecs_unique_suffix", "os_password", "password_inherit", "period", "period_type"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "auto_renew", "ecs_unique_suffix", "internet_charge_type", "internet_max_bandwidth_out", "os_password", "password_inherit", "period", "period_type", "user_data", "user_data_encoded"},
 			},
 		},
 	})
@@ -299,7 +308,7 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+  vpc_id  = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.groups.0.vpc_id : data.alicloud_vpcs.default.ids.0
   zone_id = "cn-hangzhou-i"
 }
 
@@ -343,7 +352,7 @@ data "alicloud_cddc_dedicated_host_groups" "default" {
 resource "alicloud_cddc_dedicated_host_group" "default" {
 	count = length(data.alicloud_cddc_dedicated_host_groups.default.ids) > 0 ? 0 : 1
 	engine = "MySQL"
-	vpc_id = data.alicloud_vpcs.default.ids.0
+	vpc_id = local.vpc_id
 	cpu_allocation_ratio = 101
 	mem_allocation_ratio = 50
 	disk_allocation_ratio = 200
@@ -353,6 +362,8 @@ resource "alicloud_cddc_dedicated_host_group" "default" {
 	open_permission = true
 }
 locals {
+    vpc_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.groups.0.vpc_id : data.alicloud_vpcs.default.ids.0
+    resource_group_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.groups.0.resource_group_id : data.alicloud_vpcs.default.vpcs.0.resource_group_id
     alicloud_security_group_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.ids.0 : concat(alicloud_security_group.default[*].id, [""])[0]
     alicloud_ecs_deployment_set_id = length(data.alicloud_ecs_deployment_sets.default.ids) > 0 ? data.alicloud_ecs_deployment_sets.default.sets.0.deployment_set_id : concat(alicloud_ecs_deployment_set.default[*].id, [""])[0]
     alicloud_key_pair_id = length(data.alicloud_key_pairs.default.ids) > 0 ? data.alicloud_key_pairs.default.ids.0 : concat(alicloud_key_pair.default[*].id, [""])[0]
@@ -361,5 +372,3 @@ locals {
 
 `, name)
 }
-
-// Test Cddc DedicatedPropreHost. <<< Resource test cases, automatically generated.

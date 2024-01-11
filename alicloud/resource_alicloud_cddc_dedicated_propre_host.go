@@ -30,6 +30,10 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"auto_renew": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -128,6 +132,16 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"internet_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
+			},
+			"internet_max_bandwidth_out": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 100),
+			},
 			"key_pair_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -145,7 +159,7 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"Subscription"}, true),
 			},
 			"period": {
 				Type:     schema.TypeString,
@@ -154,12 +168,27 @@ func resourceAliCloudCddcDedicatedPropreHost() *schema.Resource {
 			"period_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Monthly"}, false),
+				ValidateFunc: StringInSlice([]string{"Monthly"}, true),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"tags": tagsSchemaForceNew(),
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"user_data_encoded": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -182,12 +211,13 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 	action := "CreateMyBase"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewCddcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["DedicatedHostGroupId"] = d.Get("dedicated_host_group_id")
+	query["DedicatedHostGroupId"] = d.Get("dedicated_host_group_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
@@ -252,10 +282,39 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 		request["ECSClassList"] = string(eCSClassListMapsJson)
 	}
 
-	request["PayType"] = convertCddcPayTypeRequest(d.Get("payment_type").(string))
+	request["PayType"] = convertCddcDedicatedPropreHostPayTypeRequest(d.Get("payment_type").(string))
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		tagsMapJson, err := convertListMapToJsonString(tagsMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tags"] = tagsMapJson
+	}
+
+	if v, ok := d.GetOk("user_data"); ok {
+		request["UserData"] = v
+	}
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		request["InternetMaxBandwidthOut"] = v
+	}
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		request["InternetChargeType"] = v
+	}
+	if v, ok := d.GetOkExists("user_data_encoded"); ok {
+		request["UserDataInBase64"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-20"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -273,17 +332,9 @@ func resourceAliCloudCddcDedicatedPropreHostCreate(d *schema.ResourceData, meta 
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cddc_dedicated_propre_host", action, AlibabaCloudSdkGoERROR)
 	}
 
-	groupName, _ := jsonpath.Get("$.OrderList.OrderList[0].DedicatedHostGroupName", response)
-	ecsIdString, _ := jsonpath.Get("$.OrderList.OrderList[0].ECSInstanceIds", response)
-	var ecsIds []string
-	err = json.Unmarshal([]byte(ecsIdString.(string)), &ecsIds)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, fmt.Errorf("unmarshaling ECSInstanceIds got an error: %#v", err))
-	}
-	if len(ecsIds) != 1 {
-		return WrapErrorf(err, FailedGetAttributeMsg, "$.OrderList.OrderList[0].ECSInstanceIds", response)
-	}
-	d.SetId(fmt.Sprintf("%v:%v", groupName, ecsIds[0]))
+	OrderListOrderListDedicatedHostGroupName, _ := jsonpath.Get("$.OrderList.OrderList[0].DedicatedHostGroupName", response)
+	OrderListOrderListECSInstanceIds, _ := jsonpath.Get("$.OrderList.OrderList[0].ECSInstanceIds", response)
+	d.SetId(fmt.Sprintf("%v:%v", OrderListOrderListDedicatedHostGroupName, OrderListOrderListECSInstanceIds))
 
 	cddcServiceV2 := CddcServiceV2{client}
 	sysDiskCapacity := d.Get("ecs_class_list.0.sys_disk_capacity")
@@ -311,23 +362,30 @@ func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta in
 
 	d.Set("engine", objectRaw["Engine"])
 	d.Set("dedicated_host_group_id", objectRaw["DedicatedHostGroupId"])
-	dedicatedInstances1RawObj, _ := jsonpath.Get("$.DedicatedInstances[*]", objectRaw)
-	dedicatedInstances1Raw := make([]interface{}, 0)
-	if dedicatedInstances1RawObj != nil {
-		dedicatedInstances1Raw = dedicatedInstances1RawObj.([]interface{})
+
+	dedicatedInstances1RawArrayObj, _ := jsonpath.Get("$.DedicatedInstances[*]", objectRaw)
+	dedicatedInstances1RawArray := make([]interface{}, 0)
+	if dedicatedInstances1RawArrayObj != nil {
+		dedicatedInstances1RawArray = dedicatedInstances1RawArrayObj.([]interface{})
+	}
+	dedicatedInstances1Raw := make(map[string]interface{})
+	if len(dedicatedInstances1RawArray) > 0 {
+		dedicatedInstances1Raw = dedicatedInstances1RawArray[0].(map[string]interface{})
 	}
 
-	dedicatedInstancesChild1Raw := dedicatedInstances1Raw[0].(map[string]interface{})
+	dedicatedInstancesChild1Raw := dedicatedInstances1Raw
 	d.Set("ecs_deployment_set_id", dedicatedInstancesChild1Raw["DeploymentSetId"])
 	d.Set("ecs_host_name", dedicatedInstancesChild1Raw["HostName"])
 	d.Set("ecs_instance_name", dedicatedInstancesChild1Raw["InstanceName"])
 	d.Set("ecs_zone_id", dedicatedInstancesChild1Raw["ZoneId"])
 	d.Set("image_id", dedicatedInstancesChild1Raw["ImageId"])
 	d.Set("key_pair_name", dedicatedInstancesChild1Raw["KeyPairName"])
-	d.Set("payment_type", convertCddcDedicatedInstancesInstanceChargeTypeResponse(dedicatedInstancesChild1Raw["InstanceChargeType"]))
+	d.Set("payment_type", convertCddcDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(dedicatedInstancesChild1Raw["InstanceChargeType"]))
+	d.Set("resource_group_id", dedicatedInstancesChild1Raw["ResourceGroupId"])
 	d.Set("security_group_id", dedicatedInstancesChild1Raw["SecurityGroupIds"])
 	d.Set("vswitch_id", dedicatedInstancesChild1Raw["VSwitchId"])
 	d.Set("vpc_id", dedicatedInstancesChild1Raw["VpcId"])
+
 	ecsClasses1Raw := objectRaw["EcsClasses"]
 	ecsClassListMaps := make([]map[string]interface{}, 0)
 	if ecsClasses1Raw != nil {
@@ -342,10 +400,13 @@ func resourceAliCloudCddcDedicatedPropreHostRead(d *schema.ResourceData, meta in
 			ecsClassListMap["sys_disk_capacity"] = ecsClassesChild1Raw["SysDiskCapacity"]
 			ecsClassListMap["sys_disk_type"] = ecsClassesChild1Raw["SysDiskType"]
 			ecsClassListMap["system_disk_performance_level"] = ecsClassesChild1Raw["SystemDiskPerformanceLevel"]
+
 			ecsClassListMaps = append(ecsClassListMaps, ecsClassListMap)
 		}
 	}
 	d.Set("ecs_class_list", ecsClassListMaps)
+	tagsMaps, _ := jsonpath.Get("$.Tags", dedicatedInstancesChild1Raw)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("dedicated_host_group_name", parts[0])
@@ -364,14 +425,14 @@ func resourceAliCloudCddcDedicatedPropreHostDelete(d *schema.ResourceData, meta 
 	return nil
 }
 
-func convertCddcDedicatedInstancesInstanceChargeTypeResponse(source interface{}) interface{} {
+func convertCddcDedicatedPropreHostDedicatedInstancesInstanceChargeTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PrePaid":
 		return "Subscription"
 	}
 	return source
 }
-func convertCddcPayTypeRequest(source interface{}) interface{} {
+func convertCddcDedicatedPropreHostPayTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "Subscription":
 		return "PrePaid"
