@@ -116,7 +116,7 @@ The following arguments are supported:
   - `Instance`: allows you add servers by specifying Ecs, Ens, or Eci.
   - `Ip`: allows you to add servers by specifying IP addresses.
   - `Fc`: allows you to add servers by specifying functions of Function Compute.
-* `protocol` - (Optional, ForceNew) The server protocol. Valid values: ` HTTP`, `HTTPS`, `gRPC`. While `server_group_type` is `Fc` this parameter will not take effect. From version 1.215.1, `protocol` can be set to `gRPC`.
+* `protocol` - (Optional, ForceNew) The server protocol. Valid values: ` HTTP`, `HTTPS`, `gRPC`. While `server_group_type` is `Fc` this parameter will not take effect. From version 1.215.0, `protocol` can be set to `gRPC`.
 * `vpc_id` - (Optional, ForceNew) The ID of the VPC that you want to access. **NOTE:** This parameter takes effect when the `server_group_type` parameter is set to `Instance` or `Ip`.
 * `scheduler` - (Optional) The scheduling algorithm. Valid values: ` Sch`, ` Wlc`, `Wrr`. **NOTE:** This parameter takes effect when the `server_group_type` parameter is set to `Instance` or `Ip`.
 * `resource_group_id` - (Optional) The ID of the resource group.
@@ -144,7 +144,7 @@ The health_check_config supports the following:
 * `health_check_host` - (Optional) The domain name that is used for health checks.
 * `health_check_http_version` - (Optional) The version of the HTTP protocol. Default value: `HTTP1.1`. Valid values: `HTTP1.0` and `HTTP1.1`. **NOTE:** This parameter takes effect only when `health_check_protocol` is set to `HTTP` or `HTTPS`.
 * `health_check_interval` - (Optional, Int) The interval at which health checks are performed. Unit: seconds. Default value: `2`. Valid values: `1` to `50`.
-* `health_check_method` - (Optional) The HTTP method that is used for health checks. Default value: `GET`. Valid values: `GET`, `POST`, `HEAD`. **NOTE:** This parameter takes effect only when `health_check_protocol` is set to `HTTP`, `HTTPS`, or `gRPC`. From version 1.215.1, `health_check_method` can be set to `POST`.
+* `health_check_method` - (Optional) The HTTP method that is used for health checks. Default value: `GET`. Valid values: `GET`, `POST`, `HEAD`. **NOTE:** This parameter takes effect only when `health_check_protocol` is set to `HTTP`, `HTTPS`, or `gRPC`. From version 1.215.0, `health_check_method` can be set to `POST`.
 * `health_check_path` - (Optional) The path that is used for health checks. **NOTE:** This parameter takes effect only when `health_check_protocol` is set to `HTTP` or `HTTPS`.
 * `health_check_protocol` - (Optional) The protocol that is used for health checks. Valid values: `HTTP`, `HTTPS`, `TCP` and `gRPC`.
 * `health_check_timeout` - (Optional, Int) The timeout period for a health check response. If a backend Elastic Compute Service (ECS) instance does not send an expected response within the specified period of time, the ECS instance is considered unhealthy. Unit: seconds. Default value: `5`. Valid values: `1` to `300`. **NOTE:** If the value of `health_check_timeout` is smaller than the value of `health_check_interval`, the value of `health_check_timeout` is ignored and the value of `health_check_interval` is used.
