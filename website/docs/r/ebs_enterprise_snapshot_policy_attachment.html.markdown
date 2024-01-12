@@ -1,0 +1,84 @@
+---
+subcategory: "EBS"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ebs_enterprise_snapshot_policy_attachment"
+description: |-
+  Provides a Alicloud EBS Enterprise Snapshot Policy Attachment resource.
+---
+
+# alicloud_ebs_enterprise_snapshot_policy_attachment
+
+Provides a EBS Enterprise Snapshot Policy Attachment resource. Enterprise-level snapshot policy cloud disk binding relationship.
+
+For information about EBS Enterprise Snapshot Policy Attachment and how to use it, see [What is Enterprise Snapshot Policy Attachment](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.215.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_ecs_disk" "defaultJkW46o" {
+  category          = "cloud_essd"
+  description       = "esp-attachment-test"
+  zone_id           = "cn-hangzhou-i"
+  performance_level = "PL1"
+  size              = "20"
+  disk_name         = var.name
+}
+
+resource "alicloud_ebs_enterprise_snapshot_policy" "defaultPE3jjR" {
+  status = "DISABLED"
+  desc   = "DESC"
+  schedule {
+    cron_expression = "0 0 0 1 * ?"
+  }
+  enterprise_snapshot_policy_name = var.name
+
+  target_type = "DISK"
+  retain_rule {
+    time_interval = "120"
+    time_unit     = "DAYS"
+  }
+}
+
+
+resource "alicloud_ebs_enterprise_snapshot_policy_attachment" "default" {
+  policy_id = alicloud_ebs_enterprise_snapshot_policy.defaultPE3jjR.id
+  disk_id   = alicloud_ecs_disk.defaultJkW46o.id
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `disk_id` - (Optional, ForceNew, Computed) Cloud Disk ID.
+* `policy_id` - (Required, ForceNew) the enterprise snapshot policy id.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<policy_id>:<disk_id>`.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Enterprise Snapshot Policy Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Enterprise Snapshot Policy Attachment.
+
+## Import
+
+EBS Enterprise Snapshot Policy Attachment can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_ebs_enterprise_snapshot_policy_attachment.example <policy_id>:<disk_id>
+```

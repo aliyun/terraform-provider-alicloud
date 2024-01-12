@@ -284,3 +284,4 @@ var HologramSharedSupportRegions = []Region{Shanghai}
 var KvStoreSupportRegions = []Region{Hangzhou}
 var SLSLiteSupportRegions = []Region{Hangzhou}
 var ARMSSyncTaskSupportRegions = []Region{Hangzhou}
+var EbsEnterpriseSnapshotPolicySupportRegions = []Region{Hangzhou}
