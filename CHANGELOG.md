@@ -1,5 +1,62 @@
 ## 1.215.0 (Unreleased)
-## 1.214.1 (December 22, 2023)
+
+- **New Resource:** `alicloud_arms_grafana_workspace` [GH-6835]
+- **New Resource:** `alicloud_express_connect_ec_failover_test_job` [GH-6838]
+- **New Resource:** `alicloud_arms_synthetic_task` [GH-6847]
+- **New Resource:** `alicloud_ebs_enterprise_snapshot_policy` [GH-6854]
+- **New Resource:** `alicloud_ebs_enterprise_snapshot_policy_attachment` [GH-6854]
+- **New Resource:** `alicloud_ebs_replica_group_drill` [GH-6873]
+- **New Resource:** `alicloud_ebs_replica_pair_drill` [GH-6873]
+- **New Resource:** `alicloud_cloud_monitor_service_enterprise_public` [GH-6884]
+- **New Resource:** `alicloud_cloud_monitor_service_basic_public` [GH-6884]
+
+ENHANCEMENTS:
+
+- client: add oss client. [GH-6836]
+- client: update sls pop endpoint to log endpoint. [GH-6849]
+- client: oss client support argument sign_version. [GH-6876]
+- provider: support provider new argument sign_version. [GH-6874]
+- resource/alicloud_vpc: add 'DependencyViolation' error retry for vpc. [GH-6798]
+- resource/alicloud_vswitch: add default delete timeout for vswitch. [GH-6803]
+- resource/alicloud_eci_container_group: add containers.environment_vars.field_ref.field_path; add init_containers.environment_vars.field_ref.field_path; add security_context; add container.security_context.capability; add container.security_context.capability.run_as_user; add init_container.security_context.capability; add init_container.security_context.capability.run_as_user. [GH-6813]
+- resource/alicloud_oos_application: add delete retry error code. [GH-6819]
+- resource/alicloud_alidns_address_pool: add retry for alicloud_alidns_address_pool. [GH-6826]
+- resource/alicloud_cdn_domain_new: modify the default timeout setting; resource/alicloud_cdn_domain_config: modify the default timeout setting. [GH-6827]
+- resource/alicloud_ecs_image_component: adds new attributes. [GH-6828]
+- resource/alicloud_cms_dynamic_tag_group: update CreateDynamicTagGroup to async. [GH-6831]
+- resource/alicloud_mongodb_instance: Added the field effective_time. [GH-6832]
+- resource/alicloud_cddc_dedicated_propre_host: adds new attribute auto_pay, internet_charge_type, internet_max_bandwidth_out, resource_group_id, tags, user_data, user_data_encoded. [GH-6833]
+- resource/alicloud_ga_accelerator: Added retry strategy for error code StateError.Accelerator. [GH-6837]
+- resource/alicloud_log_store: adds new attribute metering_mode. [GH-6839]
+- resource/alicloud_polardb_database: CreateDataBase support accout_name&c_type&collate. data-source/alicloud_polardb_databases: CharacterSetName ToLower. [GH-6840]
+- resource/alicloud_alb_server_group: add retry error code; resource/alicloud_alb_rule: validation for protocol and vpc_id while server_group_type is Fc. [GH-6841]
+- resource/alicloud_ga_endpoint_group: Added the field health_check_enabled. [GH-6844]
+- resource/alicloud_security_group: Removed the filed name validate limit. [GH-6856]
+- resource/alicloud_ebs_enterprise_snapshot_policy_attachment category. [GH-6857]
+- resource/alicloud_instance: add new type for system_disk_category;datasource/alicloud_instance_types: add new type for system_disk_category. [GH-6860]
+- resource/alicloud_alb_listener: Added the field tags. [GH-6865]
+- resource/alicloud_disk: add new type for category; datasource/alicloud_disks: add new type for category; resource/alicloud_ecs_disk: add new type for category; datasource/alicloud_ecs_disks: add new type for category, modify valiedation implementation. [GH-6868]
+- resource/alicloud_alb_server_group: Supported protocol set to gRPC, and health_check_config.health_check_method set to POST. [GH-6871]
+- resource/alicloud_cen_transit_router_route_entry: optimized the waiting logic for deleting and creating. [GH-6872]
+- resource/alicloud_nlb_server_group: add new attributes any_port_enabled, connection_drain_enabled. [GH-6881]
+- resource/alicloud_cen_transit_router_route_table: modify deleting asynchronous check pending time. [GH-6882]
+- deprecate alicloud_log_oss_shipper, use alicloud_log_oss_export instead. [GH-6823]
+- add common function convertTags. [GH-6842]
+- docs: Improved the document ga_bandwidth_package. [GH-6848]
+- docs: modify resource/alicloud_ebs_enterprise_snapshot_policy. [GH-6857]
+- docs: modify netword_acl description. [GH-6859]
+- docs: Improved the document ga_endpoint_group, ga_accelerators description. [GH-6879]
+- testcase: fix cdn testcae. [GH-6821]
+- testcase: fix service_mesh testcae. [GH-6822]
+- testcase: fix express_connect testcae. [GH-6829]
+
+BUG FIXES:
+
+- resource/alicloud_mongodb_instance: Fixed spelling issues with method names; resource/alicloud_mongodb_sharding_instance: Fixed tde_status invalid error. [GH-6809]
+- resource/alicloud_open_search_app_group: fix parameter name change for resource id. [GH-6818]
+- resource/alicloud_log_store: fix attribute encrypt_conf.user_cmk_info while empty. [GH-6843]
+
+## 1.214.1 (December 29, 2023)
 
 ENHANCEMENTS:
 
