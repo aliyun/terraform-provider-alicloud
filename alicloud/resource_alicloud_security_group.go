@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"log"
-	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -40,7 +39,7 @@ func resourceAliyunSecurityGroup() *schema.Resource {
 			"name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z\u4E00-\u9FA5][\u4E00-\u9FA5A-Za-z0-9:_-]{2,128}$"), "The name must be 2 to 128 characters in length. It must start with a letter and cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), and hyphens (-)."),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"description": {
 				Type:         schema.TypeString,
