@@ -462,6 +462,14 @@ func convertMapToJsonStringIgnoreError(m map[string]interface{}) string {
 	}
 }
 
+func convertInterfaceToJsonString(m interface{}) (string, error) {
+	if result, err := json.Marshal(m); err != nil {
+		return "", err
+	} else {
+		return string(result), nil
+	}
+}
+
 func convertListMapToJsonString(configured []map[string]interface{}) (string, error) {
 	if len(configured) < 1 {
 		return "[]", nil
