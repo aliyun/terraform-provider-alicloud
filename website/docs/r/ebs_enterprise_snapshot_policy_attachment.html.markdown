@@ -1,5 +1,5 @@
 ---
-subcategory: "EBS"
+subcategory: "Elastic Block Storage(EBS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ebs_enterprise_snapshot_policy_attachment"
 description: |-
