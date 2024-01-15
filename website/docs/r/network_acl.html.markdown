@@ -10,7 +10,6 @@ description: |-
 # alicloud_network_acl
 
 Provides a VPC Network Acl resource. 
--> **NOTE:** Currently, the resource are only available in Hongkong(cn-hongkong), India(ap-south-1), and Indonesia(ap-southeast-1) regions.
 
 For information about VPC Network Acl and how to use it, see [What is Network Acl](https://www.alibabacloud.com/help/en/ens/latest/createnetworkacl).
 
