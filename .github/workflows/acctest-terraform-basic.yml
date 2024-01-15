@@ -67,6 +67,9 @@ jobs:
           diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/")
           for fileName in ${diffFiles[@]};
           do
+              if [[ ! -f ${filename} ]]; then
+                  continue
+              fi
               goimpFile=$(goimports -l ${fileName})
               if [[ -n ${goimpFile} ]]; then
                 goimports -d ${fileName}
