@@ -416,6 +416,21 @@ func TestAccAliCloudALBListener_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Listener",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Listener",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -623,6 +638,10 @@ func TestAccAliCloudALBListener_basic2(t *testing.T) {
 							"xforwardedforslbportenabled":                "true",
 						},
 					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Listener",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -639,6 +658,9 @@ func TestAccAliCloudALBListener_basic2(t *testing.T) {
 						"request_timeout":         "60",
 						"security_policy_id":      "tls_cipher_policy_1_0",
 						"xforwarded_for_config.#": "1",
+						"tags.%":                  "2",
+						"tags.Created":            "TF",
+						"tags.For":                "Listener",
 					}),
 				),
 			},
