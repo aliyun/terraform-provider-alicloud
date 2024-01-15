@@ -647,10 +647,15 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
 	request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
 	request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
-	request["ActiveDeadlineSeconds"] = d.Get("active_deadline_seconds")
 	request["EphemeralStorage"] = d.Get("ephemeral_storage")
 	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 
+	if v, ok := d.GetOk("active_deadline_seconds"); ok {
+		if d.Get("active_deadline_seconds").(int) <= 0 {
+			return WrapErrorf(err, "expected %s to be greater than (%d), got %d", "active_deadline_seconds", 0, v.(int))
+		}
+		request["ActiveDeadlineSeconds"] = v
+	}
 	if v, ok := d.GetOk("spot_price_limit"); ok {
 		request["SpotPriceLimit"] = strconv.FormatFloat(v.(float64), 'f', 2, 64)
 	}
@@ -1290,7 +1295,11 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	}
 	if d.HasChange("active_deadline_seconds") {
 		update = true
-		request["ActiveDeadlineSeconds"] = d.Get("active_deadline_seconds")
+		v := d.Get("active_deadline_seconds")
+		if v.(int) <= 0 {
+			return WrapErrorf(err, "expected %s to be greater than (%d), got %d", "active_deadline_seconds", 0, v.(int))
+		}
+		request["ActiveDeadlineSeconds"] = v
 	}
 	if d.HasChange("spot_strategy") {
 		update = true
