@@ -20,8 +20,10 @@ For information about ess eci scaling configuration, see [CreateEciScalingConfig
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+resource "random_integer" "default" {
+  count = 2
+  max   = 99999
+  min   = 10000
 }
 
 data "alicloud_zones" "default" {
@@ -30,7 +32,7 @@ data "alicloud_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example-${random_integer.default[0].result}"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -38,18 +40,18 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  vswitch_name = "terraform-example-${random_integer.default[0].result}"
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  name   = "terraform-example-${random_integer.default[0].result}"
   vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 0
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "terraform-example-${random_integer.default[0].result}"
   removal_policies   = ["OldestInstance", "NewestInstance"]
   vswitch_ids        = [alicloud_vswitch.default.id]
   group_type         = "ECI"
