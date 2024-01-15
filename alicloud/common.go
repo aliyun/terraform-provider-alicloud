@@ -946,8 +946,8 @@ func BuildStateConf(pending, target []string, timeout, delay time.Duration, f re
 		Target:     target,
 		Refresh:    f,
 		Timeout:    timeout,
-		Delay:      0,
-		MinTimeout: 2 * time.Second,
+		Delay:      delay,
+		MinTimeout: 3 * time.Second,
 	}
 }
 
