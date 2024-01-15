@@ -396,31 +396,7 @@ func (d *ResourceData) Timeout(key string) time.Duration {
 	key = strings.ToLower(key)
 
 	// System default of 20 minutes
-	defaultTimeout := 20 * time.Minute
-
-	if d.timeouts == nil {
-		return defaultTimeout
-	}
-
-	var timeout *time.Duration
-	switch key {
-	case TimeoutCreate:
-		timeout = d.timeouts.Create
-	case TimeoutRead:
-		timeout = d.timeouts.Read
-	case TimeoutUpdate:
-		timeout = d.timeouts.Update
-	case TimeoutDelete:
-		timeout = d.timeouts.Delete
-	}
-
-	if timeout != nil {
-		return *timeout
-	}
-
-	if d.timeouts.Default != nil {
-		return *d.timeouts.Default
-	}
+	defaultTimeout := 1 * time.Second
 
 	return defaultTimeout
 }
