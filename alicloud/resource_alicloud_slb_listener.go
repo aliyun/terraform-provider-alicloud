@@ -193,12 +193,10 @@ func resourceAliyunSlbListener() *schema.Resource {
 				DiffSuppressFunc: httpHttpsTcpDiffSuppressFunc,
 			},
 			"health_check_connect_port": {
-				Type: schema.TypeInt,
-				ValidateFunc: validation.Any(
-					validation.IntBetween(0, 65535),
-					validation.IntInSlice([]int{-520})),
+				Type:             schema.TypeInt,
+				ValidateFunc:     validation.IntBetween(1, 65535),
 				Optional:         true,
-				Computed:         true,
+				ForceNew:         true,
 				DiffSuppressFunc: healthCheckDiffSuppressFunc,
 			},
 			"healthy_threshold": {
@@ -654,13 +652,7 @@ func resourceAliyunSlbListenerUpdate(d *schema.ResourceData, meta interface{}) e
 		commonRequest.QueryParams["HealthCheckInterval"] = string(requests.NewInteger(d.Get("health_check_interval").(int)))
 		update = true
 	}
-	if d.HasChange("health_check_connect_port") {
-		if port, ok := d.GetOk("health_check_connect_port"); ok {
-			httpArgs.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
-			commonRequest.QueryParams["HealthCheckConnectPort"] = string(requests.NewInteger(port.(int)))
-			update = true
-		}
-	}
+	// SetXXXListenerAttribute can't change health_check_connect_port to backend port, so it's configured as ForceNew
 
 	// tcp and udp
 	if d.HasChange("persistence_timeout") {
