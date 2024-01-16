@@ -57,7 +57,7 @@ The following arguments are supported:
 
 * `zone_id` - (Optional, ForceNew) ID of the free zone to which the disk belongs. One of the `zone_id` and `instance_id` must be set but can not be set at the same time.
 * `availability_zone` - (Deprecated since 1.122.0) Field `availability_zone` has been deprecated from provider version 1.122.0. New field `zone_id` instead.
-* `category` - (Optional) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`. Default is `cloud_efficiency`.
+* `category` - (Optional) Category of the disk. Valid values are `cloud`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd`, `cloud_auto`, `cloud_essd_entry`. Default is `cloud_efficiency`.
 * `delete_auto_snapshot` - (Optional) Indicates whether the automatic snapshot is deleted when the disk is released. Default value: `false`.
 * `delete_with_instance` - (Optional) Indicates whether the disk is released together with the instance. Default value: `false`.
 * `description` - (Optional) Description of the disk. This description can have a string of 2 to 256 characters, It cannot begin with http:// or https://. Default value is null.
