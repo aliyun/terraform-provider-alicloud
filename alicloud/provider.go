@@ -863,6 +863,8 @@ func Provider() terraform.ResourceProvider {
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ebs_enterprise_snapshot_policy_attachment":            resourceAliCloudEbsEnterpriseSnapshotPolicyAttachment(),
 			"alicloud_ebs_enterprise_snapshot_policy":                       resourceAliCloudEbsEnterpriseSnapshotPolicy(),
+			"alicloud_ebs_replica_group_drill":                              resourceAliCloudEbsReplicaGroupDrill(),
+			"alicloud_ebs_replica_pair_drill":                               resourceAliCloudEbsReplicaPairDrill(),
 			"alicloud_arms_synthetic_task":                                  resourceAliCloudArmsSyntheticTask(),
 			"alicloud_express_connect_ec_failover_test_job":                 resourceAliCloudExpressConnectEcFailoverTestJob(),
 			"alicloud_realtime_compute_vvp_instance":                        resourceAliCloudRealtimeComputeVvpInstance(),
