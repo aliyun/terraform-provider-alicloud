@@ -1314,7 +1314,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_hbr_nas_backup_plan":                                   resourceAlicloudHbrNasBackupPlan(),
 			"alicloud_hbr_oss_backup_plan":                                   resourceAlicloudHbrOssBackupPlan(),
 			"alicloud_scdn_domain":                                           resourceAlicloudScdnDomain(),
-			"alicloud_alb_server_group":                                      resourceAlicloudAlbServerGroup(),
+			"alicloud_alb_server_group":                                      resourceAliCloudAlbServerGroup(),
 			"alicloud_data_works_folder":                                     resourceAlicloudDataWorksFolder(),
 			"alicloud_arms_alert_contact_group":                              resourceAlicloudArmsAlertContactGroup(),
 			"alicloud_dcdn_domain_config":                                    resourceAlicloudDcdnDomainConfig(),
