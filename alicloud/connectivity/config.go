@@ -45,6 +45,7 @@ type Config struct {
 	RamRoleExternalId        string
 	RamRoleSessionExpiration int
 	Endpoints                *sync.Map
+	SignVersion              *sync.Map
 	RKvstoreEndpoint         string
 	EcsEndpoint              string
 	RdsEndpoint              string

@@ -82,7 +82,8 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCOUNT_ID", os.Getenv("ALICLOUD_ACCOUNT_ID")),
 				Description: descriptions["account_id"],
 			},
-			"assume_role": assumeRoleSchema(),
+			"assume_role":  assumeRoleSchema(),
+			"sign_version": signVersionSchema(),
 			"fc": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -1927,6 +1928,14 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.CassandraEndpoint = strings.TrimSpace(endpoints["cassandra"].(string))
 	}
 
+	var signVersion sync.Map
+	config.SignVersion = &signVersion
+	for _, version := range d.Get("sign_version").(*schema.Set).List() {
+		for key, val := range version.(map[string]interface{}) {
+			signVersion.Store(key, val)
+		}
+	}
+
 	if config.RamRoleArn != "" {
 		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config)
 		if err != nil {
@@ -2321,6 +2330,26 @@ func assumeRoleSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Description: descriptions["external_id"],
+				},
+			},
+		},
+	}
+}
+
+func signVersionSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeSet,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"oss": {
+					Type:     schema.TypeString,
+					Optional: true,
+				},
+				"sls": {
+					Type:     schema.TypeString,
+					Optional: true,
 				},
 			},
 		},
