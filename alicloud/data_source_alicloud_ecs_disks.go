@@ -32,7 +32,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "ephemeral_ssd", "cloud_auto"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "ephemeral_ssd", "cloud_auto", "cloud_essd_entry"}, false),
 			},
 			"delete_auto_snapshot": {
 				Type:     schema.TypeBool,
@@ -71,13 +71,13 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"system", "data", "all"}, false),
+				ValidateFunc: StringInSlice([]string{"system", "data", "all"}, false),
 			},
 			"type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"system", "data", "all"}, false),
+				ValidateFunc: StringInSlice([]string{"system", "data", "all"}, false),
 				Deprecated:   "Field 'type' has been deprecated from provider version 1.122.0. New field 'disk_type' instead.",
 			},
 			"dry_run": {
@@ -105,7 +105,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"on", "off"}, false),
+				ValidateFunc: StringInSlice([]string{"on", "off"}, false),
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -135,7 +135,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
 			"portable": {
 				Type:     schema.TypeBool,
@@ -156,7 +156,7 @@ func dataSourceAlicloudEcsDisks() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Attaching", "Available", "Creating", "Detaching", "In_use", "Migrating", "ReIniting", "Transferring"}, false),
+				ValidateFunc: StringInSlice([]string{"Attaching", "Available", "Creating", "Detaching", "In_use", "Migrating", "ReIniting", "Transferring"}, false),
 			},
 			"tags": tagsSchema(),
 			"zone_id": {
