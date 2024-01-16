@@ -74,7 +74,6 @@ func resourceAlicloudCenTransitRouterRouteEntry() *schema.Resource {
 }
 
 func resourceAlicloudCenTransitRouterRouteEntryCreate(d *schema.ResourceData, meta interface{}) error {
-	time.Sleep(60 * time.Second)
 	client := meta.(*connectivity.AliyunClient)
 	cbnService := CbnService{client}
 	var response map[string]interface{}
@@ -217,6 +216,7 @@ func resourceAlicloudCenTransitRouterRouteEntryUpdate(d *schema.ResourceData, me
 
 func resourceAlicloudCenTransitRouterRouteEntryDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cbnService := CbnService{client}
 	action := "DeleteTransitRouterRouteEntry"
 	var response map[string]interface{}
 	conn, err := client.NewCbnClient()
@@ -259,6 +259,10 @@ func resourceAlicloudCenTransitRouterRouteEntryDelete(d *schema.ResourceData, me
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 1*time.Second, cbnService.CenTransitRouterRouteEntryStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
 }
