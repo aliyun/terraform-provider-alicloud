@@ -918,10 +918,11 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"container_group_name": strings.ToLower(name),
-					"security_group_id":    "${alicloud_security_group.default.id}",
-					"vswitch_id":           "${alicloud_vswitch.default.id}",
-					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"container_group_name":             strings.ToLower(name),
+					"security_group_id":                "${alicloud_security_group.default.id}",
+					"vswitch_id":                       "${alicloud_vswitch.default.id}",
+					"resource_group_id":                "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"termination_grace_period_seconds": "10",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -991,7 +992,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 									},
 								},
 							},
-						},
+							"lifecycle_pre_stop_handler_exec": []string{"/bin/sh", "-c", "sleep 10"}},
 					},
 					"init_containers": []map[string]interface{}{
 						{
@@ -1097,6 +1098,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"termination_grace_period_seconds": "11",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -1165,6 +1167,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 									},
 								},
 							},
+							"lifecycle_pre_stop_handler_exec": []string{"/bin/sh", "-c", "sleep 11"},
 						},
 					},
 					"init_containers": []map[string]interface{}{
@@ -1256,7 +1259,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec"},
 			},
 		},
 	})
@@ -1450,7 +1453,7 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id", "volumes.1.config_file_volume_config_file_to_paths.0.content"},
 			},
 		},
 	})

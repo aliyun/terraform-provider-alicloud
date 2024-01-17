@@ -144,6 +144,7 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+* `termination_grace_period_seconds` - (Optional, ForceNew, Int, Available since 1.216.0) The buffer time during which the program handles operations before the program stops. Unit: seconds.
 
 ### `acr_registry_info`
 
@@ -315,6 +316,7 @@ The containers supports the following:
 * `ready` - (Optional, Available since v1.208.0) Indicates whether the container passed the readiness probe.
 * `restart_count` - (Optional, Available since v1.208.0) The number of times that the container restarted.
 * `security_context` - (Optional, Set, Available since v1.215.0) The security context of the container. See [`security_context`](#containers-security_context) below.
+* `lifecycle_pre_stop_handler_exec` - (Optional, List, Available since v1.216.0) The commands to be executed in containers when you use the CLI to specify the preStop callback function.
 
 ### `containers-ports`
 
