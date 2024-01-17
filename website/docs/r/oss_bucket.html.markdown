@@ -402,8 +402,8 @@ The following arguments are supported:
 * `cors_rule` - (Optional) A rule of  [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm). The items of core rule are no more than 10 for every OSS bucket. See [`cors_rule`](#cors_rule) below.
 * `website` - (Optional) A website configuration. See [`website`](#website) below.
 * `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm). See [`logging`](#logging) below.
-* `logging_isenable` - (Optional, Deprecated from 1.37.0.) The flag of using logging enable container. Defaults true.
-* `referer_config` - (Optional) The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). See [`referer_config`](#referer_config) below.
+* `logging_isenable` - (Optional, Deprecated since 1.37.0) The flag of using logging enable container. Defaults true.
+* `referer_config` - (Optional, Computed, Deprecated since 1.215.0) Field `referer_config` has been deprecated from provider version 1.215.0. Please use the new resource `alicloud_oss_bucket_referer` instead. The configuration of [referer](https://www.alibabacloud.com/help/doc-detail/31901.htm). See [`referer_config`](#referer_config) below.
 * `lifecycle_rule` - (Optional) A configuration of [object lifecycle management](https://www.alibabacloud.com/help/doc-detail/31904.htm). See [`lifecycle_rule`](#lifecycle_rule) below.
 * `policy` - (Optional, Available since 1.41.0) Json format text of bucket policy [bucket policy management](https://www.alibabacloud.com/help/doc-detail/100680.htm).
 * `storage_class` - (Optional, ForceNew) The [storage class](https://www.alibabacloud.com/help/doc-detail/51374.htm) to apply. Can be "Standard", "IA", "Archive", "ColdArchive" and "DeepColdArchive". Defaults to "Standard". "ColdArchive" is available since 1.203.0. "DeepColdArchive" is available since 1.209.0.
