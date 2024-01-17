@@ -1055,7 +1055,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cs_edge_kubernetes":                                    resourceAlicloudCSEdgeKubernetes(),
 			"alicloud_cs_serverless_kubernetes":                              resourceAlicloudCSServerlessKubernetes(),
 			"alicloud_cs_kubernetes_autoscaler":                              resourceAlicloudCSKubernetesAutoscaler(),
-			"alicloud_cs_kubernetes_node_pool":                               resourceAlicloudCSKubernetesNodePool(),
+			"alicloud_cs_kubernetes_node_pool":                               resourceAliCloudAckNodepool(),
 			"alicloud_cs_kubernetes_permissions":                             resourceAlicloudCSKubernetesPermissions(),
 			"alicloud_cs_autoscaling_config":                                 resourceAlicloudCSAutoscalingConfig(),
 			"alicloud_cr_namespace":                                          resourceAlicloudCRNamespace(),

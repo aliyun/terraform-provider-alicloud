@@ -1,86 +1,418 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/alibabacloud-go/tea/tea"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	roacs "github.com/alibabacloud-go/cs-20151215/v3/client"
+	"github.com/denverdino/aliyungo/cs"
+
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/denverdino/aliyungo/cs"
-	aliyungoecs "github.com/denverdino/aliyungo/ecs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-const defaultNodePoolType = "ess"
-
-func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
+func resourceAliCloudAckNodepool() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCSKubernetesNodePoolCreate,
-		Read:   resourceAlicloudCSNodePoolRead,
-		Update: resourceAlicloudCSNodePoolUpdate,
-		Delete: resourceAlicloudCSNodePoolDelete,
+		Create: resourceAliCloudAckNodepoolCreate,
+		Read:   resourceAliCloudAckNodepoolRead,
+		Update: resourceAliCloudAckNodepoolUpdate,
+		Delete: resourceAliCloudAckNodepoolDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(90 * time.Minute),
 			Update: schema.DefaultTimeout(60 * time.Minute),
 			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:             schema.TypeBool,
+				Optional:         true,
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
+			},
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
+				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 6, 12}),
+			},
+			"cis_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"cluster_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
-			"name": {
+			"compensate_with_on_demand": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"cpu_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"static", "none"}, true),
+			},
+			"data_disks": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"bursting_enabled": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"category": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto", "cloud", "cloud_essd_xc0", "cloud_essd_xc1", "all", "ephemeral_ssd", "local_disk"}, true),
+						},
+						"kms_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"performance_level": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"encrypted": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"size": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(40, 32767),
+						},
+						"device": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"auto_snapshot_policy_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"provisioned_iops": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"deployment_set_id": {
 				Type:     schema.TypeString,
-				Required: true,
-			},
-			"node_count": {
-				Type:          schema.TypeInt,
-				Optional:      true,
-				Computed:      true,
-				ConflictsWith: []string{"instances", "desired_size"},
-				Deprecated:    "Field 'node_count' has been deprecated from provider version 1.158.0. New field 'desired_size' instead.",
+				Optional: true,
+				ForceNew: true,
 			},
 			"desired_size": {
 				Type:          schema.TypeInt,
 				Optional:      true,
-				Computed:      true,
 				ConflictsWith: []string{"instances", "node_count"},
+				ValidateFunc:  IntAtLeast(0),
 			},
-			"vpc_id": {
+			"force_delete": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"image_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
-			"vswitch_ids": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				MinItems: 1,
+			"image_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS", "AliyunLinuxSecurity"}, true),
+			},
+			"install_cloud_monitor": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
+			"instance_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      PostPaid,
+				ValidateFunc: StringInSlice([]string{"PrePaid", "PostPaid"}, true),
 			},
 			"instance_types": {
 				Type:     schema.TypeList,
 				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"internet_charge_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
+			},
+			"internet_max_bandwidth_out": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 100),
+			},
+			"key_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ConflictsWith: []string{"password", "kms_encrypted_password"},
+			},
+			"kubelet_configuration": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"event_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"cpu_manager_policy": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"allowed_unsafe_sysctls": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"eviction_soft_grace_period": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"serialize_image_pulls": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_api_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"system_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"eviction_soft": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"feature_gates": {
+							Type:     schema.TypeMap,
+							Optional: true,
+							Elem:     &schema.Schema{Type: schema.TypeBool},
+						},
+						"event_record_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"registry_burst": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_reserved": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"max_pods": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"read_only_port": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"registry_pull_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"container_log_max_files": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"eviction_hard": {
+							Type:     schema.TypeMap,
+							Optional: true,
+						},
+						"container_log_max_size": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"kube_api_qps": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
 				},
-				MinItems: 1,
-				MaxItems: 10,
+			},
+			"labels": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"key": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+			"login_as_non_root": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"management": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"auto_upgrade_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"auto_upgrade_kubelet": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"auto_repair": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"auto_upgrade": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"surge_percentage": {
+							Type:       schema.TypeInt,
+							Optional:   true,
+							Deprecated: "Field 'surge_percentage' has been deprecated from provider version 1.219.0. Proportion of additional nodes. You have to specify one of surge, surge_percentage.",
+						},
+						"surge": {
+							Type:       schema.TypeInt,
+							Optional:   true,
+							Deprecated: "Field 'surge' has been deprecated from provider version 1.219.0. Number of additional nodes. You have to specify one of surge, surge_percentage.",
+						},
+						"auto_vul_fix_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"restart_node": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+									"vul_level": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"auto_repair_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Computed: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"restart_node": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"auto_vul_fix": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"max_unavailable": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 1000),
+						},
+					},
+				},
+			},
+			"multi_az_policy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PRIORITY", "COST_OPTIMIZED", "BALANCE"}, true),
+			},
+			"node_name_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"node_pool_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"node_pool_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ExactlyOneOf: []string{"node_pool_name", "name"},
+			},
+			"on_demand_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 1000),
+			},
+			"on_demand_percentage_above_base_capacity": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"password": {
 				Type:          schema.TypeString,
@@ -88,46 +420,200 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Sensitive:     true,
 				ConflictsWith: []string{"key_name", "kms_encrypted_password"},
 			},
-			"key_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"password", "kms_encrypted_password"},
+			"period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
+				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 6, 12}),
 			},
-			"kms_encrypted_password": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ConflictsWith: []string{"password", "key_name"},
+			"period_unit": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
+				ValidateFunc:     StringInSlice([]string{"Month"}, true),
 			},
-			"kms_encryption_context": {
-				Type:     schema.TypeMap,
+			"platform": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				Deprecated:   "Field 'platform' has been deprecated from provider version 1.145.0. Operating system release, using `image_type` instead.",
+				ValidateFunc: StringInSlice([]string{"CentOS", "AliyunLinux", "Windows", "WindowsCore"}, true),
+			},
+			"private_pool_options": {
+				Type:     schema.TypeList,
 				Optional: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("kms_encrypted_password").(string) == ""
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"private_pool_options_match_criteria": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"private_pool_options_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
 				},
-				Elem: schema.TypeString,
+			},
+			"rds_instances": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"rolling_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"max_parallelism": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"runtime_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"runtime_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"scaling_config": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"instances", "node_count", "desired_size"},
+				MaxItems:      1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"min_size": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 1000),
+						},
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"cpu", "gpu", "gpushare", "spot"}, true),
+						},
+						"eip_bandwidth": {
+							Type:          schema.TypeInt,
+							Optional:      true,
+							ConflictsWith: []string{"internet_charge_type"},
+							ValidateFunc:  IntBetween(0, 500),
+						},
+						"is_bond_eip": {
+							Type:          schema.TypeBool,
+							Optional:      true,
+							ConflictsWith: []string{"internet_charge_type"},
+						},
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  true,
+						},
+						"max_size": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 1000),
+						},
+						"eip_internet_charge_type": {
+							Type:          schema.TypeString,
+							Optional:      true,
+							ConflictsWith: []string{"internet_charge_type"},
+							ValidateFunc:  StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
+						},
+					},
+				},
+			},
+			"scaling_policy": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				DiffSuppressFunc: csNodepoolScalingPolicyDiffSuppressFunc,
+				ValidateFunc:     StringInSlice([]string{"release", "recycle"}, true),
 			},
 			"security_group_id": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'security_group_id' has been deprecated from provider version 1.145.0. New field 'security_group_ids' instead",
+				ForceNew:   true,
+				Deprecated: "Field 'security_group_id' has been deprecated from provider version 1.145.0. The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.",
 			},
-			"system_disk_category": {
-				Type:     schema.TypeString,
+			"security_group_ids": {
+				Type:     schema.TypeList,
 				Optional: true,
-				Default:  DiskCloudEfficiency,
+				Computed: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"system_disk_size": {
+			"soc_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"spot_instance_pools": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      40,
-				ValidateFunc: validation.IntBetween(20, 32768),
+				ValidateFunc: IntBetween(0, 10),
 			},
-			"system_disk_performance_level": {
-				Type:             schema.TypeString,
+			"spot_instance_remedy": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"spot_price_limit": {
+				Type:             schema.TypeList,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
-				DiffSuppressFunc: csNodepoolDiskPerformanceLevelDiffSuppressFunc,
+				DiffSuppressFunc: csNodepoolSpotInstanceSettingDiffSuppressFunc,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"price_limit": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"spot_strategy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"system_disk_bursting_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"system_disk_categories": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"system_disk_category": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud_auto"}, true),
+			},
+			"system_disk_encrypt_algorithm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"aes-256"}, true),
 			},
 			"system_disk_encrypted": {
 				Type:     schema.TypeBool,
@@ -137,150 +623,30 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"system_disk_performance_level": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: csNodepoolDiskPerformanceLevelDiffSuppressFunc,
+			},
+			"system_disk_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"system_disk_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(20, 500),
+			},
 			"system_disk_snapshot_policy_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"system_disk_encrypt_algorithm": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"aes-256", "sm4-128"}, false),
-			},
-			"platform": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "Windows", "CentOS", "WindowsCore"}, false),
-				Deprecated:   "Field 'platform' has been deprecated from provider version 1.145.0. New field 'image_type' instead",
-			},
-			"image_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"cpu_policy": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
-			},
-			"instance_charge_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Default:      PostPaid,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
-			},
-			"period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12, 24, 36, 48, 60}),
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
-			},
-			"period_unit": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Default:          Month,
-				ValidateFunc:     validation.StringInSlice([]string{"Month"}, false),
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
-			},
-			"auto_renew": {
-				Type:             schema.TypeBool,
-				Default:          false,
-				Optional:         true,
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
-			},
-			"auto_renew_period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Default:          1,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
-				DiffSuppressFunc: csNodepoolInstancePostPaidDiffSuppressFunc,
-			},
-			"install_cloud_monitor": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  true,
-			},
-			"unschedulable": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"data_disks": {
-				Optional: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"size": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-						"category": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
-						},
-						"snapshot_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"device": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kms_key_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"encrypted": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"auto_snapshot_policy_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"performance_level": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
-			"tags": {
-				Type:     schema.TypeMap,
-				Optional: true,
-			},
-			"labels": {
-				Optional: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-			},
+			"tags": tagsSchema(),
 			"taints": {
-				Optional: true,
 				Type:     schema.TypeList,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -289,140 +655,59 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-					},
-				},
-			},
-			"node_name_mode": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-			},
-			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"scaling_group_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"management": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"auto_repair": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"auto_upgrade": {
-							Type:     schema.TypeBool,
-							Optional: true,
-						},
-						"surge": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntBetween(0, 1000),
-						},
-						"surge_percentage": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntBetween(0, 100),
-						},
-						"max_unavailable": {
-							Type:     schema.TypeInt,
+						"key": {
+							Type:     schema.TypeString,
 							Required: true,
 						},
 					},
 				},
 			},
-			"scaling_config": {
+			"tee_config": {
 				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"min_size": {
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(0, 1000),
-						},
-						"max_size": {
-							Type:         schema.TypeInt,
-							Required:     true,
-							ValidateFunc: validation.IntBetween(0, 1000),
-						},
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"cpu", "gpu", "gpushare", "spot"}, false),
-						},
-						"is_bond_eip": {
-							Type:          schema.TypeBool,
-							Optional:      true,
-							ConflictsWith: []string{"internet_charge_type"},
-						},
-						"eip_internet_charge_type": {
-							Type:          schema.TypeString,
-							Optional:      true,
-							ValidateFunc:  validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
-							ConflictsWith: []string{"internet_charge_type"},
-						},
-						"eip_bandwidth": {
-							Type:          schema.TypeInt,
-							Optional:      true,
-							ValidateFunc:  validation.IntBetween(1, 500),
-							ConflictsWith: []string{"internet_charge_type"},
-						},
-					},
-				},
-				ConflictsWith: []string{"instances"},
-			},
-			"scaling_policy": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Computed:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"release", "recycle"}, false),
-				DiffSuppressFunc: csNodepoolScalingPolicyDiffSuppressFunc,
-			},
-			"resource_group_id": {
-				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
-			},
-			"internet_charge_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayByTraffic", "PayByBandwidth"}, false),
-			},
-			"internet_max_bandwidth_out": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
-			"spot_strategy": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
-			},
-			"spot_price_limit": {
-				Type:     schema.TypeList,
-				Optional: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"instance_type": {
-							Type:     schema.TypeString,
+						"tee_enable": {
+							Type:     schema.TypeBool,
 							Optional: true,
-						},
-						"price_limit": {
-							Type:     schema.TypeString,
-							Optional: true,
+							ForceNew: true,
 						},
 					},
 				},
-				DiffSuppressFunc: csNodepoolSpotInstanceSettingDiffSuppressFunc,
+			},
+			"unschedulable": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					_, base64DecodeError := base64.StdEncoding.DecodeString(old)
+					if base64DecodeError == nil {
+						return new == old
+					}
+					return new == base64.StdEncoding.EncodeToString([]byte(old))
+				},
+			},
+			"vswitch_ids": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'name' has been deprecated since provider version 1.219.0. New field 'node_pool_name' instead.",
+			},
+			"kms_encrypted_password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"instances": {
 				Type:     schema.TypeList,
@@ -443,121 +728,12 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			"security_group_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				MaxItems: 5,
-				Computed: true,
-			},
-			"image_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AliyunLinux", "AliyunLinux3", "AliyunLinux3Arm64", "AliyunLinuxUEFI", "CentOS", "Windows", "WindowsCore", "AliyunLinux Qboot", "ContainerOS"}, false),
-			},
-			"runtime_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"runtime_version": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"deployment_set_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"cis_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"soc_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"rds_instances": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"polardb_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"kubelet_configuration": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"registry_pull_qps": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"registry_burst": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"event_record_qps": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"event_burst": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kube_api_qps": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kube_api_burst": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"serialize_image_pulls": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"cpu_manager_policy": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"eviction_hard": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-						"eviction_soft": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-						"eviction_soft_grace_period": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-						"system_reserved": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-						"kube_reserved": {
-							Type:     schema.TypeMap,
-							Optional: true,
-						},
-					},
-				},
+			"node_count": {
+				Type:          schema.TypeInt,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"instances", "desired_size"},
+				Deprecated:    "Field 'node_count' has been deprecated from provider version 1.158.0. New field 'desired_size' instead.",
 			},
 			"rollout_policy": {
 				Type:     schema.TypeList,
@@ -571,98 +747,1335 @@ func resourceAlicloudCSKubernetesNodePool() *schema.Resource {
 						},
 					},
 				},
-				Deprecated: "Field 'rollout_policy' has been deprecated from provider version 1.184.0. Please use new field 'rolling_policy' instead it to ensure the config takes effect",
+				Removed: "Field 'rollout_policy' has been removed from provider version 1.184.0. Please use new field 'rolling_policy' instead it to ensure the config takes effect",
 			},
-			"rolling_policy": {
-				Type:     schema.TypeList,
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Removed:  "Field 'vpc_id' has been removed from provider version 1.218.0.",
+			},
+			"kms_encryption_context": {
+				Type:     schema.TypeMap,
 				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"max_parallelism": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return d.Get("kms_encrypted_password").(string) == ""
 				},
+				Elem: schema.TypeString,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCSKubernetesNodePoolCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	invoker := NewInvoker()
 
-	var requestInfo *cs.Client
-	var raw interface{}
-
-	clusterId := d.Get("cluster_id").(string)
-	// prepare args and set default value
-	args, err := buildNodePoolArgs(d, meta)
+	ClusterId := d.Get("cluster_id")
+	action := fmt.Sprintf("/clusters/%s/nodepools", ClusterId)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	conn, err := client.NewAckClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "PrepareKubernetesNodePoolArgs", err)
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["ClusterId"] = d.Get("cluster_id")
+
+	objectDataLocalMap := make(map[string]interface{})
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		objectDataLocalMap["resource_group_id"] = v
+	}
+	objectDataLocalMap["name"] = d.Get("name")
+	if v, ok := d.GetOk("node_pool_name"); ok {
+		objectDataLocalMap["name"] = v
+	}
+	request["nodepool_info"] = objectDataLocalMap
+	objectDataLocalMap1 := make(map[string]interface{})
+	if v, ok := d.GetOk("node_count"); ok {
+		request["count"] = v
+	}
+	if v, ok := d.GetOk("security_group_ids"); ok {
+		nodeNative2, _ := jsonpath.Get("$", v)
+		if nodeNative2 != nil && nodeNative2 != "" {
+			objectDataLocalMap1["security_group_ids"] = nodeNative2
+		}
+	}
+	if v, ok := d.GetOk("period"); ok {
+		objectDataLocalMap1["period"] = v
+	}
+	if v, ok := d.GetOk("platform"); ok {
+		objectDataLocalMap1["platform"] = v
+	}
+	if v := d.Get("data_disks"); !IsNil(v) {
+		if v, ok := d.GetOk("data_disks"); ok {
+			localData, err := jsonpath.Get("$", v)
+			if err != nil {
+				return WrapError(err)
+			}
+			localMaps := make([]map[string]interface{}, 0)
+			for _, dataLoop := range localData.([]interface{}) {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["category"] = dataLoopTmp["category"]
+				if dataLoopMap["category"] == "cloud_auto" {
+					dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
+				}
+				dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
+				dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
+				if dataLoopTmp["provisioned_iops"].(int) > 0 {
+					dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
+				}
+				dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
+				if dataLoopTmp["size"].(int) > 0 {
+					dataLoopMap["size"] = dataLoopTmp["size"]
+				}
+				dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
+				dataLoopMap["disk_name"] = dataLoopTmp["name"]
+				dataLoopMap["device"] = dataLoopTmp["device"]
+				dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
+				localMaps = append(localMaps, dataLoopMap)
+			}
+			objectDataLocalMap1["data_disks"] = localMaps
+		}
+	}
+	if v, ok := d.GetOk("deployment_set_id"); ok {
+		objectDataLocalMap1["deploymentset_id"] = v
+	}
+	if v, ok := d.GetOk("compensate_with_on_demand"); ok {
+		objectDataLocalMap1["compensate_with_on_demand"] = v
+	}
+	if v, ok := d.GetOk("auto_renew"); ok {
+		objectDataLocalMap1["auto_renew"] = v
+	}
+	if v, ok := d.GetOk("auto_renew_period"); ok {
+		objectDataLocalMap1["auto_renew_period"] = v
+	}
+	if v, ok := d.GetOk("desired_size"); ok {
+		objectDataLocalMap1["desired_size"] = v
+	}
+	if v, ok := d.GetOk("image_id"); ok {
+		objectDataLocalMap1["image_id"] = v
+	}
+	if v, ok := d.GetOk("image_type"); ok {
+		objectDataLocalMap1["image_type"] = v
+	}
+	if v, ok := d.GetOk("instance_charge_type"); ok {
+		objectDataLocalMap1["instance_charge_type"] = v
+	}
+	if v, ok := d.GetOk("internet_charge_type"); ok {
+		objectDataLocalMap1["internet_charge_type"] = v
+	}
+	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
+		objectDataLocalMap1["internet_max_bandwidth_out"] = v
+	}
+	if v, ok := d.GetOk("key_name"); ok {
+		objectDataLocalMap1["key_pair"] = v
+	}
+	if v, ok := d.GetOk("multi_az_policy"); ok {
+		objectDataLocalMap1["multi_az_policy"] = v
+	}
+	if v, ok := d.GetOk("on_demand_base_capacity"); ok {
+		objectDataLocalMap1["on_demand_base_capacity"] = v
+	}
+	if v, ok := d.GetOk("on_demand_percentage_above_base_capacity"); ok {
+		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = v
+	}
+	if v, ok := d.GetOk("period_unit"); ok {
+		objectDataLocalMap1["period_unit"] = v
+	}
+	if v, ok := d.GetOk("scaling_policy"); ok {
+		objectDataLocalMap1["scaling_policy"] = v
+	}
+	if v, ok := d.GetOk("security_group_id"); ok {
+		objectDataLocalMap1["security_group_id"] = v
+	}
+	if v, ok := d.GetOk("spot_instance_pools"); ok {
+		objectDataLocalMap1["spot_instance_pools"] = v
+	}
+	if v, ok := d.GetOk("spot_instance_remedy"); ok {
+		objectDataLocalMap1["spot_instance_remedy"] = v
+	}
+	if v := d.Get("spot_price_limit"); !IsNil(v) {
+		if v, ok := d.GetOk("spot_price_limit"); ok {
+			localData1, err := jsonpath.Get("$", v)
+			if err != nil {
+				return WrapError(err)
+			}
+			localMaps1 := make([]map[string]interface{}, 0)
+			for _, dataLoop1 := range localData1.([]interface{}) {
+				dataLoop1Tmp := dataLoop1.(map[string]interface{})
+				dataLoop1Map := make(map[string]interface{})
+				dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
+				dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
+				localMaps1 = append(localMaps1, dataLoop1Map)
+			}
+			objectDataLocalMap1["spot_price_limit"] = localMaps1
+		}
+	}
+	if v, ok := d.GetOk("spot_strategy"); ok {
+		objectDataLocalMap1["spot_strategy"] = v
+	}
+	if v, ok := d.GetOk("system_disk_bursting_enabled"); ok {
+		objectDataLocalMap1["system_disk_bursting_enabled"] = v
+	}
+	if v, ok := d.GetOk("system_disk_category"); ok {
+		objectDataLocalMap1["system_disk_category"] = v
+	}
+	if v, ok := d.GetOk("system_disk_performance_level"); ok {
+		objectDataLocalMap1["system_disk_performance_level"] = v
+	}
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		nodeNative41, _ := jsonpath.Get("$", v)
+		if nodeNative41 != nil && nodeNative41 != "" {
+			objectDataLocalMap1["vswitch_ids"] = nodeNative41
+		}
+	}
+	if v := d.Get("tags"); !IsNil(v) {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		objectDataLocalMap1["tags"] = tagsMap
+	}
+	if v, ok := d.GetOk("system_disk_size"); ok {
+		objectDataLocalMap1["system_disk_size"] = v
+	}
+	if v, ok := d.GetOk("system_disk_provisioned_iops"); ok {
+		objectDataLocalMap1["system_disk_provisioned_iops"] = v
+	}
+	if v, ok := d.GetOk("password"); ok {
+		objectDataLocalMap1["login_password"] = v
+	}
+	if v := d.Get("private_pool_options"); !IsNil(v) {
+		private_pool_options := make(map[string]interface{})
+		nodeNative47, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", d.Get("private_pool_options"))
+		if nodeNative47 != nil && nodeNative47 != "" {
+			private_pool_options["match_criteria"] = nodeNative47
+		}
+		nodeNative48, _ := jsonpath.Get("$[0].private_pool_options_id", d.Get("private_pool_options"))
+		if nodeNative48 != nil && nodeNative48 != "" {
+			private_pool_options["id"] = nodeNative48
+		}
+		objectDataLocalMap1["private_pool_options"] = private_pool_options
+	}
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			objectDataLocalMap1["login_password"] = decryptResp
+		}
+	}
+	if v, ok := d.GetOk("cis_enabled"); ok {
+		objectDataLocalMap1["cis_enabled"] = v
+	}
+	if v, ok := d.GetOk("soc_enabled"); ok {
+		objectDataLocalMap1["soc_enabled"] = v
+	}
+	if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+		objectDataLocalMap1["system_disk_encrypt_algorithm"] = v
+	}
+	if v, ok := d.GetOk("login_as_non_root"); ok {
+		objectDataLocalMap1["login_as_non_root"] = v
+	}
+	if v, ok := d.GetOk("system_disk_encrypted"); ok {
+		objectDataLocalMap1["system_disk_encrypted"] = v
+	}
+	if v, ok := d.GetOk("system_disk_categories"); ok {
+		nodeNative54, _ := jsonpath.Get("$", v)
+		if nodeNative54 != nil && nodeNative54 != "" {
+			objectDataLocalMap1["system_disk_categories"] = nodeNative54
+		}
+	}
+	if v, ok := d.GetOk("instance_types"); ok {
+		nodeNative55, _ := jsonpath.Get("$", v)
+		if nodeNative55 != nil && nodeNative55 != "" {
+			objectDataLocalMap1["instance_types"] = nodeNative55
+		}
+	}
+	if v, ok := d.GetOk("rds_instances"); ok {
+		nodeNative56, _ := jsonpath.Get("$", v)
+		if nodeNative56 != nil && nodeNative56 != "" {
+			objectDataLocalMap1["rds_instances"] = nodeNative56
+		}
+	}
+	if v, ok := d.GetOk("system_disk_kms_key"); ok {
+		objectDataLocalMap1["system_disk_kms_key_id"] = v
+	}
+	if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
+		objectDataLocalMap1["worker_system_disk_snapshot_policy_id"] = v
+	}
+	request["scaling_group"] = objectDataLocalMap1
+	objectDataLocalMap2 := make(map[string]interface{})
+	if v, ok := d.GetOk("cpu_policy"); ok {
+		objectDataLocalMap2["cpu_policy"] = v
+	}
+	if v, ok := d.GetOk("install_cloud_monitor"); ok {
+		objectDataLocalMap2["cms_enabled"] = v
+	}
+	if v, ok := d.GetOk("runtime_version"); ok {
+		objectDataLocalMap2["runtime_version"] = v
+	}
+	if v, ok := d.GetOk("user_data"); ok {
+		objectDataLocalMap2["user_data"] = v
+		if v := d.Get("user_data").(string); v != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+			if base64DecodeError == nil {
+				objectDataLocalMap2["user_data"] = tea.String(v)
+			} else {
+				objectDataLocalMap2["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
+			}
+		}
+	}
+	if v := d.Get("taints"); !IsNil(v) {
+		if v, ok := d.GetOk("taints"); ok {
+			localData3, err := jsonpath.Get("$", v)
+			if err != nil {
+				return WrapError(err)
+			}
+			localMaps3 := make([]map[string]interface{}, 0)
+			for _, dataLoop3 := range localData3.([]interface{}) {
+				dataLoop3Tmp := dataLoop3.(map[string]interface{})
+				dataLoop3Map := make(map[string]interface{})
+				dataLoop3Map["key"] = dataLoop3Tmp["key"]
+				dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
+				dataLoop3Map["value"] = dataLoop3Tmp["value"]
+				localMaps3 = append(localMaps3, dataLoop3Map)
+			}
+			objectDataLocalMap2["taints"] = localMaps3
+		}
+	}
+	if v, ok := d.GetOk("node_name_mode"); ok {
+		objectDataLocalMap2["node_name_mode"] = v
+	}
+	if v, ok := d.GetOk("unschedulable"); ok {
+		objectDataLocalMap2["unschedulable"] = v
+	}
+	if v, ok := d.GetOk("runtime_name"); ok {
+		objectDataLocalMap2["runtime"] = v
+	}
+	if v := d.Get("labels"); !IsNil(v) {
+		if v, ok := d.GetOk("labels"); ok {
+			localData4, err := jsonpath.Get("$", v)
+			if err != nil {
+				return WrapError(err)
+			}
+			localMaps4 := make([]map[string]interface{}, 0)
+			for _, dataLoop4 := range localData4.([]interface{}) {
+				dataLoop4Tmp := dataLoop4.(map[string]interface{})
+				dataLoop4Map := make(map[string]interface{})
+				dataLoop4Map["key"] = dataLoop4Tmp["key"]
+				dataLoop4Map["value"] = dataLoop4Tmp["value"]
+				localMaps4 = append(localMaps4, dataLoop4Map)
+			}
+			objectDataLocalMap2["labels"] = localMaps4
+		}
+	}
+	request["kubernetes_config"] = objectDataLocalMap2
+	objectDataLocalMap3 := make(map[string]interface{})
+	if v := d.Get("scaling_config"); !IsNil(v) {
+		nodeNative71, _ := jsonpath.Get("$[0].type", d.Get("scaling_config"))
+		if nodeNative71 != nil && nodeNative71 != "" {
+			objectDataLocalMap3["type"] = nodeNative71
+		}
+		nodeNative72, _ := jsonpath.Get("$[0].max_size", d.Get("scaling_config"))
+		if nodeNative72 != nil && nodeNative72 != "" {
+			objectDataLocalMap3["max_instances"] = nodeNative72
+		}
+		nodeNative73, _ := jsonpath.Get("$[0].min_size", d.Get("scaling_config"))
+		if nodeNative73 != nil && nodeNative73 != "" {
+			objectDataLocalMap3["min_instances"] = nodeNative73
+		}
+		nodeNative74, _ := jsonpath.Get("$[0].is_bond_eip", d.Get("scaling_config"))
+		if nodeNative74 != nil && nodeNative74 != "" {
+			objectDataLocalMap3["is_bond_eip"] = nodeNative74
+		}
+		nodeNative75, _ := jsonpath.Get("$[0].enable", d.Get("scaling_config"))
+		if nodeNative75 != nil && nodeNative75 != "" {
+			objectDataLocalMap3["enable"] = nodeNative75
+		}
+		nodeNative76, _ := jsonpath.Get("$[0].eip_internet_charge_type", d.Get("scaling_config"))
+		if nodeNative76 != nil && nodeNative76 != "" {
+			objectDataLocalMap3["eip_internet_charge_type"] = nodeNative76
+		}
+		nodeNative77, _ := jsonpath.Get("$[0].eip_bandwidth", d.Get("scaling_config"))
+		if nodeNative77 != nil && nodeNative77 != "" && nodeNative77.(int) > 0 {
+			objectDataLocalMap3["eip_bandwidth"] = nodeNative77
+		}
+		request["auto_scaling"] = objectDataLocalMap3
 	}
 
-	if err = invoker.Run(func() error {
-		raw, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return csClient.CreateNodePool(args, d.Get("cluster_id").(string))
-		})
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "CreateKubernetesNodePool", raw)
+	objectDataLocalMap4 := make(map[string]interface{})
+	if v := d.Get("management"); !IsNil(v) {
+		nodeNative78, _ := jsonpath.Get("$[0].enable", d.Get("management"))
+		if nodeNative78 != nil && nodeNative78 != "" {
+			objectDataLocalMap4["enable"] = nodeNative78
+		}
+		nodeNative79, _ := jsonpath.Get("$[0].auto_repair", d.Get("management"))
+		if nodeNative79 != nil && nodeNative79 != "" {
+			objectDataLocalMap4["auto_repair"] = nodeNative79
+		}
+		auto_repair_policy := make(map[string]interface{})
+		nodeNative80, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", d.Get("management"))
+		if nodeNative80 != nil && nodeNative80 != "" {
+			auto_repair_policy["restart_node"] = nodeNative80
+		}
+		objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
+		nodeNative81, _ := jsonpath.Get("$[0].auto_vul_fix", d.Get("management"))
+		if nodeNative81 != nil && nodeNative81 != "" {
+			objectDataLocalMap4["auto_vul_fix"] = nodeNative81
+		}
+		auto_vul_fix_policy := make(map[string]interface{})
+		nodeNative82, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", d.Get("management"))
+		if nodeNative82 != nil && nodeNative82 != "" {
+			auto_vul_fix_policy["restart_node"] = nodeNative82
+		}
+		nodeNative83, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", d.Get("management"))
+		if nodeNative83 != nil && nodeNative83 != "" {
+			auto_vul_fix_policy["vul_level"] = nodeNative83
+		}
+		objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
+		nodeNative84, _ := jsonpath.Get("$[0].auto_upgrade", d.Get("management"))
+		if nodeNative84 != nil && nodeNative84 != "" {
+			objectDataLocalMap4["auto_upgrade"] = nodeNative84
+		}
+		auto_upgrade_policy := make(map[string]interface{})
+		nodeNative85, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", d.Get("management"))
+		if nodeNative85 != nil && nodeNative85 != "" {
+			auto_upgrade_policy["auto_upgrade_kubelet"] = nodeNative85
+		}
+		objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
+		upgrade_config := make(map[string]interface{})
+		nodeNative86, _ := jsonpath.Get("$[0].surge", d.Get("management"))
+		if nodeNative86 != nil && nodeNative86 != "" {
+			upgrade_config["surge"] = nodeNative86
+		}
+		nodeNative87, _ := jsonpath.Get("$[0].surge_percentage", d.Get("management"))
+		if nodeNative87 != nil && nodeNative87 != "" {
+			upgrade_config["surge_percentage"] = nodeNative87
+		}
+		nodeNative88, _ := jsonpath.Get("$[0].max_unavailable", d.Get("management"))
+		if nodeNative88 != nil && nodeNative88 != "" && nodeNative88.(int) > 0 {
+			upgrade_config["max_unavailable"] = nodeNative88
+		}
+		objectDataLocalMap4["upgrade_config"] = upgrade_config
+		request["management"] = objectDataLocalMap4
 	}
 
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["RegionId"] = common.Region(client.RegionId)
-		requestMap["Params"] = args
-		addDebug("CreateKubernetesNodePool", raw, requestInfo, requestMap)
+	objectDataLocalMap5 := make(map[string]interface{})
+	if v := d.Get("tee_config"); !IsNil(v) {
+		nodeNative89, _ := jsonpath.Get("$[0].tee_enable", d.Get("tee_config"))
+		if nodeNative89 != nil && nodeNative89 != "" {
+			objectDataLocalMap5["tee_enable"] = nodeNative89
+		}
+		request["tee_config"] = objectDataLocalMap5
 	}
 
-	nodePool, ok := raw.(*cs.CreateNodePoolResponse)
-	if ok != true {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ParseKubernetesNodePoolResponse", raw)
+	objectDataLocalMap6 := make(map[string]interface{})
+	if v := d.Get("kubelet_configuration"); !IsNil(v) {
+		kubelet_configuration := make(map[string]interface{})
+		nodeNative90, _ := jsonpath.Get("$[0].registry_pull_qps", d.Get("kubelet_configuration"))
+		if nodeNative90 != nil && nodeNative90 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative90.(string), 10, 64)
+			kubelet_configuration["registryPullQPS"] = intVal
+		}
+		nodeNative91, _ := jsonpath.Get("$[0].registry_burst", d.Get("kubelet_configuration"))
+		if nodeNative91 != nil && nodeNative91 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative91.(string), 10, 64)
+			kubelet_configuration["registryBurst"] = intVal
+		}
+		nodeNative92, _ := jsonpath.Get("$[0].event_record_qps", d.Get("kubelet_configuration"))
+		if nodeNative92 != nil && nodeNative92 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative92.(string), 10, 64)
+			kubelet_configuration["eventRecordQPS"] = intVal
+		}
+		nodeNative93, _ := jsonpath.Get("$[0].event_burst", d.Get("kubelet_configuration"))
+		if nodeNative93 != nil && nodeNative93 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative93.(string), 10, 64)
+			kubelet_configuration["eventBurst"] = intVal
+		}
+		nodeNative94, _ := jsonpath.Get("$[0].kube_api_qps", d.Get("kubelet_configuration"))
+		if nodeNative94 != nil && nodeNative94 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative94.(string), 10, 64)
+			kubelet_configuration["kubeAPIQPS"] = intVal
+		}
+		nodeNative95, _ := jsonpath.Get("$[0].serialize_image_pulls", d.Get("kubelet_configuration"))
+		if nodeNative95 != nil && nodeNative95 != "" {
+			boolVal, _ := strconv.ParseBool(nodeNative95.(string))
+			kubelet_configuration["serializeImagePulls"] = boolVal
+		}
+		nodeNative96, _ := jsonpath.Get("$[0].cpu_manager_policy", d.Get("kubelet_configuration"))
+		if nodeNative96 != nil && nodeNative96 != "" {
+			kubelet_configuration["cpuManagerPolicy"] = nodeNative96
+		}
+		nodeNative97, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", v)
+		if nodeNative97 != nil && nodeNative97 != "" {
+			kubelet_configuration["allowedUnsafeSysctls"] = nodeNative97
+		}
+		nodeNative98, _ := jsonpath.Get("$[0].feature_gates", d.Get("kubelet_configuration"))
+		if nodeNative98 != nil && nodeNative98 != "" {
+			kubelet_configuration["featureGates"] = nodeNative98
+		}
+		nodeNative99, _ := jsonpath.Get("$[0].container_log_max_files", d.Get("kubelet_configuration"))
+		if nodeNative99 != nil && nodeNative99 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative99.(string), 10, 64)
+			kubelet_configuration["containerLogMaxFiles"] = intVal
+		}
+		nodeNative100, _ := jsonpath.Get("$[0].container_log_max_size", d.Get("kubelet_configuration"))
+		if nodeNative100 != nil && nodeNative100 != "" {
+			kubelet_configuration["containerLogMaxSize"] = nodeNative100
+		}
+		nodeNative101, _ := jsonpath.Get("$[0].max_pods", d.Get("kubelet_configuration"))
+		if nodeNative101 != nil && nodeNative101 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative101.(string), 10, 64)
+			kubelet_configuration["maxPods"] = intVal
+		}
+		nodeNative102, _ := jsonpath.Get("$[0].read_only_port", d.Get("kubelet_configuration"))
+		if nodeNative102 != nil && nodeNative102 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative102.(string), 10, 64)
+			kubelet_configuration["readOnlyPort"] = intVal
+		}
+		nodeNative103, _ := jsonpath.Get("$[0].kube_reserved", d.Get("kubelet_configuration"))
+		if nodeNative103 != nil && nodeNative103 != "" {
+			kubelet_configuration["kubeReserved"] = nodeNative103
+		}
+		nodeNative104, _ := jsonpath.Get("$[0].system_reserved", d.Get("kubelet_configuration"))
+		if nodeNative104 != nil && nodeNative104 != "" {
+			kubelet_configuration["systemReserved"] = nodeNative104
+		}
+		nodeNative105, _ := jsonpath.Get("$[0].eviction_soft_grace_period", d.Get("kubelet_configuration"))
+		if nodeNative105 != nil && nodeNative105 != "" {
+			kubelet_configuration["evictionSoftGracePeriod"] = nodeNative105
+		}
+		nodeNative106, _ := jsonpath.Get("$[0].eviction_soft", d.Get("kubelet_configuration"))
+		if nodeNative106 != nil && nodeNative106 != "" {
+			kubelet_configuration["evictionSoft"] = nodeNative106
+		}
+		nodeNative107, _ := jsonpath.Get("$[0].eviction_hard", d.Get("kubelet_configuration"))
+		if nodeNative107 != nil && nodeNative107 != "" {
+			kubelet_configuration["evictionHard"] = nodeNative107
+		}
+		nodeNative108, _ := jsonpath.Get("$[0].kube_api_burst", d.Get("kubelet_configuration"))
+		if nodeNative108 != nil && nodeNative108 != "" {
+			intVal, _ := strconv.ParseInt(nodeNative108.(string), 10, 64)
+			kubelet_configuration["kubeAPIBurst"] = intVal
+		}
+		objectDataLocalMap6["kubelet_configuration"] = kubelet_configuration
+		request["node_config"] = objectDataLocalMap6
 	}
 
-	d.SetId(fmt.Sprintf("%s%s%s", clusterId, COLON_SEPARATED, nodePool.NodePoolID))
+	body = request
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
 
-	// reset interval to 10s
-	stateConf := BuildStateConf([]string{"initial", "scaling"}, []string{"active"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", action, AlibabaCloudSdkGoERROR)
+	}
+
+	nodepool_id, _ := jsonpath.Get("$.body.nodepool_id", response)
+	d.SetId(fmt.Sprintf("%v:%v", ClusterId, nodepool_id))
+
+	ackServiceV2 := AckServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, "ResourceID:%s , TaskID:%s ", d.Id(), nodePool.TaskID)
+		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	// attach existing node
 	if v, ok := d.GetOk("instances"); ok && v != nil {
 		attachExistingInstance(d, meta)
 	}
 
-	return resourceAlicloudCSNodePoolRead(d, meta)
+	return resourceAliCloudAckNodepoolRead(d, meta)
 }
 
-func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	vpcService := VpcService{client}
-	d.Partial(true)
-	update := false
-	invoker := NewInvoker()
-	args := &cs.UpdateNodePoolRequest{
-		RegionId:         common.Region(client.RegionId),
-		NodePoolInfo:     cs.NodePoolInfo{},
-		ScalingGroup:     cs.ScalingGroup{},
-		KubernetesConfig: cs.KubernetesConfig{},
-		AutoScaling:      cs.AutoScaling{},
-	}
+	ackServiceV2 := AckServiceV2{client}
 
-	parts, err := ParseResourceId(d.Id(), 2)
+	objectRaw, err := ackServiceV2.DescribeAckNodepool(d.Id())
 	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cs_kubernetes_node_pool DescribeAckNodepool Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
 		return WrapError(err)
 	}
 
-	if d.HasChange("node_count") {
+	kubernetes_config1RawObj, _ := jsonpath.Get("$.kubernetes_config", objectRaw)
+	kubernetes_config1Raw := make(map[string]interface{})
+	if kubernetes_config1RawObj != nil {
+		kubernetes_config1Raw = kubernetes_config1RawObj.(map[string]interface{})
+	}
+	d.Set("cpu_policy", kubernetes_config1Raw["cpu_policy"])
+	d.Set("install_cloud_monitor", kubernetes_config1Raw["cms_enabled"])
+	d.Set("node_name_mode", kubernetes_config1Raw["node_name_mode"])
+	d.Set("runtime_name", kubernetes_config1Raw["runtime"])
+	d.Set("runtime_version", kubernetes_config1Raw["runtime_version"])
+	d.Set("unschedulable", kubernetes_config1Raw["unschedulable"])
+	d.Set("user_data", kubernetes_config1Raw["user_data"])
+
+	nodepool_info1RawObj, _ := jsonpath.Get("$.nodepool_info", objectRaw)
+	nodepool_info1Raw := make(map[string]interface{})
+	if nodepool_info1RawObj != nil {
+		nodepool_info1Raw = nodepool_info1RawObj.(map[string]interface{})
+	}
+	d.Set("node_pool_name", nodepool_info1Raw["name"])
+	d.Set("resource_group_id", nodepool_info1Raw["resource_group_id"])
+	d.Set("node_pool_id", nodepool_info1Raw["nodepool_id"])
+
+	scaling_group1RawObj, _ := jsonpath.Get("$.scaling_group", objectRaw)
+	scaling_group1Raw := make(map[string]interface{})
+	if scaling_group1RawObj != nil {
+		scaling_group1Raw = scaling_group1RawObj.(map[string]interface{})
+	}
+	d.Set("auto_renew", scaling_group1Raw["auto_renew"])
+	d.Set("auto_renew_period", scaling_group1Raw["auto_renew_period"])
+	d.Set("cis_enabled", scaling_group1Raw["cis_enabled"])
+	d.Set("compensate_with_on_demand", scaling_group1Raw["compensate_with_on_demand"])
+	d.Set("deployment_set_id", scaling_group1Raw["deploymentset_id"])
+	d.Set("desired_size", scaling_group1Raw["desired_size"])
+	d.Set("image_id", scaling_group1Raw["image_id"])
+	d.Set("image_type", scaling_group1Raw["image_type"])
+	d.Set("instance_charge_type", scaling_group1Raw["instance_charge_type"])
+	d.Set("internet_charge_type", scaling_group1Raw["internet_charge_type"])
+	d.Set("internet_max_bandwidth_out", scaling_group1Raw["internet_max_bandwidth_out"])
+	d.Set("key_name", scaling_group1Raw["key_pair"])
+	d.Set("login_as_non_root", scaling_group1Raw["login_as_non_root"])
+	d.Set("multi_az_policy", scaling_group1Raw["multi_az_policy"])
+	d.Set("on_demand_base_capacity", scaling_group1Raw["on_demand_base_capacity"])
+	d.Set("on_demand_percentage_above_base_capacity", scaling_group1Raw["on_demand_percentage_above_base_capacity"])
+	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
+		d.Set("password", passwd)
+	}
+	d.Set("period", scaling_group1Raw["period"])
+	d.Set("period_unit", scaling_group1Raw["period_unit"])
+	d.Set("platform", scaling_group1Raw["platform"])
+	d.Set("scaling_policy", scaling_group1Raw["scaling_policy"])
+	d.Set("security_group_id", scaling_group1Raw["security_group_id"])
+	d.Set("soc_enabled", scaling_group1Raw["soc_enabled"])
+	d.Set("spot_instance_pools", scaling_group1Raw["spot_instance_pools"])
+	d.Set("spot_instance_remedy", scaling_group1Raw["spot_instance_remedy"])
+	d.Set("spot_strategy", scaling_group1Raw["spot_strategy"])
+	d.Set("system_disk_bursting_enabled", scaling_group1Raw["system_disk_bursting_enabled"])
+	d.Set("system_disk_category", scaling_group1Raw["system_disk_category"])
+	d.Set("system_disk_encrypt_algorithm", scaling_group1Raw["system_disk_encrypt_algorithm"])
+	d.Set("system_disk_encrypted", scaling_group1Raw["system_disk_encrypted"])
+	d.Set("system_disk_kms_key", scaling_group1Raw["system_disk_kms_key_id"])
+	d.Set("system_disk_performance_level", scaling_group1Raw["system_disk_performance_level"])
+	d.Set("system_disk_provisioned_iops", scaling_group1Raw["system_disk_provisioned_iops"])
+	d.Set("system_disk_size", scaling_group1Raw["system_disk_size"])
+	d.Set("system_disk_snapshot_policy_id", scaling_group1Raw["worker_system_disk_snapshot_policy_id"])
+	status1RawObj, _ := jsonpath.Get("$.status", objectRaw)
+	status1Raw := make(map[string]interface{})
+	if status1RawObj != nil {
+		status1Raw = status1RawObj.(map[string]interface{})
+	}
+	d.Set("node_count", status1Raw["total_nodes"])
+
+	data_disks1Raw, _ := jsonpath.Get("$.scaling_group.data_disks", objectRaw)
+	dataDisksMaps := make([]map[string]interface{}, 0)
+	if data_disks1Raw != nil {
+		for _, data_disksChild1Raw := range data_disks1Raw.([]interface{}) {
+			dataDisksMap := make(map[string]interface{})
+			data_disksChild1Raw := data_disksChild1Raw.(map[string]interface{})
+			dataDisksMap["auto_snapshot_policy_id"] = data_disksChild1Raw["auto_snapshot_policy_id"]
+			dataDisksMap["bursting_enabled"] = data_disksChild1Raw["bursting_enabled"]
+			dataDisksMap["category"] = data_disksChild1Raw["category"]
+			dataDisksMap["device"] = data_disksChild1Raw["device"]
+			dataDisksMap["encrypted"] = data_disksChild1Raw["encrypted"]
+			dataDisksMap["kms_key_id"] = data_disksChild1Raw["kms_key_id"]
+			dataDisksMap["name"] = data_disksChild1Raw["disk_name"]
+			dataDisksMap["performance_level"] = data_disksChild1Raw["performance_level"]
+			dataDisksMap["provisioned_iops"] = data_disksChild1Raw["provisioned_iops"]
+			dataDisksMap["size"] = data_disksChild1Raw["size"]
+			dataDisksMap["snapshot_id"] = data_disksChild1Raw["snapshot_id"]
+
+			dataDisksMaps = append(dataDisksMaps, dataDisksMap)
+		}
+	}
+	d.Set("data_disks", dataDisksMaps)
+	instance_types1Raw, _ := jsonpath.Get("$.scaling_group.instance_types", objectRaw)
+	d.Set("instance_types", instance_types1Raw)
+	kubeletConfigurationMaps := make([]map[string]interface{}, 0)
+	kubeletConfigurationMap := make(map[string]interface{})
+	kubelet_configuration1RawObj, _ := jsonpath.Get("$.node_config.kubelet_configuration", objectRaw)
+	kubelet_configuration1Raw := make(map[string]interface{})
+	if kubelet_configuration1RawObj != nil {
+		kubelet_configuration1Raw = kubelet_configuration1RawObj.(map[string]interface{})
+	}
+	if len(kubelet_configuration1Raw) > 0 {
+		if v, ok := kubelet_configuration1Raw["containerLogMaxFiles"].(json.Number); ok {
+			kubeletConfigurationMap["container_log_max_files"] = v.String()
+		}
+		kubeletConfigurationMap["container_log_max_size"] = kubelet_configuration1Raw["containerLogMaxSize"]
+		kubeletConfigurationMap["cpu_manager_policy"] = kubelet_configuration1Raw["cpuManagerPolicy"]
+		if v, ok := kubelet_configuration1Raw["eventBurst"].(json.Number); ok {
+			kubeletConfigurationMap["event_burst"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["eventRecordQPS"].(json.Number); ok {
+			kubeletConfigurationMap["event_record_qps"] = v.String()
+		}
+		kubeletConfigurationMap["eviction_hard"] = kubelet_configuration1Raw["evictionHard"]
+		kubeletConfigurationMap["eviction_soft"] = kubelet_configuration1Raw["evictionSoft"]
+		kubeletConfigurationMap["eviction_soft_grace_period"] = kubelet_configuration1Raw["evictionSoftGracePeriod"]
+		kubeletConfigurationMap["feature_gates"] = kubelet_configuration1Raw["featureGates"]
+		if v, ok := kubelet_configuration1Raw["kubeAPIBurst"].(json.Number); ok {
+			kubeletConfigurationMap["kube_api_burst"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["kubeAPIQPS"].(json.Number); ok {
+			kubeletConfigurationMap["kube_api_qps"] = v.String()
+		}
+		kubeletConfigurationMap["kube_reserved"] = kubelet_configuration1Raw["kubeReserved"]
+		if v, ok := kubelet_configuration1Raw["maxPods"].(json.Number); ok {
+			kubeletConfigurationMap["max_pods"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["readOnlyPort"].(json.Number); ok {
+			kubeletConfigurationMap["read_only_port"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["registryBurst"].(json.Number); ok {
+			kubeletConfigurationMap["registry_burst"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["registryPullQPS"].(json.Number); ok {
+			kubeletConfigurationMap["registry_pull_qps"] = v.String()
+		}
+		if v, ok := kubelet_configuration1Raw["serializeImagePulls"].(bool); ok {
+			kubeletConfigurationMap["serialize_image_pulls"] = strconv.FormatBool(v)
+		}
+		kubeletConfigurationMap["system_reserved"] = kubelet_configuration1Raw["systemReserved"]
+
+		allowedUnsafeSysctls1Raw, _ := jsonpath.Get("$.node_config.kubelet_configuration.allowedUnsafeSysctls", objectRaw)
+		kubeletConfigurationMap["allowed_unsafe_sysctls"] = allowedUnsafeSysctls1Raw
+		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
+	}
+	d.Set("kubelet_configuration", kubeletConfigurationMaps)
+	labels1Raw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
+	labelsMaps := make([]map[string]interface{}, 0)
+	if labels1Raw != nil {
+		for _, labelsChild1Raw := range labels1Raw.([]interface{}) {
+			labelsMap := make(map[string]interface{})
+			labelsChild1Raw := labelsChild1Raw.(map[string]interface{})
+			labelsMap["key"] = labelsChild1Raw["key"]
+			labelsMap["value"] = labelsChild1Raw["value"]
+
+			labelsMaps = append(labelsMaps, labelsMap)
+		}
+	}
+	d.Set("labels", labelsMaps)
+	managementMaps := make([]map[string]interface{}, 0)
+	managementMap := make(map[string]interface{})
+	management1Raw := make(map[string]interface{})
+	if objectRaw["management"] != nil {
+		management1Raw = objectRaw["management"].(map[string]interface{})
+	}
+	if len(management1Raw) > 0 {
+		managementMap["auto_repair"] = management1Raw["auto_repair"]
+		managementMap["auto_upgrade"] = management1Raw["auto_upgrade"]
+		managementMap["auto_vul_fix"] = management1Raw["auto_vul_fix"]
+		managementMap["enable"] = management1Raw["enable"]
+
+		upgrade_config1RawObj, _ := jsonpath.Get("$.management.upgrade_config", objectRaw)
+		upgrade_config1Raw := make(map[string]interface{})
+		if upgrade_config1RawObj != nil {
+			upgrade_config1Raw = upgrade_config1RawObj.(map[string]interface{})
+		}
+		if len(upgrade_config1Raw) > 0 {
+			managementMap["max_unavailable"] = upgrade_config1Raw["max_unavailable"]
+			managementMap["surge"] = upgrade_config1Raw["surge"]
+			managementMap["surge_percentage"] = upgrade_config1Raw["surge_percentage"]
+		}
+		autoRepairPolicyMaps := make([]map[string]interface{}, 0)
+		autoRepairPolicyMap := make(map[string]interface{})
+		auto_repair_policy1Raw := make(map[string]interface{})
+		if management1Raw["auto_repair_policy"] != nil {
+			auto_repair_policy1Raw = management1Raw["auto_repair_policy"].(map[string]interface{})
+		}
+		if len(auto_repair_policy1Raw) > 0 {
+			autoRepairPolicyMap["restart_node"] = auto_repair_policy1Raw["restart_node"]
+
+			autoRepairPolicyMaps = append(autoRepairPolicyMaps, autoRepairPolicyMap)
+		}
+		managementMap["auto_repair_policy"] = autoRepairPolicyMaps
+		autoUpgradePolicyMaps := make([]map[string]interface{}, 0)
+		autoUpgradePolicyMap := make(map[string]interface{})
+		auto_upgrade_policy1Raw := make(map[string]interface{})
+		if management1Raw["auto_upgrade_policy"] != nil {
+			auto_upgrade_policy1Raw = management1Raw["auto_upgrade_policy"].(map[string]interface{})
+		}
+		if len(auto_upgrade_policy1Raw) > 0 {
+			autoUpgradePolicyMap["auto_upgrade_kubelet"] = auto_upgrade_policy1Raw["auto_upgrade_kubelet"]
+
+			autoUpgradePolicyMaps = append(autoUpgradePolicyMaps, autoUpgradePolicyMap)
+		}
+		managementMap["auto_upgrade_policy"] = autoUpgradePolicyMaps
+		autoVulFixPolicyMaps := make([]map[string]interface{}, 0)
+		autoVulFixPolicyMap := make(map[string]interface{})
+		auto_vul_fix_policy1Raw := make(map[string]interface{})
+		if management1Raw["auto_vul_fix_policy"] != nil {
+			auto_vul_fix_policy1Raw = management1Raw["auto_vul_fix_policy"].(map[string]interface{})
+		}
+		if len(auto_vul_fix_policy1Raw) > 0 {
+			autoVulFixPolicyMap["restart_node"] = auto_vul_fix_policy1Raw["restart_node"]
+			autoVulFixPolicyMap["vul_level"] = auto_vul_fix_policy1Raw["vul_level"]
+
+			autoVulFixPolicyMaps = append(autoVulFixPolicyMaps, autoVulFixPolicyMap)
+		}
+		managementMap["auto_vul_fix_policy"] = autoVulFixPolicyMaps
+		managementMaps = append(managementMaps, managementMap)
+	}
+	d.Set("management", managementMaps)
+	privatePoolOptionsMaps := make([]map[string]interface{}, 0)
+	privatePoolOptionsMap := make(map[string]interface{})
+	private_pool_options1RawObj, _ := jsonpath.Get("$.scaling_group.private_pool_options", objectRaw)
+	private_pool_options1Raw := make(map[string]interface{})
+	if private_pool_options1RawObj != nil {
+		private_pool_options1Raw = private_pool_options1RawObj.(map[string]interface{})
+	}
+	if len(private_pool_options1Raw) > 0 {
+		privatePoolOptionsMap["private_pool_options_id"] = private_pool_options1Raw["id"]
+		privatePoolOptionsMap["private_pool_options_match_criteria"] = private_pool_options1Raw["match_criteria"]
+
+		privatePoolOptionsMaps = append(privatePoolOptionsMaps, privatePoolOptionsMap)
+	}
+	d.Set("private_pool_options", privatePoolOptionsMaps)
+	rds_instances1Raw, _ := jsonpath.Get("$.scaling_group.rds_instances", objectRaw)
+	d.Set("rds_instances", rds_instances1Raw)
+	scalingConfigMaps := make([]map[string]interface{}, 0)
+	scalingConfigMap := make(map[string]interface{})
+	auto_scaling1Raw := make(map[string]interface{})
+	if objectRaw["auto_scaling"] != nil {
+		auto_scaling1Raw = objectRaw["auto_scaling"].(map[string]interface{})
+	}
+	if len(auto_scaling1Raw) > 0 {
+		scalingConfigMap["eip_bandwidth"] = auto_scaling1Raw["eip_bandwidth"]
+		scalingConfigMap["eip_internet_charge_type"] = auto_scaling1Raw["eip_internet_charge_type"]
+		scalingConfigMap["enable"] = auto_scaling1Raw["enable"]
+		scalingConfigMap["is_bond_eip"] = auto_scaling1Raw["is_bond_eip"]
+		scalingConfigMap["max_size"] = auto_scaling1Raw["max_instances"]
+		scalingConfigMap["min_size"] = auto_scaling1Raw["min_instances"]
+		scalingConfigMap["type"] = auto_scaling1Raw["type"]
+
+		scalingConfigMaps = append(scalingConfigMaps, scalingConfigMap)
+	}
+	d.Set("scaling_config", scalingConfigMaps)
+	security_group_ids1Raw, _ := jsonpath.Get("$.scaling_group.security_group_ids", objectRaw)
+	d.Set("security_group_ids", security_group_ids1Raw)
+	spot_price_limit1Raw, _ := jsonpath.Get("$.scaling_group.spot_price_limit", objectRaw)
+	spotPriceLimitMaps := make([]map[string]interface{}, 0)
+	if spot_price_limit1Raw != nil {
+		for _, spot_price_limitChild1Raw := range spot_price_limit1Raw.([]interface{}) {
+			spotPriceLimitMap := make(map[string]interface{})
+			spot_price_limitChild1Raw := spot_price_limitChild1Raw.(map[string]interface{})
+			spotPriceLimitMap["instance_type"] = spot_price_limitChild1Raw["instance_type"]
+			spotPriceLimitMap["price_limit"] = spot_price_limitChild1Raw["price_limit"]
+
+			spotPriceLimitMaps = append(spotPriceLimitMaps, spotPriceLimitMap)
+		}
+	}
+	d.Set("spot_price_limit", spotPriceLimitMaps)
+	system_disk_categories1Raw, _ := jsonpath.Get("$.scaling_group.system_disk_categories", objectRaw)
+	d.Set("system_disk_categories", system_disk_categories1Raw)
+	tagsMaps, _ := jsonpath.Get("$.scaling_group.tags", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+	taints1Raw, _ := jsonpath.Get("$.kubernetes_config.taints", objectRaw)
+	taintsMaps := make([]map[string]interface{}, 0)
+	if taints1Raw != nil {
+		for _, taintsChild1Raw := range taints1Raw.([]interface{}) {
+			taintsMap := make(map[string]interface{})
+			taintsChild1Raw := taintsChild1Raw.(map[string]interface{})
+			taintsMap["effect"] = taintsChild1Raw["effect"]
+			taintsMap["key"] = taintsChild1Raw["key"]
+			taintsMap["value"] = taintsChild1Raw["value"]
+
+			taintsMaps = append(taintsMaps, taintsMap)
+		}
+	}
+	d.Set("taints", taintsMaps)
+	teeConfigMaps := make([]map[string]interface{}, 0)
+	teeConfigMap := make(map[string]interface{})
+	tee_config1Raw := make(map[string]interface{})
+	if objectRaw["tee_config"] != nil {
+		tee_config1Raw = objectRaw["tee_config"].(map[string]interface{})
+	}
+	if len(tee_config1Raw) > 0 {
+		teeConfigMap["tee_enable"] = tee_config1Raw["tee_enable"]
+
+		teeConfigMaps = append(teeConfigMaps, teeConfigMap)
+	}
+	d.Set("tee_config", teeConfigMaps)
+	vswitch_ids1Raw, _ := jsonpath.Get("$.scaling_group.vswitch_ids", objectRaw)
+	d.Set("vswitch_ids", vswitch_ids1Raw)
+
+	parts := strings.Split(d.Id(), ":")
+	d.Set("cluster_id", parts[0])
+	d.Set("node_pool_id", parts[1])
+
+	d.Set("name", d.Get("node_pool_name"))
+	return nil
+}
+
+func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	var body map[string]interface{}
+	update := false
+	d.Partial(true)
+	parts := strings.Split(d.Id(), ":")
+	ClusterId := parts[0]
+	NodepoolId := parts[1]
+	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
+	conn, err := client.NewAckClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["ClusterId"] = parts[0]
+	request["NodepoolId"] = parts[1]
+	objectDataLocalMap := make(map[string]interface{})
+	if d.HasChange("resource_group_id") {
+		update = true
+		objectDataLocalMap["resource_group_id"] = d.Get("resource_group_id")
+	}
+	if d.HasChange("name") {
+		update = true
+		objectDataLocalMap["name"] = d.Get("name")
+	}
+
+	if d.HasChange("node_pool_name") {
+		update = true
+		objectDataLocalMap["name"] = d.Get("node_pool_name")
+	}
+	request["nodepool_info"] = objectDataLocalMap
+	objectDataLocalMap1 := make(map[string]interface{})
+	if d.HasChange("period") {
+		update = true
+		objectDataLocalMap1["period"] = d.Get("period")
+	}
+	if d.HasChange("platform") {
+		update = true
+		objectDataLocalMap1["platform"] = d.Get("platform")
+	}
+	if d.HasChange("data_disks") {
+		update = true
+		if v := d.Get("data_disks"); v != nil {
+			if v, ok := d.GetOk("data_disks"); ok {
+				localData, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				localMaps := make([]map[string]interface{}, 0)
+				for _, dataLoop := range localData.([]interface{}) {
+					dataLoopTmp := dataLoop.(map[string]interface{})
+					dataLoopMap := make(map[string]interface{})
+					dataLoopMap["category"] = dataLoopTmp["category"]
+					if dataLoopMap["category"] == "cloud_auto" {
+						dataLoopMap["bursting_enabled"] = dataLoopTmp["bursting_enabled"]
+					}
+					dataLoopMap["performance_level"] = dataLoopTmp["performance_level"]
+					dataLoopMap["auto_snapshot_policy_id"] = dataLoopTmp["auto_snapshot_policy_id"]
+					if dataLoopTmp["provisioned_iops"].(int) > 0 {
+						dataLoopMap["provisioned_iops"] = dataLoopTmp["provisioned_iops"]
+					}
+					dataLoopMap["encrypted"] = dataLoopTmp["encrypted"]
+					if dataLoopTmp["size"].(int) > 0 {
+						dataLoopMap["size"] = dataLoopTmp["size"]
+					}
+					dataLoopMap["kms_key_id"] = dataLoopTmp["kms_key_id"]
+					dataLoopMap["device"] = dataLoopTmp["device"]
+					dataLoopMap["snapshot_id"] = dataLoopTmp["snapshot_id"]
+					dataLoopMap["disk_name"] = dataLoopTmp["name"]
+					localMaps = append(localMaps, dataLoopMap)
+				}
+				objectDataLocalMap1["data_disks"] = localMaps
+			}
+		}
+	}
+	if d.HasChange("compensate_with_on_demand") {
+		update = true
+		objectDataLocalMap1["compensate_with_on_demand"] = d.Get("compensate_with_on_demand")
+	}
+	if d.HasChange("auto_renew") {
+		update = true
+		objectDataLocalMap1["auto_renew"] = d.Get("auto_renew")
+	}
+	if d.HasChange("auto_renew_period") {
+		update = true
+		objectDataLocalMap1["auto_renew_period"] = d.Get("auto_renew_period")
+	}
+	if d.HasChange("desired_size") {
+		update = true
+		objectDataLocalMap1["desired_size"] = d.Get("desired_size")
+	}
+	if d.HasChange("image_id") {
+		update = true
+		objectDataLocalMap1["image_id"] = d.Get("image_id")
+	}
+	if d.HasChange("instance_charge_type") {
+		update = true
+		objectDataLocalMap1["instance_charge_type"] = d.Get("instance_charge_type")
+	}
+	if d.HasChange("internet_charge_type") {
+		update = true
+		objectDataLocalMap1["internet_charge_type"] = d.Get("internet_charge_type")
+	}
+	if d.HasChange("internet_max_bandwidth_out") {
+		update = true
+		objectDataLocalMap1["internet_max_bandwidth_out"] = d.Get("internet_max_bandwidth_out")
+	}
+	if d.HasChange("key_name") {
+		update = true
+		objectDataLocalMap1["key_pair"] = d.Get("key_name")
+	}
+	if d.HasChange("multi_az_policy") {
+		update = true
+		objectDataLocalMap1["multi_az_policy"] = d.Get("multi_az_policy")
+	}
+	if d.HasChange("on_demand_base_capacity") {
+		update = true
+		objectDataLocalMap1["on_demand_base_capacity"] = d.Get("on_demand_base_capacity")
+	}
+	if d.HasChange("on_demand_percentage_above_base_capacity") {
+		update = true
+		objectDataLocalMap1["on_demand_percentage_above_base_capacity"] = d.Get("on_demand_percentage_above_base_capacity")
+	}
+	if d.HasChange("period_unit") {
+		update = true
+		objectDataLocalMap1["period_unit"] = d.Get("period_unit")
+	}
+	if d.HasChange("scaling_policy") {
+		update = true
+		objectDataLocalMap1["scaling_policy"] = d.Get("scaling_policy")
+	}
+	if d.HasChange("spot_instance_pools") {
+		update = true
+		objectDataLocalMap1["spot_instance_pools"] = d.Get("spot_instance_pools")
+	}
+	if d.HasChange("spot_instance_remedy") {
+		update = true
+		objectDataLocalMap1["spot_instance_remedy"] = d.Get("spot_instance_remedy")
+	}
+	if d.HasChange("spot_price_limit") {
+		update = true
+		if v := d.Get("spot_price_limit"); v != nil {
+			if v, ok := d.GetOk("spot_price_limit"); ok {
+				localData1, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				localMaps1 := make([]map[string]interface{}, 0)
+				for _, dataLoop1 := range localData1.([]interface{}) {
+					dataLoop1Tmp := dataLoop1.(map[string]interface{})
+					dataLoop1Map := make(map[string]interface{})
+					dataLoop1Map["instance_type"] = dataLoop1Tmp["instance_type"]
+					dataLoop1Map["price_limit"] = dataLoop1Tmp["price_limit"]
+					localMaps1 = append(localMaps1, dataLoop1Map)
+				}
+				objectDataLocalMap1["spot_price_limit"] = localMaps1
+			}
+		}
+	}
+	if d.HasChange("spot_strategy") {
+		update = true
+		objectDataLocalMap1["spot_strategy"] = d.Get("spot_strategy")
+	}
+	if d.HasChange("system_disk_category") {
+		update = true
+		objectDataLocalMap1["system_disk_category"] = d.Get("system_disk_category")
+	}
+	if d.HasChange("system_disk_performance_level") {
+		update = true
+		objectDataLocalMap1["system_disk_performance_level"] = d.Get("system_disk_performance_level")
+	}
+	if d.HasChange("vswitch_ids") {
+		update = true
+		nodeNative36, _ := jsonpath.Get("$", d.Get("vswitch_ids"))
+		if nodeNative36 != nil && nodeNative36 != "" {
+			objectDataLocalMap1["vswitch_ids"] = nodeNative36
+		}
+	}
+	if d.HasChange("tags") {
+		update = true
+		if v := d.Get("tags"); v != nil {
+			tagsMap := ConvertTags(v.(map[string]interface{}))
+			objectDataLocalMap1["tags"] = tagsMap
+		}
+	}
+	if d.HasChange("system_disk_size") {
+		update = true
+		objectDataLocalMap1["system_disk_size"] = d.Get("system_disk_size")
+	}
+	if d.HasChange("password") {
+		update = true
+		objectDataLocalMap1["login_password"] = d.Get("password")
+	}
+	password := d.Get("password").(string)
+	if password == "" {
+		if v := d.Get("kms_encrypted_password").(string); v != "" {
+			kmsService := KmsService{client}
+			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
+			if err != nil {
+				return WrapError(err)
+			}
+			objectDataLocalMap1["login_password"] = decryptResp
+		}
+	}
+	if d.HasChange("private_pool_options") {
+		update = true
+		if v := d.Get("private_pool_options"); v != nil {
+			private_pool_options := make(map[string]interface{})
+			nodeNative41, _ := jsonpath.Get("$[0].private_pool_options_match_criteria", v)
+			if nodeNative41 != nil && nodeNative41 != "" {
+				private_pool_options["match_criteria"] = nodeNative41
+			}
+			nodeNative42, _ := jsonpath.Get("$[0].private_pool_options_id", v)
+			if nodeNative42 != nil && nodeNative42 != "" {
+				private_pool_options["id"] = nodeNative42
+			}
+			objectDataLocalMap1["private_pool_options"] = private_pool_options
+		}
+	}
+	if d.HasChange("system_disk_provisioned_iops") {
+		update = true
+		objectDataLocalMap1["system_disk_provisioned_iops"] = d.Get("system_disk_provisioned_iops")
+	}
+	if d.HasChange("system_disk_bursting_enabled") {
+		update = true
+		objectDataLocalMap1["system_disk_bursting_enabled"] = d.Get("system_disk_bursting_enabled")
+	}
+	if d.HasChange("system_disk_encrypted") {
+		update = true
+		objectDataLocalMap1["system_disk_encrypted"] = d.Get("system_disk_encrypted")
+	}
+	if d.HasChange("system_disk_categories") {
+		update = true
+		nodeNative46, _ := jsonpath.Get("$", d.Get("system_disk_categories"))
+		if nodeNative46 != nil && nodeNative46 != "" {
+			objectDataLocalMap1["system_disk_categories"] = nodeNative46
+		}
+	}
+	if d.HasChange("system_disk_encrypt_algorithm") {
+		update = true
+		objectDataLocalMap1["system_disk_encrypt_algorithm"] = d.Get("system_disk_encrypt_algorithm")
+	}
+	if d.HasChange("image_type") {
+		update = true
+		objectDataLocalMap1["image_type"] = d.Get("image_type")
+	}
+	if d.HasChange("instance_types") {
+		update = true
+		nodeNative49, _ := jsonpath.Get("$", d.Get("instance_types"))
+		if nodeNative49 != nil && nodeNative49 != "" {
+			objectDataLocalMap1["instance_types"] = nodeNative49
+		}
+	}
+	if d.HasChange("rds_instances") {
+		update = true
+		nodeNative50, _ := jsonpath.Get("$", d.Get("rds_instances"))
+		if nodeNative50 != nil && nodeNative50 != "" {
+			objectDataLocalMap1["rds_instances"] = nodeNative50
+		}
+	}
+	if d.HasChange("system_disk_kms_key") {
+		update = true
+		objectDataLocalMap1["system_disk_kms_key_id"] = d.Get("system_disk_kms_key")
+	}
+	if d.HasChange("system_disk_snapshot_policy_id") {
+		update = true
+		objectDataLocalMap1["worker_system_disk_snapshot_policy_id"] = d.Get("system_disk_snapshot_policy_id")
+	}
+	request["scaling_group"] = objectDataLocalMap1
+	objectDataLocalMap2 := make(map[string]interface{})
+	if d.HasChange("cpu_policy") {
+		update = true
+		objectDataLocalMap2["cpu_policy"] = d.Get("cpu_policy")
+	}
+	if d.HasChange("install_cloud_monitor") {
+		update = true
+		objectDataLocalMap2["cms_enabled"] = d.Get("install_cloud_monitor")
+	}
+	if d.HasChange("runtime_version") {
+		update = true
+		objectDataLocalMap2["runtime_version"] = d.Get("runtime_version")
+	}
+	if d.HasChange("user_data") {
+		update = true
+		objectDataLocalMap2["user_data"] = d.Get("user_data")
+		if v := d.Get("user_data").(string); v != "" {
+			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
+			if base64DecodeError == nil {
+				objectDataLocalMap2["user_data"] = tea.String(v)
+			} else {
+				objectDataLocalMap2["user_data"] = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
+			}
+		}
+	}
+	if d.HasChange("taints") {
+		update = true
+		if v := d.Get("taints"); v != nil {
+			if v, ok := d.GetOk("taints"); ok {
+				localData3, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				localMaps3 := make([]map[string]interface{}, 0)
+				for _, dataLoop3 := range localData3.([]interface{}) {
+					dataLoop3Tmp := dataLoop3.(map[string]interface{})
+					dataLoop3Map := make(map[string]interface{})
+					dataLoop3Map["key"] = dataLoop3Tmp["key"]
+					dataLoop3Map["effect"] = dataLoop3Tmp["effect"]
+					dataLoop3Map["value"] = dataLoop3Tmp["value"]
+					localMaps3 = append(localMaps3, dataLoop3Map)
+				}
+				objectDataLocalMap2["taints"] = localMaps3
+			}
+		}
+	}
+	if d.HasChange("runtime_name") {
+		update = true
+		objectDataLocalMap2["runtime"] = d.Get("runtime_name")
+	}
+	if d.HasChange("labels") {
+		update = true
+		if v := d.Get("labels"); v != nil {
+			if v, ok := d.GetOk("labels"); ok {
+				localData4, err := jsonpath.Get("$", v)
+				if err != nil {
+					return WrapError(err)
+				}
+				localMaps4 := make([]map[string]interface{}, 0)
+				for _, dataLoop4 := range localData4.([]interface{}) {
+					dataLoop4Tmp := dataLoop4.(map[string]interface{})
+					dataLoop4Map := make(map[string]interface{})
+					dataLoop4Map["key"] = dataLoop4Tmp["key"]
+					dataLoop4Map["value"] = dataLoop4Tmp["value"]
+					localMaps4 = append(localMaps4, dataLoop4Map)
+				}
+				objectDataLocalMap2["labels"] = localMaps4
+			}
+		}
+	}
+	if d.HasChange("unschedulable") {
+		update = true
+		objectDataLocalMap2["unschedulable"] = d.Get("unschedulable")
+	}
+	request["kubernetes_config"] = objectDataLocalMap2
+	if d.HasChange("scaling_config") {
+		update = true
+		objectDataLocalMap3 := make(map[string]interface{})
+		if v := d.Get("scaling_config"); v != nil {
+			nodeNative64, _ := jsonpath.Get("$[0].type", v)
+			if nodeNative64 != nil && nodeNative64 != "" {
+				objectDataLocalMap3["type"] = nodeNative64
+			}
+			nodeNative65, _ := jsonpath.Get("$[0].enable", v)
+			if nodeNative65 != nil && nodeNative65 != "" {
+				objectDataLocalMap3["enable"] = nodeNative65
+			}
+			nodeNative66, _ := jsonpath.Get("$[0].max_size", v)
+			if nodeNative66 != nil && nodeNative66 != "" {
+				objectDataLocalMap3["max_instances"] = nodeNative66
+			}
+			nodeNative67, _ := jsonpath.Get("$[0].min_size", v)
+			if nodeNative67 != nil && nodeNative67 != "" {
+				objectDataLocalMap3["min_instances"] = nodeNative67
+			}
+			nodeNative68, _ := jsonpath.Get("$[0].eip_bandwidth", v)
+			if nodeNative68 != nil && nodeNative68 != "" && nodeNative68.(int) > 0 {
+				objectDataLocalMap3["eip_bandwidth"] = nodeNative68
+			}
+			nodeNative69, _ := jsonpath.Get("$[0].eip_internet_charge_type", v)
+			if nodeNative69 != nil && nodeNative69 != "" {
+				objectDataLocalMap3["eip_internet_charge_type"] = nodeNative69
+			}
+			nodeNative70, _ := jsonpath.Get("$[0].is_bond_eip", v)
+			if nodeNative70 != nil && nodeNative70 != "" {
+				objectDataLocalMap3["is_bond_eip"] = nodeNative70
+			}
+			request["auto_scaling"] = objectDataLocalMap3
+		}
+	}
+
+	if d.HasChange("management") {
+		update = true
+		objectDataLocalMap4 := make(map[string]interface{})
+		if v := d.Get("management"); v != nil {
+			nodeNative71, _ := jsonpath.Get("$[0].enable", v)
+			if nodeNative71 != nil && nodeNative71 != "" {
+				objectDataLocalMap4["enable"] = nodeNative71
+			}
+			nodeNative72, _ := jsonpath.Get("$[0].auto_repair", v)
+			if nodeNative72 != nil && nodeNative72 != "" {
+				objectDataLocalMap4["auto_repair"] = nodeNative72
+			}
+			auto_repair_policy := make(map[string]interface{})
+			nodeNative73, _ := jsonpath.Get("$[0].auto_repair_policy[0].restart_node", v)
+			if nodeNative73 != nil && nodeNative73 != "" {
+				auto_repair_policy["restart_node"] = nodeNative73
+			}
+			objectDataLocalMap4["auto_repair_policy"] = auto_repair_policy
+			nodeNative74, _ := jsonpath.Get("$[0].auto_vul_fix", v)
+			if nodeNative74 != nil && nodeNative74 != "" {
+				objectDataLocalMap4["auto_vul_fix"] = nodeNative74
+			}
+			auto_vul_fix_policy := make(map[string]interface{})
+			nodeNative75, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].restart_node", v)
+			if nodeNative75 != nil && nodeNative75 != "" {
+				auto_vul_fix_policy["restart_node"] = nodeNative75
+			}
+			nodeNative76, _ := jsonpath.Get("$[0].auto_vul_fix_policy[0].vul_level", v)
+			if nodeNative76 != nil && nodeNative76 != "" {
+				auto_vul_fix_policy["vul_level"] = nodeNative76
+			}
+			objectDataLocalMap4["auto_vul_fix_policy"] = auto_vul_fix_policy
+			nodeNative77, _ := jsonpath.Get("$[0].auto_upgrade", v)
+			if nodeNative77 != nil && nodeNative77 != "" {
+				objectDataLocalMap4["auto_upgrade"] = nodeNative77
+			}
+			auto_upgrade_policy := make(map[string]interface{})
+			nodeNative78, _ := jsonpath.Get("$[0].auto_upgrade_policy[0].auto_upgrade_kubelet", v)
+			if nodeNative78 != nil && nodeNative78 != "" {
+				auto_upgrade_policy["auto_upgrade_kubelet"] = nodeNative78
+			}
+			objectDataLocalMap4["auto_upgrade_policy"] = auto_upgrade_policy
+			upgrade_config := make(map[string]interface{})
+			nodeNative79, _ := jsonpath.Get("$[0].surge", v)
+			if nodeNative79 != nil && nodeNative79 != "" {
+				upgrade_config["surge"] = nodeNative79
+			}
+			nodeNative80, _ := jsonpath.Get("$[0].surge_percentage", v)
+			if nodeNative80 != nil && nodeNative80 != "" {
+				upgrade_config["surge_percentage"] = nodeNative80
+			}
+			nodeNative81, _ := jsonpath.Get("$[0].max_unavailable", v)
+			if nodeNative81 != nil && nodeNative81 != "" && nodeNative81.(int) > 0 {
+				upgrade_config["max_unavailable"] = nodeNative81
+			}
+			objectDataLocalMap4["upgrade_config"] = upgrade_config
+			request["management"] = objectDataLocalMap4
+		}
+	}
+
+	if _, exist := d.GetOk("desired_size"); !exist && d.HasChange("node_count") {
 		oldV, newV := d.GetChange("node_count")
 		oldValue, ok := oldV.(int)
 		if ok != true {
@@ -672,275 +2085,184 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		if ok != true {
 			return WrapErrorf(fmt.Errorf("node_count new value can not be parsed"), "parseError %d", newValue)
 		}
-
-		_, exist := d.GetOk("desired_size")
-		if exist {
-			update = true
-			desiredSize := int64(newValue)
-			args.ScalingGroup.DesiredSize = &desiredSize
-		} else {
-			if newValue < oldValue {
-				removeNodePoolNodes(d, meta, parts, nil, nil)
-				// The removal of a node is logically independent.
-				// The removal of a node should not involve parameter changes.
-				return resourceAlicloudCSNodePoolRead(d, meta)
-			}
-			update = true
-			args.Count = int64(newValue) - int64(oldValue)
+		if newValue < oldValue {
+			removeNodePoolNodes(d, meta, parts, nil, nil)
+			// The removal of a node is logically independent.
+			// The removal of a node should not involve parameter changes.
+			return resourceAliCloudAckNodepoolRead(d, meta)
 		}
-	}
-
-	if d.HasChange("name") {
 		update = true
-		args.NodePoolInfo.Name = tea.TransInterfaceToString(d.Get("name"))
+		request["count"] = int64(newValue) - int64(oldValue)
 	}
-	if d.HasChange("vswitch_ids") {
-		update = true
-		var vswitchID string
-		if list := expandStringList(d.Get("vswitch_ids").([]interface{})); len(list) > 0 {
-			vswitchID = list[0]
-		} else {
-			vswitchID = ""
-		}
-
-		var vpcId string
-		if vswitchID != "" {
-			vsw, err := vpcService.DescribeVSwitch(vswitchID)
-			if err != nil {
-				return err
-			}
-			vpcId = vsw.VpcId
-		}
-		args.ScalingGroup.VpcId = vpcId
-		args.ScalingGroup.VswitchIds = expandStringList(d.Get("vswitch_ids").([]interface{}))
-	}
-
-	if v, ok := d.GetOk("instance_charge_type"); ok {
-		args.InstanceChargeType = tea.TransInterfaceToString(v)
-		if tea.StringValue(args.InstanceChargeType) == string(PrePaid) {
-			update = true
-			args.Period = tea.TransInterfaceToInt(d.Get("period"))
-			args.PeriodUnit = tea.TransInterfaceToString(d.Get("period_unit"))
-			args.AutoRenew = tea.TransInterfaceToBool(d.Get("auto_renew"))
-			args.AutoRenewPeriod = tea.TransInterfaceToInt(d.Get("auto_renew_period"))
-		}
-	}
-
-	if d.HasChange("image_type") {
-		update = true
-		args.ScalingGroup.ImageType = tea.TransInterfaceToString(d.Get("image_type"))
-	}
-
-	if d.HasChange("platform") {
-		update = true
-		args.ScalingGroup.Platform = tea.TransInterfaceToString(d.Get("platform"))
-	}
-
-	if d.HasChange("desired_size") {
-		update = true
-		size := int64(d.Get("desired_size").(int))
-		args.ScalingGroup.DesiredSize = &size
-	}
-
-	if d.HasChange("install_cloud_monitor") {
-		update = true
-		args.CmsEnabled = tea.TransInterfaceToBool(d.Get("install_cloud_monitor"))
-	}
-
-	if d.HasChange("instance_types") {
-		update = true
-		args.ScalingGroup.InstanceTypes = expandStringList(d.Get("instance_types").([]interface{}))
-	}
-
-	args.ScalingGroup.SystemDiskEncrypted = tea.TransInterfaceToBool(d.Get("system_disk_encrypted"))
-
-	if tea.BoolValue(args.ScalingGroup.SystemDiskEncrypted) && d.HasChanges("system_disk_encrypt_algorithm") {
-		update = true
-		args.ScalingGroup.SystemDiskEncryptAlgorithm = tea.TransInterfaceToString(d.Get("system_disk_encrypt_algorithm"))
-	}
-
-	if tea.BoolValue(args.ScalingGroup.SystemDiskEncrypted) && d.HasChanges("system_disk_kms_key") {
-		update = true
-		args.ScalingGroup.SystemDiskKMSKeyId = tea.TransInterfaceToString(d.Get("system_disk_kms_key"))
-	}
-
-	if d.HasChanges("system_disk_snapshot_policy_id") {
-		update = true
-		args.ScalingGroup.WorkerSnapshotPolicyId = tea.TransInterfaceToString(d.Get("system_disk_snapshot_policy_id"))
-	}
-
-	if d.HasChange("password") {
-		update = true
-		args.ScalingGroup.LoginPassword = tea.TransInterfaceToString(d.Get("password"))
-	}
-
-	if d.HasChange("key_name") {
-		update = true
-		args.ScalingGroup.KeyPair = tea.TransInterfaceToString(d.Get("key_name"))
-	}
-
-	if d.HasChange("security_group_id") {
-		update = true
-		args.ScalingGroup.SecurityGroupId = d.Get("security_group_id").(string)
-	}
-
-	if d.HasChange("system_disk_category") {
-		update = true
-		args.ScalingGroup.SystemDiskCategory = aliyungoecs.DiskCategory(d.Get("system_disk_category").(string))
-	}
-
-	if d.HasChange("system_disk_size") {
-		update = true
-		args.ScalingGroup.SystemDiskSize = tea.Int64(int64(d.Get("system_disk_size").(int)))
-	}
-
-	if d.HasChange("system_disk_performance_level") {
-		update = true
-		args.SystemDiskPerformanceLevel = tea.TransInterfaceToString(d.Get("system_disk_performance_level"))
-	}
-
-	if d.HasChange("image_id") {
-		update = true
-		args.ScalingGroup.ImageId = tea.TransInterfaceToString(d.Get("image_id"))
-	}
-
-	if d.HasChange("data_disks") {
-		update = true
-		setNodePoolDataDisks(&args.ScalingGroup, d)
-	}
-
-	if d.HasChange("tags") {
-		update = true
-		setNodePoolTags(&args.ScalingGroup, d)
-	}
-
-	if d.HasChange("labels") {
-		update = true
-		setNodePoolLabels(&args.KubernetesConfig, d)
-	}
-
-	if d.HasChange("taints") {
-		update = true
-		setNodePoolTaints(&args.KubernetesConfig, d)
-	}
-
-	if d.HasChange("node_name_mode") {
-		update = true
-		args.KubernetesConfig.NodeNameMode = d.Get("node_name_mode").(string)
-	}
-
-	if d.HasChange("user_data") {
-		update = true
-		if v := d.Get("user_data").(string); v != "" {
-			_, base64DecodeError := base64.StdEncoding.DecodeString(v)
-			if base64DecodeError == nil {
-				args.KubernetesConfig.UserData = tea.String(v)
-			} else {
-				args.KubernetesConfig.UserData = tea.String(base64.StdEncoding.EncodeToString([]byte(v)))
-			}
-		}
-	}
-
-	if d.HasChange("scaling_config") {
-		update = true
-		args.AutoScaling = setAutoScalingConfig(d.Get("scaling_config").([]interface{}))
-	}
-
-	if d.HasChange("management") {
-		update = true
-		args.Management = setManagedNodepoolConfig(d.Get("management").([]interface{}))
-	}
-
-	if d.HasChange("internet_max_bandwidth_out") {
-		update = true
-		args.InternetMaxBandwidthOut = tea.TransInterfaceToInt(d.Get("internet_max_bandwidth_out"))
-	}
-
-	if d.HasChange("scaling_policy") {
-		update = true
-		args.ScalingPolicy = tea.TransInterfaceToString(d.Get("scaling_policy"))
-	}
-
-	// spot
-	if d.HasChange("spot_strategy") {
-		update = true
-		args.SpotStrategy = tea.TransInterfaceToString(d.Get("spot_strategy"))
-	}
-	if d.HasChange("spot_price_limit") {
-		update = true
-		args.SpotPriceLimit = setSpotPriceLimit(d.Get("spot_price_limit").([]interface{}))
-	}
-	if d.HasChange("rds_instances") {
-		update = true
-		args.RdsInstances = expandStringList(d.Get("rds_instances").([]interface{}))
-	}
-	if d.HasChange("polardb_ids") {
-		update = true
-		args.PolarDBIds = expandStringList(d.Get("polardb_ids").([]interface{}))
-	}
-
+	body = request
 	if update {
-		var response interface{}
-		if err := invoker.Run(func() error {
-			var err error
-			response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				resp, err := csClient.UpdateNodePool(parts[0], parts[1], args)
-				return resp, err
-			})
-			return err
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateKubernetesNodePool", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			resizeRequestMap := make(map[string]interface{})
-			resizeRequestMap["ClusterId"] = parts[0]
-			resizeRequestMap["NodePoolId"] = parts[1]
-			resizeRequestMap["Args"] = args
-			addDebug("UpdateKubernetesNodePool", response, resizeRequestMap)
-		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
 
-		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		ackServiceV2 := AckServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
+			return WrapErrorf(err, IdMsg, d.Id(), response)
+		}
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	ClusterId = parts[0]
+	NodepoolId = parts[1]
+	action = fmt.Sprintf("/clusters/%s/nodepools/%s/node_config", ClusterId, NodepoolId)
+	conn, err = client.NewAckClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	body = make(map[string]interface{})
+	request["ClusterId"] = parts[0]
+	request["NodepoolId"] = parts[1]
+	if d.HasChange("kubelet_configuration") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+		if v := d.Get("kubelet_configuration"); v != nil {
+			nodeNative, _ := jsonpath.Get("$[0].registry_burst", v)
+			if nodeNative != nil && nodeNative != "" {
+				intVal, _ := strconv.ParseInt(nodeNative.(string), 10, 64)
+				objectDataLocalMap["registryBurst"] = intVal
+			}
+			nodeNative1, _ := jsonpath.Get("$[0].registry_pull_qps", v)
+			if nodeNative1 != nil && nodeNative1 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative1.(string), 10, 64)
+				objectDataLocalMap["registryPullQPS"] = intVal
+			}
+			nodeNative2, _ := jsonpath.Get("$[0].event_record_qps", v)
+			if nodeNative2 != nil && nodeNative2 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative2.(string), 10, 64)
+				objectDataLocalMap["eventRecordQPS"] = intVal
+			}
+			nodeNative3, _ := jsonpath.Get("$[0].event_burst", v)
+			if nodeNative3 != nil && nodeNative3 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative3.(string), 10, 64)
+				objectDataLocalMap["eventBurst"] = intVal
+			}
+			nodeNative4, _ := jsonpath.Get("$[0].kube_api_qps", v)
+			if nodeNative4 != nil && nodeNative4 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative4.(string), 10, 64)
+				objectDataLocalMap["kubeAPIQPS"] = intVal
+			}
+			nodeNative5, _ := jsonpath.Get("$[0].serialize_image_pulls", v)
+			if nodeNative5 != nil && nodeNative5 != "" {
+				boolVal, _ := strconv.ParseBool(nodeNative5.(string))
+				objectDataLocalMap["serializeImagePulls"] = boolVal
+			}
+			nodeNative6, _ := jsonpath.Get("$[0].cpu_manager_policy", v)
+			if nodeNative6 != nil && nodeNative6 != "" {
+				objectDataLocalMap["cpuManagerPolicy"] = nodeNative6
+			}
+			nodeNative7, _ := jsonpath.Get("$[0].eviction_hard", v)
+			if nodeNative7 != nil && nodeNative7 != "" {
+				objectDataLocalMap["evictionHard"] = nodeNative7
+			}
+			nodeNative8, _ := jsonpath.Get("$[0].eviction_soft", v)
+			if nodeNative8 != nil && nodeNative8 != "" {
+				objectDataLocalMap["evictionSoft"] = nodeNative8
+			}
+			nodeNative9, _ := jsonpath.Get("$[0].eviction_soft_grace_period", v)
+			if nodeNative9 != nil && nodeNative9 != "" {
+				objectDataLocalMap["evictionSoftGracePeriod"] = nodeNative9
+			}
+			nodeNative10, _ := jsonpath.Get("$[0].system_reserved", v)
+			if nodeNative10 != nil && nodeNative10 != "" {
+				objectDataLocalMap["systemReserved"] = nodeNative10
+			}
+			nodeNative11, _ := jsonpath.Get("$[0].kube_reserved", v)
+			if nodeNative11 != nil && nodeNative11 != "" {
+				objectDataLocalMap["kubeReserved"] = nodeNative11
+			}
+			nodeNative12, _ := jsonpath.Get("$[0].read_only_port", v)
+			if nodeNative12 != nil && nodeNative12 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative12.(string), 10, 64)
+				objectDataLocalMap["readOnlyPort"] = intVal
+			}
+			nodeNative13, _ := jsonpath.Get("$[0].max_pods", v)
+			if nodeNative13 != nil && nodeNative13 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative13.(string), 10, 64)
+				objectDataLocalMap["maxPods"] = intVal
+			}
+			nodeNative14, _ := jsonpath.Get("$[0].container_log_max_size", v)
+			if nodeNative14 != nil && nodeNative14 != "" {
+				objectDataLocalMap["containerLogMaxSize"] = nodeNative14
+			}
+			nodeNative15, _ := jsonpath.Get("$[0].container_log_max_files", v)
+			if nodeNative15 != nil && nodeNative15 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative15.(string), 10, 64)
+				objectDataLocalMap["containerLogMaxFiles"] = intVal
+			}
+			nodeNative16, _ := jsonpath.Get("$[0].feature_gates", v)
+			if nodeNative16 != nil && nodeNative16 != "" {
+				objectDataLocalMap["featureGates"] = nodeNative16
+			}
+			nodeNative17, _ := jsonpath.Get("$[0].allowed_unsafe_sysctls", d.Get("kubelet_configuration"))
+			if nodeNative17 != nil && nodeNative17 != "" {
+				objectDataLocalMap["allowedUnsafeSysctls"] = nodeNative17
+			}
+			nodeNative18, _ := jsonpath.Get("$[0].kube_api_burst", v)
+			if nodeNative18 != nil && nodeNative18 != "" {
+				intVal, _ := strconv.ParseInt(nodeNative18.(string), 10, 64)
+				objectDataLocalMap["kubeAPIBurst"] = intVal
+			}
+			request["kubelet_config"] = objectDataLocalMap
 		}
 	}
 
-	if d.HasChange("kubelet_configuration") {
-		roaClient, err := client.NewRoaCsClient()
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "InitClient", AlibabaCloudSdkGoERROR)
+	objectDataLocalMap1 = make(map[string]interface{})
+	if v := d.Get("rolling_policy"); v != nil {
+		nodeNative19, _ := jsonpath.Get("$[0].max_parallelism", v)
+		if nodeNative19 != nil && nodeNative19 != "" {
+			objectDataLocalMap1["max_parallelism"] = nodeNative19
 		}
-		csClient := CsClient{roaClient}
-		kubeletConfig := &roacs.ModifyNodePoolNodeConfigRequestKubeletConfig{}
-		rolling := &roacs.ModifyNodePoolNodeConfigRequestRollingPolicy{}
+		request["rolling_policy"] = objectDataLocalMap1
+	}
 
-		if v, ok := d.GetOk("kubelet_configuration"); ok {
-			if err = setKubeletConfigParamsForUpdate(kubeletConfig, v.([]interface{})); err != nil {
-				return WrapError(err)
+	body = request
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("PUT"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-		}
-
-		if v, ok := d.GetOk("rolling_policy"); ok {
-			if err = setRollingPolicy(rolling, v.([]interface{})); err != nil {
-				return WrapError(err)
-			}
-		}
-
-		modifyNodePoolKubeletRequest := &roacs.ModifyNodePoolNodeConfigRequest{
-			KubeletConfig: kubeletConfig,
-			RollingPolicy: rolling,
-		}
-
-		resp, err := csClient.ModifyNodePoolNodeConfig(parts[0], parts[1], modifyNodePoolKubeletRequest)
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", "ModifyNodePoolKubeletConfig", AlibabaCloudSdkGoERROR, resp)
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		modifyNodePoolKubeletResp, _ := resp.(*roacs.ModifyNodePoolNodeConfigResponse)
-
-		stateConf := BuildStateConf([]string{"scaling", "updating", "removing"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
+		ackServiceV2 := AckServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsgWithTask, d.Id(), csClient.DescribeTaskInfo(tea.StringValue(modifyNodePoolKubeletResp.Body.TaskId)))
+			return WrapErrorf(err, IdMsg, d.Id(), response)
 		}
 	}
 
@@ -963,6 +2285,7 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
+	csService := CsService{client}
 	_ = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		log.Printf("[DEBUG] Start retry fetch node pool info: %s", d.Id())
 		nodePoolDetail, err := csService.DescribeCsKubernetesNodePool(d.Id())
@@ -977,655 +2300,61 @@ func resourceAlicloudCSNodePoolUpdate(d *schema.ResourceData, meta interface{}) 
 
 		return resource.NonRetryableError(Error("[DEBUG] The number of nodes is the same"))
 	})
-
-	update = false
 	d.Partial(false)
-	return resourceAlicloudCSNodePoolRead(d, meta)
+	return resourceAliCloudAckNodepoolRead(d, meta)
 }
 
-func resourceAlicloudCSNodePoolRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-
-	object, err := csService.DescribeCsKubernetesNodePool(d.Id())
-	if err != nil {
-		if !d.IsNewResource() && NotFoundError(err) {
-			d.SetId("")
-			return nil
-		}
-		return WrapError(err)
-	}
-
-	d.Set("node_count", object.TotalNodes)
-	d.Set("name", object.Name)
-	d.Set("vpc_id", object.VpcId)
-	d.Set("vswitch_ids", object.VswitchIds)
-	d.Set("instance_types", object.InstanceTypes)
-	d.Set("key_name", object.KeyPair)
-	d.Set("security_group_id", object.SecurityGroupId)
-	d.Set("system_disk_category", object.SystemDiskCategory)
-	d.Set("system_disk_size", object.SystemDiskSize)
-	d.Set("system_disk_performance_level", object.SystemDiskPerformanceLevel)
-	d.Set("image_id", object.ImageId)
-	d.Set("platform", object.Platform)
-	d.Set("scaling_policy", object.ScalingPolicy)
-	d.Set("node_name_mode", object.NodeNameMode)
-	d.Set("user_data", object.UserData)
-	d.Set("scaling_group_id", object.ScalingGroupId)
-	d.Set("unschedulable", object.Unschedulable)
-	d.Set("instance_charge_type", object.InstanceChargeType)
-	d.Set("resource_group_id", object.ResourceGroupId)
-	d.Set("spot_strategy", object.SpotStrategy)
-	d.Set("internet_charge_type", object.InternetChargeType)
-	d.Set("internet_max_bandwidth_out", object.InternetMaxBandwidthOut)
-	d.Set("install_cloud_monitor", object.CmsEnabled)
-	d.Set("image_type", object.ScalingGroup.ImageType)
-	d.Set("security_group_ids", object.ScalingGroup.SecurityGroupIds)
-	d.Set("runtime_name", object.Runtime)
-	d.Set("runtime_version", object.RuntimeVersion)
-	d.Set("deployment_set_id", object.DeploymentSetId)
-	d.Set("cis_enabled", object.CisEnabled)
-	d.Set("soc_enabled", object.SocEnabled)
-
-	if object.DesiredSize != nil {
-		d.Set("desired_size", *object.DesiredSize)
-	}
-
-	if tea.StringValue(object.InstanceChargeType) == "PrePaid" {
-		d.Set("period", object.Period)
-		d.Set("period_unit", object.PeriodUnit)
-		d.Set("auto_renew", object.AutoRenew)
-		d.Set("auto_renew_period", object.AutoRenewPeriod)
-	}
-
-	d.Set("system_disk_encrypted", object.SystemDiskEncrypted)
-	d.Set("system_disk_kms_key", object.SystemDiskKMSKeyId)
-	d.Set("system_disk_encrypt_algorithm", object.SystemDiskEncryptAlgorithm)
-	d.Set("system_disk_snapshot_policy_id", object.WorkerSnapshotPolicyId)
-
-	d.Set("rds_instances", object.RdsInstances)
-	d.Set("polardb_ids", object.PolarDBIds)
-
-	if passwd, ok := d.GetOk("password"); ok && passwd.(string) != "" {
-		d.Set("password", passwd)
-	}
-
-	if parts, err := ParseResourceId(d.Id(), 2); err != nil {
-		return WrapError(err)
-	} else {
-		d.Set("cluster_id", string(parts[0]))
-	}
-
-	if err := d.Set("data_disks", flattenNodeDataDisksConfig(object.DataDisks)); err != nil {
-		return WrapError(err)
-	}
-
-	if err := d.Set("taints", flattenTaintsConfig(object.Taints)); err != nil {
-		return WrapError(err)
-	}
-
-	if err := d.Set("labels", flattenLabelsConfig(object.Labels)); err != nil {
-		return WrapError(err)
-	}
-
-	if err := d.Set("tags", flattenTagsConfig(object.Tags)); err != nil {
-		return WrapError(err)
-	}
-
-	if tea.BoolValue(object.Management.Enable) {
-		if err := d.Set("management", flattenManagementNodepoolConfig(&object.Management)); err != nil {
-			return WrapError(err)
-		}
-	}
-
-	if tea.BoolValue(object.AutoScaling.Enable) {
-		if err := d.Set("scaling_config", flattenAutoScalingConfig(&object.AutoScaling)); err != nil {
-			return WrapError(err)
-		}
-	}
-
-	if err := d.Set("spot_price_limit", flattenSpotPriceLimit(object.SpotPriceLimit)); err != nil {
-		return WrapError(err)
-	}
-
-	return nil
-}
-
-func resourceAlicloudCSNodePoolDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
-	invoker := NewInvoker()
-
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts := strings.Split(d.Id(), ":")
+	NodepoolId := parts[1]
+	ClusterId := parts[0]
+	action := fmt.Sprintf("/clusters/%s/nodepools/%s", ClusterId, NodepoolId)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]*string)
+	body := make(map[string]interface{})
+	conn, err := client.NewAckClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	request["NodepoolId"] = parts[1]
+	request["ClusterId"] = parts[0]
 
-	// delete all nodes [deprecated]
-	// removeNodePoolNodes(d, meta, parts, nil, nil)
+	query["force"] = tea.String("true")
+	if v, ok := d.GetOk("force_delete"); ok {
+		query["force"] = StringPointer(strconv.FormatBool(v.(bool)))
+	}
+	body = request
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
 
-	// force delete
-	var response interface{}
-	err = resource.Retry(30*time.Minute, func() *resource.RetryError {
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				return nil, csClient.ForceDeleteNodePool(parts[0], parts[1])
-			})
-			response = raw
-			return err
-		}); err != nil {
-			return resource.RetryableError(err)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = parts[0]
-			requestMap["NodePoolId"] = parts[1]
-			addDebug("DeleteClusterNodePool", response, d.Id(), requestMap)
-		}
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ErrorClusterNodePoolNotFound"}) {
-			return nil
-		}
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteClusterNodePool", DenverdinoAliyungo)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"active", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{}))
+	ackServiceV2 := AckServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ackServiceV2.DescribeAsyncAckNodepoolStateRefreshFunc(d, response, "$.state", []string{"fail", "failed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
-}
-
-func buildNodePoolArgs(d *schema.ResourceData, meta interface{}) (*cs.CreateNodePoolRequest, error) {
-	client := meta.(*connectivity.AliyunClient)
-
-	vpcService := VpcService{client}
-
-	var vswitchID string
-	if list := expandStringList(d.Get("vswitch_ids").([]interface{})); len(list) > 0 {
-		vswitchID = list[0]
-	} else {
-		vswitchID = ""
-	}
-
-	var vpcId string
-	if vswitchID != "" {
-		vsw, err := vpcService.DescribeVSwitch(vswitchID)
-		if err != nil {
-			return nil, err
-		}
-		vpcId = vsw.VpcId
-	}
-
-	password := d.Get("password").(string)
-	if password == "" {
-		if v := d.Get("kms_encrypted_password").(string); v != "" {
-			kmsService := KmsService{client}
-			decryptResp, err := kmsService.Decrypt(v, d.Get("kms_encryption_context").(map[string]interface{}))
-			if err != nil {
-				return nil, WrapError(err)
-			}
-			password = decryptResp
-		}
-	}
-
-	creationArgs := &cs.CreateNodePoolRequest{
-		RegionId: common.Region(client.RegionId),
-		NodePoolInfo: cs.NodePoolInfo{
-			Name:         tea.TransInterfaceToString(d.Get("name")),
-			NodePoolType: defaultNodePoolType, // hard code the type
-		},
-		ScalingGroup: cs.ScalingGroup{
-			VpcId:              vpcId,
-			VswitchIds:         expandStringList(d.Get("vswitch_ids").([]interface{})),
-			InstanceTypes:      expandStringList(d.Get("instance_types").([]interface{})),
-			LoginPassword:      tea.String(password),
-			KeyPair:            tea.TransInterfaceToString(d.Get("key_name")),
-			SystemDiskCategory: aliyungoecs.DiskCategory(d.Get("system_disk_category").(string)),
-			SystemDiskSize:     tea.Int64(int64(d.Get("system_disk_size").(int))),
-			SecurityGroupId:    d.Get("security_group_id").(string),
-			ImageId:            tea.TransInterfaceToString(d.Get("image_id")),
-		},
-		KubernetesConfig: cs.KubernetesConfig{
-			NodeNameMode: d.Get("node_name_mode").(string),
-		},
-	}
-
-	if v, ok := d.GetOkExists("node_count"); ok {
-		creationArgs.Count = int64(v.(int))
-	}
-
-	if v, ok := d.GetOkExists("desired_size"); ok {
-		size := int64(v.(int))
-		creationArgs.DesiredSize = &size
-	}
-
-	setNodePoolDataDisks(&creationArgs.ScalingGroup, d)
-	setNodePoolTags(&creationArgs.ScalingGroup, d)
-	setNodePoolTaints(&creationArgs.KubernetesConfig, d)
-	setNodePoolLabels(&creationArgs.KubernetesConfig, d)
-
-	if v, ok := d.GetOk("instance_charge_type"); ok {
-		creationArgs.InstanceChargeType = tea.TransInterfaceToString(v)
-		if tea.StringValue(creationArgs.InstanceChargeType) == string(PrePaid) {
-			creationArgs.Period = tea.TransInterfaceToInt(d.Get("period"))
-			creationArgs.PeriodUnit = tea.TransInterfaceToString(d.Get("period_unit"))
-			creationArgs.AutoRenew = tea.TransInterfaceToBool(d.Get("auto_renew"))
-			creationArgs.AutoRenewPeriod = tea.TransInterfaceToInt(d.Get("auto_renew_period"))
-		}
-	}
-
-	if v, ok := d.GetOkExists("system_disk_encrypted"); ok {
-		creationArgs.SystemDiskEncrypted = tea.TransInterfaceToBool(v)
-		if tea.BoolValue(creationArgs.SystemDiskEncrypted) {
-			creationArgs.SystemDiskKMSKeyId = tea.TransInterfaceToString(d.Get("system_disk_kms_key"))
-			creationArgs.SystemDiskEncryptAlgorithm = tea.TransInterfaceToString(d.Get("system_disk_encrypt_algorithm"))
-		}
-	}
-
-	if v, ok := d.GetOk("deployment_set_id"); ok {
-		creationArgs.DeploymentSetId = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("install_cloud_monitor"); ok {
-		creationArgs.CmsEnabled = tea.TransInterfaceToBool(v)
-	}
-
-	if v, ok := d.GetOk("unschedulable"); ok {
-		creationArgs.Unschedulable = tea.TransInterfaceToBool(v)
-	}
-
-	if v, ok := d.GetOk("user_data"); ok && v != "" {
-		data := v.(string)
-		_, base64DecodeError := base64.StdEncoding.DecodeString(data)
-		if base64DecodeError == nil {
-			creationArgs.KubernetesConfig.UserData = tea.String(data)
-		} else {
-			creationArgs.KubernetesConfig.UserData = tea.String(base64.StdEncoding.EncodeToString([]byte(data)))
-		}
-	}
-
-	// set auto scaling config
-	if v, ok := d.GetOk("scaling_policy"); ok {
-		creationArgs.ScalingPolicy = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("scaling_config"); ok {
-		if sc, ok := v.([]interface{}); len(sc) > 0 && ok {
-			creationArgs.AutoScaling = setAutoScalingConfig(sc)
-		}
-	}
-
-	// set manage nodepool params
-	if v, ok := d.GetOk("management"); ok {
-		if management, ok := v.([]interface{}); len(management) > 0 && ok {
-			creationArgs.Management = setManagedNodepoolConfig(management)
-		}
-	}
-
-	if v, ok := d.GetOk("system_disk_performance_level"); ok {
-		creationArgs.SystemDiskPerformanceLevel = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("system_disk_snapshot_policy_id"); ok {
-		creationArgs.WorkerSnapshotPolicyId = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("resource_group_id"); ok {
-		creationArgs.ResourceGroupId = tea.TransInterfaceToString(v)
-	}
-
-	// setting spot instance
-	if v, ok := d.GetOk("spot_strategy"); ok {
-		creationArgs.SpotStrategy = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("spot_price_limit"); ok {
-		creationArgs.SpotPriceLimit = setSpotPriceLimit(v.([]interface{}))
-	}
-	if v, ok := d.GetOk("internet_charge_type"); ok {
-		creationArgs.InternetChargeType = tea.TransInterfaceToString(v)
-	}
-	if v, ok := d.GetOk("internet_max_bandwidth_out"); ok {
-		creationArgs.InternetMaxBandwidthOut = tea.TransInterfaceToInt(v)
-	}
-
-	if v, ok := d.GetOk("security_group_ids"); ok {
-		creationArgs.SecurityGroupIds = expandStringList(v.([]interface{}))
-	}
-
-	if v, ok := d.GetOk("platform"); ok {
-		creationArgs.Platform = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("image_type"); ok {
-		creationArgs.ImageType = tea.TransInterfaceToString(v)
-	}
-
-	if v, ok := d.GetOk("runtime_name"); ok {
-		creationArgs.Runtime = v.(string)
-	}
-
-	if v, ok := d.GetOk("runtime_version"); ok {
-		creationArgs.RuntimeVersion = v.(string)
-	}
-
-	cisEnabled, socEnabled := false, false
-	if v, ok := d.GetOkExists("cis_enabled"); ok {
-		cisEnabled = v.(bool)
-	}
-	if v, ok := d.GetOkExists("soc_enabled"); ok {
-		socEnabled = v.(bool)
-	}
-	if cisEnabled && socEnabled {
-		return creationArgs, fmt.Errorf("setting SOC and CIS together is not supported")
-	} else if cisEnabled {
-		creationArgs.CisEnabled = tea.Bool(cisEnabled)
-	} else if socEnabled {
-		creationArgs.SocEnabled = tea.Bool(socEnabled)
-	}
-
-	if v, ok := d.GetOk("rds_instances"); ok {
-		creationArgs.RdsInstances = expandStringList(v.([]interface{}))
-	}
-	if v, ok := d.GetOk("polardb_ids"); ok {
-		creationArgs.PolarDBIds = expandStringList(v.([]interface{}))
-	}
-
-	if v, ok := d.GetOk("cpu_policy"); ok {
-		creationArgs.CpuPolicy = v.(string)
-	}
-
-	// kubelet
-	if v, ok := d.GetOk("kubelet_configuration"); ok {
-		config, err := setKubeletConfigParamsForCreate(v.([]interface{}))
-		if err != nil {
-			return creationArgs, WrapError(err)
-		}
-		creationArgs.NodeConfig = &cs.NodeConfig{}
-		creationArgs.NodeConfig.KubeletConfiguration = config
-	}
-
-	return creationArgs, nil
-}
-
-func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
-	tags := make([]cs.Tag, 0)
-	tagsMap, ok := d.Get("tags").(map[string]interface{})
-	if ok {
-		for key, value := range tagsMap {
-			if value != nil {
-				if v, ok := value.(string); ok {
-					tags = append(tags, cs.Tag{
-						Key:   key,
-						Value: v,
-					})
-				}
-			}
-		}
-	}
-
-	return tags, nil
-}
-
-func setNodePoolTags(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) error {
-	if tags, err := ConvertCsTags(d); err == nil {
-		scalingGroup.Tags = tags
-	}
-	return nil
-}
-
-func setNodePoolLabels(config *cs.KubernetesConfig, d *schema.ResourceData) error {
-	labels := make([]cs.Label, 0)
-	if v, ok := d.GetOk("labels"); ok && len(v.([]interface{})) > 0 {
-		vl := v.([]interface{})
-		for _, i := range vl {
-			if m, ok := i.(map[string]interface{}); ok {
-				labels = append(labels, cs.Label{
-					Key:   m["key"].(string),
-					Value: m["value"].(string),
-				})
-			}
-		}
-	}
-	config.Labels = labels
-
-	return nil
-}
-
-func setNodePoolDataDisks(scalingGroup *cs.ScalingGroup, d *schema.ResourceData) error {
-	if dds, ok := d.GetOk("data_disks"); ok {
-		disks := dds.([]interface{})
-		createDataDisks := make([]cs.NodePoolDataDisk, 0, len(disks))
-		for _, e := range disks {
-			pack := e.(map[string]interface{})
-			dataDisk := cs.NodePoolDataDisk{
-				Size:                 pack["size"].(int),
-				DiskName:             pack["name"].(string),
-				Category:             pack["category"].(string),
-				Device:               pack["device"].(string),
-				AutoSnapshotPolicyId: pack["auto_snapshot_policy_id"].(string),
-				KMSKeyId:             pack["kms_key_id"].(string),
-				Encrypted:            pack["encrypted"].(string),
-				PerformanceLevel:     pack["performance_level"].(string),
-			}
-			createDataDisks = append(createDataDisks, dataDisk)
-		}
-		scalingGroup.DataDisks = createDataDisks
-	}
-
-	return nil
-}
-
-func setNodePoolTaints(config *cs.KubernetesConfig, d *schema.ResourceData) error {
-	taints := make([]cs.Taint, 0)
-	if v, ok := d.GetOk("taints"); ok && len(v.([]interface{})) > 0 {
-		vl := v.([]interface{})
-		for _, i := range vl {
-			if m, ok := i.(map[string]interface{}); ok {
-				taints = append(taints, cs.Taint{
-					Key:    m["key"].(string),
-					Value:  m["value"].(string),
-					Effect: cs.Effect(m["effect"].(string)),
-				})
-			}
-
-		}
-	}
-	config.Taints = taints
-
-	return nil
-}
-
-func setManagedNodepoolConfig(l []interface{}) (config cs.Management) {
-	if len(l) == 0 || l[0] == nil {
-		config.Enable = tea.Bool(false)
-		return config
-	}
-
-	m := l[0].(map[string]interface{})
-
-	// Once "management" is set, we think of it as creating a managed node pool
-	config.Enable = tea.Bool(true)
-
-	if v, ok := m["auto_repair"].(bool); ok {
-		config.AutoRepair = tea.Bool(v)
-	}
-	if v, ok := m["auto_upgrade"].(bool); ok {
-		config.UpgradeConf.AutoUpgrade = tea.Bool(v)
-	}
-	if v, ok := m["surge"].(int); ok {
-		config.UpgradeConf.Surge = tea.Int64(int64(v))
-	}
-	if v, ok := m["surge_percentage"].(int); ok {
-		config.UpgradeConf.SurgePercentage = tea.Int64(int64(v))
-	}
-	if v, ok := m["max_unavailable"].(int); ok {
-		config.UpgradeConf.MaxUnavailable = tea.Int64(int64(v))
-	}
-
-	return config
-}
-
-func setAutoScalingConfig(l []interface{}) (config cs.AutoScaling) {
-	if len(l) == 0 || l[0] == nil {
-		config.Enable = tea.Bool(false)
-		return config
-	}
-
-	m := l[0].(map[string]interface{})
-
-	// Once "scaling_config" is set, we think of it as creating a auto scaling node pool
-	config.Enable = tea.Bool(true)
-
-	if v, ok := m["min_size"].(int); ok {
-		config.MinInstances = tea.Int64(int64(v))
-	}
-	if v, ok := m["max_size"].(int); ok {
-		config.MaxInstances = tea.Int64(int64(v))
-	}
-	if v, ok := m["type"].(string); ok {
-		config.Type = tea.String(v)
-	}
-	if v, ok := m["is_bond_eip"].(bool); ok {
-		config.IsBindEip = tea.Bool(v)
-	}
-	if v, ok := m["eip_internet_charge_type"].(string); ok {
-		config.EipInternetChargeType = tea.String(v)
-	}
-	if v, ok := m["eip_bandwidth"].(int); ok {
-		config.EipBandWidth = tea.Int64(int64(v))
-	}
-	return config
-}
-
-func setSpotPriceLimit(l []interface{}) []cs.SpotPrice {
-	config := make([]cs.SpotPrice, 0)
-	if len(l) == 0 || l[0] == nil {
-		return config
-	}
-	for _, v := range l {
-		if m, ok := v.(map[string]interface{}); ok {
-			config = append(config, cs.SpotPrice{
-				InstanceType: m["instance_type"].(string),
-				PriceLimit:   m["price_limit"].(string),
-			})
-		}
-	}
-
-	return config
-}
-
-func flattenSpotPriceLimit(config []cs.SpotPrice) (m []map[string]interface{}) {
-	if config == nil {
-		return []map[string]interface{}{}
-	}
-
-	for _, spotInfo := range config {
-		m = append(m, map[string]interface{}{
-			"instance_type": spotInfo.InstanceType,
-			"price_limit":   spotInfo.PriceLimit,
-		})
-	}
-
-	return m
-}
-
-func flattenAutoScalingConfig(config *cs.AutoScaling) (m []map[string]interface{}) {
-	if config == nil {
-		return
-	}
-	m = append(m, map[string]interface{}{
-		"min_size":                 config.MinInstances,
-		"max_size":                 config.MaxInstances,
-		"type":                     config.Type,
-		"is_bond_eip":              config.IsBindEip,
-		"eip_internet_charge_type": config.EipInternetChargeType,
-		"eip_bandwidth":            config.EipBandWidth,
-	})
-
-	return
-}
-
-func flattenManagementNodepoolConfig(config *cs.Management) (m []map[string]interface{}) {
-	if config == nil {
-		return
-	}
-	m = append(m, map[string]interface{}{
-		"auto_repair":      config.AutoRepair,
-		"auto_upgrade":     config.UpgradeConf.AutoUpgrade,
-		"surge":            config.UpgradeConf.Surge,
-		"surge_percentage": config.UpgradeConf.SurgePercentage,
-		"max_unavailable":  config.UpgradeConf.MaxUnavailable,
-	})
-
-	return
-}
-
-func flattenNodeDataDisksConfig(config []cs.NodePoolDataDisk) (m []map[string]interface{}) {
-	if config == nil {
-		return []map[string]interface{}{}
-	}
-
-	for _, disks := range config {
-		m = append(m, map[string]interface{}{
-			"size":              disks.Size,
-			"category":          disks.Category,
-			"encrypted":         disks.Encrypted,
-			"performance_level": disks.PerformanceLevel,
-			"kms_key_id":        disks.KMSKeyId,
-		})
-	}
-
-	return m
-}
-
-func flattenTaintsConfig(config []cs.Taint) (m []map[string]interface{}) {
-	if config == nil {
-		return []map[string]interface{}{}
-	}
-
-	for _, taint := range config {
-		m = append(m, map[string]interface{}{
-			"key":    taint.Key,
-			"value":  taint.Value,
-			"effect": taint.Effect,
-		})
-	}
-
-	return m
-}
-
-func flattenLabelsConfig(config []cs.Label) (m []map[string]interface{}) {
-	if config == nil {
-		return []map[string]interface{}{}
-	}
-
-	for _, label := range config {
-		m = append(m, map[string]interface{}{
-			"key":   label.Key,
-			"value": label.Value,
-		})
-	}
-
-	return m
-}
-
-func flattenTagsConfig(config []cs.Tag) map[string]string {
-	m := make(map[string]string, len(config))
-	if len(config) < 0 {
-		return m
-	}
-
-	for _, tag := range config {
-		if tag.Key != DefaultClusterTag {
-			m[tag.Key] = tag.Value
-		}
-	}
-
-	return m
 }
 
 func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []string, oldNodes []interface{}, newNodes []interface{}) error {
@@ -1708,6 +2437,42 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	return nil
 }
 
+const defaultNodePoolType = "ess"
+
+func ConvertCsTags(d *schema.ResourceData) ([]cs.Tag, error) {
+	tags := make([]cs.Tag, 0)
+	tagsMap, ok := d.Get("tags").(map[string]interface{})
+	if ok {
+		for key, value := range tagsMap {
+			if value != nil {
+				if v, ok := value.(string); ok {
+					tags = append(tags, cs.Tag{
+						Key:   key,
+						Value: v,
+					})
+				}
+			}
+		}
+	}
+
+	return tags, nil
+}
+
+func flattenTagsConfig(config []cs.Tag) map[string]string {
+	m := make(map[string]string, len(config))
+	if len(config) < 0 {
+		return m
+	}
+
+	for _, tag := range config {
+		if tag.Key != DefaultClusterTag {
+			m[tag.Key] = tag.Value
+		}
+	}
+
+	return m
+}
+
 func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 	csService := CsService{meta.(*connectivity.AliyunClient)}
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
@@ -1762,169 +2527,5 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return nil
-}
-
-func setKubeletConfigParamsForUpdate(config *roacs.ModifyNodePoolNodeConfigRequestKubeletConfig, l []interface{}) error {
-	if len(l) <= 0 || l[0] == nil {
-		return nil
-	}
-	m := l[0].(map[string]interface{})
-
-	var (
-		intVal  int64
-		boolVal bool
-		err     error
-	)
-
-	if v, ok := m["registry_pull_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'registry_pull_qps' due to %v", err))
-		}
-		config.RegistryPullQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["registry_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'registry_burst' due to %v", err))
-		}
-		config.RegistryBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["event_record_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'event_record_qps' due to %v", err))
-		}
-		config.EventRecordQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["event_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'event_burst' due to %v", err))
-		}
-		config.EventBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["kube_api_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'kube_api_qps' due to %v", err))
-		}
-		config.KubeAPIQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["kube_api_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'kube_api_burst' due to %v", err))
-		}
-		config.KubeAPIBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["serialize_image_pulls"]; ok && reflect.ValueOf(v).String() != "" {
-		if boolVal, err = strconv.ParseBool(v.(string)); err != nil {
-			return WrapError(fmt.Errorf("failed to parse 'serialize_image_pulls' due to %v", err))
-		}
-		config.SerializeImagePulls = tea.Bool(boolVal)
-	}
-	if v, ok := m["cpu_manager_policy"]; ok && reflect.ValueOf(v).String() != "" {
-		config.CpuManagerPolicy = tea.String(v.(string))
-	}
-	if v, ok := m["eviction_hard"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionHard = v.(map[string]interface{})
-	}
-	if v, ok := m["eviction_soft"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionSoft = v.(map[string]interface{})
-	}
-	if v, ok := m["eviction_soft_grace_period"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionSoftGracePeriod = v.(map[string]interface{})
-	}
-	if v, ok := m["system_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.SystemReserved = v.(map[string]interface{})
-	}
-	if v, ok := m["kube_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.KubeReserved = v.(map[string]interface{})
-	}
-
-	return nil
-}
-
-func setKubeletConfigParamsForCreate(l []interface{}) (*cs.KubeletConfiguration, error) {
-	config := &cs.KubeletConfiguration{}
-	if len(l) <= 0 || l[0] == nil {
-		return nil, nil
-	}
-
-	var (
-		intVal  int64
-		boolVal bool
-		err     error
-	)
-
-	m := l[0].(map[string]interface{})
-
-	if v, ok := m["registry_pull_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'registry_pull_qps' due to %v", err))
-		}
-		config.RegistryPullQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["registry_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'registry_burst' due to %v", err))
-		}
-		config.RegistryBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["event_record_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'event_record_qps' due to %v", err))
-		}
-		config.EventRecordQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["event_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'event_burst' due to %v", err))
-		}
-		config.EventBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["kube_api_qps"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'kube_api_qps' due to %v", err))
-		}
-		config.KubeAPIQPS = tea.Int64(intVal)
-	}
-	if v, ok := m["kube_api_burst"]; ok && reflect.ValueOf(v).String() != "" {
-		if intVal, err = strconv.ParseInt(v.(string), 10, 64); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'kube_api_burst' due to %v", err))
-		}
-		config.KubeAPIBurst = tea.Int64(intVal)
-	}
-	if v, ok := m["serialize_image_pulls"]; ok && reflect.ValueOf(v).String() != "" {
-		if boolVal, err = strconv.ParseBool(v.(string)); err != nil {
-			return config, WrapError(fmt.Errorf("failed to parse 'serialize_image_pulls' due to %v", err))
-		}
-		config.SerializeImagePulls = tea.Bool(boolVal)
-	}
-	if v, ok := m["cpu_manager_policy"]; ok && reflect.ValueOf(v).String() != "" {
-		config.CpuManagerPolicy = tea.String(v.(string))
-	}
-	if v, ok := m["eviction_hard"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionHard = v.(map[string]interface{})
-	}
-	if v, ok := m["eviction_soft"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionSoft = v.(map[string]interface{})
-	}
-	if v, ok := m["eviction_soft_grace_period"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.EvictionSoftGracePeriod = v.(map[string]interface{})
-	}
-	if v, ok := m["system_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.SystemReserved = v.(map[string]interface{})
-	}
-	if v, ok := m["kube_reserved"]; ok && reflect.TypeOf(v).Kind() == reflect.Map {
-		config.KubeReserved = v.(map[string]interface{})
-	}
-	return config, nil
-}
-
-func setRollingPolicy(policy *roacs.ModifyNodePoolNodeConfigRequestRollingPolicy, l []interface{}) error {
-	if len(l) <= 0 || l[0] == nil {
-		return nil
-	}
-	m := l[0].(map[string]interface{})
-	if v, ok := m["max_parallelism"]; ok {
-		policy.MaxParallelism = tea.Int64(int64(v.(int)))
-	}
 	return nil
 }
