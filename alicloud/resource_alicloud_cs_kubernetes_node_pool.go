@@ -791,7 +791,7 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 	request["nodepool_info"] = objectDataLocalMap
 	if v, ok := d.GetOk("node_count"); ok {
-		request["node_count"] = v
+		request["count"] = v
 	}
 	objectDataLocalMap1 := make(map[string]interface{})
 	if v, ok := d.GetOk("security_group_ids"); ok {
@@ -1634,9 +1634,6 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		objectDataLocalMap["name"] = d.Get("node_pool_name")
 	}
 	request["nodepool_info"] = objectDataLocalMap
-	if v, ok := d.GetOk("node_count"); ok {
-		request["node_count"] = v
-	}
 	objectDataLocalMap1 := make(map[string]interface{})
 	if d.HasChange("period") {
 		update = true
@@ -2278,6 +2275,7 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
+	body := make(map[string]interface{})
 	conn, err := client.NewAckClient()
 	if err != nil {
 		return WrapError(err)
@@ -2290,11 +2288,12 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("force_delete"); ok {
 		query["force"] = StringPointer(strconv.FormatBool(v.(bool)))
 	}
+	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer("2015-12-15"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {

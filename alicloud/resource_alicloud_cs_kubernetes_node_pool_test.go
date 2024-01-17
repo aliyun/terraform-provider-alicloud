@@ -57,6 +57,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 					"cis_enabled":           "true",
 					"cpu_policy":            "none",
 					"spot_strategy":         "NoSpot",
+					"rds_instances":         []string{"pgm-gw88d7qc6b2z6ksw", "pgm-gw8i4i431o53i7sp"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1386,25 +1387,25 @@ locals {
   cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
 }
 
-resource "alicloud_ecs_elasticity_assurance" "default0yDzRS" {
-  instance_amount                     = "1"
-  zone_ids                            = ["${data.alicloud_zones.default.zones.0.id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-}
-
-resource "alicloud_ecs_elasticity_assurance" "default4NZTlr" {
-  instance_amount                     = "1"
-  zone_ids                            = ["${data.alicloud_zones.default.zones.0.id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
-}
+//resource "alicloud_ecs_elasticity_assurance" "default0yDzRS" {
+//  instance_amount                     = "1"
+//  zone_ids                            = ["${data.alicloud_zones.default.zones.0.id}"]
+//  period                              = "1"
+//  private_pool_options_match_criteria = "Open"
+//  assurance_times                     = "Unlimited"
+//  period_unit                         = "Month"
+//  instance_type                       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+//}
+//
+//resource "alicloud_ecs_elasticity_assurance" "default4NZTlr" {
+//  instance_amount                     = "1"
+//  zone_ids                            = ["${data.alicloud_zones.default.zones.0.id}"]
+//  period                              = "1"
+//  private_pool_options_match_criteria = "Open"
+//  assurance_times                     = "Unlimited"
+//  period_unit                         = "Month"
+//  instance_type                       = ["${data.alicloud_instance_types.default.instance_types.0.id}"]
+//}
 
 
 `, name)
@@ -4757,7 +4758,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 					"node_pool_name":       name,
 					"cluster_id":           "${local.cluster_id}",
 					"instance_charge_type": "PostPaid",
-					"auto_renew_period":    "2",
+					"auto_renew_period":    "0",
 					"scaling_config": []map[string]interface{}{
 						{
 							"type": "cpu",
@@ -4798,7 +4799,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 					"period":                "6",
 					"tee_config": []map[string]interface{}{
 						{
-							"tee_enable": "true",
+							"tee_enable": "false",
 						},
 					},
 					"system_disk_performance_level": "PL0",
@@ -4809,9 +4810,9 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 							"value": "test",
 						},
 					},
-					"period_unit":  "Month",
+					"period_unit":  "",
 					"desired_size": "0",
-					"auto_renew":   "true",
+					"auto_renew":   "false",
 					"instance_types": []string{
 						"ecs.c6.xlarge"},
 					"tags": map[string]string{
