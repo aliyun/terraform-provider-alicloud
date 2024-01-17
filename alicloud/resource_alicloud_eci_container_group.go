@@ -427,6 +427,13 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 								},
 							},
 						},
+						"lifecycle_pre_stop_handler_exec": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+						},
 					},
 				},
 			},
@@ -777,9 +784,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ForceNew: true,
-										DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-											return old == "" && new != ""
-										},
 									},
 									"path": {
 										Type:     schema.TypeString,
@@ -851,6 +855,10 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"termination_grace_period_seconds": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 		},
 	}
@@ -994,6 +1002,9 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
 		}
 		Containers[i]["SecurityContext"] = SecurityContext
+
+		Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
+
 	}
 	request["Container"] = Containers
 
@@ -1192,11 +1203,11 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 			VolumesMap := VolumesValue.(map[string]interface{})
 			Volumes[i] = make(map[string]interface{})
 			ConfigFileVolumeConfigFileToPaths := make([]map[string]interface{}, len(VolumesMap["config_file_volume_config_file_to_paths"].([]interface{})))
-			for i, ConfigFileVolumeConfigFileToPathsValue := range VolumesMap["config_file_volume_config_file_to_paths"].([]interface{}) {
+			for j, ConfigFileVolumeConfigFileToPathsValue := range VolumesMap["config_file_volume_config_file_to_paths"].([]interface{}) {
 				ConfigFileVolumeConfigFileToPathsMap := ConfigFileVolumeConfigFileToPathsValue.(map[string]interface{})
-				ConfigFileVolumeConfigFileToPaths[i] = make(map[string]interface{})
-				ConfigFileVolumeConfigFileToPaths[i]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
-				ConfigFileVolumeConfigFileToPaths[i]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
+				ConfigFileVolumeConfigFileToPaths[j] = make(map[string]interface{})
+				ConfigFileVolumeConfigFileToPaths[j]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
+				ConfigFileVolumeConfigFileToPaths[j]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
 			}
 			Volumes[i]["ConfigFileVolume.ConfigFileToPath"] = ConfigFileVolumeConfigFileToPaths
 
@@ -1251,6 +1262,10 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("insecure_registry"); ok {
 		request["InsecureRegistry"] = v
+	}
+
+	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
+		request["TerminationGracePeriodSeconds"] = v
 	}
 
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
@@ -1468,6 +1483,12 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextMaps = append(SecurityContextMaps, SecurityContextMap)
 					temp1["security_context"] = SecurityContextMaps
 				}
+
+				exec := getLifecyclePreStopHandlerExec(d, temp1["name"])
+				if exec != "" {
+					temp1["lifecycle_pre_stop_handler_exec"] = exec
+				}
+
 				containers = append(containers, temp1)
 			}
 		}
@@ -1497,25 +1518,6 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		dnsConfigSli = append(dnsConfigSli, dnsConfigMap)
 	}
 	d.Set("dns_config", dnsConfigSli)
-
-	//eciSecurityContextSli := make([]map[string]interface{}, 0)
-	//if len(object["EciSecurityContext"].(map[string]interface{})) > 0 {
-	//	eciSecurityContext := object["EciSecurityContext"]
-	//	eciSecurityContextMap := make(map[string]interface{})
-	//
-	//	sysctlsSli := make([]map[string]interface{}, 0)
-	//	if len(eciSecurityContext.(map[string]interface{})["Sysctls"].([]interface{})) > 0 {
-	//		for _, sysctls := range eciSecurityContext.(map[string]interface{})["Sysctls"].([]interface{}) {
-	//			sysctlsMap := make(map[string]interface{})
-	//			sysctlsMap["name"] = sysctls.(map[string]interface{})["Name"]
-	//			sysctlsMap["value"] = sysctls.(map[string]interface{})["Value"]
-	//			sysctlsSli = append(sysctlsSli, sysctlsMap)
-	//		}
-	//	}
-	//	eciSecurityContextMap["sysctls"] = sysctlsSli
-	//	eciSecurityContextSli = append(eciSecurityContextSli, eciSecurityContextMap)
-	//}
-	//d.Set("eci_security_context", eciSecurityContextSli)
 
 	securityContextSli := make([]map[string]interface{}, 0)
 	if len(object["EciSecurityContext"].(map[string]interface{})) > 0 {
@@ -1674,9 +1676,10 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					for _, configFileVolumeConfigFileToPathsValue := range m1["ConfigFileVolumeConfigFileToPaths"].([]interface{}) {
 						configFileVolumeConfigFileToPaths := configFileVolumeConfigFileToPathsValue.(map[string]interface{})
 						configFileVolumeConfigFileToPathsMap := map[string]interface{}{
-							"content": configFileVolumeConfigFileToPaths["Content"],
-							"path":    configFileVolumeConfigFileToPaths["Path"],
+							"path": configFileVolumeConfigFileToPaths["Path"],
 						}
+						content := getConfigFileContent(d, temp1["name"], configFileVolumeConfigFileToPathsMap["path"])
+						configFileVolumeConfigFileToPathsMap["content"] = content
 						configFileVolumeConfigFileToPathsMaps = append(configFileVolumeConfigFileToPathsMaps, configFileVolumeConfigFileToPathsMap)
 					}
 					temp1["config_file_volume_config_file_to_paths"] = configFileVolumeConfigFileToPathsMaps
@@ -1691,6 +1694,44 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 	}
 	d.Set("zone_id", object["ZoneId"])
 	return nil
+}
+
+func getLifecyclePreStopHandlerExec(d *schema.ResourceData, name interface{}) (result interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("getLifecyclePreStopHandlerExec Recovered from panic: %v", r)
+			result = ""
+		}
+	}()
+	for _, srcContainer := range d.Get("containers").([]interface{}) {
+		c := srcContainer.(map[string]interface{})
+		if c["name"].(string) == name.(string) {
+			return c["lifecycle_pre_stop_handler_exec"]
+		}
+	}
+	return ""
+}
+
+func getConfigFileContent(d *schema.ResourceData, name interface{}, path interface{}) (result interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("getConfigFileContent Recovered from panic: %v", r)
+			result = ""
+		}
+	}()
+	for _, v := range d.Get("volumes").([]interface{}) {
+		volume := v.(map[string]interface{})
+		if volume["name"].(string) == name.(string) {
+			configs := volume["config_file_volume_config_file_to_paths"].([]interface{})
+			for _, c := range configs {
+				config := c.(map[string]interface{})
+				if config["path"].(string) == path.(string) {
+					return config["content"]
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -1929,6 +1970,8 @@ func resourceAlicloudEciContainerGroupUpdate(d *schema.ResourceData, meta interf
 				SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
 			}
 			Containers[i]["SecurityContext"] = SecurityContext
+
+			Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_exec"]
 		}
 		request["Container"] = Containers
 
