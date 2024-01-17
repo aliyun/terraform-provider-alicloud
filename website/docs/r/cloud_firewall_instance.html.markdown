@@ -36,8 +36,8 @@ resource "alicloud_cloud_firewall_instance" "example" {
 
 The following arguments are supported:
 
-* `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`.
-* `period` - (Required) The prepaid period. Valid values: `1`, `3`, `6`, `12`, `24`, `36`. **NOTE:** 1 and 3 available in 1.204.1+.
+* `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `Subscription`, `PayAsYouGo`. **NOTE:** From version 1.220.0, `payment_type` can be set to `PayAsYouGo`.
+* `period` - (Optional) The prepaid period. Valid values: `1`, `3`, `6`, `12`, `24`, `36`. **NOTE:** 1 and 3 available in 1.204.1+.
 * `renew_period` - (Deprecated since v1.209.1) Automatic renewal period. Attribute 'renew_period' has been deprecated since 1.209.1. Using 'renewal_duration' instead.
 * `renewal_duration` - (Optional) Auto-Renewal Duration. It is required under the condition that renewal_status is `AutoRenewal`. Valid values: `1`, `2`, `3`, `6`, `12`.
 * `renewal_duration_unit` - (Optional) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years. Valid values: `Month`, `Year`.
@@ -45,7 +45,6 @@ The following arguments are supported:
   - `AutoRenewal`: Auto renewal.
   - `ManualRenewal`: Manual renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
-
 * `logistics` - (Optional) The logistics.
 * `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute an update operation.
 * `cfw_service` - (Removed since v1.209.1) Attribute 'cfw_service' does not support longer, and it has been removed since v1.209.1.
