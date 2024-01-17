@@ -790,10 +790,10 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 		objectDataLocalMap["name"] = v
 	}
 	request["nodepool_info"] = objectDataLocalMap
+	objectDataLocalMap1 := make(map[string]interface{})
 	if v, ok := d.GetOk("node_count"); ok {
 		request["count"] = v
 	}
-	objectDataLocalMap1 := make(map[string]interface{})
 	if v, ok := d.GetOk("security_group_ids"); ok {
 		nodeNative2, _ := jsonpath.Get("$", v)
 		if nodeNative2 != nil && nodeNative2 != "" {
