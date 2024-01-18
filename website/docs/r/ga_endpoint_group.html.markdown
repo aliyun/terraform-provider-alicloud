@@ -23,6 +23,8 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
   * A virtual endpoint group refers to the endpoint group that you can create on the Endpoint Group page after you create a listener.
 * After you create a virtual endpoint group for an HTTP or HTTPS listener, you can create a forwarding rule and associate the forwarding rule with the virtual endpoint group. Then, the HTTP or HTTPS listener forwards requests with different destination domain names or paths to the default or virtual endpoint group based on the forwarding rule. This way, you can use one Global Accelerator (GA) instance to accelerate access to multiple domain names or paths. For more information about how to create a forwarding rule, see [Manage forwarding rules](https://www.alibabacloud.com/help/en/doc-detail/204224.htm).
 
+-> **WARN:** There is a serious bug in the `traffic_percentage` of the `alicloud_ga_endpoint_group` before version 1.211.1, when the value of `traffic_percentage` is not explicitly specified in the Terraform code, TF will set `traffic_percentage` to `0`, which will cause your instance traffic to drop to zero. So, please use provider greater than or equal to version `1.211.1`.
+
 ## Example Usage
 
 Basic Usage
