@@ -120,6 +120,7 @@ func resourceAlicloudOssBucket() *schema.Resource {
 			"referer_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"allow_empty": {
