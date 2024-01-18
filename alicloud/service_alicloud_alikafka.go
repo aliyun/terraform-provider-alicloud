@@ -961,7 +961,7 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 		return nil, WrapError(err)
 	}
 	action := "GetAllowedIpList"
-	parts, err := ParseResourceId(id, 4)
+	parts, err := ParseResourceId(id, 5)
 	if err != nil {
 		err = WrapError(err)
 		return

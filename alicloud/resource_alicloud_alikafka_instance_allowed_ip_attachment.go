@@ -47,6 +47,11 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachment() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"9092/9092", "9093/9093"}, false),
 			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -66,6 +71,7 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.Resourc
 	request["PortRange"] = d.Get("port_range")
 	request["RegionId"] = client.RegionId
 	request["UpdateType"] = "add"
+	request["Description"] = d.Get("description")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -86,7 +92,7 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentCreate(d *schema.Resourc
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["AllowedListType"], ":", request["PortRange"], ":", request["AllowedListIp"]))
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["AllowedListType"], ":", request["PortRange"], ":", request["AllowedListIp"], ":", request["Description"]))
 
 	return resourceAlicloudAliKafkaInstanceAllowedIpAttachmentRead(d, meta)
 }
@@ -102,7 +108,7 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentRead(d *schema.ResourceD
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceId(d.Id(), 5)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -110,11 +116,12 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentRead(d *schema.ResourceD
 	d.Set("allowed_type", parts[1])
 	d.Set("instance_id", parts[0])
 	d.Set("port_range", parts[2])
+	d.Set("description", parts[4])
 	return nil
 }
 func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 4)
+	parts, err := ParseResourceId(d.Id(), 5)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -129,6 +136,10 @@ func resourceAlicloudAliKafkaInstanceAllowedIpAttachmentDelete(d *schema.Resourc
 		"AllowedListType": parts[1],
 		"InstanceId":      parts[0],
 		"PortRange":       parts[2],
+	}
+
+	if len(parts[4]) > 0 {
+		request["Description"] = parts[4]
 	}
 
 	request["RegionId"] = client.RegionId

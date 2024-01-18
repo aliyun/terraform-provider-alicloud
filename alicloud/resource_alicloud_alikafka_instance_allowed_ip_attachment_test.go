@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.AliKafkaSupportRegions)
@@ -46,6 +46,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 					"port_range":   "9092/9092",
 					"instance_id":  "${alicloud_alikafka_instance.default.id}",
 					"allowed_type": "vpc",
+					"description":  "test",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -53,6 +54,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 						"port_range":   "9092/9092",
 						"instance_id":  CHECKSET,
 						"allowed_type": "vpc",
+						"description":  "test",
 					}),
 				),
 			},
@@ -65,7 +67,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
 	checkoutSupportedRegions(t, true, connectivity.AliKafkaSupportRegions)
@@ -92,6 +94,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 					"port_range":   "9093/9093",
 					"instance_id":  "${alicloud_alikafka_instance.default.id}",
 					"allowed_type": "internet",
+					"description":  "test",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -99,6 +102,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 						"port_range":   "9093/9093",
 						"instance_id":  CHECKSET,
 						"allowed_type": "internet",
+						"description":  "test",
 					}),
 				),
 			},
