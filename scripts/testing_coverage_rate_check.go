@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud"
@@ -491,6 +492,7 @@ var (
 	configRegex       = regexp.MustCompile("(^[\t]*)Config:(.*)")
 	checkRegex        = regexp.MustCompile("(.*)Check:(.*)")
 	ignoreRegex       = regexp.MustCompile("(.*)ImportStateVerifyIgnore:(.*)")
+	hasNumRegex       = regexp.MustCompile(`[0-9]+`)
 	attrRegex         = regexp.MustCompile("^([{]*)\"([a-zA-Z_0-9-.]+)\":(.*)")
 	symbolRegex       = regexp.MustCompile(`\s`)
 	variableRegex     = regexp.MustCompile("(^[a-zA-Z_0-9]+)|(\"[+]\")")
@@ -551,10 +553,30 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
 	}
 	redundantAttr := testIgnoreSet.Difference(schemaAllSet).ToSlice()
-	if len(redundantAttr) != 0 {
+	redundantAttrFinal := []string{}
+	for _, v := range redundantAttr {
+		vStr := v.(string)
+		if hasNumRegex.MatchString(vStr) && strings.Contains(vStr, ".") {
+			parts := strings.Split(vStr, ".")
+			attrStr := parts[0]
+			for _, subAttr := range parts[1:] {
+				if _, err := strconv.Atoi(subAttr); err == nil {
+					continue
+				} else {
+					attrStr += "." + subAttr
+				}
+			}
+			if !schemaAllSet.Contains(attrStr) {
+				redundantAttrFinal = append(redundantAttrFinal, vStr)
+			}
+		} else {
+			redundantAttrFinal = append(redundantAttrFinal, vStr)
+		}
+	}
+	if len(redundantAttrFinal) != 0 {
 		isIgnoreLegal = false
-		redundantAttrStr, _ := json.Marshal(redundantAttr)
-		log.Errorf("resource %s attributes %v should not in ImportStateVerifyIgnore array", resourceName, string(redundantAttrStr))
+		redundantAttrFinalStr, _ := json.Marshal(redundantAttrFinal)
+		log.Errorf("resource %s attributes %v should not in ImportStateVerifyIgnore array", resourceName, string(redundantAttrFinalStr))
 	}
 	schemaModifySet = schemaModifySet.Difference(testIgnoreSet)
 
@@ -592,3 +614,5 @@ func testAll(diff *diffparser.Diff) {
 		line++
 	}
 }
+
+
