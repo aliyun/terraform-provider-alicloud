@@ -867,6 +867,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ebs_replica_group_drill":                              resourceAliCloudEbsReplicaGroupDrill(),
 			"alicloud_ebs_replica_pair_drill":                               resourceAliCloudEbsReplicaPairDrill(),
 			"alicloud_arms_synthetic_task":                                  resourceAliCloudArmsSyntheticTask(),
+			"alicloud_cloud_monitor_service_enterprise_public":              resourceAliCloudCloudMonitorServiceEnterprisePublic(),
+			"alicloud_cloud_monitor_service_basic_public":                   resourceAliCloudCloudMonitorServiceBasicPublic(),
 			"alicloud_express_connect_ec_failover_test_job":                 resourceAliCloudExpressConnectEcFailoverTestJob(),
 			"alicloud_arms_grafana_workspace":                               resourceAliCloudArmsGrafanaWorkspace(),
 			"alicloud_realtime_compute_vvp_instance":                        resourceAliCloudRealtimeComputeVvpInstance(),
