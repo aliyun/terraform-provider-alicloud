@@ -2,14 +2,13 @@
 subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_server_group"
-sidebar_current: "docs-alicloud-resource-nlb-server-group"
 description: |-
   Provides a Alicloud NLB Server Group resource.
 ---
 
 # alicloud_nlb_server_group
 
-Provides a NLB Server Group resource.
+Provides a NLB Server Group resource. 
 
 For information about NLB Server Group and how to use it, see [What is Server Group](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createservergroup-nlb).
 
@@ -59,59 +58,71 @@ resource "alicloud_nlb_server_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `address_ip_version` - (Optional, ForceNew, Computed) Protocol version. Value:
+  - **ipv4**:IPv4 type.
+  - **DualStack**: Double Stack type.
+* `any_port_enabled` - (Optional, ForceNew, Computed, Available since v1.214.0) Full port forwarding.
+* `connection_drain_enabled` - (Optional, Computed, Available since v1.214.0) Whether to open the connection gracefully interrupted. Value:
+  - **true**: on.
+  - **false**: closed.
+* `connection_drain_timeout` - (Optional, Computed) Set the connection elegant interrupt timeout. Unit: seconds. Valid values: **10** ~ **900**.
+* `health_check` - (Optional, ForceNew, Computed) Health check configuration information. See [`health_check`](#health_check) below.
+* `preserve_client_ip_enabled` - (Optional, Computed) Whether to enable the client address retention function. Value:
+  - **true**: on.
+  - **false**: closed.
+-> **NOTE:**  special instructions: When **AddressIPVersion** is of the **ipv4** type, the default value is **true**. **Addrestipversion** can only be **false** when the value of **ipv6** is **ipv6**, and can be **true** when supported by the underlying layer * *.
+* `protocol` - (Optional, ForceNew, Computed) The backend Forwarding Protocol. Valid values: **TCP**, **UDP**, or **TCPSSL**.
+* `resource_group_id` - (Optional, Computed) The ID of the resource group to which the server group belongs.
+* `scheduler` - (Optional, Computed) Scheduling algorithm. Value:
+  - **Wrr**: Weighted polling. The higher the weight of the backend server, the higher the probability of being polled.
+  - **Rr**: polls external requests are distributed to backend servers in sequence according to the access order. sch: Source IP hash: The same source address is scheduled to the same backend server.
+  - **Tch**: Quadruple hash, based on the consistent hash of the Quad (source IP, Destination IP, source port, and destination port), the same stream is scheduled to the same backend server.
+  - **Qch**: a QUIC ID hash that allows you to hash requests with the same QUIC ID to the same backend server.
+* `server_group_name` - (Required) The name of the server group.
+* `server_group_type` - (Optional, ForceNew, Computed) Server group type. Value:
+  - **Instance**: The server type. You can add **Ecs**, **Ens**, and **Eci** instances to the server group.
+  - **Ip**: Ip address type. You can add Ip addresses to a server group of this type.
+* `tags` - (Optional, Map) Label.
+* `vpc_id` - (Required, ForceNew) The ID of the VPC to which the server group belongs.
 
-* `address_ip_version` - (Optional, ForceNew) The protocol version. Valid values: `Ipv4` (default), `DualStack`.
-* `connection_drain` - (Optional) Specifies whether to enable connection draining.
-* `connection_drain_timeout` - (Optional) The timeout period of connection draining. Unit: seconds. Valid values: 10 to 900.
-* `health_check` - (Required) HealthCheck. See [`health_check`](#health_check) below.
-* `protocol` - (Optional, ForceNew) The backend protocol. Valid values: `TCP` (default), `UDP`, and `TCPSSL`.
-* `resource_group_id` - (Optional, ForceNew) The ID of the resource group to which the security group belongs.
-* `scheduler` - (Optional) The routing algorithm. Valid values:
-  - `Wrr` (default): The Weighted Round Robin algorithm is used. Backend servers with higher weights receive more requests than backend servers with lower weights.
-  - `Rr`: The round-robin algorithm is used. Requests are forwarded to backend servers in sequence.
-  - `Sch`: Source IP hashing is used. Requests from the same source IP address are forwarded to the same backend server.
-  - `Tch`: Four-element hashing is used. It specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are forwarded to the same backend server.
-  - `Qch`: QUIC ID hashing is used. Requests that contain the same QUIC ID are forwarded to the same backend server.
-* `server_group_name` - (Required) The name of the server group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
-* `server_group_type` - (Optional, ForceNew) The type of the server group. Valid values:
-  - `Instance` (default): allows you to specify `Ecs`, `Ens`, or `Eci`.
-  - `Ip`: allows you to specify IP addresses.
-* `vpc_id` - (Required, ForceNew) The id of the vpc.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-* `preserve_client_ip_enabled` - (Optional) Indicates whether client address retention is enabled.
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `connection_drain` - (Deprecated since v1.214.0). Field 'connection_drain' has been deprecated from provider version 1.214.0. New field 'connection_drain_enabled' instead.
 
 ### `health_check`
 
-The health_check supports the following: 
-
-* `health_check_connect_port` - (Optional) The backend port that is used for health checks. Valid values: 0 to 65535. Default value: 0. If you set the value to 0, the port of a backend server is used for health checks.
-* `health_check_connect_timeout` - (Optional) The maximum timeout period of a health check response. Unit: seconds. Valid values: 1 to 300. Default value: 5.
-* `health_check_domain` - (Optional) The domain name that is used for health checks. Valid values:
-  - `$SERVER_IP`: the private IP address of a backend server.
-  - `domain`: a specified domain name. The domain name must be 1 to 80 characters in length, and can contain letters, digits, hyphens (-), and periods (.).
-* `health_check_enabled` - (Optional) Specifies whether to enable health checks.
-* `health_check_interval` - (Optional) The interval between two consecutive health checks. Unit: seconds. Valid values: 5 to 5000. Default value: 10.
-* `health_check_type` - (Optional) The protocol that is used for health checks. Valid values: `TCP` (default) and `HTTP`.
-* `health_check_url` - (Optional) The path to which health check requests are sent. The path must be 1 to 80 characters in length, and can contain only letters, digits, and the following special characters: `- / . % ? # & =`. It can also contain the following extended characters: `_ ; ~ ! ( ) * [ ] @ $ ^ : ' , +`. The path must start with a forward slash (/). **Note:** This parameter takes effect only if `health_check_type` is set to `http`.
-* `healthy_threshold` - (Optional) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. In this case, the health status is changed from fail to success. Valid values: 2 to 10. Default value: 2.
-* `unhealthy_threshold` - (Optional) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. In this case, the health status is changed from success to fail. Valid values: 2 to 10. Default value: 2.
-* `http_check_method` - (Optional) The HTTP method that is used for health checks. Valid values: `GET` and `HEAD`. **Note:** This parameter takes effect only if `health_check_type` is set to `http`.
-* `health_check_http_code` - (Optional) The HTTP status codes to return to health checks. Separate multiple HTTP status codes with commas (,). Valid values: http_2xx (default), http_3xx, http_4xx, and http_5xx. **Note:** This parameter takes effect only if `health_check_type` is set to `http`.
+The health_check supports the following:
+* `health_check_connect_port` - (Optional, Computed) The port of the backend server for health checks. Valid values: **0** ~ **65535**. **0** indicates that the port of the backend server is used for health check.
+* `health_check_connect_timeout` - (Optional, Computed) Maximum timeout for health check responses. Unit: seconds. Valid values: **1** ~ **300**.
+* `health_check_domain` - (Optional, Computed) The domain name used for health check. Valid values:
+  - **$SERVER_IP**: uses the intranet IP of the backend server.
+  - **domain**: Specify a specific domain name. The length is limited to 1 to 80 characters. Only lowercase letters, numbers, dashes (-), and half-width periods (.) can be used.
+-> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
+* `health_check_enabled` - (Optional, Computed) Whether to enable health check. Valid values:
+  - **true**: on.
+  - **false**: closed.
+* `health_check_http_code` - (Optional, Computed) Health status return code. Multiple status codes are separated by commas (,). Valid values: **http\_2xx**, **http\_3xx**, **http\_4xx**, and **http\_5xx**.
+-> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
+* `health_check_interval` - (Optional, Computed) Time interval of health examination. Unit: seconds.Valid values: **5** ~ **50**.
+* `health_check_type` - (Optional, Computed) Health check protocol. Valid values: **TCP** or **HTTP**.
+* `health_check_url` - (Optional, Computed) Health check path.
+-> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
+* `healthy_threshold` - (Optional, Computed) After the health check is successful, the health check status of the backend server is determined from **failed** to **successful * *.Valid values: **2** to **10 * *.
+* `http_check_method` - (Optional) The health check method. Valid values: **GET** or **HEAD**.
+-> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
+* `unhealthy_threshold` - (Optional, Computed) After the health check fails for many times in a row, the health check status of the backend server is determined from **Success** to **Failure**. Valid values: **2** to **10**.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Server Group.
-* `status` - The status of the resource.
+* `id` - The ID of the resource supplied above.
+* `status` - Server group status. Value:
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the Server Group.
-* `update` - (Defaults to 1 mins) Used when update the Server Group.
-* `delete` - (Defaults to 1 mins) Used when delete the Server Group.
+* `create` - (Defaults to 5 mins) Used when create the Server Group.
+* `delete` - (Defaults to 5 mins) Used when delete the Server Group.
+* `update` - (Defaults to 5 mins) Used when update the Server Group.
 
 ## Import
 
