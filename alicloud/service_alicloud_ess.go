@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -376,6 +377,26 @@ func (s *EssService) DescribeEssScalingConfigurationByCommonApi(id string) (obje
 	}
 
 	object = vv.([]interface{})[0].(map[string]interface{})
+	//.(map[string]interface{}) .(map[string]interface{})
+	w := object["WeightedCapacities"]
+	ww := object["InstanceTypes"]
+	if w != nil && ww != nil {
+		weightedCapacity := w.(map[string]interface{})["WeightedCapacity"].([]interface{})
+		instanceType := ww.(map[string]interface{})["InstanceType"].([]interface{})
+		instanceTypeOverride := make([]ess.ModifyScalingConfigurationInstanceTypeOverride, 0)
+		if len(weightedCapacity) != 0 && len(instanceType) != 0 {
+			for i := 0; i < len(weightedCapacity); i++ {
+				l := ess.ModifyScalingConfigurationInstanceTypeOverride{
+					InstanceType:     instanceType[i].(string),
+					WeightedCapacity: weightedCapacity[i].(json.Number).String(),
+				}
+				instanceTypeOverride = append(instanceTypeOverride, l)
+			}
+			m := make(map[string][]ess.ModifyScalingConfigurationInstanceTypeOverride)
+			m["InstanceTypeOverride"] = instanceTypeOverride
+			object["InstanceTypeOverrides"] = m
+		}
+	}
 	return object, nil
 }
 

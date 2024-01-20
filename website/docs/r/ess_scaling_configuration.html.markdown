@@ -18,8 +18,10 @@ Provides a ESS scaling configuration resource.
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+resource "random_integer" "default" {
+  count = 4
+  max   = 99999
+  min   = 10000
 }
 
 data "alicloud_zones" "default" {
@@ -40,7 +42,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example-${random_integer.default[0].result}"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -48,11 +50,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  vswitch_name = "terraform-example-${random_integer.default[0].result}"
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  name   = "terraform-example-${random_integer.default[0].result}"
   vpc_id = alicloud_vpc.default.id
 }
 
@@ -70,7 +72,7 @@ resource "alicloud_security_group_rule" "default" {
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "terraform-example-${random_integer.default[0].result}"
   removal_policies   = ["OldestInstance", "NewestInstance"]
   vswitch_ids        = [alicloud_vswitch.default.id]
 }
@@ -125,6 +127,7 @@ The following arguments are supported:
 * `force_delete` - (Optional) The last scaling configuration will be deleted forcibly with deleting its scaling group. Default to false.
 * `data_disk` - (Optional) DataDisk mappings to attach to ecs instance. See [`data_disk`](#data_disk) below for details.
 * `instance_pattern_info` - (Optional, Available in 1.177.0+) intelligent configuration mode. In this mode, you only need to specify the number of vCPUs, memory size, instance family, and maximum price. The system selects an instance type that is provided at the lowest price based on your configurations to create ECS instances. This mode is available only for scaling groups that reside in virtual private clouds (VPCs). This mode helps reduce the failures of scale-out activities caused by insufficient inventory of instance types.  See [`instance_pattern_info`](#instance_pattern_info) below for details.
+* `instance_type_override` - (Optional, Available in 1.216.0+) specify the weight of instance type.  See [`instance_type_override`](#instance_type_override) below for details.
 * `instance_ids` - (Deprecated) It has been deprecated from version 1.6.0. New resource `alicloud_ess_attachment` replaces it.
 * `tags` - (Optional) A mapping of tags to assign to the resource. It will be applied for ECS instances finally.
     - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "http://", or "https://". It cannot be a null string.
@@ -178,6 +181,13 @@ The instancePatternInfo mapping supports the following:
 * `instance_family_level` - (Optional) The instance family level in instancePatternInfo.
 * `max_price` - (Optional) The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.
 * `memory` - (Optional) The memory size that is specified for an instance type in instancePatternInfo.
+
+### `instance_type_override`
+
+The instanceTypeOverride mapping supports the following:
+
+* `instance_type` - (Optional) The is specified for an instance type in instanceTypeOverride.
+* `weighted_capacity` - (Optional) The weight of instance type in instanceTypeOverride.
 
 ### `spot_price_limit`
 

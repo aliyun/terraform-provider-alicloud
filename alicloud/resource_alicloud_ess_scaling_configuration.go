@@ -67,7 +67,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				ValidateFunc:  validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
-				ConflictsWith: []string{"instance_types"},
+				ConflictsWith: []string{"instance_types", "instance_type_override"},
 			},
 			"instance_types": {
 				Type: schema.TypeList,
@@ -75,7 +75,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					Type: schema.TypeString,
 				},
 				Optional:      true,
-				ConflictsWith: []string{"instance_type"},
+				ConflictsWith: []string{"instance_type", "instance_type_override"},
 				MaxItems:      int(MaxScalingConfigurationInstanceTypes),
 			},
 			"io_optimized": {
@@ -324,6 +324,24 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"instance_type_override": {
+				Optional:      true,
+				Type:          schema.TypeSet,
+				ConflictsWith: []string{"instance_type", "instance_types"},
+				MaxItems:      int(MaxScalingConfigurationInstanceTypes),
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"weighted_capacity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"instance_pattern_info": {
 				Optional: true,
 				Type:     schema.TypeSet,
@@ -369,8 +387,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	}
 	instanceType := d.Get("instance_type").(string)
 	instanceTypes := d.Get("instance_types").([]interface{})
-	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
-		return WrapError(Error("instance_type or instance_types must be assigned"))
+	instanceTypeOverrides := d.Get("instance_type_override").(*schema.Set).List()
+	if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) && (instanceTypeOverrides == nil || len(instanceTypeOverrides) == 0) {
+		return WrapError(Error("instance_type or instance_types or instance_type_override must be assigned"))
 	}
 	request["ImageId"] = d.Get("image_id")
 	request["ScalingGroupId"] = d.Get("scaling_group_id")
@@ -404,6 +423,21 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		types = append(types, instanceType)
 	}
 	request["InstanceTypes"] = types
+
+	if instanceTypeOverrides != nil && len(instanceTypeOverrides) != 0 {
+		instanceTypeOverridesMaps := make([]map[string]interface{}, 0)
+		for _, rew := range instanceTypeOverrides {
+			instanceTypeOverridesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				instanceTypeOverridesMap["InstanceType"] = instanceType
+			}
+			instanceTypeOverridesMap["WeightedCapacity"] = item["weighted_capacity"].(int)
+
+			instanceTypeOverridesMaps = append(instanceTypeOverridesMaps, instanceTypeOverridesMap)
+		}
+		request["InstanceTypeOverride"] = instanceTypeOverridesMaps
+	}
 
 	if v := d.Get("scaling_configuration_name").(string); v != "" {
 		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
@@ -741,7 +775,10 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	hasChangeInstanceType := d.HasChange("instance_type")
 	hasChangeInstanceTypes := d.HasChange("instance_types")
-	if hasChangeInstanceType || hasChangeInstanceTypes || d.Get("override").(bool) {
+	hasChangeInstanceTypeOverrides := d.HasChange("instance_type_override")
+	typeOverride := d.Get("instance_type_override")
+
+	if (hasChangeInstanceType || hasChangeInstanceTypes || d.Get("override").(bool)) && (!hasChangeInstanceTypeOverrides || len(typeOverride.(*schema.Set).List()) == 0) {
 		instanceType := d.Get("instance_type").(string)
 		instanceTypes := d.Get("instance_types").([]interface{})
 		if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
@@ -755,6 +792,23 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			types = append(types, instanceType)
 		}
 		request["InstanceTypes"] = types
+		update = true
+	}
+
+	if hasChangeInstanceTypeOverrides && d.Get("override").(bool) {
+		v, ok := d.GetOk("instance_type_override")
+		if ok {
+			instanceTypeOverrides := make([]ess.ModifyScalingConfigurationInstanceTypeOverride, 0)
+			for _, e := range v.(*schema.Set).List() {
+				pack := e.(map[string]interface{})
+				l := ess.ModifyScalingConfigurationInstanceTypeOverride{
+					InstanceType:     pack["instance_type"].(string),
+					WeightedCapacity: strconv.Itoa(pack["weighted_capacity"].(int)),
+				}
+				instanceTypeOverrides = append(instanceTypeOverrides, l)
+			}
+			request["InstanceTypeOverride"] = instanceTypeOverrides
+		}
 		update = true
 	}
 
@@ -1034,6 +1088,25 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		v := response["InstanceTypes"].(map[string]interface{})
 		d.Set("instance_types", v["InstanceType"].([]interface{}))
 	}
+
+	if instanceTypeOverride, ok := d.GetOk("instance_type_override"); ok && len(instanceTypeOverride.(*schema.Set).List()) > 0 {
+		if v := response["InstanceTypeOverrides"]; v != nil {
+			result := make([]map[string]interface{}, 0)
+			for _, i := range v.(map[string][]ess.ModifyScalingConfigurationInstanceTypeOverride)["InstanceTypeOverride"] {
+				r := i
+				n, _ := strconv.Atoi(r.WeightedCapacity)
+				l := map[string]interface{}{
+					"instance_type":     r.InstanceType,
+					"weighted_capacity": n,
+				}
+				result = append(result, l)
+			}
+			err := d.Set("instance_type_override", result)
+			if err != nil {
+				return WrapError(err)
+			}
+		}
+	}
 	if sgs, ok := d.GetOk("security_group_ids"); ok && len(sgs.([]interface{})) > 0 {
 		v := response["SecurityGroupIds"].(map[string]interface{})
 		d.Set("security_group_ids", v["SecurityGroupId"].([]interface{}))
@@ -1097,6 +1170,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			return WrapError(err)
 		}
 	}
+
 	return nil
 }
 

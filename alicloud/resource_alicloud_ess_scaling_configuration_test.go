@@ -1006,14 +1006,13 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 		  status = "Enabled"
 		}
 	resource "alicloud_kms_key" "default" {
-	  count = length(data.alicloud_kms_keys.default.ids) > 0 ? 0 : 1
 	  description = var.name
 	  status = "Enabled"
 	  pending_window_in_days = 7
 	}
 	
 	resource "alicloud_kms_ciphertext" "default" {
-	  key_id = length(data.alicloud_kms_keys.default.ids) > 0 ? data.alicloud_kms_keys.default.ids.0 : concat(alicloud_kms_key.default.*.id, [""])[0]
+	  key_id = "${alicloud_kms_key.default.id}"
 	  plaintext = "YourPassword1234"
 	  encryption_context = {
 		"name" = var.name
@@ -1243,6 +1242,84 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_pattern_info.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingConfiguration_InstanceTypeOverride(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 999999)
+	var v ess.ScalingConfiguration
+	resourceId := "alicloud_ess_scaling_configuration.ipi"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"instance_type":     CHECKSET,
+		"security_group_id": CHECKSET,
+		"image_id":          REGEXMATCH + "^ubuntu",
+		"override":          "false",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"image_id":          "${data.alicloud_images.default.images.0.id}",
+					"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"force_delete":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_inherit": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_delete", "instance_type", "security_group_id", "kms_encryption_context"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk_category": "cloud_ssd",
+					"internet_charge_type": "PayByTraffic",
+					"instance_name":        name,
+					"override":             "true",
+					"instance_type":        REMOVEKEY,
+					"instance_type_override": []map[string]string{{
+						"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+						"weighted_capacity": "4",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_disk_category":     "cloud_ssd",
+						"internet_charge_type":     "PayByTraffic",
+						"instance_name":            name,
+						"instance_type":            REMOVEKEY,
+						"instance_type_override.#": "1",
+						"override":                 "true",
 					}),
 				),
 			},
