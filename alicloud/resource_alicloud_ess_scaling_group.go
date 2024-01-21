@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -148,6 +149,26 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 			},
+			"launch_template_override": {
+				Optional: true,
+				Type:     schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"weighted_capacity": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"spot_price_limit": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -258,6 +279,26 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 			vswitchIds = append(vswitchIds, v.(string))
 		}
 	}
+
+	if v := object["LaunchTemplateOverrides"]; v != nil {
+		result := make([]map[string]interface{}, 0)
+		for _, i := range v.(map[string]interface{})["LaunchTemplateOverride"].([]interface{}) {
+			r := i.(map[string]interface{})
+			f, _ := r["SpotPriceLimit"].(json.Number).Float64()
+			spotPriceLimit, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
+			l := map[string]interface{}{
+				"instance_type":     r["InstanceType"],
+				"weighted_capacity": r["WeightedCapacity"],
+				"spot_price_limit":  spotPriceLimit,
+			}
+			result = append(result, l)
+		}
+		err := d.Set("launch_template_override", result)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
 	d.Set("vswitch_ids", vswitchIds)
 	d.Set("launch_template_id", object["LaunchTemplateId"])
 	d.Set("launch_template_version", object["LaunchTemplateVersion"])
@@ -358,6 +399,23 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("launch_template_id") || d.HasChange("launch_template_version") {
 		request.LaunchTemplateId = d.Get("launch_template_id").(string)
 		request.LaunchTemplateVersion = d.Get("launch_template_version").(string)
+	}
+
+	if d.HasChange("launch_template_override") {
+		v, ok := d.GetOk("launch_template_override")
+		if ok {
+			launchTemplateOverrides := make([]ess.ModifyScalingGroupLaunchTemplateOverride, 0)
+			for _, e := range v.(*schema.Set).List() {
+				pack := e.(map[string]interface{})
+				l := ess.ModifyScalingGroupLaunchTemplateOverride{
+					InstanceType:     pack["instance_type"].(string),
+					SpotPriceLimit:   strconv.FormatFloat(pack["spot_price_limit"].(float64), 'f', 2, 64),
+					WeightedCapacity: strconv.Itoa(pack["weighted_capacity"].(int)),
+				}
+				launchTemplateOverrides = append(launchTemplateOverrides, l)
+			}
+			request.LaunchTemplateOverride = &launchTemplateOverrides
+		}
 	}
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -499,6 +557,24 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("launch_template_id"); ok {
 		request["LaunchTemplateId"] = v
+	}
+
+	if v, ok := d.GetOk("launch_template_override"); ok {
+		launchTemplateOverridesMaps := make([]map[string]interface{}, 0)
+		launchTemplateOverrides := v.(*schema.Set).List()
+		for _, rew := range launchTemplateOverrides {
+			launchTemplateOverridesMap := make(map[string]interface{})
+			item := rew.(map[string]interface{})
+
+			if instanceType, ok := item["instance_type"].(string); ok && instanceType != "" {
+				launchTemplateOverridesMap["InstanceType"] = instanceType
+			}
+			launchTemplateOverridesMap["SpotPriceLimit"] = strconv.FormatFloat(item["spot_price_limit"].(float64), 'f', 2, 64)
+			launchTemplateOverridesMap["WeightedCapacity"] = item["weighted_capacity"].(int)
+
+			launchTemplateOverridesMaps = append(launchTemplateOverridesMaps, launchTemplateOverridesMap)
+		}
+		request["LaunchTemplateOverride"] = launchTemplateOverridesMaps
 	}
 
 	if v, ok := d.GetOk("launch_template_version"); ok {
