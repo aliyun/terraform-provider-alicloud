@@ -22,8 +22,10 @@ For information about ess scaling rule, see [CreateScalingGroup](https://www.ali
 ## Example Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+resource "random_integer" "default" {
+  count = 3
+  max   = 99999
+  min   = 10000
 }
 
 data "alicloud_zones" "default" {
@@ -44,7 +46,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = "terraform-example-${random_integer.default[0].result}"
   cidr_block = "172.16.0.0/16"
 }
 
@@ -52,11 +54,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  vswitch_name = "terraform-example-${random_integer.default[0].result}"
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  name   = "terraform-example-${random_integer.default[0].result}"
   vpc_id = alicloud_vpc.default.id
 }
 
@@ -75,13 +77,13 @@ resource "alicloud_vswitch" "default2" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.1.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = "${var.name}-bar"
+  vswitch_name = "terraform-example-${random_integer.default[0].result}-bar"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "terraform-example-${random_integer.default[0].result}"
   default_cooldown   = 20
   vswitch_ids        = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
   removal_policies   = ["OldestInstance", "NewestInstance"]
@@ -134,6 +136,16 @@ The following arguments are supported:
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `protected_instances` - (Optional, Available in v1.182.0+) Set or unset instances within group into protected status.
+* `launch_template_override` - (Optional, Available in 1.216.0+) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature..  See [`launch_template_override`](#launch_template_override) below for details.
+
+### `launch_template_override`
+
+The launchTemplateOverride mapping supports the following:
+
+* `weighted_capacity` - (Optional) The weight of the instance type in launchTemplateOverride.
+* `instance_type` - (Optional) The instance type in launchTemplateOverride.
+* `spot_price_limit` - (Optional) The maximum bid price of instance type in launchTemplateOverride.
+
 
 -> **NOTE:** When detach loadbalancers, instances in group will be remove from loadbalancer's `Default Server Group`; On the contrary, When attach loadbalancers, instances in group will be added to loadbalancer's `Default Server Group`.
 

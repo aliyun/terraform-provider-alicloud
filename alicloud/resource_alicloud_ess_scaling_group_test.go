@@ -524,6 +524,91 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 
 }
 
+func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                "0",
+		"max_size":                "4",
+		"default_cooldown":        "20",
+		"scaling_group_name":      fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_id":              CHECKSET,
+		"vswitch_ids.#":           "1",
+		"removal_policies.#":      "2",
+		"launch_template_version": "Default",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupTemplate)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.tmpVs.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
+					"launch_template_version": "Default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Latest",
+					"launch_template_override": []map[string]string{{
+						"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+						"weighted_capacity": "4",
+						"spot_price_limit":  "2.1",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":         CHECKSET,
+						"vswitch_id":                 CHECKSET,
+						"vswitch_ids.#":              "1",
+						"launch_template_override.#": "1",
+						"launch_template_version":    "Latest",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
