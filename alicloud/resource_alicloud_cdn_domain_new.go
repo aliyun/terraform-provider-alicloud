@@ -141,7 +141,7 @@ func resourceAliCloudCdnDomain() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      80,
-							ValidateFunc: IntInSlice([]int{80, 443}),
+							ValidateFunc: IntBetween(1, 65535),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
