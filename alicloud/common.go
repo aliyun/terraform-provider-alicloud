@@ -441,6 +441,23 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 	return result, nil
 }
 
+func convertJsonStringToObject(configured interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(configured.(string)), &result); err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func convertObjectToJsonString(m interface{}) string {
+	if result, err := json.Marshal(m); err != nil {
+		return ""
+	} else {
+		return string(result)
+	}
+}
+
 func convertMaptoJsonString(m map[string]interface{}) (string, error) {
 	//sm := make(map[string]string, len(m))
 	//for k, v := range m {
