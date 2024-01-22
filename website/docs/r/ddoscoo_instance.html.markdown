@@ -48,14 +48,14 @@ resource "alicloud_ddoscoo_instance" "default" {
 
 The following arguments are supported:
 
-* `name` - (Required) Name of the instance. This name can have a string of 1 to 63 characters.
+* `name` - (Required) Name of the instance. This name can have a string of `1` to `64` characters.
 * `port_count` - (Required) Port retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
 * `domain_count` - (Required) Domain retransmission rule count of the instance. At least 50. Increase 5 per step, such as 55, 60, 65. Only support upgrade.
-* `base_bandwidth` - (Optional) Base defend bandwidth of the instance. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade.
-* `bandwidth` - (Optional) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: 30, 60, 100, 300, 400, 500, 600. The unit is Gbps. Only support upgrade.
-* `service_bandwidth` - (Optional) Business bandwidth of the instance. At leaset 100. Increased 100 per step, such as 100, 200, 300. The unit is Mbps. Only support upgrade.
-* `normal_bandwidth` - (Optional, ForceNew, Available since v1.214.0) The clean bandwidth provided by the instance.
-* `normal_qps` - (Optional, ForceNew, Available since v1.214.0) The clean QPS provided by the instance.
+* `base_bandwidth` - (Optional) Base defend bandwidth of the instance. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `base_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `bandwidth` - (Optional) Elastic defend bandwidth of the instance. This value must be larger than the base defend bandwidth. Valid values: `30`, `60`, `100`, `300`, `400`, `500`, `600`. The unit is Gbps. Only support upgrade. **NOTE:** `bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `service_bandwidth` - (Optional) Business bandwidth of the instance. At leaset 100. Increased 100 per step, such as 100, 200, 300. The unit is Mbps. Only support upgrade. **NOTE:** `service_bandwidth` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
+* `normal_bandwidth` - (Optional, ForceNew, Available since v1.214.0) The clean bandwidth provided by the instance. **NOTE:** `normal_bandwidth` is valid only when `product_type` is set to `ddosDip`.
+* `normal_qps` - (Optional, ForceNew, Available since v1.214.0) The clean QPS provided by the instance. **NOTE:** `normal_qps` is valid only when `product_type` is set to `ddosDip`.
 * `edition_sale` - (Optional, ForceNew, Available since v1.212.0) The mitigation plan of the instance. Default value: `coop`. Valid values:
   - `coop`: Anti-DDoS Pro instance of the Profession mitigation plan.
 * `product_plan` - (Optional, ForceNew, Available since v1.214.0) The mitigation plan of the instance. Valid values:
@@ -63,11 +63,13 @@ The following arguments are supported:
   - `1`: The Unlimited mitigation plan.
   - `2`: The Chinese Mainland Acceleration (CMA) mitigation plan.
   - `3`: The Secure Chinese Mainland Acceleration (Sec-CMA) mitigation plan.
-* `address_type` - (Optional, ForceNew, Available since v1.212.0) The IP version of the IP address. Default value: `Ipv4`. Valid values: `Ipv4`, `Ipv6`.
+**NOTE:** `product_plan` is valid only when `product_type` is set to `ddosDip`.
+* `address_type` - (Optional, ForceNew, Available since v1.212.0) The IP version of the IP address. Default value: `Ipv4`. Valid values: `Ipv4`, `Ipv6`. **NOTE:** `address_type` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `bandwidth_mode` - (Optional, Available since v1.212.0) The mitigation plan of the instance. Valid values:
   - `0`: Disables the burstable clean bandwidth feature.
   - `1`: Enables the burstable clean bandwidth feature and uses the daily 95th percentile metering method.
   - `2`: Enables the burstable clean bandwidth feature and uses the monthly 95th percentile metering method.
+**NOTE:** `bandwidth_mode` is valid only when `product_type` is set to `ddoscoo` or `ddoscoo_intl`.
 * `function_version` - (Optional, ForceNew, Available since v1.214.0) The function plan of the instance. Valid values:
   - `0`: The Standard function plan.
   - `1`: The Enhanced function plan.
