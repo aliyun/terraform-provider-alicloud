@@ -184,6 +184,15 @@ func main() {
 				}
 				continue
 			}
+			if !argumentCheck && strings.HasPrefix(text, "## Attributes Reference") || strings.HasSuffix(text, "Attributes Reference") {
+				exampleCheck = false
+				attributesCheck = true
+				if text != "## Attributes Reference" {
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "## Attributes Reference", text)
+					exitCode = 1
+				}
+				continue
+			}
 		}
 		if argumentCheck {
 			if strings.HasPrefix(text, "* `") {
