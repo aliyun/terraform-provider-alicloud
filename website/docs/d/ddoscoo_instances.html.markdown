@@ -4,22 +4,30 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_ddoscoo_instances"
 sidebar_current: "docs-alicloud-datasource-ddoscoo-instances"
 description: |-
-  Provides a list of BGP-Line Anti-DDoS Pro instances available to the user.
+  Provides a list of BGP-Line Anti-DDoS Pro(DdosCoo) instances to the user.
 ---
 
-# alicloud\_ddoscoo\_instances
+# alicloud_ddoscoo_instances
 
-This data source provides a list of BGP-Line Anti-DDoS Pro instances in an Alibaba Cloud account according to the specified filters.
+This data source provides the BGP-Line Anti-DDoS Pro(DdosCoo) instances of the current Alibaba Cloud user.
+
+-> **NOTE:** Available since v1.39.0.
 
 ## Example Usage
 
-```
-data "alicloud_ddoscoo_instances" "instance" {
-  name_regex = "^ddoscoo"
+Basic Usage
+
+```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_ddoscoo_instances" "default" {
+  name_regex = "tf"
 }
 
 output "instance" {
-  value = "${alicloud_ddoscoo_instances.instance.*.id}"
+  value = data.alicloud_ddoscoo_instances.default.instances.*.id
 }
 ```
 
@@ -27,14 +35,14 @@ output "instance" {
 
 The following arguments are supported:
 
+* `ids` - (Optional, List) A list of instance IDs.
 * `name_regex` - (Optional) A regex string to filter results by the instance name.
-* `ids` - (Optional) A list of instance IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
-* `ids` - A list of instance IDs.
+
 * `names` - A list of instance names.
 * `instances` - A list of apis. Each element contains the following attributes:
   * `id` - The instance's id.
@@ -45,11 +53,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `port_count` - The instance's count of port retransmission config.
   * `domain_count` - The instance's count of domain retransmission config.
   * `remark` - The remark of the instance.
-  * `ip_mode` - The ip mode of the instance. The Valid Values : `fnat`, `v6tov4`.
+  * `ip_mode` - The ip mode of the instance.
   * `debt_status` - The debt status of the instance.
-  * `edition` - The edition of the instance. The Valid Values : `0`, `1`, `2`, `9`.
-  * `ip_version` - The ip version of the instance. The Valid Values : `Ipv4`, `Ipv6`.
-  * `status` - The status of the instance. The Valid Values : `1`, `2`.
-  * `enabled` - The enabled of the instance. The Valid Values : `0`, `1`.
+  * `edition` - The edition of the instance.
+  * `ip_version` - The ip version of the instance.
+  * `status` - The status of the instance.
+  * `enabled` - The enabled of the instance.
   * `expire_time` - The expiry time of the instance.
   * `create_time` - The creation time of the instance.
