@@ -2,21 +2,21 @@
 subcategory: "AliKafka"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_alikafka_sasl_user"
-sidebar_current: "docs-alicloud-resource-alikafka-sasl_user"
+sidebar_current: "docs-alicloud-resource-alikafka-sasl-user"
 description: |-
   Provides a Alicloud Alikafka Sasl User resource.
 ---
 
 # alicloud_alikafka_sasl_user
 
-Provides an Alikafka sasl user resource.
+Provides an Alikafka Sasl User resource.
 
 -> **NOTE:** Available since v1.66.0.
 
--> **NOTE:**  Only the following regions support create alikafka sasl user.
+-> **NOTE:**  Only the following regions support create alikafka Sasl User.
 [`cn-hangzhou`,`cn-beijing`,`cn-shenzhen`,`cn-shanghai`,`cn-qingdao`,`cn-hongkong`,`cn-huhehaote`,`cn-zhangjiakou`,`cn-chengdu`,`cn-heyuan`,`ap-southeast-1`,`ap-southeast-3`,`ap-southeast-5`,`ap-south-1`,`ap-northeast-1`,`eu-central-1`,`eu-west-1`,`us-west-1`,`us-east-1`]
 
-For information about Alikafka sasl user and how to use it, see [What is Alikafka sasl user ](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createsasluser).
+For information about Alikafka Sasl User and how to use it, see [What is Sasl User](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-createsasluser).
 
 ## Example Usage
 
@@ -26,6 +26,7 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -55,15 +56,13 @@ resource "alicloud_alikafka_instance" "default" {
   io_max          = "20"
   spec_type       = "professional"
   service_version = "2.2.0"
-  config          = "{\"enable.acl\":\"true\"}"
   vswitch_id      = alicloud_vswitch.default.id
   security_group  = alicloud_security_group.default.id
-}
-
-resource "alicloud_alikafka_topic" "default" {
-  instance_id = alicloud_alikafka_instance.default.id
-  topic       = "example-topic"
-  remark      = "topic-remark"
+  config          = <<EOF
+  {
+    "enable.acl": "true"
+  }
+  EOF
 }
 
 resource "alicloud_alikafka_sasl_user" "default" {
@@ -78,17 +77,17 @@ resource "alicloud_alikafka_sasl_user" "default" {
 The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) ID of the ALIKAFKA Instance that owns the groups.
-* `username` - (Required, ForceNew) Username for the sasl user. The length should between 1 to 64 characters. The characters can only contain 'a'-'z', 'A'-'Z', '0'-'9', '_' and '-'.
-* `password` - (Optional, Sensitive) Operation password. It may consist of letters, digits, or underlines, with a length of 1 to 64 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
+* `username` - (Required, ForceNew) The name of the SASL user. The length should between `1` to `64` characters. The characters can only contain `a`-`z`, `A`-`Z`, `0`-`9`, `_` and `-`.
+* `type` - (Optional, ForceNew, Available since v1.159.0) The authentication mechanism. Default value: `plain`. Valid values: `plain`, `scram`.
+* `password` - (Optional, Sensitive) The password of the SASL user. It may consist of letters, digits, or underlines, with a length of 1 to 64 characters. You have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encrypted_password` - (Optional) An KMS encrypts password used to a db account. You have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating a user with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `type` - (Optional, Available in 1.159.0+) The authentication mechanism. Valid values: `plain`, `scram`. Default value: `plain`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the resource. The value is formate as `<instance_id>:<username>`.
+* `id` - The resource ID in terraform of Sasl User. It formats as `<instance_id>:<username>`.
 
 ## Import
 
@@ -97,4 +96,3 @@ Alikafka Sasl User can be imported using the id, e.g.
 ```shell
 terraform import alicloud_alikafka_sasl_user.example <instance_id>:<username>
 ```
-

@@ -6,23 +6,20 @@ import (
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
+func resourceAliCloudAlikafkaSaslUser() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAlikafkaSaslUserCreate,
-		Read:   resourceAlicloudAlikafkaSaslUserRead,
-		Update: resourceAlicloudAlikafkaSaslUserUpdate,
-		Delete: resourceAlicloudAlikafkaSaslUserDelete,
+		Create: resourceAliCloudAlikafkaSaslUserCreate,
+		Read:   resourceAliCloudAlikafkaSaslUserRead,
+		Update: resourceAliCloudAlikafkaSaslUserUpdate,
+		Delete: resourceAliCloudAlikafkaSaslUserDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -33,13 +30,20 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
+			},
+			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"plain", "scram"}, false),
 			},
 			"password": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Sensitive:    true,
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				ValidateFunc: StringLenBetween(1, 64),
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -49,22 +53,16 @@ func resourceAlicloudAlikafkaSaslUser() *schema.Resource {
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
 				Optional: true,
+				Elem:     schema.TypeString,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("kms_encrypted_password").(string) == ""
 				},
-				Elem: schema.TypeString,
-			},
-			"type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"plain", "scram"}, false),
 			},
 		},
 	}
 }
 
-func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interface{}) error {
-
+func resourceAliCloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateSaslUser"
@@ -73,9 +71,11 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["RegionId"] = client.RegionId
 	request["InstanceId"] = d.Get("instance_id")
 	request["Username"] = d.Get("username")
-	request["RegionId"] = client.RegionId
+
 	if v, ok := d.GetOk("type"); ok {
 		request["Type"] = v
 	}
@@ -95,14 +95,17 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapError(err)
 		}
+
 		request["Password"] = decryptResp
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -110,27 +113,31 @@ func resourceAlicloudAlikafkaSaslUserCreate(d *schema.ResourceData, meta interfa
 		}
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	// Server may have cache, sleep a while.
 	time.Sleep(2 * time.Second)
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Username"]))
-	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
+
+	d.SetId(fmt.Sprintf("%v:%v", request["InstanceId"], request["Username"]))
+
+	return resourceAliCloudAlikafkaSaslUserRead(d, meta)
 }
 
-func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface{}) error {
-
+func resourceAliCloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	alikafkaService := AlikafkaService{client}
 
 	object, err := alikafkaService.DescribeAliKafkaSaslUser(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ali_kafka_consumer_group alikafkaService.DescribeAlikafkaSaslUser Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -142,16 +149,18 @@ func resourceAlicloudAlikafkaSaslUserRead(d *schema.ResourceData, meta interface
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("instance_id", parts[0])
-	d.Set("username", parts[1])
+	d.Set("username", object["Username"])
 	d.Set("type", object["Type"])
+
 	return nil
 }
 
-func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interface{}) error {
-
+func resourceAliCloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+
 	conn, err := client.NewAlikafkaClient()
 	if err != nil {
 		return WrapError(err)
@@ -163,17 +172,16 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 	}
 
 	request := map[string]interface{}{
+		"RegionId":   client.RegionId,
 		"InstanceId": parts[0],
 		"Username":   parts[1],
-		"RegionId":   client.RegionId,
 	}
 
 	if v, ok := d.GetOk("type"); ok {
 		request["Type"] = v
 	}
 
-	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
-
+	if !d.IsNewResource() && (d.HasChange("password") || d.HasChange("kms_encrypted_password")) {
 		password := d.Get("password").(string)
 		kmsPassword := d.Get("kms_encrypted_password").(string)
 
@@ -189,15 +197,19 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 			if err != nil {
 				return WrapError(err)
 			}
+
 			request["Password"] = decryptResp
 		}
 
 		action := "CreateSaslUser"
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -209,6 +221,7 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_alikafka_sasl_user", action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
@@ -217,15 +230,11 @@ func resourceAlicloudAlikafkaSaslUserUpdate(d *schema.ResourceData, meta interfa
 		time.Sleep(1000)
 	}
 
-	return resourceAlicloudAlikafkaSaslUserRead(d, meta)
+	return resourceAliCloudAlikafkaSaslUserRead(d, meta)
 }
 
-func resourceAlicloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
 	action := "DeleteSaslUser"
 	var response map[string]interface{}
 	conn, err := client.NewAlikafkaClient()
@@ -233,21 +242,28 @@ func resourceAlicloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	request := map[string]interface{}{
-		"Username":   parts[1],
+		"RegionId":   client.RegionId,
 		"InstanceId": parts[0],
+		"Username":   parts[1],
 	}
 
 	if v, ok := d.GetOk("type"); ok {
 		request["Type"] = v
 	}
 
-	request["RegionId"] = client.RegionId
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{ThrottlingUser, "ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ONS_SYSTEM_FLOW_CONTROL"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -256,11 +272,14 @@ func resourceAlicloudAlikafkaSaslUserDelete(d *schema.ResourceData, meta interfa
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	return nil
 }
