@@ -198,7 +198,7 @@ The following arguments are supported:
   -> **NOTE:** This parameter is valid only when the DBType parameter is set to MySQL.
 * `db_node_id` - (Optional, Available since v1.211.2) The ID of the node or node subscript. Node subscript values: 1 to 15.
 * `hot_replica_mode` - (Optional, Available since v1.211.2) Indicates whether the hot standby feature is enabled. Valid values are `ON`, `OFF`. Only MySQL supports.
-
+* `target_db_revision_version_code` - (Optional, Available since v1.216.0) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersion](https://www.alibabacloud.com/help/en/polardb/latest/describedbclusterversion) interface.
 
 ### `db_cluster_ip_array`
 
@@ -229,6 +229,12 @@ The following attributes are exported:
 * `tde_region` - (Available since 1.200.0) The region where the TDE key resides.
 -> **NOTE:** TDE can be enabled on clusters that have joined a global database network (GDN). After TDE is enabled on the primary cluster in a GDN, TDE is enabled on the secondary clusters in the GDN by default. The key used by the secondary clusters and the region for the key resides must be the same as the primary cluster. The region of the key cannot be modified.
 -> **NOTE:** You cannot enable TDE for the secondary clusters in a GDN. Used to view user KMS activation status.
+
+* `db_revision_version_list` - (Available since v1.216.0) The db_revision_version_list supports the following:
+  * `release_type` - (Available since v1.216.0) Database version release status. Valid values are `Stable`, `Old`, `HighRisk`.
+  * `revision_version_code` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
+  * `revision_version_name` - (Available since v1.216.0) The revision version number of the database engine.
+  * `release_note` - (Available since v1.216.0) The revised version Code of the database engine is used to specify the upgrade to the target version.
 
 ## Timeouts
 
