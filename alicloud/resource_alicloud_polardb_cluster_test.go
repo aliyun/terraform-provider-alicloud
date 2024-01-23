@@ -158,7 +158,7 @@ func TestAccAliCloudPolarDBCluster_Update(t *testing.T) {
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
 					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -464,7 +464,7 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 					"db_node_count":     "2",
 					"period":            "1",
 					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
@@ -565,7 +565,7 @@ func TestAccAliCloudPolarDBCluster_Multi(t *testing.T) {
 					"db_version":    "8.0",
 					"pay_type":      "PostPaid",
 					"db_node_class": "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":    "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":    "${local.vswitch_id}",
 					"description":   "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -683,7 +683,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"pay_type":               "PostPaid",
 					"db_node_count":          "2",
 					"db_node_class":          "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":             "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":             "${local.vswitch_id}",
 					"zone_id":                "${data.alicloud_polardb_node_classes.this.classes.0.zone_id}",
 					"creation_category":      "Normal",
 					"loose_polar_log_bin":    "ON",
@@ -888,7 +888,7 @@ func TestAccAliCloudPolarDBCluster_CreateCloneFromRDS(t *testing.T) {
 					"pay_type":           "PostPaid",
 					"db_node_count":      "2",
 					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":         "${local.vswitch_id}",
 					"description":        "${var.name}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"clone_data_point":   "LATEST",
@@ -963,7 +963,7 @@ func TestAccAliCloudPolarDBCluster_CreateMigrationFromRDS(t *testing.T) {
 					"pay_type":           "PostPaid",
 					"db_node_count":      "2",
 					"db_node_class":      "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":         "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":         "${local.vswitch_id}",
 					"description":        "${var.name}",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"clone_data_point":   "LATEST",
@@ -1039,10 +1039,10 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					"pay_type":          "PostPaid",
 					"db_node_count":     "2",
 					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":            "${local.vpc_id}",
 					"security_ips":      []string{"10.168.1.12", "100.69.7.112"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1058,6 +1058,16 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"modify_type", "imci_switch", "sub_category"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"target_db_revision_version_code": "20230707",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"target_db_revision_version_code": "20230707",
+					}),
+				),
 			},
 		},
 	})
@@ -1103,7 +1113,7 @@ func TestAccAliCloudPolarDBCluster_NormalMultimaster(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_class":     "${data.alicloud_polardb_node_classes.this.classes.0.supported_engines.0.available_resources.0.db_node_class}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"creation_category": "NormalMultimaster",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1163,7 +1173,7 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 					"db_version":          "8.0",
 					"pay_type":            "PostPaid",
 					"db_node_class":       "polar.mysql.x2.large.c",
-					"vswitch_id":          "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":          "${local.vswitch_id}",
 					"description":         "${var.name}",
 					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"creation_category":   "SENormal",
@@ -1243,7 +1253,7 @@ func TestAccAliCloudPolarDBCluster_Serverless(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_class":     "polar.mysql.sl.small",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"creation_category": "Normal",
@@ -1376,7 +1386,7 @@ func TestAccAliCloudPolarDBCluster_SteadyServerless(t *testing.T) {
 					"db_version":        "8.0",
 					"pay_type":          "PostPaid",
 					"db_node_class":     "polar.mysql.x4.medium",
-					"vswitch_id":        "${data.alicloud_vswitches.default.vswitches.0.id}",
+					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"creation_category": "Normal",
@@ -1527,6 +1537,18 @@ func resourcePolarDBClusterPrePaidConfigDependence(name string) string {
 		vpc_id = data.alicloud_vpcs.default.ids.0
 	}
 
+	resource "alicloud_vswitch" "vswitch" {
+		count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+		vpc_id            = data.alicloud_vpcs.default.ids.0
+		cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+		zone_id           = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		vswitch_name      = var.name
+	}
+	
+	locals {
+		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	}
+
 	data "alicloud_polardb_node_classes" "this" {
 	  db_type    = "MySQL"
 	  db_version = "8.0"
@@ -1557,10 +1579,20 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
       pay_type   = "PostPaid"
 	  category   = "Normal"
 	}
+	
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
 
-	data "alicloud_vswitches" "default" {
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+	
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
@@ -1570,7 +1602,7 @@ func resourcePolarDBClusterTDEConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
     data "alicloud_account" "current" {
@@ -1621,9 +1653,20 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
-	data "alicloud_vswitches" "default" {
+
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+	
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
     data "alicloud_polardb_parameter_groups" "default" {
@@ -1645,7 +1688,7 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)
@@ -1761,12 +1804,22 @@ func resourceCloneOrMigrationFromRDSClusterConfigDependence(name string) string 
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = "${var.name}"
-	    vpc_id = "${data.alicloud_vpcs.default.ids.0}"
+	    vpc_id = alicloud_vpc.default.id
+	}
+	
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
 	}
 
-	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
-	  zone_id = data.alicloud_db_zones.default.zones.0.id
+	resource "alicloud_vswitch" "default" {
+		vpc_id = alicloud_vpc.default.id
+	  	zone_id = data.alicloud_db_zones.default.zones.0.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
 	resource "alicloud_db_instance" "default" {
@@ -1776,7 +1829,7 @@ func resourceCloneOrMigrationFromRDSClusterConfigDependence(name string) string 
 		instance_charge_type = "Postpaid"
 		instance_type = "mysql.x8.medium.2"
 		instance_storage = "20"
-		vswitch_id = data.alicloud_vswitches.default.ids.0
+		vswitch_id = "${local.vswitch_id}"
 		instance_name = "tf-testAccDBInstance"
         zone_id = data.alicloud_db_zones.default.ids.0
     }
@@ -1792,9 +1845,17 @@ func resourcePolarDBClusterNormalMultimasterConfigDependence(name string) string
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
-	data "alicloud_vswitches" "default" {
+	resource "alicloud_vpc" "default" {
+ 	   vpc_name = var.name
+	}
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
 	data "alicloud_polardb_node_classes" "this" {
@@ -1811,7 +1872,7 @@ func resourcePolarDBClusterNormalMultimasterConfigDependence(name string) string
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)
@@ -1826,9 +1887,19 @@ func resourcePolarDBClusterSENormalConfigDependence(name string) string {
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
-	data "alicloud_vswitches" "default" {
+
+	resource "alicloud_vpc" "default" {
+		vpc_name = var.name
+	}
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
 	data "alicloud_polardb_node_classes" "this" {
@@ -1845,7 +1916,7 @@ func resourcePolarDBClusterSENormalConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)
@@ -1861,9 +1932,19 @@ func resourcePolarDBClusterServerlessConfigDependence(name string) string {
 		name_regex = "^default-NODELETING$"
 	}
 
-	data "alicloud_vswitches" "default" {
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
+
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
+	}
+	
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 	
 	data "alicloud_polardb_node_classes" "this" {
@@ -1880,7 +1961,7 @@ func resourcePolarDBClusterServerlessConfigDependence(name string) string {
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)
@@ -1895,12 +1976,22 @@ func resourcePolarDBClusterSteadyServerlessConfigDependence(name string) string 
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
+	
+	resource "alicloud_vpc" "default" {
+    	vpc_name = var.name
+	}
 
-	data "alicloud_vswitches" "default" {
+	resource "alicloud_vswitch" "default" {
 		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}
 	
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
+	}
+
 	data "alicloud_polardb_node_classes" "this" {
 		db_type    = "MySQL"
 		db_version = "8.0"
@@ -1915,7 +2006,7 @@ func resourcePolarDBClusterSteadyServerlessConfigDependence(name string) string 
 	resource "alicloud_security_group" "default" {
 		count = 2
 		name   = var.name
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 	}
 
 `, name)

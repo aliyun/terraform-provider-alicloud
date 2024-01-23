@@ -1842,3 +1842,70 @@ func (s *PolarDBService) DescribeDBClusterServerlessConfig(id string) (object ma
 
 	return object, nil
 }
+
+func (s *PolarDBService) DescribeDBClusterVersion(id string) (object map[string]interface{}, err error) {
+	action := "DescribeDBClusterVersion"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"DBClusterId": id,
+	}
+	var response map[string]interface{}
+	conn, err := s.client.NewPolarDBClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
+	}
+
+	object = v.(map[string]interface{})
+
+	return object, nil
+}
+func (s *PolarDBService) DescribeDBClusterAvailableVersion(id string) (instance *polardb.DescribeDBClusterVersionResponse, err error) {
+	request := polardb.CreateDescribeDBClusterVersionRequest()
+	request.RegionId = s.client.RegionId
+	request.DBClusterId = id
+	request.DescribeType = "AVAILABLE_VERSION"
+
+	var response *polardb.DescribeDBClusterVersionResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err := s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.DescribeDBClusterVersion(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ = raw.(*polardb.DescribeDBClusterVersionResponse)
+		return nil
+	})
+
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	return response, nil
+}

@@ -443,6 +443,35 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"target_db_revision_version_code": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				DiffSuppressFunc: polardbAndCreationDiffSuppressFunc,
+			},
+			"db_revision_version_list": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"release_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"revision_version_code": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"revision_version_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"release_note": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -615,7 +644,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("maintain_time")
 	}
 
-	if !d.IsNewResource() && d.HasChanges("upgrade_type", "from_time_service", "planned_start_time", "planned_end_time") {
+	if !d.IsNewResource() && d.HasChanges("upgrade_type", "from_time_service", "planned_start_time", "planned_end_time", "target_db_revision_version_code") {
+		versionInfo, err := polarDBService.DescribeDBClusterVersion(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+		var isLatestVersion = versionInfo["IsLatestVersion"].(string)
 		action := "UpgradeDBClusterVersion"
 		request := map[string]interface{}{
 			"DBClusterId": d.Id(),
@@ -632,6 +666,9 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 		if v, ok := d.GetOk("planned_end_time"); ok {
 			request["PlannedEndTime"] = v
+		}
+		if v, ok := d.GetOk("target_db_revision_version_code"); ok && isLatestVersion == "false" {
+			request["TargetDBRevisionVersionCode"] = v
 		}
 		wait := incrementalWait(3*time.Minute, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -650,7 +687,8 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		fromTimeService := d.Get("from_time_service")
-		if strings.EqualFold(fromTimeService.(string), "true") {
+		TargetDBRevisionVersionCode := d.Get("target_db_revision_version_code")
+		if strings.EqualFold(fromTimeService.(string), "true") || TargetDBRevisionVersionCode != "" {
 			// wait cluster status change from ConfigSwitching to running
 			stateConf := BuildStateConf([]string{"MinorVersionUpgrading"}, []string{"Running"},
 				d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
@@ -662,6 +700,8 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("from_time_service")
 		d.SetPartial("planned_start_time")
 		d.SetPartial("planned_end_time")
+		d.SetPartial("target_db_revision_version_code")
+
 	}
 
 	if d.HasChange("db_cluster_ip_array") {
@@ -1449,6 +1489,25 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 			d.Set("hot_replica_mode", clusterAttribute.DBNodes[formatInt(dbNodeIdIndex)].HotReplicaMode)
 		}
 	}
+	availableVersion, errs := polarDBService.DescribeDBClusterAvailableVersion(d.Id())
+	if err != nil {
+		return WrapError(errs)
+	}
+	creationCategory, categoryOk := d.GetOk("creation_category")
+	DBRevisionVersionList := make([]map[string]interface{}, 0)
+	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" && (creationCategory == "Normal" || creationCategory == "NormalMultimaster" || !categoryOk) {
+		for _, versionList := range availableVersion.DBRevisionVersionList {
+			versionListItem := map[string]interface{}{
+				"release_type":          versionList.ReleaseType,
+				"revision_version_name": versionList.RevisionVersionName,
+				"revision_version_code": versionList.RevisionVersionCode,
+				"release_note":          versionList.ReleaseNote,
+			}
+			DBRevisionVersionList = append(DBRevisionVersionList, versionListItem)
+		}
+	}
+	d.Set("db_revision_version_list", DBRevisionVersionList)
+	d.Set("target_db_revision_version_code", d.Get("target_db_revision_version_code"))
 	return nil
 }
 
