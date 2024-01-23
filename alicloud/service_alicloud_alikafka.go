@@ -900,19 +900,23 @@ func (s *AlikafkaService) DescribeAliKafkaConsumerGroup(id string) (object map[s
 
 func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeSaslUsers"
+
 	conn, err := s.client.NewAlikafkaClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "DescribeSaslUsers"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": parts[0],
 	}
+
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -929,28 +933,38 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	v, err := jsonpath.Get("$.SaslUserList.SaslUserVO", response)
+
+	resp, err := jsonpath.Get("$.SaslUserList.SaslUserVO", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SaslUserList.SaslUserVO", response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
 	}
-	for _, v := range v.([]interface{}) {
+
+	for _, v := range resp.([]interface{}) {
 		if fmt.Sprint(v.(map[string]interface{})["Username"]) == parts[1] {
 			idExist = true
 			return v.(map[string]interface{}), nil
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:SaslUser", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 
@@ -1192,6 +1206,7 @@ func (s *AlikafkaService) AliKafkaInstanceStateRefreshFunc(id, attribute string,
 		return object, fmt.Sprint(object[attribute]), nil
 	}
 }
+
 func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAliKafkaConsumerGroup(id)
@@ -1212,6 +1227,7 @@ func (s *AlikafkaService) AliKafkaConsumerStateRefreshFunc(id, attribute string,
 		return object, fmt.Sprint(object[attribute]), nil
 	}
 }
+
 func (s *AlikafkaService) AliKafkaTopicStateRefreshFunc(id, attribute string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeAlikafkaTopic(id)
