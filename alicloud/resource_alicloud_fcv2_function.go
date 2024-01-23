@@ -575,6 +575,7 @@ func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customContainerConfigMap["command"] = customContainerConfig1Raw["command"]
 		customContainerConfigMap["image"] = customContainerConfig1Raw["image"]
 		customContainerConfigMap["web_server_mode"] = customContainerConfig1Raw["webServerMode"]
+		customContainerConfigMap["instance_id"] = customContainerConfig1Raw["instanceID"]
 		customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 	}
 	d.Set("custom_container_config", customContainerConfigMaps)
