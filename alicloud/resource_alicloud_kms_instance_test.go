@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Kms Instance. >>> Resource test cases, automatically generated.
-// Case 4048
 func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_instance.default"
@@ -39,6 +37,8 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 					"spec":            "1000",
 					"product_version": "3",
 					"vpc_id":          "${local.vpc_id}",
+					"log":             "0",
+					"log_storage":     "0",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
 					"vswitch_ids": []string{
@@ -148,6 +148,18 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"log":         "1",
+					"log_storage": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log":         "1",
+						"log_storage": "1000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"bind_vpcs": []map[string]interface{}{
 						{
 							"vpc_id":       "vpc-bp14c07ucxg6h1xjmgcld",
@@ -207,7 +219,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status"},
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
 			},
 		},
 	})
@@ -426,6 +438,9 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 					"renew_status":    "ManualRenewal",
 					"product_version": "3",
 					"renew_period":    "3",
+					"log":             "1",
+					"log_storage":     "1000",
+					"period":          "2",
 					"vpc_id":          "${local.vpc_id}",
 					"zone_ids": []string{
 						"cn-hangzhou-k", "cn-hangzhou-j"},
@@ -476,13 +491,13 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status"},
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudKmsInstance_basic4048_intl(t *testing.T) {
+func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMap4048)
@@ -576,7 +591,247 @@ func TestAccAlicloudKmsInstance_basic4048_intl(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status"},
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period"},
+			},
+		},
+	})
+}
+
+// Test Kms Instance. >>> Resource test cases, automatically generated.
+// Case 国际站小规格日志——国际账号 5405
+func TestAccAliCloudKmsInstance_basic5405(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMap5405)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsInstanceBasicDependence5405)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_num":    "5",
+					"key_num":    "100",
+					"secret_num": "0",
+					"spec":       "200",
+					"vpc_id":     "${alicloud_vswitch.vswitch.vpc_id}",
+					"zone_ids": []string{
+						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.vswitch.id}"},
+					"period": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_num":       "5",
+						"key_num":       "100",
+						"secret_num":    "0",
+						"spec":          "200",
+						"vpc_id":        CHECKSET,
+						"zone_ids.#":    "2",
+						"vswitch_ids.#": "1",
+						"period":        "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_num": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_num": "5",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_num": "100",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_num": "100",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"secret_num": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"secret_num": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"spec": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"spec": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_num":         "5",
+					"key_num":         "100",
+					"secret_num":      "0",
+					"spec":            "200",
+					"renew_status":    "AutoRenewal",
+					"product_version": "5",
+					"vpc_id":          "${alicloud_vswitch.vswitch.vpc_id}",
+					"zone_ids": []string{
+						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.vswitch.id}"},
+					"period":       "1",
+					"renew_period": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_num":         "5",
+						"key_num":         "100",
+						"secret_num":      "0",
+						"spec":            "200",
+						"renew_status":    "AutoRenewal",
+						"product_version": "5",
+						"vpc_id":          CHECKSET,
+						"zone_ids.#":      "2",
+						"vswitch_ids.#":   "1",
+						"period":          "1",
+						"renew_period":    "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "product_version", "renew_period", "renew_status"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsInstanceMap5405 = map[string]string{
+	"ca_certificate_chain_pem": CHECKSET,
+	"log_storage":              "0",
+	"status":                   CHECKSET,
+	"log":                      "0",
+	"create_time":              CHECKSET,
+	"instance_name":            CHECKSET,
+}
+
+func AlicloudKmsInstanceBasicDependence5405(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "vpc-amp-instance-test" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id     = alicloud_vpc.vpc-amp-instance-test.id
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vswitch" "vswitch-j" {
+  vpc_id     = alicloud_vpc.vpc-amp-instance-test.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.2.0/24"
+}
+
+
+`, name)
+}
+
+// Case 国际站小规格日志——国际账号 5405  twin
+func TestAccAliCloudKmsInstance_basic5405_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMap5405)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsInstanceBasicDependence5405)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_num":         "5",
+					"key_num":         "100",
+					"secret_num":      "0",
+					"spec":            "200",
+					"renew_status":    "AutoRenewal",
+					"product_version": "5",
+					"vpc_id":          "${alicloud_vswitch.vswitch.vpc_id}",
+					"zone_ids": []string{
+						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.vswitch.id}"},
+					"period":       "1",
+					"renew_period": "1",
+					"log":          "1",
+					"log_storage":  "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_num":         "5",
+						"key_num":         "100",
+						"secret_num":      "0",
+						"spec":            "200",
+						"renew_status":    "AutoRenewal",
+						"product_version": "5",
+						"vpc_id":          CHECKSET,
+						"zone_ids.#":      "2",
+						"vswitch_ids.#":   "1",
+						"period":          "1",
+						"renew_period":    "1",
+						"log":             "1",
+						"log_storage":     "1000",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "product_version", "renew_period", "renew_status"},
 			},
 		},
 	})

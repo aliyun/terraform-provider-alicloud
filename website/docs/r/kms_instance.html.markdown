@@ -128,16 +128,15 @@ resource "alicloud_kms_instance" "default" {
 # }
 ```
 
-### Deleting `alicloud_kms_instance` or removing it from your configuration
-
-Terraform cannot destroy resource `alicloud_kms_instance`. Terraform will remove this resource from the state file, however resources may remain.
-
 ## Argument Reference
 
 The following arguments are supported:
 * `bind_vpcs` - (Optional) Aucillary VPCs used to access this KMS instance. See [`bind_vpcs`](#bind_vpcs) below.
 * `key_num` - (Required) Maximum number of stored keys.
-* `product_version` - (Optional) KMS Instance commodity type (software/hardware). Currently, only version 3 is supported.
+* `log` - (Optional, Computed) Instance Audit Log Switch.
+* `log_storage` - (Optional, Computed) Instance log capacity.
+* `period` - (Optional) Purchase cycle, in months.
+* `product_version` - (Optional) KMS Instance commodity type (software/hardware).
 * `renew_period` - (Optional) Automatic renewal period, in months.
 * `renew_status` - (Optional) Renewal options (manual renewal, automatic renewal, no renewal).
 * `secret_num` - (Required) Maximum number of Secrets.
@@ -168,6 +167,7 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 60 mins) Used when create the Instance.
+* `delete` - (Defaults to 10 mins) Used when delete the Instance.
 * `update` - (Defaults to 60 mins) Used when update the Instance.
 
 ## Import
