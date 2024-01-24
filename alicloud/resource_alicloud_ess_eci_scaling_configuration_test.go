@@ -165,6 +165,7 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"security_context_capability_adds":            []string{"adds"},
+							"lifecycle_pre_stop_handler_execs":            []string{"echo 1"},
 							"security_context_read_only_root_file_system": "true",
 							"security_context_run_as_user":                "1",
 							"ports": []map[string]interface{}{
@@ -313,6 +314,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 						"containers.0.security_context_run_as_user":                     "1",
 						"containers.0.security_context_capability_adds.#":               "1",
 						"containers.0.security_context_capability_adds.0":               "adds",
+						"containers.0.lifecycle_pre_stop_handler_execs.#":               "1",
+						"containers.0.lifecycle_pre_stop_handler_execs.0":               "echo 1",
 						"containers.0.environment_vars.#":                               "1",
 						"init_containers.#":                                             "1",
 						"init_containers.0.security_context_run_as_user":                "1",
@@ -375,6 +378,7 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 					"containers": []map[string]interface{}{
 						{
 							"security_context_capability_adds":            []string{"adds2"},
+							"lifecycle_pre_stop_handler_execs":            []string{"echo 2"},
 							"security_context_read_only_root_file_system": "false",
 							"security_context_run_as_user":                "2",
 							"ports": []map[string]interface{}{
@@ -528,6 +532,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 						"containers.0.security_context_run_as_user":                     "2",
 						"containers.0.security_context_capability_adds.#":               "1",
 						"containers.0.security_context_capability_adds.0":               "adds2",
+						"containers.0.lifecycle_pre_stop_handler_execs.#":               "1",
+						"containers.0.lifecycle_pre_stop_handler_execs.0":               "echo 2",
 						"containers.0.environment_vars.#":                               "1",
 						"containers.0.image":                                            "registry-vpc.aliyuncs.com/eci_open/alpine:3.6",
 						"containers.0.liveness_probe_exec_commands.0":                   "cmd2",
