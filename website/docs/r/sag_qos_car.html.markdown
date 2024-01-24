@@ -4,13 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_sag_qos_car"
 sidebar_current: "docs-alicloud-resource-sag-qos-car"
 description: |-
-  Provides a Sag Qos Car resource.
+  Provides a Alicloud Sag Qos Car resource.
 ---
 
 # alicloud_sag_qos_car
 
-Provides a Sag qos car resource. 
-You need to create a QoS car to set priorities, rate limits, and quintuple rules for different messages.
+Provides a Sag Qos Car resource.
 
 For information about Sag Qos Car and how to use it, see [What is Qos Car](https://www.alibabacloud.com/help/en/smart-access-gateway/latest/createqoscar).
 
@@ -23,29 +22,30 @@ For information about Sag Qos Car and how to use it, see [What is Qos Car](https
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf_example"
-}
 provider "alicloud" {
   region = "cn-shanghai"
 }
+
+variable "name" {
+  default = "tf_example"
+}
+
 resource "alicloud_sag_qos" "default" {
   name = var.name
 }
 
 resource "alicloud_sag_qos_car" "default" {
-  qos_id                = alicloud_sag_qos.default.id
-  name                  = var.name
-  description           = var.name
-  priority              = "1"
-  limit_type            = "Absolute"
-  min_bandwidth_abs     = "10"
-  max_bandwidth_abs     = "20"
-  min_bandwidth_percent = "10"
-  max_bandwidth_percent = "20"
-  percent_source_type   = "InternetUpBandwidth"
+  qos_id              = alicloud_sag_qos.default.id
+  name                = var.name
+  description         = var.name
+  priority            = "1"
+  limit_type          = "Absolute"
+  min_bandwidth_abs   = "10"
+  max_bandwidth_abs   = "20"
+  percent_source_type = "InternetUpBandwidth"
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -54,7 +54,7 @@ The following arguments are supported:
 * `name` - (Optional) The name of the QoS speed limiting rule..
 * `description` - (Optional) The description of the QoS speed limiting rule.
 * `priority` - (Required) The priority of the specified stream.
-* `limit_type` - (Required) The speed limiting method. Valid values: Absolute, Percent.
+* `limit_type` - (Required) The speed limiting method. Valid values: `Absolute`, `Percent`.
 * `min_bandwidth_abs` - (Optional) The minimum bandwidth allowed for the stream specified in the quintuple rule. This parameter is required when the value of the LimitType parameter is Absolute.
 * `max_bandwidth_abs` - (Optional) The maximum bandwidth allowed for the stream specified in the quintuple rule. This parameter is required when the value of the LimitType is Absolute.
 * `min_bandwidth_percent` - (Optional) The minimum bandwidth percentage allowed for the stream specified in the quintuple rule. It is based on the maximum upstream bandwidth you set for the associated SAG instance.This parameter is required when the value of the LimitType parameter is Percent.
@@ -66,13 +66,12 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - The ID of the Qos Car id and formates as `<qos_id>:<qos_car_id>`.
+* `id` - The resource ID in terraform of Qos Car. The value formats as `<qos_id>:<qos_car_id>`.
 
 ## Import
 
 The Sag Qos Car can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_sag_qos_car.example qos-abc123456:qoscar-abc123456
+$ terraform import alicloud_sag_qos_car.example <qos_id>:<qos_car_id>
 ```
-
