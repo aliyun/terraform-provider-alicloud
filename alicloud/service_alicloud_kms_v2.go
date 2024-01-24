@@ -17,7 +17,6 @@ type KmsServiceV2 struct {
 // DescribeKmsInstance <<< Encapsulated get interface for Kms Instance.
 
 func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -31,9 +30,11 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	query = make(map[string]interface{})
 	query["KmsInstanceId"] = id
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -47,9 +48,7 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -76,7 +75,9 @@ func (s *KmsServiceV2) KmsInstanceStateRefreshFunc(id string, field string, fail
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
