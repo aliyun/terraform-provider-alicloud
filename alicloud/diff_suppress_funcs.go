@@ -272,9 +272,10 @@ func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.Resourc
 }
 
 func ramSAMLProviderDiffSuppressFunc(old, new string) bool {
-	if strings.Replace(old, "\n", "", -1) != strings.Replace(new, "\n", "", -1) {
+	if Trim(strings.Replace(old, "\n", "", -1)) != Trim(strings.Replace(new, "\n", "", -1)) {
 		return false
 	}
+
 	return true
 }
 

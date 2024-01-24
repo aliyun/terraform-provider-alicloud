@@ -11,9 +11,9 @@ description: |-
 
 Provides a RAM SAML Provider resource.
 
-For information about RAM SAML Provider and how to use it, see [What is SAML Provider](https://www.alibabacloud.com/help/doc-detail/186846.htm).
+For information about RAM SAML Provider and how to use it, see [What is SAML Provider](https://www.alibabacloud.com/help/en/ram/developer-reference/api-ims-2019-08-15-createsamlprovider).
 
--> **NOTE:** Available since v1.114.0+.
+-> **NOTE:** Available since v1.114.0.
 
 ## Example Usage
 
@@ -27,16 +27,15 @@ resource "alicloud_ram_saml_provider" "example" {
   EOF
   description                   = "For Terraform Test"
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `description` - (Optional) The description of SAML Provider.
-* `encodedsaml_metadata_document` - (Optional) The metadata file, which is Base64 encoded. The file is provided by an IdP that supports SAML 2.0.
 * `saml_provider_name` - (Required, ForceNew) The name of SAML Provider.
+* `encodedsaml_metadata_document` - (Required) The metadata file, which is Base64 encoded. The file is provided by an IdP that supports SAML 2.0.
+* `description` - (Optional) The description of SAML Provider.
 
 ## Attributes Reference
 
