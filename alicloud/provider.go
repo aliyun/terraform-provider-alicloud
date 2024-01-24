@@ -1258,7 +1258,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_brain_industrial_pid_project":                          resourceAlicloudBrainIndustrialPidProject(),
 			"alicloud_cms_monitor_group":                                     resourceAlicloudCmsMonitorGroup(),
 			"alicloud_eipanycast_anycast_eip_address_attachment":             resourceAliCloudEipanycastAnycastEipAddressAttachment(),
-			"alicloud_ram_saml_provider":                                     resourceAlicloudRamSamlProvider(),
+			"alicloud_ram_saml_provider":                                     resourceAliCloudRamSamlProvider(),
 			"alicloud_quotas_application_info":                               resourceAliCloudQuotasQuotaApplication(),
 			"alicloud_cms_monitor_group_instances":                           resourceAlicloudCmsMonitorGroupInstances(),
 			"alicloud_quotas_quota_alarm":                                    resourceAliCloudQuotasQuotaAlarm(),
