@@ -171,11 +171,11 @@ The init_container supports the following:
 * `ports` - (Optional) The structure of port. See [`ports`](#init_containers-ports) below for details.
 * `volume_mounts` - (Optional) The structure of volumeMounts. See [`volume_mounts`](#init_containers-volume_mounts) below for details.
 * `working_dir` - (Optional) The working directory of the container.
-* `security_context_capability_adds` - (Optional, Available in 1.215.0+) Grant certain permissions to processes within container. Optional values:
+* `security_context_capability_adds` - (Optional, Available since 1.215.0) Grant certain permissions to processes within container. Optional values:
   - NET_ADMIN: Allow network management tasks to be performed.
   - NET_RAW: Allow raw sockets.
-* `security_context_read_only_root_file_system` - (Optional, Available in 1.215.0+) Mounts the container's root filesystem as read-only.
-* `security_context_run_as_user` - (Optional, Available in 1.215.0+) Specifies user ID  under which all processes run.
+* `security_context_read_only_root_file_system` - (Optional, Available since 1.215.0) Mounts the container's root filesystem as read-only.
+* `security_context_run_as_user` - (Optional, Available since 1.215.0) Specifies user ID  under which all processes run.
 
 ### `init_containers-environment_vars`
 
@@ -184,7 +184,7 @@ The environment_var supports the following:
 * `key` - (Optional) The name of the variable. The name can be 1 to 128 characters in length and can contain letters,
   digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
-* `field_ref_field_path` - (Optional, Available in 1.215.0+) Environment variable value reference. Optional values:
+* `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values:
   - status.podIP: IP of pod.
 
 ### `init_containers-ports`
@@ -259,11 +259,12 @@ The container supports the following:
 * `readiness_probe_tcp_socket_port` - (Optional, Available in 1.193.1+) The port detected by Transmission Control Protocol (TCP) sockets when you use TCP sockets to perform readiness probes.
 * `readiness_probe_success_threshold` - (Optional, Available in 1.193.1+) The minimum number of consecutive successes for the readiness probe to be considered successful after having failed. Default value: 1. Set the value to 1.
 * `readiness_probe_timeout_seconds` - (Optional, Available in 1.193.1+) The timeout period for the readiness probe. Unit: seconds. Default value: 1. Minimum value: 1.
-* `security_context_capability_adds` - (Optional, Available in 1.215.0+) Grant certain permissions to processes within container. Optional values:
+* `security_context_capability_adds` - (Optional, Available since 1.215.0) Grant certain permissions to processes within container. Optional values:
   - NET_ADMIN: Allow network management tasks to be performed.
   - NET_RAW: Allow raw sockets.
-* `security_context_read_only_root_file_system` - (Optional, Available in 1.215.0+) Mounts the container's root filesystem as read-only.
-* `security_context_run_as_user` - (Optional, Available in 1.215.0+) Specifies user ID  under which all processes run.
+* `lifecycle_pre_stop_handler_execs` - (Optional, Available since 1.216.0) The commands to be executed in containers when you use the CLI to specify the preStop callback function.
+* `security_context_read_only_root_file_system` - (Optional, Available since 1.215.0) Mounts the container's root filesystem as read-only.
+* `security_context_run_as_user` - (Optional, Available since 1.215.0) Specifies user ID  under which all processes run.
 
 ### `containers-environment_vars`
 
@@ -272,7 +273,7 @@ The environment_var supports the following:
 * `key` - (Optional) The name of the variable. The name can be 1 to 128 characters in length and can contain letters,
   digits, and underscores (_). It cannot start with a digit.
 * `value` - (Optional) The value of the variable. The value can be 0 to 256 characters in length.
-* `field_ref_field_path` - (Optional, Available in 1.215.0+) Environment variable value reference. Optional values: 
+* `field_ref_field_path` - (Optional, Available since 1.215.0) Environment variable value reference. Optional values: 
   - status.podIP: IP of pod.
 
 ### `containers-ports`

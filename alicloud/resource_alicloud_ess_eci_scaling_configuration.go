@@ -204,6 +204,13 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							},
 							Optional: true,
 						},
+						"lifecycle_pre_stop_handler_execs": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
+							Optional: true,
+						},
 						"security_context_read_only_root_file_system": {
 							Type:     schema.TypeBool,
 							Optional: true,
@@ -727,6 +734,7 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["Image"] = ContainersMap["image"]
 		Containers[i]["ImagePullPolicy"] = ContainersMap["image_pull_policy"]
 		Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
+		Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_execs"]
 		Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
 		Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 
@@ -976,6 +984,7 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
 					"security_context_capability_adds":            m1["SecurityContextCapabilityAdds"],
+					"lifecycle_pre_stop_handler_execs":            m1["LifecyclePreStopHandlerExecs"],
 					"security_context_read_only_root_file_system": m1["SecurityContextReadOnlyRootFilesystem"],
 					"security_context_run_as_user":                m1["SecurityContextRunAsUser"],
 					"working_dir":                                 m1["WorkingDir"],
@@ -1388,6 +1397,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			ContainersMap := ContainersValue.(map[string]interface{})
 			Containers[i] = make(map[string]interface{})
 			Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
+			Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_execs"]
 			Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
 			Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
