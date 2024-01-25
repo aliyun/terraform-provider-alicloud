@@ -145,6 +145,8 @@ The following arguments are supported:
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `termination_grace_period_seconds` - (Optional, ForceNew, Int, Available since 1.216.0) The buffer time during which the program handles operations before the program stops. Unit: seconds.
+* `spot_strategy` - (Optional, ForceNew, Available since 1.216.0) Filter the results by ECI spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `spot_price_limit` - (Optional, ForceNew, Available since 1.216.0) The maximum hourly price of the ECI spot instance.
 
 ### `acr_registry_info`
 
