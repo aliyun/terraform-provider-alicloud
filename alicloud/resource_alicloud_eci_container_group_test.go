@@ -923,6 +923,8 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 					"vswitch_id":                       "${alicloud_vswitch.default.id}",
 					"resource_group_id":                "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"termination_grace_period_seconds": "10",
+					"spot_strategy":                    "SpotWithPriceLimit",
+					"spot_price_limit":                 "0.5",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -1093,12 +1095,16 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 						"internet_ip":          CHECKSET,
 						"cpu":                  "2",
 						"memory":               "4",
+						"spot_strategy":        "SpotWithPriceLimit",
+						"spot_price_limit":     "0.5",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"termination_grace_period_seconds": "11",
+					"spot_strategy":                    "SpotWithPriceLimit",
+					"spot_price_limit":                 "0.5",
 					"containers": []map[string]interface{}{
 						{
 							"name":              strings.ToLower(name),
@@ -1292,7 +1298,7 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 					"auto_match_image_cache": "false",
 					"vswitch_id":             "${alicloud_vswitch.default.id}",
 					"zone_id":                "${data.alicloud_zones.default.zones.1.id}",
-					"instance_type":          "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"instance_type":          "${data.alicloud_instance_types.default.instance_types.13.id}",
 					"ram_role_name":          "${alicloud_ram_role.default.name}",
 					"security_context": []map[string]interface{}{
 						{

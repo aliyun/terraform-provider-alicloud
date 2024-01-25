@@ -52,6 +52,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
@@ -860,7 +861,19 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
-		},
+			"spot_price_limit": {
+				Type:     schema.TypeFloat,
+				ForceNew: true,
+				Optional: true,
+				Computed: true,
+			},
+			"spot_strategy": {
+				Type:         schema.TypeString,
+				ForceNew:     true,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+			}},
 	}
 }
 
@@ -1266,6 +1279,13 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOk("termination_grace_period_seconds"); ok {
 		request["TerminationGracePeriodSeconds"] = v
+	}
+
+	if v, ok := d.GetOk("spot_strategy"); ok {
+		request["SpotStrategy"] = v
+	}
+	if v, ok := d.GetOk("spot_price_limit"); ok {
+		request["SpotPriceLimit"] = v
 	}
 
 	request["ClientToken"] = buildClientToken("CreateContainerGroup")
@@ -1693,6 +1713,8 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 	d.Set("zone_id", object["ZoneId"])
+	d.Set("spot_strategy", object["SpotStrategy"])
+	d.Set("spot_price_limit", object["SpotPriceLimit"])
 	return nil
 }
 
