@@ -19,7 +19,6 @@ type EipServiceV2 struct {
 // DescribeEipAddress <<< Encapsulated get interface for Eip Address.
 
 func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -31,13 +30,14 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["AllocationId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -49,10 +49,9 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Address", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -62,13 +61,12 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Address", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("Address", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -80,13 +78,14 @@ func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id stri
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["InstanceId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -98,10 +97,9 @@ func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id stri
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Address", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -118,7 +116,9 @@ func (s *EipServiceV2) EipAddressStateRefreshFunc(id string, field string, failS
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -139,6 +139,7 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -154,7 +155,7 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			for i, key := range removedTagKeys {
@@ -162,9 +163,11 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -189,7 +192,7 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			count := 1
@@ -200,9 +203,11 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
