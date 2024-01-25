@@ -12,60 +12,38 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudEnsEip() *schema.Resource {
+func resourceAliCloudEnsImage() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudEnsEipCreate,
-		Read:   resourceAliCloudEnsEipRead,
-		Update: resourceAliCloudEnsEipUpdate,
-		Delete: resourceAliCloudEnsEipDelete,
+		Create: resourceAliCloudEnsImageCreate,
+		Read:   resourceAliCloudEnsImageRead,
+		Update: resourceAliCloudEnsImageUpdate,
+		Delete: resourceAliCloudEnsImageDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"bandwidth": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"delete_after_image_upload": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"true", "false"}, true),
 			},
-			"eip_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"ens_region_id": {
+			"image_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
-			"internet_charge_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"95BandwidthByMonth"}, false),
-			},
-			"isp": {
+			"instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Computed: true,
-			},
-			"payment_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -75,11 +53,11 @@ func resourceAliCloudEnsEip() *schema.Resource {
 	}
 }
 
-func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsImageCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateEipInstance"
+	action := "CreateImage"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -89,20 +67,12 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	}
 	request = make(map[string]interface{})
 
-	request["EnsRegionId"] = d.Get("ens_region_id")
-	if v, ok := d.GetOk("bandwidth"); ok {
-		request["Bandwidth"] = v
+	request["ImageName"] = d.Get("image_name")
+	if v, ok := d.GetOk("delete_after_image_upload"); ok {
+		request["DeleteAfterImageUpload"] = v
 	}
-	request["InternetChargeType"] = d.Get("internet_charge_type")
-	if v, ok := d.GetOk("isp"); ok {
-		request["Isp"] = v
-	}
-	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
-	if v, ok := d.GetOk("eip_name"); ok {
-		request["Name"] = v
-	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -122,76 +92,60 @@ func resourceAliCloudEnsEipCreate(d *schema.ResourceData, meta interface{}) erro
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_eip", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ens_image", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["AllocationId"]))
+	d.SetId(fmt.Sprint(response["ImageId"]))
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, ensServiceV2.EnsImageStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEnsEipRead(d, meta)
+	return resourceAliCloudEnsImageRead(d, meta)
 }
 
-func resourceAliCloudEnsEipRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsImageRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ensServiceV2 := EnsServiceV2{client}
 
-	objectRaw, err := ensServiceV2.DescribeEnsEip(d.Id())
+	objectRaw, err := ensServiceV2.DescribeEnsImage(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_ens_eip DescribeEnsEip Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_ens_image DescribeEnsImage Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("bandwidth", objectRaw["Bandwidth"])
-	d.Set("create_time", objectRaw["AllocationTime"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("eip_name", objectRaw["Name"])
-	d.Set("ens_region_id", objectRaw["EnsRegionId"])
-	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
-	d.Set("isp", objectRaw["Isp"])
-	d.Set("payment_type", convertEnsEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
+	d.Set("create_time", objectRaw["CreationTime"])
+	d.Set("image_name", objectRaw["ImageName"])
+	d.Set("instance_id", objectRaw["InstanceId"])
 	d.Set("status", objectRaw["Status"])
 
 	return nil
 }
 
-func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsImageUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "ModifyEnsEipAddressAttribute"
+	action := "ModifyImageAttribute"
 	conn, err := client.NewEnsClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AllocationId"] = d.Id()
-	if d.HasChange("eip_name") {
+	query["ImageId"] = d.Id()
+	if d.HasChange("image_name") {
 		update = true
-		request["Name"] = d.Get("eip_name")
 	}
-
-	if d.HasChange("bandwidth") {
-		update = true
-		request["Bandwidth"] = d.Get("bandwidth")
-	}
-
-	if d.HasChange("description") {
-		update = true
-		request["Description"] = d.Get("description")
-	}
-
+	request["ImageName"] = d.Get("image_name")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -212,15 +166,20 @@ func resourceAliCloudEnsEipUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		ensServiceV2 := EnsServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("image_name"))}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, ensServiceV2.EnsImageStateRefreshFunc(d.Id(), "ImageName", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
-	return resourceAliCloudEnsEipRead(d, meta)
+	return resourceAliCloudEnsImageRead(d, meta)
 }
 
-func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEnsImageDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteEip"
+	action := "DeleteImage"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -229,7 +188,7 @@ func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["InstanceId"] = d.Id()
+	query["ImageId"] = d.Id()
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -253,17 +212,9 @@ func resourceAliCloudEnsEipDelete(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	ensServiceV2 := EnsServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, ensServiceV2.EnsEipStateRefreshFunc(d.Id(), "AllocationId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ensServiceV2.EnsImageStateRefreshFunc(d.Id(), "ImageId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
-}
-
-func convertEnsEipAddressesEipAddressChargeTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "PostPaid":
-		return "PayAsYouGo"
-	}
-	return source
 }

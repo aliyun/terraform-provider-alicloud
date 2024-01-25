@@ -96,7 +96,7 @@ func resourceAliCloudEnsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	request = make(map[string]interface{})
 
-	request["InstanceChargeType"] = convertEnsInstanceChargeTypeRequest(d.Get("payment_type").(string))
+	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	request["EnsRegionId"] = d.Get("ens_region_id")
 	request["Category"] = d.Get("category")
 	if v, ok := d.GetOk("size"); ok {

@@ -1,0 +1,87 @@
+---
+subcategory: "ENS"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ens_disk_instance_attachment"
+description: |-
+  Provides a Alicloud ENS Disk Instance Attachment resource.
+---
+
+# alicloud_ens_disk_instance_attachment
+
+Provides a ENS Disk Instance Attachment resource. Disk instance mount.
+
+For information about ENS Disk Instance Attachment and how to use it, see [What is Disk Instance Attachment](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.216.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "alicloud_ens_disk" "default" {
+  size          = "20"
+  ens_region_id = "cn-chenzhou-telecom_unicom_cmcc"
+  payment_type  = "PayAsYouGo"
+  category      = "cloud_efficiency"
+}
+
+resource "alicloud_ens_instance" "default" {
+  system_disk {
+    size = "20"
+  }
+  image_id                   = "centos_6_08_64_20G_alibase_20171208"
+  payment_type               = "Subscription"
+  instance_type              = "ens.sn1.stiny"
+  password                   = "12345678ABCabc"
+  amount                     = "1"
+  internet_max_bandwidth_out = "10"
+  unique_suffix              = true
+  public_ip_identification   = true
+  ens_region_id              = "cn-chenzhou-telecom_unicom_cmcc"
+  schedule_area_level        = "Region"
+  period_unit                = "Month"
+  period                     = "1"
+}
+
+
+resource "alicloud_ens_disk_instance_attachment" "default" {
+  instance_id          = alicloud_ens_instance.default.id
+  delete_with_instance = "false"
+  disk_id              = alicloud_ens_disk.default.id
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `delete_with_instance` - (Optional) Whether the cloud disk to be mounted is released with the instance  Value: true: When the instance is released, the cloud disk is released together with the instance. false: When the instance is released, the cloud disk is retained and is not released together with the instance. Empty means false by default.
+* `disk_id` - (Required, ForceNew) The ID of the cloud disk to be mounted. The Cloud Disk (DiskId) and the instance (InstanceId) must be on the same node.
+* `instance_id` - (Required, ForceNew) Instance ID.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<disk_id>:<instance_id>`.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Disk Instance Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Disk Instance Attachment.
+
+## Import
+
+ENS Disk Instance Attachment can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_ens_disk_instance_attachment.example <disk_id>:<instance_id>
+```
