@@ -862,6 +862,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ens_instance_security_group_attachment":               resourceAliCloudEnsInstanceSecurityGroupAttachment(),
+			"alicloud_ens_disk_instance_attachment":                         resourceAliCloudEnsDiskInstanceAttachment(),
+			"alicloud_ens_image":                                            resourceAliCloudEnsImage(),
 			"alicloud_ebs_enterprise_snapshot_policy_attachment":            resourceAliCloudEbsEnterpriseSnapshotPolicyAttachment(),
 			"alicloud_ebs_enterprise_snapshot_policy":                       resourceAliCloudEbsEnterpriseSnapshotPolicy(),
 			"alicloud_ebs_replica_group_drill":                              resourceAliCloudEbsReplicaGroupDrill(),
