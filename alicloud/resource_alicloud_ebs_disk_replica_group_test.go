@@ -106,7 +106,7 @@ func testSweepEbsDiskReplicaGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEBSDiskReplicaGroup_basic0(t *testing.T) {
+func TestAccAliCloudEBSDiskReplicaGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_disk_replica_group.default"
 	checkoutSupportedRegions(t, true, connectivity.EBSSupportRegions)

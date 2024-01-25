@@ -43,7 +43,7 @@ func (s *IotService) DescribeIotDeviceGroup(id string) (object map[string]interf
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"iot.group.QueryGroupInfoFailed"}) {
+	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"iot.group.QueryGroupInfoFailed", "iot.group.NotExistedGroup"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("Iot:DeviceGroup", id)), NotFoundMsg, ProviderERROR)
 	}
 

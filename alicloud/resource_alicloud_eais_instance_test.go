@@ -143,14 +143,14 @@ func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_name":     name,
-					"instance_type":     "eais.ei-a6.medium",
+					"instance_type":     "eais.ei-a6.4xlarge",
 					"security_group_id": "${alicloud_security_group.default.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": name,
-						"instance_type": "eais.ei-a6.medium",
+						"instance_type": "eais.ei-a6.4xlarge",
 					}),
 				),
 			},
@@ -174,18 +174,22 @@ func AlicloudEaisInstanceBasicDependence0(name string) string {
 		data "alicloud_zones" "default" {
 			available_resource_creation = "VSwitch"
 		}
-		data "alicloud_vpcs" "default"{
-			name_regex = "default-NODELETING"
+		resource "alicloud_vpc" "default"{
+			vpc_name   = var.name
+			cidr_block = "10.4.0.0/16"
 		}
-		data "alicloud_vswitches" "default" {
-		  vpc_id  = data.alicloud_vpcs.default.ids.0
-          zone_id = data.alicloud_zones.default.ids.0
+
+		resource "alicloud_vswitch" "default" {
+			vswitch_name = var.name
+			cidr_block   = "10.4.0.0/24"
+			vpc_id       = alicloud_vpc.default.id
+			zone_id      = data.alicloud_zones.default.zones.0.id
 		}
 		
 		resource "alicloud_security_group" "default" {
 		  name        = var.name
 		  description = "tf test"
-		  vpc_id      = data.alicloud_vpcs.default.ids.0
+		  vpc_id      = alicloud_vpc.default.id
 		}
 `, name)
 }

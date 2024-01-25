@@ -19,10 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
+func TestAccAliCloudDdosbgpIp_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddosbgp_ip.default"
-	checkoutSupportedRegions(t, true, connectivity.DdosBgpSupportRegions)
+	checkoutSupportedRegions(t, true, connectivity.DdosbgpSupportedRegions)
 	ra := resourceAttrInit(resourceId, AlicloudDdosbgpIpMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &DdosbgpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -35,6 +35,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DdosbgpSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -43,7 +44,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip":                "${alicloud_eip_address.default.ip_address}",
-					"instance_id":       "${data.alicloud_ddosbgp_instances.default.ids.0}",
+					"instance_id":       "${alicloud_ddosbgp_instance.default.id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -78,11 +79,18 @@ variable "name" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_eip_address" "default" {
-	address_name = var.name
+  address_name = var.name
 }
 
-data "alicloud_ddosbgp_instances" default {}
-
+resource "alicloud_ddosbgp_instance" "default" {
+  name             = var.name
+  base_bandwidth   = 20
+  bandwidth        = -1
+  ip_count         = 100
+  ip_type          = "IPv4"
+  normal_bandwidth = 100
+  type             = "Enterprise"
+}
 `, name)
 }
 
