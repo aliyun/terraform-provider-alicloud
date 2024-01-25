@@ -37,7 +37,6 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"name"},
-				ValidateFunc:  StringLenBetween(2, 128),
 			},
 			"auto_pay": {
 				Type:     schema.TypeBool,
@@ -59,34 +58,35 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				Computed: true,
 			},
 			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringLenBetween(2, 256),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"high_definition_monitor_log_status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"OFF", "ON"}, false),
+				ValidateFunc: StringInSlice([]string{"OFF", "ON"}, true),
 			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic", "PayByDominantTraffic"}, false),
+				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, true),
 			},
 			"ip_address": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"isp": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud", "BGP_International"}, false),
+				ValidateFunc: StringInSlice([]string{"BGP", "BGP_PRO", "ChinaTelecom", "ChinaUnicom", "ChinaMobile", "ChinaTelecom_L2", "ChinaUnicom_L2", "ChinaMobile_L2", "BGP_FinanceCloud", "BGP_International"}, true),
 			},
 			"log_project": {
 				Type:     schema.TypeString,
@@ -101,7 +101,7 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"public"}, false),
+				ValidateFunc: StringInSlice([]string{"public"}, true),
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
@@ -109,17 +109,17 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"instance_charge_type"},
 				ForceNew:      true,
-				ValidateFunc:  StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
+				ValidateFunc:  StringInSlice([]string{"Subscription", "PayAsYouGo", "PrePaid", "PostPaid"}, true),
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc: IntInSlice([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 			},
 			"pricing_cycle": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Month", "Year"}, true),
 			},
 			"public_ip_address_pool_id": {
 				Type:     schema.TypeString,
@@ -149,11 +149,10 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				ForceNew: true,
 			},
 			"name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				Deprecated:   "Field 'name' has been deprecated since provider version 1.126.0. New field 'address_name' instead.",
-				ValidateFunc: StringLenBetween(2, 128),
+				Type:       schema.TypeString,
+				Optional:   true,
+				Computed:   true,
+				Deprecated: "Field 'name' has been deprecated since provider version 1.126.0. New field 'address_name' instead.",
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
@@ -161,18 +160,20 @@ func resourceAliCloudEipAddress() *schema.Resource {
 				Computed:     true,
 				Deprecated:   "Field 'instance_charge_type' has been deprecated since provider version 1.126.0. New field 'payment_type' instead.",
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PrePaid", "PostPaid"}, false),
+				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo", "PrePaid", "PostPaid"}, true),
 			},
 		},
 	}
 }
 
 func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "AllocateEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipClient()
 	if err != nil {
 		return WrapError(err)
@@ -187,12 +188,16 @@ func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("ip_address"); ok {
+		request["IpAddress"] = v
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
+
 	if v, ok := d.GetOk("address_name"); ok {
 		request["Name"] = v
 	}
@@ -223,10 +228,11 @@ func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 		request["PublicIpAddressPoolId"] = v
 	}
 	if v, ok := d.GetOk("instance_charge_type"); ok {
-		request["InstanceChargeType"] = convertEipInstanceChargeTypeRequest(v.(string))
+		request["InstanceChargeType"] = convertEipAddressInstanceChargeTypeRequest(v.(string))
 	}
+
 	if v, ok := d.GetOk("payment_type"); ok {
-		request["InstanceChargeType"] = convertEipInstanceChargeTypeRequest(v.(string))
+		request["InstanceChargeType"] = convertEipAddressInstanceChargeTypeRequest(v.(string))
 	}
 	if v, ok := d.GetOk("zone"); ok {
 		request["Zone"] = v
@@ -256,9 +262,11 @@ func resourceAliCloudEipAddressCreate(d *schema.ResourceData, meta interface{}) 
 		request["AutoPay"] = autoPay
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -315,7 +323,7 @@ func resourceAliCloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("ip_address", objectRaw["IpAddress"])
 	d.Set("isp", objectRaw["ISP"])
 	d.Set("netmode", objectRaw["Netmode"])
-	d.Set("payment_type", convertEipEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
+	d.Set("payment_type", convertEipAddressEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
 	d.Set("public_ip_address_pool_id", objectRaw["PublicIpAddressPoolId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
@@ -348,6 +356,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyEipAddressAttribute"
@@ -356,8 +365,8 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["AllocationId"] = d.Id()
+	query = make(map[string]interface{})
+	query["AllocationId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("bandwidth") {
 		update = true
@@ -373,18 +382,21 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		request["Name"] = d.Get("name")
 	}
+
 	if !d.IsNewResource() && d.HasChange("address_name") {
 		update = true
 		request["Name"] = d.Get("address_name")
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
-				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "IncorrectStatus.ResourceStatus"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "IncorrectStatus.ResourceStatus", "VPC_TASK_CONFLICT"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -412,10 +424,9 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["InstanceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	request["InstanceType"] = "EIP"
 	if d.HasChange("log_project") {
 		update = true
 		request["LogProject"] = d.Get("log_project")
@@ -431,10 +442,14 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		request["Status"] = d.Get("high_definition_monitor_log_status")
 	}
 
+	request["InstanceType"] = "EIP"
+
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "IncorrectInstanceStatus", "InvalidBindingStatus", "IncorrectStatus.NatGateway", "InvalidStatus.EcsStatusNotSupport", "InvalidStatus.InstanceHasBandWidth", "InvalidStatus.EniStatusNotSupport", "TaskConflict"}) || NeedRetry(err) {
@@ -459,10 +474,10 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["ResourceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
@@ -470,9 +485,11 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 	request["ResourceType"] = "EIP"
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -496,20 +513,23 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["InstanceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["InstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-	request["Type"] = "EIP"
 	if d.HasChange("deletion_protection") {
 		update = true
 		request["ProtectionEnable"] = d.Get("deletion_protection")
 	}
 
+	request["Type"] = "EIP"
+
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -528,9 +548,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("deletion_protection")
 	}
 
-	update = false
 	if d.HasChange("tags") {
-		update = true
 		eipServiceV2 := EipServiceV2{client}
 		if err := eipServiceV2.SetResourceTags(d, "EIP"); err != nil {
 			return WrapError(err)
@@ -549,22 +567,23 @@ func resourceAliCloudEipAddressDelete(d *schema.ResourceData, meta interface{}) 
 	}
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "ReleaseEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["AllocationId"] = d.Id()
+	query["AllocationId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "IncorrectEipStatus", "TaskConflict.AssociateGlobalAccelerationInstance"}) || NeedRetry(err) {
@@ -609,7 +628,7 @@ func convertEipAddressPaymentTypeResponse(source interface{}) interface{} {
 	return source
 }
 
-func convertEipEipAddressesEipAddressChargeTypeResponse(source interface{}) interface{} {
+func convertEipAddressEipAddressesEipAddressChargeTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PrePaid":
 		return "Subscription"
@@ -618,7 +637,7 @@ func convertEipEipAddressesEipAddressChargeTypeResponse(source interface{}) inte
 	}
 	return source
 }
-func convertEipInstanceChargeTypeRequest(source interface{}) interface{} {
+func convertEipAddressInstanceChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "Subscription":
 		return "PrePaid"

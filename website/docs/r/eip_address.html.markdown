@@ -28,7 +28,7 @@ variable "name" {
 
 
 resource "alicloud_eip_address" "default" {
-  description               = "test"
+  description               = var.name
   isp                       = "BGP"
   address_name              = var.name
   netmode                   = "public"
@@ -61,6 +61,7 @@ The following arguments are supported:
 * `internet_charge_type` - (Optional, ForceNew, Computed) Renewal Payment type.
   - **PayByBandwidth**: billed by fixed bandwidth.
   - **PayByTraffic**: Billing by traffic.
+* `ip_address` - (Optional, ForceNew, Computed) The IP address of the EIP.
 * `isp` - (Optional, ForceNew, Computed) The line type. You can set this parameter only when you create a `PayAsYouGo` EIP. Valid values: 
   - `BGP`: BGP (Multi-ISP) lines.Up to 89 high-quality BGP lines are available worldwide. Direct connections with multiple Internet Service Providers (ISPs), including Telecom, Unicom, Mobile, Railcom, Netcom, CERNET, China Broadcast Network, Dr. Peng, and Founder, can be established in all regions in mainland China.
   - `BGP_PRO`: BGP (Multi-ISP) Pro lines optimize data transmission to mainland China and improve connection quality for international services. Compared with BGP (Multi-ISP), when BGP (Multi-ISP) Pro provides services to clients in mainland China (excluding data centers), cross-border connections are established without using international ISP services. This reduces network latency.
@@ -77,15 +78,15 @@ The following arguments are supported:
 * `log_store` - (Optional) The Name of the logging service LogStore. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
 * `netmode` - (Optional, ForceNew, Computed) The type of the network. Valid value is `public` (Internet).
 * `payment_type` - (Optional, ForceNew, Computed) The billing method of the EIP. Valid values:  `Subscription`, `PayAsYouGo`.
-* `period` - (Optional) When the PricingCycle is set to Month, the Period value ranges from 1 to 9.When the PricingCycle is set to Year, the Period range is 1 to 5.If the value of the InstanceChargeType parameter is PrePaid, this parameter is required. If the value of the InstanceChargeType parameter is PostPaid, this parameter is not filled in.
-* `pricing_cycle` - (Optional, Available since v1.207.0) Value:Month (default): Pay monthly.Year: Pay per Year.This parameter is required when the value of the InstanceChargeType parameter is Subscription(PrePaid). This parameter is optional when the value of the InstanceChargeType parameter is PayAsYouGo(PostPaid).
+* `period` - (Optional) When the PricingCycle is set to Month, the Period value ranges from 1 to 9.  When the PricingCycle is set to Year, the Period range is 1 to 5.  If the value of the InstanceChargeType parameter is PrePaid, this parameter is required. If the value of the InstanceChargeType parameter is PostPaid, this parameter is not filled in.
+* `pricing_cycle` - (Optional, Available since v1.207.0) Value: Month (default): Pay monthly. Year: Pay per Year. This parameter is required when the value of the InstanceChargeType parameter is Subscription(PrePaid). This parameter is optional when the value of the InstanceChargeType parameter is PayAsYouGo(PostPaid).
 * `public_ip_address_pool_id` - (Optional, ForceNew) The ID of the IP address pool to which the EIP belongs.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `security_protection_types` - (Optional, ForceNew) Security protection level.
   - When the return is empty, the basic DDoS protection is specified.
   - When **antidos_enhanced** is returned, it indicates DDoS protection (enhanced version).
 * `tags` - (Optional, Map) The tag of the resource.
-* `zone` - (Optional, ForceNew, Computed, Available since v1.207.0) The zone of the EIP.This parameter is returned only for whitelist users that are visible to the zone.
+* `zone` - (Optional, ForceNew, Computed, Available since v1.207.0) The zone of the EIP.  This parameter is returned only for whitelist users that are visible to the zone.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.126.0). Field 'name' has been deprecated from provider version 1.126.0. New field 'address_name' instead.
@@ -96,7 +97,6 @@ The following arguments will be discarded. Please use new fields as soon as poss
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the EIP was created.
-* `ip_address` - The IP address of the EIP.
 * `status` - The status of the EIP.
 
 ## Timeouts
