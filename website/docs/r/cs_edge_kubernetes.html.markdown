@@ -34,7 +34,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "tf-example-basic-edge"
 }
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
@@ -61,7 +61,6 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   name                         = var.name
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  version                      = "1.20.11-aliyunedge.1"
   worker_number                = "1"
   password                     = "Test12345"
   pod_cidr                     = "10.99.0.0/16"
@@ -111,7 +110,6 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   name                         = var.name
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  version                      = "1.20.11-aliyunedge.1"
   cluster_spec                 = "ack.pro.small"
   worker_number                = "1"
   password                     = "Test12345"
@@ -124,18 +122,11 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   install_cloud_monitor        = "true"
   slb_internet_enabled         = "true"
   is_enterprise_security_group = "true"
-  addons {
-    name   = "alibaba-log-controller"
-    config = "{\"IngressDashboardEnabled\":\"false\"}"
-  }
+
   worker_data_disks {
     category  = "cloud_ssd"
     size      = "200"
     encrypted = "false"
-  }
-  runtime = {
-    name    = "containerd"
-    version = "1.5.10"
   }
 }
 ```
@@ -216,7 +207,8 @@ You can set some file paths to save kube_config information, but this way is cum
 The addons supports the following:
 
 * `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
-* `config` - (Optional) The ACK add-on configurations.
+* `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
+* `version` - (Optional) It specifies the version of the component.
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
 
 The following example is the definition of addons block, The type of this field is list:

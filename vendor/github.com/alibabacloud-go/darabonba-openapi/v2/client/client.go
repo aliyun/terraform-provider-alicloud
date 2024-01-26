@@ -5,14 +5,13 @@
 package client
 
 import (
-	"io"
-
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
 	openapiutil "github.com/alibabacloud-go/openapi-util/service"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	xml "github.com/alibabacloud-go/tea-xml/service"
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
+	"io"
 )
 
 type GlobalParameters struct {
@@ -93,6 +92,12 @@ type Config struct {
 	SignatureAlgorithm *string `json:"signatureAlgorithm,omitempty" xml:"signatureAlgorithm,omitempty"`
 	// Global Parameters
 	GlobalParameters *GlobalParameters `json:"globalParameters,omitempty" xml:"globalParameters,omitempty"`
+	// privite key for client certificate
+	Key *string `json:"key,omitempty" xml:"key,omitempty"`
+	// client certificate
+	Cert *string `json:"cert,omitempty" xml:"cert,omitempty"`
+	// server certificate
+	Ca *string `json:"ca,omitempty" xml:"ca,omitempty"`
 }
 
 func (s Config) String() string {
@@ -225,6 +230,21 @@ func (s *Config) SetSignatureAlgorithm(v string) *Config {
 
 func (s *Config) SetGlobalParameters(v *GlobalParameters) *Config {
 	s.GlobalParameters = v
+	return s
+}
+
+func (s *Config) SetKey(v string) *Config {
+	s.Key = &v
+	return s
+}
+
+func (s *Config) SetCert(v string) *Config {
+	s.Cert = &v
+	return s
+}
+
+func (s *Config) SetCa(v string) *Config {
+	s.Ca = &v
 	return s
 }
 
@@ -367,6 +387,9 @@ type Client struct {
 	Headers              map[string]*string
 	Spi                  spi.ClientInterface
 	GlobalParameters     *GlobalParameters
+	Key                  *string
+	Cert                 *string
+	Ca                   *string
 }
 
 /**
@@ -429,6 +452,9 @@ func (client *Client) Init(config *Config) (_err error) {
 	client.SignatureVersion = config.SignatureVersion
 	client.SignatureAlgorithm = config.SignatureAlgorithm
 	client.GlobalParameters = config.GlobalParameters
+	client.Key = config.Key
+	client.Cert = config.Cert
+	client.Ca = config.Ca
 	return nil
 }
 
@@ -455,6 +481,9 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 	}
 	_runtime := map[string]interface{}{
 		"timeouted":      "retry",
+		"key":            tea.StringValue(util.DefaultString(runtime.Key, client.Key)),
+		"cert":           tea.StringValue(util.DefaultString(runtime.Cert, client.Cert)),
+		"ca":             tea.StringValue(util.DefaultString(runtime.Ca, client.Ca)),
 		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
 		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
@@ -603,7 +632,7 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 					"message":            "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(err["Message"], err["message"])) + " request id: " + tea.ToString(requestId),
 					"data":               err,
 					"description":        tea.ToString(DefaultAny(err["Description"], err["description"])),
-					"accessDeniedDetail": err["AccessDeniedDetail"],
+					"accessDeniedDetail": DefaultAny(err["AccessDeniedDetail"], err["accessDeniedDetail"]),
 				})
 				return _result, _err
 			}
@@ -715,6 +744,9 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 	}
 	_runtime := map[string]interface{}{
 		"timeouted":      "retry",
+		"key":            tea.StringValue(util.DefaultString(runtime.Key, client.Key)),
+		"cert":           tea.StringValue(util.DefaultString(runtime.Cert, client.Cert)),
+		"ca":             tea.StringValue(util.DefaultString(runtime.Ca, client.Ca)),
 		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
 		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
@@ -841,7 +873,7 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 					"message":            "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(err["Message"], err["message"])) + " request id: " + tea.ToString(requestId),
 					"data":               err,
 					"description":        tea.ToString(DefaultAny(err["Description"], err["description"])),
-					"accessDeniedDetail": err["AccessDeniedDetail"],
+					"accessDeniedDetail": DefaultAny(err["AccessDeniedDetail"], err["accessDeniedDetail"]),
 				})
 				return _result, _err
 			}
@@ -953,6 +985,9 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 	}
 	_runtime := map[string]interface{}{
 		"timeouted":      "retry",
+		"key":            tea.StringValue(util.DefaultString(runtime.Key, client.Key)),
+		"cert":           tea.StringValue(util.DefaultString(runtime.Cert, client.Cert)),
+		"ca":             tea.StringValue(util.DefaultString(runtime.Ca, client.Ca)),
 		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
 		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
@@ -1082,7 +1117,7 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 					"message":            "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(err["Message"], err["message"])) + " request id: " + tea.ToString(DefaultAny(err["RequestId"], err["requestId"])),
 					"data":               err,
 					"description":        tea.ToString(DefaultAny(err["Description"], err["description"])),
-					"accessDeniedDetail": err["AccessDeniedDetail"],
+					"accessDeniedDetail": DefaultAny(err["AccessDeniedDetail"], err["accessDeniedDetail"]),
 				})
 				return _result, _err
 			}
@@ -1197,6 +1232,9 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 	}
 	_runtime := map[string]interface{}{
 		"timeouted":      "retry",
+		"key":            tea.StringValue(util.DefaultString(runtime.Key, client.Key)),
+		"cert":           tea.StringValue(util.DefaultString(runtime.Cert, client.Cert)),
+		"ca":             tea.StringValue(util.DefaultString(runtime.Ca, client.Ca)),
 		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
 		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),
@@ -1283,7 +1321,15 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				request_.Headers["content-type"] = tea.String("application/octet-stream")
 			} else {
 				if !tea.BoolValue(util.IsUnset(request.Body)) {
-					if tea.BoolValue(util.EqualString(params.ReqBodyType, tea.String("json"))) {
+					if tea.BoolValue(util.EqualString(params.ReqBodyType, tea.String("byte"))) {
+						byteObj, _err := util.AssertAsBytes(request.Body)
+						if _err != nil {
+							return _result, _err
+						}
+
+						hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(byteObj, signatureAlgorithm))
+						request_.Body = tea.ToReader(byteObj)
+					} else if tea.BoolValue(util.EqualString(params.ReqBodyType, tea.String("json"))) {
 						jsonObj := util.ToJSONString(request.Body)
 						hashedRequestPayload = openapiutil.HexEncode(openapiutil.Hash(util.ToBytes(jsonObj), signatureAlgorithm))
 						request_.Body = tea.ToReader(jsonObj)
@@ -1306,34 +1352,19 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 
 			request_.Headers["x-acs-content-sha256"] = hashedRequestPayload
 			if !tea.BoolValue(util.EqualString(params.AuthType, tea.String("Anonymous"))) {
-				authType, _err := client.GetType()
+				credentialModel, _err := client.Credential.GetCredential()
 				if _err != nil {
 					return _result, _err
 				}
 
+				authType := credentialModel.Type
 				if tea.BoolValue(util.EqualString(authType, tea.String("bearer"))) {
-					bearerToken, _err := client.GetBearerToken()
-					if _err != nil {
-						return _result, _err
-					}
-
+					bearerToken := credentialModel.BearerToken
 					request_.Headers["x-acs-bearer-token"] = bearerToken
 				} else {
-					accessKeyId, _err := client.GetAccessKeyId()
-					if _err != nil {
-						return _result, _err
-					}
-
-					accessKeySecret, _err := client.GetAccessKeySecret()
-					if _err != nil {
-						return _result, _err
-					}
-
-					securityToken, _err := client.GetSecurityToken()
-					if _err != nil {
-						return _result, _err
-					}
-
+					accessKeyId := credentialModel.AccessKeyId
+					accessKeySecret := credentialModel.AccessKeySecret
+					securityToken := credentialModel.SecurityToken
 					if !tea.BoolValue(util.Empty(securityToken)) {
 						request_.Headers["x-acs-accesskey-id"] = accessKeyId
 						request_.Headers["x-acs-security-token"] = securityToken
@@ -1381,7 +1412,7 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 					"message":            "code: " + tea.ToString(tea.IntValue(response_.StatusCode)) + ", " + tea.ToString(DefaultAny(err["Message"], err["message"])) + " request id: " + tea.ToString(DefaultAny(err["RequestId"], err["requestId"])),
 					"data":               err,
 					"description":        tea.ToString(DefaultAny(err["Description"], err["description"])),
-					"accessDeniedDetail": err["AccessDeniedDetail"],
+					"accessDeniedDetail": DefaultAny(err["AccessDeniedDetail"], err["accessDeniedDetail"]),
 				})
 				return _result, _err
 			}
@@ -1452,8 +1483,14 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				}, &_result)
 				return _result, _err
 			} else {
+				anything, _err := util.ReadAsString(response_.Body)
+				if _err != nil {
+					return _result, _err
+				}
+
 				_result = make(map[string]interface{})
 				_err = tea.Convert(map[string]interface{}{
+					"body":       tea.StringValue(anything),
 					"headers":    response_.Headers,
 					"statusCode": tea.IntValue(response_.StatusCode),
 				}, &_result)
@@ -1496,6 +1533,9 @@ func (client *Client) Execute(params *Params, request *OpenApiRequest, runtime *
 	}
 	_runtime := map[string]interface{}{
 		"timeouted":      "retry",
+		"key":            tea.StringValue(util.DefaultString(runtime.Key, client.Key)),
+		"cert":           tea.StringValue(util.DefaultString(runtime.Cert, client.Cert)),
+		"ca":             tea.StringValue(util.DefaultString(runtime.Ca, client.Ca)),
 		"readTimeout":    tea.IntValue(util.DefaultNumber(runtime.ReadTimeout, client.ReadTimeout)),
 		"connectTimeout": tea.IntValue(util.DefaultNumber(runtime.ConnectTimeout, client.ConnectTimeout)),
 		"httpProxy":      tea.StringValue(util.DefaultString(runtime.HttpProxy, client.HttpProxy)),

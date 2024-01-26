@@ -30,6 +30,7 @@ type Credential interface {
 	GetSecurityToken() (*string, error)
 	GetBearerToken() *string
 	GetType() *string
+	GetCredential() (*CredentialModel, error)
 }
 
 // Config is important when call NewCredential

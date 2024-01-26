@@ -59,7 +59,9 @@ github.com/alibabacloud-go/alibabacloud-gateway-sls-util/client
 github.com/alibabacloud-go/alibabacloud-gateway-spi/client
 # github.com/alibabacloud-go/cs-20151215/v3 v3.0.42
 ## explicit; go 1.15
-github.com/alibabacloud-go/cs-20151215/v3/client
+# github.com/alibabacloud-go/cs-20151215/v4 v4.5.6
+## explicit; go 1.15
+github.com/alibabacloud-go/cs-20151215/v4/client
 # github.com/alibabacloud-go/darabonba-array v0.1.0
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-array/client
@@ -69,7 +71,7 @@ github.com/alibabacloud-go/darabonba-encode-util/client
 # github.com/alibabacloud-go/darabonba-map v0.0.2
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-map/client
-# github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.4
+# github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.5
 ## explicit; go 1.14
 github.com/alibabacloud-go/darabonba-openapi/v2/client
 # github.com/alibabacloud-go/darabonba-signature-util v0.0.7
@@ -90,7 +92,7 @@ github.com/alibabacloud-go/fc-open-20210406/v2/client
 # github.com/alibabacloud-go/openapi-util v0.1.0
 ## explicit; go 1.14
 github.com/alibabacloud-go/openapi-util/service
-# github.com/alibabacloud-go/tea v1.1.19
+# github.com/alibabacloud-go/tea v1.2.1
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
@@ -194,7 +196,7 @@ github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/sql/dataprotocol
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/timeseries/flatbuffer
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel
 github.com/aliyun/aliyun-tablestore-go-sdk/tunnel/protocol
-# github.com/aliyun/credentials-go v1.3.0
+# github.com/aliyun/credentials-go v1.3.1
 ## explicit; go 1.14
 github.com/aliyun/credentials-go/credentials
 github.com/aliyun/credentials-go/credentials/request
@@ -731,7 +733,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+# golang.org/x/crypto v0.10.0
 ## explicit; go 1.17
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
@@ -740,9 +742,8 @@ golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/curve25519/internal/field
 golang.org/x/crypto/ed25519
-golang.org/x/crypto/ed25519/internal/edwards25519
+golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
-golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
 golang.org/x/crypto/openpgp/elgamal
@@ -753,7 +754,7 @@ golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-# golang.org/x/net v0.9.0
+# golang.org/x/net v0.11.0
 ## explicit; go 1.17
 golang.org/x/net/context
 golang.org/x/net/http/httpguts
@@ -774,17 +775,17 @@ golang.org/x/oauth2/google/internal/externalaccount
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.7.0
+# golang.org/x/sys v0.9.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.7.0
+# golang.org/x/term v0.9.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.9.0
+# golang.org/x/text v0.10.0
 ## explicit; go 1.17
 golang.org/x/text/secure/bidirule
 golang.org/x/text/transform

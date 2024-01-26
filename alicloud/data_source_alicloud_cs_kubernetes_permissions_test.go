@@ -39,109 +39,77 @@ variable "name" {
 	default = "%s"
 }
 
-data "alicloud_zones" default {
-  available_resource_creation  = "VSwitch"
+variable "vpc_cidr" {
+  description = "The cidr block used to launch a new vpc when 'vpc_id' is not specified."
+  default     = "10.0.0.0/8"
 }
 
-data "alicloud_instance_types" "default" {
-	availability_zone          = data.alicloud_zones.default.zones.0.id
-	cpu_core_count             = 4
-	memory_size                = 8
-	kubernetes_node_role       = "Worker"
+variable "vswitch_cidrs" {
+  description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
+  type        = list(string)
+  default     = ["10.1.0.0/16", "10.2.0.0/16"]
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+variable "pod_cidr" {
+  description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or service's and cannot be in them."
+  default     = "172.16.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+variable "service_cidr" {
+  description = "The kubernetes service cidr block. It cannot be equals to vpc's or vswitch's or pod's and cannot be in them."
+  default     = "192.168.0.0/16"
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones.0.id
-  vswitch_name      = var.name
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
+
+data "alicloud_cs_kubernetes_version" "default" {
+  cluster_type       = "ManagedKubernetes"
 }
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+resource "alicloud_vpc" "vpc" {
+  cidr_block = var.vpc_cidr
 }
 
-# Create a management cluster
+resource "alicloud_vswitch" "default" {
+  count      = length(var.vswitch_cidrs)
+  vpc_id     = alicloud_vpc.vpc.id
+  cidr_block = element(var.vswitch_cidrs, count.index)
+  zone_id    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index].zone_id
+}
+
+# Create a new RAM cluster.
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                         = var.name
-  count                        = 1
-  cluster_spec                 = "ack.pro.small"
-  is_enterprise_security_group = true
-  worker_number                = 2
-  worker_disk_size             = 40
-  worker_instance_charge_type  = "PostPaid"
-  deletion_protection          = false
-  node_port_range              = "30000-32767"
-  password                     = "Hello1234"
-  pod_cidr                     = cidrsubnet("10.0.0.0/8", 8, 34)
-  service_cidr                 = cidrsubnet("172.16.0.0/16", 4, 5)
-  worker_vswitch_ids           = [local.vswitch_id]
-  worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
-  depends_on                   = ["alicloud_ram_user_policy_attachment.attach"]
+  name                 = var.name
+  cluster_spec         = "ack.pro.small"
+  version              = data.alicloud_cs_kubernetes_version.default.metadata.0.version
+  worker_vswitch_ids   = split(",", join(",", alicloud_vswitch.default.*.id))
+  new_nat_gateway      = false
+  pod_cidr             = var.pod_cidr
+  service_cidr         = var.service_cidr
+	slb_internet_enabled = false
 }
 
 # Create a new RAM user.
 resource "alicloud_ram_user" "user" {
   name         = var.name
-  display_name = var.name
-  mobile       = "86-18688888888"
-  email        = "hello.uuu@aaa.com"
-  comments     = "yoyoyo"
 }
 
-# Create a new RAM Policy, .
-resource "alicloud_ram_policy" "policy" {
-  policy_name     = var.name
-  policy_document = <<EOF
-  {
-    "Statement":[
-      {
-        "Action":"cs:Get*",
-        "Effect":"Allow",
-        "Resource":[
-            "*"
-        ]
-      }
-    ],
-    "Version":"1"
-  }
-  EOF
-  description = "this is a policy test by tf"
-}
-
-# Authorize the RAM user
-resource "alicloud_ram_user_policy_attachment" "attach" {
-  policy_name = alicloud_ram_policy.policy.name
-  policy_type = alicloud_ram_policy.policy.type
-  user_name   = alicloud_ram_user.user.name
-}
-
-# RBAC authorization for the cluster
+# Create a cluster permission for user.
 resource "alicloud_cs_kubernetes_permissions" "default" {
   uid = alicloud_ram_user.user.id
-
   permissions {
-    cluster     = alicloud_cs_managed_kubernetes.default.0.id
+    cluster     = alicloud_cs_managed_kubernetes.default.id
     role_type   = "cluster"
-    role_name   = "dev"
+    role_name   = "admin"
+    namespace   = ""
     is_custom   = false
     is_ram_role = false
-    namespace   = ""
   }
 }
+
 # Describe user permissions
 data "alicloud_cs_kubernetes_permissions" "default" {
-  uid = alicloud_cs_kubernetes_permissions.default.id
+  uid = alicloud_ram_user.user.id
 }
 `, name)
 }

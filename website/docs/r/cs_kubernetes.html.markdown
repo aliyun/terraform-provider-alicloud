@@ -213,7 +213,7 @@ The taints supports the following:
 The addons supports the following:
 
 * `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
-* `config` - (Optional) The ACK add-on configurations.
+* `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional) The version of the component.
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
 

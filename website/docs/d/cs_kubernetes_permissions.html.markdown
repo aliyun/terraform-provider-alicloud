@@ -7,23 +7,22 @@ description: |-
   Provides a list of Ram user permissions.
 ---
 
-# alicloud\_cs\_kubernetes\_permissions
+# alicloud_cs_kubernetes_permissions
 
 This data source provides a list of Ram user permissions.
 
--> **NOTE:** Available in v1.122.0+.
+-> **NOTE:** Available since v1.122.0.
 
 ## Example Usage
 
 ```terraform
 # Declare the data source
-data "alicloud_ram_users" "users_ds" {
-  name_regex = "your_user_name"
+data "alicloud_ram_users" "default" {
 }
 
 # permissions
 data "alicloud_cs_kubernetes_permissions" "default" {
-  uid = data.alicloud_ram_users.users_ds.users.0.id
+  uid = data.alicloud_ram_users.default.users.0.id
 }
 
 output "permissions" {
@@ -40,10 +39,14 @@ The following arguments are supported.
 
 * `id` - Resource ID.
 * `uid` - The ID of the RAM user. If you want to query the permissions of a RAM role, specify the ID of the RAM role.
-* `permissions` - A list of user permission.
-  * `resource_id` - The permission settings to manage ACK clusters. 
-  * `resource_type` - The authorization type. Valid values `cluster`, `namespace` and `console`.
-  * `role_name` - The name of the predefined role. If a custom role is assigned, the value is the name of the assigined custom role.
-  * `role_type` - The predefined role. Valid values `admin`,`ops`,`dev`,`restricted` and `custom`.
-  * `is_owner` - ndicates whether the permissions are granted to the cluster owner. Valid values `0`, `1`.
-  * `is_ram_role` -Indicates whether the permissions are granted to the RAM role. Valid values `0`,`1`.
+* `permissions` - A list of user permission. See [`permissions`](#permissions) below.
+
+### `permissions`
+
+The permissions mapping supports the following:
+* `resource_id` - The permission settings to manage ACK clusters. 
+* `resource_type` - The authorization type. Valid values `cluster`, `namespace` and `console`.
+* `role_name` - The name of the predefined role. If a custom role is assigned, the value is the name of the assigined custom role.
+* `role_type` - The predefined role. Valid values `admin`,`ops`,`dev`,`restricted` and `custom`.
+* `is_owner` - Indicates whether the permissions are granted to the cluster owner. Valid values `false`, `true`.
+* `is_ram_role` - Indicates whether the permissions are granted to the RAM role. Valid values `false`, `true`.

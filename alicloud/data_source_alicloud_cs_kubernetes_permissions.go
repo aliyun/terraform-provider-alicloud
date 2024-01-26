@@ -1,12 +1,11 @@
 package alicloud
 
 import (
-	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudCSKubernetesPermissions() *schema.Resource {
@@ -19,34 +18,33 @@ func dataSourceAlicloudCSKubernetesPermissions() *schema.Resource {
 				Required: true,
 			},
 			"permissions": {
-				Optional: true,
+				Computed: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resource_id": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"resource_type": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"cluster", "namespace", "console"}, false),
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 						"role_name": {
 							Type:     schema.TypeString,
-							Required: true,
+							Computed: true,
 						},
 						"role_type": {
 							Type:     schema.TypeString,
-							Optional: true,
+							Computed: true,
 						},
 						"is_owner": {
 							Type:     schema.TypeBool,
-							Optional: true,
+							Computed: true,
 						},
 						"is_ram_role": {
 							Type:     schema.TypeBool,
-							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -80,6 +78,8 @@ func describeUserPermissions(client *cs.Client, uid string) ([]*cs.DescribeUserP
 	if err != nil {
 		return nil, err
 	}
+
+	addDebug("DescribeUserPermission", resp)
 	return resp.Body, nil
 }
 
@@ -103,12 +103,9 @@ func flattenPermissionsConfig(permissions []*cs.DescribeUserPermissionResponseBo
 
 func convertToBool(i *int64) bool {
 	in := tea.Int64Value(i)
-	var b bool
-	if in == 0 {
-		b = false
+	if in != 1 {
+		return false
 	}
-	if in == 1 {
-		b = true
-	}
-	return b
+
+	return true
 }

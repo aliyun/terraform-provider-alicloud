@@ -102,44 +102,6 @@ variable "terway_vswitch_cidrs" {
   default     = ["10.4.0.0/16", "10.5.0.0/16"]
 }
 
-variable "cluster_addons" {
-  type = list(object({
-    name   = string
-    config = string
-  }))
-
-  default = [
-    {
-      "name"   = "terway-eniip",
-      "config" = "",
-    },
-    {
-      "name"   = "csi-plugin",
-      "config" = "",
-    },
-    {
-      "name"   = "csi-provisioner",
-      "config" = "",
-    },
-    {
-      "name"   = "logtail-ds",
-      "config" = "{'IngressDashboardEnabled':'true'}",
-    },
-    {
-      "name"   = "nginx-ingress-controller",
-      "config" = "{'IngressSlbNetworkType':'internet'}",
-    },
-    {
-      "name"   = "arms-prometheus",
-      "config" = "",
-    },
-    {
-      "name"   = "ack-node-problem-detector",
-      "config" = "{'sls_project_name':''}",
-    }
-  ]
-}
-
 data "alicloud_enhanced_nat_available_zones" "enhanced" {}
 
 # If there is not specifying vpc_id, the module will launch a new vpc
@@ -176,12 +138,37 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   proxy_mode         = var.proxy_mode
   service_cidr       = var.service_cidr
 
-  dynamic "addons" {
-    for_each = var.cluster_addons
-    content {
-      name   = lookup(addons.value, "name", var.cluster_addons)
-      config = lookup(addons.value, "config", var.cluster_addons)
-    }
+  addons {
+    name = "terway-eniip"
+  }
+  addons {
+    name = "csi-plugin"
+  }
+  addons {
+    name = "csi-provisioner"
+  }
+  addons {
+    name = "logtail-ds"
+    config = jsonencode({
+      IngressDashboardEnabled = "true"
+    })
+  }
+  addons {
+    name = "nginx-ingress-controller"
+    config = jsonencode({
+      IngressSlbNetworkType = "internet"
+    })
+    # to disable install nginx-ingress-controller automatically
+    # disabled = true
+  }
+  addons {
+    name = "arms-prometheus"
+  }
+  addons {
+    name = "ack-node-problem-detector"
+    config = jsonencode({
+      # sls_project_name = "your-sls-project"
+    })
   }
 }
 ```
@@ -305,7 +292,7 @@ for example:
 The following arguments are supported in the `addons` configuration block:
 
 * `name` - (Optional) This parameter specifies the name of the component.
-* `config` - (Optional) If this parameter is left empty, no configurations are required.
+* `config` - (Optional) If this parameter is left empty, no configurations are required. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `version` - (Optional) It specifies the version of the component.
 * `disabled` - (Optional) It specifies whether to disable automatic installation. 
 
@@ -328,6 +315,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
     content {
       name     = lookup(addons.value, "name", var.cluster_addons)
       config   = lookup(addons.value, "config", var.cluster_addons)
+      version  = lookup(addons.value, "version", var.cluster_addons)
       disabled = lookup(addons.value, "disabled", var.cluster_addons)
     }
   }
@@ -452,14 +440,12 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
 
   default = [
     {
       "name"     = "arms-prometheus",
       "config"   = "",
-      "disabled": true,
     }
   ]
 }
@@ -469,13 +455,11 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
   default = [
     {
       "name"     = "ack-node-problem-detector",
       "config"   = "{\"sls_project_name\":\"\"}",
-      "disabled": true,
     }
   ]
 }
@@ -484,13 +468,11 @@ variable "cluster_addons" {
   type = list(object({
       name      = string
       config    = string
-      disabled  = bool
   }))
   default = [
     {
       "name"     = "alicloud-monitor-controller",
       "config"   = "{\"group_contact_ids\":\"[159]\"}",
-      "disabled": true,
     }
   ]
 }

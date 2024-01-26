@@ -56,6 +56,7 @@ resource "alicloud_vswitch" "default" {
 
 resource "alicloud_cs_serverless_kubernetes" "serverless" {
   name_prefix                    = var.name
+  cluster_spec                   = "ack.pro.small"
   vpc_id                         = alicloud_vpc.default.id
   vswitch_ids                    = [alicloud_vswitch.default.id]
   new_nat_gateway                = true
@@ -71,13 +72,13 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   # Select an existing sls project
   # sls_project_name             = ""
 
-  # tags 
+  # tags
   tags = {
     "k-aa" = "v-aa"
     "k-bb" = "v-aa"
   }
 
-  # addons 
+  # addons
   addons {
     # SLB Ingress
     name = "alb-ingress-controller"
@@ -140,7 +141,7 @@ The following arguments are supported:
 The addons supports the following:
 
 * `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
-* `config` - (Optional) The ACK add-on configurations.
+* `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
 
 The following example is the definition of addons block, The type of this field is list:
@@ -165,6 +166,12 @@ addons {
 # install knative
 addons {
   name = "knative"
+}
+# install prometheus
+addons {
+  name = "arms-prometheus"
+  # prometheus also provides managed version, specify with name `managed-arms-prometheus` for professional serverless clusters
+  # name = "managed-arms-prometheus"
 }
 ```
 
