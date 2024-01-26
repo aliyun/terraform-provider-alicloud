@@ -285,3 +285,6 @@ var KvStoreSupportRegions = []Region{Hangzhou}
 var SLSLiteSupportRegions = []Region{Hangzhou}
 var ARMSSyncTaskSupportRegions = []Region{Hangzhou}
 var EbsEnterpriseSnapshotPolicySupportRegions = []Region{Hangzhou}
+var VPNSupportRegions = []Region{Huhehaote}
+var VPNSingleConnectRegions = []Region{MEEast1}
+var VPNSingleConnectSupportRegions = []Region{APSouthEast2}

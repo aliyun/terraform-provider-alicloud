@@ -1696,3 +1696,23 @@ func ConvertTags(tagsMap map[string]interface{}) []map[string]interface{} {
 	}
 	return tags
 }
+
+func convertChargeTypeToPaymentType(source interface{}) interface{} {
+	switch source {
+	case "PostPaid":
+		return "PayAsYouGo"
+	case "PrePaid":
+		return "Subscription"
+	}
+	return source
+}
+
+func convertPaymentTypeToChargeType(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "PostPaid"
+	case "Subscription":
+		return "PrePaid"
+	}
+	return source
+}
