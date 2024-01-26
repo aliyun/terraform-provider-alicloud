@@ -2,9 +2,11 @@ package alicloud
 
 import (
 	"log"
+	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"fmt"
@@ -93,20 +95,39 @@ func dataSourceAlicloudCdnServiceRead(d *schema.ResourceData, meta interface{}) 
 			resp, err := conn.DoRequest(StringPointer("OpenCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, requestBody, &util.RuntimeOptions{})
 			addDebug("OpenCdnService", resp, nil)
 			if err != nil {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", AlibabaCloudSdkGoERROR)
+				if IsExpectedErrors(err, []string{"CdnService.HasOpened"}) {
+					log.Printf("[DEBUG] Datasource alicloud_cdn_service has opened!!!")
+					opened = true
+				} else {
+					return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "OpenCdnService", AlibabaCloudSdkGoERROR)
+				}
 			} else {
 				opened = true
 			}
 		}
-		response, err = conn.DoRequest(StringPointer("DescribeCdnService"), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 
-		addDebug("DescribeCdnService", response, nil)
-		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationDenied"}) {
-				log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
-			} else {
-				return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", "DescribeCdnService", AlibabaCloudSdkGoERROR)
+		action := "DescribeCdnService"
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(4*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"CdnServiceNotFound"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{"OperationDenied"}) {
+					log.Printf("[DEBUG] Datasource alicloud_cdn_service DescribeCdnService Failed!!! %s", err)
+					return nil
+				}
+				return resource.NonRetryableError(err)
 			}
+			return nil
+		})
+		addDebug(action, response, nil)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cdn_service", action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
