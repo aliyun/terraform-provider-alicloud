@@ -1347,7 +1347,7 @@ resource "alicloud_vpn_gateway" "HA-VPN" {
 
 resource "alicloud_vpn_customer_gateway" "defaultCustomerGateway" {
   description           = "defaultCustomerGateway"
-  ip_address            = "2.2.2.4"
+  ip_address            = "2.2.2.5"
   asn                   = "2224"
   customer_gateway_name = var.name
 
@@ -1355,7 +1355,7 @@ resource "alicloud_vpn_customer_gateway" "defaultCustomerGateway" {
 
 resource "alicloud_vpn_customer_gateway" "changeCustomerGateway" {
   description           = "changeCustomerGateway"
-  ip_address            = "2.2.2.4"
+  ip_address            = "2.2.2.6"
   asn                   = "2225"
   customer_gateway_name = var.name
 
