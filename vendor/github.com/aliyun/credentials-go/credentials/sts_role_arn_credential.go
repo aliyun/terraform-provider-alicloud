@@ -66,6 +66,22 @@ func newRAMRoleArnWithExternalIdCredential(accessKeyId, accessKeySecret, roleArn
 	}
 }
 
+func (e *RAMRoleArnCredential) GetCredential() (*CredentialModel, error) {
+	if e.sessionCredential == nil || e.needUpdateCredential() {
+		err := e.updateCredential()
+		if err != nil {
+			return nil, err
+		}
+	}
+	credential := &CredentialModel{
+		AccessKeyId:     tea.String(e.sessionCredential.AccessKeyId),
+		AccessKeySecret: tea.String(e.sessionCredential.AccessKeySecret),
+		SecurityToken:   tea.String(e.sessionCredential.SecurityToken),
+		Type:            tea.String("ram_role_arn"),
+	}
+	return credential, nil
+}
+
 // GetAccessKeyId reutrns RamRoleArnCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
 func (r *RAMRoleArnCredential) GetAccessKeyId() (*string, error) {

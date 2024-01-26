@@ -95,21 +95,13 @@ locals {
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name_prefix                 = "${var.name}"
-  cluster_spec                = "ack.pro.small"
-  worker_vswitch_ids          = [local.vswitch_id]
-  new_nat_gateway             = true
-  node_port_range             = "30000-32767"
-  password                    = "Hello1234"
-  pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 35)
-  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 6)
-  install_cloud_monitor       = true
-  slb_internet_enabled        = true
-  worker_disk_category        = "cloud_efficiency"
-  worker_data_disk_category   = "cloud_ssd"
-  worker_data_disk_size       = 200
-  worker_disk_size            = 40
-  worker_instance_charge_type = "PostPaid"
+  name                 = var.name
+  cluster_spec         = "ack.pro.small"
+  worker_vswitch_ids   = [local.vswitch_id]
+  new_nat_gateway      = false
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+  slb_internet_enabled = true
 }
 `, name)
 }

@@ -445,7 +445,8 @@ data "alicloud_instance_types" "default" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_kms_keys" "default" {
-  status = "Enabled"
+  status  = "Enabled"
+  filters = "[{\"Key\":\"CreatorType\", \"Values\":[\"User\"]}]"
 }
 
 data "alicloud_vpcs" "default" {

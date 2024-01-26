@@ -249,6 +249,10 @@ func resourceAlicloudCSEdgeKubernetes() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"version": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 						"disabled": {
 							Type:     schema.TypeBool,
 							Optional: true,

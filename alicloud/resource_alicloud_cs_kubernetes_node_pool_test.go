@@ -1177,7 +1177,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+  name_regex = "^Default"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -1273,7 +1273,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+  name_regex = "^Default"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -1373,7 +1373,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+  name_regex = "^Default"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -1450,7 +1450,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default.*"
+  name_regex = "^Default.*"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -1583,7 +1583,7 @@ resource "alicloud_key_pair" "default2" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
-  name_regex = "Default"
+  name_regex = "^Default"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -1654,7 +1654,7 @@ resource "alicloud_ecs_deployment_set" "default" {
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
- name_regex = "Default"
+ name_regex = "^Default"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {

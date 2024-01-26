@@ -7,27 +7,19 @@ description: |-
   Provides a list of Container Service Cluster's credential to be used by the alicloud_cs_cluster_credential resource.
 ---
 
-# alicloud\_cs\_cluster\_credential
+# alicloud_cs_cluster_credential
 
 This data source provides Container Service cluster credential on Alibaba Cloud.
 
--> **NOTE:** Available in v1.187.0+
+-> **NOTE:** Available since v1.187.0
 
 -> **NOTE:** This datasource can be used on all kinds of ACK clusters, including managed clusters, imported kubernetes clusters, serverless clusters and edge clusters. Please make sure that the target cluster is not in the failed state before using this datasource, since the api server of clusters in the failed state cannot be accessed.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
-data "alicloud_cs_cluster_credential" "auth" {
-  cluster_id                 = "cluster-id"
-  temporary_duration_minutes = 60
-}
-```
-
-```
-# Declare the data source
-data "alicloud_cs_managed_kubernetes_clusters" "k8s"{
+data "alicloud_cs_managed_kubernetes_clusters" "k8s" {
   name_regex     = "my-cluster"
   enable_details = false
 }

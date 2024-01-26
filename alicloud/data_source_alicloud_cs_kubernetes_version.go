@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v3/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v4/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
@@ -42,7 +42,6 @@ func dataSourceAlicloudCSKubernetesVersion() *schema.Resource {
 						"runtime": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Optional: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"name": {

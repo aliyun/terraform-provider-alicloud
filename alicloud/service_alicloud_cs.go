@@ -17,7 +17,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/alibabacloud-go/cs-20151215/v3/client"
+	"github.com/alibabacloud-go/cs-20151215/v4/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
 )
@@ -31,16 +31,17 @@ type CsClient struct {
 }
 
 type Component struct {
-	ComponentName string      `json:"component_name"`
-	Version       string      `json:"version"`
-	NextVersion   string      `json:"next_version"`
-	CanUpgrade    bool        `json:"can_upgrade"`
-	Required      bool        `json:"required"`
-	Status        string      `json:"status"`
-	ErrMessage    string      `json:"err_message"`
-	Config        string      `json:"config"`
-	ConfigSchema  string      `json:"config_schema"`
-	Error         interface{} `json:"error"`
+	ComponentName    string      `json:"component_name"`
+	Version          string      `json:"version"`
+	NextVersion      string      `json:"next_version"`
+	CanUpgrade       bool        `json:"can_upgrade"`
+	Required         bool        `json:"required"`
+	Status           string      `json:"status"`
+	ErrMessage       string      `json:"err_message"`
+	Config           string      `json:"config"`
+	ConfigSchema     string      `json:"config_schema"`
+	Error            interface{} `json:"error"`
+	SupportedActions []string    `json:"supported_actions"`
 }
 
 const (
@@ -269,19 +270,14 @@ func (s *CsClient) DescribeClusterAddonsMetadata(clusterId string) (map[string]*
 	}
 
 	for name, addon := range resp.Body {
-		fields := addon.(map[string]interface{})
-		version := fields["version"].(string)
-		nextVersion := fields["next_version"].(string)
-		canUpgrade := fields["can_upgrade"].(bool)
-		required := fields["required"].(bool)
-		config := fields["config"].(string)
-		c := &Component{
-			ComponentName: name,
-			Version:       version,
-			NextVersion:   nextVersion,
-			CanUpgrade:    canUpgrade,
-			Required:      required,
-			Config:        config,
+		c := &Component{}
+		bytes, err := json.Marshal(addon)
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(bytes, c)
+		if err != nil {
+			continue
 		}
 		result[name] = c
 	}
@@ -465,6 +461,24 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 	return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", id)), ResourceNotfound)
 }
 
+func (s *CsClient) CsKubernetesAddonTaskRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCsKubernetesAddonStatus(clusterId, addonName)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+		for _, failState := range failStates {
+			if object.Status == failState {
+				return object, object.Status, WrapError(Error(FailedToReachTargetStatusWithResponse, clusterId, object.ErrMessage))
+			}
+		}
+		return object, object.Status, nil
+	}
+}
+
 func (s *CsClient) CsKubernetesAddonStateRefreshFunc(clusterId string, addonName string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeCsKubernetesAddonInstance(clusterId, addonName)
@@ -566,6 +580,9 @@ func (s *CsClient) uninstallAddon(d *schema.ResourceData) error {
 	body := make([]*client.UnInstallClusterAddonsRequestAddons, 0)
 	b := &client.UnInstallClusterAddonsRequestAddons{
 		Name: tea.String(parts[1]),
+	}
+	if v, ok := d.GetOk("cleanup_cloud_resources"); ok {
+		b.CleanupCloudResources = tea.Bool(v.(bool))
 	}
 	body = append(body, b)
 
