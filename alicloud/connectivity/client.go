@@ -4909,7 +4909,6 @@ func (client *AliyunClient) NewComputenestClient() (*rpc.Client, error) {
 
 	return conn, nil
 }
-
 func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
 	productCode := "redisa"
 	endpoint := ""
@@ -4934,7 +4933,6 @@ func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
 func (client *AliyunClient) NewEipClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
@@ -4959,7 +4957,6 @@ func (client *AliyunClient) NewEipClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
 func (client *AliyunClient) NewCbwpClient() (*rpc.Client, error) {
 	productCode := "vpc"
 	endpoint := ""
@@ -5171,6 +5168,30 @@ func (client *AliyunClient) NewRealtimecomputeClient() (*rpc.Client, error) {
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			endpoint = "foasconsole.aliyuncs.com"
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+func (client *AliyunClient) NewVpngatewayClient() (*rpc.Client, error) {
+	productCode := "vpc"
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = "vpc.aliyuncs.com"
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}

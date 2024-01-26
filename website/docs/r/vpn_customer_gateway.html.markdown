@@ -2,12 +2,11 @@
 subcategory: "VPN Gateway"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpn_customer_gateway"
-sidebar_current: "docs-alicloud-resource-vpn-customer-gateway"
 description: |-
   Provides a Alicloud VPN customer gateway resource.
 ---
 
-# alicloud\_vpn_customer_gateway
+# alicloud_vpn_customer_gateway
 
 Provides a VPN customer gateway resource.
 
@@ -15,52 +14,58 @@ Provides a VPN customer gateway resource.
 
 For information about VPN customer gateway and how to use it, see [What is VPN customer gateway](https://www.alibabacloud.com/help/en/doc-detail/120368.html).
 
+-> **NOTE:** Available since v1.210.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_vpn_customer_gateway" "foo" {
-  name        = "vpnCgwNameExample"
-  ip_address  = "43.104.22.228"
-  description = "vpnCgwDescriptionExample"
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "ap-southeast-2"
+}
+
+resource "alicloud_vpn_customer_gateway" "default" {
+  description           = "defaultCustomerGateway"
+  ip_address            = "4.3.2.10"
+  asn                   = "1219002"
+  customer_gateway_name = var.name
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
-
-* `name` - (Optional) The name of the VPN customer gateway. Defaults to null.
+* `asn` - (Optional, ForceNew) Asn.
+* `customer_gateway_name` - (Optional) The name of the customer gateway.
+* `description` - (Optional) The description of the customer gateway.
 * `ip_address` - (Required, ForceNew) The IP address of the customer gateway.
-* `description` - (Optional) The description of the VPN customer gateway instance.
-* `asn` - (Optional, ForceNew, Available in v1.160.0+) The autonomous system number of the gateway device in the data center. The `asn` is a 4-byte number. You can enter the number in two segments and separate the first 16 bits from the following 16 bits with a period (.). Enter the number in each segment in the decimal format.
+* `tags` - (Optional, Map) tag.
+
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `name` - (Deprecated since v1.216.0). Field 'name' has been deprecated from provider version 1.216.0. New field 'customer_gateway_name' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The time when the customer gateway was created.
 
-* `id` - The ID of the VPN customer gateway instance id.
-
-
-#### Timeouts
-
--> **NOTE:** Available in 1.160.0+.
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the vpn customer gateway.
-* `update` - (Defaults to 1 mins) Used when update the vpn customer gateway.
-* `delete` - (Defaults to 1 mins) Used when delete the vpn customer gateway.
-
+* `create` - (Defaults to 5 mins) Used when create the Customer Gateway.
+* `delete` - (Defaults to 5 mins) Used when delete the Customer Gateway.
+* `update` - (Defaults to 5 mins) Used when update the Customer Gateway.
 
 ## Import
 
 VPN customer gateway can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_vpn_customer_gateway.example cgw-abc123456
+$ terraform import alicloud_vpn_customer_gateway.example <id>
 ```
-
-
-

@@ -124,7 +124,7 @@ func testAccCheckVpnCustomerGatewayDestroy(s *terraform.State) error {
 	return nil
 }
 
-func TestAccAlicloudVPNCustomerGatewayBasic(t *testing.T) {
+func TestAccAliCloudVPNCustomerGatewayBasic(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default"
@@ -191,7 +191,7 @@ func TestAccAlicloudVPNCustomerGatewayBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPNCustomerGatewayMulti(t *testing.T) {
+func TestAccAliCloudVPNCustomerGatewayMulti(t *testing.T) {
 	var v vpc.DescribeCustomerGatewayResponse
 
 	resourceId := "alicloud_vpn_customer_gateway.default.4"
@@ -276,7 +276,7 @@ resource "alicloud_vpn_customer_gateway" "default" {
 `, rand)
 }
 
-func TestAccAlicloudVPNCustomerGateway_basic2(t *testing.T) {
+func TestAccAliCloudVPNCustomerGateway_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpn_customer_gateway.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpnCustomerGatewayMap3)
@@ -337,3 +337,215 @@ data "alicloud_vswitches" "default" {
 
 `, name)
 }
+
+// Test VPNGateway CustomerGateway. >>> Resource test cases, automatically generated.
+// Case 3650
+func TestAccAliCloudVPNGatewayCustomerGateway_basic3650(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_customer_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayCustomerGatewayMap3650)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayCustomerGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpngatewaycustomergateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPNGatewayCustomerGatewayBasicDependence3650)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_address":            "1.1.1.1",
+					"customer_gateway_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_address":            "1.1.1.1",
+						"customer_gateway_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "defaultCustomerGateway",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "defaultCustomerGateway",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"customer_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customer_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "defaultCustomerGateway_new",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "defaultCustomerGateway_new",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"customer_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customer_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":           "defaultCustomerGateway",
+					"ip_address":            "1.1.1.1",
+					"asn":                   "1111",
+					"customer_gateway_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":           "defaultCustomerGateway",
+						"ip_address":            "1.1.1.1",
+						"asn":                   "1111",
+						"customer_gateway_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudVPNGatewayCustomerGatewayMap3650 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudVPNGatewayCustomerGatewayBasicDependence3650(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 3650  twin
+func TestAccAliCloudVPNGatewayCustomerGateway_basic3650_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpn_customer_gateway.default"
+	ra := resourceAttrInit(resourceId, AlicloudVPNGatewayCustomerGatewayMap3650)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VPNGatewayServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVPNGatewayCustomerGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%svpngatewaycustomergateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVPNGatewayCustomerGatewayBasicDependence3650)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":           "defaultCustomerGateway_new",
+					"ip_address":            "1.1.1.1",
+					"asn":                   "1111",
+					"customer_gateway_name": name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":           "defaultCustomerGateway_new",
+						"ip_address":            "1.1.1.1",
+						"asn":                   "1111",
+						"customer_gateway_name": name,
+						"tags.%":                "2",
+						"tags.Created":          "TF",
+						"tags.For":              "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test VPNGateway CustomerGateway. <<< Resource test cases, automatically generated.
