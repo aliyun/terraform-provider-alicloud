@@ -250,7 +250,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"tunnel_options_specification": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -566,7 +566,7 @@ func resourceAliCloudVPNGatewayVpnConnectionCreate(d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("tunnel_options_specification"); ok {
 		tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
-		for _, dataLoop1 := range v.(*schema.Set).List() {
+		for _, dataLoop1 := range v.([]interface{}) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
 			dataLoop1Map["CustomerGatewayId"] = dataLoop1Tmp["customer_gateway_id"]
@@ -1069,7 +1069,7 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 		update = true
 		if v, ok := d.GetOk("tunnel_options_specification"); ok {
 			tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
-			for _, dataLoop := range v.(*schema.Set).List() {
+			for _, dataLoop := range v.([]interface{}) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
 				dataLoopMap["EnableDpd"] = dataLoopTmp["enable_dpd"]
