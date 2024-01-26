@@ -272,25 +272,25 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{
 					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
 				}, false),
-				Removed: "Field `operator` has been removed from provider version 1.215.1. New field `escalations_critical.comparison_operator` instead.",
+				Removed: "Field `operator` has been removed from provider version 1.216.0. New field `escalations_critical.comparison_operator` instead.",
 			},
 			"statistics": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				Removed:  "Field `statistics` has been removed from provider version 1.215.1. New field `escalations_critical.statistics` instead.",
+				Removed:  "Field `statistics` has been removed from provider version 1.216.0. New field `escalations_critical.statistics` instead.",
 			},
 			"threshold": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				Removed:  "Field `threshold` has been removed from provider version 1.215.1. New field `escalations_critical.threshold` instead.",
+				Removed:  "Field `threshold` has been removed from provider version 1.216.0. New field `escalations_critical.threshold` instead.",
 			},
 			"triggered_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
-				Removed:  "Field `triggered_count` has been removed from provider version 1.215.1. New field `escalations_critical.times` instead.",
+				Removed:  "Field `triggered_count` has been removed from provider version 1.216.0. New field `escalations_critical.times` instead.",
 			},
 			"notify_type": {
 				Type:         schema.TypeInt,

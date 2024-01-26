@@ -119,14 +119,14 @@ The following arguments are supported:
     - TotalCapacity：[0, 1000]
 * `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id. 
 * `cooldown` - (Optional) The cooldown time of the scaling rule. This parameter is applicable only to simple scaling rules. Value range: [0, 86,400], in seconds. The default value is empty，if not set, the return value will be 0, which is the default value of integer.
-* `scaling_rule_type` - (Optional, ForceNew, Available in 1.58.0+) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
-* `estimated_instance_warmup` - (Optional, Available in 1.58.0+) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
-* `metric_name` - (Optional, Available in 1.58.0+) A CloudMonitor metric name.
-* `target_value` - (Optional, Available in 1.58.0+) The target value for the metric.
-* `disable_scale_in` - (Optional, Available in 1.58.0+) Indicates whether scale in by the target tracking policy is disabled. Default to false.
-* `step_adjustment` - (Optional, Available in 1.58.0+) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
+* `scaling_rule_type` - (Optional, ForceNew, Available since v1.58.0) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
+* `estimated_instance_warmup` - (Optional, Available since v1.58.0) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
+* `metric_name` - (Optional, Available since v1.58.0) A CloudMonitor metric name.
+* `target_value` - (Optional, Available since v1.58.0) The target value for the metric.
+* `disable_scale_in` - (Optional, Available since v1.58.0) Indicates whether scale in by the target tracking policy is disabled. Default to false.
+* `step_adjustment` - (Optional, Available since v1.58.0) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
 * `ari` - (Optional) The unique identifier of the scaling rule.
-* `alarm_dimension` - (Optional, ForceNew, Available in 1.215.0+) AlarmDimension for StepScalingRule. See [`alarm_dimension`](#alarm_dimension) below.
+* `alarm_dimension` - (Optional, ForceNew, Available since v1.216.0) AlarmDimension for StepScalingRule. See [`alarm_dimension`](#alarm_dimension) below.
 
 
 ### `step_adjustment`
