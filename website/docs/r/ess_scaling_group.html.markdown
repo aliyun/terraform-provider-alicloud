@@ -110,7 +110,7 @@ The following arguments are supported:
   **NOTE:** From version 1.204.1, `min_size` can be set to `2000`.
 * `max_size` - (Required) Maximum number of ECS instances in the scaling group. Value range: [0, 2000].
   **NOTE:** From version 1.204.1, `max_size` can be set to `2000`.
-* `desired_capacity` - (Optional, Available in 1.76.0+) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
+* `desired_capacity` - (Optional, Available since v1.76.0) Expected number of ECS instances in the scaling group. Value range: [min_size, max_size].
 * `scaling_group_name` - (Optional) Name shown for the scaling group, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain numbers, underscores `_`, hyphens `-`, and decimal points `.`. If this parameter is not specified, the default value is ScalingGroupId.
 * `default_cooldown` - (Optional) Default cool-down time (in seconds) of the scaling group. Value range: [0, 86400]. The default value is 300s.
 * `vswitch_id` - (Deprecated) It has been deprecated from version 1.7.1 and new field 'vswitch_ids' replaces it.
@@ -129,21 +129,21 @@ The following arguments are supported:
       targeting your `alicloud_slb_listener` in order to make sure the listener with its HealthCheck configuration is ready before creating your scaling group).
     - The Server Load Balancer instance attached with VPC-type ECS instances cannot be attached to the scaling group.
     - The default weight of an ECS instance attached to the Server Load Balancer instance is 50.
-* `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, BALANCE or COST_OPTIMIZED(Available in 1.54.0+).
-* `on_demand_base_capacity` - (Optional, Available in v1.54.0+) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
-* `on_demand_percentage_above_base_capacity` - (Optional, Available in v1.54.0+) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
-* `spot_instance_pools` - (Optional, Available in v1.54.0+) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
-* `spot_instance_remedy` - (Optional, Available in v1.54.0+) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
-* `group_deletion_protection` - (Optional, Available in v1.102.0+) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
-* `launch_template_id` - (Optional, Available in v1.141.0+) Instance launch template ID, scaling group obtains launch configuration from instance launch template, see [Launch Template](https://www.alibabacloud.com/help/doc-detail/73916.html). Creating scaling group from launch template enable group automatically.
-* `launch_template_version` - (Optional, Available in v1.159.0+) The version number of the launch template. Valid values are the version number, `Latest`, or `Default`, Default value: `Default`.
-* `group_type` - (Optional, ForceNew, Available in v1.164.0+) Resource type within scaling group. Optional values: ECS, ECI. Default to ECS.
-* `health_check_type` - (Optional, Available in v1.193.0+) Resource type within scaling group. Optional values: ECS, NONE. Default to ECS.
-* `tags` - (Optional, Available in v1.160.0+) A mapping of tags to assign to the resource.
+* `multi_az_policy` - (Optional, ForceNew) Multi-AZ scaling group ECS instance expansion and contraction strategy. PRIORITY, BALANCE or COST_OPTIMIZED(Available since v1.54.0).
+* `on_demand_base_capacity` - (Optional, Available since v1.54.0) The minimum amount of the Auto Scaling group's capacity that must be fulfilled by On-Demand Instances. This base portion is provisioned first as your group scales.
+* `on_demand_percentage_above_base_capacity` - (Optional, Available since v1.54.0) Controls the percentages of On-Demand Instances and Spot Instances for your additional capacity beyond OnDemandBaseCapacity.  
+* `spot_instance_pools` - (Optional, Available since v1.54.0) The number of Spot pools to use to allocate your Spot capacity. The Spot pools is composed of instance types of lowest price.
+* `spot_instance_remedy` - (Optional, Available since v1.54.0) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
+* `group_deletion_protection` - (Optional, Available since v1.102.0) Specifies whether the scaling group deletion protection is enabled. `true` or `false`, Default value: `false`.            
+* `launch_template_id` - (Optional, Available since v1.141.0) Instance launch template ID, scaling group obtains launch configuration from instance launch template, see [Launch Template](https://www.alibabacloud.com/help/doc-detail/73916.html). Creating scaling group from launch template enable group automatically.
+* `launch_template_version` - (Optional, Available since v1.159.0) The version number of the launch template. Valid values are the version number, `Latest`, or `Default`, Default value: `Default`.
+* `group_type` - (Optional, ForceNew, Available since v1.164.0) Resource type within scaling group. Optional values: ECS, ECI. Default to ECS.
+* `health_check_type` - (Optional, Available since v1.193.0) Resource type within scaling group. Optional values: ECS, NONE. Default to ECS.
+* `tags` - (Optional, Available since v1.160.0) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `protected_instances` - (Optional, Available in v1.182.0+) Set or unset instances within group into protected status.
-* `launch_template_override` - (Optional, Available in 1.216.0+) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature..  See [`launch_template_override`](#launch_template_override) below for details.
+* `protected_instances` - (Optional, Available since v1.182.0) Set or unset instances within group into protected status.
+* `launch_template_override` - (Optional, Available since v1.216.0) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature..  See [`launch_template_override`](#launch_template_override) below for details.
 
 ### `launch_template_override`
 

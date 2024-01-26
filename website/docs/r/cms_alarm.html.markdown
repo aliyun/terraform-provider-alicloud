@@ -112,15 +112,15 @@ The following arguments are supported:
 * `escalations_info` - (Optional, Set, Available since v1.94.0) A configuration of critical info. See [`escalations_info`](#escalations_info) below.
 * `escalations_warn` - (Optional, Set, Available since v1.94.0) A configuration of critical warn. See [`escalations_warn`](#escalations_warn) below.
 * `prometheus` - (Optional, Set, Available since v1.179.0) The Prometheus alert rule. See [`prometheus`](#prometheus) below. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
-* `targets` - (Optional, Set, Available since v1.215.1) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
+* `targets` - (Optional, Set, Available since v1.216.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
 * `tags` - (Optional, Available since v1.180.0) A mapping of tags to assign to the resource.
 * `dimensions` - (Optional, Map, Deprecated since v1.173.0) Field `dimensions` has been deprecated from provider version 1.173.0. New field `metric_dimensions` instead.
 * `start_time` - (Optional, Int, Deprecated since v1.50.0) Field `start_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.
 * `end_time` - (Optional, Int, Deprecated since v1.50.0) Field `end_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.
-* `operator` - (Removed since v1.215.1) Field `operator` has been removed from provider version 1.215.1. New field `escalations_critical.comparison_operator` instead.
-* `statistics` - (Removed since v1.215.1) Field `statistics` has been removed from provider version 1.215.1. New field `escalations_critical.statistics` instead.
-* `threshold` - (Removed since v1.215.1) Field `threshold` has been removed from provider version 1.215.1. New field `escalations_critical.threshold` instead.
-* `triggered_count` - (Removed since v1.215.1) Field `triggered_count` has been removed from provider version 1.215.1. New field `escalations_critical.times` instead.
+* `operator` - (Removed since v1.216.0) Field `operator` has been removed from provider version 1.216.0. New field `escalations_critical.comparison_operator` instead.
+* `statistics` - (Removed since v1.216.0) Field `statistics` has been removed from provider version 1.216.0. New field `escalations_critical.statistics` instead.
+* `threshold` - (Removed since v1.216.0) Field `threshold` has been removed from provider version 1.216.0. New field `escalations_critical.threshold` instead.
+* `triggered_count` - (Removed since v1.216.0) Field `triggered_count` has been removed from provider version 1.216.0. New field `escalations_critical.times` instead.
 * `notify_type` - (Removed since v1.50.0) Field `notify_type` has been removed from provider version 1.50.0.
 
 -> **NOTE:** Each resource supports the creation of one of the following three levels.

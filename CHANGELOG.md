@@ -1,4 +1,43 @@
 ## 1.216.0 (Unreleased)
+
+- **New Resource:** `alicloud_ens_image` [GH-6903]
+- **New Resource:** `alicloud_ens_disk_instance_attachment` [GH-6903]
+- **New Resource:** `alicloud_ens_instance_security_group_attachment` [GH-6903]
+- **New Resource:** `alicloud_vpc_ipv6_address` [GH-6919]
+- **New Datasource:** `alicloud_vpn_gateway_zones` [GH-6914]
+
+ENHANCEMENTS:
+
+- resource/alicloud_vpn_gateway: add new attribute resource_group_id, disaster_recovery_vswitch_id, vpn_type, payment_type; resource/alicloud_vpn_customer_gateway: add new attribute customer_gateway_name, tags, create_time; resource/alicloud_vpn_connection: add new attribute auto_config_route, resource_group_id, tags, tunnel_options_specification. [GH-6421]
+- resource/alicloud_cms_alarm: Added the field targets; Removed the field operator, statistics, threshold, triggered_count. [GH-6825]
+- resource/alicloud_polardb_cluster: specify minor version upgrade. [GH-6850]
+- resource/alicloud_ess_scaling_rule: add an attribute alarm_dimension. [GH-6861]
+- resource/alicloud_ess_eci_scaling_configuration: active_deadline_seconds is greater than zero. [GH-6866]
+- resource/alicloud_eci_container_group: add termination_grace_period_seconds; add containers.lifecycle_pre_stop_handler_exec. [GH-6877]
+- resource/alicloud_ess_scaling_configuration: add instance_type_override. [GH-6886]
+- resource/alicloud_ess_scaling_group: add launchTemplateOverride. [GH-6887]
+- resource/alicloud_kms_instance: add new attribute log, log_storage, period. [GH-6888]
+- resource/alicloud_ess_eci_scaling_configuration: Add lifecycle_pre_stop_handler_execs. [GH-6897]
+- resource/alicloud_cen_transit_router_route_entry: add retry error code and optimized the waiting logic creating. [GH-6901]
+- resource/alicloud_eip_address: add new attributes ip_address, instance_type, allocation_id. [GH-6902]
+- resource/alicloud_ens_disk: modify convertEnsInstanceInstanceChargeTypeRequest; resource/alicloud_ens_eip: modify convertEnsInstanceInstanceChargeTypeRequest; resource/alicloud_ens_instance: add new attribute amount, auto_renew_period, auto_use_coupon, billing_cycle, force_stop, include_data_disks, ip_type, order_id, private_ip_address, vswitch_id. [GH-6903]
+- resource/alicloud_eci_container_group: add spot_strategy; add spot_price_limit. [GH-6904]
+- resource/alicloud_vpn_connection: modify attribute tunnel_options_specification. [GH-6906]
+- resource/alicloud_kvstore_instance: Fixed the update error caused by security_ips error value; Removed the ForceNew for field shard_count; Supported for new action AddShardingNode, DeleteShardingNode. [GH-6913]
+- resource/alicloud_vpn_connection: modify attribute type health_check_config.enable, bgp_config.enable; resource/alicloud_vpn_gateway: remove default value of auto_pay, modify attribute type of bandwidth; resource/alicloud_vpn_customer_gateway: modify attribute type of asn. [GH-6915]
+- resource/alicloud_eipanycast_anycast_eip_address: support set resource_group_id while creating. [GH-6919]
+- docs: fix examples. [GH-6883]
+- docs: Improved the document ddoscoo_instance, ddoscoo_instances. [GH-6889]
+- docs: Improved the document sag_qos_car example. [GH-6898]
+- docs: modify ga endpoint_group description; modify subcategory of ehpc_cluster and ecs_image_component. [GH-6899]
+- testcase: Fixed alicloud_slb_server_group test case. [GH-6905]
+- testcase: Fixed Bastionhost test case. [GH-6909]
+
+BUG FIXES:
+
+- resource/alicloud_alikafka_sasl_user: Fixed the diff error caused by field type. [GH-6895]
+- resource/alicloud_ram_saml_provider: Fixed the diff error caused by field encodedsaml_metadata_document. [GH-6896]
+
 ## 1.215.0 (January 19, 2024)
 
 - **New Resource:** `alicloud_arms_grafana_workspace` ([#6835](https://github.com/aliyun/terraform-provider-alicloud/issues/6835))
