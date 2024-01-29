@@ -96,7 +96,8 @@ The following arguments are supported:
   256 characters in length and cannot start with http:// or https://.
 * `security_group_id` - (Optional) ID of the security group used to create new instance. It is conflict
   with `security_group_ids`.
-* `container_group_name` - (Optional) The name of the container group.
+* `container_group_name` - (Optional) The name of the container group. which must contain 2-128 characters (
+  English), starting with numbers, English lowercase letters , and can contain number, and hypens `-`.
 * `restart_policy` - (Optional) The restart policy of the container group. Default to `Always`.
 * `cpu` - (Optional) The amount of CPU resources allocated to the container group.
 * `memory` - (Optional) The amount of memory resources allocated to the container group.

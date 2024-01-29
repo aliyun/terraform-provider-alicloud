@@ -106,7 +106,7 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-test-acc-alicloud-eci-container-group%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssEciScalingConfiguration)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -121,8 +121,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 					"scaling_group_id":                 "${alicloud_ess_scaling_group.default.id}",
 					"scaling_configuration_name":       name,
 					"description":                      "desc",
-					"security_group_id":                "sg-bp1hi5tpb5c3e51a15pf",
-					"container_group_name":             "containerGroupName",
+					"security_group_id":                "${local.alicloud_security_group_id}",
+					"container_group_name":             name,
 					"restart_policy":                   "restartPolicy",
 					"cpu":                              "2",
 					"memory":                           "4",
@@ -285,8 +285,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 						"scaling_group_id":                 CHECKSET,
 						"scaling_configuration_name":       name,
 						"description":                      "desc",
-						"security_group_id":                "sg-bp1hi5tpb5c3e51a15pf",
-						"container_group_name":             "containerGroupName",
+						"security_group_id":                CHECKSET,
+						"container_group_name":             name,
 						"restart_policy":                   "restartPolicy",
 						"cpu":                              "2",
 						"memory":                           "4",
@@ -334,8 +334,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 					"active":                           "true",
 					"force_delete":                     "true",
 					"description":                      "newDesc",
-					"security_group_id":                "sg-bp1hi5tpb5c3e51a15pf2",
-					"container_group_name":             "newName",
+					"security_group_id":                "${local.alicloud_security_group_id1}",
+					"container_group_name":             "1new-name",
 					"restart_policy":                   "newPolicy",
 					"cpu":                              "4",
 					"memory":                           "8",
@@ -502,8 +502,8 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 						"active":                           "true",
 						"force_delete":                     "true",
 						"description":                      "newDesc",
-						"security_group_id":                "sg-bp1hi5tpb5c3e51a15pf2",
-						"container_group_name":             "newName",
+						"security_group_id":                CHECKSET,
+						"container_group_name":             "1new-name",
 						"restart_policy":                   "newPolicy",
 						"cpu":                              "4",
 						"memory":                           "8",
@@ -582,10 +582,14 @@ func resourceEssEciScalingConfiguration(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
+	data "alicloud_security_groups" "default" {
+	  name_regex     = "^tf_test_acc_alicloud_eci_container_group$"
+	}
+	
 	resource "alicloud_security_group" "default1" {
-	  name   = "${var.name}"
-	  vpc_id = "${alicloud_vpc.default.id}"
+		count = length(data.alicloud_security_groups.default.ids) > 1 ? 0 : 1
+		vpc_id = "${alicloud_vpc.default.id}"
+		name = "tf_test_acc_alicloud_eci_container_group"
 	}
 
 	resource "alicloud_ess_scaling_group" "default" {
@@ -595,5 +599,14 @@ func resourceEssEciScalingConfiguration(name string) string {
 		removal_policies = ["OldestInstance", "NewestInstance"]
 		vswitch_ids = ["${alicloud_vswitch.default.id}"]
 		group_type = "ECI"
-	}`, EcsInstanceCommonTestCase, name)
+	}
+	
+
+    locals {
+        alicloud_security_group_id = length(data.alicloud_security_groups.default.ids) > 0 ? data.alicloud_security_groups.default.ids.0 : concat(alicloud_security_group.default[*].id, [""])[0]
+        alicloud_security_group_id1 = length(data.alicloud_security_groups.default.ids) > 1 ? data.alicloud_security_groups.default.ids.1 : concat(alicloud_security_group.default[*].id, [""])[0]
+ 
+	}
+    
+	`, EcsInstanceCommonTestCase, name)
 }
