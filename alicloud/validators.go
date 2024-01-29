@@ -671,36 +671,3 @@ func ValidateRFC3339TimeString(allowEmpty bool) schema.SchemaValidateFunc {
 		return
 	}
 }
-
-// StringLenAtLeast returns a SchemaValidateFunc which tests if the provided value
-// is of type string and has length at least min (inclusive)
-func StringLenAtLeast(min int) schema.SchemaValidateFunc {
-	return func(i interface{}, k string) (s []string, es []error) {
-
-		v, ok := i.(string)
-		if !ok {
-			es = append(es, fmt.Errorf("expected type of %s to be string", k))
-			return
-		}
-
-		valueLen := len(strings.TrimSpace(v))
-		if valueLen < min {
-			if skipResourceSchemaValidation() {
-				s = append(s, fmt.Sprintf("expected length of %s to be at least (%d), got (%d)", k, min, valueLen))
-			} else {
-				es = append(es, fmt.Errorf("expected length of %s to be at least (%d), got (%d) %s", k, min, valueLen, skipResourceSchemaValidationWarning))
-			}
-		}
-		return
-	}
-}
-
-func validateRedisConfig(v interface{}, k string) (ws []string, errors []error) {
-	value, _ := v.(map[string]interface{})
-
-	if len(value) < 1 {
-		errors = append(errors, fmt.Errorf("invalid value for %s (%s)", k, value))
-	}
-
-	return
-}

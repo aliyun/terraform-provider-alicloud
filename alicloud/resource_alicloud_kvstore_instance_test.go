@@ -189,7 +189,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -225,13 +225,11 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"security_ip_group_name": "tf",
-					"security_ips":           []string{"10.23.12.24"},
+					"security_ips": []string{"10.23.12.24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"security_ip_group_name": "tf",
-						"security_ips.#":         "1",
+						"security_ips.#": "1",
 					}),
 				),
 			},
@@ -257,11 +255,24 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_name": name + "_update",
+					"db_instance_name": REMOVEKEY,
+					"instance_name":    name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_name": name + "_update",
+						"instance_name":    name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_name": name + "_update2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_name": name + "_update2",
+						"instance_name":    name + "_update2",
 					}),
 				),
 			},
@@ -291,6 +302,16 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"zone_id":           CHECKSET,
 						"vswitch_id":        CHECKSET,
 						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enable": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enable": "Enable",
 					}),
 				),
 			},
@@ -366,6 +387,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"security_ips":                []string{"10.0.0.1"},
 					"db_instance_name":            name,
 					"vpc_auth_mode":               "Open",
+					"ssl_enable":                  "Disable",
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
@@ -398,6 +420,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"security_ips.#":                "1",
 						"db_instance_name":              name,
 						"vpc_auth_mode":                 "Open",
+						"ssl_enable":                    "Disable",
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
@@ -443,11 +466,10 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":   "redis.shard.with.proxy.small.ce",
+					"instance_class":   "redis.shard.small.ce",
 					"db_instance_name": name,
 					"instance_type":    "Redis",
 					"engine_version":   "6.0",
-					"shard_count":      "2",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -459,11 +481,10 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":    "redis.shard.with.proxy.small.ce",
+						"instance_class":    "redis.shard.small.ce",
 						"db_instance_name":  name,
 						"instance_type":     "Redis",
 						"engine_version":    "6.0",
-						"shard_count":       "2",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "acceptance test",
@@ -475,30 +496,10 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"shard_count": "4",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"shard_count": "4",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"shard_count": "2",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"shard_count": "2",
-					}),
-				),
-			},
-			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -520,7 +521,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -528,7 +529,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -564,11 +565,11 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class": "redis.shard.with.proxy.mid.ce",
+					"instance_class": "redis.shard.mid.ce",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class": "redis.shard.with.proxy.mid.ce",
+						"instance_class": "redis.shard.mid.ce",
 					}),
 				),
 			},
@@ -667,7 +668,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":              "redis.shard.with.proxy.small.ce",
+					"instance_class":              "redis.shard.small.ce",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"security_ips":                []string{"10.0.0.1"},
@@ -676,7 +677,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -699,7 +700,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":                "redis.shard.with.proxy.small.ce",
+						"instance_class":                "redis.shard.small.ce",
 						"instance_release_protection":   "false",
 						"resource_group_id":             CHECKSET,
 						"security_ips.#":                "1",
@@ -708,7 +709,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -754,7 +755,6 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					"db_instance_name": name,
 					"instance_type":    "Redis",
 					"engine_version":   "7.0",
-					"shard_count":      "2",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -770,7 +770,6 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"db_instance_name":  name,
 						"instance_type":     "Redis",
 						"engine_version":    "7.0",
-						"shard_count":       "2",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "acceptance test",
@@ -785,7 +784,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -807,7 +806,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -815,7 +814,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -849,26 +848,35 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					}),
 				),
 			},
-			// there is no more quota for this class on multi-zone
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
-			//		"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
-			//		"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
-			//		"timeouts": []map[string]interface{}{
-			//			{
-			//				"update": "1h",
-			//			},
-			//		},
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"zone_id":           CHECKSET,
-			//			"vswitch_id":        CHECKSET,
-			//			"secondary_zone_id": CHECKSET,
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
+					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
+					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"timeouts": []map[string]interface{}{
+						{
+							"update": "1h",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_id":           CHECKSET,
+						"vswitch_id":        CHECKSET,
+						"secondary_zone_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enable": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enable": "Enable",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_class": "redis.shard.mid.ce",
@@ -935,22 +943,34 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"ssl_enable": "Disable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enable": "Disable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.shard.small.ce",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"security_ip_group_name":      "tf",
 					"security_ips":                []string{"10.0.0.1"},
 					"db_instance_name":            name,
 					"vpc_auth_mode":               "Open",
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
 					},
+					"zone_id":                   "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
+					"vswitch_id":                "${data.alicloud_vswitches.default.ids.0}",
+					"secondary_zone_id":         REMOVEKEY,
 					"maintain_start_time":       "04:00Z",
 					"maintain_end_time":         "06:00Z",
 					"backup_period":             []string{"Wednesday"},
@@ -968,17 +988,19 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"instance_class":                "redis.shard.small.ce",
 						"instance_release_protection":   "false",
 						"resource_group_id":             CHECKSET,
-						"security_ip_group_name":        "tf",
 						"security_ips.#":                "1",
 						"db_instance_name":              name,
 						"vpc_auth_mode":                 "Open",
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
+						"zone_id":                       CHECKSET,
+						"vswitch_id":                    CHECKSET,
+						"secondary_zone_id":             REMOVEKEY,
 						"maintain_start_time":           "04:00Z",
 						"maintain_end_time":             "06:00Z",
 						"backup_period.#":               "1",
@@ -1049,7 +1071,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1071,7 +1093,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1079,7 +1101,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -1207,7 +1229,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -1239,7 +1261,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -1315,7 +1337,7 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1558,7 +1580,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "modify_mode", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "security_ip_group_name", "enable_backup_log"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1612,7 +1634,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1620,7 +1642,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -1757,7 +1779,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -1788,7 +1810,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -1891,7 +1913,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1899,7 +1921,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -2038,7 +2060,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -2071,7 +2093,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -2184,7 +2206,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2192,7 +2214,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 					}),
 				),
 			},
@@ -2322,7 +2344,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"maxmemory-policy":       "volatile-lru",
+						"EvictionPolicy":         "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -2354,7 +2376,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.maxmemory-policy":       "volatile-lru",
+						"config.EvictionPolicy":         "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -2428,7 +2450,6 @@ func KvstoreInstancePrePaidDependence(name string) string {
 	}
 	`)
 }
-
 func KvstoreMemcacheInstanceVpcTestdependence(name string) string {
 	return fmt.Sprintf(`
 	data "alicloud_kvstore_zones" "default"{
