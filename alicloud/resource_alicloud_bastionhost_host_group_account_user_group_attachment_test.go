@@ -9,10 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *testing.T) {
+func TestAccAliCloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_bastionhost_host_group_account_user_group_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudBastionhostHostGroupAccountUserGroupAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudBastionhostHostGroupAccountUserGroupAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeBastionhostHostGroupAccountUserGroupAttachment")
@@ -20,7 +20,7 @@ func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *tes
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sbastionhosthostgroupaccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudBastionhostHostGroupAccountUserGroupAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostHostGroupAccountUserGroupAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -33,8 +33,8 @@ func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *tes
 				Config: testAccConfig(map[string]interface{}{
 					"user_group_id":      "${alicloud_bastionhost_user_group.default.user_group_id}",
 					"host_group_id":      "${alicloud_bastionhost_host_group.default.host_group_id}",
-					"instance_id":        "${alicloud_bastionhost_host_account.default[0].instance_id}",
-					"host_account_names": []string{"${alicloud_bastionhost_host_account.default[0].host_account_name}", "${alicloud_bastionhost_host_account.default[1].host_account_name}"},
+					"instance_id":        "${alicloud_bastionhost_host_account.default.0.instance_id}",
+					"host_account_names": []string{"${alicloud_bastionhost_host_account.default.0.host_account_name}", "${alicloud_bastionhost_host_account.default.1.host_account_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -47,7 +47,7 @@ func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *tes
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"host_account_names": []string{"${alicloud_bastionhost_host_account.default[0].host_account_name}"},
+					"host_account_names": []string{"${alicloud_bastionhost_host_account.default.0.host_account_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -57,7 +57,7 @@ func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *tes
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"host_account_names": []string{"${alicloud_bastionhost_host_account.default[0].host_account_name}", "${alicloud_bastionhost_host_account.default[1].host_account_name}", "${alicloud_bastionhost_host_account.default[2].host_account_name}"},
+					"host_account_names": []string{"${alicloud_bastionhost_host_account.default.0.host_account_name}", "${alicloud_bastionhost_host_account.default.1.host_account_name}", "${alicloud_bastionhost_host_account.default.2.host_account_name}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -74,40 +74,74 @@ func TestAccAlicloudBastionhostHostGroupAccountUserGroupAttachment_basic0(t *tes
 	})
 }
 
-var AlicloudBastionhostHostGroupAccountUserGroupAttachmentMap0 = map[string]string{
+var AliCloudBastionhostHostGroupAccountUserGroupAttachmentMap0 = map[string]string{
 	"instance_id": CHECKSET,
 }
 
-func AlicloudBastionhostHostGroupAccountUserGroupAttachmentBasicDependence0(name string) string {
+func AliCloudBastionhostHostGroupAccountUserGroupAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_bastionhost_instances" "default" {}
+	variable "name" {
+		default = "%s"
+	}
 
-resource "alicloud_bastionhost_host" "default" {
- instance_id          = data.alicloud_bastionhost_instances.default.ids.0
- host_name            = var.name
- active_address_type  = "Private"
- host_private_address = "172.16.0.10"
- os_type              = "Linux"
- source               = "Local"
-}
-resource "alicloud_bastionhost_host_account" "default" {
- count = 3
- instance_id       = alicloud_bastionhost_host.default.instance_id
- host_account_name = "${var.name}-${count.index}"
- host_id           = alicloud_bastionhost_host.default.host_id
- protocol_name     = "SSH"
- password          = "YourPassword12345"
-}
-resource "alicloud_bastionhost_host_group" "default" {
- instance_id     = data.alicloud_bastionhost_instances.default.ids.0
- host_group_name = var.name
-}
-resource "alicloud_bastionhost_user_group" "default" {
-  instance_id    = data.alicloud_bastionhost_instances.default.ids.0
-  user_group_name      = var.name
-}
+	data "alicloud_bastionhost_instances" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_security_group" "default" {
+  		count  = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_bastionhost_instance" "default" {
+  		count              = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		description        = var.name
+  		license_code       = "bhah_ent_50_asset"
+  		plan_code          = "cloudbastion"
+  		storage            = "5"
+  		bandwidth          = "5"
+  		period             = "1"
+  		vswitch_id         = data.alicloud_vswitches.default.ids.0
+  		security_group_ids = [alicloud_security_group.default.0.id]
+	}
+
+	resource "alicloud_bastionhost_host" "default" {
+  		instance_id          = local.instance_id
+  		host_name            = var.name
+  		active_address_type  = "Private"
+  		host_private_address = "172.16.0.10"
+  		os_type              = "Linux"
+  		source               = "Local"
+	}
+
+	resource "alicloud_bastionhost_host_account" "default" {
+  		count             = 3
+  		instance_id       = alicloud_bastionhost_host.default.instance_id
+  		host_account_name = "${var.name}-${count.index}"
+  		host_id           = alicloud_bastionhost_host.default.host_id
+  		protocol_name     = "SSH"
+  		password          = "YourPassword12345"
+	}
+
+	resource "alicloud_bastionhost_host_group" "default" {
+  		instance_id     = alicloud_bastionhost_host.default.instance_id
+  		host_group_name = var.name
+	}
+
+	resource "alicloud_bastionhost_user_group" "default" {
+  		instance_id     = alicloud_bastionhost_host.default.instance_id
+  		user_group_name = var.name
+	}
+
+	locals {
+  		instance_id = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? data.alicloud_bastionhost_instances.default.ids.0 : alicloud_bastionhost_instance.default.0.id
+	}
 `, name)
 }
