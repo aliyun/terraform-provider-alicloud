@@ -18,10 +18,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
+func TestAccAliCloudBastionhostUserAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_bastionhost_user_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudBastionhostUserAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudBastionhostUserAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeBastionhostUserAttachment")
@@ -29,7 +29,7 @@ func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sbastionhostuserattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudBastionhostUserAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostUserAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -61,36 +61,67 @@ func TestAccAlicloudBastionhostUserAttachment_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudBastionhostUserAttachmentMap0 = map[string]string{
+var AliCloudBastionhostUserAttachmentMap0 = map[string]string{
+	"instance_id":   CHECKSET,
 	"user_group_id": CHECKSET,
 	"user_id":       CHECKSET,
-	"instance_id":   CHECKSET,
 }
 
-func AlicloudBastionhostUserAttachmentBasicDependence0(name string) string {
+func AliCloudBastionhostUserAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_bastionhost_instances" "default" {}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_bastionhost_user" "default" {
-  instance_id     = data.alicloud_bastionhost_instances.default.ids.0
-  mobile         = "13312345678"
-  mobile_country_code = "CN"
-  password       = "YourPassword-123"
-  source         = "Local"
-  user_name      = var.name
-}
-resource "alicloud_bastionhost_user_group" "default" {
-  instance_id     = data.alicloud_bastionhost_instances.default.ids.0
-  user_group_name = var.name
-}
+	data "alicloud_bastionhost_instances" "default" {
+	}
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_security_group" "default" {
+  		count  = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_bastionhost_instance" "default" {
+  		count              = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		description        = var.name
+  		license_code       = "bhah_ent_50_asset"
+  		plan_code          = "cloudbastion"
+  		storage            = "5"
+  		bandwidth          = "5"
+  		period             = "1"
+  		vswitch_id         = data.alicloud_vswitches.default.ids.0
+  		security_group_ids = [alicloud_security_group.default.0.id]
+	}
+
+	resource "alicloud_bastionhost_user_group" "default" {
+  		instance_id     = local.instance_id
+  		user_group_name = var.name
+	}
+
+	resource "alicloud_bastionhost_user" "default" {
+  		instance_id         = alicloud_bastionhost_user_group.default.instance_id
+  		mobile              = "13312345678"
+  		mobile_country_code = "CN"
+  		password            = "YourPassword-123"
+  		source              = "Local"
+  		user_name           = var.name
+	}
+
+	locals {
+  		instance_id = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? data.alicloud_bastionhost_instances.default.ids.0 : alicloud_bastionhost_instance.default.0.id
+	}
 `, name)
 }
 
-func TestUnitAlicloudBastionhostUserAttachment(t *testing.T) {
+func TestUnitAliCloudBastionhostUserAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_user_attachment"].Schema).Data(nil, nil)

@@ -102,19 +102,15 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 	var v yundun_bastionhost.Instance
 	resourceId := "alicloud_bastionhost_instance.default"
 	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
-
 	serviceFunc := func() interface{} {
 		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf_testAcc%d", rand)
-
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -227,159 +223,6 @@ func TestAccAliCloudBastionhostInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-					"description":        "${var.name}",
-					"license_code":       "bhah_ent_200_asset",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
-					"tags":               REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"resource_group_id":    CHECKSET,
-						"description":          name,
-						"license_code":         "bhah_ent_200_asset",
-						"security_group_ids.#": "2",
-						"tags.%":               REMOVEKEY,
-						"tags.Created":         REMOVEKEY,
-						"tags.For":             REMOVEKEY,
-						"tags.Updated":         REMOVEKEY,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
-			},
-		},
-	})
-}
-
-func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
-	var v yundun_bastionhost.Instance
-	resourceId := "alicloud_bastionhost_instance.default"
-	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"license_code":         "bhah_ent_50_asset",
-					"period":               "1",
-					"plan_code":            "cloudbastion",
-					"storage":              "5",
-					"bandwidth":            "10",
-					"description":          "${var.name}",
-					"vswitch_id":           "${local.vswitch_id}",
-					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
-					"enable_public_access": "false",
-					"public_white_list":    []string{"192.168.0.0/16"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":          name,
-						"period":               "1",
-						"plan_code":            "cloudbastion",
-						"security_group_ids.#": "1",
-						"enable_public_access": "false",
-						"public_white_list.#":  "1",
-						"public_white_list.0":  "192.168.0.0/16",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"enable_public_access": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"enable_public_access": "true",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"public_white_list": []string{"192.168.0.0/18"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"public_white_list.#": "1",
-						"public_white_list.0": "192.168.0.0/18",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       false,
-				ImportStateVerifyIgnore: []string{"period", "storage", "bandwidth"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudBastionhostInstance_basic1(t *testing.T) {
-	var v yundun_bastionhost.Instance
-	resourceId := "alicloud_bastionhost_instance.default"
-	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
-	serviceFunc := func() interface{} {
-		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":        "${var.name}",
-					"license_code":       "bhah_ent_50_asset",
-					"plan_code":          "cloudbastion",
-					"storage":            "5",
-					"bandwidth":          "10",
-					"period":             "1",
-					"vswitch_id":         "${local.vswitch_id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":          name,
-						"period":               "1",
-						"security_group_ids.#": "2",
-						"renewal_status":       "ManualRenewal",
-						"plan_code":            "cloudbastion",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"renew_period":        "2",
 					"renewal_period_unit": "M",
 					"renewal_status":      "AutoRenewal",
@@ -399,63 +242,6 @@ func TestAccAliCloudBastionhostInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"renewal_status": "NotRenewal",
-						"renew_period":   "0",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period", "storage", "bandwidth"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing.T) {
-	var v yundun_bastionhost.Instance
-	resourceId := "alicloud_bastionhost_instance.default"
-	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
-
-	serviceFunc := func() interface{} {
-		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf_testAcc%d", rand)
-
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":        "${var.name}",
-					"license_code":       "bhah_ent_50_asset",
-					"plan_code":          "cloudbastion",
-					"storage":            "5",
-					"bandwidth":          "10",
-					"period":             "1",
-					"vswitch_id":         "${local.vswitch_id}",
-					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":          name,
-						"period":               "1",
-						"security_group_ids.#": "2",
-						"plan_code":            "cloudbastion",
 					}),
 				),
 			},
@@ -532,9 +318,107 @@ func TestAccAliCloudBastionhostInstance_adAuthServerAndLdapAuthServer(t *testing
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"description":        "${var.name}",
+					"license_code":       "bhah_ent_200_asset",
+					"security_group_ids": []string{"${alicloud_security_group.default.0.id}", "${alicloud_security_group.default.1.id}"},
+					"tags":               REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id":    CHECKSET,
+						"description":          name,
+						"license_code":         "bhah_ent_200_asset",
+						"security_group_ids.#": "2",
+						"tags.%":               REMOVEKEY,
+						"tags.Created":         REMOVEKEY,
+						"tags.For":             REMOVEKEY,
+						"tags.Updated":         REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: false,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudBastionhostInstance_PublicAccess(t *testing.T) {
+	var v yundun_bastionhost.Instance
+	resourceId := "alicloud_bastionhost_instance.default"
+	ra := resourceAttrInit(resourceId, bastionhostInstanceBasicMap)
+	serviceFunc := func() interface{} {
+		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf_testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceBastionhostInstanceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		//CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"license_code":         "bhah_ent_50_asset",
+					"period":               "1",
+					"plan_code":            "cloudbastion",
+					"storage":              "5",
+					"bandwidth":            "10",
+					"description":          "${var.name}",
+					"vswitch_id":           "${local.vswitch_id}",
+					"security_group_ids":   []string{"${alicloud_security_group.default.0.id}"},
+					"enable_public_access": "false",
+					"public_white_list":    []string{"192.168.0.0/16"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":          name,
+						"period":               "1",
+						"plan_code":            "cloudbastion",
+						"security_group_ids.#": "1",
+						"enable_public_access": "false",
+						"public_white_list.#":  "1",
+						"public_white_list.0":  "192.168.0.0/16",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_public_access": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public_access": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_white_list": []string{"192.168.0.0/18"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_white_list.#": "1",
+						"public_white_list.0": "192.168.0.0/18",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       false,
+				ImportStateVerifyIgnore: []string{"period", "storage", "bandwidth"},
 			},
 		},
 	})

@@ -19,10 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudBastionhostUserGroup_basic0(t *testing.T) {
+func TestAccAliCloudBastionhostUserGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_bastionhost_user_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudBastionhostUserGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudBastionhostUserGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &YundunBastionhostService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeBastionhostUserGroup")
@@ -30,7 +30,7 @@ func TestAccAlicloudBastionhostUserGroup_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sbastionhostusergroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudBastionhostUserGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudBastionhostUserGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -41,7 +41,7 @@ func TestAccAlicloudBastionhostUserGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":     "${data.alicloud_bastionhost_instances.default.ids.0}",
+					"instance_id":     "${local.instance_id}",
 					"user_group_name": "tf-testAcc-0T2Sep=samLLheEIbZ",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -92,24 +92,51 @@ func TestAccAlicloudBastionhostUserGroup_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudBastionhostUserGroupMap0 = map[string]string{
-	"comment":         "",
-	"user_group_id":   CHECKSET,
-	"instance_id":     CHECKSET,
-	"user_group_name": "tf-testAcc-0T2Sep=samLLheEIbZ",
+var AliCloudBastionhostUserGroupMap0 = map[string]string{
+	"user_group_id": CHECKSET,
 }
 
-func AlicloudBastionhostUserGroupBasicDependence0(name string) string {
+func AliCloudBastionhostUserGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_bastionhost_instances" "default" {}
+	variable "name" {
+  		default = "%s"
+	}
 
+	data "alicloud_bastionhost_instances" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_security_group" "default" {
+  		count  = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_bastionhost_instance" "default" {
+  		count              = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? 0 : 1
+  		description        = var.name
+  		license_code       = "bhah_ent_50_asset"
+  		plan_code          = "cloudbastion"
+  		storage            = "5"
+  		bandwidth          = "5"
+  		period             = "1"
+  		vswitch_id         = data.alicloud_vswitches.default.ids.0
+  		security_group_ids = [alicloud_security_group.default.0.id]
+	}
+
+	locals {
+  		instance_id = length(data.alicloud_bastionhost_instances.default.ids) > 0 ? data.alicloud_bastionhost_instances.default.ids.0 : alicloud_bastionhost_instance.default.0.id
+	}
 `, name)
 }
 
-func TestUnitAlicloudBastionhostUserGroup(t *testing.T) {
+func TestUnitAliCloudBastionhostUserGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_bastionhost_user_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_bastionhost_user_group"].Schema).Data(nil, nil)
