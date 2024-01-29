@@ -15,6 +15,7 @@ import (
 type R_kvstoreService struct {
 	client *connectivity.AliyunClient
 }
+
 type RKvstoreService struct {
 	client *connectivity.AliyunClient
 }
@@ -41,36 +42,43 @@ func (s *R_kvstoreService) DescribeInstanceSSL(id string) (object r_kvstore.Desc
 	return *response, nil
 }
 
-func (s *R_kvstoreService) DescribeSecurityIps(id string) (object r_kvstore.SecurityIpGroup, err error) {
+func (s *R_kvstoreService) DescribeSecurityIps(id, securityIpGroupName string) (object r_kvstore.SecurityIpGroup, err error) {
 	request := r_kvstore.CreateDescribeSecurityIpsRequest()
 	request.RegionId = s.client.RegionId
-
 	request.InstanceId = id
 
 	raw, err := s.client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
 		return r_kvstoreClient.DescribeSecurityIps(request)
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstance.NotFound"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundMsg, ProviderERROR)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response, _ := raw.(*r_kvstore.DescribeSecurityIpsResponse)
 
 	if len(response.SecurityIpGroups.SecurityIpGroup) < 1 {
 		return object, nil
-	} else {
-		for _, v := range response.SecurityIpGroups.SecurityIpGroup {
-			if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
-				continue
-			}
+	}
+
+	if securityIpGroupName == "" {
+		securityIpGroupName = "default"
+	}
+
+	for _, v := range response.SecurityIpGroups.SecurityIpGroup {
+		if v.SecurityIpGroupName == "ali_dms_group" || v.SecurityIpGroupName == "hdm_security_ips" {
+			continue
+		}
+
+		if v.SecurityIpGroupName == securityIpGroupName {
 			return v, nil
 		}
 	}
+
 	return response.SecurityIpGroups.SecurityIpGroup[0], nil
 }
 

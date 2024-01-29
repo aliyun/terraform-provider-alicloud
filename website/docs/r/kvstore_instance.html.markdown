@@ -21,7 +21,10 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
-data "alicloud_kvstore_zones" "default" {}
+
+data "alicloud_kvstore_zones" "default" {
+}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
@@ -30,6 +33,7 @@ resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
@@ -109,9 +113,11 @@ Setting Private Connection String
 variable "name" {
   default = "tf-example-with-connection"
 }
+
 data "alicloud_kvstore_zones" "default" {
   product_type = "OnECS"
 }
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
@@ -120,6 +126,7 @@ resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
@@ -158,7 +165,7 @@ resource "alicloud_kvstore_instance" "default" {
 ### Deleting `alicloud_kvstore_instance` or removing it from your configuration
 
 The `alicloud_kvstore_instance` resource allows you to manage `payment_type = "Prepaid"` db instance, but Terraform cannot destroy it.
-From version 1.201.0, deleting the subscription resource or removing it from your configuration will remove it 
+From version 1.201.0, deleting the subscription resource or removing it from your configuration will remove it
 from your state file and management, but will not destroy the DB Instance.
 You can resume managing the subscription db instance via the AlibabaCloud Console.
 
@@ -167,17 +174,17 @@ You can resume managing the subscription db instance via the AlibabaCloud Consol
 The following arguments are supported:
 
 * `instance_name` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `db_instance_name` instead.
-* `db_instance_name` - (Optional, Available since v1.101.0) The name of KVStore DBInstance. It is a string of 2 to 256 characters. 
+* `db_instance_name` - (Optional, Available since v1.101.0) The name of KVStore DBInstance. It is a string of 2 to 256 characters.
 * `password`- (Optional, Sensitive) The password of the KVStore DBInstance. The password that is used to connect to the instance. The password must be 8 to 32 characters in length and must contain at least three of the following character types: uppercase letters, lowercase letters, special characters, and digits. Special characters include: `! @ # $ % ^ & * ( ) _ + - =`
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
 * `instance_class` - (Optional) Type of the applied ApsaraDB for Redis instance. It can be retrieved by data source [`alicloud_kvstore_instance_classes`](https://www.terraform.io/docs/providers/alicloud/d/kvstore_instance_classes)
-or referring to help-docs [Instance type table](https://www.alibabacloud.com/help/doc-detail/26350.htm).
+  or referring to help-docs [Instance type table](https://www.alibabacloud.com/help/doc-detail/26350.htm).
 * `capacity` - (Optional, ForceNew, Int, Available since v1.101.0) The storage capacity of the KVStore DBInstance. Unit: MB.
 * `availability_zone` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `zone_id` instead.
-* `zone_id` - (Optional, Available since v1.101.0) The ID of the zone. 
+* `zone_id` - (Optional, Available since v1.101.0) The ID of the zone.
 * `secondary_zone_id` - (Optional, Available since v1.128.0) The ID of the secondary zone to which you want to migrate the ApsaraDB for Redis instance.
--> **NOTE:** If you specify this parameter, the master node and replica node of the instance can be deployed in different zones and disaster recovery is implemented across zones. The instance can withstand failures in data centers.
+  -> **NOTE:** If you specify this parameter, the master node and replica node of the instance can be deployed in different zones and disaster recovery is implemented across zones. The instance can withstand failures in data centers.
 * `instance_charge_type` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `payment_type` instead.
 * `payment_type` - (Optional, Available since v1.101.0) The billing method of the KVStore DBInstance. Valid values: `PrePaid`, `PostPaid`. Default value: `PostPaid`.
 * `period` - (Optional) The duration that you will buy KVStore DBInstance (in month). It is valid when payment_type is `PrePaid`. Valid values: `[1~9]`, `12`, `24`, `36`.
@@ -186,24 +193,22 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
 * `instance_type` - (Optional, ForceNew) The engine type of the KVStore DBInstance. Valid values: `Redis` or `Memcache`. Default value: `Redis`.
 * `vswitch_id` - (Optional) The ID of VSwitch.
 * `engine_version`- (Optional) The engine version of the KVStore DBInstance. Valid values: ["2.8", "4.0", "5.0", "6.0", "7.0"]. Default value: `5.0`.
-  **NOTE:** When `instance_type = Memcache`, the `engine_version` only supports "4.0". 
+  **NOTE:** When `instance_type = Memcache`, the `engine_version` only supports "4.0".
 * `tags` - (Optional, Available since v1.55.3) A mapping of tags to assign to the resource.
-* `security_ips`- (Optional, List) The IP addresses in the whitelist group. The maximum number of IP addresses in the whitelist group is 1000. 
+* `security_ips`- (Optional, List) The IP addresses in the whitelist group. The maximum number of IP addresses in the whitelist group is 1000.
 * `security_ip_group_attribute`- (Optional, Available since v1.101.0) The value of this parameter is empty by default. The attribute of the whitelist group. The console does not display the whitelist group whose value of this parameter is hidden.
 * `security_ip_group_name`- (Optional, Available since v1.101.0) The name of the whitelist group.
-* `modify_mode`- (Optional, Int, Available since v1.101.0) The method of modifying the whitelist. Valid values: `0`, `1` and `2`. Default value: `0`. `0` means overwrites the original whitelist. `1` means adds the IP addresses to the whitelist. `2` means deletes the IP addresses from the whitelist.
-* `security_group_id` - (Optional, Available since v1.76.0) The ID of security groups.
+* `security_group_id` - (Optional, Available since v1.76.0) The ID of security groups. Separate multiple security group IDs with commas (,), such as `sg-***,sg-***,sg-***`.
 * `private_ip`- (Optional, ForceNew) The internal IP address of the instance.
 * `backup_id`- (Optional, ForceNew) The ID of the backup file of the source instance.
 * `srcdb_instance_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the source instance.
 * `restore_time`- (Optional, ForceNew, Available since v1.101.0) The point in time of a backup file.
 * `vpc_auth_mode`- (Optional) Only meaningful if instance_type is `Redis` and network type is VPC. Valid values: `Close`, `Open`. Default value: `Open`. `Close` means the redis instance can be accessed without authentication. `Open` means authentication is required.
 * `parameters` - (Deprecated since v1.101.0) It has been deprecated from provider version 1.101.0 and `config` instead. See [`parameters`](#parameters) below.
-* `config` - (Optional, MapString, Available since v1.101.0) The configuration of the KVStore DBInstance. Available parameters can refer to the latest docs [Instance configurations table](https://www.alibabacloud.com/help/doc-detail/61209.htm) .
+* `config` - (Optional, MapString, Available since v1.101.0) The configuration of the KVStore DBInstance. Available parameters can refer to the latest docs [Instance configurations table](https://www.alibabacloud.com/help/en/redis/user-guide/supported-parameters).
 * `maintain_start_time` - (Optional, Available since v1.56.0) The start time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
 * `maintain_end_time` - (Optional, Available since v1.56.0) The end time of the operation and maintenance time period of the KVStore DBInstance, in the format of HH:mmZ (UTC time).
-* `effective_time` - (Optional, Available since v1.204.0) The time when the database is switched after the instance is migrated, 
-  or when the major version is upgraded, or when the instance class is upgraded. Valid values:
+* `effective_time` - (Optional, Available since v1.204.0) The time when the database is switched after the instance is migrated, or when the major version is upgraded, or when the instance class is upgraded. Valid values:
   - `Immediately` (Default): The configurations are immediately changed.
   - `MaintainTime`: The configurations are changed within the maintenance window. You can set `maintain_start_time` and `maintain_end_time` to change the maintenance window.
 * `resource_group_id` - (Optional, Available since v1.86.0) The ID of resource group which the resource belongs.
@@ -216,7 +221,7 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
 * `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create an ApsaraDB for Redis instance in a dedicated cluster.
-* `coupon_no`- (Optional, Available since v1.101.0) The coupon code. Default value: `youhuiquan_promotion_option_id_for_blank`.
+* `coupon_no`- (Optional, Available since v1.101.0) The coupon code.
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
 * `auto_use_coupon`- (Optional, Bool, ForceNew, Available since v1.101.0) Specifies whether to use a coupon. Default value: `false`.
 * `instance_release_protection`- (Optional, Bool, Available since v1.101.0) Whether to open the release protection.
@@ -231,13 +236,14 @@ or referring to help-docs [Instance type table](https://www.alibabacloud.com/hel
   - `true`: prechecks the request without creating an instance. The system prechecks the required parameters, request format, service limits, and available resources. If the request fails the precheck, the corresponding error message is returned. If the request passes the precheck, the DryRunOperation error code is returned.
   - `false`: checks the request. After the request passes the check, an instance is created.
 * `tde_status`- (Optional, Available since v1.200.0) Specifies whether to enable TDE. Valid values: `Enabled`.
-  **NOTE:**: TDE cannot be disabled after it is enabled. Before you enable it, evaluate whether this feature affects 
+**NOTE:**: TDE cannot be disabled after it is enabled. Before you enable it, evaluate whether this feature affects.
   your business. For more information, see [Enable TDE](https://www.alibabacloud.com/help/en/redis/user-guide/enable-tde).
 * `encryption_name`- (Optional, Available since v1.200.0) The Encryption algorithm, default AES-CTR-256.Note that this parameter is only available when the TDEStatus parameter is Enabled.
 * `encryption_key`- (Optional, Available since v1.200.0) The Custom key ID, which you can get by calling DescribeEncryptionKeyList.If this parameter is not passed, the key is automatically generated by the key management service. To create a custom key, you can call the CreateKey interface of the key management service.
 * `role_arn`- (Optional, Available since v1.200.0) The Specify the global resource descriptor ARN (Alibaba Cloud Resource Name) information of the role to be authorized, and use the related key management services after the authorization is completed, in the format: `acs:ram::$accountID:role/$roleName`.
-* `shard_count`- (Optional, ForceNew, Int, Available since v1.208.0) The number of data shards. This parameter is available only if you create a cluster instance that uses cloud disks. You can use this parameter to specify a custom number of data shards.
+* `shard_count`- (Optional, Int, Available since v1.208.0) The number of data shards. This parameter is available only if you create a cluster instance that uses cloud disks. You can use this parameter to specify a custom number of data shards. **NOTE:** From version 1.216.0, `shard_count` can be modified.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
+* `modify_mode`- (Removed since v1.216.0) The method of modifying the whitelist. **NOTE:** Field `modify_mode` has been removed from provider version 1.216.0.
 
 -> **NOTE:** The start time to the end time must be 1 hour. For example, the MaintainStartTime is 01:00Z, then the MaintainEndTime must be 02:00Z.
 
@@ -271,8 +277,8 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 20 mins) Used when creating the KVStore instance (until it reaches the initial `Normal` status). 
-* `update` - (Defaults to 40 mins) Used when updating the KVStore instance (until it reaches the initial `Normal` status). 
+* `create` - (Defaults to 20 mins) Used when creating the KVStore instance (until it reaches the initial `Normal` status).
+* `update` - (Defaults to 40 mins) Used when updating the KVStore instance (until it reaches the initial `Normal` status).
 * `delete` - It has been deprecated from provider version 1.101.0.
 
 ## Import
