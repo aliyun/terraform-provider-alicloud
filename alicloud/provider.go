@@ -166,6 +166,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
+"alicloud_vpn_gateway_zones": dataSourceAliCloudVPNGatewayZones(),
 			"alicloud_account":                dataSourceAlicloudAccount(),
 			"alicloud_caller_identity":        dataSourceAlicloudCallerIdentity(),
 			"alicloud_images":                 dataSourceAlicloudImages(),
