@@ -46,7 +46,7 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\\u4e00-\\u9fa5a-zA-Z0-9][\\u4e00-\\u9fa5a-zA-Z0-9\-_.]{1,63}$`), "It must be 2 to 64 characters in length and can contain letters, digits, underscores (_), hyphens (-), and periods (.). It must start with a letter or a digit."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[\\u4e00-\\u9fa5a-zA-Z0-9][\\u4e00-\\u9fa5a-zA-Z0-9\-_.]{1,63}$`), "It must be 2 to 64 characters in length and can contain letters, digits, underscores (_), hyphens (-), and periods (.). It must start with a letter or a digit."),
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -57,9 +57,9 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"container_group_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,126}[a-z0-9]$`), "It must be 2 to 128 characters in length and can contain lowercase letters, digits, and hyphens (-). It must start with a letter or a digit.")},
 			"restart_policy": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -105,8 +105,9 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"active_deadline_seconds": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"spot_strategy": {
 				Type:     schema.TypeString,
@@ -658,9 +659,6 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 
 	if v, ok := d.GetOk("active_deadline_seconds"); ok {
-		if d.Get("active_deadline_seconds").(int) <= 0 {
-			return WrapErrorf(err, "expected %s to be greater than (%d), got %d", "active_deadline_seconds", 0, v.(int))
-		}
 		request["ActiveDeadlineSeconds"] = v
 	}
 	if v, ok := d.GetOk("spot_price_limit"); ok {
@@ -1305,9 +1303,6 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	if d.HasChange("active_deadline_seconds") {
 		update = true
 		v := d.Get("active_deadline_seconds")
-		if v.(int) <= 0 {
-			return WrapErrorf(err, "expected %s to be greater than (%d), got %d", "active_deadline_seconds", 0, v.(int))
-		}
 		request["ActiveDeadlineSeconds"] = v
 	}
 	if d.HasChange("spot_strategy") {
