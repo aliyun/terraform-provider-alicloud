@@ -56,7 +56,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 							Computed: true,
 						},
 						"enable": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeBool,
 							Optional: true,
 							Computed: true,
 						},
@@ -104,7 +104,7 @@ func resourceAliCloudVPNGatewayVpnConnection() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enable": {
-							Type:     schema.TypeString,
+							Type:     schema.TypeBool,
 							Optional: true,
 							Computed: true,
 						},
@@ -751,7 +751,7 @@ func resourceAliCloudVPNGatewayVpnConnectionRead(d *schema.ResourceData, meta in
 		vpnBgpConfig1Raw = objectRaw["VpnBgpConfig"].(map[string]interface{})
 	}
 	if len(vpnBgpConfig1Raw) > 0 {
-		bgpConfigMap["enable"] = vpnBgpConfig1Raw["EnableBgp"]
+		bgpConfigMap["enable"] = formatBool(vpnBgpConfig1Raw["EnableBgp"])
 		bgpConfigMap["local_asn"] = vpnBgpConfig1Raw["LocalAsn"]
 		bgpConfigMap["local_bgp_ip"] = vpnBgpConfig1Raw["LocalBgpIp"]
 		bgpConfigMap["status"] = vpnBgpConfig1Raw["Status"]
@@ -768,7 +768,7 @@ func resourceAliCloudVPNGatewayVpnConnectionRead(d *schema.ResourceData, meta in
 	}
 	if len(vcoHealthCheck1Raw) > 0 {
 		healthCheckConfigMap["dip"] = vcoHealthCheck1Raw["Dip"]
-		healthCheckConfigMap["enable"] = vcoHealthCheck1Raw["Enable"]
+		healthCheckConfigMap["enable"] = formatBool(vcoHealthCheck1Raw["Enable"])
 		healthCheckConfigMap["interval"] = vcoHealthCheck1Raw["Interval"]
 		healthCheckConfigMap["retry"] = vcoHealthCheck1Raw["Retry"]
 		healthCheckConfigMap["sip"] = vcoHealthCheck1Raw["Sip"]

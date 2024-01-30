@@ -558,7 +558,6 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -861,8 +860,8 @@ variable "spec" {
 data "alicloud_resource_manager_resource_groups" "default" {
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_vpn_gateway_zones" "default" {
+  spec = "5M"
 }
 
 data "alicloud_vpcs" "default" {
@@ -871,27 +870,27 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-huhehaote-a"
+  zone_id = data.alicloud_vpn_gateway_zones.default.ids.0
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 1)
-  zone_id           = "cn-huhehaote-a"
+  zone_id           = data.alicloud_vpn_gateway_zones.default.ids.0
   vswitch_name      = var.name
 }
 
 data "alicloud_vswitches" "default2" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-huhehaote-b"
+  zone_id = data.alicloud_vpn_gateway_zones.default.ids.1
 }
 
 resource "alicloud_vswitch" "vswitch2" {
   count             = length(data.alicloud_vswitches.default2.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id           = "cn-huhehaote-b"
+  zone_id           = data.alicloud_vpn_gateway_zones.default.ids.1
   vswitch_name      = var.name
 }
 
@@ -942,7 +941,6 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1071,8 +1069,10 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 					"enable_tunnels_bgp": "true",
 					"tunnel_options_specification": []map[string]interface{}{
 						{
-							"customer_gateway_id": "${alicloud_vpn_customer_gateway.changeCustomerGateway.id}",
-							"role":                "master",
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.changeCustomerGateway.id}",
+							"role":                 "master",
+							"enable_dpd":           "true",
+							"enable_nat_traversal": "true",
 							"tunnel_bgp_config": []map[string]interface{}{
 								{
 									"local_asn":    "1219002",
@@ -1089,7 +1089,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 									"ike_pfs":      "group5",
 									"ike_version":  "ikev2",
 									"local_id":     "localid_tunnel2",
-									"psk":          "12345678",
+									"psk":          "12345679",
 									"remote_id":    "remote24",
 								},
 							},
@@ -1121,7 +1121,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 									"ike_pfs":      "group14",
 									"ike_version":  "ikev2",
 									"local_id":     "localid_tunnel2",
-									"psk":          "12345678",
+									"psk":          "12345679",
 									"remote_id":    "remote2",
 								},
 							},
@@ -1155,8 +1155,10 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"tunnel_options_specification": []map[string]interface{}{
 						{
-							"customer_gateway_id": "${alicloud_vpn_customer_gateway.changeCustomerGateway.id}",
-							"role":                "master",
+							"customer_gateway_id":  "${alicloud_vpn_customer_gateway.changeCustomerGateway.id}",
+							"role":                 "master",
+							"enable_dpd":           "false",
+							"enable_nat_traversal": "false",
 							"tunnel_bgp_config": []map[string]interface{}{
 								{
 									"local_asn":    "1219002",
@@ -1292,8 +1294,8 @@ variable "spec" {
   default = "5"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_vpn_gateway_zones" "default" {
+  spec = "5M"
 }
 
 data "alicloud_vpcs" "default" {
@@ -1302,27 +1304,27 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-huhehaote-a"
+  zone_id = data.alicloud_vpn_gateway_zones.default.ids.0
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 1)
-  zone_id           = "cn-huhehaote-a"
+  zone_id           = data.alicloud_vpn_gateway_zones.default.ids.0
   vswitch_name      = var.name
 }
 
 data "alicloud_vswitches" "default2" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-huhehaote-b"
+  zone_id = data.alicloud_vpn_gateway_zones.default.ids.1
 }
 
 resource "alicloud_vswitch" "vswitch2" {
   count             = length(data.alicloud_vswitches.default2.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id           = "cn-huhehaote-b"
+  zone_id           = data.alicloud_vpn_gateway_zones.default.ids.1
   vswitch_name      = var.name
 }
 
@@ -1381,7 +1383,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2050,14 +2052,14 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "ap-southeast-2b"
+  zone_id = "me-east-1a"
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id            = data.alicloud_vpcs.default.ids.0
   cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = "ap-southeast-2b"
+  zone_id           = "me-east-1a"
   vswitch_name      = var.name
 }
 
@@ -2105,7 +2107,6 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5678_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2231,7 +2232,6 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic3783_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -2353,7 +2353,7 @@ func TestAccAliCloudVPNGatewayVpnConnection_basic5663_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.VPNSingleConnectRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
