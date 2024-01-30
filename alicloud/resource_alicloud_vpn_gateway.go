@@ -34,14 +34,13 @@ func resourceAliCloudVPNGatewayVPNGateway() *schema.Resource {
 			"auto_pay": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
 			},
 			"auto_propagate": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"bandwidth": {
-				Type:     schema.TypeString,
+				Type:     schema.TypeInt,
 				Required: true,
 				ForceNew: true,
 			},
@@ -77,7 +76,7 @@ func resourceAliCloudVPNGatewayVPNGateway() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"public"}, true),
+				ValidateFunc: StringInSlice([]string{"public", "private"}, true),
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
@@ -188,6 +187,8 @@ func resourceAliCloudVPNGatewayVPNGatewayCreate(d *schema.ResourceData, meta int
 	}
 	if v, ok := d.GetOkExists("auto_pay"); ok {
 		request["AutoPay"] = v
+	} else {
+		request["AutoPay"] = true
 	}
 	if v, ok := d.GetOkExists("enable_ipsec"); ok {
 		request["EnableIpsec"] = v
@@ -286,7 +287,7 @@ func resourceAliCloudVPNGatewayVPNGatewayRead(d *schema.ResourceData, meta inter
 
 	e := jsonata.MustCompile("$substringBefore($.Spec, \"M\")")
 	evaluation, _ := e.Eval(objectRaw)
-	d.Set("bandwidth", evaluation)
+	d.Set("bandwidth", formatInt(evaluation))
 
 	d.Set("instance_charge_type", convertPaymentTypeToChargeType(d.Get("payment_type")))
 	d.Set("name", d.Get("vpn_gateway_name"))

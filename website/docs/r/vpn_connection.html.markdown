@@ -27,7 +27,7 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "ap-southeast-2"
+  region = "me-east-1"
 }
 
 variable "spec" {
@@ -44,14 +44,14 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "ap-southeast-2b"
+  zone_id = "me-east-1a"
 }
 
 resource "alicloud_vswitch" "vswitch" {
   count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
   vpc_id       = data.alicloud_vpcs.default.ids.0
   cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = "ap-southeast-2b"
+  zone_id      = "me-east-1a"
   vswitch_name = var.name
 }
 
@@ -73,49 +73,28 @@ resource "alicloud_vpn_gateway" "default" {
 }
 
 resource "alicloud_vpn_customer_gateway" "default" {
-  description           = "defaultCustomerGateway"
+  description           = var.name
   ip_address            = "4.3.2.10"
   asn                   = "1219002"
   customer_gateway_name = var.name
 }
 
 resource "alicloud_vpn_connection" "default" {
+  local_subnet = [
+    "3.0.0.0/24"
+  ]
+  enable_nat_traversal = "true"
   bgp_config {
-    enable       = "true"
-    local_asn    = "1219002"
     local_bgp_ip = "169.254.10.1"
     tunnel_cidr  = "169.254.10.0/30"
+    enable       = "true"
+    local_asn    = "1219002"
   }
 
-  ipsec_config {
-    ipsec_enc_alg  = "aes"
-    ipsec_auth_alg = "sha1"
-    ipsec_lifetime = "86400"
-    ipsec_pfs      = "group2"
-  }
-
-  ike_config {
-    ike_auth_alg  = "sha1"
-    ike_local_id  = "localid1"
-    ike_enc_alg   = "aes"
-    ike_version   = "ikev2"
-    ike_remote_id = "remoteId2"
-    ike_pfs       = "group2"
-    ike_mode      = "main"
-    ike_lifetime  = "86400"
-    psk           = "12345678"
-  }
-
-  remote_subnet = [
-    "10.0.0.0/24",
-    "10.0.1.0/24"
-  ]
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  tags = {
-    Created = "TF"
-    For     = "Test"
-  }
-  enable_dpd = "true"
+  vpn_gateway_id      = alicloud_vpn_gateway.default.id
+  vpn_connection_name = var.name
+  effect_immediately  = "true"
   health_check_config {
     enable   = "true"
     dip      = "1.1.1.1"
@@ -124,14 +103,30 @@ resource "alicloud_vpn_connection" "default" {
     interval = "3"
   }
 
-  vpn_gateway_id       = alicloud_vpn_gateway.default.id
-  effect_immediately   = "true"
-  vpn_connection_name  = var.name
-  auto_config_route    = "true"
-  enable_nat_traversal = "true"
-  local_subnet = [
-    "3.0.0.0/24"
+  remote_subnet = [
+    "10.0.0.0/24",
+    "10.0.1.0/24"
   ]
+  ipsec_config {
+    ipsec_enc_alg  = "aes"
+    ipsec_auth_alg = "sha1"
+    ipsec_lifetime = "86400"
+    ipsec_pfs      = "group2"
+  }
+
+  auto_config_route = "true"
+  enable_dpd        = "true"
+  ike_config {
+    ike_lifetime  = "86400"
+    ike_local_id  = "localid1"
+    ike_version   = "ikev2"
+    ike_mode      = "main"
+    psk           = "12345678"
+    ike_remote_id = "remoteId2"
+    ike_pfs       = "group2"
+    ike_auth_alg  = "sha1"
+    ike_enc_alg   = "aes"
+  }
 }
 ```
 

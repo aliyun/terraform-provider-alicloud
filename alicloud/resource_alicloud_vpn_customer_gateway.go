@@ -29,7 +29,7 @@ func resourceAliCloudVPNGatewayCustomerGateway() *schema.Resource {
 		},
 		Schema: map[string]*schema.Schema{
 			"asn": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
