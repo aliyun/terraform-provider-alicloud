@@ -861,7 +861,6 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_monitorings":                      dataSourceAliCloudArmsPrometheusMonitorings(),
 			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
-			"alicloud_cdt_service":                                      datasourceAliCloudCdtService(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_ens_instance_security_group_attachment":               resourceAliCloudEnsInstanceSecurityGroupAttachment(),
