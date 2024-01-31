@@ -55,7 +55,7 @@ func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      "PayAsYouGo",
-				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, false),
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo"}, true),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -77,11 +77,13 @@ func resourceAliCloudEipanycastAnycastEipAddress() *schema.Resource {
 }
 
 func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "AllocateAnycastEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipanycastClient()
 	if err != nil {
 		return WrapError(err)
@@ -94,7 +96,7 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 		request["Name"] = v
 	}
 	if v, ok := d.GetOk("payment_type"); ok {
-		request["InstanceChargeType"] = convertEipanycastInstanceChargeTypeRequest(v.(string))
+		request["InstanceChargeType"] = convertEipanycastAnycastEipAddressInstanceChargeTypeRequest(v.(string))
 	}
 	if v, ok := d.GetOk("bandwidth"); ok {
 		request["Bandwidth"] = v
@@ -106,9 +108,14 @@ func resourceAliCloudEipanycastAnycastEipAddressCreate(d *schema.ResourceData, m
 	if v, ok := d.GetOk("internet_charge_type"); ok {
 		request["InternetChargeType"] = v
 	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -156,10 +163,11 @@ func resourceAliCloudEipanycastAnycastEipAddressRead(d *schema.ResourceData, met
 	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
 	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
-	d.Set("payment_type", convertEipanycastInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
+	d.Set("payment_type", convertEipanycastAnycastEipAddressInstanceChargeTypeResponse(objectRaw["InstanceChargeType"]))
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("service_location", objectRaw["ServiceLocation"])
 	d.Set("status", objectRaw["Status"])
+
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
@@ -170,6 +178,7 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyAnycastEipAddressAttribute"
@@ -178,7 +187,8 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["AnycastId"] = d.Id()
+	query = make(map[string]interface{})
+	query["AnycastId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("anycast_eip_address_name") {
 		update = true
@@ -191,9 +201,11 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -218,7 +230,8 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["AnycastId"] = d.Id()
+	query = make(map[string]interface{})
+	query["AnycastId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("bandwidth") {
 		update = true
@@ -226,9 +239,11 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -257,18 +272,21 @@ func resourceAliCloudEipanycastAnycastEipAddressUpdate(d *schema.ResourceData, m
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["ResourceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ResourceType"] = "ANYCASTEIPADDRESS"
-	if d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -303,19 +321,22 @@ func resourceAliCloudEipanycastAnycastEipAddressDelete(d *schema.ResourceData, m
 	action := "ReleaseAnycastEipAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipanycastClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["AnycastId"] = d.Id()
+	query["AnycastId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -357,14 +378,14 @@ func convertEipanycastAnycastEipAddressPaymentTypeResponse(source string) string
 	return source
 }
 
-func convertEipanycastInstanceChargeTypeResponse(source interface{}) interface{} {
+func convertEipanycastAnycastEipAddressInstanceChargeTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PostPaid":
 		return "PayAsYouGo"
 	}
 	return source
 }
-func convertEipanycastInstanceChargeTypeRequest(source interface{}) interface{} {
+func convertEipanycastAnycastEipAddressInstanceChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
 		return "PostPaid"
