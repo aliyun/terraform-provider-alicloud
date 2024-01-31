@@ -21,44 +21,51 @@ Provides an ALIKAFKA topic resource, see [What is Alikafka topic ](https://www.a
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+variable "instance_name" {
+  default = "tf-example"
 }
 
-provider "alicloud" {
-  region = "cn-hangzhou"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name           = var.name
-  partition_num  = 50
-  disk_type      = 1
-  disk_size      = 500
-  deploy_type    = 5
-  io_max         = 20
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
+  name           = "${var.instance_name}-${random_integer.default.result}"
+  partition_num  = "50"
+  disk_type      = "1"
+  disk_size      = "500"
+  deploy_type    = "5"
+  io_max         = "20"
+  vswitch_id     = alicloud_vswitch.default.id
   security_group = alicloud_security_group.default.id
 }
 
 resource "alicloud_alikafka_topic" "default" {
-  remark        = "alicloud_alikafka_topic_remark"
   instance_id   = alicloud_alikafka_instance.default.id
-  topic         = var.name
+  topic         = "example-topic"
   local_topic   = "false"
   compact_topic = "false"
-  partition_num = "6"
+  partition_num = "12"
+  remark        = "dafault_kafka_topic_remark"
 }
 ```
 

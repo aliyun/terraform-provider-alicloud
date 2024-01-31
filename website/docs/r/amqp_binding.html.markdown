@@ -39,7 +39,7 @@ resource "alicloud_amqp_virtual_host" "default" {
 resource "alicloud_amqp_exchange" "default" {
   auto_delete_state = false
   exchange_name     = "tf-example"
-  exchange_type     = "DIRECT"
+  exchange_type     = "HEADERS"
   instance_id       = alicloud_amqp_instance.default.id
   internal          = false
   virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name

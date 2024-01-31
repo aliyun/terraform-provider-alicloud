@@ -21,8 +21,13 @@ variable "name" {
   default = "tf-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_ots_instance" "default" {
-  name        = var.name
+  name        = "${var.name}-${random_integer.default.result}"
   description = var.name
   accessed_by = "Vpc"
   tags = {
@@ -52,8 +57,6 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID. The value is same as the "name".
-* `accessed_by` - TThe network limitation of accessing instance.
-* `tags` - The instance tags.
 
 ## Import
 

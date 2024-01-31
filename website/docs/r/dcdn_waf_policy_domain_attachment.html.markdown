@@ -20,15 +20,21 @@ For information about DCDN Waf Policy Domain Attachment and how to use it, see [
 Basic Usage
 
 ```terraform
+variable "domain_name" {
+  default = "tf-example.com"
+}
+
 variable "name" {
   default = "tf_example"
 }
-variable "domain_name" {
-  default = "example.com"
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_dcdn_domain" "example" {
-  domain_name = var.domain_name
+  domain_name = "${var.domain_name}-${random_integer.default.result}"
   scope       = "overseas"
   sources {
     content  = "1.1.1.1"
@@ -46,7 +52,7 @@ resource "alicloud_dcdn_waf_domain" "example" {
 
 resource "alicloud_dcdn_waf_policy" "example" {
   defense_scene = "waf_group"
-  policy_name   = var.name
+  policy_name   = "${var.name}_${random_integer.default.result}"
   policy_type   = "custom"
   status        = "on"
 }

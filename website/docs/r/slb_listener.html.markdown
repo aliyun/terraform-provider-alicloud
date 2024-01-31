@@ -25,12 +25,16 @@ For information about listener and how to use it, to see the following:
 ## Example Usage
 
 ```terraform
-variable "slb_listener_name" {
-  default = "forSlbListener"
+variable "name" {
+  default = "tf-example"
+}
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_slb_load_balancer" "listener" {
-  load_balancer_name   = "tf-exampleSlbListenerHttp"
+  load_balancer_name   = "${var.name}-${random_integer.default.result}"
   internet_charge_type = "PayByTraffic"
   address_type         = "internet"
   instance_charge_type = "PayByCLCU"
@@ -67,7 +71,7 @@ resource "alicloud_slb_listener" "listener" {
 }
 
 resource "alicloud_slb_acl" "listener" {
-  name       = var.slb_listener_name
+  name       = "${var.name}-${random_integer.default.result}"
   ip_version = "ipv4"
 }
 
