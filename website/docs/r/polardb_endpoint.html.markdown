@@ -7,11 +7,11 @@ description: |-
   Provides a PolarDB instance endpoint resource.
 ---
 
-# alicloud\_polardb\_endpoint
+# alicloud_polardb_endpoint
 
 Provides a PolarDB endpoint resource to manage endpoint of PolarDB cluster.
 
--> **NOTE:** After v1.80.0 and before v1.121.0, you can only use this resource to manage the custom endpoint. Since v1.121.0, you also can import the primary endpoint and the cluster endpoint, to modify their ssl status and so on. 
+-> **NOTE:** Available since v1.80.0, you can only use this resource to manage the custom endpoint. Since v1.121.0, you also can import the primary endpoint and the cluster endpoint, to modify their ssl status and so on. 
  
 -> **NOTE:** The primary endpoint and the default cluster endpoint can not be created or deleted manually.
 
@@ -51,7 +51,7 @@ resource "alicloud_polardb_endpoint" "default" {
 }
 ```
 
-## Argument Reference 
+## Argument Reference
 
 The following arguments are supported:
 
@@ -63,21 +63,20 @@ The following arguments are supported:
 * `endpoint_config` - (Optional) The advanced settings of the endpoint of Apsara PolarDB clusters are in JSON format. Including the settings of consistency level, transaction splitting, connection pool, and offload reads from primary node. For more details, see the [description of EndpointConfig in the Request parameters table for details](https://www.alibabacloud.com/help/doc-detail/116593.htm).
 * `ssl_enabled` - (Optional, Available in v1.121.0+) Specifies how to modify the SSL encryption status. Valid values: `Disable`, `Enable`, `Update`.
 * `net_type` - (Optional, Available in v1.121.0+) The network type of the endpoint address.
-* `ssl_auto_rotate` - (Available in v1.132.0+) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.  
+* `ssl_auto_rotate` - (Optional, Available in v1.132.0+) Specifies whether automatic rotation of SSL certificates is enabled. Valid values: `Enable`,`Disable`.  
 * `ssl_certificate_url` - (Available in v1.132.0+) Specifies SSL certificate download link.  
     **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).  
     For a PolarDB for PostgreSQL cluster or a PolarDB-O cluster, this parameter is not required, by default, SSL encryption is enabled for all endpoints.
 * `db_endpoint_description` - (Optional, Available in v1.201.0+) The name of the endpoint.
+* `ssl_connection_string` - (Available in v1.121.0+) The SSL connection string.
+* `ssl_expire_time` - (Available in v1.121.0+) The time when the SSL certificate expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
+* `db_endpoint_id` - (Optional, Available in v1.161.0+) The ID of the cluster endpoint.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The current instance connection resource ID. Composed of instance ID and connection string with format `<db_cluster_id>:<db_endpoint_id>`.
-* `endpoint_type` - Type of endpoint.
-* `ssl_connection_string` - (Available in v1.121.0+) The SSL connection string.
-* `ssl_expire_time` - (Available in v1.121.0+) The time when the SSL certificate expires. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-* `db_endpoint_id` - (Available in v1.161.0+) The ID of the cluster endpoint.
 
 ## Import
 
