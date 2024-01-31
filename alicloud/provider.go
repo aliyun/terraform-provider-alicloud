@@ -166,7 +166,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-"alicloud_vpn_gateway_zones": dataSourceAliCloudVPNGatewayZones(),
+			"alicloud_vpn_gateway_zones":      dataSourceAliCloudVPNGatewayZones(),
 			"alicloud_account":                dataSourceAlicloudAccount(),
 			"alicloud_caller_identity":        dataSourceAlicloudCallerIdentity(),
 			"alicloud_images":                 dataSourceAlicloudImages(),
@@ -863,6 +863,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_ipv6_address":                                     resourceAliCloudVpcIpv6Address(),
 			"alicloud_ens_instance_security_group_attachment":               resourceAliCloudEnsInstanceSecurityGroupAttachment(),
 			"alicloud_ens_disk_instance_attachment":                         resourceAliCloudEnsDiskInstanceAttachment(),
 			"alicloud_ens_image":                                            resourceAliCloudEnsImage(),

@@ -21,7 +21,6 @@ type EipanycastServiceV2 struct {
 // DescribeEipanycastAnycastEipAddress <<< Encapsulated get interface for Eipanycast AnycastEipAddress.
 
 func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -34,11 +33,13 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AnycastId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -53,14 +54,10 @@ func (s *EipanycastServiceV2) DescribeEipanycastAnycastEipAddress(id string) (ob
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.AnycastInstance"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddress", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddress", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-
-	currentStatus := response["Status"]
-	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AnycastEipAddress", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 	}
 
 	return response, nil
@@ -76,7 +73,9 @@ func (s *EipanycastServiceV2) EipanycastAnycastEipAddressStateRefreshFunc(id str
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -97,6 +96,7 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -112,6 +112,7 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			for i, key := range removedTagKeys {
@@ -119,9 +120,11 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -146,6 +149,7 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			count := 1
@@ -156,9 +160,11 @@ func (s *EipanycastServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-09"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
