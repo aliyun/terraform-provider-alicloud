@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_eip_association"
 sidebar_current: "docs-alicloud-resource-eip-association"
 description: |-
-  Provides a ECS EIP Association resource.
+  Provides a Alicloud ECS EIP Association resource.
 ---
 
 # alicloud_eip_association
@@ -26,6 +26,7 @@ Provides an Alicloud EIP Association resource for associating Elastic IP to ECS 
 variable "name" {
   default = "tf-example"
 }
+
 data "alicloud_zones" "example" {
   available_resource_creation = "Instance"
 }
@@ -90,22 +91,23 @@ to create several EIP instances and associate them with other resources one-clic
 
 The following arguments are supported:
 
-* `allocation_id` - (Required, ForceNew) The allocation EIP ID.
+* `allocation_id` - (Required, ForceNew) The ID of the EIP that you want to associate with an instance.
 * `instance_id` - (Required, ForceNew) The ID of the ECS or SLB instance or Nat Gateway or NetworkInterface or HaVip.
-* `instance_type` - (Optional, ForceNew, Available since v1.46.0) The type of cloud product that the eip instance to bind. Valid values: `EcsInstance`, `SlbInstance`, `Nat`, `NetworkInterface`, `HaVip` and `IpAddress`.
-* `private_ip_address` - (Optional, ForceNew, Available since v1.52.2) The private IP address in the network segment of the vswitch which has been assigned.
-* `force` - (Optional, Available since v1.95.0) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default to `false`.
-* `vpc_id` - (Optional, ForceNew, Available since v1.203.0) The ID of the VPC that has IPv4 gateways enabled and that is deployed in the same region as the EIP. When you associate an EIP with an IP address, the system can enable the IP address to access the Internet based on VPC route configurations. **Note:** This parameter is required if `instance_type` is set to IpAddress. In this case, the EIP is associated with an IP address.
+* `instance_type` - (Optional, ForceNew, Available since v1.46.0) The type of the instance with which you want to associate the EIP. Valid values: `Nat`, `SlbInstance`, `EcsInstance`, `NetworkInterface`, `HaVip` and `IpAddress`.
+* `mode` - (Optional, ForceNew, Available since v1.216.1) The association mode. Default value: `NAT`. Valid values: `NAT`, `BINDED`, `MULTI_BINDED`. **Note:** This parameter is required only when `instance_type` is set to `NetworkInterface`.
+* `vpc_id` - (Optional, ForceNew, Available since v1.203.0) The ID of the VPC that has IPv4 gateways enabled and that is deployed in the same region as the EIP. When you associate an EIP with an IP address, the system can enable the IP address to access the Internet based on VPC route configurations. **Note:** This parameter is required if `instance_type` is set to `IpAddress`.
+* `private_ip_address` - (Optional, ForceNew, Available since v1.52.2) The IP address in the CIDR block of the vSwitch.
+* `force` - (Optional, Bool, Available since v1.95.0) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default value: `false`. Valid values: `true`, `false`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The EIP Association ID and it formats as `<allocation_id>:<instance_id>`.
+* `id` - The resource ID in terraform of EIP Association. It formats as `<allocation_id>:<instance_id>`.
 
 ## Timeouts
 
--> **NOTE:** Available since 1.194.1+.
+-> **NOTE:** Available since 1.194.1.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
@@ -114,10 +116,10 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
--> **NOTE:** Available since 1.117.0+.
+-> **NOTE:** Available since 1.117.0.
 
 Elastic IP address association can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_eip_association.example eip-abc12345678:i-abc12355
+$ terraform import alicloud_eip_association.example <allocation_id>:<instance_id>
 ```

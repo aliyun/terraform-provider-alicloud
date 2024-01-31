@@ -16,12 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliyunEipAssociation() *schema.Resource {
+func resourceAliCloudEipAssociation() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliyunEipAssociationCreate,
-		Read:   resourceAliyunEipAssociationRead,
-		Update: resourceAliyunEipAssociationUpdate,
-		Delete: resourceAliyunEipAssociationDelete,
+		Create: resourceAliCloudEipAssociationCreate,
+		Read:   resourceAliCloudEipAssociationRead,
+		Update: resourceAliCloudEipAssociationUpdate,
+		Delete: resourceAliCloudEipAssociationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -46,12 +46,7 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				ForceNew: true,
 				Computed: true,
 			},
-			"force": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"private_ip_address": {
+			"mode": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -62,12 +57,23 @@ func resourceAliyunEipAssociation() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"private_ip_address": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 		},
 	}
 }
 
-func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEipAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	vpcService := VpcService{client}
 	var response map[string]interface{}
 	action := "AssociateEipAddress"
 	request := make(map[string]interface{})
@@ -75,30 +81,36 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	vpcService := VpcService{client}
-	if v, ok := d.GetOk("activity_id"); ok {
-		request["ActivityId"] = v
-	}
+
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("AssociateEipAddress")
 	request["AllocationId"] = Trim(d.Get("allocation_id").(string))
 	request["InstanceId"] = Trim(d.Get("instance_id").(string))
+
 	request["InstanceType"] = EcsInstance
 	if strings.HasPrefix(request["InstanceId"].(string), "lb-") {
 		request["InstanceType"] = SlbInstance
 	}
+
 	if strings.HasPrefix(request["InstanceId"].(string), "ngw-") {
 		request["InstanceType"] = Nat
 	}
+
 	if instanceType, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = instanceType.(string)
 	}
+
+	if mode, ok := d.GetOk("mode"); ok {
+		request["Mode"] = mode.(string)
+	}
+
+	if vpcId, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = vpcId.(string)
+	}
+
 	if privateIPAddress, ok := d.GetOk("private_ip_address"); ok {
 		request["PrivateIpAddress"] = privateIPAddress.(string)
 	}
-	if v, ok := d.GetOk("vpc_id"); ok {
-		request["VpcId"] = v.(string)
-	}
-	request["ClientToken"] = buildClientToken("AssociateEipAddress")
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -123,12 +135,12 @@ func resourceAliyunEipAssociationCreate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	d.SetId(fmt.Sprint(request["AllocationId"], ":", request["InstanceId"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["AllocationId"], request["InstanceId"]))
 
-	return resourceAliyunEipAssociationRead(d, meta)
+	return resourceAliCloudEipAssociationRead(d, meta)
 }
 
-func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEipAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 
@@ -140,47 +152,53 @@ func resourceAliyunEipAssociationRead(d *schema.ResourceData, meta interface{}) 
 		}
 		return WrapError(err)
 	}
-	d.Set("instance_id", object["InstanceId"])
+
 	d.Set("allocation_id", object["AllocationId"])
+	d.Set("instance_id", object["InstanceId"])
 	d.Set("instance_type", object["InstanceType"])
+	d.Set("mode", object["Mode"])
 	d.Set("vpc_id", object["VpcId"])
+	d.Set("private_ip_address", object["PrivateIpAddress"])
+
 	return nil
 }
 
-func resourceAliyunEipAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEipAssociationUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[WARN] The update method is used to ensure that the force parameter does not need to add forcenew.")
 	return nil
 }
 
-func resourceAliyunEipAssociationDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEipAssociationDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
+
 	allocationId, instanceId := parts[0], parts[1]
-	if err != nil {
-		return WrapError(err)
-	}
 
 	request := vpc.CreateUnassociateEipAddressRequest()
 	request.RegionId = client.RegionId
+	request.ClientToken = buildClientToken(request.GetActionName())
 	request.AllocationId = allocationId
 	request.InstanceId = instanceId
 	request.InstanceType = EcsInstance
 	request.Force = requests.NewBoolean(d.Get("force").(bool))
-	request.ClientToken = buildClientToken(request.GetActionName())
 
 	if strings.HasPrefix(instanceId, "lb-") {
 		request.InstanceType = SlbInstance
 	}
+
 	if strings.HasPrefix(instanceId, "ngw-") {
 		request.InstanceType = Nat
 	}
+
 	if instanceType, ok := d.GetOk("instance_type"); ok {
 		request.InstanceType = instanceType.(string)
 	}
+
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
 			return vpcClient.UnassociateEipAddress(request)
