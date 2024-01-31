@@ -49,6 +49,7 @@ func resourceAlicloudPolarDBEndpointAddress() *schema.Resource {
 			},
 			"port": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"connection_string": {
@@ -109,7 +110,7 @@ func resourceAlicloudPolarDBEndpointAddressCreate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	return resourceAlicloudPolarDBEndpointAddressRead(d, meta)
+	return resourceAlicloudPolarDBEndpointAddressUpdate(d, meta)
 }
 
 func resourceAlicloudPolarDBEndpointAddressRead(d *schema.ResourceData, meta interface{}) error {
@@ -149,7 +150,7 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 
-	if d.HasChange("connection_prefix") {
+	if d.IsNewResource() && d.HasChange("port") {
 		request := polardb.CreateModifyDBEndpointAddressRequest()
 		request.RegionId = client.RegionId
 		request.DBClusterId = parts[0]
@@ -158,9 +159,55 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapError(err)
 		}
+
 		request.NetType = object.NetType
 		request.ConnectionStringPrefix = d.Get("connection_prefix").(string)
+		request.Port = d.Get("port").(string)
 		request.NetType = d.Get("net_type").(string)
+		if request.Port != object.Port {
+			if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBEndpointAddress(request)
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus"}) {
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				return nil
+			}); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+
+			// wait instance connection_prefix modify success
+			if err := polarDBService.WaitForPolarDBConnectionPrefix(d.Id(), request.ConnectionStringPrefix, request.Port, DefaultTimeoutMedium); err != nil {
+				return WrapError(err)
+			}
+		}
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudPolarDBEndpointAddressRead(d, meta)
+	}
+
+	if d.HasChange("connection_prefix") || d.HasChange("port") {
+		request := polardb.CreateModifyDBEndpointAddressRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = parts[0]
+		request.DBEndpointId = parts[1]
+		object, err := polarDBService.DescribePolarDBConnection(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request.NetType = object.NetType
+		request.ConnectionStringPrefix = d.Get("connection_prefix").(string)
+		request.Port = d.Get("port").(string)
+		request.NetType = d.Get("net_type").(string)
+
 		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
 			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 				return polarDBClient.ModifyDBEndpointAddress(request)
@@ -178,9 +225,10 @@ func resourceAlicloudPolarDBEndpointAddressUpdate(d *schema.ResourceData, meta i
 		}
 
 		// wait instance connection_prefix modify success
-		if err := polarDBService.WaitForPolarDBConnectionPrefix(d.Id(), request.ConnectionStringPrefix, DefaultTimeoutMedium); err != nil {
+		if err := polarDBService.WaitForPolarDBConnectionPrefix(d.Id(), request.ConnectionStringPrefix, request.Port, DefaultTimeoutMedium); err != nil {
 			return WrapError(err)
 		}
+
 	}
 	return resourceAlicloudPolarDBEndpointAddressRead(d, meta)
 }
