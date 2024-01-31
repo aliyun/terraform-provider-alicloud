@@ -998,7 +998,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_snat_entry":                    resourceAlicloudSnatEntry(),
 			"alicloud_forward_entry":                 resourceAlicloudForwardEntry(),
 			"alicloud_eip":                           resourceAliCloudEipAddress(),
-			"alicloud_eip_association":               resourceAliyunEipAssociation(),
+			"alicloud_eip_association":               resourceAliCloudEipAssociation(),
 			"alicloud_slb":                           resourceAlicloudSlbLoadBalancer(),
 			"alicloud_slb_listener":                  resourceAliCloudSlbListener(),
 			"alicloud_slb_attachment":                resourceAliyunSlbAttachment(),
