@@ -21,12 +21,8 @@ Provides an ALIKAFKA consumer group resource, see [What is alikafka consumer gro
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
 variable "name" {
-  default = "terraform-example"
+  default = "tf-example"
 }
 
 resource "random_integer" "default" {
@@ -34,33 +30,38 @@ resource "random_integer" "default" {
   max = 99999
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "default" {
+  cidr_block = "172.16.0.0/12"
+}
+
+resource "alicloud_vswitch" "default" {
+  vpc_id     = alicloud_vpc.default.id
+  cidr_block = "172.16.0.0/24"
+  zone_id    = data.alicloud_zones.default.zones[0].id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_alikafka_instance" "default" {
-  name           = var.name
+  name           = "${var.name}-${random_integer.default.result}"
   partition_num  = "50"
   disk_type      = "1"
   disk_size      = "500"
   deploy_type    = "5"
   io_max         = "20"
-  vswitch_id     = data.alicloud_vswitches.default.ids.0
+  vswitch_id     = alicloud_vswitch.default.id
   security_group = alicloud_security_group.default.id
 }
 
 resource "alicloud_alikafka_consumer_group" "default" {
+  consumer_id = var.name
   instance_id = alicloud_alikafka_instance.default.id
-  consumer_id = "${var.name}-${random_integer.default.result}"
-  description = "${var.name}-${random_integer.default.result}"
 }
 ```
 

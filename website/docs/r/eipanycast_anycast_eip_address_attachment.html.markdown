@@ -22,6 +22,10 @@ For information about Eipanycast Anycast Eip Address Attachment and how to use i
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "terraform-example"
 }

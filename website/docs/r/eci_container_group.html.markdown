@@ -20,6 +20,9 @@ For information about ECI Container Group and how to use it, see [What is Contai
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
 variable "name" {
   default = "tf-example"
 }

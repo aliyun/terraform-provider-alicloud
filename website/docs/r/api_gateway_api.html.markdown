@@ -22,6 +22,10 @@ For information about Api Gateway Api and how to use it, see [Create an API](htt
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 resource "alicloud_api_gateway_group" "example" {
   name        = "tf-example"
   description = "tf-example"

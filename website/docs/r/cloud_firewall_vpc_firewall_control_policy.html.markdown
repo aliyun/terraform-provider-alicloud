@@ -20,6 +20,10 @@ For information about Cloud Firewall Vpc Firewall Control Policy and how to use 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 data "alicloud_account" "default" {
 }
 

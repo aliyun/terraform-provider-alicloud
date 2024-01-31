@@ -20,29 +20,23 @@ For information about Api Gateway Log Config and how to use it, see [What is Log
 Basic Usage
 
 ```terraform
-data "alicloud_api_gateway_log_configs" "default" {
-  log_type = "PROVIDER"
-}
-locals {
-  count = length(data.alicloud_api_gateway_log_configs.default.configs) > 0 ? 0 : 1
+variable "name" {
+  default = "terraform-example"
 }
 
 resource "random_integer" "default" {
-  count = local.count
-  max   = 99999
-  min   = 10000
+  max = 99999
+  min = 10000
 }
 
 resource "alicloud_log_project" "example" {
-  count       = local.count
-  name        = "terraform-example-${random_integer.default[0].result}"
-  description = "terraform-example"
+  project_name = "${var.name}-${random_integer.default.result}"
+  description  = var.name
 }
 
 resource "alicloud_log_store" "example" {
-  count                 = local.count
-  project               = alicloud_log_project.example[0].name
-  name                  = "terraform-example"
+  project_name          = alicloud_log_project.example.project_name
+  logstore_name         = "${var.name}-${random_integer.default.result}"
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60
@@ -50,9 +44,8 @@ resource "alicloud_log_store" "example" {
 }
 
 resource "alicloud_api_gateway_log_config" "example" {
-  count         = local.count
-  sls_project   = alicloud_log_project.example[0].name
-  sls_log_store = alicloud_log_store.example[0].name
+  sls_project   = alicloud_log_project.example.project_name
+  sls_log_store = alicloud_log_store.example.logstore_name
   log_type      = "PROVIDER"
 }
 ```

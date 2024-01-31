@@ -7,7 +7,7 @@ description: |-
   Provides an ECS image export resource.
 ---
 
-# alicloud\_image\_export
+# alicloud_image_export
 
 Export a custom image to the OSS bucket in the same region as the custom image.
 
@@ -17,7 +17,7 @@ Export a custom image to the OSS bucket in the same region as the custom image.
 
 -> **NOTE:** Before exporting the image, you must authorize the cloud server ECS official service account to write OSS permissions through RAM.
 
--> **NOTE:** Available in 1.68.0+.
+-> **NOTE:** Available since v1.68.0+.
 
 ## Example Usage
 
@@ -62,15 +62,15 @@ resource "alicloud_instance" "default" {
   internet_max_bandwidth_out = 10
 }
 
-resource "alicloud_image" "default" {
-  instance_id = alicloud_instance.default.id
-  image_name  = "terraform-example"
-  description = "terraform-example"
-}
-
 resource "random_integer" "default" {
   max = 99999
   min = 10000
+}
+
+resource "alicloud_image" "default" {
+  instance_id = alicloud_instance.default.id
+  image_name  = "terraform-example-${random_integer.default.result}"
+  description = "terraform-example"
 }
 
 resource "alicloud_oss_bucket" "default" {
@@ -99,7 +99,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `create` - (Defaults to 20 mins) Used when exporting the image (until it reaches the initial `Available` status). 
    
    
-## Attributes Reference0
+## Attributes Reference
  
  The following attributes are exported:
  

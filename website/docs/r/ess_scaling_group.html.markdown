@@ -22,10 +22,17 @@ For information about ess scaling rule, see [CreateScalingGroup](https://www.ali
 ## Example Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 resource "random_integer" "default" {
-  count = 3
-  max   = 99999
-  min   = 10000
+  min = 10000
+  max = 99999
+}
+
+locals {
+  name = "${var.name}-${random_integer.default.result}"
 }
 
 data "alicloud_zones" "default" {
@@ -46,7 +53,7 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = "terraform-example-${random_integer.default[0].result}"
+  vpc_name   = local.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -54,11 +61,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = "terraform-example-${random_integer.default[0].result}"
+  vswitch_name = local.name
 }
 
 resource "alicloud_security_group" "default" {
-  name   = "terraform-example-${random_integer.default[0].result}"
+  name   = local.name
   vpc_id = alicloud_vpc.default.id
 }
 
@@ -77,13 +84,13 @@ resource "alicloud_vswitch" "default2" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.1.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = "terraform-example-${random_integer.default[0].result}-bar"
+  vswitch_name = "${var.name}-bar"
 }
 
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = "terraform-example-${random_integer.default[0].result}"
+  scaling_group_name = local.name
   default_cooldown   = 20
   vswitch_ids        = [alicloud_vswitch.default.id, alicloud_vswitch.default2.id]
   removal_policies   = ["OldestInstance", "NewestInstance"]

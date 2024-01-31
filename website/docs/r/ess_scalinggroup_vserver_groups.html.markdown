@@ -36,13 +36,22 @@ variable "name" {
   default = "terraform-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+locals {
+  name = "${var.name}-${random_integer.default.result}"
+}
+
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
+  vpc_name   = local.name
   cidr_block = "172.16.0.0/16"
 }
 
@@ -50,11 +59,11 @@ resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  vswitch_name = local.name
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
+  name   = local.name
   vpc_id = alicloud_vpc.default.id
 }
 
@@ -68,13 +77,13 @@ resource "alicloud_slb_load_balancer" "default" {
 resource "alicloud_slb_server_group" "default1" {
   count            = "2"
   load_balancer_id = alicloud_slb_load_balancer.default.0.id
-  name             = var.name
+  name             = local.name
 }
 
 resource "alicloud_slb_server_group" "default2" {
   count            = "2"
   load_balancer_id = alicloud_slb_load_balancer.default.1.id
-  name             = var.name
+  name             = local.name
 }
 
 resource "alicloud_slb_listener" "default" {
@@ -90,7 +99,7 @@ resource "alicloud_slb_listener" "default" {
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = "2"
   max_size           = "2"
-  scaling_group_name = var.name
+  scaling_group_name = local.name
   default_cooldown   = 200
   removal_policies   = ["OldestInstance"]
   vswitch_ids        = [alicloud_vswitch.default.id]

@@ -22,6 +22,10 @@ For information about Api Gateway App attachment and how to use it, see [Add spe
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-beijing"
+}
+
 variable "name" {
   default = "terraform_example"
 }
