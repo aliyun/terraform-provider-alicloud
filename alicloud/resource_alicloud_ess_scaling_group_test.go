@@ -1350,6 +1350,76 @@ func TestAccAliCloudEssScalingGroup_eci(t *testing.T) {
 
 }
 
+func TestAccAliCloudEssScalingGroup_scalingPolicy(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "0",
+		"max_size":           "4",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":      "1",
+		"removal_policies.#": "2",
+		"scaling_policy":     "release",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupTemplate)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"scaling_policy":     "release",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "0",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"scaling_policy":     "release",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"max_size": "0",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_protected_instances(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
