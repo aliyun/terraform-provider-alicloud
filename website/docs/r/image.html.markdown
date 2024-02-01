@@ -7,7 +7,7 @@ description: |-
   Provides an ECS image resource.
 ---
 
-# alicloud\_image
+# alicloud_image
 
 Creates a custom image. You can then use a custom image to create ECS instances (RunInstances) or change the system disk for an existing instance (ReplaceSystemDisk).
 
@@ -17,7 +17,7 @@ Creates a custom image. You can then use a custom image to create ECS instances 
 
 -> **NOTE:**  If you want to combine snapshots of multiple disks into an image template, you can specify DiskDeviceMapping to create a custom image.
 
--> **NOTE:**  Available in 1.64.0+
+-> **NOTE:** Available since v1.64.0.
 
 ## Example Usage
 
@@ -62,12 +62,17 @@ resource "alicloud_instance" "default" {
   internet_max_bandwidth_out = 10
 }
 data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_image" "default" {
   instance_id       = alicloud_instance.default.id
-  image_name        = "terraform-example"
+  image_name        = "terraform-example-${random_integer.default.result}"
   description       = "terraform-example"
   architecture      = "x86_64"
-  platform          = "CentOS"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   tags = {
     FinanceDept = "FinanceDeptJoshua"

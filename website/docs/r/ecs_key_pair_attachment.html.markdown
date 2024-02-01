@@ -62,8 +62,13 @@ resource "alicloud_instance" "example" {
   vswitch_id           = alicloud_vswitch.example.id
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_ecs_key_pair" "example" {
-  key_pair_name = "tf-example"
+  key_pair_name = "tf-example-${random_integer.default.result}"
 }
 
 resource "alicloud_ecs_key_pair_attachment" "example" {

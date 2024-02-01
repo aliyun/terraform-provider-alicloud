@@ -88,7 +88,7 @@ The param_list supports the following:
 
 -> **NOTE:** There exists a potential diff error that the backend service will return a default param as following:
 
-```terraform
+```
 param_list {
   resource_key = "IsBase64Encode"
   form         = "CONSTANT"

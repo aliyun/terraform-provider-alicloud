@@ -1,7 +1,7 @@
 ---
 subcategory: "CDN"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_cdn_doamin_config"
+page_title: "Alicloud: alicloud_cdn_domain_config"
 sidebar_current: "docs-alicloud-resource-cdn-domain-config"
 description: |-
   Provides a Alicloud Cdn domain config  Resource.
@@ -13,16 +13,21 @@ Provides a CDN Accelerated Domain resource.
 
 For information about domain config and how to use it, see [Batch set config](https://www.alibabacloud.com/help/zh/doc-detail/90915.htm)
 
--> **NOTE:** Available in v1.34.0+.
+-> **NOTE:** Available since v1.34.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 # Create a new Domain config.
 resource "alicloud_cdn_domain_new" "domain" {
-  domain_name = "mycdndomain.alicloud-provider.cn"
+  domain_name = "mycdndomain-${random_integer.default.result}.alicloud-provider.cn"
   cdn_type    = "web"
   scope       = "overseas"
   sources {
@@ -49,9 +54,9 @@ The following arguments are supported:
 
 * `domain_name` - (Required) Name of the accelerated domain. This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix `.sh` and `.tel` are not supported.
 * `function_name` - (Required) The name of the domain config.
-* `function_args` - (Required, Type: list) The args of the domain config.
+* `function_args` - (Required, Type: list) The args of the domain config. See [`function_args`](#function_args) below.
 
-### Block function_args
+### `function_args`
 
 The `function_args` block supports the following:
 
@@ -69,7 +74,7 @@ The following attributes are exported:
 ## Import
 
 CDN domain config can be imported using the id, e.g.
-```
+```shell
 terraform import alicloud_cdn_domain_config.example <domain_name>:<function_name>:<config_id>
 ```
 

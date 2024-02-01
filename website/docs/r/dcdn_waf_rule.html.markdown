@@ -24,9 +24,14 @@ variable "name" {
   default = "tf_example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_dcdn_waf_policy" "example" {
   defense_scene = "waf_group"
-  policy_name   = var.name
+  policy_name   = "${var.name}_${random_integer.default.result}"
   policy_type   = "custom"
   status        = "on"
 }
@@ -45,10 +50,8 @@ resource "alicloud_dcdn_waf_rule" "example" {
     op_value = "eq"
     values   = "b"
   }
-  status    = "on"
-  cc_status = "on"
-  action    = "monitor"
-  effect    = "rule"
+  status = "on"
+  action = "monitor"
   rate_limit {
     target    = "IP"
     interval  = "5"

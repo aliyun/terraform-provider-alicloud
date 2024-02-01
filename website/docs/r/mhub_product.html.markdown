@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud MHUB Product resource.
 ---
 
-# alicloud\_mhub\_product
+# alicloud_mhub_product
 
 Provides a MHUB Product resource.
 
 For information about MHUB Product and how to use it, see [What is Product](https://help.aliyun.com/product/65109.html).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0+.
 
 -> **NOTE:** At present, the resource only supports cn-shanghai region.
 
@@ -22,6 +22,10 @@ For information about MHUB Product and how to use it, see [What is Product](http
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 resource "alicloud_mhub_product" "example" {
   product_name = "example_value"
 }

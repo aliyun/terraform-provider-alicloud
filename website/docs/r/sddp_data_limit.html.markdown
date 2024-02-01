@@ -20,6 +20,9 @@ For information about Data Security Center Data Limit and how to use it, see [Wh
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf_example"
 }

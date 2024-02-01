@@ -20,13 +20,14 @@ For information about CDN Domain and how to use it, see [What is Domain](https:/
 Basic Usage
 
 ```terraform
-variable "domain_name" {
-  default = "mycdndomain.alicloud-provider.cn"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_cdn_domain_new" "default" {
   scope       = "overseas"
-  domain_name = var.domain_name
+  domain_name = "mycdndomain-${random_integer.default.result}.alicloud-provider.cn"
   cdn_type    = "web"
   sources {
     type     = "ipaddr"

@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud MHUB App resource.
 ---
 
-# alicloud\_mhub\_app
+# alicloud_mhub_app
 
 Provides a MHUB App resource.
 
 For information about MHUB App and how to use it, see [What is App](https://help.aliyun.com/product/65109.html).
 
--> **NOTE:** Available in v1.138.0+.
+-> **NOTE:** Available since v1.138.0+.
 
 -> **NOTE:** At present, the resource only supports cn-shanghai region.
 
@@ -22,6 +22,10 @@ For information about MHUB App and how to use it, see [What is App](https://help
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 variable "name" {
   default = "example_value"
 }
@@ -33,7 +37,7 @@ resource "alicloud_mhub_product" "default" {
 resource "alicloud_mhub_app" "default" {
   app_name     = var.name
   product_id   = alicloud_mhub_product.default.id
-  package_name = "com.test.android"
+  package_name = "com.example.android"
   type         = "Android"
 }
 ```
