@@ -20,12 +20,11 @@ For information about DBS Backup Plan and how to use it, see [What is Backup Pla
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "terraform-example"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {

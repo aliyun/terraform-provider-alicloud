@@ -7,19 +7,23 @@ description: |-
   Provides a Alicloud Serverless Workflow Schedule resource.
 ---
 
-# alicloud\_fnf\_schedule
+# alicloud_fnf_schedule
 
 Provides a Serverless Workflow Schedule resource.
 
 For information about Serverless Workflow Schedule and how to use it, see [What is Schedule](https://www.alibabacloud.com/help/en/doc-detail/168934.htm).
 
--> **NOTE:** Available in v1.105.0+.
+-> **NOTE:** Available since v1.105.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 resource "alicloud_fnf_flow" "example" {
   definition  = <<EOF
   version: v1beta1
@@ -28,18 +32,18 @@ resource "alicloud_fnf_flow" "example" {
     - type: pass
       name: helloworld
   EOF  
-  description = "tf-testaccFnFFlow983041"
-  name        = "tf-testAccSchedule"
+  description = "tf-exampleFnFFlow983041"
+  name        = "tf-exampleSchedule"
   type        = "FDL"
 }
 
 resource "alicloud_fnf_schedule" "example" {
   cron_expression = "30 9 * * * *"
-  description     = "tf-testaccFnFSchedule983041"
+  description     = "tf-exampleFnFSchedule983041"
   enable          = "true"
   flow_name       = alicloud_fnf_flow.example.name
-  payload         = "{\"tf-test\": \"test success\"}"
-  schedule_name   = "tf-testaccFnFSchedule983041"
+  payload         = "{\"tf-example\": \"example success\"}"
+  schedule_name   = "tf-exampleFnFSchedule983041"
 }
 ```
 
@@ -62,7 +66,7 @@ The following attributes are exported:
 * `last_modified_time` - The time when the time-based schedule was last updated.
 * `schedule_id` - The ID of the time-based schedule.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

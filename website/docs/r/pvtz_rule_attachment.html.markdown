@@ -24,6 +24,11 @@ variable "name" {
   default = "example_value"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_pvtz_resolver_zones" "default" {
   status = "NORMAL"
 }
@@ -50,7 +55,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_pvtz_endpoint" "default" {
-  endpoint_name     = var.name
+  endpoint_name     = "${var.name}-${random_integer.default.result}"
   security_group_id = alicloud_security_group.default.id
   vpc_id            = alicloud_vpc.default[2].id
   vpc_region_id     = data.alicloud_regions.default.regions.0.id
@@ -69,7 +74,7 @@ resource "alicloud_pvtz_endpoint" "default" {
 
 resource "alicloud_pvtz_rule" "default" {
   endpoint_id = alicloud_pvtz_endpoint.default.id
-  rule_name   = var.name
+  rule_name   = "${var.name}-${random_integer.default.result}"
   type        = "OUTBOUND"
   zone_name   = var.name
   forward_ips {

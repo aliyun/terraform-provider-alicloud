@@ -7,21 +7,25 @@ description: |-
   Provides a Alicloud Serverless Workflow Execution resource.
 ---
 
-# alicloud\_fnf\_execution
+# alicloud_fnf_execution
 
 Provides a Serverless Workflow Execution resource.
 
 For information about Serverless Workflow Execution and how to use it, see [What is Execution](https://www.alibabacloud.com/help/en/doc-detail/122628.html).
 
--> **NOTE:** Available in v1.149.0+.
+-> **NOTE:** Available since v1.149.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 variable "name" {
-  default = "tf-testacc-fnfflow"
+  default = "tf-example-fnfflow"
 }
 
 resource "alicloud_ram_role" "default" {
@@ -81,7 +85,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Execution. The value formats as `<flow_name>:<execution_name>`.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

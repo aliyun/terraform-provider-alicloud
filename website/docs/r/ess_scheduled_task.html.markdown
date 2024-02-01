@@ -22,6 +22,11 @@ variable "name" {
   default = "terraform-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -70,7 +75,7 @@ resource "alicloud_security_group_rule" "default" {
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 1
   max_size           = 1
-  scaling_group_name = var.name
+  scaling_group_name = "${var.name}-${random_integer.default.result}"
   vswitch_ids        = [alicloud_vswitch.default.id]
   removal_policies   = ["OldestInstance", "NewestInstance"]
 }
@@ -93,7 +98,7 @@ resource "alicloud_ess_scaling_rule" "default" {
 resource "alicloud_ess_scheduled_task" "default" {
   scheduled_action    = alicloud_ess_scaling_rule.default.ari
   launch_time         = formatdate("YYYY-MM-DD'T'hh:mm'Z'", timeadd(timestamp(), "24h"))
-  scheduled_task_name = var.name
+  scheduled_task_name = "${var.name}-${random_integer.default.result}"
 }
 ```
 

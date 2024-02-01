@@ -13,28 +13,32 @@ Provides a DMS Enterprise Proxy Access resource.
 
 For information about DMS Enterprise Proxy Access and how to use it, see [What is Proxy Access](https://next.api.alibabacloud.com/document/dms-enterprise/2018-11-01/CreateProxyAccess).
 
--> **NOTE:** Available in v1.195.0+.
+-> **NOTE:** Available since v1.195.0+.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+data "alicloud_dms_enterprise_users" "dms_enterprise_users_ds" {
+  role   = "USER"
+  status = "NORMAL"
+}
+data "alicloud_dms_enterprise_proxies" "ids" {}
+
 resource "alicloud_dms_enterprise_proxy_access" "default" {
-  indep_password = "PASSWORD-DEMO"
-  proxy_id       = 1881
-  indep_account  = "dmstest"
-  user_id        = 104442
+  proxy_id = data.alicloud_dms_enterprise_proxies.ids.proxies.0.id
+  user_id  = data.alicloud_dms_enterprise_users.dms_enterprise_users_ds.users.0.user_id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `indep_account` - (ForceNew,Optional) Database account.
-* `indep_password` - (ForceNew,Optional) Database password.
-* `proxy_id` - (Required,ForceNew) The ID of the security agent. 
-* `user_id` - (Required,ForceNew) The user ID.
+* `indep_account` - (ForceNew, Optional) Database account.
+* `indep_password` - (ForceNew, Optional) Database password.
+* `proxy_id` - (Required, ForceNew) The ID of the security agent. 
+* `user_id` - (Required, ForceNew) The user ID.
 
 
 ## Attributes Reference
@@ -52,7 +56,7 @@ The following attributes are exported:
 * `user_name` - User nickname.
 * `user_uid` - User UID.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Proxy Access.

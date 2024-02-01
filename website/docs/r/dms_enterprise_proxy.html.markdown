@@ -20,6 +20,10 @@ For information about DMS Enterprise Proxy and how to use it, see [What is Proxy
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
@@ -90,7 +94,7 @@ resource "alicloud_db_account" "default" {
 
 resource "alicloud_dms_enterprise_instance" "default" {
   tid               = data.alicloud_dms_user_tenants.default.ids.0
-  instance_type     = "MySQL"
+  instance_type     = "mysql"
   instance_source   = "RDS"
   network_type      = "VPC"
   env_type          = "dev"
