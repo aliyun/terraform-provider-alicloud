@@ -32,10 +32,9 @@ func init() {
 }
 
 func testSweepCmsNamespace(region string) error {
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	aliyunClient := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -116,18 +115,18 @@ func testSweepCmsNamespace(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCloudMonitorServiceNamespace_basic0(t *testing.T) {
+func TestAccAliCloudCloudMonitorServiceNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_namespace.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudMonitorServiceNamespaceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCloudMonitorServiceNamespaceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCmsNamespace")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc-cloudmonitorservicenamespace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceNamespaceBasicDependence0)
+	name := fmt.Sprintf("tf-testacc-cmsn%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudMonitorServiceNamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -138,25 +137,11 @@ func TestAccAlicloudCloudMonitorServiceNamespace_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":   "${var.name}",
-					"namespace":     "${var.name}",
-					"specification": "cms.s1.large",
+					"namespace": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":   name,
-						"namespace":     name,
-						"specification": "cms.s1.large",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
+						"namespace": name,
 					}),
 				),
 			},
@@ -171,6 +156,16 @@ func TestAccAlicloudCloudMonitorServiceNamespace_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -179,19 +174,62 @@ func TestAccAlicloudCloudMonitorServiceNamespace_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudCloudMonitorServiceNamespaceMap0 = map[string]string{
-	"namespace": CHECKSET,
+func TestAccAliCloudCloudMonitorServiceNamespace_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_namespace.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudMonitorServiceNamespaceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsNamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-cmsn%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudMonitorServiceNamespaceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"namespace":     name,
+					"specification": "cms.s1.xlarge",
+					"description":   name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"namespace":     name,
+						"specification": "cms.s1.xlarge",
+						"description":   name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
-func AlicloudCloudMonitorServiceNamespaceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+var AliCloudCloudMonitorServiceNamespaceMap0 = map[string]string{
+	"specification": CHECKSET,
 }
+
+func AliCloudCloudMonitorServiceNamespaceBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+    	default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
+func TestUnitAliCloudCloudMonitorServiceNamespace(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_namespace"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_namespace"].Schema).Data(nil, nil)
@@ -257,7 +295,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsNamespaceCreate(dInit, rawClient)
+	err = resourceAliCloudCmsNamespaceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -280,7 +318,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsNamespaceCreate(dInit, rawClient)
+		err := resourceAliCloudCmsNamespaceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -307,7 +345,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsNamespaceUpdate(dExisted, rawClient)
+	err = resourceAliCloudCmsNamespaceUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -347,7 +385,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsNamespaceUpdate(dExisted, rawClient)
+		err := resourceAliCloudCmsNamespaceUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -391,7 +429,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsNamespaceRead(dExisted, rawClient)
+		err := resourceAliCloudCmsNamespaceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -410,7 +448,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsNamespaceDelete(dExisted, rawClient)
+	err = resourceAliCloudCmsNamespaceDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -438,7 +476,7 @@ func TestUnitAlicloudCloudMonitorServiceNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsNamespaceDelete(dExisted, rawClient)
+		err := resourceAliCloudCmsNamespaceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

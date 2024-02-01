@@ -1537,7 +1537,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecd_snapshot":                                          resourceAlicloudEcdSnapshot(),
 			"alicloud_ecd_bundle":                                            resourceAlicloudEcdBundle(),
 			"alicloud_config_delivery":                                       resourceAlicloudConfigDelivery(),
-			"alicloud_cms_namespace":                                         resourceAlicloudCmsNamespace(),
+			"alicloud_cms_namespace":                                         resourceAliCloudCmsNamespace(),
 			"alicloud_cms_sls_group":                                         resourceAlicloudCmsSlsGroup(),
 			"alicloud_config_aggregate_delivery":                             resourceAlicloudConfigAggregateDelivery(),
 			"alicloud_edas_namespace":                                        resourceAlicloudEdasNamespace(),

@@ -10,15 +10,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCmsNamespace() *schema.Resource {
+func resourceAliCloudCmsNamespace() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsNamespaceCreate,
-		Read:   resourceAlicloudCmsNamespaceRead,
-		Update: resourceAlicloudCmsNamespaceUpdate,
-		Delete: resourceAlicloudCmsNamespaceDelete,
+		Create: resourceAliCloudCmsNamespaceCreate,
+		Read:   resourceAliCloudCmsNamespaceRead,
+		Update: resourceAliCloudCmsNamespaceUpdate,
+		Delete: resourceAliCloudCmsNamespaceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,27 +27,27 @@ func resourceAlicloudCmsNamespace() *schema.Resource {
 			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"namespace": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`[a-z0-9-]+$`), "The namespace can contain lowercase letters, digits, and hyphens (-)."),
 				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile(`[a-z0-9-]+$`), "The namespace can contain lowercase letters, digits, and hyphens (-)."),
 			},
 			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cms.s1.12xlarge", "cms.s1.2xlarge", "cms.s1.3xlarge", "cms.s1.6xlarge", "cms.s1.large", "cms.s1.xlarge"}, false),
+				ValidateFunc: StringInSlice([]string{"cms.s1.large", "cms.s1.xlarge", "cms.s1.2xlarge", "cms.s1.3xlarge", "cms.s1.6xlarge", "cms.s1.12xlarge"}, false),
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateHybridMonitorNamespace"
@@ -57,16 +56,22 @@ func resourceAlicloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
+
 	request["Namespace"] = d.Get("namespace")
+
 	if v, ok := d.GetOk("specification"); ok {
 		request["Spec"] = v
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -77,23 +82,27 @@ func resourceAlicloudCmsNamespaceCreate(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_namespace", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(request["Namespace"]))
 
-	return resourceAlicloudCmsNamespaceRead(d, meta)
+	return resourceAliCloudCmsNamespaceRead(d, meta)
 }
-func resourceAlicloudCmsNamespaceRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsNamespaceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
+
 	object, err := cmsService.DescribeCmsNamespace(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cms_namespace cmsService.DescribeCmsNamespace Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -101,39 +110,53 @@ func resourceAlicloudCmsNamespaceRead(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 
-	d.Set("namespace", d.Id())
+	d.Set("namespace", object["Namespace"])
 	d.Set("description", object["Description"])
-	d.Set("specification", object["Detail"].(map[string]interface{})["Spec"])
+
+	if detail, ok := object["Detail"]; ok {
+		detailArg := detail.(map[string]interface{})
+
+		d.Set("specification", detailArg["Spec"])
+	}
+
 	return nil
 }
-func resourceAlicloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
 	update := false
+
 	request := map[string]interface{}{
 		"Namespace": d.Id(),
 	}
-	if d.HasChange("description") {
-		update = true
-	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
+
 	if d.HasChange("specification") {
 		update = true
 	}
 	if v, ok := d.GetOk("specification"); ok {
 		request["Spec"] = v
 	}
+
+	if d.HasChange("description") {
+		update = true
+	}
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
 	if update {
 		action := "ModifyHybridMonitorNamespace"
+		conn, err := client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -144,16 +167,20 @@ func resourceAlicloudCmsNamespaceUpdate(d *schema.ResourceData, meta interface{}
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 	}
-	return resourceAlicloudCmsNamespaceRead(d, meta)
+
+	return resourceAliCloudCmsNamespaceRead(d, meta)
 }
-func resourceAlicloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteHybridMonitorNamespace"
 	var response map[string]interface{}
@@ -161,13 +188,16 @@ func resourceAlicloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"Namespace": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -178,11 +208,17 @@ func resourceAlicloudCmsNamespaceDelete(d *schema.ResourceData, meta interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	return nil
 }
