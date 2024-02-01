@@ -21,8 +21,9 @@ Basic Usage
 
 ```terraform
 resource "alicloud_cms_namespace" "example" {
-  namespace     = "tf_example"
+  namespace     = "tf-example"
   specification = "cms.s1.large"
+  description   = "tf-example"
 }
 ```
 
@@ -30,15 +31,15 @@ resource "alicloud_cms_namespace" "example" {
 
 The following arguments are supported:
 
-* `description` - (Optional) Description of indicator warehouse.
-* `namespace` - (Required, ForceNew) Indicator warehouse name. The namespace can contain lowercase letters, digits, and hyphens (-).
-* `specification` - (Optional) Data storage duration. Valid values: `cms.s1.12xlarge`, `cms.s1.2xlarge`, `cms.s1.3xlarge`, `cms.s1.6xlarge`, `cms.s1.large`, `cms.s1.xlarge`. 
-  - `cms.s1.large`: Data storage duration is 15 days. 
-  - `cms.s1.xlarge`: Data storage duration is 32 days. 
+* `namespace` - (Required, ForceNew) The name of the namespace. The name can contain lowercase letters, digits, and hyphens (-).
+* `specification` - (Optional) The data retention period. Default value: `cms.s1.3xlarge`. Valid values:
+  - `cms.s1.large`: Data storage duration is 15 days.
+  - `cms.s1.xlarge`: Data storage duration is 32 days.
   - `cms.s1.2xlarge`: Data storage duration 63 days.
-  - `cms.s1.3xlarge`: (Default) Data storage duration 93 days.
+  - `cms.s1.3xlarge`: Data storage duration 93 days.
   - `cms.s1.6xlarge`: Data storage duration 185 days.
   - `cms.s1.12xlarge`: Data storage duration 376 days.
+* `description` - (Optional) The description of the namespace.
 
 ## Attributes Reference
 
@@ -50,14 +51,14 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Namespace.
-* `delete` - (Defaults to 1 mins) Used when delete the Namespace.
-* `update` - (Defaults to 1 mins) Used when update the Namespace.
+* `create` - (Defaults to 1 min) Used when create the Namespace.
+* `update` - (Defaults to 1 min) Used when update the Namespace.
+* `delete` - (Defaults to 1 min) Used when delete the Namespace.
 
 ## Import
 
 Cloud Monitor Service Namespace can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cms_namespace.example <namespace>
+$ terraform import alicloud_cms_namespace.example <id>
 ```
