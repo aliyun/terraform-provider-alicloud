@@ -614,5 +614,3 @@ func testAll(diff *diffparser.Diff) {
 		line++
 	}
 }
-
-
