@@ -11,7 +11,7 @@ description: |-
 
 Provides a PolarDB endpoint resource to manage cluster endpoint of PolarDB cluster.
 
--> **NOTE:** Available since v1.216.0
+-> **NOTE:** Available since v1.217.0
 
 -> **NOTE:** The default cluster endpoint can not be created or deleted manually.
 

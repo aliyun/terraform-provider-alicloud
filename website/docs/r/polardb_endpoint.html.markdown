@@ -69,8 +69,8 @@ The following arguments are supported:
     **NOTE:** For a PolarDB for MySQL cluster, this parameter is required, and only one connection string in each endpoint can enable the ssl, for other notes, see [Configure SSL encryption](https://www.alibabacloud.com/help/doc-detail/153182.htm).  
     For a PolarDB for PostgreSQL cluster or a PolarDB-O cluster, this parameter is not required, by default, SSL encryption is enabled for all endpoints.
 * `db_endpoint_description` - (Optional, Available since v1.201.0) The name of the endpoint.
-* `connection_prefix` - (Optional, Available since v1.216.0) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
-* `port` - (Optional, Available since v1.216.0) Port of the specified endpoint. Valid values: 3000 to 5999.
+* `connection_prefix` - (Optional, Available since v1.217.0) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
+* `port` - (Optional, Available since v1.217.0) Port of the specified endpoint. Valid values: 3000 to 5999.
 
 ## Attributes Reference
 

@@ -65,7 +65,7 @@ The following arguments are supported:
 * `db_endpoint_id` - (Required, ForceNew) The Id of endpoint that can run database.
 * `connection_prefix` - (Optional) Prefix of the specified endpoint. The prefix must be 6 to 30 characters in length, and can contain lowercase letters, digits, and hyphens (-), must start with a letter and end with a digit or letter.
 * `net_type` - (Optional, ForceNew) Internet connection net type. Valid value: `Public`. Default to `Public`. Currently supported only `Public`.
-* `port` - (Optional, Available since v1.216.0) Port of the specified endpoint. Valid values: 3000 to 5999.
+* `port` - (Optional, Available since v1.217.0) Port of the specified endpoint. Valid values: 3000 to 5999.
 
 ## Attributes Reference
 
