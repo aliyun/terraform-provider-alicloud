@@ -88,11 +88,13 @@ func resourceAliCloudQuotasQuotaAlarm() *schema.Resource {
 }
 
 func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateQuotaAlarm"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
@@ -126,9 +128,11 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 	if v, ok := d.GetOk("threshold_type"); ok {
 		request["ThresholdType"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -147,7 +151,7 @@ func resourceAliCloudQuotasQuotaAlarmCreate(d *schema.ResourceData, meta interfa
 
 	d.SetId(fmt.Sprint(response["AlarmId"]))
 
-	return resourceAliCloudQuotasQuotaAlarmUpdate(d, meta)
+	return resourceAliCloudQuotasQuotaAlarmRead(d, meta)
 }
 
 func resourceAliCloudQuotasQuotaAlarmRead(d *schema.ResourceData, meta interface{}) error {
@@ -184,6 +188,7 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	action := "UpdateQuotaAlarm"
 	conn, err := client.NewQuotasClient()
@@ -191,36 +196,38 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
+	query = make(map[string]interface{})
 	request["AlarmId"] = d.Id()
-	if !d.IsNewResource() && d.HasChange("threshold") {
+	if d.HasChange("threshold") {
 		update = true
 		request["Threshold"] = d.Get("threshold")
 	}
 
-	if !d.IsNewResource() && d.HasChange("threshold_percent") {
+	if d.HasChange("threshold_percent") {
 		update = true
 		request["ThresholdPercent"] = d.Get("threshold_percent")
 	}
 
-	if !d.IsNewResource() && d.HasChange("web_hook") {
+	if d.HasChange("web_hook") {
 		update = true
 		request["WebHook"] = d.Get("web_hook")
 	}
 
-	if !d.IsNewResource() && d.HasChange("quota_alarm_name") {
+	if d.HasChange("quota_alarm_name") {
 		update = true
 	}
 	request["AlarmName"] = d.Get("quota_alarm_name")
-	if !d.IsNewResource() && d.HasChange("threshold_type") {
+	if d.HasChange("threshold_type") {
 		update = true
 		request["ThresholdType"] = d.Get("threshold_type")
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -235,29 +242,30 @@ func resourceAliCloudQuotasQuotaAlarmUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
 	}
+
 	return resourceAliCloudQuotasQuotaAlarmRead(d, meta)
 }
 
 func resourceAliCloudQuotasQuotaAlarmDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteQuotaAlarm"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["AlarmId"] = d.Id()
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {

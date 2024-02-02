@@ -17,12 +17,14 @@ func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAliCloudQuotasQuotaApplicationCreate,
 		Read:   resourceAliCloudQuotasQuotaApplicationRead,
+		Update: resourceAliCloudQuotasQuotaApplicationUpdate,
 		Delete: resourceAliCloudQuotasQuotaApplicationDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
@@ -34,8 +36,7 @@ func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Async", "Sync"}, false),
+				ValidateFunc: StringInSlice([]string{"Async", "Sync"}, true),
 			},
 			"audit_reason": {
 				Type:     schema.TypeString,
@@ -77,8 +78,7 @@ func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 			"env_language": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"zh", "en"}, false),
+				ValidateFunc: StringInSlice([]string{"zh", "en"}, true),
 			},
 			"expire_time": {
 				Type:     schema.TypeString,
@@ -105,8 +105,7 @@ func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 			"quota_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
+				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, true),
 			},
 			"quota_description": {
 				Type:     schema.TypeString,
@@ -134,11 +133,13 @@ func resourceAliCloudQuotasQuotaApplication() *schema.Resource {
 }
 
 func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateQuotaApplication"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
@@ -179,9 +180,11 @@ func resourceAliCloudQuotasQuotaApplicationCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("env_language"); ok {
 		request["EnvLanguage"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -236,6 +239,11 @@ func resourceAliCloudQuotasQuotaApplicationRead(d *schema.ResourceData, meta int
 	evaluation, _ := e.Eval(objectRaw)
 	d.Set("dimensions", evaluation)
 
+	return nil
+}
+
+func resourceAliCloudQuotasQuotaApplicationUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Quota Application.")
 	return nil
 }
 

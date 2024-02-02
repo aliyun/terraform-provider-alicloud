@@ -18,7 +18,6 @@ type QuotasServiceV2 struct {
 // DescribeQuotasTemplateQuota <<< Encapsulated get interface for Quotas TemplateQuota.
 
 func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -30,12 +29,13 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["Id"] = id
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -47,10 +47,12 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TEMPLATE.ITEM.NOT.FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -60,7 +62,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateQuota(id string) (object map[str
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("TemplateQuota", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -76,7 +78,14 @@ func (s *QuotasServiceV2) QuotasTemplateQuotaStateRefreshFunc(id string, field s
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.Dimensions" {
+			e := jsonata.MustCompile("$each($.Dimensions, function($v, $k) {{\"value\":$v, \"key\": $k}})[]")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -91,7 +100,6 @@ func (s *QuotasServiceV2) QuotasTemplateQuotaStateRefreshFunc(id string, field s
 // DescribeQuotasQuotaApplication <<< Encapsulated get interface for Quotas QuotaApplication.
 
 func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -103,12 +111,13 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["ApplicationId"] = id
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -120,10 +129,9 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaApplication(id string) (object map[
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaApplication", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -145,7 +153,14 @@ func (s *QuotasServiceV2) QuotasQuotaApplicationStateRefreshFunc(id string, fiel
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.Dimension" {
+			e := jsonata.MustCompile("$each($.$.Dimension, function($v, $k) {{\"value\":$v, \"key\": $k}})")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -160,7 +175,6 @@ func (s *QuotasServiceV2) QuotasQuotaApplicationStateRefreshFunc(id string, fiel
 // DescribeQuotasQuotaAlarm <<< Encapsulated get interface for Quotas QuotaAlarm.
 
 func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -172,12 +186,13 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["AlarmId"] = id
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -189,10 +204,12 @@ func (s *QuotasServiceV2) DescribeQuotasQuotaAlarm(id string) (object map[string
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ALARM.NOT.FOUND"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaAlarm", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("QuotaAlarm", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -214,7 +231,14 @@ func (s *QuotasServiceV2) QuotasQuotaAlarmStateRefreshFunc(id string, field stri
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+		if field == "$.QuotaDimension" {
+			e := jsonata.MustCompile("$each($.$.QuotaDimension, function($v, $k) {{\"value\":$v, \"key\": $k}})")
+			v, _ = e.Eval(object)
+			currentStatus = fmt.Sprint(v)
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -260,6 +284,7 @@ func (s *QuotasServiceV2) DescribeQuotasTemplateApplications(id string) (object 
 	})
 
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -306,6 +331,7 @@ func (s *QuotasServiceV2) DescribeListQuotaApplicationsDetailForTemplate(id stri
 	})
 
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

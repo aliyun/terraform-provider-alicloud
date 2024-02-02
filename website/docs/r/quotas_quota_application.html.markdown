@@ -23,6 +23,10 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 
 resource "alicloud_quotas_quota_application" "default" {
   quota_action_code = "q_desktop-count"
@@ -46,26 +50,25 @@ Terraform cannot destroy resource `alicloud_quotas_quota_application`. Terraform
 ## Argument Reference
 
 The following arguments are supported:
-* `audit_mode` - (Optional, ForceNew, Computed) Quota audit mode. Value:
+* `audit_mode` - (Optional, Computed) Quota audit mode. Value:
   - Sync: Synchronize auditing. The quota center automatically approves, and the approval result is returned immediately, but the probability of application passing is lower than that of asynchronous approval, and the validity period of the increase quota is 1 hour.
   - Async: Asynchronous auditing. Manual review, the probability of application passing is relatively high, and the validity period of the increase quota is 1 month.
 -> **NOTE:**  This parameter takes effect only for the ECS specification quota of the cloud server.
 * `desire_value` - (Required, ForceNew) The desire value of the quota application.
-* `dimensions` - (Optional, ForceNew) QuotaDimensions. See [`dimensions`](#dimensions) below.
+* `dimensions` - (Optional, ForceNew) QuotaDimensions ListProductQuotaDimensions:Query the supported quota dimensions for the product.[ListProductQuotaDimensions](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproductquotadimensions) GetProductQuotaDimension:Query the details of quota dimensions supported by the product.[getproductquotadimension](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-getproductquotadimension). See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The effective time of the quota application.
-* `env_language` - (Optional, ForceNew, Available in v1.206.0+) The language of the quota alert notification. Value:
+* `env_language` - (Optional, Available in v1.206.0+) The language of the quota alert notification. Value:
   - zh (default): Chinese.
   - en: English.
 * `expire_time` - (Optional, ForceNew) The expired time of the quota application.
-* `notice_type` - (Optional, ForceNew, Computed) Specifies whether to send a notification about the application result. Valid values:0: sends a notification about the application result.3: A notification about the application result is sent.
-* `product_code` - (Required, ForceNew) The product code.
+* `notice_type` - (Optional, ForceNew, Computed) Specifies whether to send a notification about the application result. Valid values:  0: sends a notification about the application result. 3: A notification about the application result is sent.
+* `product_code` - (Required, ForceNew) The product code. ListProducts:Query the list of products supported by the quota center. [ListProducts](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproducts).
 * `quota_action_code` - (Required, ForceNew) The ID of quota action.
-* `quota_category` - (Optional, ForceNew) The quota type.
+* `quota_category` - (Optional) The quota type.
   - CommonQuota (default): Generic quota.
   - FlowControl:API rate quota.
   - WhiteListLabel: Equity quota.
 * `reason` - (Required, ForceNew) The reason of the quota application.
-
 
 ### `dimensions`
 

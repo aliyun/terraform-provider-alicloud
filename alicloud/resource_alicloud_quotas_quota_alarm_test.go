@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudQuotasQuotaAlarm_basic(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap)
@@ -375,7 +375,7 @@ func TestUnitAlicloudQuotasQuotaAlarm(t *testing.T) {
 
 }
 
-func TestAccAlicloudQuotasQuotaAlarm_basic1(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
@@ -541,7 +541,7 @@ func TestAccAlicloudQuotasQuotaAlarm_basic1(t *testing.T) {
 
 // Test Quotas QuotaAlarm. >>> Resource test cases, automatically generated.
 // Case 2901
-func TestAccAlicloudQuotasQuotaAlarm_basic2901(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic2901(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
@@ -689,7 +689,7 @@ variable "name" {
 }
 
 // Case 2936
-func TestAccAlicloudQuotasQuotaAlarm_basic2936(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic2936(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)
@@ -797,7 +797,7 @@ variable "name" {
 }
 
 // Case 2901  twin
-func TestAccAlicloudQuotasQuotaAlarm_basic2901_twin(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic2901_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2901)
@@ -855,7 +855,7 @@ func TestAccAlicloudQuotasQuotaAlarm_basic2901_twin(t *testing.T) {
 }
 
 // Case 2936  twin
-func TestAccAlicloudQuotasQuotaAlarm_basic2936_twin(t *testing.T) {
+func TestAccAliCloudQuotasQuotaAlarm_basic2936_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap2936)

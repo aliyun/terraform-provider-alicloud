@@ -20,7 +20,7 @@ import (
 )
 
 // The quota product does not support deletion, so skip the test.
-func SkipTestAccAlicloudQuotasQuotaApplication_basic(t *testing.T) {
+func SkipTestAccAliCloudQuotasQuotaApplication_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap)
@@ -253,7 +253,7 @@ func TestUnitAlicloudQuotasQuotaApplication(t *testing.T) {
 
 // Test Quotas QuotaApplication. >>> Resource test cases, automatically generated.
 // Case 3294
-func SkipTestAccAlicloudQuotasQuotaApplication_basic3294(t *testing.T) {
+func TestAccAliCloudQuotasQuotaApplication_basic3294(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3294)
@@ -331,7 +331,7 @@ variable "name" {
 }
 
 // Case 3289
-func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
+func TestAccAliCloudQuotasQuotaApplication_basic3289(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_quota_application.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaApplicationMap3289)
@@ -358,7 +358,7 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 					"product_code":      "vpc",
 					"quota_category":    "WhiteListLabel",
 					"notice_type":       "3",
-					"expire_time":       "2023-06-26T16:00:00Z",
+					"expire_time":       "2024-06-26T16:00:00Z",
 					"desire_value":      "1",
 					"reason":            "测试",
 					"env_language":      "zh",
@@ -371,7 +371,7 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 						"product_code":      "vpc",
 						"quota_category":    "WhiteListLabel",
 						"notice_type":       "3",
-						"expire_time":       "2023-06-26T16:00:00Z",
+						"expire_time":       "2024-06-26T16:00:00Z",
 						"desire_value":      "1",
 						"reason":            "测试",
 						"env_language":      "zh",

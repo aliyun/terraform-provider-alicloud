@@ -11,7 +11,7 @@ import (
 
 // Test Quotas TemplateQuota. >>> Resource test cases, automatically generated.
 // Case 3099
-func TestAccAlicloudQuotasTemplateQuota_basic3099(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3099(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3099)
@@ -157,7 +157,7 @@ variable "name" {
 }
 
 // Case 3298
-func TestAccAlicloudQuotasTemplateQuota_basic3298(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3298(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3298)
@@ -303,7 +303,7 @@ variable "name" {
 }
 
 // Case 3099  twin
-func TestAccAlicloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3099)
@@ -361,7 +361,7 @@ func TestAccAlicloudQuotasTemplateQuota_basic3099_twin(t *testing.T) {
 }
 
 // Case 3298  twin
-func TestAccAlicloudQuotasTemplateQuota_basic3298_twin(t *testing.T) {
+func TestAccAliCloudQuotasTemplateQuota_basic3298_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_quotas_template_quota.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasTemplateQuotaMap3298)

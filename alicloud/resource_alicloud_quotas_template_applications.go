@@ -167,7 +167,7 @@ func resourceAliCloudQuotasTemplateApplications() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
+				ValidateFunc: StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, true),
 			},
 			"reason": {
 				Type:     schema.TypeString,
