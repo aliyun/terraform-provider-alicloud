@@ -1,4 +1,20 @@
 ## 1.217.0 (Unreleased)
+
+- **New Resource:** `alicloud_polardb_cluster_endpoint` [GH-6923]
+- **New Resource:** `alicloud_polardb_primary_endpoint` [GH-6923]
+
+ENHANCEMENTS:
+
+- provider: improves the append user agent. [GH-6930]
+- resource/alicloud_ess_eci_scaling_configuration: update active_deadline_seconds and container_group_name constriction. [GH-6910]
+- resource/alicloud_eip_association: Added the field mode. [GH-6922]
+- resource/alicloud_polardb_endpoint_address: Support modify custom endpoint public port. resource/alicloud_polardb_endpoint: Support modify custom endpoint private address, port. [GH-6923]
+- resource/alicloud_cms_namespace: Improved alicloud_cms_namespace testcase. [GH-6924]
+- resource/alicloud_eip_association: Added retry strategy for error code OperationFailed.EcsMigrating. [GH-6931]
+- data-source/alicloud_cdn_service: add retry for cdn_service. [GH-6917]
+- docs: Improves the provider index docs examples. [GH-6926]
+- docs: fmt polardb_cluster_endpoint version number. [GH-6928]
+
 ## 1.216.0 (February 01, 2014)
 
 - **New Resource:** `alicloud_ens_image` ([#6903](https://github.com/aliyun/terraform-provider-alicloud/issues/6903))
