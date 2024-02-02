@@ -251,6 +251,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 	locationClient.AppendUserAgent(Terraform, client.config.TerraformVersion)
 	locationClient.AppendUserAgent(Provider, providerVersion)
 	locationClient.AppendUserAgent(Module, client.config.ConfigurationSource)
+	locationClient.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	var endpointResult string
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {

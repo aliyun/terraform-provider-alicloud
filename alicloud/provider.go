@@ -1977,24 +1977,33 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.FcEndpoint = strings.TrimSpace(fcEndpoint.(string))
 	}
 
-	if config.ConfigurationSource == "" {
-		sourceAccessKey := config.AccessKey
-		if len(sourceAccessKey) > 25 {
-			sourceAccessKey = sourceAccessKey[:25]
-		}
-		sourceName := fmt.Sprintf("Default/%s:%s", sourceAccessKey, config.TerraformTraceId)
-		if len(sourceName) > 64 {
-			sourceName = sourceName[:64]
-		}
-		config.ConfigurationSource = sourceName
-	} else {
-		// configuration source does not come from env TF_APPEND_USER_AGENT,
-		// the final value should also contains TF_APPEND_USER_AGENT valaue
-		appendSource := strings.TrimSpace(os.Getenv("TF_APPEND_USER_AGENT"))
-		if appendSource != "" && appendSource != strings.TrimSpace(config.ConfigurationSource) {
-			config.ConfigurationSource += " " + appendSource
+	configurationSources := []string{
+		fmt.Sprintf("Default/%s", config.TerraformTraceId),
+	}
+
+	// configuration source final value should also contain TF_APPEND_USER_AGENT value
+	// there is need to deduplication
+	config.ConfigurationSource += " " + strings.TrimSpace(os.Getenv("TF_APPEND_USER_AGENT"))
+	if config.ConfigurationSource != "" {
+		for _, s := range strings.Split(config.ConfigurationSource, " ") {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				continue
+			}
+			exist := false
+			for _, con := range configurationSources {
+				if s == con {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				configurationSources = append(configurationSources, s)
+			}
 		}
 	}
+	config.ConfigurationSource = strings.Join(configurationSources, " ") + getModuleAddr()
+
 	client, err := config.Client()
 	if err != nil {
 		return nil, err
@@ -3498,4 +3507,29 @@ func getClientByCredentialsURI(credentialsURI string) (*CredentialsURIResponse, 
 	}
 
 	return &response, nil
+}
+
+func getModuleAddr() string {
+	moduleMeta := make(map[string]interface{})
+	str, err := os.ReadFile(".terraform/modules/modules.json")
+	if err != nil {
+		return ""
+	}
+	err = json.Unmarshal(str, &moduleMeta)
+	if err != nil || len(moduleMeta) < 1 || moduleMeta["Modules"] == nil {
+		return ""
+	}
+	var result string
+	for _, m := range moduleMeta["Modules"].([]interface{}) {
+		module := m.(map[string]interface{})
+		moduleSource := fmt.Sprint(module["Source"])
+		moduleVersion := fmt.Sprint(module["Version"])
+		if strings.HasPrefix(moduleSource, "registry.terraform.io/") {
+			parts := strings.Split(moduleSource, "/")
+			if len(parts) == 4 {
+				result += " " + "terraform-" + parts[3] + "-" + parts[2] + "/" + moduleVersion
+			}
+		}
+	}
+	return result
 }
