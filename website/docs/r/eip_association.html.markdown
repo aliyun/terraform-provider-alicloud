@@ -94,7 +94,7 @@ The following arguments are supported:
 * `allocation_id` - (Required, ForceNew) The ID of the EIP that you want to associate with an instance.
 * `instance_id` - (Required, ForceNew) The ID of the ECS or SLB instance or Nat Gateway or NetworkInterface or HaVip.
 * `instance_type` - (Optional, ForceNew, Available since v1.46.0) The type of the instance with which you want to associate the EIP. Valid values: `Nat`, `SlbInstance`, `EcsInstance`, `NetworkInterface`, `HaVip` and `IpAddress`.
-* `mode` - (Optional, ForceNew, Available since v1.216.1) The association mode. Default value: `NAT`. Valid values: `NAT`, `BINDED`, `MULTI_BINDED`. **Note:** This parameter is required only when `instance_type` is set to `NetworkInterface`.
+* `mode` - (Optional, ForceNew, Available since v1.217.0) The association mode. Default value: `NAT`. Valid values: `NAT`, `BINDED`, `MULTI_BINDED`. **Note:** This parameter is required only when `instance_type` is set to `NetworkInterface`.
 * `vpc_id` - (Optional, ForceNew, Available since v1.203.0) The ID of the VPC that has IPv4 gateways enabled and that is deployed in the same region as the EIP. When you associate an EIP with an IP address, the system can enable the IP address to access the Internet based on VPC route configurations. **Note:** This parameter is required if `instance_type` is set to `IpAddress`.
 * `private_ip_address` - (Optional, ForceNew, Available since v1.52.2) The IP address in the CIDR block of the vSwitch.
 * `force` - (Optional, Bool, Available since v1.95.0) When EIP is bound to a NAT gateway, and the NAT gateway adds a DNAT or SNAT entry, set it for `true` can unassociation any way. Default value: `false`. Valid values: `true`, `false`.
