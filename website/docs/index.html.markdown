@@ -20,41 +20,72 @@ Use the navigation on the left to read about the available resources.
 ## Example Usage
 
 ```terraform
-# Configure the Alicloud Provider
+# Configure the AliCloud Provider
+
 provider "alicloud" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
-  region     = "${var.region}"
+  access_key = var.access_key
+  secret_key = var.secret_key
+  # If not set, cn-beijing will be used.
+  region = var.region
 }
 
-data "alicloud_instance_types" "c2g4" {
-  cpu_core_count = 2
-  memory_size    = 4
+variable "name" {
+  default = "terraform-example"
 }
 
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
-  most_recent = true
-  owners      = "system"
+data "alicloud_zones" "default" {
+  available_disk_category     = "cloud_efficiency"
+  available_resource_creation = "VSwitch"
 }
 
-# Create a web server
-resource "alicloud_instance" "web" {
-  image_id             = "${data.alicloud_images.default.images.0.id}"
-  internet_charge_type = "PayByBandwidth"
-
-  instance_type        = "${data.alicloud_instance_types.c2g4.instance_types.0.id}"
-  system_disk_category = "cloud_efficiency"
-  security_groups      = ["${alicloud_security_group.default.id}"]
-  instance_name        = "web"
-  vswitch_id           = "vsw-abc12345"
+# Create a new ECS instance for VPC
+resource "alicloud_vpc" "vpc" {
+  vpc_name   = var.name
+  cidr_block = "172.16.0.0/16"
 }
 
-# Create security group
-resource "alicloud_security_group" "default" {
-  name        = "default"
-  description = "default"
-  vpc_id      = "vpc-abc12345"
+resource "alicloud_vswitch" "vswitch" {
+  vpc_id       = alicloud_vpc.vpc.id
+  cidr_block   = "172.16.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+}
+
+# Create a new Security in a VPC
+resource "alicloud_security_group" "group" {
+  name        = var.name
+  description = "foo"
+  vpc_id      = alicloud_vpc.vpc.id
+}
+# Create a kms to encrypt the disk
+resource "alicloud_kms_key" "key" {
+  description            = "Hello KMS"
+  pending_window_in_days = "7"
+  status                 = "Enabled"
+}
+
+resource "alicloud_instance" "instance" {
+  # cn-beijing
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  security_groups   = alicloud_security_group.group.*.id
+
+  # series III
+  instance_type              = "ecs.n4.large"
+  system_disk_category       = "cloud_efficiency"
+  system_disk_name           = var.name
+  system_disk_description    = "system_disk_description"
+  image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
+  instance_name              = var.name
+  vswitch_id                 = alicloud_vswitch.vswitch.id
+  internet_max_bandwidth_out = 10
+  data_disks {
+    name        = "data-disk"
+    size        = 20
+    category    = "cloud_efficiency"
+    description = "disk-description"
+    encrypted   = true
+    kms_key_id  = alicloud_kms_key.key.id
+  }
 }
 ```
 
@@ -79,16 +110,16 @@ Usage:
 
 ```terraform
 provider "alicloud" {
-  access_key = "${var.access_key}"
-  secret_key = "${var.secret_key}"
-  region     = "${var.region}"
+  access_key = var.access_key
+  secret_key = var.secret_key
+  region     = var.region
 }
 ```
 
 ### Environment variables
 
 You can provide your credentials via `ALICLOUD_ACCESS_KEY` and `ALICLOUD_SECRET_KEY`
-environment variables, representing your Alicloud access key and secret key respectively.
+environment variables, representing your Alibaba Cloud access key and secret key respectively.
 `ALICLOUD_REGION` is also used, if applicable:
 
 ```terraform
@@ -98,8 +129,8 @@ provider "alicloud" {}
 Usage:
 
 ```shell
-$ export ALICLOUD_ACCESS_KEY="anaccesskey"
-$ export ALICLOUD_SECRET_KEY="asecretkey"
+$ export ALICLOUD_ACCESS_KEY="<Your-Access-Key-ID>"
+$ export ALICLOUD_SECRET_KEY="<Your-Access-Key-Secret>"
 $ export ALICLOUD_REGION="cn-beijing"
 $ terraform plan
 ```
@@ -136,7 +167,7 @@ Usage:
 ```terraform
 provider "alicloud" {
   ecs_role_name = "terraform-provider-alicloud"
-  region        = "${var.region}"
+  region        = var.region
 }
 ```
 
@@ -212,8 +243,8 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `ecs_role_name` - "The RAM Role Name attached on a ECS instance for API operations. You can retrieve this from the 'Access Control' section of the Alibaba Cloud console.",
 
-* `region` - This is the Alicloud region. It must be provided, but
-  it can also be sourced from the `ALICLOUD_REGION` environment variables.
+* `region` - This is the Alibaba Cloud region. Default to `cn-beijing`. 
+  It can also be sourced from the `ALICLOUD_REGION` environment variables.
 
 * `account_id` - (Optional) Alibaba Cloud Account ID. It is used by the Function Compute service and to connect router interfaces.
   If not provided, the provider will attempt to retrieve it automatically with [STS GetCallerIdentity](https://www.alibabacloud.com/help/doc-detail/43767.htm).
