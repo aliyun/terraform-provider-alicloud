@@ -440,7 +440,7 @@ func TestAccAliCloudGaAccelerator_basic1(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -471,6 +471,16 @@ func TestAccAliCloudGaAccelerator_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cross_border_mode": "bgpPro",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -546,6 +556,7 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 					"payment_type":           "PayAsYouGo",
 					"cross_border_status":    "true",
 					"cross_border_mode":      "bgpPro",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 					"accelerator_name":       name,
 					"description":            name,
 					"tags": map[string]string{
@@ -559,6 +570,7 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 						"payment_type":           "PayAsYouGo",
 						"cross_border_status":    "true",
 						"cross_border_mode":      "bgpPro",
+						"resource_group_id":      CHECKSET,
 						"accelerator_name":       name,
 						"description":            name,
 						"tags.%":                 "2",
@@ -580,11 +592,15 @@ func TestAccAliCloudGaAccelerator_basic1_twin(t *testing.T) {
 var AliCloudGaAcceleratorMap0 = map[string]string{
 	"bandwidth_billing_type": CHECKSET,
 	"payment_type":           CHECKSET,
+	"resource_group_id":      CHECKSET,
 	"status":                 CHECKSET,
 }
 
 func AliCloudGaAcceleratorBasicDependence0(name string) string {
-	return ""
+	return fmt.Sprintf(`
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+`)
 }
 
 func TestUnitAliCloudGaAccelerator(t *testing.T) {
