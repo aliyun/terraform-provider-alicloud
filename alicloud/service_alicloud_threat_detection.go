@@ -46,7 +46,7 @@ func (s *ThreatDetectionService) DescribeThreatDetectionBackupPolicy(id string) 
 	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DataNotExist"}) {
+		if IsExpectedErrors(err, []string{"DataNotExist", "InvalidId"}) {
 			return nil, WrapErrorf(Error(GetNotFoundMessage("TDS:BackupPolicy", id)), NotFoundMsg, ProviderERROR)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -112,6 +112,9 @@ func (s *ThreatDetectionService) DescribeThreatDetectionVulWhitelist(id string) 
 	addDebug(action, response, request)
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"VulWhitelistNotExist", "InvalidId"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("TDS:VulWhitelist", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
