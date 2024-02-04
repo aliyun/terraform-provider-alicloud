@@ -137,7 +137,7 @@ func TestAccAlicloudDCDNDomain_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.update.ids.0}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -289,10 +289,6 @@ variable "name" {
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "default"
-}
-data "alicloud_resource_manager_resource_groups" "update" {
-  name_regex = "terraformci"
 }
 `, name)
 }
