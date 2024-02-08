@@ -220,6 +220,7 @@ func parseResourceDocs(resourceName, docsPath string, isResource bool, resourceA
 								backIndex--
 								if strings.Contains(subAttributeName, ".") {
 									subAttributeName = strings.TrimSuffix(strings.TrimSuffix(subAttributeName, parts[len(parts)-1]), ".")
+									parts = parts[:len(parts)-1]
 								} else {
 									subAttributeName = ""
 								}
