@@ -86,8 +86,7 @@ resource "alicloud_nas_file_system" "default" {
   file_system_type = "extreme"
   protocol_type    = "NFS"
   zone_id          = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
-  storage_type     = "standard"
-  description      = var.name
+  storage_type     = "advance"
   capacity         = 100
 }
 `, name)
