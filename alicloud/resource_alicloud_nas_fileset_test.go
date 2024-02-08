@@ -106,7 +106,6 @@ resource "alicloud_nas_file_system" "default" {
   storage_type     = "advance_200"
   file_system_type = "cpfs"
   capacity         = 3600
-  description      = "tf-testacc"
   zone_id          = local.zone_id
   vpc_id           = data.alicloud_vpcs.default.ids.0
   vswitch_id       = data.alicloud_vswitches.default.ids.0

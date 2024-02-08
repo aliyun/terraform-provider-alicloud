@@ -22,9 +22,9 @@ func resourceAlicloudNasFileSystem() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
-			Update: schema.DefaultTimeout(10 * time.Minute),
-			Delete: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(30 * time.Minute),
+			Update: schema.DefaultTimeout(30 * time.Minute),
+			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"storage_type": {
@@ -194,7 +194,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -219,7 +219,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -284,7 +284,7 @@ func resourceAlicloudNasFileSystemDelete(d *schema.ResourceData, meta interface{
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{InvalidFileSystemStatus_Ordering, "OperationDenied.InvalidState"}) {
 				wait()
 				return resource.RetryableError(err)
 			}

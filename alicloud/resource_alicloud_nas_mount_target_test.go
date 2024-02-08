@@ -268,11 +268,11 @@ resource "alicloud_vswitch" "main" {
 }
 
 resource "alicloud_nas_file_system" "example" {
-	protocol_type     = "NFS"
-	storage_type      = "advance"
-	capacity          = "100"
-	zone_id           = local.zone_id
-	file_system_type  = "extreme"
+  file_system_type = "extreme"
+  protocol_type    = "NFS"
+  zone_id          = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
+  storage_type     = "advance"
+  capacity         = 100
 }
 
 resource "alicloud_nas_access_group" "example" {
