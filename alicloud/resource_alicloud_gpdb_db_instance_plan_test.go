@@ -2,12 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -17,13 +11,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/stretchr/testify/assert"
+	"log"
+	"os"
+	"reflect"
+	"testing"
+	"time"
 )
 
-func TestAccAlicloudGPDBDBInstancePlan_basic0(t *testing.T) {
+func TestAccAliCloudGpdbDbInstancePlan_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_gpdb_db_instance_plan.default"
 	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstancePlanMap0)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGpdbDbInstancePlan")
@@ -31,112 +30,13 @@ func TestAccAlicloudGPDBDBInstancePlan_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstancePlanBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_plan_name": "${var.name}",
-					"plan_desc":             "${var.name}",
-					"plan_type":             "PauseResume",
-					"plan_schedule_type":    "Regular",
-					"plan_start_date":       "${var.plan_start_date}",
-					"plan_end_date":         "${var.plan_end_date}",
-					"plan_config": []interface{}{
-						map[string]interface{}{
-							"resume": []interface{}{
-								map[string]interface{}{
-									"plan_cron_time": "0 0 0 1/1 * ? ",
-								},
-							},
-							"pause": []interface{}{
-								map[string]interface{}{
-									"plan_cron_time": "0 0 10 1/1 * ? ",
-								},
-							},
-						},
-					},
-					"db_instance_id": "${data.alicloud_gpdb_instances.default.ids.0}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_plan_name":                 name,
-						"plan_desc":                             name,
-						"plan_type":                             "PauseResume",
-						"plan_schedule_type":                    "Regular",
-						"plan_start_date":                       CHECKSET,
-						"plan_end_date":                         CHECKSET,
-						"plan_config.#":                         "1",
-						"plan_config.0.resume.#":                "1",
-						"plan_config.0.resume.0.plan_cron_time": "0 0 0 1/1 * ? ",
-						"plan_config.0.pause.#":                 "1",
-						"plan_config.0.pause.0.plan_cron_time":  "0 0 10 1/1 * ? ",
-						"db_instance_id":                        CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudGPDBDBInstancePlanMap0 = map[string]string{
-	"plan_type":             CHECKSET,
-	"plan_id":               CHECKSET,
-	"db_instance_id":        CHECKSET,
-	"plan_config.#":         CHECKSET,
-	"plan_schedule_type":    CHECKSET,
-	"plan_desc":             CHECKSET,
-	"db_instance_plan_name": CHECKSET,
-	"status":                CHECKSET,
-}
-
-func AlicloudGPDBDBInstancePlanBasicDependence0(name string) string {
 	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
-	planEndDate := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
-
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-variable "plan_start_date" {
-  default = "%v"
-}
-
-variable "plan_end_date" {
-  default = "%v"
-}
-
-data "alicloud_gpdb_instances" "default" {	
-	name_regex = "default-NODELETING"
-}
-`, name, planStartDate, planEndDate)
-}
-
-func TestAccAlicloudGPDBDBInstancePlan_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_gpdb_db_instance_plan.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstancePlanMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGpdbDbInstancePlan")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstancePlanBasicDependence0)
+	planEndDate := time.Now().AddDate(0, 0, 6).Format("2006-01-02T15:04:05Z")
+	resumeExecuteTime := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
+	pauseExecuteTime := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	resumeExecuteTimeUpdate := time.Now().AddDate(0, 0, 2).Format("2006-01-02T15:04:05Z")
+	pauseExecuteTimeUpdate := time.Now().AddDate(0, 0, 3).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -147,62 +47,48 @@ func TestAccAlicloudGPDBDBInstancePlan_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_plan_name": "${var.name}",
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
 					"plan_type":             "PauseResume",
-					"plan_schedule_type":    "Regular",
+					"plan_schedule_type":    "Postpone",
 					"plan_config": []interface{}{
 						map[string]interface{}{
 							"resume": []interface{}{
 								map[string]interface{}{
-									"plan_cron_time": "0 0 0 1/1 * ? ",
+									"execute_time": resumeExecuteTime,
 								},
 							},
 							"pause": []interface{}{
 								map[string]interface{}{
-									"plan_cron_time": "0 0 10 1/1 * ? ",
+									"execute_time": pauseExecuteTime,
 								},
 							},
 						},
 					},
-					"db_instance_id": "${data.alicloud_gpdb_instances.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_plan_name":                 name,
-						"plan_type":                             "PauseResume",
-						"plan_schedule_type":                    "Regular",
-						"plan_config.#":                         "1",
-						"plan_config.0.resume.#":                "1",
-						"plan_config.0.resume.0.plan_cron_time": "0 0 0 1/1 * ? ",
-						"plan_config.0.pause.#":                 "1",
-						"plan_config.0.pause.0.plan_cron_time":  "0 0 10 1/1 * ? ",
-						"db_instance_id":                        CHECKSET,
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "PauseResume",
+						"plan_schedule_type":    "Postpone",
+						"plan_config.#":         "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_plan_name": "${var.name}_update",
+					"db_instance_plan_name": name + "-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_plan_name": name + "_update",
+						"db_instance_plan_name": name + "-update",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"plan_desc": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"plan_desc": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"plan_start_date": "${var.plan_start_date}",
+					"plan_start_date": planStartDate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -212,7 +98,7 @@ func TestAccAlicloudGPDBDBInstancePlan_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"plan_end_date": "${var.plan_end_date}",
+					"plan_end_date": planEndDate,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -222,28 +108,11 @@ func TestAccAlicloudGPDBDBInstancePlan_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"plan_config": []interface{}{
-						map[string]interface{}{
-							"resume": []interface{}{
-								map[string]interface{}{
-									"plan_cron_time": "0 0 1 1/1 * ? ",
-								},
-							},
-							"pause": []interface{}{
-								map[string]interface{}{
-									"plan_cron_time": "0 0 11 1/1 * ? ",
-								},
-							},
-						},
-					},
+					"plan_desc": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"plan_config.#":                         "1",
-						"plan_config.0.resume.#":                "1",
-						"plan_config.0.resume.0.plan_cron_time": "0 0 1 1/1 * ? ",
-						"plan_config.0.pause.#":                 "1",
-						"plan_config.0.pause.0.plan_cron_time":  "0 0 11 1/1 * ? ",
+						"plan_desc": name,
 					}),
 				),
 			},
@@ -268,86 +137,25 @@ func TestAccAlicloudGPDBDBInstancePlan_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-var AlicloudGPDBDBInstancePlanMap1 = map[string]string{
-	"db_instance_plan_name": CHECKSET,
-	"plan_schedule_type":    CHECKSET,
-	"plan_type":             CHECKSET,
-	"status":                CHECKSET,
-	"db_instance_id":        CHECKSET,
-	"plan_config.#":         CHECKSET,
-}
-
-func TestAccAlicloudGPDBDBInstancePlan_basic2(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_gpdb_db_instance_plan.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudGPDBDBInstancePlanMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeGpdbDbInstancePlan")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGPDBDBInstancePlanBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_instance_plan_name": "${var.name}",
-					"plan_desc":             "${var.name}",
-					"plan_type":             "Resize",
-					"plan_schedule_type":    "Regular",
-					"plan_start_date":       "${var.plan_start_date}",
-					"plan_end_date":         "${var.plan_end_date}",
 					"plan_config": []interface{}{
 						map[string]interface{}{
-							"scale_out": []interface{}{
+							"resume": []interface{}{
 								map[string]interface{}{
-									"segment_node_num": "4",
-									"plan_cron_time":   "0 0 0 1/1 * ? ",
+									"execute_time": resumeExecuteTimeUpdate,
 								},
 							},
-							"scale_in": []interface{}{
+							"pause": []interface{}{
 								map[string]interface{}{
-									"segment_node_num": "2",
-									"plan_cron_time":   "0 0 10 1/1 * ? ",
+									"execute_time": pauseExecuteTimeUpdate,
 								},
 							},
 						},
 					},
-					"db_instance_id": "${data.alicloud_gpdb_instances.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_instance_plan_name":     name,
-						"plan_desc":                 name,
-						"plan_type":                 "Resize",
-						"plan_schedule_type":        "Regular",
-						"plan_start_date":           CHECKSET,
-						"plan_end_date":             CHECKSET,
-						"plan_config.#":             "1",
-						"plan_config.0.scale_out.#": "1",
-						"plan_config.0.scale_out.0.plan_cron_time":   "0 0 0 1/1 * ? ",
-						"plan_config.0.scale_out.0.segment_node_num": "4",
-						"plan_config.0.scale_in.#":                   "1",
-						"plan_config.0.scale_in.0.plan_cron_time":    "0 0 10 1/1 * ? ",
-						"plan_config.0.scale_in.0.segment_node_num":  "2",
-						"db_instance_id":                             CHECKSET,
+						"plan_config.#": "1",
 					}),
 				),
 			},
@@ -360,7 +168,824 @@ func TestAccAlicloudGPDBDBInstancePlan_basic2(t *testing.T) {
 	})
 }
 
-func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
+func TestAccAliCloudGpdbDbInstancePlan_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	resumeExecuteTime := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
+	pauseExecuteTime := time.Now().AddDate(0, 0, 2).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "PauseResume",
+					"plan_schedule_type":    "Postpone",
+					"plan_start_date":       planStartDate,
+					"plan_end_date":         planEndDate,
+					"plan_desc":             name,
+					"status":                "active",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"resume": []interface{}{
+								map[string]interface{}{
+									"execute_time": resumeExecuteTime,
+								},
+							},
+							"pause": []interface{}{
+								map[string]interface{}{
+									"execute_time": pauseExecuteTime,
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "PauseResume",
+						"plan_schedule_type":    "Postpone",
+						"plan_start_date":       CHECKSET,
+						"plan_end_date":         CHECKSET,
+						"plan_desc":             name,
+						"status":                "active",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic1(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "PauseResume",
+					"plan_schedule_type":    "Regular",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"resume": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 0 1/1 * ? ",
+								},
+							},
+							"pause": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 2 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "PauseResume",
+						"plan_schedule_type":    "Regular",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_plan_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_plan_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_start_date": planStartDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_start_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_end_date": planEndDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_end_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_desc": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_desc": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "cancel",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "cancel",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"resume": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 1 1/1 * ? ",
+								},
+							},
+							"pause": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 6 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBDBInstancePlanSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "PauseResume",
+					"plan_schedule_type":    "Regular",
+					"plan_start_date":       planStartDate,
+					"plan_end_date":         planEndDate,
+					"plan_desc":             name,
+					"status":                "active",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"resume": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 0 1/1 * ? ",
+								},
+							},
+							"pause": []interface{}{
+								map[string]interface{}{
+									"plan_cron_time": "0 0 6 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "PauseResume",
+						"plan_schedule_type":    "Regular",
+						"plan_start_date":       CHECKSET,
+						"plan_end_date":         CHECKSET,
+						"plan_desc":             name,
+						"status":                "active",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic2(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 6).Format("2006-01-02T15:04:05Z")
+	scaleInExecuteTime := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
+	scaleOutExecuteTime := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	scaleInExecuteTimeUpdate := time.Now().AddDate(0, 0, 2).Format("2006-01-02T15:04:05Z")
+	scaleOutExecuteTimeUpdate := time.Now().AddDate(0, 0, 3).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "Resize",
+					"plan_schedule_type":    "Postpone",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "2",
+									"execute_time":     scaleInExecuteTime,
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"execute_time":     scaleOutExecuteTime,
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "Resize",
+						"plan_schedule_type":    "Postpone",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_plan_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_plan_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_start_date": planStartDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_start_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_end_date": planEndDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_end_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_desc": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_desc": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "cancel",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "cancel",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"execute_time":     scaleInExecuteTimeUpdate,
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "8",
+									"execute_time":     scaleOutExecuteTimeUpdate,
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic2_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	scaleInExecuteTime := time.Now().AddDate(0, 0, 1).Format("2006-01-02T15:04:05Z")
+	scaleOutExecuteTime := time.Now().AddDate(0, 0, 2).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "Resize",
+					"plan_schedule_type":    "Postpone",
+					"plan_start_date":       planStartDate,
+					"plan_end_date":         planEndDate,
+					"plan_desc":             name,
+					"status":                "active",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "2",
+									"execute_time":     scaleInExecuteTime,
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"execute_time":     scaleOutExecuteTime,
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "Resize",
+						"plan_schedule_type":    "Postpone",
+						"plan_start_date":       CHECKSET,
+						"plan_end_date":         CHECKSET,
+						"plan_desc":             name,
+						"status":                "active",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic3(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "Resize",
+					"plan_schedule_type":    "Regular",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "2",
+									"plan_cron_time":   "0 0 0 1/1 * ? ",
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"plan_cron_time":   "0 0 2 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "Resize",
+						"plan_schedule_type":    "Regular",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_plan_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_plan_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_start_date": planStartDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_start_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_end_date": planEndDate,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_end_date": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_desc": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_desc": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "cancel",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "cancel",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"plan_cron_time":   "0 0 1 1/1 * ? ",
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "8",
+									"plan_cron_time":   "0 0 6 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"plan_config.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudGpdbDbInstancePlan_basic3_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	resourceId := "alicloud_gpdb_db_instance_plan.default"
+	ra := resourceAttrInit(resourceId, AliCloudGpdbDbInstancePlanMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGpdbDbInstancePlan")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sgpdbdbinstanceplan%d", defaultRegionToTest, rand)
+	planStartDate := time.Now().Format("2006-01-02T15:04:05Z")
+	planEndDate := time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGpdbDbInstancePlanBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id":        "${alicloud_gpdb_instance.default.id}",
+					"db_instance_plan_name": name,
+					"plan_type":             "Resize",
+					"plan_schedule_type":    "Regular",
+					"plan_start_date":       planStartDate,
+					"plan_end_date":         planEndDate,
+					"plan_desc":             name,
+					"status":                "active",
+					"plan_config": []interface{}{
+						map[string]interface{}{
+							"scale_in": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "2",
+									"plan_cron_time":   "0 0 0 1/1 * ? ",
+								},
+							},
+							"scale_out": []interface{}{
+								map[string]interface{}{
+									"segment_node_num": "6",
+									"plan_cron_time":   "0 0 6 1/1 * ? ",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id":        CHECKSET,
+						"db_instance_plan_name": name,
+						"plan_type":             "Resize",
+						"plan_schedule_type":    "Regular",
+						"plan_start_date":       CHECKSET,
+						"plan_end_date":         CHECKSET,
+						"plan_desc":             name,
+						"status":                "active",
+						"plan_config.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudGpdbDbInstancePlanMap0 = map[string]string{
+	"plan_id":         CHECKSET,
+	"plan_start_date": CHECKSET,
+	"status":          CHECKSET,
+}
+
+func AliCloudGpdbDbInstancePlanBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_gpdb_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_gpdb_zones.default.ids.0
+	}
+
+	resource "alicloud_gpdb_instance" "default" {
+  		db_instance_category  = "HighAvailability"
+  		db_instance_class     = "gpdb.group.segsdx1"
+  		db_instance_mode      = "StorageElastic"
+  		description           = var.name
+  		engine                = "gpdb"
+  		engine_version        = "6.0"
+  		zone_id               = data.alicloud_gpdb_zones.default.ids.0
+  		instance_network_type = "VPC"
+  		instance_spec         = "2C16G"
+  		payment_type          = "PayAsYouGo"
+  		seg_storage_type      = "cloud_essd"
+  		seg_node_num          = 4
+  		storage_size          = 50
+  		vpc_id                = data.alicloud_vpcs.default.ids.0
+  		vswitch_id            = data.alicloud_vswitches.default.ids.0
+	}
+`, name)
+}
+
+func AliCloudGpdbDbInstancePlanBasicDependence1(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = "ap-southeast-1c"
+	}
+
+	resource "alicloud_gpdb_instance" "default" {
+  		db_instance_mode      = "Serverless"
+  		description           = var.name
+		engine                = "gpdb"
+  		engine_version        = "6.0"
+  		zone_id               = "ap-southeast-1c"
+  		instance_network_type = "VPC"
+  		instance_spec         = "4C16G"
+  		payment_type          = "PayAsYouGo"
+  		seg_node_num          = 2
+  		vpc_id                = data.alicloud_vpcs.default.ids.0
+  		vswitch_id            = data.alicloud_vswitches.default.ids.0
+	}
+`, name)
+}
+
+func TestUnitAccAliCloudGpdbDbInstancePlan(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_gpdb_db_instance_plan"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_gpdb_db_instance_plan"].Schema).Data(nil, nil)
@@ -469,7 +1094,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGpdbDbInstancePlanCreate(dInit, rawClient)
+	err = resourceAliCloudGpdbDbInstancePlanCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -492,7 +1117,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGpdbDbInstancePlanCreate(dInit, rawClient)
+		err := resourceAliCloudGpdbDbInstancePlanCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -519,7 +1144,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGpdbDbInstancePlanUpdate(dExisted, rawClient)
+	err = resourceAliCloudGpdbDbInstancePlanUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -608,7 +1233,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGpdbDbInstancePlanUpdate(dExisted, rawClient)
+		err := resourceAliCloudGpdbDbInstancePlanUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -652,7 +1277,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGpdbDbInstancePlanRead(dExisted, rawClient)
+		err := resourceAliCloudGpdbDbInstancePlanRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -671,7 +1296,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGpdbDbInstancePlanDelete(dExisted, rawClient)
+	err = resourceAliCloudGpdbDbInstancePlanDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -699,7 +1324,7 @@ func TestUnitAccAlicloudGpdbDbInstancePlan(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGpdbDbInstancePlanDelete(dExisted, rawClient)
+		err := resourceAliCloudGpdbDbInstancePlanDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
