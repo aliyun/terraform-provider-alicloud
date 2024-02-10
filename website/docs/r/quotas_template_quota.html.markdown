@@ -2,7 +2,6 @@
 subcategory: "Quotas"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_quotas_template_quota"
-sidebar_current: "docs-alicloud-resource-quotas-template-quota"
 description: |-
   Provides a Alicloud Quotas Template Quota resource.
 ---
@@ -24,6 +23,10 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 
 resource "alicloud_quotas_template_quota" "default" {
   quota_action_code = "q_desktop-count"
@@ -39,12 +42,11 @@ resource "alicloud_quotas_template_quota" "default" {
 }
 ```
 
-
 ## Argument Reference
 
 The following arguments are supported:
 * `desire_value` - (Required) Quota application value.
-* `dimensions` - (Optional) The Quota Dimensions. See [`dimensions`](#dimensions) below.
+* `dimensions` - (Optional, ForceNew) The Quota Dimensions. ListProductQuotaDimensions:Query the supported quota dimensions for the product.[ListProductQuotaDimensions](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproductquotadimensions) GetProductQuotaDimension:Query the details of quota dimensions supported by the product.[getproductquotadimension](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-getproductquotadimension). See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional) The UTC time when the quota takes effect.
 * `env_language` - (Optional, Computed) The language of the quota alert notification. Value:
   - zh: Chinese.
@@ -53,19 +55,18 @@ The following arguments are supported:
 * `notice_type` - (Optional, Computed) Whether to notify the result of quota promotion application. Value:
   - 0: No.
   - 3: Yes.
-* `product_code` - (Required, ForceNew) The abbreviation of the cloud service name.
+* `product_code` - (Required, ForceNew) The abbreviation of the cloud service name. ListProducts:Query the list of products supported by the quota center. [ListProducts](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproducts).
 * `quota_action_code` - (Required, ForceNew) The quota ID.
-* `quota_category` - (Optional) Type of quota. Value:
+* `quota_category` - (Optional, ForceNew) Type of quota. Value:
   - CommonQuota : Generic quota.
   - WhiteListLabel: Equity quota.
   - FlowControl:API rate quota.
 
 ### `dimensions`
 
-The Dimensions supports the following:
-* `key` - (Optional) The Key of quota_dimensions.
-* `value` - (Optional) The Value of quota_dimensions.
-
+The dimensions supports the following:
+* `key` - (Optional, ForceNew) The Key of quota_dimensions.
+* `value` - (Optional, ForceNew) The Value of quota_dimensions.
 
 ## Attributes Reference
 

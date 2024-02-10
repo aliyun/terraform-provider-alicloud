@@ -63,7 +63,7 @@ The following arguments are supported:
 -> **NOTE:**  Only 50 members can apply for quota increase in batch at a time. For more information about the members of the resource directory, see [Query the list of all members in the resource directory](~~ 604207 ~~).
 * `desire_value` - (Required, ForceNew) The value of the quota request.
 -> **NOTE:**  The quota request is approved by the technical support of each cloud service. If you want to increase the chance of passing, please fill in a reasonable application value and detailed application reasons when applying for quota.
-* `dimensions` - (Optional, ForceNew) Quota dimension. See [`dimensions`](#dimensions) below.
+* `dimensions` - (Optional, ForceNew) Quota dimension. ListProductQuotaDimensions:Query the supported quota dimensions for the product.[ListProductQuotaDimensions](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproductquotadimensions) GetProductQuotaDimension:Query the details of quota dimensions supported by the product.[getproductquotadimension](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-getproductquotadimension). See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The UTC time when the quota takes effect. This parameter applies only to the equity quota (WhiteListLabel).
 -> **NOTE:**  If the current account does not select the effective time, the default is the submission time.
 * `env_language` - (Optional) The language of the quota application result notification. Value:
@@ -94,7 +94,7 @@ The dimensions supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `quota_application_details` - List of quota application details.
+* `quota_application_details` - List of quota application details. ListDependentQuotas: Query the list of quotas that the target quota depends on, which are required to be applied for together during the quota application process. [ListDependentQuotas](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listdependentquotas) ListProducts:Query the list of products supported by the quota center. [ListProducts](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproducts).
   * `aliyun_uid` - Alibaba Cloud account (primary account).
   * `application_id` - The ID of the quota promotion request.
   * `approve_value` - The approved quota value of the quota increase request.

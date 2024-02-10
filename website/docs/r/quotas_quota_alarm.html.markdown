@@ -23,6 +23,10 @@ variable "name" {
   default = "terraform-example"
 }
 
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 
 resource "alicloud_quotas_quota_alarm" "default" {
   quota_action_code = "q_desktop-count"
@@ -40,17 +44,16 @@ resource "alicloud_quotas_quota_alarm" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `product_code` - (Required, ForceNew) The Product Code.
+* `product_code` - (Required, ForceNew) The Product Code. ListProducts:Query the list of products supported by the quota center. [ListProducts](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproducts).
 * `quota_action_code` - (Required, ForceNew) The Quota Action Code.
 * `quota_alarm_name` - (Required) The name of Quota Alarm.
-* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. See [`quota_dimensions`](#quota_dimensions) below.
+* `quota_dimensions` - (Optional, ForceNew) The Quota Dimensions. ListProductQuotaDimensions:Query the supported quota dimensions for the product.[ListProductQuotaDimensions](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-listproductquotadimensions) GetProductQuotaDimension:Query the details of quota dimensions supported by the product.[getproductquotadimension](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-getproductquotadimension). See [`quota_dimensions`](#quota_dimensions) below.
 * `threshold` - (Optional) The threshold of Quota Alarm.
 * `threshold_percent` - (Optional) The threshold percent of Quota Alarm.
-* `threshold_type` - (Optional, Computed, Available in v1.206.0+) Quota alarm type. Value:
+* `threshold_type` - (Optional, Computed, Available since v1.206.0) Quota alarm type. Value:
   - used: Quota used alarm.
   - usable: alarm for the remaining available quota.
 * `web_hook` - (Optional) The WebHook of Quota Alarm.
-
 
 ### `quota_dimensions`
 

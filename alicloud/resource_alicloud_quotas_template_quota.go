@@ -35,15 +35,18 @@ func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
 			"dimensions": {
 				Type:     schema.TypeSet,
 				Optional: true,
+				ForceNew: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"value": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 						"key": {
 							Type:     schema.TypeString,
 							Optional: true,
+							ForceNew: true,
 						},
 					},
 				},
@@ -80,18 +83,21 @@ func resourceAliCloudQuotasTemplateQuota() *schema.Resource {
 			"quota_category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"CommonQuota", "WhiteListLabel", "FlowControl"}, false),
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"CommonQuota", "WhiteListLabel", "FlowControl"}, true),
 			},
 		},
 	}
 }
 
 func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
@@ -128,9 +134,11 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("expire_time"); ok {
 		request["ExpireTime"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -149,7 +157,7 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAliCloudQuotasTemplateQuotaUpdate(d, meta)
+	return resourceAliCloudQuotasTemplateQuotaRead(d, meta)
 }
 
 func resourceAliCloudQuotasTemplateQuotaRead(d *schema.ResourceData, meta interface{}) error {
@@ -186,6 +194,7 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	action := "ModifyTemplateQuotaItem"
 	conn, err := client.NewQuotasClient()
@@ -193,56 +202,38 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
+	query = make(map[string]interface{})
 	request["Id"] = d.Id()
-	if !d.IsNewResource() && d.HasChange("desire_value") {
+	if d.HasChange("desire_value") {
 		update = true
 	}
 	request["DesireValue"] = d.Get("desire_value")
-	if !d.IsNewResource() && d.HasChange("notice_type") {
+	if d.HasChange("notice_type") {
 		update = true
 		request["NoticeType"] = d.Get("notice_type")
 	}
 
-	if !d.IsNewResource() && d.HasChange("env_language") {
+	if d.HasChange("env_language") {
 		update = true
 		request["EnvLanguage"] = d.Get("env_language")
 	}
 
-	if !d.IsNewResource() && d.HasChange("quota_category") {
-		update = true
-		request["QuotaCategory"] = d.Get("quota_category")
-	}
-
-	if !d.IsNewResource() && d.HasChange("dimensions") {
-		update = true
-		if v, ok := d.GetOk("dimensions"); ok {
-			dimensionsMaps := make([]map[string]interface{}, 0)
-			for _, dataLoop := range v.(*schema.Set).List() {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["Key"] = dataLoopTmp["key"]
-				dataLoopMap["Value"] = dataLoopTmp["value"]
-				dimensionsMaps = append(dimensionsMaps, dataLoopMap)
-			}
-			request["Dimensions"] = dimensionsMaps
-		}
-	}
-
-	if !d.IsNewResource() && d.HasChange("expire_time") {
+	if d.HasChange("expire_time") {
 		update = true
 		request["ExpireTime"] = d.Get("expire_time")
 	}
 
-	if !d.IsNewResource() && d.HasChange("effective_time") {
+	if d.HasChange("effective_time") {
 		update = true
 		request["EffectiveTime"] = d.Get("effective_time")
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -257,29 +248,30 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
 	}
+
 	return resourceAliCloudQuotasTemplateQuotaRead(d, meta)
 }
 
 func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewQuotasClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
 	request["Id"] = d.Id()
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
