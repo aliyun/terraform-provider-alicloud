@@ -65,6 +65,10 @@ func AliCloudAliCloudCloudMonitorServiceHybridDoubleWriteBasicDependence0(name s
 	data "alicloud_account" "default" {
 	}
 
+	data "alicloud_cloud_monitor_service_enterprise_service" "current" {
+	  enable = "On"
+	}
+
 	resource "alicloud_cms_namespace" "source" {
   		namespace = var.name
 	}
