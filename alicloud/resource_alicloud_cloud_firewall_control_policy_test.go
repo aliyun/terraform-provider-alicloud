@@ -124,13 +124,13 @@ func TestAccAlicloudCloudFirewallControlPolicy_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"dest_port_group": "ANY",
+					"dest_port_group": "Any",
 					"dest_port_type":  "group",
 					"dest_port":       "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"dest_port_group": "ANY",
+						"dest_port_group": "Any",
 						"dest_port_type":  "group",
 						"dest_port":       "0",
 					}),
