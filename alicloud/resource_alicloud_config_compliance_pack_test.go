@@ -249,6 +249,13 @@ func TestAccAliCloudConfigCompliancePack_basic0(t *testing.T) {
 			},
 		},
 	})
+
+	prefixes := []string{
+		"oss-",
+		"ecs-",
+		"governance-",
+	}
+	testSweepConfigRuleByPrefixes(defaultRegionToTest, prefixes)
 }
 
 func TestAccAliCloudConfigCompliancePack_basic0_twin(t *testing.T) {

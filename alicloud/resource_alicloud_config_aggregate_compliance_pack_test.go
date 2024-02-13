@@ -204,7 +204,7 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":                  "${alicloud_config_aggregator.default.id}",
 					"aggregate_compliance_pack_name": name,
 					"description":                    name,
 					"risk_level":                     "1",
@@ -329,7 +329,7 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic0_twin(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":                  "${alicloud_config_aggregator.default.id}",
 					"aggregate_compliance_pack_name": name,
 					"description":                    name,
 					"risk_level":                     "1",
@@ -383,7 +383,7 @@ func TestAccAliCloudConfigAggregateCompliancePack_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"aggregator_id":                  "${data.alicloud_config_aggregators.default.ids.0}",
+					"aggregator_id":                  "${alicloud_config_aggregator.default.id}",
 					"aggregate_compliance_pack_name": name,
 					"description":                    name,
 					"risk_level":                     "1",
@@ -467,10 +467,37 @@ func AliCloudConfigAggregateCompliancePackBasicDependence0(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_config_aggregators" "default" {
+	data "alicloud_resource_manager_accounts" "default" {
+	  status = "CreateSuccess"
 	}
 
 	data "alicloud_config_compliance_packs" "default" {
+	}
+
+	resource "alicloud_config_aggregator" "default" {
+	  aggregator_accounts {
+		account_id   = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
+		account_name = data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+		account_type = "ResourceDirectory"
+	  }
+	  aggregator_name = var.name
+	  description     = var.name
+	  aggregator_type = "CUSTOM"
+	}
+	
+	resource "alicloud_config_aggregate_config_rule" "default" {
+	  aggregate_config_rule_name = "contains-tag"
+	  aggregator_id              = alicloud_config_aggregator.default.id
+	  config_rule_trigger_types  = "ConfigurationItemChangeNotification"
+	  source_owner               = "ALIYUN"
+	  source_identifier          = "contains-tag"
+	  description                = var.name
+	  risk_level                 = 1
+	  resource_types_scope       = ["ACS::ECS::Instance"]
+	  input_parameters = {
+		key   = "example"
+		value = "example"
+	  }
 	}
 `, name)
 }
@@ -484,7 +511,19 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
 	data "alicloud_resource_manager_resource_groups" "default" {
 	}
 
-	data "alicloud_config_aggregators" "default" {
+	data "alicloud_resource_manager_accounts" "default" {
+	  status = "CreateSuccess"
+	}
+
+	resource "alicloud_config_aggregator" "default" {
+	  aggregator_accounts {
+		account_id   = data.alicloud_resource_manager_accounts.default.accounts.0.account_id
+		account_name = data.alicloud_resource_manager_accounts.default.accounts.0.display_name
+		account_type = "ResourceDirectory"
+	  }
+	  aggregator_name = var.name
+	  description     = var.name
+	  aggregator_type = "CUSTOM"
 	}
 
 	data "alicloud_zones" "default" {
@@ -533,7 +572,7 @@ func AliCloudConfigAggregateCompliancePackBasicDependence1(name string) string {
 
 	resource "alicloud_config_aggregate_config_rule" "default" {
   		count                      = 2
-  		aggregator_id              = data.alicloud_config_aggregators.default.ids.0
+  		aggregator_id              = alicloud_config_aggregator.default.id
   		aggregate_config_rule_name = var.name
   		source_owner               = "ALIYUN"
   		source_identifier          = "ecs-cpu-min-count-limit"

@@ -31,16 +31,19 @@ func init() {
 }
 
 func testSweepConfigRule(region string) error {
+	prefixes := []string{
+		"tf-testAcc",
+		"tf-test",
+	}
+	return testSweepConfigRuleByPrefixes(region, prefixes)
+}
+
+func testSweepConfigRuleByPrefixes(region string, prefixes []string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return WrapErrorf(err, "Error getting Alicloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-
-	prefixes := []string{
-		"tf-testAcc",
-		"tf-test",
-	}
 
 	request := make(map[string]interface{})
 	var response map[string]interface{}
@@ -78,7 +81,19 @@ func testSweepConfigRule(region string) error {
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			ruleIds = append(ruleIds, item["ConfigRuleName"].(string))
+			skip := true
+			if !sweepAll() {
+				for _, prefix := range prefixes {
+					if strings.HasPrefix(strings.ToLower(item["ConfigRuleName"].(string)), strings.ToLower(prefix)) {
+						skip = false
+					}
+				}
+				if skip {
+					log.Printf("[INFO] Skipping config rule: %s ", item["ConfigRuleName"].(string))
+					continue
+				}
+			}
+			ruleIds = append(ruleIds, item["ConfigRuleId"].(string))
 		}
 		if len(result) < PageSizeLarge {
 			break
@@ -87,18 +102,6 @@ func testSweepConfigRule(region string) error {
 	}
 
 	for _, ruleId := range ruleIds {
-		skip := true
-		if !sweepAll() {
-			for _, prefix := range prefixes {
-				if strings.HasPrefix(strings.ToLower(ruleId), strings.ToLower(prefix)) {
-					skip = false
-				}
-			}
-			if skip {
-				log.Printf("[INFO] Skipping config rule: %s ", ruleId)
-				continue
-			}
-		}
 		action = "DeleteConfigRules"
 		request := map[string]interface{}{
 			"ConfigRuleIds": ruleId,
