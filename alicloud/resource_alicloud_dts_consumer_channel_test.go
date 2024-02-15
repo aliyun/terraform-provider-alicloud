@@ -84,10 +84,13 @@ variable "name" {
 variable "region_id" {
 	default = "%s"
 }
-data "alicloud_db_zones" "default"{
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_charge_type = "PostPaid"
+
+data "alicloud_db_zones" "default" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
 }
 
 data "alicloud_vpcs" "default" {
@@ -95,65 +98,79 @@ data "alicloud_vpcs" "default" {
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids[0]
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.0.id
-	engine = "MySQL"
-	engine_version = "5.6"
-	instance_charge_type = "PostPaid"
+  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  category                 = "HighAvailability"
+  db_instance_storage_type = "local_ssd"
+  instance_charge_type     = "PostPaid"
 }
 
-resource "alicloud_db_instance" "instance" {
+## RDS MySQL Source
+resource "alicloud_db_instance" "source" {
   engine           = "MySQL"
-  engine_version   = "5.6"
+  engine_version   = "8.0"
   instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
   instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id       = data.alicloud_vswitches.default.ids.0
-  instance_name    = var.name
+  instance_name    = "rds-mysql-source"
 }
 
-resource "alicloud_db_database" "db" {
-  count       = 2
-  instance_id = alicloud_db_instance.instance.id
-  name        = "tfaccountpri_${count.index}"
-  description = "from terraform"
+resource "alicloud_db_database" "source_db" {
+  instance_id = alicloud_db_instance.source.id
+  name        = "test_database"
 }
 
-resource "alicloud_db_account" "account" {
-  db_instance_id      = alicloud_db_instance.instance.id
-  account_name        = "tftestprivilege"
-  account_password    = "Test12345"
-  account_description = "from terraform"
+resource "alicloud_rds_account" "source_account" {
+  db_instance_id   = alicloud_db_instance.source.id
+  account_name     = "test_mysql"
+  account_password = "N1cetest"
 }
 
-resource "alicloud_db_account_privilege" "privilege" {
-  instance_id  = alicloud_db_instance.instance.id
-  account_name = alicloud_db_account.account.name
+resource "alicloud_db_account_privilege" "source_privilege" {
+  instance_id  = alicloud_db_instance.source.id
+  account_name = alicloud_rds_account.source_account.name
   privilege    = "ReadWrite"
-  db_names     = alicloud_db_database.db.*.name
+  db_names     = alicloud_db_database.source_db.*.name
+}
+
+## RDS MySQL Target
+resource "alicloud_db_instance" "target" {
+  engine           = "MySQL"
+  engine_version   = "8.0"
+  instance_type    = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+  instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
+  vswitch_id       = data.alicloud_vswitches.default.ids.0
+  instance_name    = "rds-mysql-target"
+}
+
+resource "alicloud_rds_account" "target_account" {
+  db_instance_id   = alicloud_db_instance.target.id
+  account_name     = "test_mysql"
+  account_password = "N1cetest"
 }
 
 resource "alicloud_dts_subscription_job" "default" {
-    dts_job_name                        = var.name
-    payment_type                        = "PayAsYouGo"
-    source_endpoint_engine_name         = "MySQL"
-    source_endpoint_region              = var.region_id
-    source_endpoint_instance_type       = "RDS"
-    source_endpoint_instance_id         = alicloud_db_instance.instance.id
-    source_endpoint_database_name       = "tfaccountpri_0"
-    source_endpoint_user_name           = "tftestprivilege"
-    source_endpoint_password            = "Test12345"
-    db_list                             =  <<EOF
-        {"dtstestdata": {"name": "tfaccountpri_0", "all": true}}
-    EOF
-    subscription_instance_network_type  = "vpc"
-    subscription_instance_vpc_id        = data.alicloud_vpcs.default.ids[0]
-    subscription_instance_vswitch_id    = data.alicloud_vswitches.default.ids[0]
-    status                              = "Normal"
-}
+  source_endpoint_user_name = "tftestprivilege"
+  payment_type = "Subscription"
+  source_endpoint_instance_id = "${alicloud_db_instance.source.id}"
+  source_endpoint_database_name = "tfaccountpri_0"
+  db_list = "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}"
+  payment_duration_unit = "Month"
+  source_endpoint_instance_type = "RDS"
+  source_endpoint_password = "Test12345"
+  dts_job_name = "tf-testAccCase"
+  payment_duration = "1"
+  source_endpoint_region = "cn-hangzhou"
+  subscription_instance_network_type = "classic"
+  source_endpoint_engine_name = "MySQL"
+  status = "Normal"
+} 
 `, name, os.Getenv("ALICLOUD_REGION"))
 }
 
