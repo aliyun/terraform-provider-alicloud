@@ -135,7 +135,7 @@ func TestAccAlicloudVPCSnatEntry_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"snat_ip":         "${alicloud_eip_address.default.ip_address}",
 					"snat_table_id":   "${alicloud_nat_gateway.default.snat_table_ids}",
-					"source_cidr":     "${cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)}",
+					"source_cidr":     "${cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)}",
 					"snat_entry_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
