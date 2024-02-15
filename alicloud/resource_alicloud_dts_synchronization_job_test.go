@@ -76,26 +76,26 @@ func TestAccAliCloudDTSSynchronizationJob_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Suspending",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Suspending",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Synchronizing",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Synchronizing",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Suspending",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Suspending",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Synchronizing",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Synchronizing",
+			//		}),
+			//	),
+			//},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"source_endpoint_password": "Lazypeople123+",

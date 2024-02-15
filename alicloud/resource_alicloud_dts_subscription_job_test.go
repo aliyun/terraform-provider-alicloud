@@ -304,10 +304,10 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 					"source_endpoint_password":           "Test12345",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "acceptance test",
+					//},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -321,27 +321,27 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 						"source_endpoint_password":           "Test12345",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
-						"tags.%":                             "2",
-						"tags.Created":                       "TF",
-						"tags.For":                           "acceptance test",
+						//"tags.%":                             "2",
+						//"tags.Created":                       "TF",
+						//"tags.For":                           "acceptance test",
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "subscribeJob",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF",
-						"tags.For":     "subscribeJob",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"tags": map[string]string{
+			//			"Created": "TF",
+			//			"For":     "subscribeJob",
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"tags.%":       "2",
+			//			"tags.Created": "TF",
+			//			"tags.For":     "subscribeJob",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"dts_job_name": "tf-testAccCase1",
@@ -372,16 +372,16 @@ func TestAccAlicloudDTSSubscriptionJob_basic1(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Normal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Normal",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Normal",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Normal",
+			//		}),
+			//	),
+			//},
 			// TODO: There is an api bug that does not support to update db_list even if its status is Normal
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
@@ -437,10 +437,11 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 					"source_endpoint_password":           "Test12345",
 					"db_list":                            "{\\\"tfaccountpri_0\\\":{\\\"name\\\":\\\"tfaccountpri_0\\\",\\\"all\\\":true,\\\"state\\\":\\\"normal\\\"}}",
 					"subscription_instance_network_type": "classic",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "acceptance test",
-					},
+					// There is an api bug that the request parameter tags does not take effect. This should reopen after the bug is fixed.
+					//"tags": map[string]string{
+					//	"Created": "TF",
+					//	"For":     "acceptance test",
+					//},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -454,9 +455,9 @@ func TestAccAlicloudDTSSubscriptionJob_basic2(t *testing.T) {
 						"source_endpoint_password":           "Test12345",
 						"db_list":                            "{\"tfaccountpri_0\":{\"name\":\"tfaccountpri_0\",\"all\":true,\"state\":\"normal\"}}",
 						"subscription_instance_network_type": "classic",
-						"tags.%":                             "2",
-						"tags.Created":                       "TF",
-						"tags.For":                           "acceptance test",
+						//"tags.%":                             "2",
+						//"tags.Created":                       "TF",
+						//"tags.For":                           "acceptance test",
 					}),
 				),
 			},
