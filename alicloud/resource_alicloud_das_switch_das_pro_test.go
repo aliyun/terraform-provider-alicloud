@@ -70,16 +70,19 @@ func resourceAlicloudDasSwitchDasProBasicDependence(name string) string {
 		name_regex = "^default-NODELETING$"
 	}
 
+	data "alicloud_polardb_zones" "default"{}
+
 	data "alicloud_vswitches" "default" {
-		name_regex = "default-zone-j"
+        zone_id = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
 		vpc_id     = data.alicloud_vpcs.default.ids.0
 	}
 
 	data "alicloud_polardb_node_classes" "default" {
-		zone_id    = data.alicloud_vswitches.default.vswitches.0.zone_id
-		pay_type   = "PostPaid"
 		db_type    = "MySQL"
 		db_version = "8.0"
+		pay_type   = "PostPaid"
+		zone_id    = data.alicloud_polardb_zones.default.ids[length(data.alicloud_polardb_zones.default.ids)-1]
+		category   = "Normal"
 	}
 
 	resource "alicloud_polardb_cluster" "default" {
