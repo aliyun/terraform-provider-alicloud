@@ -32,7 +32,7 @@ func TestAccAlicloudROSStackInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"stack_instance_account_id": "${var.account_id}",
+					"stack_instance_account_id": "${data.alicloud_account.this.id}",
 					"stack_group_name":          "${alicloud_ros_stack_group.default.stack_group_name}",
 					"stack_instance_region_id":  "${data.alicloud_ros_regions.default.regions.0.region_id}",
 				}),
@@ -119,7 +119,7 @@ func TestAccAlicloudROSStackInstance_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"stack_instance_account_id": "${var.account_id}",
+					"stack_instance_account_id": "${data.alicloud_account.this.id}",
 					"stack_group_name":          "${alicloud_ros_stack_group.default.stack_group_name}",
 					"stack_instance_region_id":  "${data.alicloud_ros_regions.default.regions.0.region_id}",
 					"parameter_overrides": []map[string]interface{}{
@@ -172,6 +172,9 @@ variable "name" {
 
 variable "account_id" {
   default = "%s"
+}
+
+data "alicloud_account" "this" {
 }
 
 data "alicloud_ros_regions" "default" {}
