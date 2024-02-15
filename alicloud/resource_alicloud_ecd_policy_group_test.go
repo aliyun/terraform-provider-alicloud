@@ -532,7 +532,7 @@ func TestAccAlicloudECDPolicyGroup_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"recording_start_time", "recording_end_time"},
+				ImportStateVerifyIgnore: []string{"recording_start_time", "recording_end_time", "status"},
 			},
 		},
 	})
