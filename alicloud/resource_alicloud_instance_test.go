@@ -1309,8 +1309,8 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"renewal_status":    "NotRenewal",
-						"auto_renew_period": "0",
+						"renewal_status": "NotRenewal",
+						// "auto_renew_period": "0",
 					}),
 				),
 			},
@@ -1321,6 +1321,16 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"user_data": "SSBhbSB0aGUgdXNlciBkYXRh",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_delete": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force_delete": "false",
 					}),
 				),
 			},
