@@ -20,9 +20,9 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 		Update: resourceAlicloudEhpcClusterUpdate,
 		Delete: resourceAlicloudEhpcClusterDelete,
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(20 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(60 * time.Minute),
+			Update: schema.DefaultTimeout(15 * time.Minute),
+			Delete: schema.DefaultTimeout(15 * time.Minute),
 		},
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -33,7 +33,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"nis", "ldap"}, false),
+				ValidateFunc: StringInSlice([]string{"nis", "ldap"}, false),
 			},
 			"additional_volumes": {
 				Type:     schema.TypeSet,
@@ -86,7 +86,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 						"volume_protocol": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"nfs", "smb"}, false),
+							ValidateFunc: StringInSlice([]string{"nfs", "smb"}, false),
 						},
 						"volume_type": {
 							Type:     schema.TypeString,
@@ -127,7 +127,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"cluster_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringLenBetween(2, 64),
+				ValidateFunc: StringLenBetween(2, 64),
 			},
 			"cluster_version": {
 				Type:     schema.TypeString,
@@ -138,7 +138,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.IntBetween(1, 99),
+				ValidateFunc: IntBetween(1, 99),
 			},
 			"compute_enable_ht": {
 				Type:     schema.TypeBool,
@@ -156,20 +156,20 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"compute_spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
+				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotWithPriceLimit", "SpotAsPriceGo"}, false),
 			},
 			"deploy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Standard", "Simple", "Tiny"}, false),
+				ValidateFunc: StringInSlice([]string{"Standard", "Simple", "Tiny"}, false),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It must be `2` to `256` characters in length and cannot start with `https://` or `https://`.")),
+				ValidateFunc: validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It must be `2` to `256` characters in length and cannot start with `https://` or `https://`.")),
 			},
 			"domain": {
 				Type:     schema.TypeString,
@@ -186,7 +186,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc: StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 			},
 			"manager_count": {
 				Type:         schema.TypeInt,
@@ -215,7 +215,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"marketplace", "others", "self", "system"}, false),
+				ValidateFunc: StringInSlice([]string{"marketplace", "others", "self", "system"}, false),
 			},
 			"input_file_url": {
 				Type:     schema.TypeString,
@@ -245,7 +245,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.IntInSlice([]int{1}),
+				ValidateFunc: IntInSlice([]int{1}),
 			},
 			"login_instance_type": {
 				Type:     schema.TypeString,
@@ -264,13 +264,13 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			},
 			"period": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
+				ValidateFunc: IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}),
 				Optional:     true,
 			},
 			"period_unit": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Year", "Month", "Hour", "Week"}, false),
+				ValidateFunc: StringInSlice([]string{"Year", "Month", "Hour", "Week"}, false),
 			},
 			"plugin": {
 				Type:     schema.TypeString,
@@ -287,7 +287,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"pbs", "slurm", "opengridscheduler", "deadline"}, false),
+				ValidateFunc: StringInSlice([]string{"pbs", "slurm", "opengridscheduler", "deadline"}, false),
 			},
 			"post_install_script": {
 				Type:     schema.TypeSet,
@@ -358,17 +358,17 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 			"system_disk_level": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(40, 500),
+				ValidateFunc: IntBetween(40, 500),
 			},
 			"system_disk_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud"}, false),
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -397,7 +397,7 @@ func resourceAlicloudEhpcCluster() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"nfs", "smb"}, false),
+				ValidateFunc: StringInSlice([]string{"nfs", "smb"}, false),
 			},
 			"volume_type": {
 				Type:     schema.TypeString,
