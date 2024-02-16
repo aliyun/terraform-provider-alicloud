@@ -89,6 +89,7 @@ func AlicloudGaAccessLogBasicDependence0(name string) string {
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+		bandwidth_billing_type = "BandwidthPackage"
 	}
 
 	resource "alicloud_log_project" "default" {

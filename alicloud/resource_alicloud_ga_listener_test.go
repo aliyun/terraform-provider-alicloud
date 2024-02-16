@@ -365,6 +365,7 @@ func AliCloudGaListenerBasicDependence(name string) string {
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+		bandwidth_billing_type = "BandwidthPackage"
 	}
 
 	data "alicloud_cas_certificates" "default" {
