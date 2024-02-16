@@ -2,13 +2,14 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	"github.com/agiledragon/gomonkey/v2"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
-
-	"github.com/agiledragon/gomonkey/v2"
-	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/alibabacloud-go/tea/tea"
@@ -19,6 +20,91 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func TestAccAlicloudEhpcCluster_sweep(t *testing.T) {
+	testSweepEhpcCluster("cn-hangzhou")
+	testSweepEhpcCluster("eu-central-1")
+}
+
+func testSweepEhpcCluster(region string) error {
+	rawClient, err := sharedClientForRegion(region)
+	if err != nil {
+		return WrapErrorf(err, "error getting AliCloud client.")
+	}
+
+	client := rawClient.(*connectivity.AliyunClient)
+
+	prefixes := []string{
+		"tf-testAcc",
+		"tf_testAcc",
+	}
+
+	request := make(map[string]interface{})
+	request["RegionId"] = region
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	conn, err := client.NewEhsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	for {
+		action := "ListClusters"
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-04-12"), StringPointer("AK"), request, nil, &runtime)
+		if err != nil {
+			log.Printf("[ERROR] %s got an error: %v", action, err)
+			break
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.Clusters.ClusterInfoSimple", response)
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			itemName := fmt.Sprint(item["Name"])
+			itemId := fmt.Sprint(item["Id"])
+			skip := true
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(itemName, prefix) {
+					skip = false
+					break
+				}
+			}
+			if skip {
+				log.Printf("[INFO] Skipping Ehpc cluster: %s(%s) ", itemId, itemName)
+				continue
+			}
+			log.Printf("[Info] Delete Ehpc cluster: %s(%s)", itemId, itemName)
+
+			{
+				action := "DeleteCluster"
+				request := map[string]interface{}{
+					"ClusterId":       itemId,
+					"RegionId":        client.RegionId,
+					"ReleaseInstance": "true",
+				}
+				request["ClientToken"] = buildClientToken("DeleteCluster")
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-04-12"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+				addDebug(action, response, request)
+				if err != nil {
+					log.Printf("[ERROR] Deleting ephc cluster %s got an error: %s", itemId, err)
+				}
+			}
+
+		}
+		if len(result) < PageSizeLarge {
+			break
+		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+	return nil
+}
 
 func TestAccAlicloudEhpcCluster_basic0(t *testing.T) {
 	var v map[string]interface{}
@@ -59,6 +145,7 @@ func TestAccAlicloudEhpcCluster_basic0(t *testing.T) {
 					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
 					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
 					"zone_id":               "${data.alicloud_zones.default.zones.0.id}",
+					"release_instance":      "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -71,7 +158,7 @@ func TestAccAlicloudEhpcCluster_basic0(t *testing.T) {
 						"compute_instance_type": CHECKSET,
 						"login_count":           "1",
 						"login_instance_type":   CHECKSET,
-						"volume_protocol":       "nfs",
+						"volume_protocol":       "nfs4",
 						"volume_id":             CHECKSET,
 						"volume_mountpoint":     CHECKSET,
 						"vswitch_id":            CHECKSET,
@@ -115,7 +202,7 @@ func TestAccAlicloudEhpcCluster_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "ram_role_name", "system_disk_level", "system_disk_type", "ram_node_types", "plugin", "resource_group_id", "domain", "volume_mount_option", "zone_id", "compute_enable_ht", "ecs_charge_type", "release_instance", "cluster_version", "input_file_url", "system_disk_size", "compute_spot_strategy", "without_elastic_ip", "additional_volumes", "security_group_name", "period", "compute_spot_price_limit", "manager_count", "job_queue", "without_agent", "auto_renew", "is_compute_ess", "ehpc_version", "remote_vis_enable", "auto_renew_period", "period_unit"},
+				ImportStateVerifyIgnore: []string{"password", "ram_role_name", "system_disk_level", "system_disk_type", "ram_node_types", "plugin", "resource_group_id", "domain", "volume_mount_option", "zone_id", "compute_enable_ht", "ecs_charge_type", "release_instance", "cluster_version", "input_file_url", "system_disk_size", "compute_spot_strategy", "without_elastic_ip", "additional_volumes", "security_group_name", "period", "compute_spot_price_limit", "manager_count", "job_queue", "without_agent", "auto_renew", "is_compute_ess", "ehpc_version", "remote_vis_enable", "auto_renew_period", "period_unit", "volume_protocol"},
 			},
 		},
 	})
@@ -212,6 +299,7 @@ func TestAccAlicloudEhpcCluster_basic1(t *testing.T) {
 					"without_elastic_ip":  "false",
 					"ehpc_version":        "1.0.0",
 					"is_compute_ess":      "false",
+					"release_instance":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
