@@ -35,6 +35,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DdosBgpRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -43,7 +44,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"ip":                "${alicloud_eip_address.default.ip_address}",
-					"instance_id":       "${data.alicloud_ddosbgp_instances.default.ids.0}",
+					"instance_id":       "${local.instance_id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -82,6 +83,21 @@ resource "alicloud_eip_address" "default" {
 }
 
 data "alicloud_ddosbgp_instances" default {}
+
+locals {
+  instance_id = length(data.alicloud_ddosbgp_instances.default.ids) > 0 ? data.alicloud_ddosbgp_instances.default.ids.0 : concat(alicloud_ddosbgp_instance.default.*.id, [""])[0]
+}
+
+resource "alicloud_ddosbgp_instance" "default" {
+  count = length(data.alicloud_ddosbgp_instances.default.ids) > 0 ? 0 : 1
+  name             = var.name
+  base_bandwidth   = 20
+  bandwidth        = -1
+  ip_count         = 100
+  ip_type          = "IPv4"
+  normal_bandwidth = 100
+  type             = "Enterprise"
+}
 
 `, name)
 }

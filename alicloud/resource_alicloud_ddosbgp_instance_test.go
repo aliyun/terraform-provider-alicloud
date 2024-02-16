@@ -49,7 +49,7 @@ func TestAccAliCloudDdosbgpInstance_basic(t *testing.T) {
 					"ip_count":         "100",
 					"ip_type":          "IPv4",
 					"type":             "Enterprise",
-					"period":           12,
+					"period":           "12",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
