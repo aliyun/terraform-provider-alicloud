@@ -298,6 +298,7 @@ func AliCloudGaForwardingRuleBasicDependence(name string) string {
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+        bandwidth_billing_type = "BandwidthPackage"
 	}
 
 	resource "alicloud_ga_bandwidth_package" "default" {

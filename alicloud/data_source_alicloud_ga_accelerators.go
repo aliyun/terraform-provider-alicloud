@@ -37,7 +37,13 @@ func dataSourceAlicloudGaAccelerators() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"active", "binding", "configuring", "deleting", "finacialLocked", "init", "unbinding"}, false),
+				ValidateFunc: StringInSlice([]string{"active", "binding", "configuring", "deleting", "finacialLocked", "init", "unbinding"}, false),
+			},
+			"bandwidth_billing_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"BandwidthPackage", "CDT"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -167,6 +173,7 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 		}
 	}
 	status, statusOk := d.GetOk("status")
+	bandwidthBillingType, BandwidthBillingTypeOk := d.GetOk("bandwidth_billing_type")
 	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()
 	if err != nil {
@@ -199,6 +206,9 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 				}
 			}
 			if statusOk && status.(string) != "" && status.(string) != item["State"].(string) {
+				continue
+			}
+			if BandwidthBillingTypeOk && bandwidthBillingType.(string) != "" && bandwidthBillingType.(string) != item["BandwidthBillingType"].(string) {
 				continue
 			}
 			objects = append(objects, item)

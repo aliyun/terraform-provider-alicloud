@@ -106,6 +106,7 @@ func AliCloudGaCustomRoutingEndpointTrafficPolicyBasicDependence0(name string) s
 
 	data "alicloud_ga_accelerators" "default" {
   		status = "active"
+        bandwidth_billing_type = "BandwidthPackage"
 	}
 
 	resource "alicloud_vpc" "default" {

@@ -73,7 +73,18 @@ func AlicloudGaAcceleratorSpareIpAttachmentBasicDependence0(name string) string 
 variable "name" {
   default = "%s"
 }
+
+data "alicloud_ga_accelerators" "default" {
+	status = "active"
+    bandwidth_billing_type = "BandwidthPackage"
+}
+
+locals {
+  instance_id = length(data.alicloud_ga_accelerators.default.ids) > 0 ? data.alicloud_ga_accelerators.default.ids.0 : concat(alicloud_ga_accelerator.default.*.id, [""])[0]
+}
+
 resource "alicloud_ga_accelerator" "default" {
+  count = length(data.alicloud_ga_accelerators.default.ids) > 0 ? 0 : 1
   duration         = 1
   spec             = "1"
   accelerator_name = var.name
@@ -92,7 +103,7 @@ resource "alicloud_ga_bandwidth_package" "default" {
     auto_use_coupon        = true
 }
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-	accelerator_id = alicloud_ga_accelerator.default.id
+	accelerator_id = local.instance_id
 	bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 `, name)

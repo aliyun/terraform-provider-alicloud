@@ -34,6 +34,9 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, List)  A list of Accelerator IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Accelerator name.
 * `status` - (Optional, ForceNew) The status of the GA instance. Valid values: `active`, `binding`, `configuring`, `deleting`, `finacialLocked`, `init`, `unbinding`.
+* `bandwidth_billing_type` - (Optional, ForceNew, Available since v1.218.0) The bandwidth billing method. Default value: `BandwidthPackage`. Valid values:
+  - `BandwidthPackage`: billed based on bandwidth plans.
+  - `CDT`: billed based on data transfer.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
