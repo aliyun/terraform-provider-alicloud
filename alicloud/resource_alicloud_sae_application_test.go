@@ -60,9 +60,9 @@ func testSweepSaeApplication(region string) error {
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
 	}
-	result, _ := resp.([]interface{})
+	namespace, _ := resp.([]interface{})
 
-	for _, v := range result {
+	for _, v := range namespace {
 		// item namespace
 		item := v.(map[string]interface{})
 
@@ -85,7 +85,6 @@ func testSweepSaeApplication(region string) error {
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data.Applications", response)
 		}
-		sweeped := false
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
@@ -103,7 +102,6 @@ func testSweepSaeApplication(region string) error {
 				log.Printf("[INFO] Skipping Sae Application: %s (%s)", item["AppName"], item["AppId"])
 				continue
 			}
-			sweeped = true
 			action := "/pop/v1/sam/app/deleteApplication"
 			request = map[string]*string{
 				"AppId": StringPointer(item["AppId"].(string)),
@@ -118,20 +116,13 @@ func testSweepSaeApplication(region string) error {
 						wait()
 						return resource.RetryableError(err)
 					}
-					if IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) {
-						wait()
-						return resource.RetryableError(err)
-					}
 
 					return resource.NonRetryableError(err)
 				}
 				return nil
 			})
-			if err != nil {
+			if err != nil && !IsExpectedErrors(err, []string{"Application.ChangerOrderRunning"}) {
 				return WrapError(err)
-			}
-			if sweeped {
-				time.Sleep(10 * time.Second)
 			}
 			log.Printf("[INFO] Delete Sae Application  success: %v ", item["AppId"])
 		}
