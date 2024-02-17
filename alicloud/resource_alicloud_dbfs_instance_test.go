@@ -135,7 +135,7 @@ func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":          "standard",
+					"category":          "enterprise",
 					"zone_id":           "cn-hangzhou-i",
 					"performance_level": "PL1",
 					"instance_name":     name,
@@ -143,7 +143,7 @@ func TestAccAliCloudDBFSInstance_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":          "standard",
+						"category":          "enterprise",
 						"zone_id":           "cn-hangzhou-i",
 						"performance_level": "PL1",
 						"instance_name":     name,
@@ -259,7 +259,7 @@ data "alicloud_instance_types" "example" {
 }
 data "alicloud_images" "example" {
   instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
-  name_regex    = "^aliyun_2"
+  name_regex    = "^aliyun_2_1903_x64_20G_alibase_20231221.vhd"
   owners        = "system"
 }
 
@@ -279,7 +279,7 @@ resource "alicloud_security_group" "example" {
 resource "alicloud_instance" "default" {
   availability_zone    = local.zone_id
   instance_name        = var.name
-  image_id             = data.alicloud_images.example.images.1.id
+  image_id             = data.alicloud_images.example.images.0.id
   instance_type        = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
   security_groups      = [alicloud_security_group.example.id]
   vswitch_id           = data.alicloud_vswitches.default.ids.0
