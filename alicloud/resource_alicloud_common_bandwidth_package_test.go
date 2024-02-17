@@ -186,7 +186,7 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.change.ids.0}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -209,7 +209,7 @@ func TestAccAlicloudCommonBandwidthPackage_basic(t *testing.T) {
 					"bandwidth":              `10`,
 					"description":            name,
 					"bandwidth_package_name": "${var.name}",
-					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"deletion_protection":    "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -510,10 +510,6 @@ variable "name" {
 			default = "%s"
 		}
 data "alicloud_resource_manager_resource_groups" "default" {
-  name_regex = "default"
-}
-data "alicloud_resource_manager_resource_groups" "change" {
-  name_regex = "terraformci"
 }
 `, name)
 }
