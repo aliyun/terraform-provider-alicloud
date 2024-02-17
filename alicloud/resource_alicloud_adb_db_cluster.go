@@ -533,7 +533,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -803,7 +803,7 @@ func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
