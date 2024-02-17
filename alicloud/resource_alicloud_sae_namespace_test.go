@@ -2,12 +2,101 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	"log"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
+
+func testSweepSaeNamespace(region string) error {
+	prefixes := []string{
+		"tftestacc",
+	}
+	rawClient, err := sharedClientForRegionWithBackendRegions(region, true, connectivity.SaeSupportRegions)
+	if err != nil {
+		return WrapErrorf(err, "Error getting AliCloud client.")
+	}
+	client := rawClient.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	request := make(map[string]*string)
+
+	request["ContainCustom"] = StringPointer(strconv.FormatBool(true))
+	action := "/pop/v1/sam/namespace/describeNamespaceList"
+	conn, err := client.NewServerlessClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+	if err != nil {
+		log.Printf("[ERROR] %s got an error: %s", action, err)
+		return nil
+	}
+	if respBody, isExist := response["body"]; isExist {
+		response = respBody.(map[string]interface{})
+	} else {
+		return nil
+	}
+	resp, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Data", response)
+	}
+	namespace, _ := resp.([]interface{})
+
+	for _, v := range namespace {
+		// item namespace
+		item := v.(map[string]interface{})
+
+		skip := true
+		for _, prefix := range prefixes {
+			app_name := ""
+			if val, exist := item["NamespaceName"]; exist {
+				app_name = val.(string)
+			}
+			if strings.Contains(strings.ToLower(app_name), strings.ToLower(prefix)) {
+				skip = false
+			}
+		}
+		if skip {
+			log.Printf("[INFO] Skipping Sae Namespace: %s", item["NamespaceName"])
+			continue
+		}
+
+		action := "/pop/v1/paas/namespace"
+		conn, err = client.NewServerlessClient()
+		request = map[string]*string{
+			"NamespaceId": StringPointer(fmt.Sprint(item["NamespaceId"])),
+		}
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		if err != nil && !IsExpectedErrors(err, []string{"Namespace.AppExists"}) {
+			return WrapError(err)
+		}
+		log.Printf("[INFO] Delete Sae Namespace success: %v ", item["NamespaceName"])
+	}
+	return nil
+}
 
 func TestAccAlicloudSAENamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
