@@ -4,8 +4,10 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"time"
 )
 
 func resourceAlicloudCloudConnectNetwork() *schema.Resource {
@@ -57,14 +59,26 @@ func resourceAlicloudCloudConnectNetworkCreate(d *schema.ResourceData, meta inte
 		request.CidrBlock = v.(string)
 	}
 
-	raw, err := client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
-		return sagClient.CreateCloudConnectNetwork(request)
+	var err error
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		raw, err = client.WithSagClient(func(sagClient *smartag.Client) (interface{}, error) {
+			return sagClient.CreateCloudConnectNetwork(request)
+		})
+		if err != nil {
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			if IsExpectedErrors(err, []string{"ResourceInOperating", "InternalError"}) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_connect_network", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*smartag.CreateCloudConnectNetworkResponse)
 	d.SetId(response.CcnId)
 
