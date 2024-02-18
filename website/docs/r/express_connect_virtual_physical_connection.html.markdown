@@ -20,6 +20,9 @@ For information about Express Connect Virtual Physical Connection and how to use
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf-example"
 }

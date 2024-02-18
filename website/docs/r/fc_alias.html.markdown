@@ -20,6 +20,9 @@ Creates a Function Compute service alias. Creates an alias that points to the sp
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 resource "random_integer" "default" {
   max = 99999
   min = 10000
