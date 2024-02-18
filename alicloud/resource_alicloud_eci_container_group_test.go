@@ -313,7 +313,7 @@ func TestAccAliCloudEciContainerGroup_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -400,7 +400,7 @@ func TestAccAliCloudEciContainerGroup_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -480,7 +480,7 @@ func TestAccAliCloudEciContainerGroup_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "insecure_registry", "plain_http_registry"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "insecure_registry", "plain_http_registry", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -560,7 +560,7 @@ func TestAccAliCloudEciContainerGroup_basic3(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -725,7 +725,7 @@ func TestAccAliCloudEciContainerGroup_basic4(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "acr_registry_info"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "acr_registry_info", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -890,7 +890,7 @@ func TestAccAliCloudEciContainerGroup_basic5(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "acr_registry_info"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "acr_registry_info", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -1265,7 +1265,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec", "auto_match_image_cache"},
 			},
 		},
 	})
@@ -1459,7 +1459,7 @@ func TestAccAliCloudEciContainerGroup_basic7(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id", "volumes.1.config_file_volume_config_file_to_paths.0.content"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "eip_instance_id", "volumes.1.config_file_volume_config_file_to_paths.0.content", "auto_match_image_cache", "auto_match_image_cache"},
 			},
 		},
 	})

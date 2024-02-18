@@ -91,11 +91,7 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 			"auto_match_image_cache": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  true,
-				ForceNew: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return true
-				},
+				Computed: true,
 			},
 			"plain_http_registry": {
 				Type:     schema.TypeString,
