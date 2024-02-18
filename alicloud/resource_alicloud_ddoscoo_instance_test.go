@@ -444,6 +444,7 @@ func TestAccAliCloudDdoscooInstance_basic0_intl(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
