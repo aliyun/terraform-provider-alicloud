@@ -340,7 +340,7 @@ func resourceAliCloudEipanycastAnycastEipAddressDelete(d *schema.ResourceData, m
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Anycast"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
