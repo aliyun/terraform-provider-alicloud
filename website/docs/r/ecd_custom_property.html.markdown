@@ -22,6 +22,10 @@ For information about ECD Custom Property and how to use it, see [What is Custom
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 resource "alicloud_ecd_custom_property" "example" {
   property_key = "example_key"
   property_values {

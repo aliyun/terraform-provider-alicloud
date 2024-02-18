@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud HBR Oss Backup Plan resource.
 ---
 
-# alicloud\_hbr\_oss\_backup\_plan
+# alicloud_hbr_oss_backup_plan
 
 Provides a HBR Oss Backup Plan resource.
 
 For information about HBR Oss Backup Plan and how to use it, see [What is Oss Backup Plan](https://www.alibabacloud.com/help/doc-detail/130040.htm).
 
--> **NOTE:** Available in v1.131.0+.
+-> **NOTE:** Available since v1.131.0+.
 
 ## Example Usage
 
@@ -35,12 +35,13 @@ resource "alicloud_oss_bucket" "default" {
 
 resource "alicloud_hbr_oss_backup_plan" "default" {
   oss_backup_plan_name = "terraform-example"
-  prefix               = "/"
-  bucket               = alicloud_oss_bucket.default.bucket
-  vault_id             = alicloud_hbr_vault.default.id
-  schedule             = "I|1602673264|PT2H"
-  backup_type          = "COMPLETE"
-  retention            = "2"
+  # the prefix of object you want to back up
+  prefix      = "/example"
+  bucket      = alicloud_oss_bucket.default.bucket
+  vault_id    = alicloud_hbr_vault.default.id
+  schedule    = "I|1602673264|PT2H"
+  backup_type = "COMPLETE"
+  retention   = "2"
 }
 ```
 

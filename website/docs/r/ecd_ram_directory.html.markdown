@@ -20,6 +20,10 @@ For information about ECD Ram Directory and how to use it, see [What is Ram Dire
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -37,11 +41,10 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_ecd_ram_directory" "default" {
-  desktop_access_type    = "INTERNET"
-  enable_admin_access    = true
-  enable_internet_access = true
-  ram_directory_name     = var.name
-  vswitch_ids            = [alicloud_vswitch.default.id]
+  desktop_access_type = "INTERNET"
+  enable_admin_access = true
+  ram_directory_name  = var.name
+  vswitch_ids         = [alicloud_vswitch.default.id]
 }
 ```
 ## Argument Reference

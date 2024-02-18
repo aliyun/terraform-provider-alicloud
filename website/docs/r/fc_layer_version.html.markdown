@@ -22,6 +22,9 @@ For information about FC Layer Version and how to use it, see [What is Layer Ver
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 resource "random_integer" "default" {
   max = 99999
   min = 10000

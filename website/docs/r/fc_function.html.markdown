@@ -21,18 +21,21 @@ Provides a Alicloud Function Compute Function resource. Function allows you to t
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 resource "random_integer" "default" {
   max = 99999
   min = 10000
 }
 
 resource "alicloud_log_project" "default" {
-  name = "example-value-${random_integer.default.result}"
+  project_name = "example-value-${random_integer.default.result}"
 }
 
 resource "alicloud_log_store" "default" {
-  project = alicloud_log_project.default.name
-  name    = "example-value"
+  project_name  = alicloud_log_project.default.name
+  logstore_name = "example-value"
 }
 
 resource "alicloud_ram_role" "default" {

@@ -20,6 +20,10 @@ For information about ECD Bundle and how to use it, see [What is Bundle](https:/
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }

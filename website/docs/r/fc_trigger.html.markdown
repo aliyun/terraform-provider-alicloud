@@ -32,17 +32,17 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "default" {
-  name = "example-value-${random_integer.default.result}"
+  project_name = "example-value-${random_integer.default.result}"
 }
 
 resource "alicloud_log_store" "default" {
-  project = alicloud_log_project.default.name
-  name    = "example-value"
+  project_name  = alicloud_log_project.default.name
+  logstore_name = "example-value"
 }
 
 resource "alicloud_log_store" "source_store" {
-  project = alicloud_log_project.default.name
-  name    = "example-source-store"
+  project_name  = alicloud_log_project.default.name
+  logstore_name = "example-source-store"
 }
 
 resource "alicloud_ram_role" "default" {
@@ -143,6 +143,10 @@ EOF
 MNS topic trigger:
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 data "alicloud_account" "default" {}
 data "alicloud_regions" "default" {
   current = true
@@ -203,7 +207,7 @@ resource "alicloud_oss_bucket_object" "default" {
 
 resource "alicloud_fc_function" "default" {
   service     = alicloud_fc_service.default.name
-  name        = "terraform-example"
+  name        = "terraform-example-${random_integer.default.result}"
   description = "example"
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
@@ -232,6 +236,10 @@ resource "alicloud_fc_trigger" "default" {
 CDN events trigger:
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 data "alicloud_account" "default" {}
 
 resource "random_integer" "default" {
@@ -320,7 +328,7 @@ resource "alicloud_oss_bucket_object" "default" {
 
 resource "alicloud_fc_function" "default" {
   service     = alicloud_fc_service.default.name
-  name        = "terraform-example"
+  name        = "terraform-example-${random_integer.default.result}"
   description = "example"
   oss_bucket  = alicloud_oss_bucket.default.id
   oss_key     = alicloud_oss_bucket_object.default.key
