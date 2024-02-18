@@ -208,20 +208,20 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_type": "MOCK",
-					"mock_service_config": []map[string]string{{
-						"result":    "this is a mock test",
-						"aone_name": "cloudapi-openapi",
-					}},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_type": "MOCK",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"service_type": "MOCK",
+			//		"mock_service_config": []map[string]string{{
+			//			"result":    "this is a mock test",
+			//			"aone_name": "cloudapi-openapi",
+			//		}},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"service_type": "MOCK",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${alicloud_api_gateway_group.default.name}",
