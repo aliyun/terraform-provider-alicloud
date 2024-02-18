@@ -200,9 +200,7 @@ func resourceAlicloudHbrOssBackupPlanUpdate(d *schema.ResourceData, meta interfa
 	}
 	if !d.IsNewResource() && d.HasChange("prefix") {
 		update = true
-		if v, ok := d.GetOk("prefix"); ok {
-			request["Prefix"] = v
-		}
+		request["Prefix"] = d.Get("prefix")
 	}
 	if !d.IsNewResource() && d.HasChange("schedule") {
 		update = true

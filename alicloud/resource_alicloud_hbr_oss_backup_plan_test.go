@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
+func TestAccAliCloudHBROssBackupPlan_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_oss_backup_plan.default"
 	ra := resourceAttrInit(resourceId, AlicloudHBROssBackupPlanMap0)
@@ -120,6 +120,16 @@ func TestAccAlicloudHBROssBackupPlan_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"prefix": "var",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"prefix": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"prefix": "",
 					}),
 				),
 			},
