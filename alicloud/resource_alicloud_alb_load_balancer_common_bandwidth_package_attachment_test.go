@@ -74,14 +74,14 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "vswitch_1" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  zone_id           = data.alicloud_alb_zones.default.zones.0.id
   vswitch_name      = "${var.name}_1"
 }
 
 resource "alicloud_vswitch" "vswitch_2" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
-  zone_id           = data.alicloud_zones.default.zones.1.id
+  zone_id           = data.alicloud_alb_zones.default.zones.1.id
   vswitch_name      = "${var.name}_2"
 }
 
@@ -96,11 +96,11 @@ resource "alicloud_alb_load_balancer" "default" {
   }
   zone_mappings{
 		vswitch_id = alicloud_vswitch.vswitch_1.id
-		zone_id =  data.alicloud_alb_zones.default.zones.0.id
+		zone_id =  alicloud_vswitch.vswitch_1.zone_id
 	}
   zone_mappings{
 		vswitch_id = alicloud_vswitch.vswitch_2.id
-		zone_id =   data.alicloud_alb_zones.default.zones.1.id
+		zone_id =   alicloud_vswitch.vswitch_2.zone_id
 	}
 }
 
