@@ -10,11 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudComputeNestServiceInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeComputeNestServiceInstance")
@@ -22,7 +22,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudComputeNestServiceInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -98,11 +98,11 @@ func TestAccAlicloudComputeNestServiceInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudComputeNestServiceInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeComputeNestServiceInstance")
@@ -110,7 +110,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudComputeNestServiceInstanceBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -186,11 +186,11 @@ func TestAccAlicloudComputeNestServiceInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
+func TestAccAliCloudComputeNestServiceInstance_basic2(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ComputeNestSupportRegions)
 	resourceId := "alicloud_compute_nest_service_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudComputeNestServiceInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudComputeNestServiceInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &ComputeNestService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeComputeNestServiceInstance")
@@ -198,7 +198,7 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(100, 999)
 	name := fmt.Sprintf("tf-testacc%sComputeNestServiceInstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudComputeNestServiceInstanceBasicDependence2)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudComputeNestServiceInstanceBasicDependence2)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -274,11 +274,11 @@ func TestAccAlicloudComputeNestServiceInstance_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudComputeNestServiceInstanceMap = map[string]string{
+var AliCloudComputeNestServiceInstanceMap = map[string]string{
 	"status": CHECKSET,
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
+func AliCloudComputeNestServiceInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -313,7 +313,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence0(name string) string {
 `, name)
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
+func AliCloudComputeNestServiceInstanceBasicDependence1(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -367,7 +367,7 @@ func AlicloudComputeNestServiceInstanceBasicDependence1(name string) string {
 `, name)
 }
 
-func AlicloudComputeNestServiceInstanceBasicDependence2(name string) string {
+func AliCloudComputeNestServiceInstanceBasicDependence2(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
