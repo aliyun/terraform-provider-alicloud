@@ -288,3 +288,4 @@ var EbsEnterpriseSnapshotPolicySupportRegions = []Region{Hangzhou}
 var VPNSupportRegions = []Region{Huhehaote}
 var VPNSingleConnectRegions = []Region{MEEast1}
 var DdosBgpRegions = []Region{Beijing}
+var EcsDedicatedHostRegions = []Region{Hangzhou}
