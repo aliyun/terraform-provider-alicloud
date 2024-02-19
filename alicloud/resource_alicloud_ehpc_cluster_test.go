@@ -21,11 +21,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEhpcCluster_sweep(t *testing.T) {
-	testSweepEhpcCluster("cn-hangzhou")
-	testSweepEhpcCluster("eu-central-1")
-}
-
 func testSweepEhpcCluster(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
