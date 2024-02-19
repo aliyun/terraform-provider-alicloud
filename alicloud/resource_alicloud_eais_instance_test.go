@@ -143,14 +143,14 @@ func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_name":     name,
-					"instance_type":     "eais.ei-a6.medium",
+					"instance_type":     "eais.ei-a6.2xlarge",
 					"security_group_id": "${alicloud_security_group.default.id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": name,
-						"instance_type": "eais.ei-a6.medium",
+						"instance_type": "eais.ei-a6.2xlarge",
 					}),
 				),
 			},
@@ -174,12 +174,15 @@ func AlicloudEaisInstanceBasicDependence0(name string) string {
 		data "alicloud_zones" "default" {
 			available_resource_creation = "VSwitch"
 		}
+		locals {
+		  zone_id = "cn-hangzhou-h"
+		}
 		data "alicloud_vpcs" "default"{
 			name_regex = "default-NODELETING"
 		}
 		data "alicloud_vswitches" "default" {
 		  vpc_id  = data.alicloud_vpcs.default.ids.0
-          zone_id = data.alicloud_zones.default.ids.0
+          zone_id = local.zone_id
 		}
 		
 		resource "alicloud_security_group" "default" {
