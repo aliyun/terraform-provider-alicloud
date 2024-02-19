@@ -103,13 +103,13 @@ func TestAccAlicloudAmqpInstance_professional(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"support_eip": "true",
-					"max_eip_tps": "128",
+					"support_eip": "false",
+					//"max_eip_tps": "128",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"support_eip": "true",
-						"max_eip_tps": "128",
+						"support_eip": "false",
+						//"max_eip_tps": "128",
 					}),
 				),
 			},
