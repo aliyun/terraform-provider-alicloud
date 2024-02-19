@@ -254,7 +254,7 @@ func resourceAlicloudRouterInterfaceDelete(d *schema.ResourceData, meta interfac
 			return vpcClient.DeleteRouterInterface(&args)
 		})
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectStatus", "DependencyViolation.RouterInterfaceReferedByRouteEntry"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus", "DependencyViolation.RouterInterfaceReferedByRouteEntry", "OperationConflict"}) {
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(err)
 			}
