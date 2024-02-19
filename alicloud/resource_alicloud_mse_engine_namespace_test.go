@@ -88,16 +88,16 @@ data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
 }
 resource "alicloud_mse_cluster" "default" {
-  cluster_specification = "MSE_SC_1_2_60_c"
-  cluster_type          = "ZooKeeper"
-  cluster_version       = "ZooKeeper_3_8_0"
-  instance_count        = 1
-  net_type              = "privatenet"
-  vswitch_id            = data.alicloud_vswitches.default.ids.0
-  pub_network_flow      = "1"
-  acl_entry_list        = ["127.0.0.1/32"]
-  cluster_alias_name    = var.name
-  mse_version = "mse_dev"
+	  connection_type = "slb"
+	  net_type = "privatenet"
+	  vswitch_id = data.alicloud_vswitches.default.ids.0
+	  cluster_specification = "MSE_SC_1_2_60_c"
+	  cluster_version = "NACOS_2_0_0"
+	  instance_count = "1"
+	  pub_network_flow = "1"
+	  cluster_alias_name = "tf-testAccMseCluster2119826"
+	  mse_version = "mse_dev"
+	  cluster_type = "Nacos-Ans"
 }
 `, name)
 }

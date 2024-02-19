@@ -232,7 +232,7 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 	}
 	action := "ListEngineNamespaces"
 	request := map[string]interface{}{
-		"ClusterId": parts[0],
+		"InstanceId": parts[0],
 	}
 	idExist := false
 	runtime := util.RuntimeOptions{}
@@ -250,6 +250,10 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 		return nil
 	})
 	addDebug(action, response, request)
+	// There is an API bug while query an Instance deleted.
+	if IsExpectedErrors(err, []string{"InternalError"}) {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:EngineNamespace", id)), NotFoundMsg, ProviderERROR)
+	}
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
