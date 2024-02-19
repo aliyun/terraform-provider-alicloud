@@ -142,15 +142,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -166,15 +169,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -226,15 +232,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -250,15 +259,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -286,15 +298,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "90",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "90",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -310,15 +325,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -346,15 +364,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "90",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "90",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -370,15 +391,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -394,15 +418,18 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -419,7 +446,7 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"node_groups"},
 			},
 		},
 	})
@@ -480,15 +507,18 @@ func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "3",
 								},
 							},
 						},
@@ -504,15 +534,18 @@ func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
 							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
 								},
 							},
 							"data_disks": []map[string]interface{}{
 								{
-									"category": "cloud_essd",
-									"size":     "80",
-									"count":    "3",
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
 								},
 							},
 						},
@@ -543,7 +576,7 @@ func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				ImportStateVerifyIgnore: []string{"node_groups"},
 			},
 		},
 	})

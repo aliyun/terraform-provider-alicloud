@@ -459,7 +459,7 @@ func TestAccAlicloudEmrCluster_gateway(t *testing.T) {
 
 func TestAccAlicloudEmrCluster_multicluster(t *testing.T) {
 	var v *emr.DescribeClusterV2Response
-	resourceId := "alicloud_emr_cluster.default.4"
+	resourceId := "alicloud_emr_cluster.default.0"
 	ra := resourceAttrInit(resourceId, nil)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
