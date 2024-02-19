@@ -107,7 +107,7 @@ func testSweepEdasNamespace(region string) error {
 		}
 		action := "/pop/v5/user_region_def"
 		request := map[string]*string{
-			"Id": StringPointer(item["Id"].(string)),
+			"Id": StringPointer(fmt.Sprint(item["Id"])),
 		}
 		_, err = conn.DoRequest(StringPointer("2017-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
