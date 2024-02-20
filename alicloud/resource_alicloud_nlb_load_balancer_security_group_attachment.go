@@ -1,8 +1,10 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -11,21 +13,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudNlbLoadBalancerSecurityGroupAttachment() *schema.Resource {
+func resourceAliCloudNlbLoadBalancerSecurityGroupAttachment() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentCreate,
-		Read:   resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentRead,
-		Update: resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentUpdate,
-		Delete: resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentDelete,
+		Create: resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentCreate,
+		Read:   resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentRead,
+		Update: resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentUpdate,
+		Delete: resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"dry_run": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -36,76 +42,72 @@ func resourceAlicloudNlbLoadBalancerSecurityGroupAttachment() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"dry_run": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
 		},
 	}
 }
 
-func resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	request := make(map[string]interface{})
+
+	action := "LoadBalancerJoinSecurityGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-
-	request["RegionId"] = client.RegionId
-	request["ClientToken"] = buildClientToken("LoadBalancerJoinSecurityGroup")
+	request = make(map[string]interface{})
 	request["LoadBalancerId"] = d.Get("load_balancer_id")
-
-	securityGroupId := d.Get("security_group_id").(string)
-	request["SecurityGroupIds"] = []string{securityGroupId}
+	request["SecurityGroupIds.1"] = d.Get("security_group_id")
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-
-	var response map[string]interface{}
-	action := "LoadBalancerJoinSecurityGroup"
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Conflict.Lock", "SystemBusy"}) {
+			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nlb_load_balancer_security_group_attachment", action, AlibabaCloudSdkGoERROR)
 	}
 
-	nlbService := NlbService{client}
+	d.SetId(fmt.Sprintf("%v:%v", request["LoadBalancerId"], request["SecurityGroupIds.1"]))
 
-	jobId := fmt.Sprint(response["JobId"])
-	taskConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbService.NlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(jobId, []string{}))
-	if _, err := taskConf.WaitForState(); err != nil {
+	nlbServiceV2 := NlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(d, response, "$.Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	d.SetId(fmt.Sprint(request["LoadBalancerId"], ":", securityGroupId))
-
-	return resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentRead(d, meta)
+	return resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentRead(d, meta)
 }
 
-func resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	nlbService := NlbService{client}
+	nlbServiceV2 := NlbServiceV2{client}
 
-	_, err := nlbService.DescribeNlbLoadBalancerSecurityGroupAttachment(d.Id())
+	_, err := nlbServiceV2.DescribeNlbLoadBalancerSecurityGroupAttachment(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_nlb_load_balancer_security_group_attachment nlbService.DescribeNlbLoadBalancerSecurityGroupAttachment Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_nlb_load_balancer_security_group_attachment DescribeNlbLoadBalancerSecurityGroupAttachment Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -123,52 +125,65 @@ func resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentRead(d *schema.Resour
 	return nil
 }
 
-func resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentRead(d, meta)
+func resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[INFO] Cannot update resource Alicloud Resource Load Balancer Security Group Attachment.")
+	return nil
 }
 
-func resourceAlicloudNlbLoadBalancerSecurityGroupAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "LoadBalancerLeaveSecurityGroup"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	request = make(map[string]interface{})
+	request["LoadBalancerId"] = parts[0]
+	request["SecurityGroupIds.1"] = parts[1]
+	request["RegionId"] = client.RegionId
 
-	request := map[string]interface{}{
-		"RegionId":           client.RegionId,
-		"ClientToken":        buildClientToken("LoadBalancerLeaveSecurityGroup"),
-		"LoadBalancerId":     parts[0],
-		"SecurityGroupIds.1": parts[1],
-	}
+	request["ClientToken"] = buildClientToken(action)
 
-	action := "LoadBalancerLeaveSecurityGroup"
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"Conflict.Lock"}) {
+			if IsExpectedErrors(err, []string{"Conflict.Lock"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 
 	if err != nil {
-		if NotFoundError(err) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
+	nlbServiceV2 := NlbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Succeeded"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nlbServiceV2.DescribeAsyncNlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(d, response, "$.Status", []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
 	return nil
+}
+
+func convertNlbSecurityGroupIdsResponse(source interface{}) interface{} {
+	switch source {
+	}
+	return source
 }

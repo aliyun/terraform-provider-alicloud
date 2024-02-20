@@ -113,7 +113,7 @@ func testSweepNlbServerGroup(region string) error {
 	return nil
 }
 
-func TestAccAliCloudNLBServerGroup_basic0(t *testing.T) {
+func TestAccAliCloudNlbServerGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudNLBServerGroupMap0)
@@ -217,7 +217,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
-func TestAccAliCloudNLBServerGroup_basic1(t *testing.T) {
+func TestAccAliCloudNlbServerGroup_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_server_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudNLBServerGroupMap0)

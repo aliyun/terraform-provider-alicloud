@@ -17,7 +17,6 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment() *schema.R
 	return &schema.Resource{
 		Create: resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentCreate,
 		Read:   resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentRead,
-		// Update: resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentUpdate,
 		Delete: resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -46,11 +45,13 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachment() *schema.R
 }
 
 func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "AttachCommonBandwidthPackageToLoadBalancer"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNlbClient()
 	if err != nil {
 		return WrapError(err)
@@ -61,9 +62,11 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentCreate(d *sc
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -125,6 +128,7 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentDelete(d *sc
 	action := "DetachCommonBandwidthPackageFromLoadBalancer"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNlbClient()
 	if err != nil {
 		return WrapError(err)
@@ -136,9 +140,11 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentDelete(d *sc
 
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

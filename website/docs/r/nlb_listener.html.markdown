@@ -2,16 +2,15 @@
 subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_listener"
-sidebar_current: "docs-alicloud-resource-nlb-listener"
 description: |-
   Provides a Alicloud NLB Listener resource.
 ---
 
 # alicloud_nlb_listener
 
-Provides a NLB Listener resource.
+Provides a NLB Listener resource. 
 
-For information about NLB Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/createlistener-nl).
+For information about NLB Listener and how to use it, see [What is Listener](https://www.alibabacloud.com/help/en/server-load-balancer/latest/api-nlb-2022-04-30-createlistener).
 
 -> **NOTE:** Available since v1.191.0.
 
@@ -21,133 +20,145 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
-data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_nlb_zones" "default" {}
-resource "alicloud_vpc" "default" {
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "192.168.0.0/16"
   vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_nlb_zones.default.zones.0.id
-}
-resource "alicloud_vswitch" "default1" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.1.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_nlb_zones.default.zones.1.id
+
 }
 
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+resource "alicloud_vswitch" "vswtich" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vswitch_name = var.name
+
+  cidr_block = "192.168.1.0/24"
 }
 
-resource "alicloud_nlb_load_balancer" "default" {
-  load_balancer_name = var.name
-  resource_group_id  = data.alicloud_resource_manager_resource_groups.default.ids.0
+resource "alicloud_vswitch" "vswtich2" {
+  vpc_id       = alicloud_vpc.vpc.id
+  zone_id      = data.alicloud_zones.default.zones.1.id
+  vswitch_name = var.name
+
+  cidr_block = "192.168.2.0/24"
+}
+
+resource "alicloud_nlb_load_balancer" "nlb" {
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vswtich.id
+    zone_id    = alicloud_vswitch.vswtich.zone_id
+  }
+  zone_mappings {
+    vswitch_id = alicloud_vswitch.vswtich2.id
+    zone_id    = alicloud_vswitch.vswtich2.zone_id
+  }
   load_balancer_type = "Network"
+  vpc_id             = alicloud_vpc.vpc.id
   address_type       = "Internet"
   address_ip_version = "Ipv4"
-  vpc_id             = alicloud_vpc.default.id
-  tags = {
-    Created = "TF",
-    For     = "example",
-  }
-  zone_mappings {
-    vswitch_id = alicloud_vswitch.default.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.0.id
-  }
-  zone_mappings {
-    vswitch_id = alicloud_vswitch.default1.id
-    zone_id    = data.alicloud_nlb_zones.default.zones.1.id
-  }
 }
 
-resource "alicloud_nlb_server_group" "default" {
-  resource_group_id        = data.alicloud_resource_manager_resource_groups.default.ids.0
-  server_group_name        = var.name
-  server_group_type        = "Instance"
-  vpc_id                   = alicloud_vpc.default.id
-  scheduler                = "Wrr"
-  protocol                 = "TCP"
-  connection_drain         = true
-  connection_drain_timeout = 60
-  address_ip_version       = "Ipv4"
+resource "alicloud_nlb_server_group" "sg1" {
+  scheduler = "Wrr"
   health_check {
-    health_check_enabled         = true
-    health_check_type            = "TCP"
-    health_check_connect_port    = 0
-    healthy_threshold            = 2
-    unhealthy_threshold          = 2
-    health_check_connect_timeout = 5
-    health_check_interval        = 10
-    http_check_method            = "GET"
-    health_check_http_code       = ["http_2xx", "http_3xx", "http_4xx"]
   }
-  tags = {
-    Created = "TF",
-    For     = "example",
-  }
+  server_group_type = "Instance"
+  vpc_id            = alicloud_vpc.vpc.id
+  protocol          = "UDP"
+  server_group_name = var.name
+
+  resource_group_id = alicloud_nlb_load_balancer.nlb.resource_group_id
 }
+
+resource "alicloud_nlb_server_group" "sg2" {
+  scheduler = "Wrr"
+  health_check {
+  }
+  server_group_type = "Instance"
+  vpc_id            = alicloud_vpc.vpc.id
+  protocol          = "UDP"
+  server_group_name = var.name
+
+  resource_group_id = alicloud_nlb_load_balancer.nlb.resource_group_id
+}
+
 
 resource "alicloud_nlb_listener" "default" {
-  listener_protocol      = "TCP"
-  listener_port          = "80"
-  listener_description   = var.name
-  load_balancer_id       = alicloud_nlb_load_balancer.default.id
-  server_group_id        = alicloud_nlb_server_group.default.id
-  idle_timeout           = "900"
-  proxy_protocol_enabled = "true"
-  sec_sensor_enabled     = "true"
-  cps                    = "10000"
-  mss                    = "0"
+  load_balancer_id     = alicloud_nlb_load_balancer.nlb.id
+  server_group_id      = alicloud_nlb_server_group.sg1.id
+  listener_protocol    = "UDP"
+  certificate_ids      = []
+  listener_description = "test"
+  listener_port        = "100"
+  ca_certificate_ids   = []
+  status               = "Running"
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `listener_description` - (Optional) Custom listener name. The length is limited to 2 to 256 characters, supports Chinese and English letters, and can include numbers, commas (,), half-width periods (.), half-width semicolons (;), forward slashes (/), at(@), underscores (_), and dashes (-).
-* `listener_port` - (Required, ForceNew) Listening port. Valid values: 0 ~ 65535. `0`: indicates that full port listening is used. When set to `0`, you must configure `StartPort` and `EndPort`.
-* `listener_protocol` - (Required, ForceNew) The listening protocol. Valid values: `TCP`, `UDP`, or `TCPSSL`.
+* `alpn_enabled` - (Optional) Whether ALPN is turned on. Value:
+  - **true**: on.
+  - **false**: closed.
+* `alpn_policy` - (Optional) ALPN policy. Value:
+  - **HTTP1Only * *
+  - **HTTP2Only * *
+  - **HTTP2Preferred * *
+  - **HTTP2Optional * *.
+* `ca_certificate_ids` - (Optional) CA certificate list information. Currently, only one CA certificate can be added.
+-> **NOTE:**  This parameter only takes effect for TCPSSL listeners.
+.
+* `ca_enabled` - (Optional) Whether to start two-way authentication. Value:
+  - **true**: start.
+  - **false**: closed.
+* `certificate_ids` - (Optional) Server certificate list information. Currently, only one server certificate can be added.
+-> **NOTE:**  This parameter only takes effect for TCPSSL listeners.
+* `cps` - (Optional) The new connection speed limit for a network-based load balancing instance per second. Valid values: **0** ~ **1000000 * *. **0** indicates unlimited speed.
+* `end_port` - (Optional, ForceNew) Full port listening end port. Valid values: **0** ~ **65535 * *. The value of the end port is less than the start port.
+* `idle_timeout` - (Optional) Connection idle timeout time. Unit: seconds. Valid values: **1** ~ **900 * *.
+* `listener_description` - (Optional) Custom listener name.The length is limited to 2 to 256 characters, supports Chinese and English letters, and can include numbers, commas (,), half-width periods (.), half-width semicolons (;), forward slashes (/), at(@), underscores (_), and dashes (-).
+* `listener_port` - (Required, ForceNew) Listening port. Valid values: **0** ~ **65535 * *. **0**: indicates that full port listening is used. When set to **0**, you must configure **StartPort** and **EndPort * *.
+* `listener_protocol` - (Required, ForceNew) The listening protocol. Valid values: **TCP**, **UDP**, or **TCPSSL * *.
 * `load_balancer_id` - (Required, ForceNew) The ID of the network-based server load balancer instance.
+* `mss` - (Optional) The maximum segment size of the TCP message. Unit: Bytes. Valid values: **0** ~ **1500 * *. **0** indicates that the MSS value of the TCP message is not modified.
+-> **NOTE:**  only TCP and TCPSSL listeners support this field value.
+* `proxy_protocol_enabled` - (Optional) Whether to enable the Proxy Protocol to carry the source address of the client to the backend server. Value:
+  - **true**: on.
+  - **false**: closed.
+* `sec_sensor_enabled` - (Optional) Whether to turn on the second-level monitoring function. Value:
+  - **true**: on.
+  - **false**: closed.
+* `security_policy_id` - (Optional) Security policy ID. Support system security policies and custom security policies.
+
+Valid values: **tls_cipher_policy_1_0**, **tls_cipher_policy_1_1**, **tls_cipher_policy_1_2**, **tls_cipher_policy_1_2_strict**, or **tls_cipher_policy_1_2_strict_with_1_3 * *.
+-> **NOTE:**  This parameter only takes effect for TCPSSL listeners.
 * `server_group_id` - (Required) The ID of the server group.
-* `status` - (Optional) The status of the resource. Valid values: `Running`, `Stopped`.
-* `end_port` - (Optional, ForceNew) Full port listening end port. Valid values: `0` ~ `65535`. The value of the end port is less than the start port.
-* `start_port` - (Optional, ForceNew) Full Port listens to the starting port. Valid values: `0` ~ `65535`.
-* `alpn_enabled` - (Optional) Specifies whether to enable Application-Layer Protocol Negotiation (ALPN).
-* `ca_certificate_ids` - (Optional) The list of certificate authority (CA) certificates. This parameter takes effect only for listeners that use SSL over TCP. **Note:** Only one CA certificate is supported.
-* `sec_sensor_enabled` - (Optional) Specifies whether to enable fine-grained monitoring.
-* `certificate_ids` - (Optional) The list of server certificates. This parameter takes effect only for listeners that use SSL over TCP. **Note:** Only one server certificate is supported.
-* `idle_timeout` - (Optional) The timeout period of an idle connection. Unit: seconds. Valid values: `1` to `900`. Default value: `900`.
-* `security_policy_id` - (Optional) The ID of the security policy. System security policies and custom security policies are supported. 
-  System security policies valid values: `tls_cipher_policy_1_0` (default), `tls_cipher_policy_1_1,` `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`, and `tls_cipher_policy_1_2_strict_with_1_3`.
-  Custom security policies can be created by resource `alicloud_nlb_security_policy`.
-* `alpn_policy` - (Optional) The ALPN policy.
-* `proxy_protocol_enabled` - (Optional) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers.
-* `ca_enabled` - (Optional) Specifies whether to enable mutual authentication.
-* `mss` - (Optional) The maximum size of a TCP segment. Unit: bytes. Valid values: 0 to 1500. 0 specifies that the maximum segment size remains unchanged. **Note:** This parameter is supported only by listeners that use SSL over TCP.
-* `cps` - (Optional) The maximum number of connections that can be created per second on the NLB instance. Valid values: 0 to 1000000. 0 specifies that the number of connections is unlimited.
+* `start_port` - (Optional, ForceNew) Full Port listens to the starting port. Valid values: **0** ~ **65535 * *.
+* `status` - (Optional, Computed) The status of the resource.
+* `tags` - (Optional, Map, Available since v1.214.0) The tag of the resource.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Listener.
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the Listener.
-* `delete` - (Defaults to 1 mins) Used when delete the Listener.
-* `update` - (Defaults to 1 mins) Used when update the Listener.
+* `create` - (Defaults to 5 mins) Used when create the Listener.
+* `delete` - (Defaults to 5 mins) Used when delete the Listener.
+* `update` - (Defaults to 5 mins) Used when update the Listener.
 
 ## Import
 
