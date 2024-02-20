@@ -13,15 +13,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudAlbRules() *schema.Resource {
+func dataSourceAliCloudAlbRules() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudAlbRulesRead,
+		Read: dataSourceAliCloudAlbRulesRead,
 		Schema: map[string]*schema.Schema{
-			"listener_ids": {
+			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
 			"load_balancer_ids": {
 				Type:     schema.TypeList,
@@ -29,12 +36,11 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"ids": {
+			"listener_ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
 			},
 			"rule_ids": {
 				Type:     schema.TypeList,
@@ -42,37 +48,43 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 				ForceNew: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
-			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
-			},
-			"names": {
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Available", "Configuring", "Provisioning"}, false),
+				ValidateFunc: StringInSlice([]string{"Provisioning", "Configuring", "Available"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"rules": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"listener_id": {
+						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"rule_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"load_balancer_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"listener_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"rule_name": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -85,6 +97,14 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"order": {
+										Type:     schema.TypeInt,
+										Computed: true,
+									},
 									"fixed_response_config": {
 										Type:     schema.TypeList,
 										Computed: true,
@@ -148,10 +168,6 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 												},
 											},
 										},
-									},
-									"order": {
-										Type:     schema.TypeInt,
-										Computed: true,
 									},
 									"redirect_config": {
 										Type:     schema.TypeList,
@@ -249,10 +265,6 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 											},
 										},
 									},
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
 								},
 							},
 						},
@@ -261,6 +273,10 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									"type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 									"cookie_config": {
 										Type:     schema.TypeList,
 										Computed: true,
@@ -365,10 +381,6 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 											},
 										},
 									},
-									"type": {
-										Type:     schema.TypeString,
-										Computed: true,
-									},
 									"source_ip_config": {
 										Type:     schema.TypeList,
 										Computed: true,
@@ -385,18 +397,6 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 								},
 							},
 						},
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"rule_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"rule_name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -408,27 +408,27 @@ func dataSourceAlicloudAlbRules() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudAlbRulesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListRules"
 	request := make(map[string]interface{})
-	if m, ok := d.GetOk("listener_ids"); ok {
-		for k, v := range m.([]interface{}) {
-			request[fmt.Sprintf("ListenerIds.%d", k+1)] = v.(string)
-		}
-	}
-	if m, ok := d.GetOk("load_balancer_ids"); ok {
-		for k, v := range m.([]interface{}) {
-			request[fmt.Sprintf("LoadBalancerIds.%d", k+1)] = v.(string)
-		}
-	}
-	if m, ok := d.GetOk("rule_ids"); ok {
-		for k, v := range m.([]interface{}) {
-			request[fmt.Sprintf("RuleIds.%d", k+1)] = v.(string)
-		}
-	}
 	request["MaxResults"] = PageSizeLarge
+
+	if v, ok := d.GetOk("load_balancer_ids"); ok {
+		request["LoadBalancerIds"] = v
+	}
+
+	if v, ok := d.GetOk("listener_ids"); ok {
+		request["ListenerIds"] = v
+	}
+
+	if v, ok := d.GetOk("rule_ids"); ok {
+		request["RuleIds"] = v
+	}
+
+	status, statusOk := d.GetOk("status")
+
 	var objects []map[string]interface{}
 	var ruleNameRegex *regexp.Regexp
 	if v, ok := d.GetOk("name_regex"); ok {
@@ -448,12 +448,13 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
+
 	var response map[string]interface{}
 	conn, err := client.NewAlbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -470,56 +471,78 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_alb_rules", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.Rules", response)
 		if formatInt(response["TotalCount"]) != 0 && err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Rules", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if ruleNameRegex != nil && !ruleNameRegex.MatchString(fmt.Sprint(item["RuleName"])) {
 				continue
 			}
+
 			if len(idsMap) > 0 {
 				if _, ok := idsMap[fmt.Sprint(item["RuleId"])]; !ok {
 					continue
 				}
 			}
+
 			if statusOk && status.(string) != "" && status.(string) != item["RuleStatus"].(string) {
 				continue
 			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"listener_id":      object["ListenerId"],
-			"load_balancer_id": object["LoadBalancerId"],
-			"priority":         formatInt(object["Priority"]),
 			"id":               fmt.Sprint(object["RuleId"]),
 			"rule_id":          fmt.Sprint(object["RuleId"]),
+			"load_balancer_id": object["LoadBalancerId"],
+			"listener_id":      object["ListenerId"],
 			"rule_name":        object["RuleName"],
+			"priority":         formatInt(object["Priority"]),
 			"status":           object["RuleStatus"],
 		}
 
-		ruleActionsMaps := make([]map[string]interface{}, 0)
 		if ruleActionsList, ok := object["RuleActions"]; ok {
+			ruleActionsMaps := make([]map[string]interface{}, 0)
 			for _, ruleActions := range ruleActionsList.([]interface{}) {
 				ruleActionsArg := ruleActions.(map[string]interface{})
 				ruleActionsMap := map[string]interface{}{}
 				ruleActionsMap["type"] = ruleActionsArg["Type"]
 				ruleActionsMap["order"] = formatInt(ruleActionsArg["Order"])
+
+				if fixedResponseConfig, ok := ruleActionsArg["FixedResponseConfig"]; ok {
+					fixedResponseConfigArg := fixedResponseConfig.(map[string]interface{})
+					if len(fixedResponseConfigArg) > 0 {
+						fixedResponseConfigMaps := make([]map[string]interface{}, 0)
+						fixedResponseConfigMap := make(map[string]interface{}, 0)
+						fixedResponseConfigMap["content"] = fixedResponseConfigArg["Content"]
+						fixedResponseConfigMap["content_type"] = fixedResponseConfigArg["ContentType"]
+						fixedResponseConfigMap["http_code"] = fixedResponseConfigArg["HttpCode"]
+						fixedResponseConfigMaps = append(fixedResponseConfigMaps, fixedResponseConfigMap)
+						ruleActionsMap["fixed_response_config"] = fixedResponseConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+					}
+				}
 
 				if forwardGroupConfig, ok := ruleActionsArg["ForwardGroupConfig"]; ok {
 					forwardGroupConfigArg := forwardGroupConfig.(map[string]interface{})
@@ -530,10 +553,11 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 								serverGroupTuplesArg := serverGroupTuples.(map[string]interface{})
 								serverGroupTuplesMap := map[string]interface{}{}
 								serverGroupTuplesMap["server_group_id"] = serverGroupTuplesArg["ServerGroupId"]
-								serverGroupTuplesMap["weight"] = serverGroupTuplesArg["Weight"]
+								serverGroupTuplesMap["weight"] = formatInt(serverGroupTuplesArg["Weight"])
 								serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 							}
 						}
+
 						if len(serverGroupTuplesMaps) > 0 {
 							forwardGroupConfigMaps := make([]map[string]interface{}, 0)
 							forwardGroupConfigMap := map[string]interface{}{}
@@ -542,6 +566,63 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 							ruleActionsMap["forward_group_config"] = forwardGroupConfigMaps
 							ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 						}
+					}
+				}
+
+				if insertHeaderConfig, ok := ruleActionsArg["InsertHeaderConfig"]; ok {
+					insertHeaderConfigArg := insertHeaderConfig.(map[string]interface{})
+					if len(insertHeaderConfigArg) > 0 {
+						insertHeaderConfigMaps := make([]map[string]interface{}, 0)
+						insertHeaderConfigMap := make(map[string]interface{}, 0)
+						insertHeaderConfigMap["key"] = insertHeaderConfigArg["Key"]
+						insertHeaderConfigMap["value"] = insertHeaderConfigArg["Value"]
+						insertHeaderConfigMap["value_type"] = insertHeaderConfigArg["ValueType"]
+						insertHeaderConfigMaps = append(insertHeaderConfigMaps, insertHeaderConfigMap)
+						ruleActionsMap["insert_header_config"] = insertHeaderConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+					}
+				}
+
+				if redirectConfig, ok := ruleActionsArg["RedirectConfig"]; ok {
+					redirectConfigArg := redirectConfig.(map[string]interface{})
+					if len(redirectConfigArg) > 0 {
+						redirectConfigMaps := make([]map[string]interface{}, 0)
+						redirectConfigMap := make(map[string]interface{}, 0)
+						redirectConfigMap["host"] = redirectConfigArg["Host"]
+						redirectConfigMap["http_code"] = redirectConfigArg["HttpCode"]
+						redirectConfigMap["path"] = redirectConfigArg["Path"]
+						redirectConfigMap["port"] = redirectConfigArg["Port"]
+						redirectConfigMap["protocol"] = redirectConfigArg["Protocol"]
+						redirectConfigMap["query"] = redirectConfigArg["Query"]
+						redirectConfigMaps = append(redirectConfigMaps, redirectConfigMap)
+						ruleActionsMap["redirect_config"] = redirectConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+					}
+				}
+
+				if rewriteConfig, ok := ruleActionsArg["RewriteConfig"]; ok {
+					rewriteConfigArg := rewriteConfig.(map[string]interface{})
+					if len(rewriteConfigArg) > 0 {
+						rewriteConfigMaps := make([]map[string]interface{}, 0)
+						rewriteConfigMap := make(map[string]interface{}, 0)
+						rewriteConfigMap["host"] = rewriteConfigArg["Host"]
+						rewriteConfigMap["path"] = rewriteConfigArg["Path"]
+						rewriteConfigMap["query"] = rewriteConfigArg["Query"]
+						rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
+						ruleActionsMap["rewrite_config"] = rewriteConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
+					}
+				}
+
+				if trafficLimitConfig, ok := ruleActionsArg["TrafficLimitConfig"]; ok {
+					trafficLimitConfigArg := trafficLimitConfig.(map[string]interface{})
+					if len(trafficLimitConfigArg) > 0 {
+						trafficLimitConfigMaps := make([]map[string]interface{}, 0)
+						trafficLimitConfigMap := make(map[string]interface{}, 0)
+						trafficLimitConfigMap["qps"] = trafficLimitConfigArg["QPS"]
+						trafficLimitConfigMaps = append(trafficLimitConfigMaps, trafficLimitConfigMap)
+						ruleActionsMap["traffic_limit_config"] = trafficLimitConfigMaps
+						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
 					}
 				}
 
@@ -576,83 +657,13 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 						}
 					}
 				}
-
-				if fixedResponseConfig, ok := ruleActionsArg["FixedResponseConfig"]; ok {
-					fixedResponseConfigArg := fixedResponseConfig.(map[string]interface{})
-					if len(fixedResponseConfigArg) > 0 {
-						fixedResponseConfigMaps := make([]map[string]interface{}, 0)
-						fixedResponseConfigMap := make(map[string]interface{}, 0)
-						fixedResponseConfigMap["content"] = fixedResponseConfigArg["Content"]
-						fixedResponseConfigMap["content_type"] = fixedResponseConfigArg["ContentType"]
-						fixedResponseConfigMap["http_code"] = fixedResponseConfigArg["HttpCode"]
-						fixedResponseConfigMaps = append(fixedResponseConfigMaps, fixedResponseConfigMap)
-						ruleActionsMap["fixed_response_config"] = fixedResponseConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-					}
-				}
-
-				if insertHeaderConfig, ok := ruleActionsArg["InsertHeaderConfig"]; ok {
-					insertHeaderConfigArg := insertHeaderConfig.(map[string]interface{})
-					if len(insertHeaderConfigArg) > 0 {
-						insertHeaderConfigMaps := make([]map[string]interface{}, 0)
-						insertHeaderConfigMap := make(map[string]interface{}, 0)
-						insertHeaderConfigMap["key"] = insertHeaderConfigArg["Key"]
-						insertHeaderConfigMap["value"] = insertHeaderConfigArg["Value"]
-						insertHeaderConfigMap["value_type"] = insertHeaderConfigArg["ValueType"]
-						insertHeaderConfigMaps = append(insertHeaderConfigMaps, insertHeaderConfigMap)
-						ruleActionsMap["insert_header_config"] = insertHeaderConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-					}
-				}
-
-				if redirectConfig, ok := ruleActionsArg["RedirectConfig"]; ok {
-					redirectConfigArg := redirectConfig.(map[string]interface{})
-					if len(redirectConfigArg) > 0 {
-						redirectConfigMaps := make([]map[string]interface{}, 0)
-						redirectConfigMap := make(map[string]interface{}, 0)
-						redirectConfigMap["host"] = redirectConfigArg["Host"]
-						redirectConfigMap["http_code"] = redirectConfigArg["HttpCode"]
-						redirectConfigMap["path"] = redirectConfigArg["Path"]
-						redirectConfigMap["port"] = formatInt(redirectConfigArg["Port"])
-						redirectConfigMap["protocol"] = redirectConfigArg["Protocol"]
-						redirectConfigMap["query"] = redirectConfigArg["Query"]
-						redirectConfigMaps = append(redirectConfigMaps, redirectConfigMap)
-						ruleActionsMap["redirect_config"] = redirectConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-					}
-				}
-
-				if rewriteConfig, ok := ruleActionsArg["RewriteConfig"]; ok {
-					rewriteConfigArg := rewriteConfig.(map[string]interface{})
-					if len(rewriteConfigArg) > 0 {
-						rewriteConfigMaps := make([]map[string]interface{}, 0)
-						rewriteConfigMap := make(map[string]interface{}, 0)
-						rewriteConfigMap["host"] = rewriteConfigArg["Host"]
-						rewriteConfigMap["path"] = rewriteConfigArg["Path"]
-						rewriteConfigMap["query"] = rewriteConfigArg["Query"]
-						rewriteConfigMaps = append(rewriteConfigMaps, rewriteConfigMap)
-						ruleActionsMap["rewrite_config"] = rewriteConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-					}
-				}
-
-				if trafficLimitConfig, ok := ruleActionsArg["TrafficLimitConfig"]; ok {
-					trafficLimitConfigArg := trafficLimitConfig.(map[string]interface{})
-					if len(trafficLimitConfigArg) > 0 {
-						trafficLimitConfigMaps := make([]map[string]interface{}, 0)
-						trafficLimitConfigMap := make(map[string]interface{}, 0)
-						trafficLimitConfigMap["qps"] = trafficLimitConfigArg["QPS"]
-						trafficLimitConfigMaps = append(trafficLimitConfigMaps, trafficLimitConfigMap)
-						ruleActionsMap["traffic_limit_config"] = trafficLimitConfigMaps
-						ruleActionsMaps = append(ruleActionsMaps, ruleActionsMap)
-					}
-				}
 			}
-		}
-		mapping["rule_actions"] = ruleActionsMaps
 
-		ruleConditionsMaps := make([]map[string]interface{}, 0)
+			mapping["rule_actions"] = ruleActionsMaps
+		}
+
 		if ruleConditionsList, ok := object["RuleConditions"]; ok {
+			ruleConditionsMaps := make([]map[string]interface{}, 0)
 			for _, ruleConditions := range ruleConditionsList.([]interface{}) {
 				ruleConditionsArg := ruleConditions.(map[string]interface{})
 				ruleConditionsMap := map[string]interface{}{}
@@ -759,8 +770,9 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 					}
 				}
 			}
+
+			mapping["rule_conditions"] = ruleConditionsMaps
 		}
-		mapping["rule_conditions"] = ruleConditionsMaps
 
 		ids = append(ids, fmt.Sprint(mapping["id"]))
 		names = append(names, object["RuleName"])
@@ -768,6 +780,7 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -779,6 +792,7 @@ func dataSourceAlicloudAlbRulesRead(d *schema.ResourceData, meta interface{}) er
 	if err := d.Set("rules", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
