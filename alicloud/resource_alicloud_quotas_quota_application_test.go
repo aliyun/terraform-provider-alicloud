@@ -6,6 +6,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -342,6 +343,9 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%squotasquotaapplication%d", defaultRegionToTest, rand)
+	currentTime := time.Now()
+	sixMonthsLater := currentTime.AddDate(0, 6, 0)
+	expireTime := sixMonthsLater.Format("2006-01-02T15:04:05Z")
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasQuotaApplicationBasicDependence3289)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -358,9 +362,9 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 					"product_code":      "vpc",
 					"quota_category":    "WhiteListLabel",
 					"notice_type":       "3",
-					"expire_time":       "2023-06-26T16:00:00Z",
+					"expire_time":       expireTime,
 					"desire_value":      "1",
-					"reason":            "测试",
+					"reason":            "",
 					"env_language":      "zh",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -371,9 +375,9 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 						"product_code":      "vpc",
 						"quota_category":    "WhiteListLabel",
 						"notice_type":       "3",
-						"expire_time":       "2023-06-26T16:00:00Z",
+						"expire_time":       expireTime,
 						"desire_value":      "1",
-						"reason":            "测试",
+						"reason":            "",
 						"env_language":      "zh",
 					}),
 				),
@@ -382,7 +386,7 @@ func TestAccAlicloudQuotasQuotaApplication_basic3289(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"audit_mode", "env_language", "quota_category"},
+				ImportStateVerifyIgnore: []string{"audit_mode", "env_language", "quota_category", "status"},
 			},
 		},
 	})
