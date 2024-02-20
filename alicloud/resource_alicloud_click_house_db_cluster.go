@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -9,79 +10,78 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudClickHouseDbCluster() *schema.Resource {
+func resourceAliCloudClickHouseDBCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudClickHouseDbClusterCreate,
-		Read:   resourceAlicloudClickHouseDbClusterRead,
-		Update: resourceAlicloudClickHouseDbClusterUpdate,
-		Delete: resourceAlicloudClickHouseDbClusterDelete,
+		Create: resourceAliCloudClickHouseDBClusterCreate,
+		Read:   resourceAliCloudClickHouseDBClusterRead,
+		Update: resourceAliCloudClickHouseDBClusterUpdate,
+		Delete: resourceAliCloudClickHouseDBClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(60 * time.Minute),
 			Update: schema.DefaultTimeout(60 * time.Minute),
+			Delete: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"category": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "HighAvailability"}, false),
 				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Basic", "HighAvailability"}, true),
 			},
-			"db_cluster_access_white_list": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"db_cluster_ip_array_attribute": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Removed:  "Field 'db_cluster_ip_array_attribute' has been removed from provider",
-						},
-						"db_cluster_ip_array_name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"security_ip_list": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"db_cluster_class": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
+			"db_cluster_ip_array_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_cluster_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"db_cluster_description": {
+				Type:     schema.TypeString,
+				Computed: true,
+				Optional: true,
+			},
 			"db_cluster_network_type": {
-				Type:         schema.TypeString,
-				ValidateFunc: validation.StringInSlice([]string{"vpc"}, false),
-				Required:     true,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"db_cluster_version": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"19.15.2.2", "20.3.10.75", "20.8.7.15", "21.8.10.19", "22.8.5.29"}, false),
-			},
-			"db_node_storage": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
+				ValidateFunc: StringInSlice([]string{"19.15.2.2", "20.3.10.75", "20.8.7.15", "21.8.10.19", "22.8.5.29"}, false),
 			},
 			"db_node_group_count": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringLenBetween(1, 48),
+			},
+			"db_node_storage": {
 				Type:         schema.TypeInt,
-				ValidateFunc: validation.IntBetween(1, 48),
 				Required:     true,
 				ForceNew:     true,
+				ValidateFunc: IntBetween(100, 32000),
 			},
-
+			"duration": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"encryption_key": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -92,58 +92,84 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"maintain_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"modify_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Cover", "Append", "Delete"}, true),
+			},
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, true),
 			},
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
+				ValidateFunc: StringInSlice([]string{"Year", "Month"}, true),
 			},
-			"storage_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_efficiency", "cloud_essd_pl2", "cloud_essd_pl3"}, false),
-			},
-			"used_time": {
+			"period_unit": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
-			"vswitch_id": {
+			"renewal_status": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
-
-			"db_cluster_description": {
+			"resource_group_id": {
 				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
+			},
+			"restart_time": {
+				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"security_ips": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Creating", "Deleting", "Restarting", "Preparing", "Running"}, false),
+				ValidateFunc: StringInSlice([]string{"Creating", "Deleting", "Restarting", "Preparing", "Running"}, false),
 			},
-			"maintain_time": {
+			"storage_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringInSlice([]string{"CloudESSD_PL0", "CloudESSD_PL1", "CloudESSD_PL2", "CloudESSD_PL3", "CloudEfficiency", "cloud_essd", "cloud_efficiency", "cloud_essd_pl2", "cloud_essd_pl3"}, true),
+			},
+			"used_time": {
 				Type:     schema.TypeString,
-				Computed: true,
 				Optional: true,
 			},
-			"zone_id": {
+			"vswitch_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"vswitch_id_bak": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vswitch_id_bak_second": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
 			},
-			"vpc_id": {
+			"zone_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -161,54 +187,64 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 	}
 }
 
-func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudClickHouseDBClusterCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	clickhouseService := ClickhouseService{client}
-	var response map[string]interface{}
+
 	action := "CreateDBInstance"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewClickhouseClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["DBClusterCategory"] = d.Get("category")
-	request["DBClusterClass"] = d.Get("db_cluster_class")
-	if v, ok := d.GetOk("db_cluster_description"); ok {
-		request["DBClusterDescription"] = v
+	request = make(map[string]interface{})
+	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
 	}
-	request["DBClusterNetworkType"] = d.Get("db_cluster_network_type")
-	request["DBClusterVersion"] = d.Get("db_cluster_version")
-	request["DBNodeGroupCount"] = d.Get("db_node_group_count")
-	request["DBNodeStorage"] = d.Get("db_node_storage")
+	if v, ok := d.GetOk("period"); ok {
+		request["Period"] = v
+	}
+	if v, ok := d.GetOk("used_time"); ok {
+		request["UsedTime"] = v
+	}
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VPCId"] = v
+	}
+	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("encryption_key"); ok {
 		request["EncryptionKey"] = v
 	}
 	if v, ok := d.GetOk("encryption_type"); ok {
 		request["EncryptionType"] = v
 	}
-	request["PayType"] = convertClickHouseDbClusterPaymentTypeRequest(d.Get("payment_type").(string))
-
-	if v, ok := d.GetOk("period"); ok {
-		request["Period"] = v
-	}
-	request["RegionId"] = client.RegionId
+	request["DBClusterCategory"] = d.Get("category")
+	request["PayType"] = convertClickHouseDBClusterPayTypeRequest(d.Get("payment_type").(string))
 	request["DbNodeStorageType"] = d.Get("storage_type")
-	if v, ok := d.GetOk("used_time"); ok {
-		request["UsedTime"] = v
+	if v, ok := d.GetOk("db_cluster_name"); ok {
+		request["DBClusterDescription"] = v
 	}
-
-	if v, ok := d.GetOk("vpc_id"); ok {
-		request["VPCId"] = v
+	if v, ok := d.GetOk("db_cluster_description"); ok {
+		request["DBClusterDescription"] = v
 	}
-
-	if v, ok := d.GetOk("zone_id"); ok {
-		request["ZoneId"] = v
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
-
-	if v, ok := d.GetOk("vswitch_id"); ok {
-		request["VSwitchId"] = v
+	request["DBClusterClass"] = d.Get("db_cluster_class")
+	request["DBNodeGroupCount"] = d.Get("db_node_group_count")
+	request["DBNodeStorage"] = d.Get("db_node_storage")
+	request["DBClusterNetworkType"] = d.Get("db_cluster_network_type")
+	request["DBClusterVersion"] = d.Get("db_cluster_version")
+	if v, ok := d.GetOk("vswitch_id_bak"); ok {
+		request["VSwitchBak"] = v
 	}
-
+	if v, ok := d.GetOk("vswitch_id_bak_second"); ok {
+		request["VSwitchBak2"] = v
+	}
 	if (request["ZoneId"] == nil || request["VpcId"] == nil) && request["VSwitchId"] != nil {
 		vpcService := VpcService{client}
 		vsw, err := vpcService.DescribeVSwitchWithTeadsl(request["VSwitchId"].(string))
@@ -222,239 +258,357 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
-	request["ClientToken"] = buildClientToken("CreateDBInstance")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_click_house_db_cluster", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["DBClusterId"]))
-	stateConf := BuildStateConf([]string{"Creating", "Deleting", "Restarting", "Preparing"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+
+	clickHouseServiceV2 := ClickHouseServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 50*time.Second, clickHouseServiceV2.ClickHouseDBClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudClickHouseDbClusterUpdate(d, meta)
+
+	return resourceAliCloudClickHouseDBClusterUpdate(d, meta)
 }
-func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudClickHouseDBClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	clickhouseService := ClickhouseService{client}
-	object, err := clickhouseService.DescribeClickHouseDbCluster(d.Id())
+	clickHouseServiceV2 := ClickHouseServiceV2{client}
+
+	objectRaw, err := clickHouseServiceV2.DescribeClickHouseDBCluster(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_click_house_db_cluster clickhouseService.DescribeClickHouseDbCluster Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_click_house_db_cluster DescribeClickHouseDBCluster Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("category", object["Category"])
-	d.Set("db_cluster_description", object["DBClusterDescription"])
-	d.Set("db_cluster_network_type", object["DBClusterNetworkType"])
-	d.Set("db_node_storage", fmt.Sprint(formatInt(object["DBNodeStorage"])))
-	d.Set("encryption_key", object["EncryptionKey"])
-	d.Set("encryption_type", object["EncryptionType"])
-	d.Set("maintain_time", object["MaintainTime"])
-	d.Set("status", object["DBClusterStatus"])
-	d.Set("payment_type", convertClickHouseDbClusterPaymentTypeResponse(object["PayType"].(string)))
-	d.Set("storage_type", convertClickHouseDbClusterStorageTypeResponse(object["StorageType"].(string)))
-	d.Set("vswitch_id", object["VSwitchId"])
-	d.Set("zone_id", object["ZoneId"])
-	d.Set("vpc_id", object["VpcId"])
-	d.Set("connection_string", object["ConnectionString"])
-	d.Set("port", object["Port"])
-	describeDBClusterAccessWhiteListObject, err := clickhouseService.DescribeDBClusterAccessWhiteList(d.Id())
+
+	d.Set("category", objectRaw["Category"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("db_cluster_name", objectRaw["DBClusterDescription"])
+	d.Set("db_cluster_description", objectRaw["DBClusterDescription"])
+	d.Set("db_cluster_network_type", objectRaw["DBClusterNetworkType"])
+	d.Set("db_node_storage", objectRaw["DBNodeStorage"])
+	d.Set("encryption_key", objectRaw["EncryptionKey"])
+	d.Set("encryption_type", objectRaw["EncryptionType"])
+	d.Set("maintain_time", objectRaw["MaintainTime"])
+	d.Set("payment_type", convertClickHouseDBClusterDBClusterPayTypeResponse(objectRaw["PayType"]))
+	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	d.Set("status", objectRaw["DBClusterStatus"])
+	d.Set("storage_type", convertClickHouseDbClusterStorageTypeResponse(objectRaw["StorageType"].(string)))
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("zone_id", objectRaw["ZoneId"])
+	d.Set("connection_string", objectRaw["ConnectionString"])
+	d.Set("port", objectRaw["Port"])
+
+	if convertClickHouseDBClusterPayTypeRequest(d.Get("payment_type").(string)) == "Prepaid" {
+		objectRaw, err = clickHouseServiceV2.DescribeDescribeAutoRenewAttribute(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	d.Set("duration", objectRaw["Duration"])
+	d.Set("period_unit", objectRaw["PeriodUnit"])
+	d.Set("renewal_status", objectRaw["RenewalStatus"])
+
+	objectRaw, err = clickHouseServiceV2.DescribeDescribeDBClusterAccessWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
-	if dBClusterAccessWhiteListMap, ok := describeDBClusterAccessWhiteListObject["DBClusterAccessWhiteList"].(map[string]interface{}); ok && dBClusterAccessWhiteListMap != nil {
-		if iPArrayList, ok := dBClusterAccessWhiteListMap["IPArray"]; ok && iPArrayList != nil {
-			dBClusterAccessWhiteListMaps := make([]map[string]interface{}, 0)
-			for _, iPArrayListItem := range iPArrayList.([]interface{}) {
-				if v, ok := iPArrayListItem.(map[string]interface{}); ok {
-					if v["DBClusterIPArrayName"].(string) == "default" || v["DBClusterIPArrayName"].(string) == "dms" {
-						continue
-					}
-					iPArrayListItemMap := make(map[string]interface{})
-					iPArrayListItemMap["db_cluster_ip_array_attribute"] = v["DBClusterIPArrayAttribute"]
-					iPArrayListItemMap["db_cluster_ip_array_name"] = v["DBClusterIPArrayName"]
-					iPArrayListItemMap["security_ip_list"] = v["SecurityIPList"]
-					dBClusterAccessWhiteListMaps = append(dBClusterAccessWhiteListMaps, iPArrayListItemMap)
-				}
-			}
-			d.Set("db_cluster_access_white_list", dBClusterAccessWhiteListMaps)
-		}
-	}
+
+	d.Set("db_cluster_ip_array_name", objectRaw["DBClusterIPArrayName"])
+	d.Set("security_ips", objectRaw["SecurityIPList"])
 
 	return nil
 }
-func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
-	d.Partial(true)
 
+func resourceAliCloudClickHouseDBClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
-	request := map[string]interface{}{
-		"DBClusterId": d.Id(),
+	d.Partial(true)
+	action := "ModifyDBClusterDescription"
+	conn, err := client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DBClusterId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("db_cluster_name") {
+		update = true
+		request["DBClusterDescription"] = d.Get("db_cluster_name")
 	}
 	if !d.IsNewResource() && d.HasChange("db_cluster_description") {
 		update = true
-		if v, ok := d.GetOk("db_cluster_description"); ok {
-			request["DBClusterDescription"] = v
-		}
+		request["DBClusterDescription"] = d.Get("db_cluster_description")
 	}
+
 	if update {
-		action := "ModifyDBClusterDescription"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		clickHouseServiceV2 := ClickHouseServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 50*time.Second, clickHouseServiceV2.ClickHouseDBClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("db_cluster_name")
 		d.SetPartial("db_cluster_description")
 	}
 	update = false
-	modifyDBClusterMaintainTimeReq := map[string]interface{}{
-		"DBClusterId": d.Id(),
+	action = "ModifyDBClusterMaintainTime"
+	conn, err = client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if !d.IsNewResource() && d.HasChange("maintain_time") {
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DBClusterId"] = d.Id()
+	if d.HasChange("maintain_time") {
 		update = true
+		request["MaintainTime"] = d.Get("maintain_time")
 	}
-	if v, ok := d.GetOk("maintain_time"); ok {
-		modifyDBClusterMaintainTimeReq["MaintainTime"] = v
-	}
+
 	if update {
-		action := "ModifyDBClusterMaintainTime"
-		conn, err := client.NewClickhouseClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, modifyDBClusterMaintainTimeReq, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
-				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+				if NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, modifyDBClusterMaintainTimeReq)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		d.SetPartial("maintain_time")
 	}
-	if d.HasChange("db_cluster_access_white_list") {
-
-		oraw, nraw := d.GetChange("db_cluster_access_white_list")
-		remove := oraw.(*schema.Set).Difference(nraw.(*schema.Set)).List()
-		create := nraw.(*schema.Set).Difference(oraw.(*schema.Set)).List()
-		if len(remove) > 0 {
-			removeWhiteListReq := map[string]interface{}{
-				"DBClusterId": d.Id(),
-				"ModifyMode":  "Delete",
-			}
-
-			for _, whiteList := range remove {
-				whiteListArg := whiteList.(map[string]interface{})
-				removeWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
-				removeWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
-				removeWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
-
-				action := "ModifyDBClusterAccessWhiteList"
-				conn, err := client.NewClickhouseClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, removeWhiteListReq, &util.RuntimeOptions{})
-					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, removeWhiteListReq)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-			}
-		}
-		if len(create) > 0 {
-			createWhiteListReq := map[string]interface{}{
-				"DBClusterId": d.Id(),
-				"ModifyMode":  "Append",
-			}
-
-			for _, whiteList := range create {
-				whiteListArg := whiteList.(map[string]interface{})
-				createWhiteListReq["DBClusterIPArrayAttribute"] = whiteListArg["db_cluster_ip_array_attribute"]
-				createWhiteListReq["DBClusterIPArrayName"] = whiteListArg["db_cluster_ip_array_name"]
-				createWhiteListReq["SecurityIps"] = whiteListArg["security_ip_list"]
-
-				action := "ModifyDBClusterAccessWhiteList"
-				conn, err := client.NewClickhouseClient()
-				if err != nil {
-					return WrapError(err)
-				}
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
-				wait := incrementalWait(3*time.Second, 5*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, createWhiteListReq, &util.RuntimeOptions{})
-					if err != nil {
-						if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, createWhiteListReq)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-			}
-		}
-		d.SetPartial("db_cluster_access_white_list")
+	update = false
+	action = "ModifyDBClusterAccessWhiteList"
+	conn, err = client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DBClusterId"] = d.Id()
+	if v, ok := d.GetOk("modify_mode"); ok {
+		request["ModifyMode"] = v
+	}
+	if d.HasChange("security_ips") {
+		update = true
+		request["SecurityIps"] = d.Get("security_ips")
+	}
+
+	if d.HasChange("db_cluster_ip_array_name") {
+		update = true
+		request["DBClusterIPArrayName"] = d.Get("db_cluster_ip_array_name")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("security_ips")
+		d.SetPartial("db_cluster_ip_array_name")
+	}
+	update = false
+	action = "ModifyDBCluster"
+	conn, err = client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DBClusterId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	request["DBNodeGroupCount"] = d.Get("db_node_group_count")
+	if !d.IsNewResource() && d.HasChange("db_node_storage") {
+		update = true
+	}
+	request["DBNodeStorage"] = d.Get("db_node_storage")
+	request["DBClusterClass"] = d.Get("db_cluster_class")
+	if !d.IsNewResource() && d.HasChange("storage_type") {
+		update = true
+	}
+	request["DbNodeStorageType"] = d.Get("storage_type")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("storage_type")
+	}
+	update = false
+	action = "ChangeResourceGroup"
+	conn, err = client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+	}
+	request["ResourceId"] = d.Id()
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if IsExpectedErrors(err, []string{"SystemError"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
+		d.SetPartial("db_cluster_name")
+		d.SetPartial("db_cluster_description")
+	}
+	update = false
+	action = "ModifyAutoRenewAttribute"
+	conn, err = client.NewClickhouseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["DBClusterIds"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("renewal_status") {
+		update = true
+		request["RenewalStatus"] = d.Get("renewal_status")
+	}
+
+	if d.HasChange("duration") {
+		update = true
+		request["Duration"] = d.Get("duration")
+	}
+
+	if d.HasChange("period_unit") {
+		update = true
+		request["PeriodUnit"] = d.Get("period_unit")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("renewal_status")
+		d.SetPartial("duration")
+		d.SetPartial("period_unit")
+	}
+
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}
 		object, err := clickhouseService.DescribeClickHouseDbCluster(d.Id())
@@ -498,40 +652,64 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 	}
 	d.Partial(false)
-	return resourceAlicloudClickHouseDbClusterRead(d, meta)
+	return resourceAliCloudClickHouseDBClusterRead(d, meta)
 }
-func resourceAlicloudClickHouseDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudClickHouseDBClusterDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBCluster"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewClickhouseClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"DBClusterId": d.Id(),
-	}
-	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
-		log.Printf("[WARN] Cannot destroy resourceClickHouseDbCluster. Because payment_type = 'Subscription'. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	request = make(map[string]interface{})
+	query["DBClusterId"] = d.Id()
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
-			if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
+}
+
+func convertClickHouseDBClusterDBClusterPayTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "Prepaid":
+		return "Subscription"
+	case "Postpaid":
+		return "PayAsYouGo"
+	}
+	return source
+}
+func convertClickHouseDBClusterPayTypeRequest(source interface{}) interface{} {
+	switch source {
+	case "Subscription":
+		return "Prepaid"
+	case "PayAsYouGo":
+		return "Postpaid"
+	}
+	return source
 }
 
 func convertClickHouseDbClusterPaymentTypeRequest(source string) string {

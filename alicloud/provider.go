@@ -1353,7 +1353,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_iot_device_group":                                      resourceAlicloudIotDeviceGroup(),
 			"alicloud_express_connect_virtual_border_router":                 resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                           resourceAlicloudImmProject(),
-			"alicloud_click_house_db_cluster":                                resourceAlicloudClickHouseDbCluster(),
+			"alicloud_click_house_db_cluster":                                resourceAliCloudClickHouseDBCluster(),
 			"alicloud_direct_mail_domain":                                    resourceAlicloudDirectMailDomain(),
 			"alicloud_bastionhost_host_group":                                resourceAlicloudBastionhostHostGroup(),
 			"alicloud_vpc_dhcp_options_set":                                  resourceAliCloudVpcDhcpOptionsSet(),
