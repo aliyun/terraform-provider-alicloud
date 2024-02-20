@@ -205,7 +205,7 @@ func resourceAlicloudSlbLoadBalancer() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"active", "inactive", "locked"}, false),
 			},
-			"tags": tagsSchema(),
+			"tags": tagsSchemaComputed(),
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
