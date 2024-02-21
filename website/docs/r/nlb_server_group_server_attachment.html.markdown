@@ -2,7 +2,6 @@
 subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_server_group_server_attachment"
-sidebar_current: "docs-alicloud-resource-nlb-server-group-server-attachment"
 description: |-
   Provides a Alicloud NLB Server Group Server Attachment resource.
 ---
@@ -56,7 +55,7 @@ resource "alicloud_nlb_server_group_server_attachment" "default" {
 
 The following arguments are supported:
 * `description` - (Optional) The description of the servers. The description must be 2 to 256 characters in length, and can contain letters, digits, commas (,), periods (.), semicolons (;), forward slashes (/), at signs (@), underscores (_), and hyphens (-).
-* `port` - (Required, ForceNew) The port used by the backend server. Valid values: 1 to 65535.
+* `port` - (Optional, ForceNew, Computed) The port used by the backend server. Valid values: 1 to 65535.
 * `server_group_id` - (Required, ForceNew) The ID of the server group.
 * `server_id` - (Required, ForceNew) The ID of the server.
   - If the server group type is Instance, set the ServerId parameter to the ID of an Elastic Compute Service (ECS) instance, an elastic network interface (ENI), or an elastic container instance. These backend servers are specified by Ecs, Eni, or Eci. 
@@ -65,22 +64,19 @@ The following arguments are supported:
 * `server_type` - (Required, ForceNew) The type of the backend server. Valid values: `Ecs`, `Eni`, `Eci`, `Ip`.
 * `weight` - (Optional) The weight of the backend server. Valid values: 0 to 100. Default value: 100. If the weight of a backend server is set to 0, no requests are forwarded to the backend server.
 
-
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Server Group Server Attachment. The value formats as `<server_group_id>:<server_id>:<server_type>:<port>`.
-* `status` - Status of the server.
+* `id` - The ID of the resource supplied above.The value is formulated as `<server_group_id>:<server_id>:<server_type>:<port>`.
+* `status` - The status of the resource.
 * `zone_id` - The zoneId of the server.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the Server Group Server Attachment.
-* `delete` - (Defaults to 1 mins) Used when delete the Server Group Server Attachment.
-* `update` - (Defaults to 1 mins) Used when update the Server Group Server Attachment.
+* `create` - (Defaults to 5 mins) Used when create the Server Group Server Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Server Group Server Attachment.
+* `update` - (Defaults to 5 mins) Used when update the Server Group Server Attachment.
 
 ## Import
 

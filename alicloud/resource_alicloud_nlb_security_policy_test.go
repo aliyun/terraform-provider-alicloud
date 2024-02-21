@@ -115,7 +115,7 @@ func testSweepNlbSecurityPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNLBSecurityPolicy_basic0(t *testing.T) {
+func TestAccAliCloudNlbSecurityPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_security_policy.default"
 	ra := resourceAttrInit(resourceId, AlicloudNLBSecurityPolicyMap0)
@@ -184,7 +184,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 `, name)
 }
 
-func TestAccAlicloudNLBSecurityPolicy_basic1(t *testing.T) {
+func TestAccAliCloudNlbSecurityPolicy_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nlb_security_policy.default"
 	ra := resourceAttrInit(resourceId, AlicloudNLBSecurityPolicyMap1)
@@ -383,7 +383,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyCreate(dInit, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -406,7 +406,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyCreate(dInit, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -433,7 +433,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyUpdate(dExisted, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -482,7 +482,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyUpdate(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -526,7 +526,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyRead(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -545,7 +545,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudNlbSecurityPolicyDelete(dExisted, rawClient)
+	err = resourceAliCloudNlbSecurityPolicyDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -576,7 +576,7 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudNlbSecurityPolicyDelete(dExisted, rawClient)
+		err := resourceAliCloudNlbSecurityPolicyDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -586,3 +586,303 @@ func TestUnitAccAlicloudNlbSecurityPolicy(t *testing.T) {
 		}
 	}
 }
+
+// Test Nlb SecurityPolicy. >>> Resource test cases, automatically generated.
+// Case 5352
+func TestAccAliCloudNlbSecurityPolicy_basic5352(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_security_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudNlbSecurityPolicyMap5352)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbSecurityPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlbsecuritypolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbSecurityPolicyBasicDependence5352)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES128-SHA"},
+					"tls_versions": []string{
+						"TLSv1.0"},
+					"security_policy_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ciphers.#":            "1",
+						"tls_versions.#":       "1",
+						"security_policy_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES128-SHA"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ciphers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls_versions": []string{
+						"TLSv1.0"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls_versions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES256-SHA"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ciphers.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tls_versions": []string{
+						"TLSv1.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tls_versions.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES128-SHA", "TLS_AES_128_GCM_SHA256"},
+					"tls_versions": []string{
+						"TLSv1.0", "TLSv1.3"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ciphers.#":      "2",
+						"tls_versions.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": name + "_update",
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES128-SHA"},
+					"tls_versions": []string{
+						"TLSv1.0"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": name + "_update",
+						"ciphers.#":            "1",
+						"tls_versions.#":       "1",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNlbSecurityPolicyMap5352 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AlicloudNlbSecurityPolicyBasicDependence5352(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
+`, name)
+}
+
+// Case 5352  twin
+func TestAccAliCloudNlbSecurityPolicy_basic5352_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nlb_security_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudNlbSecurityPolicyMap5352)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NlbServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNlbSecurityPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snlbsecuritypolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNlbSecurityPolicyBasicDependence5352)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_policy_name": name,
+					"ciphers": []string{
+						"ECDHE-ECDSA-AES128-SHA", "TLS_AES_128_GCM_SHA256", "TLS_AES_128_GCM_SHA256"},
+					"tls_versions": []string{
+						"TLSv1.0", "TLSv1.3", "TLSv1.3"},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_policy_name": name,
+						"ciphers.#":            "3",
+						"tls_versions.#":       "3",
+						"resource_group_id":    CHECKSET,
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Nlb SecurityPolicy. <<< Resource test cases, automatically generated.
