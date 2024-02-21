@@ -631,7 +631,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -674,7 +674,7 @@ func resourceAliCloudLindormInstanceUpdate(d *schema.ResourceData, meta interfac
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, updateLindormInstanceAttributeReq, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"Instance.IsNotValid"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1143,7 +1143,7 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"Instance.NotActive"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"Instance.NotActive", "OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1152,6 +1152,7 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
@@ -1161,5 +1162,6 @@ func UpgradeLindormInstance(d *schema.ResourceData, meta interface{}, request ma
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
