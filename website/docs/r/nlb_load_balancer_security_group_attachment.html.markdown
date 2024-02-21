@@ -2,9 +2,8 @@
 subcategory: "Network Load Balancer (NLB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nlb_load_balancer_security_group_attachment"
-sidebar_current: "docs-alicloud-resource-nlb-load-balancer-security-group-attachment"
 description: |-
-  Provides a Alicloud Nlb Load Balancer Security Group Attachment resource.
+  Provides a Alicloud NLB Load Balancer Security Group Attachment resource.
 ---
 
 # alicloud_nlb_load_balancer_security_group_attachment
@@ -77,29 +76,27 @@ resource "alicloud_nlb_load_balancer_security_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-
+* `dry_run` - (Optional) Whether to PreCheck this request only. Value:
+  - **true**: sends a check request and does not bind a security group to the instance. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
+  - **false** (default): Sends a normal request, returns the HTTP 2xx status code after the check, and directly performs the operation.
 * `load_balancer_id` - (Required, ForceNew) The ID of the network-based server load balancer instance to be bound to the security group.
-* `security_group_id` - (Required, ForceNew) The ID of security groups.
-* `dry_run` - (Optional) Whether to PreCheck this request only. Value:-**true**: sends a check request and does not bind a security group to the instance. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.-**false** (default): Sends a normal request, returns the HTTP 2xx status code after the check, and directly performs the operation.
+* `security_group_id` - (Required, ForceNew, Computed) The ID of the security group.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Load Balancer Security Group Attachment.
+* `id` - The ID of the resource supplied above.The value is formulated as `<load_balancer_id>:<security_group_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Load Balancer Security Group Attachment.
-* `update` - (Defaults to 1 mins) Used when delete the Load Balancer Security Group Attachment.
 * `delete` - (Defaults to 5 mins) Used when delete the Load Balancer Security Group Attachment.
 
 ## Import
 
-Nlb Load Balancer Security Group Attachment can be imported using the id, e.g.
+NLB Load Balancer Security Group Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nlb_load_balancer_security_group_attachment.example <LoadBalancerId>:<SecurityGroupId>
+$ terraform import alicloud_nlb_load_balancer_security_group_attachment.example <load_balancer_id>:<security_group_id>
 ```
