@@ -863,6 +863,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_oss_ingestion":                                    resourceAliCloudSlsOssIngestion(),
 			"alicloud_vpc_ipv6_address":                                     resourceAliCloudVpcIpv6Address(),
 			"alicloud_ens_instance_security_group_attachment":               resourceAliCloudEnsInstanceSecurityGroupAttachment(),
 			"alicloud_ens_disk_instance_attachment":                         resourceAliCloudEnsDiskInstanceAttachment(),
