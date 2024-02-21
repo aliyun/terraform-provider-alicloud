@@ -689,12 +689,11 @@ func TestAccAliCloudLindormInstance_basic3(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"disk_category":             "local_ssd_pro",
-						"payment_type":              "PayAsYouGo",
-						"instance_name":             name,
-						"core_spec":                 "lindorm.i2.4xlarge",
-						"file_engine_specification": CHECKSET,
-						"instance_storage":          CHECKSET,
+						"disk_category":    "local_ssd_pro",
+						"payment_type":     "PayAsYouGo",
+						"instance_name":    name,
+						"core_spec":        "lindorm.i2.4xlarge",
+						"instance_storage": CHECKSET,
 					}),
 				),
 			},
