@@ -26,6 +26,10 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			Update: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"category": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -55,7 +59,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			},
 			"db_cluster_class": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"db_cluster_network_type": {
@@ -67,7 +70,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"db_cluster_version": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"19.15.2.2", "20.3.10.75", "20.8.7.15", "21.8.10.19", "22.8.5.29"}, false),
 			},
 			"db_node_storage": {
@@ -79,7 +81,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntBetween(1, 48),
 				Required:     true,
-				ForceNew:     true,
 			},
 
 			"encryption_key": {
@@ -101,7 +102,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"storage_type": {
@@ -113,7 +113,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"used_time": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -175,6 +174,10 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	request["DBClusterClass"] = d.Get("db_cluster_class")
 	if v, ok := d.GetOk("db_cluster_description"); ok {
 		request["DBClusterDescription"] = v
+	}
+	if v, ok := d.GetOk("auto_renew"); ok {
+		log.Printf("auto_renew %v", v)
+		request["AutoRenew"] = v
 	}
 	request["DBClusterNetworkType"] = d.Get("db_cluster_network_type")
 	request["DBClusterVersion"] = d.Get("db_cluster_version")
@@ -455,6 +458,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		d.SetPartial("db_cluster_access_white_list")
 	}
+
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}
 		object, err := clickhouseService.DescribeClickHouseDbCluster(d.Id())

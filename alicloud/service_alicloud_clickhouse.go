@@ -286,3 +286,4 @@ func (s *ClickhouseService) ClickHouseBackupPolicyStateRefreshFunc(id string, fa
 		return object, fmt.Sprint(object["Switch"]), nil
 	}
 }
+
