@@ -270,7 +270,7 @@ func attachVserverGroups(d *schema.ResourceData, client *connectivity.AliyunClie
 			request["ClientToken"] = buildClientToken(action)
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-28"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"BackendServer.configuring"}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"VServerGroupProcessing", "BackendServer.configuring"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
