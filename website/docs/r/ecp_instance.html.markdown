@@ -21,29 +21,48 @@ see [What is Instance](https://www.alibabacloud.com/help/en/cloudphone/latest/ap
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
 
-data "alicloud_ecp_zones" "default" {}
-data "alicloud_ecp_instance_types" "default" {}
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
-}
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.1.0.0/16"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_ecp_zones.default.zones.0.zone_id
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+data "alicloud_ecp_zones" "default" {
 }
+
+data "alicloud_ecp_instance_types" "default" {
+}
+
+locals {
+  count_size               = length(data.alicloud_ecp_zones.default.zones)
+  zone_id                  = data.alicloud_ecp_zones.default.zones[local.count_size - 1].zone_id
+  instance_type_count_size = length(data.alicloud_ecp_instance_types.default.instance_types)
+  instance_type            = data.alicloud_ecp_instance_types.default.instance_types[local.instance_type_count_size - 1].instance_type
+}
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = local.zone_id
+}
+
+resource "alicloud_security_group" "group" {
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
 resource "alicloud_ecp_key_pair" "default" {
-  key_pair_name   = var.name
+  key_pair_name   = "${var.name}-${random_integer.default.result}"
   public_key_body = "ssh-rsa AAAAB3Nza12345678qwertyuudsfsg"
 }
 
@@ -51,12 +70,13 @@ resource "alicloud_ecp_instance" "default" {
   instance_name     = var.name
   description       = var.name
   key_pair_name     = alicloud_ecp_key_pair.default.key_pair_name
-  security_group_id = alicloud_security_group.default.id
-  vswitch_id        = alicloud_vswitch.default.id
+  security_group_id = alicloud_security_group.group.id
+  vswitch_id        = data.alicloud_vswitches.default.ids.0
   image_id          = "android_9_0_0_release_2851157_20211201.vhd"
   instance_type     = data.alicloud_ecp_instance_types.default.instance_types.1.instance_type
   vnc_password      = "Ecp123"
   payment_type      = "PayAsYouGo"
+  force             = "true"
 }
 ```
 

@@ -20,6 +20,10 @@ For information about Dbfs Auto Snap Shot Policy and how to use it.
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 resource "alicloud_dbfs_auto_snap_shot_policy" "default" {
   time_points     = ["01"]
   policy_name     = "tf-example"

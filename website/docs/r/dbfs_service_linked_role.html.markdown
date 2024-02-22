@@ -19,6 +19,10 @@ For information about Dbfs service-linked roles(SLR) and how to use it, see [Wha
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 resource "alicloud_dbfs_service_linked_role" "service_linked_role" {
   product_name = "AliyunServiceRoleForDbfs"
 }

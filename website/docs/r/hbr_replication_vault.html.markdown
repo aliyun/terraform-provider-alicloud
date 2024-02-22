@@ -36,9 +36,14 @@ provider "alicloud" {
   region = data.alicloud_hbr_replication_vault_regions.default.regions.0.replication_region_id
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_hbr_vault" "default" {
   provider   = alicloud.source
-  vault_name = "terraform-example"
+  vault_name = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_hbr_replication_vault" "default" {

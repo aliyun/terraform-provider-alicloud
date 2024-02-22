@@ -20,6 +20,10 @@ For information about Serverless App Engine (SAE) Config Map and how to use it, 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

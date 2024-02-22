@@ -77,7 +77,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 }
 
 resource "alicloud_key_pair" "default" {
-  key_pair_name = var.name
+  key_pair_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {

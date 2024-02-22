@@ -237,7 +237,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   it can also be sourced from the `ALICLOUD_SECRET_KEY` environment variable, or via
   a dynamic secret key if `ecs_role_name` is specified.
 
-* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/doc-detail/66222.html).
+* `security_token` - Alicloud [Security Token Service](https://www.alibabacloud.com/help/en/ram/product-overview/what-is-sts).
   It can be sourced from the `ALICLOUD_SECURITY_TOKEN` environment variable,  or via
   a dynamic security token if `ecs_role_name` is specified.
 
