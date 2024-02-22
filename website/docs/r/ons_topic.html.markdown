@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud ONS Topic resource.
 ---
 
-# alicloud\_ons\_topic
+# alicloud_ons_topic
 
 Provides an ONS topic resource.
 
@@ -28,8 +28,14 @@ variable "topic" {
   default = "onsTopicName"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+
 resource "alicloud_ons_instance" "default" {
-  name   = var.name
+  name   = "${var.name}-${random_integer.default.result}"
   remark = "default_ons_instance_remark"
 }
 

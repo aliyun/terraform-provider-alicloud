@@ -23,6 +23,10 @@ see [What is Meta Tag](https://www.alibabacloud.com/help/en/resource-management/
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 resource "alicloud_tag_meta_tag" "example" {
   key    = "Name1"
   values = ["Desc2"]

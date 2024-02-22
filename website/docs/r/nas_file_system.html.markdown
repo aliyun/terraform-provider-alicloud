@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud NAS File System resource.
 ---
 
-# alicloud\_nas_file_system
+# alicloud_nas_file_system
 
 Provides a Nas File System resource.
 
@@ -45,12 +45,15 @@ resource "alicloud_nas_file_system" "foo" {
   protocol_type    = "NFS"
   zone_id          = data.alicloud_nas_zones.example.zones[0].zone_id
   storage_type     = "standard"
-  description      = "terraform-example"
   capacity         = "100"
 }
 ```
 
 ```terraform
+provider "alicloud" {
+  region = "cn-zhangjiakou"
+}
+
 data "alicloud_nas_zones" "example" {
   file_system_type = "cpfs"
 }
@@ -72,7 +75,6 @@ resource "alicloud_nas_file_system" "example" {
   storage_type     = "advance_200"
   file_system_type = "cpfs"
   capacity         = 3600
-  description      = "terraform-example"
   zone_id          = data.alicloud_nas_zones.example.zones[1].zone_id
   vpc_id           = alicloud_vpc.example.id
   vswitch_id       = alicloud_vswitch.example.id

@@ -20,14 +20,29 @@ For information about Cloud Architect Design Tools Application and how to use it
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
+data "alicloud_instances" "default" {
+  status = "Running"
+}
+
 resource "alicloud_bp_studio_application" "default" {
-  application_name  = "example_value"
-  template_id       = "example_value"
-  resource_group_id = "example_value"
-  area_id           = "example_value"
+  application_name  = var.name
+  template_id       = "YAUUQIYRSV1CMFGX"
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+  area_id           = "cn-hangzhou"
   instances {
-    id        = "example_value"
-    node_name = "example_value"
+    id        = "data.alicloud_instances.default.instances.0.id"
+    node_name = "data.alicloud_instances.default.instances.0.name"
     node_type = "ecs"
   }
   configuration = {

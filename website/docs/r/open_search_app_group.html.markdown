@@ -20,6 +20,9 @@ For information about Open Search App Group and how to use it, see [What is App 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "name"
 }
@@ -33,7 +36,6 @@ resource "alicloud_open_search_app_group" "default" {
     spec             = "opensearch.share.common"
   }
 }
-
 ```
 
 ## Argument Reference

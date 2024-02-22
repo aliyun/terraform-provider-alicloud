@@ -20,6 +20,10 @@ For information about Serverless App Engine (SAE) Ingress and how to use it, see
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }

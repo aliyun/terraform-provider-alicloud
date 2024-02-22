@@ -21,16 +21,20 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "onsInstanceName"
+  default = "GID-tf-example"
 }
 
 variable "group_name" {
-  default = "GID-onsGroupDatasourceName"
+  default = "GID-tf-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 resource "alicloud_ons_instance" "default" {
-  name   = var.name
-  remark = "default_ons_instance_remark"
+  name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_ons_group" "default" {

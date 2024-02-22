@@ -20,6 +20,9 @@ For information about Express Connect Grant Rule To Cen and how to use it, see [
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf-example"
 }

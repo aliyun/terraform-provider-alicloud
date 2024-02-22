@@ -68,8 +68,13 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   worker_vswitch_ids = [alicloud_vswitch.vswitch.id]
 }
 
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 resource "alicloud_key_pair" "default" {
-  key_pair_name = var.name
+  key_pair_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {

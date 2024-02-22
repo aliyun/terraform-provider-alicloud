@@ -19,7 +19,6 @@ For information about NAS Mount Target and how to use it, see [Manage NAS Mount 
 Basic Usage
 
 ```terraform
-
 data "alicloud_nas_zones" "default" {
   file_system_type = "extreme"
 }
@@ -29,15 +28,15 @@ locals {
   zone_id    = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
 }
 
-resource "alicloud_vpc" "main" {
+resource "alicloud_vpc" "example" {
   vpc_name   = "terraform-example"
   cidr_block = "172.17.3.0/24"
 }
 
-resource "alicloud_vswitch" "main" {
-  vswitch_name = alicloud_vpc.main.vpc_name
-  cidr_block   = alicloud_vpc.main.cidr_block
-  vpc_id       = alicloud_vpc.main.id
+resource "alicloud_vswitch" "example" {
+  vswitch_name = alicloud_vpc.example.vpc_name
+  cidr_block   = alicloud_vpc.example.cidr_block
+  vpc_id       = alicloud_vpc.example.id
   zone_id      = local.zone_id
 }
 

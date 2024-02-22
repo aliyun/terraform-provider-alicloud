@@ -20,6 +20,9 @@ For information about Serverless App Engine (SAE) Application Scaling Rule and h
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf-example"
 }

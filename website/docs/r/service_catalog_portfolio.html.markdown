@@ -20,6 +20,10 @@ For information about Service Catalog Portfolio and how to use it, see [What is 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf_example"
 }

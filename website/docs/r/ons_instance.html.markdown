@@ -22,9 +22,18 @@ For more information about how to use it, see [RocketMQ Instance Management API]
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_ons_instance" "example" {
-  instance_name = "tf-example-ons-instance"
-  remark        = "tf-example-ons-instance-remark"
+  instance_name = "${var.name}-${random_integer.default.result}"
+  remark        = var.name
 }
 ```
 

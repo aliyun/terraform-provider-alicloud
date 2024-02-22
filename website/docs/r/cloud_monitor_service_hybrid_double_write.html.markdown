@@ -19,19 +19,26 @@ For information about Cloud Monitor Service Hybrid Double Write and how to use i
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
+data "alicloud_account" "default" {
+}
+
 resource "alicloud_cms_namespace" "source" {
-  namespace = "your_source_namespace"
+  namespace = var.name
 }
 
 resource "alicloud_cms_namespace" "default" {
-  namespace = "your_namespace"
+  namespace = "${var.name}-source"
 }
 
 resource "alicloud_cloud_monitor_service_hybrid_double_write" "default" {
   source_namespace = alicloud_cms_namespace.source.id
-  source_user_id   = "your_source_account"
+  source_user_id   = data.alicloud_account.default.id
   namespace        = alicloud_cms_namespace.default.id
-  user_id          = "your_account"
+  user_id          = data.alicloud_account.default.id
 }
 ```
 

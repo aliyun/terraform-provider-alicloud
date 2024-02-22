@@ -24,6 +24,11 @@ variable "name" {
   default = "tf-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_regions" "default" {
   current = true
 }
@@ -78,8 +83,7 @@ resource "alicloud_cloud_storage_gateway_gateway_file_share" "default" {
   oss_bucket_name         = alicloud_oss_bucket.default.bucket
   oss_endpoint            = alicloud_oss_bucket.default.extranet_endpoint
   protocol                = "NFS"
-  remote_sync             = true
-  polling_interval        = 4500
+  remote_sync             = false
   fe_limit                = 0
   backend_limit           = 0
   cache_mode              = "Cache"
@@ -91,7 +95,7 @@ resource "alicloud_cloud_storage_gateway_express_sync" "default" {
   bucket_name       = alicloud_cloud_storage_gateway_gateway_file_share.default.oss_bucket_name
   bucket_region     = data.alicloud_regions.default.regions.0.id
   description       = var.name
-  express_sync_name = var.name
+  express_sync_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cloud_storage_gateway_express_sync_share_attachment" "default" {

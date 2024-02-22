@@ -18,16 +18,7 @@ Creates or modifies an alarm contact. For information about alarm contact and ho
 Basic Usage
 
 ```terraform
-# If you use this template, you need to activate the link before you can return to the alarm contact information, otherwise diff will appear in terraform. So please confirm the activation link as soon as possible.
-resource "alicloud_cms_alarm_contact" "example" {
-  alarm_contact_name = "terraform-example"
-  describe           = "For example"
-  channels_mail      = "terraform@test.com"
-}
-```
-
-```terraform
-# If you use this template, you can ignore the diff of the alarm contact information by `lifestyle`. We recommend the above usage and activate the link in time.
+# You need to activate the link before you can return to the alarm contact information, otherwise diff will appear in terraform. So please confirm the activation link as soon as possible. Besides, you can ignore the diff of the alarm contact information by `lifestyle`. 
 resource "alicloud_cms_alarm_contact" "example" {
   alarm_contact_name = "tf-example"
   describe           = "For example"

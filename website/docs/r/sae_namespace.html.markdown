@@ -20,6 +20,10 @@ For information about SAE Namespace and how to use it, see [What is Namespace](h
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
