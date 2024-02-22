@@ -115,6 +115,7 @@ The following attributes are exported:
 * `status` - The status of the resource.
 * `internet_ip` - The internet ip of the VPN.
 * `business_status` - The business status of the VPN gateway.
+* `ssl_vpn_internet_ip` - The IP address of the SSL-VPN connection. This parameter is returned only when the VPN gateway is a public VPN gateway and supports only the single-tunnel mode. In addition, the VPN gateway must have the SSL-VPN feature enabled.
 
 ## Timeouts
 

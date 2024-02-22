@@ -17,7 +17,15 @@ The VPNs data source lists a number of VPNs resource information owned by an Ali
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "me-east-1"
+}
+
+variable "spec" {
+  default = "20"
 }
 
 data "alicloud_zones" "default" {
@@ -30,27 +38,36 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.zones.0.id
+  zone_id = "me-east-1a"
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id      = "me-east-1a"
+  vswitch_name = var.name
+}
+
+locals {
+  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
 resource "alicloud_vpn_gateway" "default" {
-  name                 = var.name
-  vpc_id               = data.alicloud_vpcs.default.ids.0
-  bandwidth            = "10"
-  enable_ssl           = true
-  enable_ipsec         = true
-  instance_charge_type = "PrePaid"
-  description          = var.name
-  vswitch_id           = data.alicloud_vswitches.default.ids.0
-  network_type         = "public"
+  vpn_type         = "Normal"
+  vpn_gateway_name = var.name
+
+  vswitch_id   = local.vswitch_id
+  auto_pay     = true
+  vpc_id       = data.alicloud_vpcs.default.ids.0
+  network_type = "public"
+  payment_type = "Subscription"
+  enable_ipsec = true
+  bandwidth    = var.spec
 }
 
 data "alicloud_vpn_gateways" "vpn_gateways" {
-  vpc_id                   = data.alicloud_vpcs.default.ids.0
   ids                      = [alicloud_vpn_gateway.default.id]
-  status                   = "Active"
-  business_status          = "Normal"
-  name_regex               = "tf-example"
   include_reservation_data = true
   output_file              = "/tmp/vpns"
 }
@@ -92,3 +109,9 @@ The following attributes are exported:
   * `ssl_connections` - Total count of ssl vpn connections.
   * `network_type` - The network type of the VPN gateway.
   * `auto_propagate` - Whether to automatically propagate BGP routes to the VPC. Valid values: `true`, `false`.
+  * `disaster_recovery_vswitch_id` - - The ID of the backup VSwitch to which the VPN gateway is attached.
+  * `vpn_type` - - The VPN gateway type. Value:  Normal (default): Normal type. NationalStandard: National Secret type.
+  * `tags` - The Tag of.
+  * `ssl_vpn_internet_ip` - The IP address of the SSL-VPN connection. This parameter is returned only when the VPN gateway is a public VPN gateway and supports only the single-tunnel mode. In addition, the VPN gateway must have the SSL-VPN feature enabled.
+  * `vswitch_id` - - The ID of the VSwitch to which the VPN gateway is attached.
+  * `resource_group_id` - The ID of the resource group.

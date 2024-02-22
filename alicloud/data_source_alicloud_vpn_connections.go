@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"github.com/PaesslerAG/jsonpath"
 	"regexp"
 	"strings"
 
@@ -244,6 +245,158 @@ func dataSourceAlicloudVpnConnections() *schema.Resource {
 								},
 							},
 						},
+						"enable_tunnels_bgp": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"tunnel_options_specification": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"role": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tunnel_ike_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"ike_auth_alg": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"local_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ike_enc_alg": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ike_version": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ike_mode": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ike_lifetime": {
+													Type:     schema.TypeInt,
+													Computed: true,
+												},
+												"psk": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"remote_id": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ike_pfs": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"customer_gateway_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+										ForceNew: true,
+									},
+									"internet_ip": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tunnel_bgp_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"local_asn": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"tunnel_cidr": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"bgp_status": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"peer_bgp_ip": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"peer_asn": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"local_bgp_ip": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"state": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"enable_nat_traversal": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"tunnel_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"tunnel_ipsec_config": {
+										Type:     schema.TypeList,
+										Computed: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"ipsec_pfs": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipsec_enc_alg": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipsec_auth_alg": {
+													Type:     schema.TypeString,
+													Computed: true,
+												},
+												"ipsec_lifetime": {
+													Type:     schema.TypeInt,
+													Computed: true,
+												},
+											},
+										},
+									},
+									"enable_dpd": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"zone_no": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -353,11 +506,89 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"status":               conn.Status,
 			"enable_dpd":           conn.EnableDpd,
 			"enable_nat_traversal": conn.EnableNatTraversal,
+			"enable_tunnels_bgp":   conn.EnableTunnelsBgp,
 			"ike_config":           vpnGatewayService.ParseIkeConfig(conn.IkeConfig),
 			"ipsec_config":         vpnGatewayService.ParseIpsecConfig(conn.IpsecConfig),
 			"vco_health_check":     vpnGatewayService.VcoHealthCheck(conn.VcoHealthCheck),
 			"vpn_bgp_config":       vpnGatewayService.VpnBgpConfig(conn.VpnBgpConfig),
 		}
+
+		tunnelOptions1Raw, _ := jsonpath.Get("$.TunnelOptionsSpecification.TunnelOptions", conn)
+		tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
+		if tunnelOptions1Raw != nil {
+			for _, tunnelOptionsChild1Raw := range tunnelOptions1Raw.([]interface{}) {
+				tunnelOptionsSpecificationMap := make(map[string]interface{})
+				tunnelOptionsChild1Raw := tunnelOptionsChild1Raw.(map[string]interface{})
+				tunnelOptionsSpecificationMap["customer_gateway_id"] = tunnelOptionsChild1Raw["CustomerGatewayId"]
+				tunnelOptionsSpecificationMap["enable_dpd"] = tunnelOptionsChild1Raw["EnableDpd"]
+				tunnelOptionsSpecificationMap["enable_nat_traversal"] = tunnelOptionsChild1Raw["EnableNatTraversal"]
+				tunnelOptionsSpecificationMap["internet_ip"] = tunnelOptionsChild1Raw["InternetIp"]
+				tunnelOptionsSpecificationMap["role"] = tunnelOptionsChild1Raw["Role"]
+				tunnelOptionsSpecificationMap["state"] = tunnelOptionsChild1Raw["State"]
+				tunnelOptionsSpecificationMap["status"] = tunnelOptionsChild1Raw["Status"]
+				tunnelOptionsSpecificationMap["tunnel_id"] = tunnelOptionsChild1Raw["TunnelId"]
+				tunnelOptionsSpecificationMap["zone_no"] = tunnelOptionsChild1Raw["ZoneNo"]
+
+				tunnelBgpConfigMaps := make([]map[string]interface{}, 0)
+				tunnelBgpConfigMap := make(map[string]interface{})
+				tunnelBgpConfig1RawObj, _ := jsonpath.Get("$.TunnelBgpConfig", tunnelOptionsChild1Raw)
+				tunnelBgpConfig1Raw := make(map[string]interface{})
+				if tunnelBgpConfig1RawObj != nil {
+					tunnelBgpConfig1Raw = tunnelBgpConfig1RawObj.(map[string]interface{})
+				}
+				if len(tunnelBgpConfig1Raw) > 0 {
+					tunnelBgpConfigMap["bgp_status"] = tunnelBgpConfig1Raw["BgpStatus"]
+					tunnelBgpConfigMap["local_asn"] = tunnelBgpConfig1Raw["LocalAsn"]
+					tunnelBgpConfigMap["local_bgp_ip"] = tunnelBgpConfig1Raw["LocalBgpIp"]
+					tunnelBgpConfigMap["peer_asn"] = tunnelBgpConfig1Raw["PeerAsn"]
+					tunnelBgpConfigMap["peer_bgp_ip"] = tunnelBgpConfig1Raw["PeerBgpIp"]
+					tunnelBgpConfigMap["tunnel_cidr"] = tunnelBgpConfig1Raw["TunnelCidr"]
+
+					tunnelBgpConfigMaps = append(tunnelBgpConfigMaps, tunnelBgpConfigMap)
+				}
+				tunnelOptionsSpecificationMap["tunnel_bgp_config"] = tunnelBgpConfigMaps
+				tunnelIkeConfigMaps := make([]map[string]interface{}, 0)
+				tunnelIkeConfigMap := make(map[string]interface{})
+				tunnelIkeConfig1RawObj, _ := jsonpath.Get("$.TunnelIkeConfig", tunnelOptionsChild1Raw)
+				tunnelIkeConfig1Raw := make(map[string]interface{})
+				if tunnelIkeConfig1RawObj != nil {
+					tunnelIkeConfig1Raw = tunnelIkeConfig1RawObj.(map[string]interface{})
+				}
+				if len(tunnelIkeConfig1Raw) > 0 {
+					tunnelIkeConfigMap["ike_auth_alg"] = tunnelIkeConfig1Raw["IkeAuthAlg"]
+					tunnelIkeConfigMap["ike_enc_alg"] = tunnelIkeConfig1Raw["IkeEncAlg"]
+					tunnelIkeConfigMap["ike_lifetime"] = tunnelIkeConfig1Raw["IkeLifetime"]
+					tunnelIkeConfigMap["ike_mode"] = tunnelIkeConfig1Raw["IkeMode"]
+					tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfig1Raw["IkePfs"]
+					tunnelIkeConfigMap["ike_version"] = tunnelIkeConfig1Raw["IkeVersion"]
+					tunnelIkeConfigMap["local_id"] = tunnelIkeConfig1Raw["LocalId"]
+					tunnelIkeConfigMap["psk"] = tunnelIkeConfig1Raw["Psk"]
+					tunnelIkeConfigMap["remote_id"] = tunnelIkeConfig1Raw["RemoteId"]
+
+					tunnelIkeConfigMaps = append(tunnelIkeConfigMaps, tunnelIkeConfigMap)
+				}
+				tunnelOptionsSpecificationMap["tunnel_ike_config"] = tunnelIkeConfigMaps
+				tunnelIpsecConfigMaps := make([]map[string]interface{}, 0)
+				tunnelIpsecConfigMap := make(map[string]interface{})
+				tunnelIpsecConfig1RawObj, _ := jsonpath.Get("$.TunnelIpsecConfig", tunnelOptionsChild1Raw)
+				tunnelIpsecConfig1Raw := make(map[string]interface{})
+				if tunnelIpsecConfig1RawObj != nil {
+					tunnelIpsecConfig1Raw = tunnelIpsecConfig1RawObj.(map[string]interface{})
+				}
+				if len(tunnelIpsecConfig1Raw) > 0 {
+					tunnelIpsecConfigMap["ipsec_auth_alg"] = tunnelIpsecConfig1Raw["IpsecAuthAlg"]
+					tunnelIpsecConfigMap["ipsec_enc_alg"] = tunnelIpsecConfig1Raw["IpsecEncAlg"]
+					tunnelIpsecConfigMap["ipsec_lifetime"] = tunnelIpsecConfig1Raw["IpsecLifetime"]
+					tunnelIpsecConfigMap["ipsec_pfs"] = tunnelIpsecConfig1Raw["IpsecPfs"]
+
+					tunnelIpsecConfigMaps = append(tunnelIpsecConfigMaps, tunnelIpsecConfigMap)
+				}
+				tunnelOptionsSpecificationMap["tunnel_ipsec_config"] = tunnelIpsecConfigMaps
+				tunnelOptionsSpecificationMaps = append(tunnelOptionsSpecificationMaps, tunnelOptionsSpecificationMap)
+			}
+		}
+		mapping["tunnel_options_specification"] = tunnelOptionsSpecificationMaps
+
 		ids = append(ids, conn.VpnConnectionId)
 		names = append(names, conn.Name)
 		s = append(s, mapping)
