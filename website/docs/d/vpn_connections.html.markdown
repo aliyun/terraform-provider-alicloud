@@ -7,9 +7,11 @@ description: |-
     Provides a list of VPN connections which owned by an Alicloud account.
 ---
 
-# alicloud\_vpn_connections
+# alicloud_vpn_connections
 
 The VPN connections data source lists lots of VPN connections resource information owned by an Alicloud account.
+
+-> **NOTE:** Available since v1.18.0.
 
 ## Example Usage
 
@@ -52,49 +54,58 @@ The following attributes are exported:
   * `vpn_bgp_config` - The configuration information for BGP.
   * `enable_dpd` - Specifies whether to enable the dead peer detection (DPD) feature.
   * `enable_nat_traversal` - Specifies whether to enable NAT traversal.
-
-  ### Block ike_config
-
-  The ike_config mapping supports the following:
-
-  * `psk` - Used for authentication between the IPsec VPN gateway and the customer gateway.
-  * `ike_version` - The version of the IKE protocol. 
-  * `ike_mode` - The negotiation mode of IKE phase-one. 
-  * `ike_enc_alg` - The encryption algorithm of phase-one negotiation. 
-  * `ike_auth_alg` - The authentication algorithm of phase-one negotiation. 
-  * `ike_pfs` - The Diffie-Hellman key exchange algorithm used by phase-one negotiation. 
-  * `ike_lifetime` - The SA lifecycle as the result of phase-one negotiation. 
-  * `ike_local_id` - The identification of the VPN gateway.
-  * `ike_remote_id` - The identification of the customer gateway.
-
-  ### Block ipsec_config
-
-  The ipsec_config mapping supports the following:
-
-  * `ipsec_enc_alg` - The encryption algorithm of phase-two negotiation. 
-  * `ipsec_auth_alg` - The authentication algorithm of phase-two negotiation. 
-  * `ipsec_pfs` - The Diffie-Hellman key exchange algorithm used by phase-two negotiation. 
-  * `ipsec_lifetime` - The SA lifecycle as the result of phase-two negotiation. 
-
-  ### Block health_check_config
-
-  The health_check_config mapping supports the following:
-
-  * `status` - The health check status. Valid values: `success`, `failed`.
-  * `dip` - The destination ip address.
-  * `sip` - The source ip address.
-  * `interval` - The time interval between health checks.
-  * `retry` - The number of retries for health checks issued. 
-  * `enable` - The health check on status. Valid values: `true`, `false`.
-
-  ### Block vpn_bgp_config
-
-  The vpn_bgp_config mapping supports the following:
-
-  * `status` - The negotiation status of the BGP routing protocol. Valid values: `success`, `false`.
-  * `peer_bgp_ip` - The BGP address on the other side.
-  * `peer_asn` - The counterpart autonomous system number.
-  * `local_asn` - The ali cloud side autonomous system.
-  * `auth_key` - The authentication keys for BGP routing protocols.
-  * `tunnel_cidr` - The ipsec tunnel segments.
-  * `local_bgp_ip` - The ali cloud side BGP address.
+  * `enable_tunnels_bgp` - Enable tunnel bgp.
+  * `ike_config` - The ike_config mapping supports the following:
+    * `psk` - Used for authentication between the IPsec VPN gateway and the customer gateway.
+    * `ike_version` - The version of the IKE protocol. 
+    * `ike_mode` - The negotiation mode of IKE phase-one. 
+    * `ike_enc_alg` - The encryption algorithm of phase-one negotiation. 
+    * `ike_auth_alg` - The authentication algorithm of phase-one negotiation. 
+    * `ike_pfs` - The Diffie-Hellman key exchange algorithm used by phase-one negotiation. 
+    * `ike_lifetime` - The SA lifecycle as the result of phase-one negotiation. 
+    * `ike_local_id` - The identification of the VPN gateway.
+    * `ike_remote_id` - The identification of the customer gateway.
+  * `ipsec_config` - The ipsec_config mapping supports the following:
+    * `ipsec_enc_alg` - The encryption algorithm of phase-two negotiation. 
+    * `ipsec_auth_alg` - The authentication algorithm of phase-two negotiation. 
+    * `ipsec_pfs` - The Diffie-Hellman key exchange algorithm used by phase-two negotiation. 
+    * `ipsec_lifetime` - The SA lifecycle as the result of phase-two negotiation. 
+  * `health_check_config` - The health_check_config mapping supports the following:
+    * `status` - The health check status. Valid values: `success`, `failed`.
+    * `dip` - The destination ip address.
+    * `sip` - The source ip address.
+    * `interval` - The time interval between health checks.
+    * `retry` - The number of retries for health checks issued. 
+    * `enable` - The health check on status. Valid values: `true`, `false`.
+  * `vpn_bgp_config` - The vpn_bgp_config mapping supports the following:
+    * `status` - The negotiation status of the BGP routing protocol. Valid values: `success`, `false`.
+    * `peer_bgp_ip` - The BGP address on the other side.
+    * `peer_asn` - The counterpart autonomous system number.
+    * `local_asn` - The ali cloud side autonomous system.
+    * `auth_key` - The authentication keys for BGP routing protocols.
+    * `tunnel_cidr` - The ipsec tunnel segments.
+    * `local_bgp_ip` - The ali cloud side BGP address.
+  * `tunnel_options_specification` - The tunnel_options_specification supports the following:
+    * `customer_gateway_id` - The ID of the customer gateway in Tunnel.
+    * `enable_dpd` - Wether enable Dpd detection.
+    * `enable_nat_traversal` - enable nat traversal.
+    * `role` - The role of Tunnel.
+    * `tunnel_bgp_config` - The bgp config of Tunnel.
+      * `local_asn` - Local asn.
+      * `local_bgp_ip` - Local bgp IP.
+      * `tunnel_cidr` - BGP Tunnel CIDR.
+    * `tunnel_ike_config` - The configuration of Phase 1 negotiations in Tunnel.
+      * `ike_auth_alg` - IKE auth Algorithm.
+      * `ike_enc_alg` - IKE encript algorithm.
+      * `ike_lifetime` - IKE lifetime.
+      * `ike_mode` - IKE Mode.
+      * `ike_pfs` - DH Group.
+      * `ike_version` - IKE Version.
+      * `local_id` - The local Id.
+      * `psk` - Preshared secret key.
+      * `remote_id` - Remote ID.
+    * `tunnel_ipsec_config` - IPsec configuration in Tunnel.
+      * `ipsec_auth_alg` - IPsec Auth algorithm.
+      * `ipsec_enc_alg` - IPsec Encript algorithm.
+      * `ipsec_lifetime` - IPsec lifetime.
+      * `ipsec_pfs` - DH Group.

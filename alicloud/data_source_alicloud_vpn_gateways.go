@@ -150,6 +150,30 @@ func dataSourceAlicloudVpnGateways() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"disaster_recovery_vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vpn_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
+						"ssl_vpn_internet_ip": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -258,20 +282,39 @@ func dataSourceAlicloudVpnsRead(d *schema.ResourceData, meta interface{}) error 
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"id":                   object["VpnGatewayId"],
-			"vpc_id":               object["VpcId"],
-			"internet_ip":          object["InternetIp"],
-			"specification":        object["Spec"],
-			"name":                 object["Name"],
-			"description":          object["Description"],
-			"status":               convertStatus(object["Status"].(string)),
-			"business_status":      object["BusinessStatus"],
-			"instance_charge_type": convertChargeType(object["ChargeType"].(string)),
-			"enable_ipsec":         object["IpsecVpn"],
-			"enable_ssl":           object["SslVpn"],
-			"ssl_connections":      object["SslMaxConnections"],
-			"network_type":         object["NetworkType"],
+			"id":                           object["VpnGatewayId"],
+			"vpc_id":                       object["VpcId"],
+			"internet_ip":                  object["InternetIp"],
+			"specification":                object["Spec"],
+			"name":                         object["Name"],
+			"description":                  object["Description"],
+			"status":                       convertStatus(object["Status"].(string)),
+			"business_status":              object["BusinessStatus"],
+			"instance_charge_type":         convertChargeType(object["ChargeType"].(string)),
+			"enable_ipsec":                 object["IpsecVpn"],
+			"enable_ssl":                   object["SslVpn"],
+			"ssl_connections":              object["SslMaxConnections"],
+			"network_type":                 object["NetworkType"],
+			"disaster_recovery_vswitch_id": object["DisasterRecoveryVSwitchId"],
+			"vpn_type":                     object["VpnType"],
+			"ssl_vpn_internet_ip":          object["SslVpnInternetIp"],
+			"vswitch_id":                   object["VSwitchId"],
+			"resource_group_id":            object["ResourceGroupId"],
 		}
+
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.Tag", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
+			}
+		}
+		mapping["tags"] = tags
+
 		if v, ok := object["CreateTime"]; ok {
 			createTime, err := v.(json.Number).Int64()
 			if err != nil {
