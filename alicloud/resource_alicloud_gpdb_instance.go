@@ -391,8 +391,8 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["PrivateIpAddress"] = v
 	}
 
-	if v, ok := d.GetOkExists("ssl_enabled"); ok && v.(int) == 1 {
-		request["EnableSSL"] = true
+	if v, ok := d.GetOkExists("ssl_enabled"); ok {
+		request["EnableSSL"] = convertGpdbDbInstanceSSLEnabledRequest(v)
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -420,6 +420,13 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	if v, ok := d.GetOkExists("ssl_enabled"); ok {
+		sslEnabledStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(v)}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.DBInstanceSSLStateRefreshFunc(d, []string{}))
+		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	return resourceAliCloudGpdbDbInstanceUpdate(d, meta)
@@ -502,12 +509,9 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
+
 	if v, ok := describeDBInstanceSSLObject["SSLEnabled"]; ok && strconv.FormatBool(v.(bool)) != "" {
-		sslEnabled := 0
-		if fmt.Sprint(v) == "true" {
-			sslEnabled = 1
-		}
-		d.Set("ssl_enabled", sslEnabled)
+		d.Set("ssl_enabled", convertGpdbDbInstanceSSLEnabledResponse(v))
 	}
 
 	return nil
@@ -890,12 +894,14 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 	request = map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
+
 	if !d.IsNewResource() && d.HasChange("ssl_enabled") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("ssl_enabled"); ok {
 		request["SSLEnabled"] = v
 	}
+
 	if update {
 		action := "ModifyDBInstanceSSL"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -911,13 +917,21 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
+		sslEnabledStateConf := BuildStateConf([]string{}, []string{fmt.Sprint(request["SSLEnabled"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbService.DBInstanceSSLStateRefreshFunc(d, []string{}))
+		if _, err := sslEnabledStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("ssl_enabled")
 	}
 
@@ -979,7 +993,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, modifyMasterSpec, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -1053,6 +1067,7 @@ func convertGpdbDbInstancePaymentTypeRequest(source interface{}) interface{} {
 	case "PayAsYouGo":
 		return "Postpaid"
 	}
+
 	return source
 }
 
@@ -1062,6 +1077,28 @@ func convertGpdbDbInstancePaymentTypeResponse(source interface{}) interface{} {
 		return "Subscription"
 	case "Postpaid":
 		return "PayAsYouGo"
+	}
+
+	return source
+}
+
+func convertGpdbDbInstanceSSLEnabledRequest(source interface{}) interface{} {
+	switch source {
+	case 0:
+		return false
+	case 1:
+		return true
+	}
+
+	return source
+}
+
+func convertGpdbDbInstanceSSLEnabledResponse(source interface{}) interface{} {
+	switch source {
+	case false:
+		return 0
+	case true:
+		return 1
 	}
 
 	return source
