@@ -2,61 +2,61 @@
 
 ENHANCEMENTS:
 
-- resource/alicloud_nas_file_system: add retry code for update and delete operation. [GH-6945]
-- resource/alicloud_threat_detection_honeypot_node: modify creating asynchronous timeout. [GH-6947]
-- resource/alicloud_nlb_server_group: add new attributes tags; resource/alicloud_nlb_listener_additional_certificate_attachment: optimized code implementation; resource/alicloud_nlb_load_balancer: support new attributes ipv6_address_type, resource_group_id, security_group_ids; resource/alicloud_nlb_server_group_server_attachment: optimized code implementation; resource/alicloud_nlb_loadbalancer_common_bandwidth_package_attachment: optimized code implementation; resource/alicloud_nlb_security_policy: support resource_group_id modification; resource/alicloud_nlb_server_group: adds new attributes connection_drain_enabled, any_port_enabled, resource_group_id; resource/alicloud_nlb_server_group_server_attachment: optimized code implementation; resource/alicloud_nlb_listener: add new attributes tags; resource/alicloud_nlb_load_balancer_security_group_attachment: optimized code implementation. [GH-6958]
-- resource/alicloud_ehpc_cluster: modify ValidateFunc. [GH-6962]
-- resource/alicloud_adb_cluster: add retry code for ModifyDBClusterPayType. [GH-6965]
-- resource/alicloud_eci_container_group: fix auto_match_image_cache. [GH-6970]
-- resource/alicloud_iot_device_group: add error code for QueryDeviceGroupInfo. [GH-6973]
-- resource/alicloud_eipanycast_anycast_eip_address: add retry code for ReleaseAnycastEipAddress. [GH-6974]
-- resource/alicloud_cloud_connect_network: add retry code for CreateCloudConnectNetwork. [GH-6976]
-- resource/alicloud_graph_database_db_instance: modify timeout while creating and updating. [GH-6977]
-- resource/alicloud_mse_engine_namespace: add parameter for create, update and delete api. [GH-6984]
-- resource/alicloud_router_interface: add retry code for delete api. [GH-6987]
-- resource/alicloud_alb_load_balancer: mark attribute tags as Computed. [GH-6992]
-- resource/alicloud_slb_load_balancer: mark attribute tags as Computed. [GH-6995]
-- resource/alicloud_vpn_gateway: add new attribute ssl_vpn_internet_ip; data-source/alicloud_vpn_connections: add new attributes enable_tunnels_bgp, tunnel_options_specification; data-source/alicloud_vpn_gateways: add new attributes disaster_recovery_vswitch_id, vpn_type, tags, ssl_vpn_internet_ip, vswitch_id, resource_group_id. [GH-7001]
-- resource/alicloud_ess_scalinggroup_vserver_groups: add retry error code. [GH-7002]
-- resource/alicloud_ess_scaling_group: prolong delete timeout. [GH-7004]
-- docs: fix examples for cdn, dbs, dcdn, dms, ess, fnf, kms, mhub, pvtz and sddp. [GH-6929]
-- docs: fix examples for ecd, express_connect, fc, hbr. [GH-6991]
-- docs: modify alicloud_ga_accelerators bandwidth_billing_type version info. [GH-7006]
-- testcase: fix alicloud_threat_detection_vul_whitelist testcae. [GH-6936]
-- testcase: fix alicloud_dcdn_domain testcae. [GH-6937]
-- testcase: fix testcase for config_rule, config_compliance_pack, config_aggregate_compliance_pack. [GH-6948]
-- testcase: fix testcase for cddc. [GH-6950]
-- testcase: fix testcase for ecd. [GH-6951]
-- testcase: fix testcase for alicloud_snat_entry. [GH-6952]
-- testcase: fix testcase for alicloud_dts_synchronization_job, alicloud_dts_subscription_job. [GH-6953]
-- testcase: fix testcase for alicloud_ros_stack_instance. [GH-6954]
-- testcase: fix testcase for alicloud_ens_instance. [GH-6955]
-- testcase: fix testcase for alicloud_das_switch_das_pro. [GH-6956]
-- testcase: fix testcase for brain industrial. [GH-6957]
-- testcase: fix testcase for ddosbgp. [GH-6959]
-- testcase: fix testcase for ecs instance. [GH-6961]
-- testcase: fix testcase for ga. [GH-6963]
-- testcase: add sweeper for sae. [GH-6964]
-- testcase: add sweeper for dbfs. [GH-6966]
-- testcase: fix testcase for alicloud_common_bandwidth_package. [GH-6967]
-- testcase: fix testcase for alicloud_api_gateway_api. [GH-6968]
-- testcase: skip testcase for alicloud_service_catalog_provisioned_product. [GH-6969]
-- testcase: fix testcase for alicloud_alb_load_balancer_common_bandwidth_package_attachment. [GH-6971]
-- testcase: fix testcase for alicloud_actiontrail_trail. [GH-6972]
-- testcase: fix testcase for alicloud_eais_instance. [GH-6979]
-- testcase: fix testcase for alicloud_ddoscoo_instance. [GH-6980]
-- testcase: fix sweeper for edas. [GH-6981]
-- testcase: fix testcase for alicloud_ecs_dedicated_host. [GH-6982]
-- testcase: fix testcase for emr. [GH-6983]
-- testcase: fix testcase for alicloud_amqp_instance. [GH-6985]
-- testcase: fix testcase for alicloud_express_connect_vbr_pconn_association. [GH-6989]
-- testcase: fix testcase for alicloud_ga_listener. [GH-6993]
-- testcase: fix testcase for alicloud_quotas_quota_application. [GH-6994]
-- testcase: fix testcase for alicloud_ocean_base_instance. [GH-7005]
+- resource/alicloud_nas_file_system: add retry code for update and delete operation. ([#6945](https://github.com/aliyun/terraform-provider-alicloud/issues/6945))
+- resource/alicloud_threat_detection_honeypot_node: modify creating asynchronous timeout. ([#6947](https://github.com/aliyun/terraform-provider-alicloud/issues/6947))
+- resource/alicloud_nlb_server_group: add new attributes tags; resource/alicloud_nlb_listener_additional_certificate_attachment: optimized code implementation; resource/alicloud_nlb_load_balancer: support new attributes ipv6_address_type, resource_group_id, security_group_ids; resource/alicloud_nlb_server_group_server_attachment: optimized code implementation; resource/alicloud_nlb_loadbalancer_common_bandwidth_package_attachment: optimized code implementation; resource/alicloud_nlb_security_policy: support resource_group_id modification; resource/alicloud_nlb_server_group: adds new attributes connection_drain_enabled, any_port_enabled, resource_group_id; resource/alicloud_nlb_server_group_server_attachment: optimized code implementation; resource/alicloud_nlb_listener: add new attributes tags; resource/alicloud_nlb_load_balancer_security_group_attachment: optimized code implementation. ([#6958](https://github.com/aliyun/terraform-provider-alicloud/issues/6958))
+- resource/alicloud_ehpc_cluster: modify ValidateFunc. ([#6962](https://github.com/aliyun/terraform-provider-alicloud/issues/6962))
+- resource/alicloud_adb_cluster: add retry code for ModifyDBClusterPayType. ([#6965](https://github.com/aliyun/terraform-provider-alicloud/issues/6965))
+- resource/alicloud_eci_container_group: fix auto_match_image_cache. ([#6970](https://github.com/aliyun/terraform-provider-alicloud/issues/6970))
+- resource/alicloud_iot_device_group: add error code for QueryDeviceGroupInfo. ([#6973](https://github.com/aliyun/terraform-provider-alicloud/issues/6973))
+- resource/alicloud_eipanycast_anycast_eip_address: add retry code for ReleaseAnycastEipAddress. ([#6974](https://github.com/aliyun/terraform-provider-alicloud/issues/6974))
+- resource/alicloud_cloud_connect_network: add retry code for CreateCloudConnectNetwork. ([#6976](https://github.com/aliyun/terraform-provider-alicloud/issues/6976))
+- resource/alicloud_graph_database_db_instance: modify timeout while creating and updating. ([#6977](https://github.com/aliyun/terraform-provider-alicloud/issues/6977))
+- resource/alicloud_mse_engine_namespace: add parameter for create, update and delete api. ([#6984](https://github.com/aliyun/terraform-provider-alicloud/issues/6984))
+- resource/alicloud_router_interface: add retry code for delete api. ([#6987](https://github.com/aliyun/terraform-provider-alicloud/issues/6987))
+- resource/alicloud_alb_load_balancer: mark attribute tags as Computed. ([#6992](https://github.com/aliyun/terraform-provider-alicloud/issues/6992))
+- resource/alicloud_slb_load_balancer: mark attribute tags as Computed. ([#6995](https://github.com/aliyun/terraform-provider-alicloud/issues/6995))
+- resource/alicloud_vpn_gateway: add new attribute ssl_vpn_internet_ip; data-source/alicloud_vpn_connections: add new attributes enable_tunnels_bgp, tunnel_options_specification; data-source/alicloud_vpn_gateways: add new attributes disaster_recovery_vswitch_id, vpn_type, tags, ssl_vpn_internet_ip, vswitch_id, resource_group_id. ([#7001](https://github.com/aliyun/terraform-provider-alicloud/issues/7001))
+- resource/alicloud_ess_scalinggroup_vserver_groups: add retry error code. ([#7002](https://github.com/aliyun/terraform-provider-alicloud/issues/7002))
+- resource/alicloud_ess_scaling_group: prolong delete timeout. ([#7004](https://github.com/aliyun/terraform-provider-alicloud/issues/7004))
+- docs: fix examples for cdn, dbs, dcdn, dms, ess, fnf, kms, mhub, pvtz and sddp. ([#6929](https://github.com/aliyun/terraform-provider-alicloud/issues/6929))
+- docs: fix examples for ecd, express_connect, fc, hbr. ([#6991](https://github.com/aliyun/terraform-provider-alicloud/issues/6991))
+- docs: modify alicloud_ga_accelerators bandwidth_billing_type version info. ([#7006](https://github.com/aliyun/terraform-provider-alicloud/issues/7006))
+- testcase: fix alicloud_threat_detection_vul_whitelist testcae. ([#6936](https://github.com/aliyun/terraform-provider-alicloud/issues/6936))
+- testcase: fix alicloud_dcdn_domain testcae. ([#6937](https://github.com/aliyun/terraform-provider-alicloud/issues/6937))
+- testcase: fix testcase for config_rule, config_compliance_pack, config_aggregate_compliance_pack. ([#6948](https://github.com/aliyun/terraform-provider-alicloud/issues/6948))
+- testcase: fix testcase for cddc. ([#6950](https://github.com/aliyun/terraform-provider-alicloud/issues/6950))
+- testcase: fix testcase for ecd. ([#6951](https://github.com/aliyun/terraform-provider-alicloud/issues/6951))
+- testcase: fix testcase for alicloud_snat_entry. ([#6952](https://github.com/aliyun/terraform-provider-alicloud/issues/6952))
+- testcase: fix testcase for alicloud_dts_synchronization_job, alicloud_dts_subscription_job. ([#6953](https://github.com/aliyun/terraform-provider-alicloud/issues/6953))
+- testcase: fix testcase for alicloud_ros_stack_instance. ([#6954](https://github.com/aliyun/terraform-provider-alicloud/issues/6954))
+- testcase: fix testcase for alicloud_ens_instance. ([#6955](https://github.com/aliyun/terraform-provider-alicloud/issues/6955))
+- testcase: fix testcase for alicloud_das_switch_das_pro. ([#6956](https://github.com/aliyun/terraform-provider-alicloud/issues/6956))
+- testcase: fix testcase for brain industrial. ([#6957](https://github.com/aliyun/terraform-provider-alicloud/issues/6957))
+- testcase: fix testcase for ddosbgp. ([#6959](https://github.com/aliyun/terraform-provider-alicloud/issues/6959))
+- testcase: fix testcase for ecs instance. ([#6961](https://github.com/aliyun/terraform-provider-alicloud/issues/6961))
+- testcase: fix testcase for ga. ([#6963](https://github.com/aliyun/terraform-provider-alicloud/issues/6963))
+- testcase: add sweeper for sae. ([#6964](https://github.com/aliyun/terraform-provider-alicloud/issues/6964))
+- testcase: add sweeper for dbfs. ([#6966](https://github.com/aliyun/terraform-provider-alicloud/issues/6966))
+- testcase: fix testcase for alicloud_common_bandwidth_package. ([#6967](https://github.com/aliyun/terraform-provider-alicloud/issues/6967))
+- testcase: fix testcase for alicloud_api_gateway_api. ([#6968](https://github.com/aliyun/terraform-provider-alicloud/issues/6968))
+- testcase: skip testcase for alicloud_service_catalog_provisioned_product. ([#6969](https://github.com/aliyun/terraform-provider-alicloud/issues/6969))
+- testcase: fix testcase for alicloud_alb_load_balancer_common_bandwidth_package_attachment. ([#6971](https://github.com/aliyun/terraform-provider-alicloud/issues/6971))
+- testcase: fix testcase for alicloud_actiontrail_trail. ([#6972](https://github.com/aliyun/terraform-provider-alicloud/issues/6972))
+- testcase: fix testcase for alicloud_eais_instance. ([#6979](https://github.com/aliyun/terraform-provider-alicloud/issues/6979))
+- testcase: fix testcase for alicloud_ddoscoo_instance. ([#6980](https://github.com/aliyun/terraform-provider-alicloud/issues/6980))
+- testcase: fix sweeper for edas. ([#6981](https://github.com/aliyun/terraform-provider-alicloud/issues/6981))
+- testcase: fix testcase for alicloud_ecs_dedicated_host. ([#6982](https://github.com/aliyun/terraform-provider-alicloud/issues/6982))
+- testcase: fix testcase for emr. ([#6983](https://github.com/aliyun/terraform-provider-alicloud/issues/6983))
+- testcase: fix testcase for alicloud_amqp_instance. ([#6985](https://github.com/aliyun/terraform-provider-alicloud/issues/6985))
+- testcase: fix testcase for alicloud_express_connect_vbr_pconn_association. ([#6989](https://github.com/aliyun/terraform-provider-alicloud/issues/6989))
+- testcase: fix testcase for alicloud_ga_listener. ([#6993](https://github.com/aliyun/terraform-provider-alicloud/issues/6993))
+- testcase: fix testcase for alicloud_quotas_quota_application. ([#6994](https://github.com/aliyun/terraform-provider-alicloud/issues/6994))
+- testcase: fix testcase for alicloud_ocean_base_instance. ([#7005](https://github.com/aliyun/terraform-provider-alicloud/issues/7005))
 
 BUG FIXES:
 
-- resource/alicloud_hbr_oss_backup_plan: fix bug while leave this property empty for field prefix. [GH-6975]
+- resource/alicloud_hbr_oss_backup_plan: fix bug while leave this property empty for field prefix. ([#6975](https://github.com/aliyun/terraform-provider-alicloud/issues/6975))
 
 ## 1.217.0 (February 02, 2024)
 
