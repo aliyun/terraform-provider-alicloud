@@ -59,21 +59,23 @@ func (s *EventbridgeService) DescribeEventBridgeEventBus(id string) (object map[
 
 func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetRule"
+
 	conn, err := s.client.NewEventbridgeClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetRule"
-	parts, err := ParseResourceId(id, 2)
-	if err != nil {
-		err = WrapError(err)
-		return
-	}
+
 	request := map[string]interface{}{
-		"RegionId":     s.client.RegionId,
 		"EventBusName": parts[0],
 		"RuleName":     parts[1],
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -89,20 +91,29 @@ func (s *EventbridgeService) DescribeEventBridgeRule(id string) (object map[stri
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		//if IsExpectedErrors(err, []string{"NotExist.Policy"}) {
+		//	return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundWithResponse, response)
+		//}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventRuleNotExisted"}) {
+
+	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"EventBusNotExist", "EventRuleNotExisted"}) {
 		return object, WrapErrorf(Error(GetNotFoundMessage("EventBridge:Rule", id)), NotFoundMsg, ProviderERROR)
 	}
+
 	if fmt.Sprint(response["Code"]) != "Success" {
 		return object, WrapError(fmt.Errorf("GetRule failed, response: %v", response))
 	}
+
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -122,6 +133,7 @@ func (s *EventbridgeService) EventBridgeRuleStateRefreshFunc(id string, failStat
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
