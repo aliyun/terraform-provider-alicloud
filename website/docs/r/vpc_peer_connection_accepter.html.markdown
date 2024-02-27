@@ -11,7 +11,7 @@ description: |-
 
 Provides a Vpc Peer Connection Accepter resource.
 
-For information about Vpc Peer Connection Accepter and how to use it, see [What is Peer Connection Accepter](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/AcceptVpcPeerConnection).
+For information about Vpc Peer Connection Accepter and how to use it, see [What is Peer Connection Accepter](https://www.alibabacloud.com/help/en/vpc/developer-reference/api-vpcpeer-2022-01-01-acceptvpcpeerconnection).
 
 -> **NOTE:** Available since v1.196.0.
 
