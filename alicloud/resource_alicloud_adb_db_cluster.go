@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudAdbDbCluster() *schema.Resource {
+func resourceAliCloudAdbDbCluster() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAdbDbClusterCreate,
-		Read:   resourceAlicloudAdbDbClusterRead,
-		Update: resourceAlicloudAdbDbClusterUpdate,
-		Delete: resourceAlicloudAdbDbClusterDelete,
+		Create: resourceAliCloudAdbDbClusterCreate,
+		Read:   resourceAliCloudAdbDbClusterRead,
+		Update: resourceAliCloudAdbDbClusterUpdate,
+		Delete: resourceAliCloudAdbDbClusterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -179,6 +179,16 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
+			"disk_encryption": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"kms_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"tags": tagsSchema(),
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -196,7 +206,7 @@ func resourceAlicloudAdbDbCluster() *schema.Resource {
 	}
 }
 
-func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	var response map[string]interface{}
@@ -296,6 +306,14 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
+	if v, ok := d.GetOkExists("disk_encryption"); ok {
+		request["DiskEncryption"] = v
+	}
+
+	if v, ok := d.GetOk("kms_id"); ok {
+		request["KmsId"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("CreateDBCluster")
@@ -318,15 +336,16 @@ func resourceAlicloudAdbDbClusterCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	d.SetId(fmt.Sprint(response["DBClusterId"]))
+
 	stateConf := BuildStateConf([]string{"Preparing", "Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 300*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudAdbDbClusterUpdate(d, meta)
+	return resourceAliCloudAdbDbClusterUpdate(d, meta)
 }
 
-func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	object, err := adbService.DescribeAdbDbCluster(d.Id())
@@ -361,6 +380,8 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("elastic_io_resource_size", object["ElasticIOResourceSize"])
 	d.Set("disk_performance_level", object["DiskPerformanceLevel"])
 	d.Set("db_cluster_version", object["DBVersion"])
+	d.Set("disk_encryption", object["DiskEncryption"])
+	d.Set("kms_id", object["KmsId"])
 
 	if object["PayType"].(string) == string(Prepaid) {
 		describeAutoRenewAttributeObject, err := adbService.DescribeAutoRenewAttribute(d.Id())
@@ -387,11 +408,13 @@ func resourceAlicloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("security_ips", strings.Split(describeDBClusterAccessWhiteListObject["SecurityIPList"].(string), ","))
+
 	return nil
 }
 
-func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	var response map[string]interface{}
@@ -691,7 +714,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -721,7 +744,6 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("db_cluster_category")
 		d.SetPartial("db_node_class")
 		d.SetPartial("db_node_count")
-		d.SetPartial("db_node_storage")
 		d.SetPartial("elastic_io_resource")
 		d.SetPartial("elastic_io_resource_size")
 		d.SetPartial("disk_performance_level")
@@ -731,10 +753,12 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 	modifyDBClusterReq = map[string]interface{}{
 		"DBClusterId": d.Id(),
 	}
+
 	if !d.IsNewResource() && d.HasChange("db_node_storage") {
 		update = true
 		modifyDBClusterReq["DBNodeStorage"] = d.Get("db_node_storage")
 	}
+
 	modifyDBClusterReq["RegionId"] = client.RegionId
 	if update {
 		if _, ok := d.GetOk("mode"); ok {
@@ -754,7 +778,7 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			if err != nil {
 				// There is service bug and needs checking IncorrectDBInstanceState.
 				// If the bug is fixed, the IncorrectDBInstanceState checking can be removed.
-				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -783,10 +807,10 @@ func resourceAlicloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudAdbDbClusterRead(d, meta)
+	return resourceAliCloudAdbDbClusterRead(d, meta)
 }
 
-func resourceAlicloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAdbDbClusterDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	action := "DeleteDBCluster"
