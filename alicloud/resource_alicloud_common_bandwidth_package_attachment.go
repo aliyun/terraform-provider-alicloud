@@ -91,7 +91,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageAttachmentCreate(d *schema.Resour
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"BandwidthPackageOperation.conflict", "OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "TaskConflict", "EipOperation.TooFrequently"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"BandwidthPackageOperation.conflict", "OperationConflict", "LastTokenProcessing", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "TaskConflict", "EipOperation.TooFrequently", "IncorrectStatus.Eip"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
