@@ -24,11 +24,13 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_adb_zones" "default" {}
+data "alicloud_adb_zones" "default" {
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_adb_zones.default.ids.0
@@ -82,9 +84,11 @@ The following arguments are supported:
   - `8Core64GB`: If you set `elastic_io_resource_size` to `8Core64GB`, the specifications of an EIU are 24 cores and 192 GB memory.
   - `12Core96GB`: If you set `elastic_io_resource_size` to `12Core96GB`, the specifications of an EIU are 36 cores and 288 GB memory.
 * `disk_performance_level` - (Optional, Available since v1.207.0) The ESSD performance level. Default Value: `PL1`. Valid values: `PL1`, `PL2`, `PL3`.
+* `disk_encryption` - (Optional, ForceNew, Bool, Available since v1.218.1) Specifies whether to enable disk encryption. Default Value: `false`. Valid values: `true`, `false`.
+* `kms_id` - (Optional, ForceNew, Available since v1.218.1) The Key Management Service (KMS) ID that is used for disk encryption. `kms_id` is valid only when `disk_encryption` is set to `true`.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-    - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
-    - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
+  - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
+  - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 
 -> **NOTE:** Because of data backup and migration, change DB cluster type and storage would cost 15~30 minutes. Please make full preparation before changing them.
 
