@@ -255,6 +255,120 @@ func TestAccAliCloudOtsInstance_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOtsInstance_acl(t *testing.T) {
+	var v ots.InstanceInfo
+
+	resourceId := "alicloud_ots_instance.default"
+	ra := resourceAttrInit(resourceId, otsInstanceBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":               name,
+					"description":        name,
+					"instance_type":      "Capacity",
+					"network_type_acl":   []string{"INTERNET", "VPC"},
+					"network_source_acl": []string{"TRUST_PROXY"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"description":          name,
+						"instance_type":        "Capacity",
+						"network_type_acl.#":   "2",
+						"network_type_acl.0":   "INTERNET",
+						"network_type_acl.1":   "VPC",
+						"network_source_acl.#": "1",
+						"network_source_acl.0": "TRUST_PROXY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        name,
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"description":          name,
+						"network_type_acl.#":   "2",
+						"network_type_acl.0":   "VPC",
+						"network_type_acl.1":   "CLASSIC",
+						"network_source_acl.0": "TRUST_PROXY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      name,
+					"network_type_acl": []string{"VPC"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":               name,
+						"description":        name,
+						"network_type_acl.#": "1",
+						"network_type_acl.0": "VPC",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      name,
+					"network_type_acl": []string{"CLASSIC"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":               name,
+						"description":        name,
+						"network_type_acl.#": "1",
+						"network_type_acl.0": "CLASSIC",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      name,
+					"network_type_acl": []string{"INTERNET"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":               name,
+						"description":        name,
+						"network_type_acl.#": "1",
+						"network_type_acl.0": "INTERNET",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAliCloudOtsInstanceHighPerformance(t *testing.T) {
 	var v ots.InstanceInfo
 
@@ -417,7 +531,7 @@ var otsInstanceBasicMap = map[string]string{
 	"description":   CHECKSET,
 }
 
-func testAccCheckOtsInstanceExist(n string, instance *ots.InstanceInfo) resource.TestCheckFunc {
+func testAccCheckOtsInstanceExist(n string, instance *RestOtsInstanceInfo) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {

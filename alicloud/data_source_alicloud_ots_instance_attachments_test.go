@@ -85,18 +85,17 @@ func dataSourceOtsInstanceAttachmentsConfigDependence(name string) string {
 	data "alicloud_zones" "foo" {
 	  available_resource_creation = "VSwitch"
 	}
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+	  vpc_name   = "${var.name}"
 	}
 	data "alicloud_vswitches" "default" {
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 		zone_id      = data.alicloud_zones.foo.zones.0.id
 	}
 	
 	resource "alicloud_vswitch" "vswitch" {
-	  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	  vpc_id            = data.alicloud_vpcs.default.ids.0
-	  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	  vpc_id            = alicloud_vpc.default.id
+	  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
 	  zone_id           = data.alicloud_zones.foo.zones.0.id
 	  vswitch_name      = var.name
 	}

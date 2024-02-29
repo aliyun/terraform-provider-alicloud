@@ -56,8 +56,13 @@ The following attributes are exported in addition to the arguments listed above:
   * `cluster_type` - The cluster type of the instance. Possible values: `SSD`, `HYBRID`.
   * `create_time` - The create time of the instance.
   * `user_id` - The user id of the instance.
-  * `network` - The network type of the instance. Possible values: `NORMAL`, `VPC`, `VPC_CONSOLE`.
+  * `network_type_acl` - (Available since v1.221.0) The set of network types that are allowed access. Possible values: `CLASSIC`, `VPC`, `INTERNET`.
+  * `network_source_acl` - (Available since v1.221.0) The set of request sources that are allowed access. Possible values: `TRUST_PROXY`.
+  * `network` - (Removed since v1.221.0) The network type of the instance. Possible values: `NORMAL`, `VPC`, `VPC_CONSOLE`.
+  * `policy` - (Available since v1.221.0) instance policy, json string.
+  * `policy_version` - (Available since v1.221.0) instance policy version.
   * `description` - The description of the instance.
-  * `entity_quota` - The instance quota which indicating the maximum number of tables.
+  * `table_quota` - (Available since v1.221.0) The instance quota which indicating the maximum number of tables.
+  * `entity_quota` - (Removed since v1.221.0) The instance quota which indicating the maximum number of tables.
   * `tags` - The tags of the instance.
 	
