@@ -1,3 +1,9 @@
+provider "alicloud" {
+  access_key = var.access_key
+  secret_key = var.secret_key
+  # If not set, cn-beijing will be used.
+  region = var.region
+}
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
@@ -17,6 +23,8 @@ resource "alicloud_vswitch" "default" {
 resource "alicloud_ots_instance" "default" {
   name        = var.ots_instance_name
   description = "TF ots instance example"
+  network_type_acl = ["VPC", "INTERNET"]
+  network_source_acl = ["TRUST_PROXY"]
 }
 
 resource "alicloud_ots_instance_attachment" "default" {

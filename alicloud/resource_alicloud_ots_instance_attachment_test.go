@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudOtsInstanceAttachmentBasic(t *testing.T) {
+func TestAccAliCloudOtsInstanceAttachmentBasic(t *testing.T) {
 	var v ots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"
@@ -55,7 +55,7 @@ func TestAccAlicloudOtsInstanceAttachmentBasic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsInstanceAttachmentHighPerformance(t *testing.T) {
+func TestAccAliCloudOtsInstanceAttachmentHighPerformance(t *testing.T) {
 	var v ots.VpcInfo
 
 	resourceId := "alicloud_ots_instance_attachment.default"
@@ -117,18 +117,18 @@ func resourceOtsInstanceAttachmentConfigDependence(name string) string {
 	  available_resource_creation = "VSwitch"
 	}
 
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+	  vpc_name   = "${var.name}"
 	}
+
 	data "alicloud_vswitches" "default" {
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 	
 	resource "alicloud_vswitch" "vswitch" {
-	  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	  vpc_id            = data.alicloud_vpcs.default.ids.0
-	  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	  vpc_id            = alicloud_vpc.default.id 
+	  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
 	  zone_id           = data.alicloud_zones.default.zones.0.id
 	  vswitch_name      = var.name
 	}
@@ -155,18 +155,17 @@ func resourceOtsInstanceAttachmentConfigDependenceHighperformance(name string) s
 	data "alicloud_zones" "default" {
 	  available_resource_creation = "VSwitch"
 	}
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+	  vpc_name   = "${var.name}"
 	}
 	data "alicloud_vswitches" "default" {
-		vpc_id = data.alicloud_vpcs.default.ids.0
+		vpc_id = alicloud_vpc.default.id
 		zone_id      = data.alicloud_zones.default.zones.0.id
 	}
 	
 	resource "alicloud_vswitch" "vswitch" {
-	  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-	  vpc_id            = data.alicloud_vpcs.default.ids.0
-	  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+	  vpc_id            = alicloud_vpc.default.id
+	  cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 8)
 	  zone_id           = data.alicloud_zones.default.zones.0.id
 	  vswitch_name      = var.name
 	}

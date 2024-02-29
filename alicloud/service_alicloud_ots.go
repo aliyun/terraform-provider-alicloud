@@ -1,11 +1,13 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"errors"
 	"regexp"
+	"strconv"
 	"strings"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 
@@ -206,67 +208,88 @@ const (
 	NotExist      ColumnFindResult = 3
 )
 
-func (s *OtsService) ListOtsInstance(pageSize int, pageNum int) ([]string, error) {
-	req := ots.CreateListInstanceRequest()
-	req.RegionId = s.client.RegionId
-	req.Method = "GET"
-	req.PageSize = requests.NewInteger(pageSize)
-	req.PageNum = requests.NewInteger(pageNum)
-	var allInstanceNames []string
+func (s *OtsService) ListOtsInstance(maxResults int) (allInstanceNames []string, err error) {
+	actionPath := "/v2/openapi/listinstances"
+	request := make(map[string]*string)
+	request["RegionId"] = StringPointer(s.client.RegionId)
+	request["MaxResults"] = StringPointer(strconv.Itoa(maxResults))
 
 	for {
-		raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-			return otsClient.ListInstance(req)
-		})
+		resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 		if err != nil {
-			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", req.GetActionName(), AlibabaCloudSdkGoERROR)
+			return nil, WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", actionPath, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(req.GetActionName(), raw, req.RpcRequest, req)
-		response, _ := raw.(*ots.ListInstanceResponse)
+		addDebug(actionPath, resp, request)
 
-		if response == nil || len(response.InstanceInfos.InstanceInfo) < 1 {
+		// resp struct: {"_headers": {...}, "body": {...}}
+		respBody, ok := resp["body"].(map[string]interface{})
+		if !ok {
+			return allInstanceNames, WrapErrorf(errors.New("parse resp body to map[string]interface{} failed"), DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+		}
+		// respBody["Instances"] struct: [{}, {}, {}]
+		instanceMaps := respBody["Instances"]
+		// Convert map to json string
+		instancesJSON, err := json.Marshal(instanceMaps)
+		if err != nil {
+			return allInstanceNames, WrapErrorf(err, DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+		}
+		// Convert json string to obj
+		var instances []RestOtsInstanceInfo
+		if err := json.Unmarshal(instancesJSON, &instances); err != nil {
+			return allInstanceNames, WrapErrorf(err, DefaultErrorMsg, "instance:*", actionPath, AlibabaCloudSdkGoERROR)
+		}
+
+		if instances == nil || len(instances) < 1 {
 			break
 		}
 
-		for _, instance := range response.InstanceInfos.InstanceInfo {
+		for _, instance := range instances {
 			allInstanceNames = append(allInstanceNames, instance.InstanceName)
 		}
 
-		if len(response.InstanceInfos.InstanceInfo) < PageSizeLarge {
+		nextToken, _ := resp["NextToken"].(string)
+		if len(instances) < maxResults || nextToken == "" {
 			break
-		}
-
-		if page, err := getNextpageNumber(req.PageNum); err != nil {
-			return nil, WrapError(err)
 		} else {
-			req.PageNum = page
+			request["NextToken"] = &nextToken
 		}
 	}
 	return allInstanceNames, nil
 }
 
-func (s *OtsService) DescribeOtsInstance(id string) (inst ots.InstanceInfo, err error) {
-	request := ots.CreateGetInstanceRequest()
-	request.RegionId = s.client.RegionId
-	request.InstanceName = id
-	request.Method = "GET"
-	raw, err := s.client.WithOtsClient(func(otsClient *ots.Client) (interface{}, error) {
-		return otsClient.GetInstance(request)
-	})
+func (s *OtsService) DescribeOtsInstance(instanceName string) (inst RestOtsInstanceInfo, err error) {
+	actionPath := "/v2/openapi/getinstance"
+	request := make(map[string]*string)
+	request["RegionId"] = StringPointer(s.client.RegionId)
+	request["InstanceName"] = StringPointer(instanceName)
 
-	// OTS instance not found error code is "NotFound"
+	//client := meta.(*connectivity.AliyunClient)
+	resp, err := OtsRestApiGetWithRetry(s.client, "tablestore", "2020-12-09", actionPath, request)
 	if err != nil {
 		if NotFoundError(err) {
 			return inst, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
-		return inst, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*ots.GetInstanceResponse)
-	if response.InstanceInfo.InstanceName != id {
-		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstance", id)), NotFoundMsg, ProviderERROR)
+	addDebug(actionPath, resp, request)
+
+	// resp struct: {"_headers": {...}, "body": {...}}
+	instMap := resp["body"]
+	// Convert map to json string
+	instJSON, err := json.Marshal(instMap)
+	if err != nil {
+		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
 	}
-	return response.InstanceInfo, nil
+	// Convert json string to obj
+	if err := json.Unmarshal(instJSON, &inst); err != nil {
+		return inst, WrapErrorf(err, DefaultErrorMsg, instanceName, actionPath, AlibabaCloudSdkGoERROR)
+	}
+
+	if inst.InstanceName != instanceName {
+		return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstance", instanceName)), NotFoundMsg, ProviderERROR)
+	}
+
+	return inst, nil
 }
 
 func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
@@ -340,25 +363,25 @@ func (s *OtsService) ListOtsInstanceVpc(id string) (inst []ots.VpcInfo, err erro
 	return retInfos, nil
 }
 
-func (s *OtsService) WaitForOtsInstance(id string, status Status, timeout int) error {
+func (s *OtsService) WaitForOtsInstance(id string, instanceInnerStatus string, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		object, err := s.DescribeOtsInstance(id)
+		instance, err := s.DescribeOtsInstance(id)
 		if err != nil {
 			if NotFoundError(err) {
-				if status == Deleted {
+				if instanceInnerStatus == string(Deleted) {
 					return nil
 				}
 			} else {
 				return WrapError(err)
 			}
 		}
-		if object.Status == convertOtsInstanceStatus(status) {
+		if instance.InstanceStatus == instanceInnerStatus {
 			break
 		}
 		if time.Now().After(deadline) {
-			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(object.Status), status, ProviderERROR)
+			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, fmt.Sprint(instance.InstanceStatus), instanceInnerStatus, ProviderERROR)
 		}
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
@@ -920,28 +943,28 @@ func (s *OtsService) DeleteSearchIndex(instanceName string, tableName string, in
 
 // OtsRestApiPostWithRetry send POST request by CommonSDK(roa/restful) with retry.
 // This method directly passes OpenAPI parameters such as product and version, without relying on SDK version upgrades.
-// Retry policy: 3, 3+5, 3+5+5.., retry timeout: d.Timeout(schema.TimeoutCreate)
+// Retry policy: 3, 3+5, 3+5+5…, retry timeout: d.Timeout(schema.TimeoutCreate)
 // product is openapi product code, version is openapi version, actionPath is restful openapi backend api path, requestBody is request body content
-func OtsRestApiPostWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, requestBody map[string]*string) (map[string]interface{}, error) {
-	return invokeOtsRestApiWithRetry(d, client, product, version, actionPath, "POST", nil, nil, requestBody)
+func OtsRestApiPostWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, requestBody map[string]interface{}) (map[string]interface{}, error) {
+	return invokeOtsRestApiWithRetry(client, product, version, actionPath, "POST", nil, nil, requestBody)
 }
 
 // OtsRestApiGetWithRetry send GET request by CommonSDK(roa/restful) with retry.
 // This method directly passes OpenAPI parameters such as product and version, without relying on SDK version upgrades.
-// Retry policy: 3, 3+5, 3+5+5.., retry timeout: d.Timeout(schema.TimeoutCreate)
+// Retry policy: 3, 3+5, 3+5+5…, retry timeout: d.Timeout(schema.TimeoutCreate)
 // product is openapi product code, version is openapi version, actionPath is restful openapi backend api path, urlQuery is url param
-func OtsRestApiGetWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, urlQuery map[string]*string) (map[string]interface{}, error) {
-	return invokeOtsRestApiWithRetry(d, client, product, version, actionPath, "GET", urlQuery, nil, nil)
+func OtsRestApiGetWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, urlQuery map[string]*string) (map[string]interface{}, error) {
+	return invokeOtsRestApiWithRetry(client, product, version, actionPath, "GET", urlQuery, nil, nil)
 }
 
-func invokeOtsRestApiWithRetry(d *schema.ResourceData, client *connectivity.AliyunClient, product string, version string, actionPath string, httpMethod string, urlQuery map[string]*string, headers map[string]*string, requestBody map[string]*string) (map[string]interface{}, error) {
+func invokeOtsRestApiWithRetry(client *connectivity.AliyunClient, product string, version string, actionPath string, httpMethod string, urlQuery map[string]*string, headers map[string]*string, requestBody map[string]interface{}) (map[string]interface{}, error) {
 	var response map[string]interface{}
 	otsClient, err := client.NewOtsRoaClient(product)
 	if err != nil {
 		return nil, WrapError(err)
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(20*time.Minute, func() *resource.RetryError {
 		response, err = otsClient.DoRequest(StringPointer(version), nil, StringPointer(httpMethod), StringPointer("AK"), StringPointer(actionPath), urlQuery, headers, requestBody, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, OtsTableIsTemporarilyUnavailable) ||
@@ -962,4 +985,12 @@ func invokeOtsRestApiWithRetry(d *schema.ResourceData, client *connectivity.Aliy
 		return nil, WrapErrorf(err, DefaultErrorMsg, product, actionPath, AlibabaCloudSdkGoERROR)
 	}
 	return response, nil
+}
+
+// ACLString2Slice aclPattern: A,B,C
+func ACLString2Slice(aclStr string) (s []string) {
+	if aclStr == "" {
+		return s
+	}
+	return strings.Split(aclStr, ",")
 }
