@@ -1,12 +1,10 @@
 package alicloud
 
 import (
-	"regexp"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"regexp"
 )
 
 func dataSourceAlicloudOtsInstances() *schema.Resource {
@@ -57,14 +55,6 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"write_capacity": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"read_capacity": {
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
 						"cluster_type": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -77,8 +67,31 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"resource_group_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"network": {
 							Type:     schema.TypeString,
+							Computed: true,
+							Removed:  "Field 'network' has been removed from provider version v1.221.0. Please Use the 'network_type_acl' and 'network_source_acl'",
+						},
+						"network_type_acl": {
+							Type:     schema.TypeSet,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"network_source_acl": {
+							Type:     schema.TypeSet,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"policy": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"policy_version": {
+							Type:     schema.TypeInt,
 							Computed: true,
 						},
 						"description": {
@@ -88,8 +101,16 @@ func dataSourceAlicloudOtsInstances() *schema.Resource {
 						"entity_quota": {
 							Type:     schema.TypeInt,
 							Computed: true,
+							Removed:  "Field 'entity_quota' has been removed from provider version v1.221.0. Please Use the 'table_quota'",
 						},
-						"tags": tagsSchemaComputed(),
+						"table_quota": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -101,7 +122,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
 
-	allInstanceNames, err := otsService.ListOtsInstance(PageSizeLarge, 1)
+	allInstanceNames, err := otsService.ListOtsInstance(PageSizeLarge)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ots_instances", "ListOtsInstance", AlibabaCloudSdkGoERROR)
 	}
@@ -137,7 +158,7 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	}
 
 	// get full instance info via GetInstance
-	var allInstances []ots.InstanceInfo
+	var allInstances []RestOtsInstanceInfo
 	for _, instanceName := range filteredInstanceNames {
 		instanceInfo, err := otsService.DescribeOtsInstance(instanceName)
 		if err != nil {
@@ -147,11 +168,11 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	}
 
 	// filter by tag.
-	var filteredInstances []ots.InstanceInfo
+	var filteredInstances []RestOtsInstanceInfo
 	if v, ok := d.GetOk("tags"); ok {
 		if vmap, ok := v.(map[string]interface{}); ok && len(vmap) > 0 {
 			for _, instance := range allInstances {
-				if tagsMapEqual(vmap, otsTagsToMap(instance.TagInfos.TagInfo)) {
+				if tagsMapEqual(vmap, otsRestTagsToMap(instance.Tags)) {
 					filteredInstances = append(filteredInstances, instance)
 				}
 			}
@@ -164,24 +185,26 @@ func dataSourceAlicloudOtsInstancesRead(d *schema.ResourceData, meta interface{}
 	return otsInstancesDecriptionAttributes(d, filteredInstances, meta)
 }
 
-func otsInstancesDecriptionAttributes(d *schema.ResourceData, instances []ots.InstanceInfo, meta interface{}) error {
+func otsInstancesDecriptionAttributes(d *schema.ResourceData, instances []RestOtsInstanceInfo, meta interface{}) error {
 	var ids []string
 	var names []string
 	var s []map[string]interface{}
 	for _, instance := range instances {
 		mapping := map[string]interface{}{
-			"id":             instance.InstanceName,
-			"name":           instance.InstanceName,
-			"status":         string(convertOtsInstanceStatusConvert(instance.Status)),
-			"write_capacity": instance.WriteCapacity,
-			"read_capacity":  instance.ReadCapacity,
-			"cluster_type":   instance.ClusterType,
-			"create_time":    instance.CreateTime,
-			"user_id":        instance.UserId,
-			"network":        instance.Network,
-			"description":    instance.Description,
-			"entity_quota":   instance.Quota.EntityQuota,
-			"tags":           otsTagsToMap(instance.TagInfos.TagInfo),
+			"id":                 instance.InstanceName,
+			"name":               instance.InstanceName,
+			"status":             toInstanceOuterStatus(instance.InstanceStatus),
+			"cluster_type":       instance.InstanceSpecification,
+			"create_time":        instance.CreateTime,
+			"user_id":            instance.UserId,
+			"resource_group_id":  instance.ResourceGroupId,
+			"network_type_acl":   instance.NetworkTypeACL,
+			"network_source_acl": instance.NetworkSourceACL,
+			"policy":             instance.Policy,
+			"policy_version":     instance.PolicyVersion,
+			"description":        instance.InstanceDescription,
+			"table_quota":        instance.Quota.TableQuota,
+			"tags":               otsRestTagsToMap(instance.Tags),
 		}
 		names = append(names, instance.InstanceName)
 		ids = append(ids, instance.InstanceName)
