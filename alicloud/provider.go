@@ -1034,7 +1034,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ram_user":                      resourceAlicloudRamUser(),
 			"alicloud_ram_account_password_policy":   resourceAlicloudRamAccountPasswordPolicy(),
 			"alicloud_ram_access_key":                resourceAlicloudRamAccessKey(),
-			"alicloud_ram_login_profile":             resourceAlicloudRamLoginProfile(),
+			"alicloud_ram_login_profile":             resourceAliCloudRamLoginProfile(),
 			"alicloud_ram_group":                     resourceAlicloudRamGroup(),
 			"alicloud_ram_role":                      resourceAlicloudRamRole(),
 			"alicloud_ram_policy":                    resourceAlicloudRamPolicy(),
