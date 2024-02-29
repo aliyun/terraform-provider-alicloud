@@ -65,21 +65,19 @@ func TestAccAlicloudOtsInstancesDataSource(t *testing.T) {
 
 	var existOtsInstancesMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"names.#":                    "1",
-			"names.0":                    fmt.Sprintf("tf-testAcc%d", rand),
-			"instances.#":                "1",
-			"instances.0.name":           fmt.Sprintf("tf-testAcc%d", rand),
-			"instances.0.id":             fmt.Sprintf("tf-testAcc%d", rand),
-			"instances.0.status":         string(Running),
-			"instances.0.write_capacity": CHECKSET,
-			"instances.0.read_capacity":  CHECKSET,
-			"instances.0.cluster_type":   CHECKSET,
-			"instances.0.create_time":    CHECKSET,
-			"instances.0.user_id":        CHECKSET,
-			"instances.0.network":        "NORMAL",
-			"instances.0.description":    fmt.Sprintf("tf-testAcc%d", rand),
-			"instances.0.entity_quota":   CHECKSET,
-			"instances.0.tags.%":         "2",
+			"names.#":                       "1",
+			"names.0":                       fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.#":                   "1",
+			"instances.0.name":              fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.id":                fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.status":            string(Running),
+			"instances.0.cluster_type":      CHECKSET,
+			"instances.0.create_time":       CHECKSET,
+			"instances.0.user_id":           CHECKSET,
+			"instances.0.description":       fmt.Sprintf("tf-testAcc%d", rand),
+			"instances.0.table_quota":       CHECKSET,
+			"instances.0.resource_group_id": CHECKSET,
+			"instances.0.tags.%":            "2",
 		}
 	}
 

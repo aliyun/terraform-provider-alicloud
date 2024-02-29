@@ -497,6 +497,15 @@ func otsTagsToMap(tags []ots.TagInfo) map[string]string {
 	return result
 }
 
+func otsRestTagsToMap(tags []RestOtsTagInfo) map[string]string {
+	result := make(map[string]string)
+	for _, t := range tags {
+		result[t.Key] = t.Value
+	}
+
+	return result
+}
+
 func albTagsToMap(tags interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	if tags == nil {
