@@ -2,41 +2,81 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"testing"
 )
 
-func TestAccAlicloudRAMLoginProfile_basic(t *testing.T) {
-	var v *ram.GetLoginProfileResponse
+func TestAccAliCloudRamLoginProfile_basic0(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_ram_login_profile.default"
-	ra := resourceAttrInit(resourceId, ramLoginProfilMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudRamLoginProfileMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeRamLoginProfile")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sRamLoginProfileConfig%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamLoginProfileBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamLoginProfileDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileCreateConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"user_name": "${alicloud_ram_user.default.name}",
+					"password":  "YourPassword123!",
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamLoginProfileConfig-%d", defaultRegionToTest, rand)}),
+					testAccCheck(map[string]string{
+						"user_name": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_reset_required": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_reset_required": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mfa_bind_required": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mfa_bind_required": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"password_reset_required": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"password_reset_required": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mfa_bind_required": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mfa_bind_required": "false",
+					}),
 				),
 			},
 			{
@@ -45,168 +85,69 @@ func TestAccAlicloudRAMLoginProfile_basic(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
+		},
+	})
+}
+
+func TestAccAliCloudRamLoginProfile_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_login_profile.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamLoginProfileMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamLoginProfile")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sRamLoginProfileConfig%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamLoginProfileBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
-				Config: testAccRamLoginProfileUserNameConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"user_name": fmt.Sprintf("tf-testAcc%sRamLoginProfileConfig-%d-N", defaultRegionToTest, rand)}),
-				),
-			},
-			{
-				Config: testAccRamLoginProfilePasswordConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"password": "Yourpassword_1235"}),
-				),
-			},
-			{
-				Config: testAccRamLoginProfilePasswordResetRequiredConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"password_reset_required": "true"}),
-				),
-			},
-			{
-				Config: testAccRamLoginProfileMfaBindRequiredConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"mfa_bind_required": "true"}),
-				),
-			},
-			{
-				Config: testAccRamLoginProfileAllConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"user_name":               "${alicloud_ram_user.default.name}",
+					"password":                "YourPassword123!",
+					"password_reset_required": "true",
+					"mfa_bind_required":       "true",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":               fmt.Sprintf("tf-testAcc%sRamLoginProfileConfig-%d", defaultRegionToTest, rand),
-						"password":                "Yourpassword_1234",
-						"password_reset_required": "false",
-						"mfa_bind_required":       "false",
+						"user_name":               CHECKSET,
+						"password_reset_required": "true",
+						"mfa_bind_required":       "true",
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})
 }
 
-var ramLoginProfilMap = map[string]string{
-	"user_name":               CHECKSET,
-	"password":                CHECKSET,
-	"password_reset_required": CHECKSET,
-	"mfa_bind_required":       CHECKSET,
-}
+var AliCloudRamLoginProfileMap0 = map[string]string{}
 
-func testAccRamLoginProfileCreateConfig(rand int) string {
-	return fmt.Sprintf(`
+func AliCloudRamLoginProfileBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
+
 	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
+  		name         = var.name
+  		display_name = "displayname"
+  		mobile       = "86-18888888888"
+  		email        = "hello.uuu@aaa.com"
+  		comments     = "yoyoyo"
 	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1234"
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamLoginProfileUserNameConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d-N"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1234"
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamLoginProfilePasswordConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d-N"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1235"
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamLoginProfilePasswordResetRequiredConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d-N"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1235"
-	  password_reset_required = "true"
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamLoginProfileMfaBindRequiredConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d-N"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1235"
-	  password_reset_required = "true"
-	  mfa_bind_required = "true"
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamLoginProfileAllConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_user" "default" {
-	  name = "tf-testAcc%sRamLoginProfileConfig-%d"
-	  display_name = "displayname"
-	  mobile = "86-18888888888"
-	  email = "hello.uuu@aaa.com"
-	  comments = "yoyoyo"
-	}
-
-	resource "alicloud_ram_login_profile" "default" {
-	  user_name = "${alicloud_ram_user.default.name}"
-	  password = "Yourpassword_1234"
-	  password_reset_required = "false"
-	  mfa_bind_required = "false"
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccCheckRamLoginProfileDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_login_profile" {
-			continue
-		}
-
-		// Try to find the login profile
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		request := ram.CreateGetLoginProfileRequest()
-		request.UserName = rs.Primary.Attributes["user_name"]
-
-		_, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
-			return ramClient.GetLoginProfile(request)
-		})
-
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.User"}) {
-			return WrapError(err)
-		}
-	}
-	return nil
+`, name)
 }

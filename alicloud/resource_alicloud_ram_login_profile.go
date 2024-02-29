@@ -11,16 +11,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudRamLoginProfile() *schema.Resource {
+func resourceAliCloudRamLoginProfile() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamLoginProfileCreate,
-		Read:   resourceAlicloudRamLoginProfileRead,
-		Update: resourceAlicloudRamLoginProfileUpdate,
-		Delete: resourceAlicloudRamLoginProfileDelete,
+		Create: resourceAliCloudRamLoginProfileCreate,
+		Read:   resourceAliCloudRamLoginProfileRead,
+		Update: resourceAliCloudRamLoginProfileUpdate,
+		Delete: resourceAliCloudRamLoginProfileDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"user_name": {
 				Type:     schema.TypeString,
@@ -46,7 +45,7 @@ func resourceAlicloudRamLoginProfile() *schema.Resource {
 	}
 }
 
-func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamLoginProfileCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramSercvice := RamService{client}
 	request := ram.CreateCreateLoginProfileRequest()
@@ -76,27 +75,29 @@ func resourceAlicloudRamLoginProfileCreate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_login_profile", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	d.SetId(request.UserName)
+
 	err = ramSercvice.WaitForRamLoginProfile(d.Id(), Normal, DefaultTimeout)
 	if err != nil {
 		return WrapError(err)
 	}
-	return resourceAlicloudRamLoginProfileRead(d, meta)
+
+	return resourceAliCloudRamLoginProfileRead(d, meta)
 }
 
-func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamLoginProfileUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	request := ram.CreateUpdateLoginProfileRequest()
 	request.RegionId = client.RegionId
-	request.Password = d.Get("password").(string)
 	request.UserName = d.Id()
+	request.Password = d.Get("password").(string)
 
 	if d.HasChange("password_reset_required") {
 		request.PasswordResetRequired = requests.Boolean(strconv.FormatBool(d.Get("password_reset_required").(bool)))
@@ -122,21 +123,21 @@ func resourceAlicloudRamLoginProfileUpdate(d *schema.ResourceData, meta interfac
 		}
 		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-	return resourceAlicloudRamLoginProfileRead(d, meta)
+	return resourceAliCloudRamLoginProfileRead(d, meta)
 }
 
-func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamLoginProfileRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	object, err := ramService.DescribeRamLoginProfile(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -147,20 +148,22 @@ func resourceAlicloudRamLoginProfileRead(d *schema.ResourceData, meta interface{
 	d.Set("user_name", profile.UserName)
 	d.Set("mfa_bind_required", profile.MFABindRequired)
 	d.Set("password_reset_required", profile.PasswordResetRequired)
+
 	return nil
 }
 
-func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamLoginProfileDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
 	request := ram.CreateDeleteLoginProfileRequest()
 	request.RegionId = client.RegionId
 	request.UserName = d.Id()
 
+	var raw interface{}
 	var err error
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		raw, err := client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
+		raw, err = client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 			return ramClient.DeleteLoginProfile(request)
 		})
 		if err != nil {
@@ -170,12 +173,12 @@ func resourceAlicloudRamLoginProfileDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EntityNotExist.User", "EntityNotExist.User.LoginProfile"}) {
+		if IsExpectedErrors(err, []string{"EntityNotExist.User", "EntityNotExist.User.LoginProfile"}) || NeedRetry(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
