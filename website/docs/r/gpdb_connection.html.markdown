@@ -25,15 +25,12 @@ variable "name" {
 data "alicloud_resource_manager_resource_groups" "default" {}
 data "alicloud_gpdb_zones" "default" {}
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.4.0.0/24"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_gpdb_zones.default.ids.0
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_gpdb_zones.default.ids.0
 }
 
 resource "alicloud_gpdb_instance" "default" {
@@ -52,8 +49,8 @@ resource "alicloud_gpdb_instance" "default" {
   seg_storage_type      = "cloud_essd"
   seg_node_num          = 4
   storage_size          = 50
-  vpc_id                = alicloud_vpc.default.id
-  vswitch_id            = alicloud_vswitch.default.id
+  vpc_id                = data.alicloud_vpcs.default.ids.0
+  vswitch_id            = data.alicloud_vswitches.default.ids[0]
   ip_whitelist {
     security_ip_list = "127.0.0.1"
   }

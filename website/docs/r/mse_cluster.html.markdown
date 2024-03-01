@@ -16,6 +16,9 @@ Provides a MSE Cluster resource. It is a one-stop microservice platform for the 
 ## Example Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 data "alicloud_zones" "example" {
   available_resource_creation = "VSwitch"
 }

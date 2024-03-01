@@ -23,26 +23,32 @@ variable "name" {
   default = "terraform-example"
 }
 
-resource "alicloud_oss_bucket" "default8j4t1R" {
-  bucket = "${var.name}-1"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
 
+locals {
+  bucket_random = random_integer.default.result
+}
+
+resource "alicloud_oss_bucket" "default8j4t1R" {
+  bucket        = "${var.name}-1-${local.bucket_random}"
   storage_class = "Standard"
 }
 
 resource "alicloud_oss_bucket" "default9HMqfT" {
-  bucket = "${var.name}-2"
-
+  bucket        = "${var.name}-2-${local.bucket_random}"
   storage_class = "Standard"
 }
 
 resource "alicloud_oss_bucket" "defaultxBXqFQ" {
-  bucket        = "${var.name}-3"
+  bucket        = "${var.name}-3-${local.bucket_random}"
   storage_class = "Standard"
 }
 
 resource "alicloud_oss_bucket" "defaulthZvCmR" {
-  bucket = "${var.name}-4"
-
+  bucket        = "${var.name}-4-${local.bucket_random}"
   storage_class = "Standard"
 }
 

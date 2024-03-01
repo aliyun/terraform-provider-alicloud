@@ -27,7 +27,6 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
 data "alicloud_gpdb_zones" "default" {}
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
