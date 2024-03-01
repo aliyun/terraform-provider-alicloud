@@ -303,7 +303,7 @@ const (
 	OpenFcService                  = "fc-open.cn-hangzhou.aliyuncs.com"
 	OpenAckService                 = "cs.aliyuncs.com"
 	OpenPrivateLinkService         = "privatelink.cn-hangzhou.aliyuncs.com"
-	OpenBrainIndustrialService     = "brain-industrial-share.cn-hangzhou.aliyuncs.com"
+	OpenBrainIndustrialService     = "brain-industrial.cn-hangzhou.aliyuncs.com"
 	OpenIotService                 = "iot.aliyuncs.com"
 	OpenVsService                  = "vs.cn-shanghai.aliyuncs.com"
 	OpenCrService                  = "cr.cn-hangzhou.aliyuncs.com"
