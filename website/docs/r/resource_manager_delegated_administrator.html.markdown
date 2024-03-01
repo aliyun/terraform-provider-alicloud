@@ -27,12 +27,17 @@ variable "display_name" {
   default = "EAccount"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_resource_manager_folder" "example" {
-  folder_name = var.name
+  folder_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_resource_manager_account" "example" {
-  display_name = var.display_name
+  display_name = "${var.display_name}-${random_integer.default.result}"
   folder_id    = alicloud_resource_manager_folder.example.id
 }
 

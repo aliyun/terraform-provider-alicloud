@@ -20,6 +20,9 @@ For information about Application Load Balancer (ALB) Listener Additional Certif
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
 variable "name" {
   default = "tf_example"
 }
@@ -96,9 +99,14 @@ resource "alicloud_alb_listener" "default" {
   }
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_ssl_certificates_service_certificate" "default" {
   count            = 2
-  certificate_name = join("", [var.name, count.index])
+  certificate_name = join("-", [var.name, random_integer.default.result, count.index])
   cert             = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV

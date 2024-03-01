@@ -24,6 +24,11 @@ variable "name" {
   default = "tf-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_resource_manager_control_policy" "example" {
   control_policy_name = var.name
   description         = var.name
@@ -48,7 +53,7 @@ resource "alicloud_resource_manager_control_policy" "example" {
 }
 
 resource "alicloud_resource_manager_folder" "example" {
-  folder_name = var.name
+  folder_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_resource_manager_control_policy_attachment" "example" {

@@ -28,6 +28,11 @@ variable "name" {
   default = "tf-example"
 }
 
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 data "alicloud_regions" "default" {
   current = true
 }
@@ -53,7 +58,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_sae_namespace" "default" {
-  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example"
+  namespace_id              = "${data.alicloud_regions.default.regions.0.id}:example${random_integer.default.result}"
   namespace_name            = var.name
   namespace_description     = var.name
   enable_micro_registration = false
@@ -61,7 +66,7 @@ resource "alicloud_sae_namespace" "default" {
 
 resource "alicloud_sae_application" "default" {
   app_description   = var.name
-  app_name          = var.name
+  app_name          = "${var.name}-${random_integer.default.result}"
   namespace_id      = alicloud_sae_namespace.default.id
   image_url         = "registry-vpc.${data.alicloud_regions.default.regions.0.id}.aliyuncs.com/sae-demo-image/consumer:1.0"
   package_type      = "Image"
