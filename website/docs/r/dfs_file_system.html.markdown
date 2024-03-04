@@ -1,17 +1,16 @@
 ---
-subcategory: "Apsara File Storage for HDFS (DFS)"
+subcategory: "DFS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dfs_file_system"
-sidebar_current: "docs-alicloud-resource-dfs-file-system"
 description: |-
   Provides a Alicloud DFS File System resource.
 ---
 
 # alicloud_dfs_file_system
 
-Provides a DFS File System resource.
+Provides a DFS File System resource. 
 
-For information about DFS File System and how to use it, see [What is File System](https://www.alibabacloud.com/help/doc-detail/207144.htm).
+For information about DFS File System and how to use it, see [What is File System](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
 -> **NOTE:** Available since v1.140.0.
 
@@ -20,46 +19,67 @@ For information about DFS File System and how to use it, see [What is File Syste
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-variable "name" {
-  default = "tf-example"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
 data "alicloud_dfs_zones" "default" {}
 
+locals {
+  zone_id      = data.alicloud_dfs_zones.default.zones.0.zone_id
+  storage_type = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
+}
+
 resource "alicloud_dfs_file_system" "default" {
-  storage_type                     = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
-  zone_id                          = data.alicloud_dfs_zones.default.zones.0.zone_id
   protocol_type                    = "HDFS"
   description                      = var.name
-  file_system_name                 = var.name
-  throughput_mode                  = "Provisioned"
+  file_system_name                 = "${var.name}-${random_integer.default.result}"
   space_capacity                   = "1024"
+  throughput_mode                  = "Provisioned"
   provisioned_throughput_in_mi_bps = "512"
+  storage_type                     = local.storage_type
+  zone_id                          = local.zone_id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `description` - (Optional) The description of the File system.
-* `file_system_name` - (Required) The name of the File system.
-* `protocol_type` - (Required, ForceNew) The protocol type. Valid values: `HDFS`.
-* `provisioned_throughput_in_mi_bps` - (Optional, ForceNew) The preset throughput of the File system. Valid values: `1` to `1024`, Unit: MB/s. **NOTE:** Only when `throughput_mode` is `Provisioned`, this param is valid.
-* `space_capacity` - (Required) The capacity budget of the File system. **NOTE:** When the actual data storage reaches the file system capacity budget, the data cannot be written. The file system capacity budget does not support shrinking.
-* `storage_type` - (Required, ForceNew) The storage specifications of the File system. Valid values: `PERFORMANCE`, `STANDARD`.
-* `throughput_mode` - (Optional, Sensitive) The throughput mode of the File system. Valid values: `Provisioned`, `Standard`.
-* `zone_id` - (Required, ForceNew) The zone ID of the File system.
+* `data_redundancy_type` - (Optional) Redundancy mode of the file system. Value:
+  - LRS (default): Local redundancy.
+  - ZRS: Same-City redundancy. When ZRS is selected, zoneId is a string consisting of multiple zones that are expected to be redundant in the same city, for example,  'zoneId1,zoneId2 '.
+* `description` - (Optional) The description of the file system resource. No more than 32 characters in length.
+* `file_system_name` - (Required) The file system name. The naming rules are as follows: The length is 6~64 characters. Globally unique and cannot be an empty string. English letters are supported and can contain numbers, underscores (_), and dashes (-).
+* `partition_number` - (Optional, Available since v1.218.0) Save set sequence number, the user selects the content of the specified sequence number in the Save set.
+* `protocol_type` - (Required, ForceNew) The protocol type.  Only HDFS(Hadoop Distributed File System) is supported.
+* `provisioned_throughput_in_mi_bps` - (Optional) Provisioned throughput. This parameter is required when ThroughputMode is set to Provisioned. Unit: MB/s Value range: 1~5120.
+* `space_capacity` - (Required) File system capacity.  When the actual amount of data stored reaches the capacity of the file system, data cannot be written.  Unit: GiB.
+* `storage_set_name` - (Optional, Available since v1.218.0) Save set identity, used to select a user-specified save set.
+* `storage_type` - (Required, ForceNew) The storage media type. Value: STANDARD (default): STANDARD PERFORMANCE: PERFORMANCE type.
+* `throughput_mode` - (Optional) The throughput mode. Value: Standard (default): Standard throughput Provisioned: preset throughput.
+* `zone_id` - (Required, ForceNew) Zone Id, which is used to create file system resources to the specified zone.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the file system instance.
 
-* `id` - The resource ID in terraform of File System.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the File System.
+* `delete` - (Defaults to 5 mins) Used when delete the File System.
+* `update` - (Defaults to 5 mins) Used when update the File System.
 
 ## Import
 

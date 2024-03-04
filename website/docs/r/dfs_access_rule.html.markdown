@@ -1,17 +1,16 @@
 ---
-subcategory: "Apsara File Storage for HDFS (DFS)"
+subcategory: "DFS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dfs_access_rule"
-sidebar_current: "docs-alicloud-resource-dfs-access-rule"
 description: |-
   Provides a Alicloud DFS Access Rule resource.
 ---
 
 # alicloud_dfs_access_rule
 
-Provides a DFS Access Rule resource.
+Provides a DFS Access Rule resource. 
 
-For information about DFS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/doc-detail/207144.htm).
+For information about DFS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/en/aibaba-cloud-storage-services/latest/apsara-file-storage-for-hdfs).
 
 -> **NOTE:** Available since v1.140.0.
 
@@ -21,41 +20,50 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "example_name"
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
 }
 
 resource "alicloud_dfs_access_group" "default" {
+  description       = "example"
   network_type      = "VPC"
   access_group_name = var.name
-  description       = var.name
 }
 
 resource "alicloud_dfs_access_rule" "default" {
-  network_segment = "192.0.2.0/24"
-  access_group_id = alicloud_dfs_access_group.default.id
-  description     = var.name
+  description     = "example"
   rw_access_type  = "RDWR"
-  priority        = "10"
+  priority        = "1"
+  network_segment = "192.168.81.1"
+  access_group_id = alicloud_dfs_access_group.default.id
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `access_group_id` - (Required, ForceNew) The resource ID of Access Group.
-* `description` - (Optional) The Description of the Access Rule.
-* `network_segment` - (Required, ForceNew) The NetworkSegment of the Access Rule.
-* `priority` - (Required) The Priority of the Access Rule. Valid values: `1` to `100`. **NOTE:** When multiple rules are matched by the same authorized object, the high-priority rule takes effect. `1` is the highest priority.
-* `rw_access_type` - (Required) The RWAccessType of the Access Rule. Valid values: `RDONLY`, `RDWR`.
+* `access_group_id` - (Required, ForceNew) Permission group resource ID. You must specify the permission group ID when creating a permission rule.
+* `description` - (Optional) Permission rule description.  No more than 32 characters in length.
+* `network_segment` - (Required, ForceNew) The IP address or network segment of the authorized object.
+* `priority` - (Required) Permission rule priority. When the same authorization object matches multiple rules, the high-priority rule takes effect. Value range: 1~100,1 is the highest priority.
+* `rw_access_type` - (Required) The read and write permissions of the authorized object on the file system. Value: RDWR: readable and writable RDONLY: Read only.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<access_group_id>:<access_rule_id>`.
+* `access_rule_id` - The unique identity of the permission rule, which is used to retrieve the permission rule for a specific day in the permission group.
+* `create_time` - Permission rule resource creation time.
 
-* `id` - The resource ID of the Access Rule. The value formats as `<access_group_id>:<access_rule_id>`.
-* `access_rule_id` - The ID of the Access Rule.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Access Rule.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Rule.
+* `update` - (Defaults to 5 mins) Used when update the Access Rule.
 
 ## Import
 

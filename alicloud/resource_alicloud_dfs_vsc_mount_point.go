@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudDfsAccessRule() *schema.Resource {
+func resourceAliCloudDfsVscMountPoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudDfsAccessRuleCreate,
-		Read:   resourceAliCloudDfsAccessRuleRead,
-		Update: resourceAliCloudDfsAccessRuleUpdate,
-		Delete: resourceAliCloudDfsAccessRuleDelete,
+		Create: resourceAliCloudDfsVscMountPointCreate,
+		Read:   resourceAliCloudDfsVscMountPointRead,
+		Update: resourceAliCloudDfsVscMountPointUpdate,
+		Delete: resourceAliCloudDfsVscMountPointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -28,47 +28,68 @@ func resourceAliCloudDfsAccessRule() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"access_group_id": {
+			"alias_prefix": {
 				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"access_rule_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"create_time": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"network_segment": {
+			"file_system_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"priority": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ValidateFunc: IntBetween(0, 100),
+			"instances": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"status": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"vscs": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"vsc_id": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vsc_type": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"vsc_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+					},
+				},
 			},
-			"rw_access_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: StringInSlice([]string{"RDWR", "RDONLY"}, true),
+			"mount_point_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsVscMountPointCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreateAccessRule"
+	action := "CreateVscMountPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -77,15 +98,13 @@ func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["AccessGroupId"] = d.Get("access_group_id")
-	request["InputRegionId"] = client.RegionId
+	query["FileSystemId"] = d.Get("file_system_id")
+	query["InputRegionId"] = client.RegionId
 
-	request["NetworkSegment"] = d.Get("network_segment")
-	request["Priority"] = d.Get("priority")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["RWAccessType"] = d.Get("rw_access_type")
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -104,73 +123,88 @@ func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_access_rule", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_vsc_mount_point", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", query["AccessGroupId"], response["AccessRuleId"]))
+	d.SetId(fmt.Sprintf("%v:%v", query["FileSystemId"], response["MountPointId"]))
 
-	return resourceAliCloudDfsAccessRuleRead(d, meta)
+	return resourceAliCloudDfsVscMountPointUpdate(d, meta)
 }
 
-func resourceAliCloudDfsAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsVscMountPointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dfsServiceV2 := DfsServiceV2{client}
 
-	objectRaw, err := dfsServiceV2.DescribeDfsAccessRule(d.Id())
+	objectRaw, err := dfsServiceV2.DescribeDfsVscMountPoint(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dfs_access_rule DescribeDfsAccessRule Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_dfs_vsc_mount_point DescribeDfsVscMountPoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
 	d.Set("description", objectRaw["Description"])
-	d.Set("network_segment", objectRaw["NetworkSegment"])
-	d.Set("priority", objectRaw["Priority"])
-	d.Set("rw_access_type", objectRaw["RWAccessType"])
-	d.Set("access_group_id", objectRaw["AccessGroupId"])
-	d.Set("access_rule_id", objectRaw["AccessRuleId"])
+	d.Set("mount_point_id", objectRaw["MountPointId"])
+
+	instances1Raw := objectRaw["Instances"]
+	instancesMaps := make([]map[string]interface{}, 0)
+	if instances1Raw != nil {
+		for _, instancesChild1Raw := range instances1Raw.([]interface{}) {
+			instancesMap := make(map[string]interface{})
+			instancesChild1Raw := instancesChild1Raw.(map[string]interface{})
+			instancesMap["instance_id"] = instancesChild1Raw["InstanceId"]
+			instancesMap["status"] = instancesChild1Raw["Status"]
+
+			vscs1Raw := instancesChild1Raw["Vscs"]
+			vscsMaps := make([]map[string]interface{}, 0)
+			if vscs1Raw != nil {
+				for _, vscsChild1Raw := range vscs1Raw.([]interface{}) {
+					vscsMap := make(map[string]interface{})
+					vscsChild1Raw := vscsChild1Raw.(map[string]interface{})
+					vscsMap["vsc_id"] = vscsChild1Raw["VscId"]
+					vscsMap["vsc_status"] = vscsChild1Raw["VscStatus"]
+					vscsMap["vsc_type"] = vscsChild1Raw["VscType"]
+
+					vscsMaps = append(vscsMaps, vscsMap)
+				}
+			}
+			instancesMap["vscs"] = vscsMaps
+			instancesMaps = append(instancesMaps, instancesMap)
+		}
+	}
+	d.Set("instances", instancesMaps)
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("access_group_id", parts[0])
-	d.Set("access_rule_id", parts[1])
+	d.Set("file_system_id", parts[0])
+	d.Set("mount_point_id", parts[1])
 
 	return nil
 }
 
-func resourceAliCloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsVscMountPointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
 	parts := strings.Split(d.Id(), ":")
-	action := "ModifyAccessRule"
+	action := "ModifyVscMountPoint"
 	conn, err := client.NewDfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccessGroupId"] = parts[0]
-	query["AccessRuleId"] = parts[1]
-	request["InputRegionId"] = client.RegionId
-	if d.HasChange("priority") {
-		update = true
-	}
-	request["Priority"] = d.Get("priority")
-	if d.HasChange("description") {
+	query["FileSystemId"] = parts[0]
+	query["MountPointId"] = parts[1]
+	query["InputRegionId"] = client.RegionId
+	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
 
-	if d.HasChange("rw_access_type") {
-		update = true
-	}
-	request["RWAccessType"] = d.Get("rw_access_type")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -193,14 +227,14 @@ func resourceAliCloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		}
 	}
 
-	return resourceAliCloudDfsAccessRuleRead(d, meta)
+	return resourceAliCloudDfsVscMountPointRead(d, meta)
 }
 
-func resourceAliCloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsVscMountPointDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	parts := strings.Split(d.Id(), ":")
-	action := "DeleteAccessRule"
+	action := "DeleteVscMountPoint"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -209,9 +243,9 @@ func resourceAliCloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["AccessGroupId"] = parts[0]
-	query["AccessRuleId"] = parts[1]
-	request["InputRegionId"] = client.RegionId
+	query["MountPointId"] = parts[1]
+	query["FileSystemId"] = parts[0]
+	query["InputRegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -231,9 +265,6 @@ func resourceAliCloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

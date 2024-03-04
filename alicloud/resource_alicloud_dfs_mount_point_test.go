@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDFSMountPoint_basic0(t *testing.T) {
+func TestAccAliCloudDfsMountPoint_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_mount_point.default"
 	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
@@ -237,7 +237,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsMountPointCreate(dInit, rawClient)
+	err = resourceAliCloudDfsMountPointCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -262,7 +262,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsMountPointCreate(dInit, rawClient)
+		err := resourceAliCloudDfsMountPointCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -288,7 +288,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsMountPointUpdate(dExisted, rawClient)
+	err = resourceAliCloudDfsMountPointUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyMountPoint
@@ -328,7 +328,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsMountPointUpdate(dExisted, rawClient)
+		err := resourceAliCloudDfsMountPointUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -372,7 +372,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsMountPointRead(dExisted, rawClient)
+		err := resourceAliCloudDfsMountPointRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -389,7 +389,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsMountPointDelete(dExisted, rawClient)
+	err = resourceAliCloudDfsMountPointDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -419,7 +419,7 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsMountPointDelete(dExisted, rawClient)
+		err := resourceAliCloudDfsMountPointDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -429,3 +429,304 @@ func TestUnitAlicloudDFSMountPoint(t *testing.T) {
 		}
 	}
 }
+
+// Test Dfs MountPoint. >>> Resource test cases, automatically generated.
+// Case MountPoint资源测试用例_2.0 5564
+func TestAccAliCloudDfsMountPoint_basic5564(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_mount_point.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsMountPointMap5564)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsMountPoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsMountPointBasicDependence5564)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":          "${alicloud_vpc.DefaultVPCRMC.id}",
+					"network_type":    "VPC",
+					"vswitch_id":      "${alicloud_vswitch.DefaultVSwitch.id}",
+					"file_system_id":  "${alicloud_dfs_file_system.DefaultFs.id}",
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":          CHECKSET,
+						"network_type":    "VPC",
+						"vswitch_id":      CHECKSET,
+						"file_system_id":  CHECKSET,
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "mountpoint RMC test case",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "mountpoint RMC test case",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "mountpoint RMC test case fix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "mountpoint RMC test case fix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_id": "${alicloud_dfs_access_group.UpdateAccessGroup.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Inactive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Inactive",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "mountpoint RMC test case",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "mountpoint RMC test case",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Active",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "mountpoint RMC test case fix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "mountpoint RMC test case fix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_id": "${alicloud_dfs_access_group.UpdateAccessGroup.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Inactive",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Inactive",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":          "${alicloud_vpc.DefaultVPCRMC.id}",
+					"description":     "mountpoint RMC test case",
+					"network_type":    "VPC",
+					"vswitch_id":      "${alicloud_vswitch.DefaultVSwitch.id}",
+					"file_system_id":  "${alicloud_dfs_file_system.DefaultFs.id}",
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+					"status":          "Active",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":          CHECKSET,
+						"description":     "mountpoint RMC test case",
+						"network_type":    "VPC",
+						"vswitch_id":      CHECKSET,
+						"file_system_id":  CHECKSET,
+						"access_group_id": CHECKSET,
+						"status":          "Active",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alias_prefix"},
+			},
+		},
+	})
+}
+
+var AlicloudDfsMountPointMap5564 = map[string]string{
+	"status":         CHECKSET,
+	"mount_point_id": CHECKSET,
+	"create_time":    CHECKSET,
+}
+
+func AlicloudDfsMountPointBasicDependence5564(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_dfs_zones" "default" {}
+
+resource "alicloud_vpc" "DefaultVPCRMC" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = var.name
+
+}
+
+resource "alicloud_vswitch" "DefaultVSwitch" {
+  description  = "rmc test"
+  vpc_id       = alicloud_vpc.DefaultVPCRMC.id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = var.name
+
+  zone_id = data.alicloud_dfs_zones.default.zones.0.zone_id
+}
+
+resource "alicloud_dfs_access_group" "DefaultAccessGroupRMC" {
+  description       = "AccessGroup resource manager center test case for mp"
+  network_type      = "VPC"
+  access_group_name = var.name
+
+}
+
+resource "alicloud_dfs_access_group" "UpdateAccessGroup" {
+  description       = "Second AccessGroup resource manager center test case for mp"
+  network_type      = "VPC"
+  access_group_name = join("-", [var.name, "0"])
+
+}
+
+resource "alicloud_dfs_file_system" "DefaultFs" {
+  space_capacity       = "1024"
+  description          = "for mountpoint RMC test"
+  storage_type         = "STANDARD"
+  zone_id              = data.alicloud_dfs_zones.default.zones.0.zone_id
+  protocol_type        = "HDFS"
+  data_redundancy_type = "LRS"
+  file_system_name     = var.name
+
+}
+
+
+`, name)
+}
+
+// Case MountPoint资源测试用例_2.0 5564  twin
+func TestAccAliCloudDfsMountPoint_basic5564_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_mount_point.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsMountPointMap5564)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsMountPoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsmountpoint%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsMountPointBasicDependence5564)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":          "${alicloud_vpc.DefaultVPCRMC.id}",
+					"description":     "mountpoint RMC test case fix",
+					"network_type":    "VPC",
+					"vswitch_id":      "${alicloud_vswitch.DefaultVSwitch.id}",
+					"file_system_id":  "${alicloud_dfs_file_system.DefaultFs.id}",
+					"access_group_id": "${alicloud_dfs_access_group.UpdateAccessGroup.id}",
+					"status":          "Inactive",
+					"alias_prefix":    "MPAliasRMCTest14",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":          CHECKSET,
+						"description":     "mountpoint RMC test case fix",
+						"network_type":    "VPC",
+						"vswitch_id":      CHECKSET,
+						"file_system_id":  CHECKSET,
+						"access_group_id": CHECKSET,
+						"status":          "Inactive",
+						"alias_prefix":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"alias_prefix"},
+			},
+		},
+	})
+}
+
+// Test Dfs MountPoint. <<< Resource test cases, automatically generated.
