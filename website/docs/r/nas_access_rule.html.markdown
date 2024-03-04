@@ -2,18 +2,17 @@
 subcategory: "Network Attached Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_access_rule"
-sidebar_current: "docs-alicloud-resource-nas-access-rule"
 description: |-
-  Provides a Alicloud Nas Access Rule resource.
+  Provides a Alicloud NAS Access Rule resource.
 ---
 
-# alicloud\_nas_access_rule
+# alicloud_nas_access_rule
 
-Provides a Nas Access Rule resource.
+Provides a NAS Access Rule resource. 
 
-When NAS is activated, the Default VPC Permission Group is automatically generated. It allows all IP addresses in a VPC to access the mount point with full permissions. Full permissions include Read/Write permission with no restriction on root users.
+For information about NAS Access Rule and how to use it, see [What is Access Rule](https://www.alibabacloud.com/help/en/nas/developer-reference/api-nas-2017-06-26-createaccessrule).
 
--> **NOTE:** Available in v1.34.0+.
+-> **NOTE:** Available since v1.34.0.
 
 ## Example Usage
 
@@ -40,25 +39,31 @@ resource "alicloud_nas_access_rule" "foo" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `access_group_name` - (Required, ForceNew) Permission group name.
-* `source_cidr_ip` - (Required) Address or address segment.
-* `rw_access_type` - (Optional) Read-write permission type: `RDWR` (default), `RDONLY`.
-* `user_access_type` - (Optional) User permission type: `no_squash` (default), `root_squash`, `all_squash`.
-* `priority` - (Optional) Priority level. Range: 1-100. Default value: `1`.
+* `access_group_name` - (Required, ForceNew) AccessGroupName.
+* `file_system_type` - (Optional, ForceNew) filesystem type. include standard, extreme.
+* `ipv6_source_cidr_ip` - (Optional, Available since v1.218.0) Ipv6SourceCidrIp.
+* `priority` - (Optional, Computed) Priority.
+* `rw_access_type` - (Optional, Computed) RWAccess.
+* `source_cidr_ip` - (Optional) SourceCidrIp.
+* `user_access_type` - (Optional, Computed) UserAccess.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<access_group_name>:<file_system_type>:<access_rule_id>`.
+* `access_rule_id` - The first ID of the resource.
 
-* `id` - This ID of this resource. The value is formate as `<access_group_name>:<access rule id>`.
-* `access_rule_id` - The nas access rule ID.
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Access Rule.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Rule.
+* `update` - (Defaults to 5 mins) Used when update the Access Rule.
 
 ## Import
 
-Nas Access Rule can be imported using the id, e.g.
+NAS Access Rule can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nas_access_rule.foo tf-testAccNasConfigName:1
+$ terraform import alicloud_nas_access_rule.example <access_group_name>:<file_system_type>:<access_rule_id>
 ```
-
