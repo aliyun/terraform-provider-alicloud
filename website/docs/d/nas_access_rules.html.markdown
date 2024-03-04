@@ -21,6 +21,7 @@ data "alicloud_nas_access_rules" "foo" {
   source_cidr_ip    = "168.1.1.0/16"
   rw_access         = "RDWR"
   user_access       = "no_squash"
+  file_system_type  = "extreme"
 }
 
 output "alicloud_nas_access_rules_id" {
@@ -38,6 +39,10 @@ The following arguments are supported:
 * `user_access` - (Optional) Filter results by a specific UserAccess. 
 * `rw_access` - (Optional) Filter results by a specific RWAccess. 
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
+* `file_system_type` - (Optional, Available in v1.202.0+) the type of the file system. 
+                                    Valid values:
+                                    `standard` (Default),
+                                    `extreme`.
 
 ## Attributes Reference
 

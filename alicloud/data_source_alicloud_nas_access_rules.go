@@ -7,6 +7,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func dataSourceAlicloudAccessRules() *schema.Resource {
@@ -30,6 +31,12 @@ func dataSourceAlicloudAccessRules() *schema.Resource {
 			"rw_access": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"file_system_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -82,6 +89,9 @@ func dataSourceAlicloudAccessRulesRead(d *schema.ResourceData, meta interface{})
 	request["RegionId"] = client.Region
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
+	if v, ok := d.GetOk("file_system_type"); ok && v.(string) != "" {
+		request["FileSystemType"] = v
+	}
 	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {

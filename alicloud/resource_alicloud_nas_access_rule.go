@@ -3,15 +3,14 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudNasAccessRule() *schema.Resource {
@@ -56,6 +55,13 @@ func resourceAlicloudNasAccessRule() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"file_system_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"extreme", "standard"}, false),
+				Default:      "standard",
+			},
 		},
 	}
 }
@@ -74,6 +80,9 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	request["SourceCidrIp"] = d.Get("source_cidr_ip")
 	if v, ok := d.GetOk("rw_access_type"); ok && v.(string) != "" {
 		request["RWAccessType"] = v
+	}
+	if v, ok := d.GetOk("file_system_type"); ok && v.(string) != "" {
+		request["FileSystemType"] = v
 	}
 	if v, ok := d.GetOk("user_access_type"); ok && v.(string) != "" {
 		request["UserAccessType"] = v
@@ -95,7 +104,7 @@ func resourceAlicloudNasAccessRuleCreate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_access_rule", action, AlibabaCloudSdkGoERROR)
 	}
-	d.SetId(fmt.Sprint(request["AccessGroupName"], ":", response["AccessRuleId"]))
+	d.SetId(fmt.Sprint(request["AccessGroupName"], ":", response["AccessRuleId"], ":", request["FileSystemType"]))
 	return resourceAlicloudNasAccessRuleRead(d, meta)
 }
 
@@ -106,7 +115,10 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
+	}
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		err = WrapError(err)
 		return err
@@ -115,6 +127,7 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 		"RegionId":        client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
+		"FileSystemType":  parts[2],
 	}
 
 	update := false
@@ -163,6 +176,9 @@ func resourceAlicloudNasAccessRuleUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	nasService := NasService{client}
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
+	}
 	object, err := nasService.DescribeNasAccessRule(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -172,7 +188,7 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		return WrapError(err)
 	}
@@ -182,6 +198,7 @@ func resourceAlicloudNasAccessRuleRead(d *schema.ResourceData, meta interface{})
 	d.Set("priority", formatInt(object["Priority"]))
 	d.Set("rw_access_type", object["RWAccess"])
 	d.Set("user_access_type", object["UserAccess"])
+	d.Set("file_system_type", parts[2])
 
 	return nil
 }
@@ -194,7 +211,10 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	if len(strings.Split(d.Id(), ":")) != 3 {
+		d.SetId(fmt.Sprintf("%v:%v", d.Id(), "standard"))
+	}
+	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
 		err = WrapError(err)
 		return err
@@ -203,6 +223,7 @@ func resourceAlicloudNasAccessRuleDelete(d *schema.ResourceData, meta interface{
 		"RegionId":        client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
+		"FileSystemType":  parts[2],
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)

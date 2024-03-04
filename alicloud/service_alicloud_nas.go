@@ -140,7 +140,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		return nil, WrapError(err)
 	}
 	action := "DescribeAccessRules"
-	parts, err := ParseResourceId(id, 2)
+	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		err = WrapError(err)
 		return
@@ -149,6 +149,7 @@ func (s *NasService) DescribeNasAccessRule(id string) (object map[string]interfa
 		"RegionId":        s.client.RegionId,
 		"AccessGroupName": parts[0],
 		"AccessRuleId":    parts[1],
+		"FileSystemType":  parts[2],
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
