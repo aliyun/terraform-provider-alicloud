@@ -662,7 +662,7 @@ The following arguments are supported:
   - Disable
 
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable.
-* `storage_threshold` - (Optional, Available in 1.129.0+)The trigger threshold (percentage) for automatic storage space expansion.
+* `storage_threshold` - (Optional, Available in 1.129.0+)The threshold in percentage based on which an automatic storage expansion is triggered. If the available storage reaches the threshold, ApsaraDB RDS increases the storage capacity of the instance.
   Valid values: [10, 20, 30, 40, 50].
 
 -> **NOTE:** This parameter only takes effect when the StorageAutoScale parameter is set to Enable. The value must be greater than or equal to the total size of the current storage space of the instance.
