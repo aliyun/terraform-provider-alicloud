@@ -1,28 +1,29 @@
-## 1.218.0 (Unreleased)
+## 1.218.1 (Unreleased)
+## 1.218.0 (March 04, 2024)
 
-- **New Resource:** `alicloud_api_gateway_instance` [GH-6921]
-- **New Resource:** `alicloud_wafv3_defense_template` [GH-7013]
-- **New Resource:** `alicloud_ebs_solution_instance` [GH-7025]
+- **New Resource:** `alicloud_api_gateway_instance` ([#6921](https://github.com/aliyun/terraform-provider-alicloud/issues/6921))
+- **New Resource:** `alicloud_wafv3_defense_template` ([#7013](https://github.com/aliyun/terraform-provider-alicloud/issues/7013))
+- **New Resource:** `alicloud_ebs_solution_instance` ([#7025](https://github.com/aliyun/terraform-provider-alicloud/issues/7025))
 
 ENHANCEMENTS:
 
-- resource/alicloud_gpdb_db_instance_plan: Improved alicloud_gpdb_db_instance_plan testcase. [GH-6944]
-- resource/alicloud_lindorm_instance: Added retry strategy for error code OperationDenied.OrderProcessing, Instance.IsNotValid. [GH-6997]
-- resource/alicloud_gpdb_instance: Added retry strategy for error code OperationDenied.OrderProcessing; Fixed the create error caused by state refresh. [GH-7003]
-- resource/alicloud_common_bandwidth_package_attachment: add retry code for AddCommonBandwidthPackageIp. [GH-7011]
-- resource/alicloud_ram_login_profile: Improved alicloud_ram_login_profile testcase. [GH-7014]
-- resource/alicloud_resource_manager_account: update delete timeout to five minutes. [GH-7018]
-- resource/alicloud_dfs_access_group: add new attribute create_time; resource/alicloud_dfs_access_rule: add new attribute create_time; resource/alicloud_dfs_file_system: add new attribute create_time, data_redundancy_type, storage_set_name; resource/alicloud_dfs_mount_point add new attribute alias_prefix, create_time; New Resource: alicloud_dfs_vsc_mount_point; resource/alicloud_dfs_mount_point: add new attribute alias_prefix. [GH-7021]
-- resource/alicloud_nas_access_rule: add new attribute ipv6_source_cidr_ip; resource/alicloud_nas_access_group: optimized code implementation. [GH-7023]
-- resource/alicloud_ens_image: modify timeout of create. [GH-7024]
-- resource/alicloud_vpn_gateway: add new attribute disaster_recovery_internet_ip; data-source/alicloud_vpn_gateways: add new attribute disaster_recovery_internet_ip; data-source/alicloud_vpn_connections: fix attribute tunnel_options_specification. [GH-7028]
-- docs: fix examples for arms, bationhost, bp_studio, cddc, cloud_firewall, cloud_moniter_service, cms, dbfs, dfs, drds, ecs, emrv2, vod, ons, sae. [GH-7008]
-- docs: Fixed invalid links. [GH-7010]
+- resource/alicloud_gpdb_db_instance_plan: Improved alicloud_gpdb_db_instance_plan testcase. ([#6944](https://github.com/aliyun/terraform-provider-alicloud/issues/6944))
+- resource/alicloud_lindorm_instance: Added retry strategy for error code OperationDenied.OrderProcessing, Instance.IsNotValid. ([#6997](https://github.com/aliyun/terraform-provider-alicloud/issues/6997))
+- resource/alicloud_gpdb_instance: Added retry strategy for error code OperationDenied.OrderProcessing; Fixed the create error caused by state refresh. ([#7003](https://github.com/aliyun/terraform-provider-alicloud/issues/7003))
+- resource/alicloud_common_bandwidth_package_attachment: add retry code for AddCommonBandwidthPackageIp. ([#7011](https://github.com/aliyun/terraform-provider-alicloud/issues/7011))
+- resource/alicloud_ram_login_profile: Improved alicloud_ram_login_profile testcase. ([#7014](https://github.com/aliyun/terraform-provider-alicloud/issues/7014))
+- resource/alicloud_resource_manager_account: update delete timeout to five minutes. ([#7018](https://github.com/aliyun/terraform-provider-alicloud/issues/7018))
+- resource/alicloud_dfs_access_group: add new attribute create_time; resource/alicloud_dfs_access_rule: add new attribute create_time; resource/alicloud_dfs_file_system: add new attribute create_time, data_redundancy_type, storage_set_name; resource/alicloud_dfs_mount_point add new attribute alias_prefix, create_time; New Resource: alicloud_dfs_vsc_mount_point; resource/alicloud_dfs_mount_point: add new attribute alias_prefix. ([#7021](https://github.com/aliyun/terraform-provider-alicloud/issues/7021))
+- resource/alicloud_nas_access_rule: add new attribute ipv6_source_cidr_ip; resource/alicloud_nas_access_group: optimized code implementation. ([#7023](https://github.com/aliyun/terraform-provider-alicloud/issues/7023))
+- resource/alicloud_ens_image: modify timeout of create. ([#7024](https://github.com/aliyun/terraform-provider-alicloud/issues/7024))
+- resource/alicloud_vpn_gateway: add new attribute disaster_recovery_internet_ip; data-source/alicloud_vpn_gateways: add new attribute disaster_recovery_internet_ip; data-source/alicloud_vpn_connections: fix attribute tunnel_options_specification. ([#7028](https://github.com/aliyun/terraform-provider-alicloud/issues/7028))
+- docs: fix examples for arms, bationhost, bp_studio, cddc, cloud_firewall, cloud_moniter_service, cms, dbfs, dfs, drds, ecs, emrv2, vod, ons, sae. ([#7008](https://github.com/aliyun/terraform-provider-alicloud/issues/7008))
+- docs: Fixed invalid links. ([#7010](https://github.com/aliyun/terraform-provider-alicloud/issues/7010))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: Fix RDS operation timeout. [GH-7022]
-- data-source/alicloud_alb_rules: Fixed the panic error caused by type of rules.0.rule_actions.0.redirect_config.0.port. [GH-6990]
+- resource/alicloud_db_instance: Fix RDS operation timeout. ([#7022](https://github.com/aliyun/terraform-provider-alicloud/issues/7022))
+- data-source/alicloud_alb_rules: Fixed the panic error caused by type of rules.0.rule_actions.0.redirect_config.0.port. ([#6990](https://github.com/aliyun/terraform-provider-alicloud/issues/6990))
 
 ## 1.217.1 (February 27, 2024)
 
