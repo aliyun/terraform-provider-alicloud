@@ -116,6 +116,7 @@ The following attributes are exported:
 * `internet_ip` - The internet ip of the VPN.
 * `business_status` - The business status of the VPN gateway.
 * `ssl_vpn_internet_ip` - The IP address of the SSL-VPN connection. This parameter is returned only when the VPN gateway is a public VPN gateway and supports only the single-tunnel mode. In addition, the VPN gateway must have the SSL-VPN feature enabled.
+* `disaster_recovery_internet_ip` - The backup public IP address of the VPN gateway. The second IP address assigned by the system to create an IPsec-VPN connection. This parameter is returned only when the VPN gateway supports the dual-tunnel mode.
 
 ## Timeouts
 
