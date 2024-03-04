@@ -109,7 +109,7 @@ func testSweepDFSFileSystem(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDFSFileSystem_basic0(t *testing.T) {
+func TestAccAliCloudDfsFileSystem_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_file_system.default"
 	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
@@ -294,7 +294,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsFileSystemCreate(dInit, rawClient)
+	err = resourceAliCloudDfsFileSystemCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -316,7 +316,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsFileSystemCreate(dInit, rawClient)
+		err := resourceAliCloudDfsFileSystemCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -342,7 +342,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsFileSystemUpdate(dExisted, rawClient)
+	err = resourceAliCloudDfsFileSystemUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -386,7 +386,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsFileSystemUpdate(dExisted, rawClient)
+		err := resourceAliCloudDfsFileSystemUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -424,7 +424,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsFileSystemRead(dExisted, rawClient)
+		err := resourceAliCloudDfsFileSystemRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -441,7 +441,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsFileSystemDelete(dExisted, rawClient)
+	err = resourceAliCloudDfsFileSystemDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.FileSystemNotFound"}
@@ -465,7 +465,7 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsFileSystemDelete(dExisted, rawClient)
+		err := resourceAliCloudDfsFileSystemDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -475,3 +475,430 @@ func TestUnitAlicloudDFSFileSystem(t *testing.T) {
 		}
 	}
 }
+
+// Test Dfs FileSystem. >>> Resource test cases, automatically generated.
+// Case FileSystem资源测试用例_增加StorageType覆盖率 5910
+func TestAccAliCloudDfsFileSystem_basic5910(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsFileSystemMap5910)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsFileSystemBasicDependence5910)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":                   "1024",
+					"storage_type":                     "PERFORMANCE",
+					"zone_id":                          "${local.zone_id}",
+					"protocol_type":                    "HDFS",
+					"file_system_name":                 name,
+					"throughput_mode":                  "Provisioned",
+					"provisioned_throughput_in_mi_bps": "500",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":                   "1024",
+						"storage_type":                     "PERFORMANCE",
+						"zone_id":                          CHECKSET,
+						"protocol_type":                    "HDFS",
+						"file_system_name":                 name,
+						"throughput_mode":                  "Provisioned",
+						"provisioned_throughput_in_mi_bps": "500",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "ResourceManagerCenterFsTestCase",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "ResourceManagerCenterFsTestCase",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provisioned_throughput_in_mi_bps": "1000",
+					"throughput_mode":                  "Provisioned",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_throughput_in_mi_bps": "1000",
+						"throughput_mode":                  "Provisioned",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"throughput_mode": "Provisioned",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"throughput_mode": "Provisioned",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":                   "1024",
+					"description":                      "ResourceManagerCenterFsTestCase",
+					"storage_type":                     "PERFORMANCE",
+					"zone_id":                          "${local.zone_id}",
+					"protocol_type":                    "HDFS",
+					"file_system_name":                 name + "_update",
+					"data_redundancy_type":             "LRS",
+					"provisioned_throughput_in_mi_bps": "1024",
+					"throughput_mode":                  "Provisioned",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":                   "1024",
+						"description":                      "ResourceManagerCenterFsTestCase",
+						"storage_type":                     "PERFORMANCE",
+						"zone_id":                          CHECKSET,
+						"protocol_type":                    "HDFS",
+						"file_system_name":                 name + "_update",
+						"data_redundancy_type":             "LRS",
+						"provisioned_throughput_in_mi_bps": "1024",
+						"throughput_mode":                  "Provisioned",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_redundancy_type", "partition_number", "storage_set_name"},
+			},
+		},
+	})
+}
+
+var AlicloudDfsFileSystemMap5910 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudDfsFileSystemBasicDependence5910(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_dfs_zones" "default" {}
+locals {
+  zone_id      = data.alicloud_dfs_zones.default.zones.0.zone_id
+  storage_type = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
+}
+`, name)
+}
+
+// Case FileSystem资源测试用例 5175
+func TestAccAliCloudDfsFileSystem_basic5175(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsFileSystemMap5175)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsFileSystemBasicDependence5175)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":   "1024",
+					"storage_type":     "STANDARD",
+					"zone_id":          "${local.zone_id}",
+					"protocol_type":    "HDFS",
+					"file_system_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":   "1024",
+						"storage_type":     "STANDARD",
+						"zone_id":          CHECKSET,
+						"protocol_type":    "HDFS",
+						"file_system_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "ResourceManagerCenterFsTestCase",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "ResourceManagerCenterFsTestCase",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"throughput_mode":                  "Provisioned",
+					"provisioned_throughput_in_mi_bps": "1000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"throughput_mode":                  "Provisioned",
+						"provisioned_throughput_in_mi_bps": "1000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity": "1026",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity": "1026",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "ResourceManagerCenterTestCase-fix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "ResourceManagerCenterTestCase-fix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"file_system_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"file_system_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"provisioned_throughput_in_mi_bps": "1010",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"provisioned_throughput_in_mi_bps": "1010",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"throughput_mode": "Standard",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"throughput_mode": "Standard",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":                   "1026",
+					"description":                      "ResourceManagerCenterFsTestCase",
+					"storage_type":                     "STANDARD",
+					"zone_id":                          "${local.zone_id}",
+					"protocol_type":                    "HDFS",
+					"file_system_name":                 name + "_update",
+					"data_redundancy_type":             "LRS",
+					"provisioned_throughput_in_mi_bps": "1000",
+					"throughput_mode":                  "Provisioned",
+					"partition_number":                 "0",
+					"storage_set_name":                 "RMCTestStorageSet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":                   "1026",
+						"description":                      "ResourceManagerCenterFsTestCase",
+						"storage_type":                     "STANDARD",
+						"zone_id":                          CHECKSET,
+						"protocol_type":                    "HDFS",
+						"file_system_name":                 name + "_update",
+						"data_redundancy_type":             "LRS",
+						"provisioned_throughput_in_mi_bps": "1000",
+						"throughput_mode":                  "Provisioned",
+						"partition_number":                 "0",
+						"storage_set_name":                 "RMCTestStorageSet",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_redundancy_type", "partition_number", "storage_set_name"},
+			},
+		},
+	})
+}
+
+var AlicloudDfsFileSystemMap5175 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudDfsFileSystemBasicDependence5175(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_dfs_zones" "default" {}
+locals {
+  zone_id      = data.alicloud_dfs_zones.default.zones.0.zone_id
+  storage_type = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
+}
+`, name)
+}
+
+// Case FileSystem资源测试用例_增加StorageType覆盖率 5910  twin
+func TestAccAliCloudDfsFileSystem_basic5910_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsFileSystemMap5910)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsFileSystemBasicDependence5910)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":                   "1024",
+					"description":                      "ResourceManagerCenterFsTestCase",
+					"storage_type":                     "PERFORMANCE",
+					"zone_id":                          "${local.zone_id}",
+					"protocol_type":                    "HDFS",
+					"file_system_name":                 name,
+					"data_redundancy_type":             "LRS",
+					"provisioned_throughput_in_mi_bps": "1000",
+					"throughput_mode":                  "Provisioned",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":                   "1024",
+						"description":                      "ResourceManagerCenterFsTestCase",
+						"storage_type":                     "PERFORMANCE",
+						"zone_id":                          CHECKSET,
+						"protocol_type":                    "HDFS",
+						"file_system_name":                 name,
+						"data_redundancy_type":             "LRS",
+						"provisioned_throughput_in_mi_bps": "1000",
+						"throughput_mode":                  "Provisioned",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_redundancy_type", "partition_number", "storage_set_name"},
+			},
+		},
+	})
+}
+
+// Case FileSystem资源测试用例 5175  twin
+func TestAccAliCloudDfsFileSystem_basic5175_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_file_system.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsFileSystemMap5175)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsFileSystem")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsfilesystem%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsFileSystemBasicDependence5175)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
+			testAccPreCheckWithTime(t, []int{1})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"space_capacity":                   "1026",
+					"description":                      "ResourceManagerCenterTestCase-fix",
+					"storage_type":                     "STANDARD",
+					"zone_id":                          "${local.zone_id}",
+					"protocol_type":                    "HDFS",
+					"file_system_name":                 name,
+					"data_redundancy_type":             "LRS",
+					"provisioned_throughput_in_mi_bps": "0",
+					"throughput_mode":                  "Standard",
+					"partition_number":                 "0",
+					"storage_set_name":                 "RMCTestStorageSet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"space_capacity":                   "1026",
+						"description":                      "ResourceManagerCenterTestCase-fix",
+						"storage_type":                     "STANDARD",
+						"zone_id":                          CHECKSET,
+						"protocol_type":                    "HDFS",
+						"file_system_name":                 name,
+						"data_redundancy_type":             "LRS",
+						"provisioned_throughput_in_mi_bps": "0",
+						"throughput_mode":                  "Standard",
+						"partition_number":                 "0",
+						"storage_set_name":                 "RMCTestStorageSet",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"data_redundancy_type", "partition_number", "storage_set_name"},
+			},
+		},
+	})
+}
+
+// Test Dfs FileSystem. <<< Resource test cases, automatically generated.

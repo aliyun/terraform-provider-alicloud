@@ -1,30 +1,44 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDfsMountPoint() *schema.Resource {
+func resourceAliCloudDfsMountPoint() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDfsMountPointCreate,
-		Read:   resourceAlicloudDfsMountPointRead,
-		Update: resourceAlicloudDfsMountPointUpdate,
-		Delete: resourceAlicloudDfsMountPointDelete,
+		Create: resourceAliCloudDfsMountPointCreate,
+		Read:   resourceAliCloudDfsMountPointRead,
+		Update: resourceAliCloudDfsMountPointUpdate,
+		Delete: resourceAliCloudDfsMountPointDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"alias_prefix": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -40,23 +54,21 @@ func resourceAlicloudDfsMountPoint() *schema.Resource {
 				Computed: true,
 			},
 			"network_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"VPC"}, false),
-			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Inactive"}, false),
-			},
-			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"vswitch_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"vpc_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -65,27 +77,35 @@ func resourceAlicloudDfsMountPoint() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDfsMountPointCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsMountPointCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateMountPoint"
-	request := make(map[string]interface{})
-	conn, err := client.NewAlidfsClient()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewDfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	query["FileSystemId"] = d.Get("file_system_id")
+	query["InputRegionId"] = client.RegionId
+
 	request["AccessGroupId"] = d.Get("access_group_id")
+	request["NetworkType"] = d.Get("network_type")
+	request["VpcId"] = d.Get("vpc_id")
+	request["VSwitchId"] = d.Get("vswitch_id")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["FileSystemId"] = d.Get("file_system_id")
-	request["NetworkType"] = d.Get("network_type")
-	request["InputRegionId"] = client.RegionId
-	request["VpcId"] = d.Get("vpc_id")
-	request["VSwitchId"] = d.Get("vswitch_id")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -93,81 +113,88 @@ func resourceAlicloudDfsMountPointCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_mount_point", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["FileSystemId"], ":", response["MountPointId"]))
+	d.SetId(fmt.Sprintf("%v:%v", query["FileSystemId"], response["MountPointId"]))
 
-	return resourceAlicloudDfsMountPointUpdate(d, meta)
+	return resourceAliCloudDfsMountPointUpdate(d, meta)
 }
-func resourceAlicloudDfsMountPointRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDfsMountPointRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dfsService := DfsService{client}
-	object, err := dfsService.DescribeDfsMountPoint(d.Id())
+	dfsServiceV2 := DfsServiceV2{client}
+
+	objectRaw, err := dfsServiceV2.DescribeDfsMountPoint(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dfs_mount_point dfsService.DescribeDfsMountPoint Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dfs_mount_point DescribeDfsMountPoint Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+
+	d.Set("access_group_id", objectRaw["AccessGroupId"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("network_type", objectRaw["NetworkType"])
+	d.Set("status", objectRaw["Status"])
+	d.Set("vswitch_id", objectRaw["VSwitchId"])
+	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("file_system_id", objectRaw["FileSystemId"])
+	d.Set("mount_point_id", objectRaw["MountPointId"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("file_system_id", parts[0])
 	d.Set("mount_point_id", parts[1])
-	d.Set("access_group_id", object["AccessGroupId"])
-	d.Set("description", object["Description"])
-	d.Set("network_type", object["NetworkType"])
-	d.Set("status", object["Status"])
-	d.Set("vpc_id", object["VpcId"])
-	d.Set("vswitch_id", object["VSwitchId"])
+
 	return nil
 }
-func resourceAlicloudDfsMountPointUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDfsMountPointUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAlidfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var request map[string]interface{}
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	var query map[string]interface{}
+	update := false
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyMountPoint"
+	conn, err := client.NewDfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
-	request := map[string]interface{}{
-		"FileSystemId": parts[0],
-		"MountPointId": parts[1],
-	}
-	request["InputRegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("access_group_id") {
-		update = true
-		request["AccessGroupId"] = d.Get("access_group_id")
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["MountPointId"] = parts[1]
+	query["FileSystemId"] = parts[0]
+	query["InputRegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
+		request["Description"] = d.Get("description")
 	}
+
+	if !d.IsNewResource() && d.HasChange("access_group_id") {
+		update = true
+	}
+	request["AccessGroupId"] = d.Get("access_group_id")
 	if d.HasChange("status") {
 		update = true
-		if v, ok := d.GetOk("status"); ok {
-			request["Status"] = v
-		}
+		request["Status"] = d.Get("status")
 	}
+
 	if update {
-		action := "ModifyMountPoint"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -175,36 +202,40 @@ func resourceAlicloudDfsMountPointUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudDfsMountPointRead(d, meta)
-}
-func resourceAlicloudDfsMountPointDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeleteMountPoint"
-	var response map[string]interface{}
-	conn, err := client.NewAlidfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	request := map[string]interface{}{
-		"FileSystemId": parts[0],
-		"MountPointId": parts[1],
-	}
 
-	request["InputRegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	return resourceAliCloudDfsMountPointRead(d, meta)
+}
+
+func resourceAliCloudDfsMountPointDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteMountPoint"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewDfsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query["MountPointId"] = parts[1]
+	query["FileSystemId"] = parts[0]
+	query["InputRegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -212,14 +243,13 @@ func resourceAlicloudDfsMountPointDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidParameter.MountPointNotFound"}) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
