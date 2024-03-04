@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"github.com/PaesslerAG/jsonpath"
 	"regexp"
 	"strings"
@@ -513,15 +514,18 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 			"vpn_bgp_config":       vpnGatewayService.VpnBgpConfig(conn.VpnBgpConfig),
 		}
 
-		tunnelOptions1Raw, _ := jsonpath.Get("$.TunnelOptionsSpecification.TunnelOptions", conn)
+		connState, _ := json.Marshal(conn)
+		var result map[string]interface{}
+		_ = json.Unmarshal(connState, &result)
+		tunnelOptions1Raw, _ := jsonpath.Get("$.TunnelOptionsSpecification.TunnelOptions", result)
 		tunnelOptionsSpecificationMaps := make([]map[string]interface{}, 0)
 		if tunnelOptions1Raw != nil {
 			for _, tunnelOptionsChild1Raw := range tunnelOptions1Raw.([]interface{}) {
 				tunnelOptionsSpecificationMap := make(map[string]interface{})
 				tunnelOptionsChild1Raw := tunnelOptionsChild1Raw.(map[string]interface{})
 				tunnelOptionsSpecificationMap["customer_gateway_id"] = tunnelOptionsChild1Raw["CustomerGatewayId"]
-				tunnelOptionsSpecificationMap["enable_dpd"] = tunnelOptionsChild1Raw["EnableDpd"]
-				tunnelOptionsSpecificationMap["enable_nat_traversal"] = tunnelOptionsChild1Raw["EnableNatTraversal"]
+				tunnelOptionsSpecificationMap["enable_dpd"] = formatBool(tunnelOptionsChild1Raw["EnableDpd"])
+				tunnelOptionsSpecificationMap["enable_nat_traversal"] = formatBool(tunnelOptionsChild1Raw["EnableNatTraversal"])
 				tunnelOptionsSpecificationMap["internet_ip"] = tunnelOptionsChild1Raw["InternetIp"]
 				tunnelOptionsSpecificationMap["role"] = tunnelOptionsChild1Raw["Role"]
 				tunnelOptionsSpecificationMap["state"] = tunnelOptionsChild1Raw["State"]
@@ -557,7 +561,7 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 				if len(tunnelIkeConfig1Raw) > 0 {
 					tunnelIkeConfigMap["ike_auth_alg"] = tunnelIkeConfig1Raw["IkeAuthAlg"]
 					tunnelIkeConfigMap["ike_enc_alg"] = tunnelIkeConfig1Raw["IkeEncAlg"]
-					tunnelIkeConfigMap["ike_lifetime"] = tunnelIkeConfig1Raw["IkeLifetime"]
+					tunnelIkeConfigMap["ike_lifetime"] = formatInt(tunnelIkeConfig1Raw["IkeLifetime"])
 					tunnelIkeConfigMap["ike_mode"] = tunnelIkeConfig1Raw["IkeMode"]
 					tunnelIkeConfigMap["ike_pfs"] = tunnelIkeConfig1Raw["IkePfs"]
 					tunnelIkeConfigMap["ike_version"] = tunnelIkeConfig1Raw["IkeVersion"]
@@ -578,7 +582,7 @@ func vpnConnectionsDecriptionAttributes(d *schema.ResourceData, vpnSetTypes []vp
 				if len(tunnelIpsecConfig1Raw) > 0 {
 					tunnelIpsecConfigMap["ipsec_auth_alg"] = tunnelIpsecConfig1Raw["IpsecAuthAlg"]
 					tunnelIpsecConfigMap["ipsec_enc_alg"] = tunnelIpsecConfig1Raw["IpsecEncAlg"]
-					tunnelIpsecConfigMap["ipsec_lifetime"] = tunnelIpsecConfig1Raw["IpsecLifetime"]
+					tunnelIpsecConfigMap["ipsec_lifetime"] = formatInt(tunnelIpsecConfig1Raw["IpsecLifetime"])
 					tunnelIpsecConfigMap["ipsec_pfs"] = tunnelIpsecConfig1Raw["IpsecPfs"]
 
 					tunnelIpsecConfigMaps = append(tunnelIpsecConfigMaps, tunnelIpsecConfigMap)
