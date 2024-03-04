@@ -866,6 +866,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_wafv3_defense_template":                               resourceAliCloudWafv3DefenseTemplate(),
 			"alicloud_vpc_ipv6_address":                                     resourceAliCloudVpcIpv6Address(),
 			"alicloud_api_gateway_instance":                                 resourceAliCloudApiGatewayInstance(),
+			"alicloud_ebs_solution_instance":                                resourceAliCloudEbsSolutionInstance(),
 			"alicloud_ens_instance_security_group_attachment":               resourceAliCloudEnsInstanceSecurityGroupAttachment(),
 			"alicloud_ens_disk_instance_attachment":                         resourceAliCloudEnsDiskInstanceAttachment(),
 			"alicloud_ens_image":                                            resourceAliCloudEnsImage(),
