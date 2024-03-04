@@ -1214,15 +1214,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		"RegionId":     client.RegionId,
 		"SourceIp":     client.SourceIp,
 	}
-	if d.HasChange("port") {
-		connectUpdate = true
-	}
-	if d.HasChange("connection_string_prefix") {
-		connectUpdate = true
-	}
-	if d.HasChange("babelfish_port") {
-		connectUpdate = true
-	}
+
 	// port default to 3306 and if setting port to 3306, there will have a change
 	if d.HasChanges("port", "connection_string_prefix", "babelfish_port") {
 		instance, err := rdsService.DescribeDBInstance(d.Id())
@@ -1935,7 +1927,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
 		request["TargetMinorVersion"] = v
 	}
-
+	if v, ok := d.GetOk("port"); ok && v.(string) != "" {
+		request["Port"] = v
+	}
 	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {
 		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 			request["RoleARN"] = v.(string)
