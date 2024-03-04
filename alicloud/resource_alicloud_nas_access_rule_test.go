@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudNASAccessRule_basic(t *testing.T) {
+func TestAccAliCloudNasAccessRule_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_access_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudNasAccessRule0)
@@ -220,7 +220,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAccessRuleCreate(d, rawClient)
+		err := resourceAliCloudNasAccessRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -237,7 +237,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleCreate(d, rawClient)
+		err := resourceAliCloudNasAccessRuleCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -254,7 +254,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleCreate(dCreate, rawClient)
+		err := resourceAliCloudNasAccessRuleCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -272,7 +272,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudNasAccessRuleUpdate(d, rawClient)
+		err := resourceAliCloudNasAccessRuleUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -307,7 +307,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasAccessRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -342,7 +342,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasAccessRuleUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -356,7 +356,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAliCloudNasAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -373,7 +373,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAliCloudNasAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -390,7 +390,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAliCloudNasAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -407,7 +407,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleDelete(d, rawClient)
+		err := resourceAliCloudNasAccessRuleDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -424,7 +424,7 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleRead(d, rawClient)
+		err := resourceAliCloudNasAccessRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -440,8 +440,401 @@ func TestUnitAlicloudNASAccessRule(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAccessRuleRead(d, rawClient)
+		err := resourceAliCloudNasAccessRuleRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Nas AccessRule. >>> Resource test cases, automatically generated.
+// Case 极速型 Vpc 权限组规则测试 5737
+func TestAccAliCloudNasAccessRule_basic5737(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessRuleMap5737)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence5737)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.NasExtremeTypeRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"file_system_type":    "extreme",
+					"access_group_name":   "${alicloud_nas_access_group.defaultf20OX7.access_group_name}",
+					"ipv6_source_cidr_ip": "2001:250:6000::1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"file_system_type":    "extreme",
+						"access_group_name":   CHECKSET,
+						"ipv6_source_cidr_ip": "2001:250:6000::1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type": "no_squash",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type": "no_squash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rw_access_type": "RDONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rw_access_type": "RDONLY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_cidr_ip":      "",
+					"ipv6_source_cidr_ip": "::1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_cidr_ip":      "",
+						"ipv6_source_cidr_ip": "::1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type": "root_squash",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type": "root_squash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rw_access_type": "RDWR",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rw_access_type": "RDWR",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ipv6_source_cidr_ip": "2001:250:6000::1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_source_cidr_ip": "2001:250:6000::1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type":    "no_squash",
+					"priority":            "1",
+					"file_system_type":    "extreme",
+					"access_group_name":   "${alicloud_nas_access_group.defaultf20OX7.access_group_name}",
+					"rw_access_type":      "RDONLY",
+					"ipv6_source_cidr_ip": "::1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type":    "no_squash",
+						"priority":            "1",
+						"file_system_type":    "extreme",
+						"access_group_name":   CHECKSET,
+						"rw_access_type":      "RDONLY",
+						"ipv6_source_cidr_ip": "::1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNasAccessRuleMap5737 = map[string]string{
+	"access_rule_id": CHECKSET,
+}
+
+func AlicloudNasAccessRuleBasicDependence5737(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_nas_access_group" "defaultf20OX7" {
+  access_group_type = "Vpc"
+  description       = "ExtremeAccessGroup"
+  access_group_name = var.name
+
+  file_system_type = "extreme"
+}
+
+
+`, name)
+}
+
+// Case 通用型 Vpc 权限组规则测试 5736
+func TestAccAliCloudNasAccessRule_basic5736(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessRuleMap5736)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence5736)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"file_system_type":  "standard",
+					"access_group_name": "${alicloud_nas_access_group.defaultCWVMZb.access_group_name}",
+					"source_cidr_ip":    "1.1.1.1/0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"file_system_type":  "standard",
+						"access_group_name": CHECKSET,
+						"source_cidr_ip":    "1.1.1.1/0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type": "no_squash",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type": "no_squash",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_cidr_ip": "1.1.1.1/0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_cidr_ip": "1.1.1.1/0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type":  "root_squash",
+					"priority":          "2",
+					"file_system_type":  "standard",
+					"source_cidr_ip":    "1.1.1.2/0",
+					"access_group_name": "${alicloud_nas_access_group.defaultCWVMZb.access_group_name}",
+					"rw_access_type":    "RDWR",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type":  "root_squash",
+						"priority":          "2",
+						"file_system_type":  "standard",
+						"source_cidr_ip":    "1.1.1.2/0",
+						"access_group_name": CHECKSET,
+						"rw_access_type":    "RDWR",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudNasAccessRuleMap5736 = map[string]string{
+	"access_rule_id": CHECKSET,
+}
+
+func AlicloudNasAccessRuleBasicDependence5736(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_nas_access_group" "defaultCWVMZb" {
+  access_group_type = "Vpc"
+  description       = "StandardAccessGroup"
+  access_group_name = var.name
+
+  file_system_type = "standard"
+}
+
+
+`, name)
+}
+
+// Case 极速型 Vpc 权限组规则测试 5737  twin
+func TestAccAliCloudNasAccessRule_basic5737_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessRuleMap5737)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence5737)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.NasExtremeTypeRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type":    "no_squash",
+					"priority":            "1",
+					"file_system_type":    "extreme",
+					"access_group_name":   "${alicloud_nas_access_group.defaultf20OX7.access_group_name}",
+					"rw_access_type":      "RDONLY",
+					"ipv6_source_cidr_ip": "::1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type":    "no_squash",
+						"priority":            "1",
+						"file_system_type":    "extreme",
+						"access_group_name":   CHECKSET,
+						"rw_access_type":      "RDONLY",
+						"ipv6_source_cidr_ip": "::1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 通用型 Vpc 权限组规则测试 5736  twin
+func TestAccAliCloudNasAccessRule_basic5736_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAccessRuleMap5736)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAccessRuleBasicDependence5736)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_access_type":  "root_squash",
+					"priority":          "2",
+					"file_system_type":  "standard",
+					"source_cidr_ip":    "1.1.1.2/0",
+					"access_group_name": "${alicloud_nas_access_group.defaultCWVMZb.access_group_name}",
+					"rw_access_type":    "RDWR",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_access_type":  "root_squash",
+						"priority":          "2",
+						"file_system_type":  "standard",
+						"source_cidr_ip":    "1.1.1.2/0",
+						"access_group_name": CHECKSET,
+						"rw_access_type":    "RDWR",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Nas AccessRule. <<< Resource test cases, automatically generated.
