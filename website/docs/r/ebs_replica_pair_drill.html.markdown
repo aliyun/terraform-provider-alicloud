@@ -1,5 +1,5 @@
 ---
-subcategory: "EBS"
+subcategory: "Elastic Block Storage(EBS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ebs_replica_pair_drill"
 description: |-
