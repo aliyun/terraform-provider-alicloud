@@ -1,5 +1,5 @@
 ---
-subcategory: "DFS"
+subcategory: "Apsara File Storage for HDFS (DFS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dfs_vsc_mount_point"
 description: |-
