@@ -689,6 +689,12 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		fromTimeService := d.Get("from_time_service")
 		TargetDBRevisionVersionCode := d.Get("target_db_revision_version_code")
 		if strings.EqualFold(fromTimeService.(string), "true") || TargetDBRevisionVersionCode != "" {
+			// maxscale upgrade is relatively slow, wait cluster maxscale proxy status from  MinorVersionUpgrading to running
+			proxyStatusConf := BuildStateConf([]string{"MinorVersionUpgrading"}, []string{"Running"},
+				d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterProxyStateRefreshFunc(d.Id(), []string{""}))
+			if _, err := proxyStatusConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
 			// wait cluster status change from ConfigSwitching to running
 			stateConf := BuildStateConf([]string{"MinorVersionUpgrading"}, []string{"Running"},
 				d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
