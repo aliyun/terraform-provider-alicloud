@@ -94,7 +94,7 @@ func resourceAliCloudAlbServerGroup() *schema.Resource {
 				},
 			},
 			"health_check_config": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
@@ -295,53 +295,52 @@ func resourceAliCloudAlbServerGroupCreate(d *schema.ResourceData, meta interface
 
 	healthCheckConfig := d.Get("health_check_config")
 	healthCheckConfigMap := make(map[string]interface{})
-	for _, healthCheckConfigList := range healthCheckConfig.(*schema.Set).List() {
+	for _, healthCheckConfigList := range healthCheckConfig.([]interface{}) {
 		healthCheckConfigArg := healthCheckConfigList.(map[string]interface{})
 
 		healthCheckConfigMap["HealthCheckEnabled"] = healthCheckConfigArg["health_check_enabled"]
-
 		if healthCheckConfigMap["HealthCheckEnabled"] == true {
-			if healthCheckConnectPort, ok := healthCheckConfigArg["health_check_connect_port"]; ok {
+			if healthCheckConnectPort, ok := d.GetOkExists("health_check_config.0.health_check_connect_port"); ok {
 				healthCheckConfigMap["HealthCheckConnectPort"] = healthCheckConnectPort
 			}
 
-			if healthCheckHost, ok := healthCheckConfigArg["health_check_host"]; ok {
+			if healthCheckHost, ok := d.GetOk("health_check_config.0.health_check_host"); ok {
 				healthCheckConfigMap["HealthCheckHost"] = healthCheckHost
 			}
 
-			if healthCheckHttpVersion, ok := healthCheckConfigArg["health_check_http_version"]; ok {
+			if healthCheckHttpVersion, ok := d.GetOk("health_check_config.0.health_check_http_version"); ok {
 				healthCheckConfigMap["HealthCheckHttpVersion"] = healthCheckHttpVersion
 			}
 
-			if healthCheckInterval, ok := healthCheckConfigArg["health_check_interval"]; ok {
+			if healthCheckInterval, ok := d.GetOkExists("health_check_config.0.health_check_interval"); ok {
 				healthCheckConfigMap["HealthCheckInterval"] = healthCheckInterval
 			}
 
-			if healthCheckMethod, ok := healthCheckConfigArg["health_check_method"]; ok {
+			if healthCheckMethod, ok := d.GetOk("health_check_config.0.health_check_method"); ok {
 				healthCheckConfigMap["HealthCheckMethod"] = healthCheckMethod
 			}
 
-			if healthCheckPath, ok := healthCheckConfigArg["health_check_path"]; ok {
+			if healthCheckPath, ok := d.GetOk("health_check_config.0.health_check_path"); ok {
 				healthCheckConfigMap["HealthCheckPath"] = healthCheckPath
 			}
 
-			if healthCheckProtocol, ok := healthCheckConfigArg["health_check_protocol"]; ok {
+			if healthCheckProtocol, ok := d.GetOk("health_check_config.0.health_check_protocol"); ok {
 				healthCheckConfigMap["HealthCheckProtocol"] = healthCheckProtocol
 			}
 
-			if healthCheckTimeout, ok := healthCheckConfigArg["health_check_timeout"]; ok {
+			if healthCheckTimeout, ok := d.GetOkExists("health_check_config.0.health_check_timeout"); ok {
 				healthCheckConfigMap["HealthCheckTimeout"] = healthCheckTimeout
 			}
 
-			if healthyThreshold, ok := healthCheckConfigArg["healthy_threshold"]; ok {
+			if healthyThreshold, ok := d.GetOkExists("health_check_config.0.healthy_threshold"); ok {
 				healthCheckConfigMap["HealthyThreshold"] = healthyThreshold
 			}
 
-			if unhealthyThreshold, ok := healthCheckConfigArg["unhealthy_threshold"]; ok {
+			if unhealthyThreshold, ok := d.GetOkExists("health_check_config.0.unhealthy_threshold"); ok {
 				healthCheckConfigMap["UnhealthyThreshold"] = unhealthyThreshold
 			}
 
-			if healthCheckCodes, ok := healthCheckConfigArg["health_check_codes"]; ok {
+			if healthCheckCodes, ok := d.GetOk("health_check_config.0.health_check_codes"); ok {
 				healthCheckConfigMap["HealthCheckCodes"] = healthCheckCodes
 			}
 		}
@@ -617,53 +616,53 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 	}
 	healthCheckConfig := d.Get("health_check_config")
 	healthCheckConfigMap := make(map[string]interface{})
-	for _, healthCheckConfigList := range healthCheckConfig.(*schema.Set).List() {
+	for _, healthCheckConfigList := range healthCheckConfig.([]interface{}) {
 		healthCheckConfigArg := healthCheckConfigList.(map[string]interface{})
 
 		healthCheckConfigMap["HealthCheckEnabled"] = healthCheckConfigArg["health_check_enabled"]
 
 		if healthCheckConfigMap["HealthCheckEnabled"] == true {
-			if healthCheckConnectPort, ok := healthCheckConfigArg["health_check_connect_port"]; ok {
+			if healthCheckConnectPort, ok := d.GetOkExists("health_check_config.0.health_check_connect_port"); ok {
 				healthCheckConfigMap["HealthCheckConnectPort"] = healthCheckConnectPort
 			}
 
-			if healthCheckHost, ok := healthCheckConfigArg["health_check_host"]; ok {
+			if healthCheckHost, ok := d.GetOk("health_check_config.0.health_check_host"); ok {
 				healthCheckConfigMap["HealthCheckHost"] = healthCheckHost
 			}
 
-			if healthCheckHttpVersion, ok := healthCheckConfigArg["health_check_http_version"]; ok {
+			if healthCheckHttpVersion, ok := d.GetOk("health_check_config.0.health_check_http_version"); ok {
 				healthCheckConfigMap["HealthCheckHttpVersion"] = healthCheckHttpVersion
 			}
 
-			if healthCheckInterval, ok := healthCheckConfigArg["health_check_interval"]; ok {
+			if healthCheckInterval, ok := d.GetOkExists("health_check_config.0.health_check_interval"); ok {
 				healthCheckConfigMap["HealthCheckInterval"] = healthCheckInterval
 			}
 
-			if healthCheckMethod, ok := healthCheckConfigArg["health_check_method"]; ok {
+			if healthCheckMethod, ok := d.GetOk("health_check_config.0.health_check_method"); ok {
 				healthCheckConfigMap["HealthCheckMethod"] = healthCheckMethod
 			}
 
-			if healthCheckPath, ok := healthCheckConfigArg["health_check_path"]; ok {
+			if healthCheckPath, ok := d.GetOk("health_check_config.0.health_check_path"); ok {
 				healthCheckConfigMap["HealthCheckPath"] = healthCheckPath
 			}
 
-			if healthCheckProtocol, ok := healthCheckConfigArg["health_check_protocol"]; ok {
+			if healthCheckProtocol, ok := d.GetOk("health_check_config.0.health_check_protocol"); ok {
 				healthCheckConfigMap["HealthCheckProtocol"] = healthCheckProtocol
 			}
 
-			if healthCheckTimeout, ok := healthCheckConfigArg["health_check_timeout"]; ok {
+			if healthCheckTimeout, ok := d.GetOkExists("health_check_config.0.health_check_timeout"); ok {
 				healthCheckConfigMap["HealthCheckTimeout"] = healthCheckTimeout
 			}
 
-			if healthyThreshold, ok := healthCheckConfigArg["healthy_threshold"]; ok {
+			if healthyThreshold, ok := d.GetOkExists("health_check_config.0.healthy_threshold"); ok {
 				healthCheckConfigMap["HealthyThreshold"] = healthyThreshold
 			}
 
-			if unhealthyThreshold, ok := healthCheckConfigArg["unhealthy_threshold"]; ok {
+			if unhealthyThreshold, ok := d.GetOkExists("health_check_config.0.unhealthy_threshold"); ok {
 				healthCheckConfigMap["UnhealthyThreshold"] = unhealthyThreshold
 			}
 
-			if healthCheckCodes, ok := healthCheckConfigArg["health_check_codes"]; ok {
+			if healthCheckCodes, ok := d.GetOk("health_check_config.0.health_check_codes"); ok {
 				healthCheckConfigMap["HealthCheckCodes"] = healthCheckCodes
 			}
 		}
