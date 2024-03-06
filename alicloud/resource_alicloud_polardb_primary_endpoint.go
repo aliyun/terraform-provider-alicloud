@@ -303,10 +303,6 @@ func resourceAlicloudPolarDBPrimaryEndpointUpdate(d *schema.ResourceData, meta i
 				return WrapError(err)
 			}
 
-			stateConf := BuildStateConf([]string{"NetAddressModifying"}, []string{"Running", "ConfigSwitching"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterStateRefreshFunc(request.DBClusterId, []string{"Deleting"}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
 		}
 	}
 	return resourceAlicloudPolarDBPrimaryEndpointRead(d, meta)
