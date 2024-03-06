@@ -1,7 +1,10 @@
 package alicloud
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
@@ -387,6 +390,91 @@ func (s *LogService) WaitForLogtailAttachment(id string, status Status, timeout 
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object, name, ProviderERROR)
 		}
 	}
+}
+
+func (s *LogService) DescribeLogAlertResource(id string) (map[string]string, error) {
+	var result = map[string]string{}
+	parts, err := ParseResourceId(id, 3)
+	if err != nil {
+		return result, WrapError(err)
+	}
+	resourceType := parts[1]
+	if err := resource.Retry(2*time.Minute, func() *resource.RetryError {
+		_, err := s.client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
+			switch resourceType {
+			case "user":
+				_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+					record, err := slsClient.GetResourceRecord("sls.alert.global_config", "default_config")
+					if err != nil {
+						return nil, err
+					}
+					var alertGlobalConfig AlertGlobalConfig
+					err = json.Unmarshal([]byte(record.Value), &alertGlobalConfig)
+					if err != nil {
+						return nil, err
+					}
+					region := alertGlobalConfig.ConfigDetail.AlertCenterLog.Region
+					accountId, err := s.client.AccountId()
+					if err != nil {
+						return nil, err
+					}
+					projectName := fmt.Sprintf("sls-alert-%s-%s", accountId, region)
+					endpoint := slsClient.Endpoint
+					slsClient.Endpoint = strings.Replace(endpoint, s.client.RegionId, region, 1)
+					_, err = slsClient.GetProject(projectName)
+					if err != nil {
+						slsClient.Endpoint = endpoint
+						return nil, err
+					}
+					_, err = slsClient.GetLogStore(projectName, "internal-alert-center-log")
+					slsClient.Endpoint = endpoint
+					if err != nil {
+						return nil, err
+					}
+					return nil, nil
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"ProjectNotExist"}) || IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+						return result, nil
+					}
+					return nil, err
+				}
+				lang := parts[2]
+				result["type"] = resourceType
+				result["project"] = ""
+				result["lang"] = lang
+				return result, nil
+			case "project":
+				project := parts[2]
+				_, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
+					return slsClient.GetLogStore(project, "internal-alert-history")
+				})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
+						return nil, nil
+					}
+					return nil, err
+				}
+				result["type"] = resourceType
+				result["project"] = project
+				result["lang"] = ""
+				return result, nil
+			default:
+				return result, WrapErrorf(errors.New("type error"), DefaultErrorMsg, "alicloud_log_alert_resource", "ReadAlertResource", AliyunLogGoSdkERROR)
+			}
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{LogClientTimeout}) {
+				time.Sleep(5 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	}); err != nil {
+		return result, WrapErrorf(err, DefaultErrorMsg, "alicloud_log_alert_resource", "ReadAlertResource", AliyunLogGoSdkERROR)
+	}
+	return result, nil
 }
 
 func (s *LogService) DescribeLogAlert(id string) (*sls.Alert, error) {

@@ -7,25 +7,22 @@ description: |-
     Provides a datasource to init SLS Alert resources automatically.
 ---
 
-# alicloud\_log\_alert\_resource
+# alicloud_log_alert_resource
 
 Using this data source can init SLS Alert resources automatically.
 
 For information about SLS Alert and how to use it, see [SLS Alert Overview](https://www.alibabacloud.com/help/en/doc-detail/209202.html)
 
--> **NOTE:** Available in v1.161.0+
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.218.1`. Please use new resource [alicloud_log_alert_resource](https://www.terraform.io/docs/providers/alicloud/r/log_alert_resource).
+
+-> **NOTE:** Available since v1.161.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_log_alert_resource" "example_user" {
-  type          = "user"
-  lang          = "cn"
-}
-
-data "alicloud_log_alert_resource" "example_project" {
-  type          = "project"
-  project       = "test-alert-tf"
+  type = "user"
+  lang = "cn"
 }
 ```
 
