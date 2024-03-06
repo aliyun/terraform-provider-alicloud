@@ -1955,3 +1955,23 @@ func (s *PolarDBService) DescribeDBClusterAvailableVersion(id string) (instance 
 	}
 	return response, nil
 }
+
+func (s *PolarDBService) PolarDBClusterProxyStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribePolarDBClusterAttribute(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object.ProxyStatus == failState {
+				return object, object.ProxyStatus, WrapError(Error(FailedToReachTargetStatus, object.ProxyStatus))
+			}
+		}
+		return object, object.ProxyStatus, nil
+	}
+}
