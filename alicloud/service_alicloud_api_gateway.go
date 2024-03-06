@@ -214,6 +214,62 @@ func (s *CloudApiService) DescribeApiGatewayAppAttachment(id string) (*cloudapi.
 	return app, nil
 }
 
+func (s *CloudApiService) DescribeApiGatewayPluginAttachment(id string) (*cloudapi.PluginAttribute, error) {
+	plugin := &cloudapi.PluginAttribute{}
+	request := cloudapi.CreateDescribePluginsByApiRequest()
+	request.RegionId = s.client.RegionId
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return plugin, WrapError(err)
+	}
+	request.GroupId = parts[0]
+	request.ApiId = parts[1]
+	request.StageName = parts[3]
+	pluginId := parts[2]
+
+	var allPlugins []cloudapi.PluginAttribute
+
+	for {
+		raw, err := s.client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
+			return cloudApiClient.DescribePluginsByApi(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"NotFoundApiGroup", "NotFoundApi"}) {
+				return plugin, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			}
+			return plugin, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		response, _ := raw.(*cloudapi.DescribePluginsByApiResponse)
+
+		allPlugins = append(allPlugins, response.Plugins.PluginAttribute...)
+
+		if len(allPlugins) < PageSizeLarge {
+			break
+		}
+
+		page, err := getNextpageNumber(request.PageNumber)
+		if err != nil {
+			return plugin, WrapError(err)
+		}
+		request.PageNumber = page
+	}
+
+	var filteredPluginsTemp []cloudapi.PluginAttribute
+	for _, plugin := range allPlugins {
+		if plugin.PluginId == pluginId {
+			filteredPluginsTemp = append(filteredPluginsTemp, plugin)
+		}
+	}
+
+	if len(filteredPluginsTemp) < 1 {
+		return plugin, WrapErrorf(Error(GetNotFoundMessage("ApiGatewayPluginAttachment", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	plugin = &filteredPluginsTemp[0]
+	return plugin, nil
+}
+
 func (s *CloudApiService) DescribeApiGatewayVpcAccess(id string) (*cloudapi.VpcAccessAttribute, error) {
 	vpc := &cloudapi.VpcAccessAttribute{}
 	request := cloudapi.CreateDescribeVpcAccessesRequest()

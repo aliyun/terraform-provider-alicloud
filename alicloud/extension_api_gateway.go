@@ -9,10 +9,16 @@ type ApiGatewayRequestConfig struct {
 }
 
 type ApiGatewayFunctionComputeConfig struct {
-	Region       string `json:"fcRegionId"`
-	ServiceName  string `json:"serviceName"`
-	FunctionName string `json:"functionName"`
-	Arn          string `json:"roleArn"`
+	FunctionType     string `json:"fcType"`
+	FunctionBaseUrl  string `json:"fcBaseUrl"`
+	Path             string `json:"path"`
+	Method           string `json:"method"`
+	OnlyBusinessPath bool   `json:"onlyBusinessPath"`
+	Qualifier        string `json:"qualifier"`
+	Region           string `json:"fcRegionId"`
+	ServiceName      string `json:"serviceName"`
+	FunctionName     string `json:"functionName"`
+	Arn              string `json:"roleArn"`
 }
 
 type ApiGatewayVpcConfig struct {

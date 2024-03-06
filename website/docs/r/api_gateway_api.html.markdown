@@ -124,10 +124,16 @@ The http_vpc_service_config mapping supports the following:
 
 The fc_service_config mapping supports the following:
 
+* `function_type` - (Optional, Available in v1.218.1) The type of function compute service. Supports values of `FCEvent`,`HttpTrigger`. Default value: `FCEvent`.
 * `region` - (Required) The region that the function compute service belongs to.
-* `function_name` - (Required) The function name of function compute service.
-* `service_name` - (Required) The service name of function compute service.
-* `arn_role` - (Optional) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
+* `function_name` - (Optional) The function name of function compute service. Required if `function_type` is `FCEvent`.
+* `service_name` - (Optional) The service name of function compute service. Required if `function_type` is `FCEvent`.
+* `qualifier` - (Optional, Available in v1.218.1) The qualifier of function name of compute service.
+* `function_base_url` - (Optional, Available in v1.218.1) The base url of function compute service. Required if `function_type` is `HttpTrigger`.
+* `path` - (Optional, Available in v1.218.1) The path of function compute service. Required if `function_type` is `HttpTrigger`.
+* `method` - (Optional, Available in v1.218.1) The http method of function compute service. Required if `function_type` is `HttpTrigger`.
+* `only_business_path` - (Optional, Available in v1.218.1) Whether to filter path in `function_base_url`. Optional if `function_type` is `HttpTrigger`.
+* `arn_role` - (Required) RAM role arn attached to the Function Compute service. This governs both who / what can invoke your Function, as well as what resources our Function has access to. See [User Permissions](https://www.alibabacloud.com/help/doc-detail/52885.htm) for more details.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
 
 ### `mock_service_config`
