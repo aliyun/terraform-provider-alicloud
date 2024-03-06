@@ -101,6 +101,7 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -368,6 +369,8 @@ func TestAccAlicloudApigatewayApi_fc(t *testing.T) {
 					}},
 					"service_type": "FunctionCompute",
 					"fc_service_config": []map[string]string{{
+						"function_type": "FCEvent",
+						"qualifier":     "LATEST",
 						"region":        defaultRegionToTest,
 						"function_name": name + "Func",
 						"service_name":  name,
@@ -386,6 +389,8 @@ func TestAccAlicloudApigatewayApi_fc(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                              name,
+						"fc_service_config.0.function_type": "FCEvent",
+						"fc_service_config.0.qualifier":     "LATEST",
 						"fc_service_config.0.region":        defaultRegionToTest,
 						"fc_service_config.0.function_name": name + "Func",
 						"fc_service_config.0.service_name":  name,
@@ -393,6 +398,85 @@ func TestAccAlicloudApigatewayApi_fc(t *testing.T) {
 						"fc_service_config.0.arn_role":      "cloudapi-openapi",
 					}),
 				),
+			},
+		},
+	})
+}
+
+func TestAccAlicloudApigatewayApi_fc2(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.FcNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":        "${alicloud_api_gateway_group.default.name}",
+					"group_id":    "${alicloud_api_gateway_group.default.id}",
+					"description": "tf_testAcc_api description",
+					"auth_type":   "APP",
+					"request_config": []map[string]string{{
+						"protocol": "HTTP",
+						"method":   "GET",
+						"path":     "/test/path/fc",
+						"mode":     "MAPPING",
+					}},
+					"service_type": "FunctionCompute",
+					"fc_service_config": []map[string]string{{
+						"function_type":      "HttpTrigger",
+						"function_base_url":  "http://apigateway-backend.alicloudapi.com/fcapp.run/",
+						"path":               "/test/path/fc",
+						"method":             "GET",
+						"only_business_path": "false",
+						"region":             defaultRegionToTest,
+						"timeout":            "20",
+						"arn_role":           "cloudapi-openapi",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":         "testparam",
+						"type":         "STRING",
+						"required":     "OPTIONAL",
+						"in":           "QUERY",
+						"in_service":   "QUERY",
+						"name_service": "testparams",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                                   name,
+						"fc_service_config.0.function_type":      "HttpTrigger",
+						"fc_service_config.0.function_base_url":  "http://apigateway-backend.alicloudapi.com/fcapp.run/",
+						"fc_service_config.0.path":               "/test/path/fc",
+						"fc_service_config.0.method":             "GET",
+						"fc_service_config.0.only_business_path": "false",
+						"fc_service_config.0.region":             defaultRegionToTest,
+						"fc_service_config.0.timeout":            "20",
+						"fc_service_config.0.arn_role":           "cloudapi-openapi",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
@@ -415,6 +499,7 @@ func TestAccAlicloudApigatewayApi_multi(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,

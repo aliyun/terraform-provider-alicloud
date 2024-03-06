@@ -151,19 +151,45 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"function_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"FCEvent", "HttpTrigger"}, false),
+						},
 						"region": {
 							Type:     schema.TypeString,
 							Required: true,
 						},
 						"function_name": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
 						},
 						"service_name": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+						},
+						"function_base_url": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"method": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"only_business_path": {
+							Type:     schema.TypeBool,
+							Optional: true,
 						},
 						"arn_role": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"qualifier": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -403,6 +429,12 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		d.Set("service_type", "FunctionCompute")
 		fcServiceConfig := map[string]interface{}{}
 		fcServiceConfig["region"] = object.ServiceConfig.FunctionComputeConfig.RegionId
+		fcServiceConfig["function_type"] = object.ServiceConfig.FunctionComputeConfig.FcType
+		fcServiceConfig["function_base_url"] = object.ServiceConfig.FunctionComputeConfig.FcBaseUrl
+		fcServiceConfig["path"] = object.ServiceConfig.FunctionComputeConfig.Path
+		fcServiceConfig["method"] = object.ServiceConfig.FunctionComputeConfig.Method
+		fcServiceConfig["only_business_path"] = object.ServiceConfig.FunctionComputeConfig.OnlyBusinessPath
+		fcServiceConfig["qualifier"] = object.ServiceConfig.FunctionComputeConfig.Qualifier
 		fcServiceConfig["function_name"] = object.ServiceConfig.FunctionComputeConfig.FunctionName
 		fcServiceConfig["service_name"] = object.ServiceConfig.FunctionComputeConfig.ServiceName
 		fcServiceConfig["arn_role"] = object.ServiceConfig.FunctionComputeConfig.RoleArn
@@ -754,6 +786,12 @@ func getFcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 
 	config := l[0].(map[string]interface{})
 	serviceConfig.Protocol = "FunctionCompute"
+	serviceConfig.FcConfig.FunctionType = config["function_type"].(string)
+	serviceConfig.FcConfig.FunctionBaseUrl = config["function_base_url"].(string)
+	serviceConfig.FcConfig.Path = config["path"].(string)
+	serviceConfig.FcConfig.Method = config["method"].(string)
+	serviceConfig.FcConfig.OnlyBusinessPath = config["only_business_path"].(bool)
+	serviceConfig.FcConfig.Qualifier = config["qualifier"].(string)
 	serviceConfig.FcConfig.Region = config["region"].(string)
 	serviceConfig.FcConfig.FunctionName = config["function_name"].(string)
 	serviceConfig.FcConfig.ServiceName = config["service_name"].(string)
