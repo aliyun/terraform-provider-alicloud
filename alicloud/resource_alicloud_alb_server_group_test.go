@@ -135,12 +135,12 @@ func TestAccAliCloudALBServerGroup_basic0(t *testing.T) {
 					"vpc_id":            "${data.alicloud_vpcs.default.vpcs.0.id}",
 					"sticky_session_config": []map[string]interface{}{
 						{
-							"sticky_session_enabled": "false",
+							"sticky_session_enabled": "true",
 						},
 					},
 					"health_check_config": []map[string]interface{}{
 						{
-							"health_check_enabled": "false",
+							"health_check_enabled": "true",
 						},
 					},
 				}),
