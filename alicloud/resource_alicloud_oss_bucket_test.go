@@ -184,6 +184,7 @@ func TestAccAliCloudOssBucketBasic(t *testing.T) {
 						"bucket":                  name,
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -571,6 +572,7 @@ func TestAccAliCloudOssBucketVersioning(t *testing.T) {
 						"bucket":                  name,
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -701,6 +703,7 @@ func TestAccAliCloudOssBucketCheckSseRule(t *testing.T) {
 						"bucket":                  name,
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -806,6 +809,7 @@ func TestAccAliCloudOssBucketCheckTransferAcc(t *testing.T) {
 						"bucket":                  name,
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -892,6 +896,7 @@ func TestAccAliCloudOssBucketBasic1(t *testing.T) {
 						"acl":                     "public-read",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -958,6 +963,7 @@ func TestAccAliCloudOssBucketColdArchive(t *testing.T) {
 						"storage_class":           "ColdArchive",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -1055,6 +1061,7 @@ func TestAccAliCloudOssBucketLifeCycleRuleOverlap(t *testing.T) {
 						"acl":                     "public-read",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -1184,6 +1191,7 @@ func TestAccAliCloudOssBucketAccessMonitor(t *testing.T) {
 						"acl":                     "public-read",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -1517,6 +1525,7 @@ func TestAccAliCloudOssBucketDeepColdArchive(t *testing.T) {
 						"storage_class":           "DeepColdArchive",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -1672,6 +1681,7 @@ func TestAccAliCloudOssBucketLifeCycleTags(t *testing.T) {
 						"acl":                     "public-read",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -1876,6 +1886,7 @@ func TestAccAliCloudOssBucketLifeCycleFilter(t *testing.T) {
 						"acl":                     "public-read",
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
 					}),
 				),
 			},
@@ -2184,8 +2195,77 @@ func TestAccAliCloudOssBucketLifeCycleFilter(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOssBucketResourceGroup(t *testing.T) {
+	var v oss.GetBucketInfoResult
+
+	resourceId := "alicloud_oss_bucket.default"
+	ra := resourceAttrInit(resourceId, ossBucketBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &OssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-bucket-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOssBucketResourceGroupDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bucket":            name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bucket":                  name,
+						"access_monitor.#":        "1",
+						"access_monitor.0.status": "Disabled",
+						"resource_group_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_destroy", "lifecycle_rule_allow_same_action_overlap"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+}
+
 func resourceOssBucketConfigBasic(name string) string {
 	return fmt.Sprintf("")
+}
+
+func resourceOssBucketResourceGroupDependence(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_resource_manager_resource_groups" "default" {}
+	locals {
+		resource_group_id  = data.alicloud_resource_manager_resource_groups.default.groups.0.id
+		resource_group_id1 = data.alicloud_resource_manager_resource_groups.default.groups.1.id
+	}`)
 }
 
 var ossBucketBasicMap = map[string]string{
