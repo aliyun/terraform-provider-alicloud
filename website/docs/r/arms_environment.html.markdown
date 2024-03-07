@@ -104,12 +104,17 @@ resource "alicloud_arms_environment" "default" {
 The following arguments are supported:
 * `aliyun_lang` - (Optional) The locale. The default is Chinese zh | en.
 * `bind_resource_id` - (Optional, ForceNew) The id or vpcId of the bound container instance.
+* `drop_metrics` - (Optional) List of abandoned indicators.
 * `environment_name` - (Optional) The name of the resource.
 * `environment_sub_type` - (Required, ForceNew) Subtype of environment:
   - Type of CS: ACK is currently supported.
   - Type of ECS: currently supports ECS.
   - Type of Cloud: currently supports Cloud.
 * `environment_type` - (Required, ForceNew) Type of environment.
+* `managed_type` - (Optional, ForceNew) Hosting type:
+  - none: unmanaged. The default value of the ACK cluster.
+  - agent: Managed agent (including ksm). Default values of ASK, ACS, and Acone clusters.
+  - agent-exproter: Managed agent and exporter. The default value of the cloud service type.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group.
 * `tags` - (Optional, Map) The tag of the resource.
 

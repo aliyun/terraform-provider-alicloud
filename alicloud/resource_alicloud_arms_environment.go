@@ -3,10 +3,10 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
-	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -37,6 +37,10 @@ func resourceAliCloudArmsEnvironment() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"drop_metrics": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"environment_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -49,13 +53,20 @@ func resourceAliCloudArmsEnvironment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud"}, false),
+				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud"}, true),
 			},
 			"environment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ECS", "CS", "Cloud"}, false),
+				ValidateFunc: StringInSlice([]string{"ECS", "CS", "Cloud"}, true),
+			},
+			"managed_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"none", "agent", "agent-exporter"}, true),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -88,6 +99,11 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("environment_name"); ok {
 		request["EnvironmentName"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
 	request["EnvironmentType"] = d.Get("environment_type")
 	if v, ok := d.GetOk("bind_resource_id"); ok {
 		request["BindResourceId"] = v
@@ -95,6 +111,9 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 	request["EnvironmentSubType"] = d.Get("environment_sub_type")
 	if v, ok := d.GetOk("aliyun_lang"); ok {
 		request["AliyunLang"] = v
+	}
+	if v, ok := d.GetOk("managed_type"); ok {
+		request["ManagedType"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -136,6 +155,9 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("aliyun_lang"); ok {
 		request["AliyunLang"] = v
 	}
+	if v, ok := d.GetOk("managed_type"); ok {
+		request["ManagedType"] = v
+	}
 	runtime = util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait = incrementalWait(3*time.Second, 5*time.Second)
@@ -164,7 +186,7 @@ func resourceAliCloudArmsEnvironmentCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprint(query["EnvironmentId"]))
 
-	return resourceAliCloudArmsEnvironmentUpdate(d, meta)
+	return resourceAliCloudArmsEnvironmentRead(d, meta)
 }
 
 func resourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interface{}) error {
@@ -185,11 +207,14 @@ func resourceAliCloudArmsEnvironmentRead(d *schema.ResourceData, meta interface{
 	d.Set("environment_name", objectRaw["EnvironmentName"])
 	d.Set("environment_sub_type", objectRaw["EnvironmentSubType"])
 	d.Set("environment_type", objectRaw["EnvironmentType"])
+	d.Set("managed_type", objectRaw["ManagedType"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("environment_id", objectRaw["EnvironmentId"])
 
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
+
+	d.Set("environment_id", d.Id())
 
 	return nil
 }
@@ -210,7 +235,7 @@ func resourceAliCloudArmsEnvironmentUpdate(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	query["EnvironmentId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("environment_name") {
+	if d.HasChange("environment_name") {
 		update = true
 		request["EnvironmentName"] = d.Get("environment_name")
 	}
@@ -250,7 +275,7 @@ func resourceAliCloudArmsEnvironmentUpdate(d *schema.ResourceData, meta interfac
 	query = make(map[string]interface{})
 	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
