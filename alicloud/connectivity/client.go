@@ -178,7 +178,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.217.1"
+var providerVersion = "1.218.0"
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{
@@ -5276,6 +5276,54 @@ func (client *AliyunClient) NewCloudmonitorserviceClient() (*rpc.Client, error) 
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
+		}
+	}
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+func (client *AliyunClient) NewWafv3Client() (*rpc.Client, error) {
+	productCode := "waf"
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = "wafopenapi.cn-hangzhou.aliyuncs.com"
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return conn, nil
+}
+func (client *AliyunClient) NewDfsClient() (*rpc.Client, error) {
+	productCode := "alidfs"
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = fmt.Sprintf("dfs.%s.aliyuncs.com", client.config.RegionId)
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {

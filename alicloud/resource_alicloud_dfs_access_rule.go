@@ -1,25 +1,31 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudDfsAccessRule() *schema.Resource {
+func resourceAliCloudDfsAccessRule() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDfsAccessRuleCreate,
-		Read:   resourceAlicloudDfsAccessRuleRead,
-		Update: resourceAlicloudDfsAccessRuleUpdate,
-		Delete: resourceAlicloudDfsAccessRuleDelete,
+		Create: resourceAliCloudDfsAccessRuleCreate,
+		Read:   resourceAliCloudDfsAccessRuleRead,
+		Update: resourceAliCloudDfsAccessRuleUpdate,
+		Delete: resourceAliCloudDfsAccessRuleDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"access_group_id": {
@@ -28,6 +34,10 @@ func resourceAlicloudDfsAccessRule() *schema.Resource {
 				ForceNew: true,
 			},
 			"access_rule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -43,37 +53,45 @@ func resourceAlicloudDfsAccessRule() *schema.Resource {
 			"priority": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(1, 100),
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"rw_access_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringInSlice([]string{"RDONLY", "RDWR"}, false),
+				ValidateFunc: StringInSlice([]string{"RDWR", "RDONLY"}, true),
 			},
 		},
 	}
 }
 
-func resourceAlicloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateAccessRule"
-	request := make(map[string]interface{})
-	conn, err := client.NewAlidfsClient()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewDfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request["AccessGroupId"] = d.Get("access_group_id")
+	request = make(map[string]interface{})
+	query["AccessGroupId"] = d.Get("access_group_id")
+	request["InputRegionId"] = client.RegionId
+
+	request["NetworkSegment"] = d.Get("network_segment")
+	request["Priority"] = d.Get("priority")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["NetworkSegment"] = d.Get("network_segment")
-	request["Priority"] = d.Get("priority")
-	request["InputRegionId"] = client.RegionId
 	request["RWAccessType"] = d.Get("rw_access_type")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -81,79 +99,85 @@ func resourceAlicloudDfsAccessRuleCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_dfs_access_rule", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["AccessGroupId"], ":", response["AccessRuleId"]))
+	d.SetId(fmt.Sprintf("%v:%v", query["AccessGroupId"], response["AccessRuleId"]))
 
-	return resourceAlicloudDfsAccessRuleRead(d, meta)
+	return resourceAliCloudDfsAccessRuleRead(d, meta)
 }
-func resourceAlicloudDfsAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDfsAccessRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	dfsService := DfsService{client}
-	object, err := dfsService.DescribeDfsAccessRule(d.Id())
+	dfsServiceV2 := DfsServiceV2{client}
+
+	objectRaw, err := dfsServiceV2.DescribeDfsAccessRule(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_dfs_access_rule dfsService.DescribeDfsAccessRule Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_dfs_access_rule DescribeDfsAccessRule Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("network_segment", objectRaw["NetworkSegment"])
+	d.Set("priority", objectRaw["Priority"])
+	d.Set("rw_access_type", objectRaw["RWAccessType"])
+	d.Set("access_group_id", objectRaw["AccessGroupId"])
+	d.Set("access_rule_id", objectRaw["AccessRuleId"])
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("access_group_id", parts[0])
 	d.Set("access_rule_id", parts[1])
-	d.Set("description", object["Description"])
-	d.Set("network_segment", object["NetworkSegment"])
-	if v, ok := object["Priority"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("priority", formatInt(v))
-	}
-	d.Set("rw_access_type", object["RWAccessType"])
+
 	return nil
 }
-func resourceAlicloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewAlidfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var request map[string]interface{}
 	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
+	var query map[string]interface{}
+	update := false
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyAccessRule"
+	conn, err := client.NewDfsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	update := false
-	request := map[string]interface{}{
-		"AccessGroupId": parts[0],
-		"AccessRuleId":  parts[1],
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AccessGroupId"] = parts[0]
+	query["AccessRuleId"] = parts[1]
 	request["InputRegionId"] = client.RegionId
-	if d.HasChange("description") {
-		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
-	}
 	if d.HasChange("priority") {
 		update = true
-		request["Priority"] = d.Get("priority")
 	}
+	request["Priority"] = d.Get("priority")
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
+	}
+
 	if d.HasChange("rw_access_type") {
 		update = true
-		request["RWAccessType"] = d.Get("rw_access_type")
 	}
+	request["RWAccessType"] = d.Get("rw_access_type")
 	if update {
-		action := "ModifyAccessRule"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -161,36 +185,40 @@ func resourceAlicloudDfsAccessRuleUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudDfsAccessRuleRead(d, meta)
-}
-func resourceAlicloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	action := "DeleteAccessRule"
-	var response map[string]interface{}
-	conn, err := client.NewAlidfsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	request := map[string]interface{}{
-		"AccessGroupId": parts[0],
-		"AccessRuleId":  parts[1],
-	}
 
+	return resourceAliCloudDfsAccessRuleRead(d, meta)
+}
+
+func resourceAliCloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteAccessRule"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewDfsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query["AccessGroupId"] = parts[0]
+	query["AccessRuleId"] = parts[1]
 	request["InputRegionId"] = client.RegionId
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -198,14 +226,16 @@ func resourceAlicloudDfsAccessRuleDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.AccessRuleNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

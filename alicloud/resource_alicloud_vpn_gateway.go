@@ -149,6 +149,10 @@ func resourceAliCloudVPNGatewayVPNGateway() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"disaster_recovery_internet_ip": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"name": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -300,6 +304,7 @@ func resourceAliCloudVPNGatewayVPNGatewayRead(d *schema.ResourceData, meta inter
 	d.Set("enable_ssl", "enable" == objectRaw["SslVpn"])
 	d.Set("ssl_connections", objectRaw["SslMaxConnections"])
 	d.Set("ssl_vpn_internet_ip", objectRaw["SslVpnInternetIp"])
+	d.Set("disaster_recovery_internet_ip", objectRaw["DisasterRecoveryInternetIp"])
 	return nil
 }
 

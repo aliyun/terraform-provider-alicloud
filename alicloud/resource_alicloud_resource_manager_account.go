@@ -23,7 +23,7 @@ func resourceAlicloudResourceManagerAccount() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(3 * time.Minute),
 			Update: schema.DefaultTimeout(3 * time.Minute),
-			Delete: schema.DefaultTimeout(3 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"account_name_prefix": {
@@ -265,7 +265,7 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Checking"}, []string{"Success", "Deleting"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
+	stateConf := BuildStateConf([]string{"Checking", "Deleting"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

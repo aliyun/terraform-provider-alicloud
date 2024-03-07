@@ -20,6 +20,10 @@ For information about Microservice Engine (MSE) Gateway and how to use it, see [
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 data "alicloud_zones" "example" {
   available_resource_creation = "VSwitch"
 }

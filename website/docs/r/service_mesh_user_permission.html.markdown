@@ -20,36 +20,46 @@ For information about Service Mesh User Permission and how to use it, see [What 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tfexample"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
+
 data "alicloud_service_mesh_versions" "default" {
   edition = "Default"
 }
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
 }
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.1.0.0/16"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_service_mesh_service_mesh" "default" {
-  service_mesh_name = var.name
-  edition           = "Pro"
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_ram_user" "default" {
+  name = var.name
+}
+
+resource "alicloud_service_mesh_service_mesh" "default1" {
+  service_mesh_name = "${var.name}-${random_integer.default.result}"
+  edition           = "Default"
+  cluster_spec      = "standard"
   version           = data.alicloud_service_mesh_versions.default.versions.0.version
-  cluster_spec      = "enterprise"
   network {
-    vpc_id        = alicloud_vpc.default.id
-    vswitche_list = [alicloud_vswitch.default.id]
+    vpc_id        = data.alicloud_vpcs.default.ids.0
+    vswitche_list = [data.alicloud_vswitches.default.ids.0]
   }
   load_balancer {
     pilot_public_eip      = false
@@ -57,18 +67,13 @@ resource "alicloud_service_mesh_service_mesh" "default" {
   }
 }
 
-resource "alicloud_ram_user" "default" {
-  name = var.name
-}
-
 resource "alicloud_service_mesh_user_permission" "default" {
   sub_account_user_id = alicloud_ram_user.default.id
   permissions {
-    role_name       = "istio-admin"
-    service_mesh_id = alicloud_service_mesh_service_mesh.default.id
+    role_name       = "istio-ops"
+    service_mesh_id = alicloud_service_mesh_service_mesh.default1.id
     role_type       = "custom"
     is_custom       = true
-    is_ram_role     = false
   }
 }
 ```

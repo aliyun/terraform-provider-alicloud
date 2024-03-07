@@ -364,15 +364,17 @@ func (s *RamService) DescribeRamLoginProfile(id string) (*ram.GetLoginProfileRes
 	raw, err := s.client.WithRamClient(func(ramClient *ram.Client) (interface{}, error) {
 		return ramClient.GetLoginProfile(request)
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.User.LoginProfile", "EntityNotExist.User"}) {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(Error(GetNotFoundMessage("Ram:LoginProfile", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
 		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response = raw.(*ram.GetLoginProfileResponse)
+
 	return response, nil
 }
 

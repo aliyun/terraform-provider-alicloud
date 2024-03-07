@@ -107,7 +107,7 @@ func testSweepDFSAccessGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudDFSAccessGroup_basic0(t *testing.T) {
+func TestAccAliCloudDfsAccessGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_group.default"
 	ra := resourceAttrInit(resourceId, AlicloudDFSAccessGroupMap0)
@@ -259,7 +259,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessGroupCreate(dInit, rawClient)
+	err = resourceAliCloudDfsAccessGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -281,7 +281,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessGroupCreate(dInit, rawClient)
+		err := resourceAliCloudDfsAccessGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -307,7 +307,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessGroupUpdate(dExisted, rawClient)
+	err = resourceAliCloudDfsAccessGroupUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -345,7 +345,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessGroupUpdate(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessGroupUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -383,7 +383,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessGroupRead(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -400,7 +400,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessGroupDelete(dExisted, rawClient)
+	err = resourceAliCloudDfsAccessGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "InvalidParameter.AccessGroupNotFound"}
@@ -424,7 +424,7 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessGroupDelete(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -434,3 +434,152 @@ func TestUnitAlicloudDFSAccessGroup(t *testing.T) {
 		}
 	}
 }
+
+// Test Dfs AccessGroup. >>> Resource test cases, automatically generated.
+// Case AccessGroup资源测试用例 5176
+func TestAccAliCloudDfsAccessGroup_basic5176(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_access_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsAccessGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_type":      "VPC",
+					"access_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_type":      "VPC",
+						"access_group_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "AccessGroup resource manager center test case",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "AccessGroup resource manager center test case",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "AccessGroup resource manager center test case fix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "AccessGroup resource manager center test case fix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_group_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_group_name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "AccessGroup resource manager center test case",
+					"network_type":      "VPC",
+					"access_group_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "AccessGroup resource manager center test case",
+						"network_type":      "VPC",
+						"access_group_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudDfsAccessGroupMap5176 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudDfsAccessGroupBasicDependence5176(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case AccessGroup资源测试用例 5176  twin
+func TestAccAliCloudDfsAccessGroup_basic5176_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_access_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsAccessGroupMap5176)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsAccessGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessgroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessGroupBasicDependence5176)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":       "AccessGroup resource manager center test case fix",
+					"network_type":      "VPC",
+					"access_group_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":       "AccessGroup resource manager center test case fix",
+						"network_type":      "VPC",
+						"access_group_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Dfs AccessGroup. <<< Resource test cases, automatically generated.

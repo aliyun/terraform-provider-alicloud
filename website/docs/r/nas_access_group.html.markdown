@@ -2,19 +2,18 @@
 subcategory: "Network Attached Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_access_group"
-sidebar_current: "docs-alicloud-resource-nas-access-group"
 description: |-
   Provides a Alicloud NAS Access Group resource.
 ---
 
-# alicloud\_nas\_access\_group
+# alicloud_nas_access_group
 
-Provides a NAS Access Group resource.
+Provides a NAS Access Group resource. File system Access Group.
 
 In NAS, the permission group acts as a whitelist that allows you to restrict file system access. You can allow specified IP addresses or CIDR blocks to access the file system, and assign different levels of access permission to different IP addresses or CIDR blocks by adding rules to the permission group.
 For information about NAS Access Group and how to use it, see [What is NAS Access Group](https://www.alibabacloud.com/help/en/nas/developer-reference/api-nas-2017-06-26-createaccessgroup)
 
--> **NOTE:** Available in v1.33.0+.
+-> **NOTE:** Available since v1.33.0.
 
 ## Example Usage
 
@@ -32,26 +31,33 @@ resource "alicloud_nas_access_group" "foo" {
 ## Argument Reference
 
 The following arguments are supported:
-
-* `name` - (Optional, ForceNew, Deprecated from v1.92.0+) Replaced by `access_group_name` after version 1.92.0.
-* `type` - (Optional, ForceNew, Deprecated from v1.92.0+) Replaced by `access_group_type` after version 1.92.0.
-* `access_group_name` - (Optional, ForceNew, Available in v1.92.0+) A Name of one Access Group.
-* `access_group_type` - (Optional, ForceNew, Available in v1.92.0+) A Type of one Access Group. Valid values: `Vpc` and `Classic`.
-* `description` - (Optional) The Access Group description.
-* `file_system_type` - (Optional, ForceNew, Available in v1.92.0+) The type of file system. Valid values: `standard` and `extreme`. Default to `standard`. Note that the extreme only support Vpc Network.
+* `access_group_name` - (Optional, ForceNew) The name of the permission group.
+* `access_group_type` - (Optional, ForceNew) Permission group types, including Vpc.
+* `description` - (Optional) Permission group description information.
+* `file_system_type` - (Optional, ForceNew, Computed) File system type. Value:
+  - standard (default): Universal NAS
+  - extreme: extreme NAS
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `name` - (Deprecated since v1.218.0). Field 'name' has been deprecated from provider version 1.218.0. New field 'access_group_name' instead.
+* `type` - (Deprecated since v1.218.0). Field 'type' has been deprecated from provider version 1.218.0. New field 'access_group_type' instead.
 
 ## Attributes Reference
 
 The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<access_group_name>:<file_system_type>`.
+* `create_time` - Creation time.
 
-* `id` - The ID of the Access Group. The value as `<access_group_name>`. 
+## Timeouts
 
--> **NOTE:** The ID value as `<access_group_name>`:`<file_system_type>` after version 1.92.0.
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Access Group.
+* `delete` - (Defaults to 5 mins) Used when delete the Access Group.
+* `update` - (Defaults to 5 mins) Used when update the Access Group.
 
 ## Import
 
 NAS Access Group can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_nas_access_group.foo tf_testAccNasConfig:standard
+$ terraform import alicloud_nas_access_group.example <access_group_name>:<file_system_type>
 ```

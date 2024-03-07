@@ -23,14 +23,20 @@ Provides a ActionTrail Trail resource. For information about alicloud actiontrai
 variable "name" {
   default = "tf-example"
 }
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_regions" "example" {
   current = true
 }
 data "alicloud_account" "example" {}
 
 resource "alicloud_log_project" "example" {
-  name        = var.name
-  description = "tf actiontrail example"
+  project_name = "${var.name}-${random_integer.default.result}"
+  description  = "tf actiontrail example"
 }
 
 data "alicloud_ram_roles" "example" {

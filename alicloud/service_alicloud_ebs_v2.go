@@ -445,3 +445,84 @@ func (s *EbsServiceV2) EbsEnterpriseSnapshotPolicyAttachmentStateRefreshFunc(id 
 }
 
 // DescribeEbsEnterpriseSnapshotPolicyAttachment >>> Encapsulated.
+// DescribeEbsSolutionInstance <<< Encapsulated get interface for Ebs SolutionInstance.
+
+func (s *EbsServiceV2) DescribeEbsSolutionInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeSolutionInstance"
+	conn, err := client.NewEbsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["SolutionInstanceId.1"] = id
+	query["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken(action)
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-30"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Data[*]", response)
+	if err != nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+	}
+
+	currentStatus := v.([]interface{})[0].(map[string]interface{})["Status"]
+	if currentStatus == nil {
+		return object, WrapErrorf(Error(GetNotFoundMessage("SolutionInstance", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *EbsServiceV2) EbsSolutionInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeEbsSolutionInstance(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeEbsSolutionInstance >>> Encapsulated.

@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDFSAccessRule_basic0(t *testing.T) {
+func TestAccAliCloudDfsAccessRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_dfs_access_rule.default"
 	checkoutSupportedRegions(t, true, connectivity.DfsSupportRegions)
@@ -197,7 +197,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessRuleCreate(dInit, rawClient)
+	err = resourceAliCloudDfsAccessRuleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -219,7 +219,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessRuleCreate(dInit, rawClient)
+		err := resourceAliCloudDfsAccessRuleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -245,7 +245,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessRuleUpdate(dExisted, rawClient)
+	err = resourceAliCloudDfsAccessRuleUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyAccessGroup
@@ -285,7 +285,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -328,7 +328,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessRuleRead(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessRuleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -345,7 +345,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudDfsAccessRuleDelete(dExisted, rawClient)
+	err = resourceAliCloudDfsAccessRuleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -375,7 +375,7 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDfsAccessRuleDelete(dExisted, rawClient)
+		err := resourceAliCloudDfsAccessRuleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -385,3 +385,182 @@ func TestUnitAlicloudDFSAccessRule(t *testing.T) {
 		}
 	}
 }
+
+// Test Dfs AccessRule. >>> Resource test cases, automatically generated.
+// Case AccessRule资源测试用例_2.0 5561
+func TestAccAliCloudDfsAccessRule_basic5561(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rw_access_type":  "RDWR",
+					"priority":        "1",
+					"network_segment": "192.168.81.1",
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rw_access_type":  "RDWR",
+						"priority":        "1",
+						"network_segment": CHECKSET,
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "AccessRule RMC test case ",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "AccessRule RMC test case ",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "AccessRule RMC test case fix",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "AccessRule RMC test case fix",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rw_access_type": "RDONLY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rw_access_type": "RDONLY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"priority": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"priority": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":     "AccessRule RMC test case ",
+					"rw_access_type":  "RDWR",
+					"priority":        "1",
+					"network_segment": "192.168.81.16",
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":     "AccessRule RMC test case ",
+						"rw_access_type":  "RDWR",
+						"priority":        "1",
+						"network_segment": CHECKSET,
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudDfsAccessRuleMap5561 = map[string]string{
+	"create_time":    CHECKSET,
+	"access_rule_id": CHECKSET,
+}
+
+func AlicloudDfsAccessRuleBasicDependence5561(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_dfs_access_group" "DefaultAccessGroupRMC" {
+  description       = "AccessGroup RMC for AccessRule test case"
+  network_type      = "VPC"
+  access_group_name = var.name
+
+}
+
+
+`, name)
+}
+
+// Case AccessRule资源测试用例_2.0 5561  twin
+func TestAccAliCloudDfsAccessRule_basic5561_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_dfs_access_rule.default"
+	ra := resourceAttrInit(resourceId, AlicloudDfsAccessRuleMap5561)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DfsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDfsAccessRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sdfsaccessrule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDfsAccessRuleBasicDependence5561)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":     "AccessRule RMC test case fix",
+					"rw_access_type":  "RDONLY",
+					"priority":        "2",
+					"network_segment": "192.168.81.1",
+					"access_group_id": "${alicloud_dfs_access_group.DefaultAccessGroupRMC.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":     "AccessRule RMC test case fix",
+						"rw_access_type":  "RDONLY",
+						"priority":        "2",
+						"network_segment": CHECKSET,
+						"access_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Dfs AccessRule. <<< Resource test cases, automatically generated.

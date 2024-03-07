@@ -24,43 +24,32 @@ variable "name" {
 
 data "alicloud_adb_zones" "default" {
 }
-data "alicloud_resource_manager_resource_groups" "default" {
-  status = "OK"
+
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "10.4.0.0/24"
-  zone_id      = data.alicloud_adb_zones.default.zones[0].id
-  vswitch_name = var.name
+data "alicloud_vswitches" "default" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_adb_zones.default.ids.0
 }
 
-resource "alicloud_adb_db_cluster" "default" {
-  db_cluster_category = "Cluster"
-  db_node_class       = "C8"
-  db_node_count       = "4"
-  db_node_storage     = "400"
-  mode                = "reserver"
-  db_cluster_version  = "3.0"
-  payment_type        = "PayAsYouGo"
-  vswitch_id          = alicloud_vswitch.default.id
+
+locals {
+  vswitch_id = data.alicloud_vswitches.default.ids.0
+}
+
+resource "alicloud_adb_db_cluster" "cluster" {
+  db_cluster_category = "MixedStorage"
+  mode                = "flexible"
+  compute_resource    = "8Core32GB"
+  vswitch_id          = local.vswitch_id
   description         = var.name
-  maintain_time       = "23:00Z-00:00Z"
-  resource_group_id   = data.alicloud_resource_manager_resource_groups.default.ids.0
-  security_ips        = ["10.168.1.12", "10.168.1.11"]
-  tags = {
-    Created = "TF",
-    For     = "example",
-  }
 }
 
 resource "alicloud_adb_backup_policy" "default" {
-  db_cluster_id           = alicloud_adb_db_cluster.default.id
-  preferred_backup_period = ["Tuesday", "Thursday", "Saturday"]
+  db_cluster_id           = alicloud_adb_db_cluster.cluster.id
+  preferred_backup_period = ["Tuesday", "Wednesday"]
   preferred_backup_time   = "10:00Z-11:00Z"
 }
 ```
