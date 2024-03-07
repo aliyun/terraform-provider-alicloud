@@ -178,7 +178,7 @@ func (s *ArmsServiceV2) DescribeArmsEnvironment(id string) (object map[string]in
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EnvironmentId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -222,6 +222,7 @@ func (s *ArmsServiceV2) ArmsEnvironmentStateRefreshFunc(id string, field string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -260,11 +261,11 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
+			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -296,7 +297,6 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -304,6 +304,7 @@ func (s *ArmsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				count++
 			}
 
+			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)

@@ -207,6 +207,8 @@ func TestAccAliCloudArmsEnvironment_basic4697(t *testing.T) {
 					"bind_resource_id":     "${alicloud_cs_kubernetes_node_pool.default.cluster_id}",
 					"environment_sub_type": "ACK",
 					"environment_name":     name,
+					"managed_type":         "agent",
+					"drop_metrics":         "abc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -214,12 +216,14 @@ func TestAccAliCloudArmsEnvironment_basic4697(t *testing.T) {
 						"environment_name":     name,
 						"bind_resource_id":     CHECKSET,
 						"environment_sub_type": "ACK",
+						"managed_type":         "agent",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"environment_name": name + "_update",
+					"drop_metrics":     "abc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -289,7 +293,7 @@ func TestAccAliCloudArmsEnvironment_basic4697(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"aliyun_lang"},
+				ImportStateVerifyIgnore: []string{"aliyun_lang", "drop_metrics"},
 			},
 		},
 	})
