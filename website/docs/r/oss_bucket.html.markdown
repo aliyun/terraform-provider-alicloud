@@ -393,6 +393,24 @@ resource "alicloud_oss_bucket" "bucket-accelerate" {
 }
 ```
 
+Set bucket resource group id
+
+```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+  name_regex = "default"
+}
+
+resource "alicloud_oss_bucket" "bucket-accelerate" {
+  bucket            = "terraform-example-${random_integer.default.result}"
+  resource_group_id = "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}"
+}
+```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -415,6 +433,8 @@ The following arguments are supported:
 * `transfer_acceleration` - (Optional, Available since 1.123.1) A transfer acceleration status of a bucket. See [`transfer_acceleration`](#transfer_acceleration) below.
 * `lifecycle_rule_allow_same_action_overlap` - (Optional, Available since 1.208.1) A boolean that indicates lifecycle rules allow prefix overlap.
 * `access_monitor` - (Optional, Available since 1.208.1) A access monitor status of a bucket. See [`access_monitor`](#access_monitor) below.
+* `resource_group_id` - (Optional, Available since 1.218.1) The ID of the resource group to which the bucket belongs.
+
 
 ### `cors_rule`
 
