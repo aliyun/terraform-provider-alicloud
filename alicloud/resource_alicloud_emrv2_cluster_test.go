@@ -89,7 +89,7 @@ func testSweepEmrV2Cluster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
+func TestAccAliCloudEmrV2Cluster_basic(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -279,7 +279,7 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"node_groups.#": "2",
-						"force_sleep":   "90",
+						"force_sleep":   "180",
 					}),
 				),
 			},
@@ -345,7 +345,7 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"node_groups.#": "2",
-						"force_sleep":   "90",
+						"force_sleep":   "180",
 					}),
 				),
 			},
@@ -416,6 +416,19 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 							"with_public_ip":       "false",
 							"graceful_shutdown":    "false",
 							"spot_instance_remedy": "false",
+							"cost_optimized_config": []map[string]interface{}{
+								{
+									"on_demand_base_capacity":                  "1",
+									"on_demand_percentage_above_base_capacity": "10",
+									"spot_instance_pools":                      "1",
+								},
+							},
+							"spot_bid_prices": []map[string]interface{}{
+								{
+									"instance_type": "ecs.g7.xlarge",
+									"bid_price":     "1",
+								},
+							},
 							"system_disk": []map[string]interface{}{
 								{
 									"category":          "cloud_essd",
@@ -438,7 +451,7 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"node_groups.#": "3",
-						"force_sleep":   "90",
+						"force_sleep":   "180",
 					}),
 				),
 			},
@@ -452,7 +465,7 @@ func TestAccAlicloudEmrV2Cluster_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
+func TestAccAliCloudEmrV2Cluster_basic1(t *testing.T) {
 	v := map[string]interface{}{}
 	resourceId := "alicloud_emrv2_cluster.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -523,15 +536,16 @@ func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
 							},
 						},
 						{
-							"node_group_type":      "CORE",
-							"node_group_name":      "emr-core",
-							"payment_type":         "PayAsYouGo",
-							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
-							"instance_types":       []string{"ecs.g7.xlarge"},
-							"node_count":           "2",
-							"with_public_ip":       "false",
-							"graceful_shutdown":    "false",
-							"spot_instance_remedy": "false",
+							"node_group_type":         "CORE",
+							"node_group_name":         "emr-core",
+							"payment_type":            "PayAsYouGo",
+							"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":          []string{"ecs.g7.xlarge"},
+							"node_count":              "2",
+							"with_public_ip":          "false",
+							"deployment_set_strategy": "CLUSTER",
+							"graceful_shutdown":       "false",
+							"spot_instance_remedy":    "false",
 							"system_disk": []map[string]interface{}{
 								{
 									"category":          "cloud_essd",
@@ -569,6 +583,467 @@ func TestAccAlicloudEmrV2Cluster_basic1(t *testing.T) {
 						"node_attributes.#": "1",
 						"applications.#":    "3",
 						"node_groups.#":     "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"node_groups"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
+	v := map[string]interface{}{}
+	resourceId := "alicloud_emrv2_cluster.default"
+	ra := resourceAttrInit(resourceId, nil)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EmrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "GetEmrV2Cluster")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAcc%sEmrV2ClusterConfig%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEmrV2ClusterCommonConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"payment_type":      "PayAsYouGo",
+					"cluster_type":      "DATAFLOW",
+					"release_version":   "EMR-5.16.0",
+					"cluster_name":      name,
+					"deploy_mode":       "NORMAL",
+					"security_mode":     "NORMAL",
+					"subscription_config": []map[string]interface{}{
+						{
+							"payment_duration_unit":    "Month",
+							"payment_duration":         1,
+							"auto_renew":               false,
+							"auto_pay_order":           true,
+							"auto_renew_duration_unit": "Month",
+							"auto_renew_duration":      1,
+						},
+					},
+					"log_collect_strategy": "{\"open\":[\"\"],\"close\":[\"all\"]}",
+					"applications":         []string{"HADOOP-COMMON", "HDFS", "YARN"},
+					"bootstrap_scripts": []map[string]interface{}{
+						{
+							"script_name":             "tfTest",
+							"script_path":             "oss://emr/tf.sh",
+							"script_args":             "--a=b",
+							"priority":                "5",
+							"execution_moment":        "BEFORE_INSTALL",
+							"execution_fail_strategy": "FAILED_CONTINUE",
+							"node_selector": []map[string]interface{}{
+								{
+									"node_select_type": "node_select_type",
+									"node_names":       []string{"test",},
+									"node_group_id":    "ng-test",
+									"node_group_types": []string{"CORE",},
+									"node_group_name":  "emr-core",
+								},
+							},
+						},
+					},
+					"application_configs": []map[string]interface{}{
+						{
+							"application_name":   "YARN",
+							"config_file_name":   "yarn-site.xml",
+							"config_item_key":    "TestKey",
+							"config_item_value":  "TestValue",
+							"config_scope":       "NODE_GROUP",
+							"config_description": "tfTest",
+							"node_group_name":    "CORE",
+							"node_group_id":      "test",
+						},
+					},
+					"node_attributes": []map[string]interface{}{
+						{
+							"vpc_id":            "${alicloud_vpc.default.id}",
+							"ram_role":          "${alicloud_ram_role.default.name}",
+							"security_group_id": "${alicloud_security_group.default.id}",
+							"zone_id":           "${data.alicloud_zones.default.zones.0.id}",
+							"key_pair_name":     "${alicloud_ecs_key_pair.default.id}",
+						},
+					},
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":               "CORE",
+							"node_group_name":               "emr-core",
+							"payment_type":                  "PayAsYouGo",
+							"vswitch_ids":                   []string{"${alicloud_vswitch.default.id}"},
+							"additional_security_group_ids": []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":                []string{"ecs.g7.xlarge"},
+							"node_count":                    "2",
+							"with_public_ip":                "false",
+							"graceful_shutdown":             "false",
+							"spot_instance_remedy":          "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+							"subscription_config": []map[string]interface{}{
+								{
+									"payment_duration_unit":    "Month",
+									"payment_duration":         1,
+									"auto_renew":               false,
+									"auto_pay_order":           true,
+									"auto_renew_duration_unit": "Month",
+									"auto_renew_duration":      1,
+								},
+							},
+						},
+						{
+							"node_group_type":      "GATEWAY",
+							"node_group_name":      "emr-gateway",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+					"tags": map[string]interface{}{
+						"Created": "TF",
+						"For":     "acceptance test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name":      name,
+						"cluster_type":      "DATAFLOW",
+						"payment_type":      "PayAsYouGo",
+						"release_version":   "EMR-5.16.0",
+						"deploy_mode":       "NORMAL",
+						"security_mode":     "NORMAL",
+						"tags.%":            "2",
+						"tags.Created":      "TF",
+						"tags.For":          "acceptance test",
+						"node_attributes.#": "1",
+						"applications.#":    "3",
+						"node_groups.#":     "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_name": name + "v2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_name": name + "v2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"log_collect_strategy": "{\"open\":[\"all\"],\"close\":[\"\"]}",
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "2",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "GATEWAY",
+							"node_group_name":      "emr-gateway",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "GATEWAY",
+							"node_group_name":      "emr-gateway-1",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"log_collect_strategy": "{\"open\":[\"all\"],\"close\":[\"\"]}",
+						"node_groups.#":        "4",
+						"force_sleep":          "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"node_groups": []map[string]interface{}{
+						{
+							"node_group_type":      "MASTER",
+							"node_group_name":      "emr-master",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "3",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "GATEWAY",
+							"node_group_name":      "emr-gateway",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "0",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+						{
+							"node_group_type":      "GATEWAY",
+							"node_group_name":      "emr-gateway-1",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "1",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
+							"system_disk": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"performance_level": "PL0",
+									"count":             "1",
+								},
+							},
+							"data_disks": []map[string]interface{}{
+								{
+									"category":          "cloud_essd",
+									"size":              "80",
+									"count":             "3",
+									"performance_level": "PL0",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"node_groups.#": "4",
+						"force_sleep":   "180",
 					}),
 				),
 			},
