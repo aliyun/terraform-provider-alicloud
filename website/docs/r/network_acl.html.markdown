@@ -45,18 +45,18 @@ resource "alicloud_network_acl" "example" {
   ingress_acl_entries {
     description            = "${var.name}-ingress"
     network_acl_entry_name = "${var.name}-ingress"
-    source_cidr_ip         = "196.168.2.0/21"
+    source_cidr_ip         = "10.0.0.0/24"
     policy                 = "accept"
-    port                   = "22/80"
+    port                   = "20/80"
     protocol               = "tcp"
   }
   egress_acl_entries {
     description            = "${var.name}-egress"
     network_acl_entry_name = "${var.name}-egress"
-    destination_cidr_ip    = "0.0.0.0/0"
+    destination_cidr_ip    = "10.0.0.0/24"
     policy                 = "accept"
-    port                   = "-1/-1"
-    protocol               = "all"
+    port                   = "20/80"
+    protocol               = "tcp"
   }
   resources {
     resource_id   = alicloud_vswitch.example.id

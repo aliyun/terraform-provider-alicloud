@@ -15,6 +15,8 @@ For information about CMS and how to use it, see [What is CMS](https://help.aliy
 
 -> **NOTE:** Available in v1.111.0+
 
+-> **DEPRECATED:**  This data source has been deprecated from version `1.219.0`. The Cloud Monitor Servic is no longer needed to open in the product dimension and the OpenAPI has been taken [offline](https://api.alibabacloud.com/api/Cms/2019-01-01/OpenCmsService).
+
 ## Example Usage
 
 ```

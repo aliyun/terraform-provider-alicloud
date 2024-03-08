@@ -20,7 +20,7 @@ For information about Event Bridge service-linked roles(SLR) and how to use it, 
 
 ```terraform
 resource "alicloud_event_bridge_service_linked_role" "service_linked_role" {
-  product_name = "AliyunServiceRoleForEventBridgeSendToMNS"
+  product_name = "AliyunServiceRoleForEventBridgeSourceRocketMQ"
 }
 ```
 

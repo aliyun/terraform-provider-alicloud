@@ -61,7 +61,7 @@ data "alicloud_instance_types" "default" {
   cpu_core_count       = 2
   memory_size          = 4
   kubernetes_node_role = "Worker"
-  instance_type_family = "ecs.sn1ne"
+  instance_type_family = "ecs.n1"
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -87,7 +87,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   desired_size         = 2
 }
 
