@@ -44,8 +44,13 @@ resource "alicloud_security_group" "default" {
   vpc_id = alicloud_vpc.default.id
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_alikafka_instance" "default" {
-  name            = var.name
+  name            = "${var.name}-${random_integer.default.result}"
   partition_num   = 50
   disk_type       = "1"
   disk_size       = "500"

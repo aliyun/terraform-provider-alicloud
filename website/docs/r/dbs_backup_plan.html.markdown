@@ -57,15 +57,8 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
-resource "alicloud_vswitch" "this" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vswitch_name = var.name
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  zone_id      = data.alicloud_db_zones.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
-}
 locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
+  vswitch_id = data.alicloud_vswitches.default.ids.0
   zone_id    = data.alicloud_db_zones.default.ids.0
 }
 

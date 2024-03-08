@@ -18,7 +18,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ecs_dedicated_host" "default" {
-  dedicated_host_type = "ddh.g5"
+  dedicated_host_type = "ddh.g6"
   tags = {
     Create = "Terraform",
     For    = "DDH",

@@ -20,15 +20,17 @@ For information about DCDN Ipa Domain and how to use it, see [What is Ipa Domain
 Basic Usage
 
 ```terraform
-variable "domain_name" {
-  default = "example.com"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
+
 data "alicloud_resource_manager_resource_groups" "default" {}
 
 resource "alicloud_dcdn_ipa_domain" "example" {
-  domain_name       = var.domain_name
+  domain_name       = "example-${random_integer.default.result}.com"
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  scope             = "global"
+  scope             = "overseas"
   status            = "online"
   sources {
     content  = "www.alicloud-provider.cn"
