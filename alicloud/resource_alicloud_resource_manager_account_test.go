@@ -46,7 +46,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
-					"folder_id":    "${alicloud_resource_manager_folder.default.id}",
+					"folder_id":    "${data.alicloud_resource_manager_folders.example.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -67,7 +67,7 @@ func TestAccAlicloudResourceManagerAccount_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"folder_id": "${alicloud_resource_manager_folder.update.id}",
+					"folder_id": "${data.alicloud_resource_manager_folders.example.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -110,7 +110,7 @@ func TestAccAlicloudResourceManagerAccount_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"display_name": name,
-					"folder_id":    "${alicloud_resource_manager_folder.default.id}",
+					"folder_id":    "${data.alicloud_resource_manager_folders.example.ids.0}",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "ACCOUNT",
@@ -164,11 +164,9 @@ func ResourceManagerAccountBasicdependence(name string) string {
 variable "name" {
 	default = "%s"
 }
-resource "alicloud_resource_manager_folder" "default"{
-	folder_name = var.name
-}
-resource "alicloud_resource_manager_folder" "update"{
-	folder_name = "${var.name}update"
+
+data "alicloud_resource_manager_folders" "example" {
+
 }
 `, name)
 }

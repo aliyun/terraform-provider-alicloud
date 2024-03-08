@@ -265,7 +265,8 @@ func resourceAlicloudResourceManagerAccountDelete(d *schema.ResourceData, meta i
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	stateConf := BuildStateConf([]string{"Checking", "Deleting"}, []string{"Success"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
+	// Since some accounts have a silent deletion period, 'deleting' will be considered as a successful deletion.
+	stateConf := BuildStateConf([]string{"Checking"}, []string{"Success", "Deleting"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, resourcemanagerService.AccountDeletionStateRefreshFunc(d.Id(), []string{"CheckFailed", "DeleteFailed"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

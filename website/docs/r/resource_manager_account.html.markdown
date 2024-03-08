@@ -31,13 +31,13 @@ resource "random_integer" "default" {
   max = 99999
 }
 
-resource "alicloud_resource_manager_folder" "example" {
-  folder_name = "${var.name}-${random_integer.default.result}"
+data "alicloud_resource_manager_folders" "example" {
+
 }
 
 resource "alicloud_resource_manager_account" "example" {
   display_name = "${var.display_name}-${random_integer.default.result}"
-  folder_id    = alicloud_resource_manager_folder.example.id
+  folder_id    = data.alicloud_resource_manager_folders.example.ids.0
 }
 ```
 
