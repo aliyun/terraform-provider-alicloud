@@ -25,7 +25,7 @@ func TestAccAlicloudQuotasQuotaAlarm_basic(t *testing.T) {
 	resourceId := "alicloud_quotas_quota_alarm.default"
 	ra := resourceAttrInit(resourceId, AlicloudQuotasQuotaAlarmMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &QuotasService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+		return &QuotasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeQuotasQuotaAlarm")
 	rac := resourceAttrCheckInit(rc, ra)
 	rand := acctest.RandIntRange(1000000, 9999999)

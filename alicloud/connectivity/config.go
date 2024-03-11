@@ -2,15 +2,16 @@ package connectivity
 
 import (
 	"fmt"
+	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"sync"
-
-	roa "github.com/alibabacloud-go/tea-roa/client"
 
 	"encoding/json"
 	"net/http"
 	"strings"
 
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	roa "github.com/alibabacloud-go/tea-roa/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
@@ -355,6 +356,54 @@ func (c *Config) getTeaRoaDslSdkConfig(stsSupported bool) (config roa.Config, er
 	if c.SecureTransport != "" {
 		config.SetSecureTransport(c.SecureTransport)
 	}
+	return
+}
+func (c *Config) getTeaRpcOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
+	config.SetRegionId(c.RegionId)
+	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout).
+		SetMaxIdleConns(500)
+
+	query := map[string]*string{
+		"AcceptLanguage": tea.String("en-US"),
+	}
+	if c.SourceIp != "" {
+		query["SourceIp"] = tea.String(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		query["SecureTransport"] = tea.String(c.SecureTransport)
+	}
+
+	param := &openapi.GlobalParameters{Queries: query}
+	config.GlobalParameters = param
+	return
+}
+func (c *Config) getTeaRoaOpenapiConfig(stsSupported bool) (config openapi.Config, err error) {
+	config.SetRegionId(c.RegionId)
+	config.SetUserAgent(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId))
+	credential, err := credential.NewCredential(c.getCredentialConfig(stsSupported))
+	config.SetCredential(credential).
+		SetRegionId(c.RegionId).
+		SetProtocol(c.Protocol).
+		SetReadTimeout(c.ClientReadTimeout).
+		SetConnectTimeout(c.ClientConnectTimeout).
+		SetMaxIdleConns(500)
+
+	header := make(map[string]*string)
+	if c.SourceIp != "" {
+		header["x-acs-source-ip"] = tea.String(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		header["x-acs-secure-transport"] = tea.String(c.SecureTransport)
+	}
+
+	param := &openapi.GlobalParameters{Headers: header}
+	config.GlobalParameters = param
 	return
 }
 func (c *Config) getCredentialConfig(stsSupported bool) *credential.Config {
