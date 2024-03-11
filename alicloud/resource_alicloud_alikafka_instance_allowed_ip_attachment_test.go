@@ -19,11 +19,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.AliKafkaSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudAliKafkaInstanceAllowedIpAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaInstanceAllowedIpAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaInstanceAllowedIpAttachment")
@@ -31,7 +30,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkainstanceallowedipattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,17 +41,17 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"allowed_ip":   "172.168.4.0/24",
-					"port_range":   "9092/9092",
 					"instance_id":  "${alicloud_alikafka_instance.default.id}",
 					"allowed_type": "vpc",
+					"port_range":   "9092/9092",
+					"allowed_ip":   "172.168.4.0/24",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allowed_ip":   "172.168.4.0/24",
-						"port_range":   "9092/9092",
 						"instance_id":  CHECKSET,
 						"allowed_type": "vpc",
+						"port_range":   "9092/9092",
+						"allowed_ip":   "172.168.4.0/24",
 					}),
 				),
 			},
@@ -65,11 +64,10 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
-	checkoutSupportedRegions(t, true, connectivity.AliKafkaSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudAliKafkaInstanceAllowedIpAttachmentMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaInstanceAllowedIpAttachmentMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAliKafkaInstanceAllowedIpAttachment")
@@ -77,7 +75,7 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salikafkainstanceallowedipattachment%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -88,17 +86,17 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"allowed_ip":   "1.1.1.1/1",
-					"port_range":   "9093/9093",
 					"instance_id":  "${alicloud_alikafka_instance.default.id}",
 					"allowed_type": "internet",
+					"port_range":   "9093/9093",
+					"allowed_ip":   "1.1.1.1/1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"allowed_ip":   "1.1.1.1/1",
-						"port_range":   "9093/9093",
 						"instance_id":  CHECKSET,
 						"allowed_type": "internet",
+						"port_range":   "9093/9093",
+						"allowed_ip":   "1.1.1.1/1",
 					}),
 				),
 			},
@@ -111,74 +109,132 @@ func TestAccAlicloudAliKafkaInstanceAllowedIpAttachment_basic1(t *testing.T) {
 	})
 }
 
-var AlicloudAliKafkaInstanceAllowedIpAttachmentMap0 = map[string]string{}
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaInstanceAllowedIpAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAliKafkaInstanceAllowedIpAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salikafkainstanceallowedipattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":  "${alicloud_alikafka_instance.default.id}",
+					"allowed_type": "vpc",
+					"port_range":   "9094/9094",
+					"allowed_ip":   "172.168.4.0/24",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":  CHECKSET,
+						"allowed_type": "vpc",
+						"port_range":   "9094/9094",
+						"allowed_ip":   "172.168.4.0/24",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 
-func AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0(name string) string {
+func TestAccAliCloudAliKafkaInstanceAllowedIpAttachment_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alikafka_instance_allowed_ip_attachment.default"
+	ra := resourceAttrInit(resourceId, AliCloudAliKafkaInstanceAllowedIpAttachmentMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlikafkaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAliKafkaInstanceAllowedIpAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salikafkainstanceallowedipattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":  "${alicloud_alikafka_instance.default.id}",
+					"allowed_type": "vpc",
+					"port_range":   "9095/9095",
+					"allowed_ip":   "172.168.4.0/24",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":  CHECKSET,
+						"allowed_type": "vpc",
+						"port_range":   "9095/9095",
+						"allowed_ip":   "172.168.4.0/24",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudAliKafkaInstanceAllowedIpAttachmentMap0 = map[string]string{}
+
+func AliCloudAliKafkaInstanceAllowedIpAttachmentBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-	default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
 
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
+	data "alicloud_vswitches" "default" {
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 
-resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = data.alicloud_vpcs.default.ids.0
+	}
 
-resource "alicloud_alikafka_instance" "default" {
-	name           = var.name
-	partition_num  = 50
-	disk_type      = "1"
-	disk_size      = "500"
-	deploy_type    = "5"
-	io_max         = "20"
-	vswitch_id     = data.alicloud_vswitches.default.ids.0
-	security_group = alicloud_security_group.default.id
-}
+	resource "alicloud_alikafka_instance" "default" {
+  		name           = var.name
+  		partition_num  = "50"
+  		disk_type      = "1"
+  		disk_size      = "500"
+  		deploy_type    = "4"
+  		eip_max        = "3"
+  		io_max         = "20"
+  		vswitch_id     = data.alicloud_vswitches.default.ids.0
+  		security_group = alicloud_security_group.default.id
+	}
 `, name)
 }
 
-func AlicloudAliKafkaInstanceAllowedIpAttachmentBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-	default = "%s"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_security_group" "default" {
-	name   = var.name
-	vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_alikafka_instance" "default" {
-	name           = var.name
-	partition_num    = "50"
-	disk_type      = "1"
-	disk_size      = "500"
-	deploy_type    = "4"
-	eip_max        = "3"
-	io_max         = "20"
-	vswitch_id     = data.alicloud_vswitches.default.ids.0
-	security_group = alicloud_security_group.default.id
-}
-`, name)
-}
-
-func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
+func TestUnitAliCloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_alikafka_instance_allowed_ip_attachment"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_alikafka_instance_allowed_ip_attachment"].Schema).Data(nil, nil)
@@ -246,7 +302,7 @@ func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudAliKafkaInstanceAllowedIpAttachmentCreate(dInit, rawClient)
+	err = resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -269,7 +325,7 @@ func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAliKafkaInstanceAllowedIpAttachmentCreate(dInit, rawClient)
+		err := resourceAliCloudAliKafkaInstanceAllowedIpAttachmentCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -314,7 +370,7 @@ func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAliKafkaInstanceAllowedIpAttachmentRead(dExisted, rawClient)
+		err := resourceAliCloudAliKafkaInstanceAllowedIpAttachmentRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -333,7 +389,7 @@ func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudAliKafkaInstanceAllowedIpAttachmentDelete(dExisted, rawClient)
+	err = resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -361,7 +417,7 @@ func TestUnitAlicloudAliKafkaInstanceAllowedIpAttachment(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudAliKafkaInstanceAllowedIpAttachmentDelete(dExisted, rawClient)
+		err := resourceAliCloudAliKafkaInstanceAllowedIpAttachmentDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

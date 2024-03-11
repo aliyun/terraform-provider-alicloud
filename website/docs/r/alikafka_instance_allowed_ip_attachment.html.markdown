@@ -11,7 +11,7 @@ description: |-
 
 Provides a AliKafka Instance Allowed Ip Attachment resource.
 
-For information about Ali Kafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-updateallowedip).
+For information about AliKafka Instance Allowed Ip Attachment and how to use it, see [What is Instance Allowed Ip Attachment](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/api-alikafka-2019-09-16-updateallowedip).
 
 -> **NOTE:** Available since v1.163.0.
 
@@ -61,10 +61,10 @@ resource "alicloud_alikafka_instance" "default" {
 }
 
 resource "alicloud_alikafka_instance_allowed_ip_attachment" "default" {
-  allowed_ip   = "114.237.9.78/32"
-  allowed_type = "vpc"
   instance_id  = alicloud_alikafka_instance.default.id
+  allowed_type = "vpc"
   port_range   = "9092/9092"
+  allowed_ip   = "114.237.9.78/32"
 }
 ```
 
@@ -72,27 +72,29 @@ resource "alicloud_alikafka_instance_allowed_ip_attachment" "default" {
 
 The following arguments are supported:
 
-* `allowed_ip` - (Required, ForceNew) The allowed ip. It can be a CIDR block.
-* `allowed_type` - (Required, ForceNew) The type of whitelist. Valid Value: `vpc`, `internet`. **NOTE:** From version 1.179.0, `allowed_type` can be set to `internet`.
-  - `vpc`: IP address whitelist for VPC access.
-  - `internet`: IP address whitelist for Internet access.
 * `instance_id` - (Required, ForceNew) The ID of the instance.
-* `port_range` - (Required, ForceNew) The Port range.  Valid Value: `9092/9092`, `9093/9093`. **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`.
-  - `9092/9092`: port range for a VPC whitelist.
-  - `9093/9093`: port range for an Internet whitelist.
-  
+* `allowed_type` - (Required, ForceNew) The type of the whitelist. Valid Value: `vpc`, `internet`. **NOTE:** From version 1.179.0, `allowed_type` can be set to `internet`.
+  - `vpc`: A whitelist for access from a VPC.
+  - `internet`: A whitelist for access from the Internet.
+* `port_range` - (Required, ForceNew) The Port range. Valid Value: `9092/9092`, `9093/9093`, `9094/9094`, `9095/9095`. **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`. From version 1.218.1, `port_range` can be set to `9094/9094`, `9095/9095`.
+  - `9092/9092`: The port range for access from virtual private clouds (VPCs) by using the default endpoint.
+  - `9093/9093`: The port range for access from the Internet.
+  - `9094/9094`: The port range for access from VPCs by using the Simple Authentication and Security Layer (SASL) endpoint.
+  - `9095/9095`: The port range for access from VPCs by using the Secure Sockets Layer (SSL) endpoint.
+* `allowed_ip` - (Required, ForceNew) The IP address whitelist. It can be a CIDR block.
+
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Instance Allowed Ip Attachment. The value formats as `<instance_id>:<allowed_type>:<port_range>:<allowed_ip>`.
+* `id` - The resource ID of Instance Allowed Ip Attachment. It formats as `<instance_id>:<allowed_type>:<port_range>:<allowed_ip>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the resource.
-* `delete` - (Defaults to 1 mins) Used when delete the resource.
+* `create` - (Defaults to 1 mins) Used when create the Instance Allowed Ip Attachment.
+* `delete` - (Defaults to 1 mins) Used when delete the Instance Allowed Ip Attachment.
 
 
 ## Import
@@ -100,5 +102,5 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 AliKafka Instance Allowed Ip Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ali_kafka_instance_allowed_ip_attachment.example <instance_id>:<allowed_type>:<port_range>:<allowed_ip>
+$ terraform import alicloud_alikafka_instance_allowed_ip_attachment.example <instance_id>:<allowed_type>:<port_range>:<allowed_ip>
 ```
