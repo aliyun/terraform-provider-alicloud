@@ -87,6 +87,8 @@ type AliyunClient struct {
 	config                       *Config
 	teaSdkConfig                 rpc.Config
 	teaRoaSdkConfig              roa.Config
+	teaRpcOpenapiConfig          openapi.Config
+	teaRoaOpenapiConfig          openapi.Config
 	accountId                    string
 	ecsconn                      *ecs.Client
 	essconn                      *ess.Client
@@ -229,10 +231,20 @@ func (c *Config) Client() (*AliyunClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	teaRpcOpenapiConfig, err := c.getTeaRpcOpenapiConfig(true)
+	if err != nil {
+		return nil, err
+	}
+	teaRoaOpenapiConfig, err := c.getTeaRoaOpenapiConfig(true)
+	if err != nil {
+		return nil, err
+	}
 	return &AliyunClient{
 		config:                       c,
 		teaSdkConfig:                 teaSdkConfig,
 		teaRoaSdkConfig:              teaRoaSdkConfig,
+		teaRpcOpenapiConfig:          teaRpcOpenapiConfig,
+		teaRoaOpenapiConfig:          teaRoaOpenapiConfig,
 		SourceIp:                     c.SourceIp,
 		Region:                       c.Region,
 		RegionId:                     c.RegionId,
@@ -2830,6 +2842,31 @@ func (client *AliyunClient) NewQuotasClient() (*rpc.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
+}
+
+func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
+	productCode := "quotas"
+	endpoint := ""
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			endpoint = "quotas.aliyuncs.com"
+			client.config.Endpoints.Store(productCode, endpoint)
+			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the central endpoint %s instead.", productCode, err, endpoint)
+		}
+	}
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+		endpoint = v.(string)
+	}
+	if endpoint == "" {
+		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	}
+	openapiConfig := client.teaRpcOpenapiConfig
+	openapiConfig.Endpoint = tea.String(endpoint)
+	result, err := openapi.NewClient(&openapiConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	}
+	return result, nil
 }
 
 func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
