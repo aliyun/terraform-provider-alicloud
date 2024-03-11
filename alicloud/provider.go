@@ -1522,7 +1522,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpn_pbr_route_entry":                                   resourceAlicloudVpnPbrRouteEntry(),
 			"alicloud_slb_acl_entry_attachment":                              resourceAlicloudSlbAclEntryAttachment(),
 			"alicloud_mse_znode":                                             resourceAlicloudMseZnode(),
-			"alicloud_alikafka_instance_allowed_ip_attachment":               resourceAlicloudAliKafkaInstanceAllowedIpAttachment(),
+			"alicloud_alikafka_instance_allowed_ip_attachment":               resourceAliCloudAliKafkaInstanceAllowedIpAttachment(),
 			"alicloud_ecs_image_pipeline":                                    resourceAlicloudEcsImagePipeline(),
 			"alicloud_slb_server_group_server_attachment":                    resourceAlicloudSlbServerGroupServerAttachment(),
 			"alicloud_alb_listener_acl_attachment":                           resourceAliCloudAlbListenerAclAttachment(),

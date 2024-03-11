@@ -970,19 +970,24 @@ func (s *AlikafkaService) DescribeAliKafkaSaslUser(id string) (object map[string
 
 func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetAllowedIpList"
+
 	conn, err := s.client.NewAlikafkaClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetAllowedIpList"
+
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
+
 	request := map[string]interface{}{
+		"RegionId":   s.client.RegionId,
 		"InstanceId": parts[0],
 	}
+
 	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -999,37 +1004,39 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"BIZ_INSTANCE_STATUS_ERROR"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+			return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
-	var v interface{}
+	var resp interface{}
 	allowedType := parts[1]
 
 	switch allowedType {
 	case "vpc":
-		v, err = jsonpath.Get("$.AllowedList.VpcList", response)
+		resp, err = jsonpath.Get("$.AllowedList.VpcList", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AllowedList.VpcList", response)
 		}
 	case "internet":
-		v, err = jsonpath.Get("$.AllowedList.InternetList", response)
+		resp, err = jsonpath.Get("$.AllowedList.InternetList", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AllowedList.InternetList", response)
 		}
 	}
 
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
 	}
 
-	for _, v := range v.([]interface{}) {
+	for _, v := range resp.([]interface{}) {
 		ipList := v.(map[string]interface{})
 		if fmt.Sprint(ipList["PortRange"]) == parts[2] {
 			for _, ip := range ipList["AllowedIpList"].([]interface{}) {
@@ -1040,9 +1047,11 @@ func (s *AlikafkaService) DescribeAliKafkaInstanceAllowedIpAttachment(id string)
 			}
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("AliKafka:InstanceAllowedIpAttachment", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 
