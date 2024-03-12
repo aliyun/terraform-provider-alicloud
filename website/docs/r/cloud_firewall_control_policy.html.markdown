@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Cloud Firewall Control Policy resource.
 ---
 
-# alicloud\_cloud\_firewall\_control\_policy
+# alicloud_cloud_firewall_control_policy
 
 Provides a Cloud Firewall Control Policy resource.
 
 For information about Cloud Firewall Control Policy and how to use it, see [What is Control Policy](https://www.alibabacloud.com/help/doc-detail/138867.htm).
 
--> **NOTE:** Available in v1.129.0+.
+-> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
 
@@ -31,7 +31,6 @@ resource "alicloud_cloud_firewall_control_policy" "example" {
   source           = "1.2.3.0/24"
   source_type      = "net"
 }
-
 ```
 
 ## Argument Reference
@@ -39,9 +38,10 @@ resource "alicloud_cloud_firewall_control_policy" "example" {
 The following arguments are supported:
 
 * `acl_action` - (Required) The action that Cloud Firewall performs on the traffic. Valid values: `accept`, `drop`, `log`.
-* `application_name` - (Required) The application type that the access control policy supports.If `direction` is `in`, the valid value is `ANY`. If `direction` is `out`, the valid values are `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
+* `application_name` - (Required) The application type supported by the access control policy. Valid values: `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
+  -> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
 * `description` - (Required) The description of the access control policy.
-* `dest_port` - (Optional) The destination port defined in the access control policy. 
+* `dest_port` - (Optional) The destination port defined in the access control policy.
 * `dest_port_group` - (Optional) The destination port address book defined in the access control policy.
 * `dest_port_type` - (Optional) The destination port type defined in the access control policy. Valid values: `group`, `port`.
 * `destination` - (Required) The destination address defined in the access control policy.
@@ -60,7 +60,7 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - The resource ID of Control Policy. The value formats as `<acl_uuid>:<direction>`.
-* `acl_uuid` - (Available in v1.148.0+) The unique ID of the access control policy.
+* `acl_uuid` - (Available since v1.148.0) The unique ID of the access control policy.
 
 ## Import
 
