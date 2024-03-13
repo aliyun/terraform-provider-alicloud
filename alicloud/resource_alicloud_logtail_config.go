@@ -3,10 +3,10 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -40,7 +40,10 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"last_modify_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"project": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -52,8 +55,10 @@ func resourceAlicloudLogtailConfig() *schema.Resource {
 				ForceNew: true,
 			},
 			"output_type": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"LogService"}, false),
 			},
 			"input_detail": {
 				Type:     schema.TypeString,
@@ -106,14 +111,19 @@ func resourceAlicloudLogtailConfigCreate(d *schema.ResourceData, meta interface{
 		})
 	}
 	d.SetId(fmt.Sprintf("%s%s%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("logstore").(string), COLON_SEPARATED, d.Get("name").(string)))
-	return resourceAlicloudLogtailConfigRead(d, meta)
+	return resourceAlicloudLogtailConfigSave(d, meta)
 }
 
-func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{}) error {
+func getConfig(d *schema.ResourceData, meta interface{}) (*sls.LogConfig, error) {
 	client := meta.(*connectivity.AliyunClient)
 	logService := LogService{client}
-	split := strings.Split(d.Id(), COLON_SEPARATED)
 	config, err := logService.DescribeLogtailConfig(d.Id())
+	return config, err
+}
+
+func resourceAlicloudLogtailConfigSave(d *schema.ResourceData, meta interface{}) error {
+	split := strings.Split(d.Id(), COLON_SEPARATED)
+	config, err := getConfig(d, meta)
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -122,6 +132,35 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
+	// Save the input_detail in tf to state, instead of saving the server-side config's input_detail.
+	lastModifyTimeNew := strconv.Itoa(int(config.LastModifyTime))
+	d.Set("last_modify_time", lastModifyTimeNew)
+	d.Set("project", split[0])
+	d.Set("name", config.Name)
+	d.Set("logstore", split[1])
+	d.Set("input_type", config.InputType)
+	d.Set("log_sample", config.LogSample)
+	d.Set("output_type", config.OutputType)
+	return nil
+}
+
+// The return value of this function will be saved to the state during import and refresh, and used for diff during plan and apply.
+func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{}) error {
+	split := strings.Split(d.Id(), COLON_SEPARATED)
+	config, err := getConfig(d, meta)
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	// Determine if there is "last_modify_time" in the state, if yes, then retrieve it; otherwise, leave it empty.
+	var lastModifyTimeOld string
+	if val, ok := d.GetOk("last_modify_time"); ok {
+		lastModifyTimeOld = val.(string)
+	}
 	// Because the server will return redundant parameters, we filter here
 	inputDetail := d.Get("input_detail").(string)
 	var oMap map[string]interface{}
@@ -138,7 +177,18 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 	if err != nil {
 		return WrapError(err)
 	}
-	d.Set("input_detail", string(nMapJson))
+	lastModifyTimeNew := strconv.Itoa(int(config.LastModifyTime))
+	if len(lastModifyTimeOld) == 0 {
+		// When Terraform is upgraded from a lower version or when executing terraform import, if lastModifyTimeOld is empty, set input_detail to the server-side config's input_detail.
+		d.Set("input_detail", string(nMapJson))
+	} else if lastModifyTimeNew != lastModifyTimeOld {
+		// If the last_modify_time in state is different from that on the server, it means that the server configuration has been changed. The input_detail of input needs to be set as the input_detail of the server configuration.
+		d.Set("input_detail", string(nMapJson))
+	} else {
+		// If the last_modify_time in state is the same as that on the server, it means that there is no change in the server configuration. The input_detail and state remain consistent.
+		d.Set("input_detail", inputDetail)
+	}
+	d.Set("last_modify_time", lastModifyTimeNew)
 	d.Set("project", split[0])
 	d.Set("name", config.Name)
 	d.Set("logstore", split[1])
@@ -208,7 +258,7 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 			})
 		}
 	}
-	return resourceAlicloudLogtailConfigRead(d, meta)
+	return resourceAlicloudLogtailConfigSave(d, meta)
 }
 
 func resourceAlicloudLogtailConfigDelete(d *schema.ResourceData, meta interface{}) error {
