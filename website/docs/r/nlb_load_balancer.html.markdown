@@ -67,7 +67,7 @@ resource "alicloud_nlb_load_balancer" "default" {
 
 The following arguments are supported:
 * `address_ip_version` - (Optional, ForceNew) Protocol version. Value:
-  - **ipv4**:IPv4 type.
+  - **Ipv4**:IPv4 type.
   - **DualStack**: Double Stack type.
 * `address_type` - (Required) The network address type of IPv4 for network load balancing. Value:
   - **Internet**: public network. Load balancer has a public network IP address, and the DNS domain name is resolved to a public network IP address, so it can be accessed in a public network environment.
