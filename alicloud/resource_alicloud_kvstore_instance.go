@@ -30,6 +30,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(20 * time.Minute),
 			Update: schema.DefaultTimeout(40 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_renew": {
@@ -886,30 +887,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("maintain_end_time")
 		d.SetPartial("maintain_start_time")
 	}
-	update = false
-	modifyInstanceMajorVersionReq := r_kvstore.CreateModifyInstanceMajorVersionRequest()
-	modifyInstanceMajorVersionReq.InstanceId = d.Id()
-	if !d.IsNewResource() && d.HasChange("engine_version") {
-		update = true
-	}
-	modifyInstanceMajorVersionReq.MajorVersion = d.Get("engine_version").(string)
-	if v, ok := d.GetOk("effective_time"); ok {
-		modifyInstanceMajorVersionReq.EffectiveTime = v.(string)
-	}
-	if update {
-		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-			return r_kvstoreClient.ModifyInstanceMajorVersion(modifyInstanceMajorVersionReq)
-		})
-		addDebug(modifyInstanceMajorVersionReq.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMajorVersionReq.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, d.Id())
-		}
-		d.SetPartial("engine_version")
-	}
 	if d.HasChange("ssl_enable") {
 		request := r_kvstore.CreateModifyInstanceSSLRequest()
 		request.InstanceId = d.Id()
@@ -1217,6 +1194,31 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		d.SetPartial("engine_version")
 		d.SetPartial("instance_class")
 	}
+	update = false
+	modifyInstanceMajorVersionReq := r_kvstore.CreateModifyInstanceMajorVersionRequest()
+	modifyInstanceMajorVersionReq.InstanceId = d.Id()
+	if !d.IsNewResource() && d.HasChange("engine_version") && !d.HasChange("instance_class") {
+		update = true
+	}
+
+	modifyInstanceMajorVersionReq.MajorVersion = d.Get("engine_version").(string)
+	if v, ok := d.GetOk("effective_time"); ok {
+		modifyInstanceMajorVersionReq.EffectiveTime = v.(string)
+	}
+	if update {
+		raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
+			return r_kvstoreClient.ModifyInstanceMajorVersion(modifyInstanceMajorVersionReq)
+		})
+		addDebug(modifyInstanceMajorVersionReq.GetActionName(), raw)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMajorVersionReq.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 300*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("engine_version")
+	}
 	if d.HasChange("parameters") {
 		request := r_kvstore.CreateModifyInstanceConfigRequest()
 		request.InstanceId = d.Id()
@@ -1483,6 +1485,12 @@ func resourceAliCloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
+	stateConf := BuildStateConf([]string{}, []string{"Released"}, d.Timeout(schema.TimeoutDelete), 60*time.Second, r_kvstoreService.KvstoreInstanceDeletedStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }
 
