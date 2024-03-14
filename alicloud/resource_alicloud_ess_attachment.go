@@ -1,6 +1,8 @@
 package alicloud
 
 import (
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"strconv"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
@@ -25,7 +27,26 @@ func resourceAlicloudEssAttachment() *schema.Resource {
 				ForceNew: true,
 				Required: true,
 			},
-
+			"entrusted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+				ForceNew: true,
+			},
+			"lifecycle_hook": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"load_balancer_weights": {
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+				MaxItems: 20,
+				MinItems: 1,
+			},
 			"instance_ids": {
 				Type:     schema.TypeSet,
 				Elem:     &schema.Schema{Type: schema.TypeString},
@@ -71,12 +92,20 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		ns := n.(*schema.Set)
 		remove := os.Difference(ns).List()
 		add := convertArrayInterfaceToArrayString(ns.Difference(os).List())
-
 		if len(add) > 0 {
 			request := ess.CreateAttachInstancesRequest()
 			request.RegionId = client.RegionId
 			request.ScalingGroupId = d.Id()
 			request.InstanceId = &add
+			weigths := convertArrayInterfaceToArrayInt(d.Get("load_balancer_weights").(*schema.Set).List())
+			request.LoadBalancerWeight = &weigths
+
+			if v, ok := d.GetOk("entrusted"); ok {
+				request.Entrusted = requests.NewBoolean(v.(bool))
+			}
+			if v, ok := d.GetOk("lifecycle_hook"); ok {
+				request.LifecycleHook = requests.NewBoolean(v.(bool))
+			}
 
 			err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 				raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -155,6 +184,7 @@ func resourceAliyunEssAttachmentUpdate(d *schema.ResourceData, meta interface{})
 				return WrapError(err)
 			}
 		}
+
 		if len(remove) > 0 {
 
 			err := resource.Retry(1*time.Minute, func() *resource.RetryError {
@@ -196,13 +226,16 @@ func resourceAliyunEssAttachmentRead(d *schema.ResourceData, meta interface{}) e
 	}
 
 	var instanceIds []string
+	var weigths []int
 	for _, inst := range object {
 		instanceIds = append(instanceIds, inst.InstanceId)
+		weigths = append(weigths, inst.LoadBalancerWeight)
 	}
 
 	d.Set("scaling_group_id", object[0].ScalingGroupId)
 	d.Set("instance_ids", instanceIds)
-
+	d.Set("entrusted", object[0].Entrusted)
+	d.Set("load_balancer_weights", weigths)
 	return nil
 }
 
@@ -255,7 +288,7 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 				time.Sleep(5 * time.Second)
 				return resource.RetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 			}
-			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
+			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound", "InvalidInstanceId.NotFound", "IncorrectInstanceStatus"}) {
 				return nil
 			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
@@ -292,7 +325,17 @@ func resourceAliyunEssAttachmentDelete(d *schema.ResourceData, meta interface{})
 
 	return WrapError(essService.WaitForEssAttachment(d.Id(), Deleted, DefaultTimeout))
 }
-
+func convertArrayInterfaceToArrayInt(elm []interface{}) (arr []string) {
+	if len(elm) < 1 {
+		return
+	}
+	for _, e := range elm {
+		i2 := e.(int)
+		i := strconv.FormatInt(int64(i2), 10)
+		arr = append(arr, i)
+	}
+	return
+}
 func convertArrayInterfaceToArrayString(elm []interface{}) (arr []string) {
 	if len(elm) < 1 {
 		return

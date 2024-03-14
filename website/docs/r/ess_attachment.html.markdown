@@ -114,6 +114,9 @@ The following arguments are supported:
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group of a scaling configuration.
 * `instance_ids` - (Required) ID of the ECS instance to be attached to the scaling group. You can input up to 20 IDs.
 * `force` - (Optional) Whether to remove forcibly "AutoCreated" ECS instances in order to release scaling group capacity "MaxSize" for attaching ECS instances. Default to false.
+* `entrusted` - (Optional, Available since v1.219.1, ForceNew) Specifies whether the scaling group manages the lifecycles of the instances that are manually added to the scaling group.
+* `lifecycle_hook` - (Optional, Available since v1.219.1, ForceNew) Specifies whether to trigger a lifecycle hook for the scaling group to which instances are being added.
+* `load_balancer_weights` - (Optional, Available since v1.219.1, ForceNew) The weight of ECS instance N or elastic container instance N as a backend server of the associated Server Load Balancer (SLB) instance. Valid values of N: 1 to 20. Valid values of this parameter: 1 to 100.
 
 -> **NOTE:** "AutoCreated" ECS instance will be deleted after it is removed from scaling group, but "Attached" will be not.
 
