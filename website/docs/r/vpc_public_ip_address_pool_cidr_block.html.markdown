@@ -43,14 +43,13 @@ resource "alicloud_vpc_public_ip_address_pool_cidr_block" "default" {
 }
 ```
 
-
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_block` - (Optional, ForceNew) The CIDR block.
+* `cidr_block` - (Optional, ForceNew, Computed) The CIDR block.
+* `cidr_mask` - (Optional, Available since v1.219.0) IP address and network segment mask. After you enter the mask, the system automatically allocates the IP address network segment. Value range: **24** to **28**.
+-> **NOTE:**  **CidrBlock** and **CidrMask** cannot be configured at the same time. Select one of them to configure.
 * `public_ip_address_pool_id` - (Required, ForceNew) The ID of the VPC Public IP address pool.
-
-
 
 ## Attributes Reference
 

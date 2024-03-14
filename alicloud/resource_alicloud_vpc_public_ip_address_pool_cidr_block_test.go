@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVpcPublicIpAddressPoolCidrBlock_basic0(t *testing.T) {
+func TestAccAliCloudVpcPublicIpAddressPoolCidrBlock_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_public_ip_address_pool_cidr_block.default"
 	checkoutSupportedRegions(t, true, connectivity.VPCPublicIpAddressPoolCidrBlockSupportRegions)
@@ -58,6 +58,49 @@ func TestAccAlicloudVpcPublicIpAddressPoolCidrBlock_basic0(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVpcPublicIpAddressPoolCidrBlock_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_public_ip_address_pool_cidr_block.default"
+	checkoutSupportedRegions(t, true, connectivity.VPCPublicIpAddressPoolCidrBlockSupportRegions)
+	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolCidrBlockMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcPublicIpAddressPoolCidrBlock")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sVpcPublicIpAddressPoolCidrBlock-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudVpcPublicIpAddressPoolCidrBlockBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_ip_address_pool_id": "${alicloud_vpc_public_ip_address_pool.default.id}",
+					"cidr_mask":                 "25",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_ip_address_pool_id": CHECKSET,
+						"cidr_block":                CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cidr_mask"},
 			},
 		},
 	})
