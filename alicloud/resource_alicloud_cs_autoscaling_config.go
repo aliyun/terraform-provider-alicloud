@@ -3,6 +3,8 @@ package alicloud
 import (
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -166,8 +168,19 @@ func resourceAlicloudCSAutoscalingConfigUpdate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("scale_up_from_zero"); ok {
 		updateAutoscalingConfigRequest.ScaleUpFromZero = tea.Bool(v.(bool))
 	}
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 
-	_, err = client.CreateAutoscalingConfig(tea.String(clusterId), updateAutoscalingConfigRequest)
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "CreateAutoscalingConfig", AliyunTablestoreGoSdk)
 	}

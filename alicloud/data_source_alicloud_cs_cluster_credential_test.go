@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCSClusterCredentialDataSource(t *testing.T) {
+func TestAccAliCloudCSClusterCredentialDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_cluster_credential.default"
 
@@ -74,7 +74,7 @@ data "alicloud_zones" default {
 }
 
 data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+  name_regex = "^default-NODELETING-ACK$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -99,7 +99,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   cluster_spec         = "ack.pro.small"
   worker_vswitch_ids   = [local.vswitch_id]
   new_nat_gateway      = false
-  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = true
 }

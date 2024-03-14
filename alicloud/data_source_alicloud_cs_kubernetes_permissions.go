@@ -1,10 +1,13 @@
 package alicloud
 
 import (
+	"time"
+
 	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -60,9 +63,22 @@ func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interf
 	}
 
 	// Query existing permissions, DescribeUserPermission
+	var perms []*cs.DescribeUserPermissionResponseBody
 	uid := d.Get("uid").(string)
-	perms, _err := describeUserPermissions(client, uid)
-	if _err != nil {
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		perms, err = describeUserPermissions(client, uid)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
 	}
 

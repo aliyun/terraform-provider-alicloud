@@ -569,7 +569,19 @@ func resourceAlicloudCSServerlessKubernetesDelete(d *schema.ResourceData, meta i
 		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
 	}
 
-	_, err = client.DeleteCluster(tea.String(d.Id()), args)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = client.DeleteCluster(tea.String(d.Id()), args)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil

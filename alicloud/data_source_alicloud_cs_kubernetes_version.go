@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -63,11 +65,25 @@ func dataSourceAlicloudCSKubernetesVersion() *schema.Resource {
 }
 
 func dataSourceAlicloudCSKubernetesVersionRead(d *schema.ResourceData, meta interface{}) error {
-	client, err := meta.(*connectivity.AliyunClient)
+	client := meta.(*connectivity.AliyunClient)
 
-	resp, _err := describeKubernetesVersionMetadata(d, client)
-	if _err != nil {
-		return WrapErrorf(_err, DefaultErrorMsg, "DescribeKubernetesVersionMetadata", err)
+	var resp []*cs.DescribeKubernetesVersionMetadataResponseBody
+	var err error
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err = describeKubernetesVersionMetadata(d, client)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, "DescribeKubernetesVersionMetadata", err)
 	}
 
 	var results []map[string]interface{}
@@ -102,7 +118,20 @@ func describeKubernetesVersionMetadata(d *schema.ResourceData, client *connectiv
 	request.ClusterType = tea.String(d.Get("cluster_type").(string))
 	request.Profile = tea.String(d.Get("profile").(string))
 	request.KubernetesVersion = tea.String(d.Get("kubernetes_version").(string))
-	resp, err := csClient.DescribeKubernetesVersionMetadata(request)
+	var resp *cs.DescribeKubernetesVersionMetadataResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err = csClient.DescribeKubernetesVersionMetadata(request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return nil, err
 	}

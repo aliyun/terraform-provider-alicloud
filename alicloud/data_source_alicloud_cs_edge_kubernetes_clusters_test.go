@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCSEdgeKubernetesClustersDataSource(t *testing.T) {
+func TestAccAliCloudCSEdgeKubernetesClustersDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_edge_kubernetes_clusters.default"
 
@@ -107,7 +107,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+    name_regex = "^default-NODELETING-ACK$"
 }
 
 data "alicloud_vswitches" "default" {
@@ -152,7 +152,7 @@ resource "alicloud_cs_edge_kubernetes" "default" {
   worker_number               = 2
   password                    = "Yourpassword1234"
   pod_cidr                    = cidrsubnet("10.0.0.0/8", 8, 30)
-  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 1)
+  service_cidr                = cidrsubnet("172.16.0.0/16", 4, 2)
   install_cloud_monitor       = true
   slb_internet_enabled        = true
   worker_disk_category        = "cloud_efficiency"

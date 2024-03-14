@@ -1276,7 +1276,20 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+	var kubeConfig *roacs.DescribeClusterUserKubeconfigResponseBody
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		kubeConfig, err = csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
 	} else {
@@ -1319,7 +1332,18 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
 	}
 
-	_, err = client.DeleteCluster(tea.String(d.Id()), args)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = client.DeleteCluster(tea.String(d.Id()), args)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 			return nil
@@ -1747,42 +1771,27 @@ func flattenMaintenanceWindowConfig(config *cs.MaintenanceWindow) (m []map[strin
 	return
 }
 
-func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.MaintenanceWindow) error {
-	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-
-	var response interface{}
-	var requestInfo cs.ModifyClusterArgs
-
-	requestInfo.MaintenanceWindow = mw
-
-	if err := invoker.Run(func() error {
-		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
-		})
-		return err
-	}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyMaintenanceWindowFailed"}) {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		requestMap["maintenance_window"] = requestInfo.DeletionProtection
-		addDebug("ModifyCluster", response, requestInfo, requestMap)
-	}
-	d.SetPartial("maintenance_window")
-
-	return nil
-}
-
 // getApiServerSlbID gets cluster's API server SLB ID.
 func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error) {
 	rosClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
 		return "", err
 	}
-	request := &roacs.DescribeClusterResourcesRequest{}
-	clusterResources, err := rosClient.DescribeClusterResources(tea.String(d.Id()), request)
+	var clusterResources *roacs.DescribeClusterResourcesResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		request := &roacs.DescribeClusterResourcesRequest{}
+		clusterResources, err = rosClient.DescribeClusterResources(tea.String(d.Id()), request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return "", err
 	}
@@ -1873,7 +1882,20 @@ func fetchMasterNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 			PageNumber: tea.String(strconv.Itoa(num)),
 			PageSize:   tea.String(strconv.Itoa(size)),
 		}
-		response, err := csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+		var response *roacs.DescribeClusterNodesResponse
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
 		if err != nil {
 			return nil
 		}
@@ -1908,7 +1930,20 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	if err != nil {
 		return nil
 	}
-	response, err := csClient.DescribeClusterNodePools(tea.String(d.Id()))
+	var response *roacs.DescribeClusterNodePoolsResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = csClient.DescribeClusterNodePools(tea.String(d.Id()))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return nil
 	}
@@ -1934,7 +1969,20 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 			PageSize:   tea.String(strconv.Itoa(size)),
 			NodepoolId: tea.String(nodepoolId),
 		}
-		response, err := csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+		var response *roacs.DescribeClusterNodesResponse
+		wait = incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = csClient.DescribeClusterNodes(tea.String(d.Id()), request)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
 		if err != nil {
 			return nil
 		}

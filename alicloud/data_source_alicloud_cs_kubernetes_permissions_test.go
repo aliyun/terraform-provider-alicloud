@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCSKubernetesPermissionDataSource(t *testing.T) {
+func TestAccAliCloudCSKubernetesPermissionDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccCSKubernetesPermission-%d", rand)
 

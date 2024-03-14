@@ -1,9 +1,13 @@
 package alicloud
 
 import (
-	"github.com/alibabacloud-go/cs-20151215/v5/client"
+	"time"
+
+	roaCS "github.com/alibabacloud-go/cs-20151215/v5/client"
+
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
@@ -84,7 +88,7 @@ func dataSourceAlicloudCSClusterCredentialRead(d *schema.ResourceData, meta inte
 	return csClusterAuthDescriptionAttributes(d, meta, cluster.Body)
 }
 
-func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}, cluster *client.DescribeClusterDetailResponseBody) error {
+func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}, cluster *roaCS.DescribeClusterDetailResponseBody) error {
 	client := meta.(*connectivity.AliyunClient)
 	roaClient, err := client.NewRoaCsClient()
 	if err != nil {
@@ -99,7 +103,20 @@ func csClusterAuthDescriptionAttributes(d *schema.ResourceData, meta interface{}
 	}
 
 	clusterId := tea.StringValue(cluster.ClusterId)
-	credential, err := csClient.DescribeClusterKubeConfigWithExpiration(clusterId, expiration)
+	var credential *roaCS.DescribeClusterUserKubeconfigResponseBody
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		credential, err = csClient.DescribeClusterKubeConfigWithExpiration(clusterId, expiration)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cs_cluster_credential", "DescribeClusterKubeConfigWithExpiration", AlibabaCloudSdkGoERROR)
 	}
