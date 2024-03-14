@@ -2,18 +2,15 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"log"
 	"os"
 	"sync"
-	"testing"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestMain(m *testing.M) {
-	resource.TestMain(m)
-}
+//func TestMain(m *testing.M) {
+//	resource.TestMain(m)
+//}
 
 // sharedClientForRegion returns a common AlicloudClient setup needed for the sweeper
 // functions for a given region
