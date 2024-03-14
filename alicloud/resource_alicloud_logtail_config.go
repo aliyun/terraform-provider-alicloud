@@ -121,14 +121,30 @@ func getConfig(d *schema.ResourceData, meta interface{}) (*sls.LogConfig, error)
 	return config, err
 }
 
+func isLogtailConfigUnconvertable(d *schema.ResourceData, err error, split []string) bool {
+	if IsExpectedErrors(err, []string{"unconvertable", "Unconvertable"}) {
+		d.Set("project", split[0])
+		d.Set("logstore", split[1])
+		d.Set("name", split[2])
+		d.Set("input_detail", "[Warning!] Server configuration is an unconvertable pipeline config.")
+		d.Set("last_modify_time", "")
+		return true
+	}
+	return false
+}
+
 func resourceAlicloudLogtailConfigSave(d *schema.ResourceData, meta interface{}) error {
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	config, err := getConfig(d, meta)
 	if err != nil {
+		if isLogtailConfigUnconvertable(d, err, split) {
+			return nil
+		}
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
+		d.Set("last_modify_time", "")
 		return WrapError(err)
 	}
 
@@ -149,10 +165,14 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 	split := strings.Split(d.Id(), COLON_SEPARATED)
 	config, err := getConfig(d, meta)
 	if err != nil {
+		if isLogtailConfigUnconvertable(d, err, split) {
+			return nil
+		}
 		if NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
+		d.Set("last_modify_time", "")
 		return WrapError(err)
 	}
 
@@ -166,7 +186,7 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 	var oMap map[string]interface{}
 	json.Unmarshal([]byte(inputDetail), &oMap)
 	nMap := config.InputDetail.(map[string]interface{})
-	if inputDetail != "" {
+	if inputDetail != "" && !strings.HasPrefix(inputDetail, "[Warning!]") {
 		for nk := range nMap {
 			if _, ok := oMap[nk]; !ok {
 				delete(nMap, nk)
@@ -175,6 +195,7 @@ func resourceAlicloudLogtailConfigRead(d *schema.ResourceData, meta interface{})
 	}
 	nMapJson, err := json.Marshal(nMap)
 	if err != nil {
+		d.Set("last_modify_time", "")
 		return WrapError(err)
 	}
 	lastModifyTimeNew := strconv.Itoa(int(config.LastModifyTime))
@@ -222,11 +243,15 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 		data := d.Get("input_detail").(string)
 		conver_err := json.Unmarshal([]byte(data), &inputConfigInputDetail)
 		if conver_err != nil {
+			old, _ := d.GetChange("input_detail")
+			d.Set("input_detail", old)
 			return WrapError(conver_err)
 		}
 		sls.AddNecessaryInputConfigField(inputConfigInputDetail)
 		covertInput, covertErr := assertInputDetailType(inputConfigInputDetail, logconfig)
 		if covertErr != nil {
+			old, _ := d.GetChange("input_detail")
+			d.Set("input_detail", old)
 			return WrapError(covertErr)
 		}
 		logconfig.InputDetail = covertInput
@@ -249,6 +274,8 @@ func resourceAlicloudLogtailConfiglUpdate(d *schema.ResourceData, meta interface
 			return nil, slsClient.UpdateConfig(parts[0], params)
 		})
 		if err != nil {
+			old, _ := d.GetChange("input_detail")
+			d.Set("input_detail", old)
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateConfig", AliyunLogGoSdkERROR)
 		}
 		if debugOn() {
