@@ -65,6 +65,7 @@ resource "alicloud_alikafka_instance_allowed_ip_attachment" "default" {
   allowed_type = "vpc"
   instance_id  = alicloud_alikafka_instance.default.id
   port_range   = "9092/9092"
+  description  = "tf-example"
 }
 ```
 
@@ -80,6 +81,7 @@ The following arguments are supported:
 * `port_range` - (Required, ForceNew) The Port range.  Valid Value: `9092/9092`, `9093/9093`. **NOTE:** From version 1.179.0, `port_range` can be set to `9093/9093`.
   - `9092/9092`: port range for a VPC whitelist.
   - `9093/9093`: port range for an Internet whitelist.
+* `description` - (Optional, ForceNew) The description of whitelist group.
   
 ## Attributes Reference
 
