@@ -62,6 +62,10 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
+						"auto_pay_order": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
 						"auto_renew_duration_unit": {
 							Type:         schema.TypeString,
 							Optional:     true,
@@ -90,6 +94,11 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 			"cluster_name": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"log_collect_strategy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"deploy_mode": {
 				Type:         schema.TypeString,
@@ -202,7 +211,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"node_group_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"MASTER", "CORE", "TASK"}, false),
+							ValidateFunc: validation.StringInSlice([]string{"MASTER", "CORE", "TASK", "GATEWAY"}, false),
 						},
 						"node_group_name": {
 							Type:     schema.TypeString,
@@ -213,6 +222,18 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Optional:     true,
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+						},
+						"deployment_set_strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"NONE", "CLUSTER", "NODE_GROUP"}, false),
+						},
+						"node_resize_strategy": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: validation.StringInSlice([]string{"PRIORITY", "COST_OPTIMIZED"}, false),
 						},
 						"subscription_config": {
 							Type:     schema.TypeSet,
@@ -230,6 +251,10 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 										ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36, 48, 60}),
 									},
 									"auto_renew": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"auto_pay_order": {
 										Type:     schema.TypeBool,
 										Optional: true,
 									},
@@ -476,11 +501,16 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 			subscriptionConfigMap := map[string]interface{}{
 				"PaymentDurationUnit":   subscriptionConfigSource["payment_duration_unit"],
 				"PaymentDuration":       subscriptionConfigSource["payment_duration"],
-				"AutoPayOrder":          true,
 				"AutoRenew":             subscriptionConfigSource["auto_renew"],
 				"AutoRenewDurationUnit": subscriptionConfigSource["auto_renew_duration_unit"],
 				"AutoRenewDuration":     subscriptionConfigSource["auto_renew_duration"],
 			}
+			if value, exists := subscriptionConfigSource["auto_pay_order"]; exists {
+				subscriptionConfigMap["AutoPayOrder"] = value.(bool)
+			} else {
+				subscriptionConfigMap["AutoPayOrder"] = true
+			}
+
 			createClusterRequest["SubscriptionConfig"] = subscriptionConfigMap
 		}
 	}
@@ -503,6 +533,10 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 
 	if v, ok := d.GetOk("security_mode"); ok {
 		createClusterRequest["SecurityMode"] = v
+	}
+
+	if v, ok := d.GetOk("log_collect_strategy"); ok && v.(string) != "" {
+		createClusterRequest["LogCollectStrategy"] = v.(string)
 	}
 
 	applications := make([]map[string]interface{}, 0)
@@ -575,6 +609,12 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 			if v, ok := kv["payment_type"]; ok {
 				nodeGroup["PaymentType"] = v
 			}
+			if v, ok := kv["deployment_set_strategy"]; ok && v.(string) != "" {
+				nodeGroup["DeploymentSetStrategy"] = v.(string)
+			}
+			if v, ok := kv["node_resize_strategy"]; ok && v.(string) != "" {
+				nodeGroup["NodeResizeStrategy"] = v.(string)
+			}
 			if v, ok := kv["subscription_config"]; ok {
 				subscriptionConfigs := v.(*schema.Set).List()
 				if len(subscriptionConfigs) == 1 {
@@ -594,6 +634,11 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					}
 					if value, exists := subscriptionConfigMap["auto_renew_duration"]; exists {
 						subscriptionConfig["AutoRenewDuration"] = value
+					}
+					if value, exists := subscriptionConfigMap["auto_pay_order"]; exists {
+						subscriptionConfig["AutoPayOrder"] = value.(bool)
+					} else {
+						subscriptionConfig["AutoPayOrder"] = true
 					}
 					nodeGroup["SubscriptionConfig"] = subscriptionConfig
 				}
@@ -654,7 +699,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					if value, exists := systemDiskMap["size"]; exists {
 						systemDisk["Size"] = value
 					}
-					if value, exists := systemDiskMap["performance_level"]; exists {
+					if value, exists := systemDiskMap["performance_level"]; exists && value.(string) != "" {
 						systemDisk["PerformanceLevel"] = value
 					}
 					if value, exists := systemDiskMap["count"]; exists {
@@ -676,7 +721,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 						if value, exists := dataDiskMap["size"]; exists {
 							dataDisk["Size"] = value
 						}
-						if value, exists := dataDiskMap["performance_level"]; exists {
+						if value, exists := dataDiskMap["performance_level"]; exists && value.(string) != "" {
 							dataDisk["PerformanceLevel"] = value
 						}
 						if value, exists := dataDiskMap["count"]; exists {
@@ -840,6 +885,14 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("security_mode", object["SecurityMode"])
 	d.Set("resource_group_id", object["ResourceGroupId"])
 
+	if v, ok := d.GetOk("log_collect_strategy"); ok && v.(string) != "" {
+		logCollectStrategy := v.(string)
+		if value, exists := object["LogCollectStrategy"]; exists && value.(string) != "" {
+			logCollectStrategy = value.(string)
+		}
+		d.Set("log_collect_strategy", logCollectStrategy)
+	}
+
 	var nodeAttributes []map[string]interface{}
 	if v, ok := object["NodeAttributes"]; ok {
 		nodeAttributesMap := v.(map[string]interface{})
@@ -857,7 +910,6 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 		nodeAttributes = append(nodeAttributes, nodeAttribute)
 		d.Set("node_attributes", nodeAttributes)
 	}
-
 	var response map[string]interface{}
 	conn, err := client.NewEmrClient()
 	if err != nil {
@@ -966,6 +1018,14 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 					}
 					nodeGroup["subscription_config"] = subscriptionConfig
 				}
+
+				if v, ok := oldNodeGroup["spot_bid_prices"]; ok {
+					var spotBidPrices []map[string]interface{}
+					for _, item := range v.(*schema.Set).List() {
+						spotBidPrices = append(spotBidPrices, item.(map[string]interface{}))
+					}
+					nodeGroup["spot_bid_prices"] = spotBidPrices
+				}
 			}
 
 			if v, ok := nodeGroupMap["SpotBidPrices"]; ok && len(v.([]interface{})) > 0 {
@@ -1002,6 +1062,26 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 					instanceTypes = append(instanceTypes, item.(string))
 				}
 				nodeGroup["instance_types"] = instanceTypes
+			}
+
+			if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
+				if v, ok := oldNodeGroup["deployment_set_strategy"]; ok && v.(string) != "" {
+					deploymentSetStrategy := v.(string)
+					if st, stExists := nodeGroupMap["DeploymentSetStrategy"]; stExists && st.(string) != "" {
+						deploymentSetStrategy = st.(string)
+					}
+					nodeGroup["deployment_set_strategy"] = deploymentSetStrategy
+				}
+			}
+
+			if oldNodeGroup, exists := oldNodeGroupsMap[nodeGroupMap["NodeGroupName"].(string)]; exists {
+				if v, ok := oldNodeGroup["node_resize_strategy"]; ok && v.(string) != "" {
+					nodeResizeStrategy := v.(string)
+					if nrs, nrsExists := nodeGroupMap["NodeResizeStrategy"]; nrsExists && nrs.(string) != "" {
+						nodeResizeStrategy = nrs.(string)
+					}
+					nodeGroup["node_resize_strategy"] = nodeResizeStrategy
+				}
 			}
 
 			if v, ok := nodeGroupMap["SystemDisk"]; ok {
@@ -1089,12 +1169,17 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 
-	if d.HasChange("cluster_name") {
+	if d.HasChange("cluster_name") || d.HasChange("log_collect_strategy") {
 		action := "UpdateClusterAttribute"
 		request := map[string]interface{}{
-			"ClusterId":   d.Id(),
-			"RegionId":    client.RegionId,
-			"ClusterName": d.Get("cluster_name"),
+			"ClusterId": d.Id(),
+			"RegionId":  client.RegionId,
+		}
+		if d.HasChange("cluster_name") && d.Get("cluster_name").(string) != "" {
+			request["ClusterName"] = d.Get("cluster_name")
+		}
+		if d.HasChange("log_collect_strategy") && d.Get("log_collect_strategy").(string) != "" {
+			request["LogCollectStrategy"] = d.Get("log_collect_strategy")
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
@@ -1175,20 +1260,25 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					increaseNodesGroup["ClusterId"] = d.Id()
 					increaseNodesGroup["NodeGroupId"] = oldNodeGroup["NodeGroupId"]
 					increaseNodesGroup["IncreaseNodeCount"] = count
-					increaseNodesGroup["AutoPayOrder"] = true
 					if "Subscription" == newNodeGroup["payment_type"].(string) {
 						subscriptionConfig := newNodeGroup["subscription_config"].(*schema.Set).List()
 						if len(subscriptionConfig) == 1 {
 							configMap := subscriptionConfig[0].(map[string]interface{})
 							increaseNodesGroup["PaymentDuration"] = configMap["payment_duration"]
 							increaseNodesGroup["PaymentDurationUnit"] = configMap["payment_duration_unit"]
+							if value, exists := configMap["auto_pay_order"]; exists {
+								increaseNodesGroup["AutoPayOrder"] = value.(bool)
+							} else {
+								increaseNodesGroup["AutoPayOrder"] = true
+							}
 						}
 					}
 					increaseNodesGroups = append(increaseNodesGroups, increaseNodesGroup)
 				} else if oldNodeCount > newNodeCount { // decrease nodes
-					// EMR cluster can only decrease 'TASK' node group.
-					if "TASK" != newNodeGroup["node_group_type"].(string) {
-						return WrapError(Error("EMR cluster can only decrease the node group type of [TASK]."))
+					// EMR cluster can only decrease 'TASK, GATEWAY' node group.
+					nodeGroupType := newNodeGroup["node_group_type"].(string)
+					if "TASK" != nodeGroupType && "GATEWAY" != nodeGroupType {
+						return WrapError(Error("EMR cluster can only decrease the node group type of ['TASK', 'GATEWAY']."))
 					}
 					decreaseNodesGroup := map[string]interface{}{
 						"ClusterId":         d.Id(),
@@ -1248,6 +1338,11 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					subscriptionConfig["AutoRenew"] = subscriptionMap["auto_renew"]
 					subscriptionConfig["AutoRenewDurationUnit"] = subscriptionMap["auto_renew_duration_unit"]
 					subscriptionConfig["AutoRenewDuration"] = subscriptionMap["auto_renew_duration"]
+					if value, exists := subscriptionMap["auto_pay_order"]; exists {
+						subscriptionConfig["AutoPayOrder"] = value.(bool)
+					} else {
+						subscriptionConfig["AutoPayOrder"] = true
+					}
 				}
 				var spotBidPrices []map[string]interface{}
 				for _, v := range newNodeGroup["spot_bid_prices"].(*schema.Set).List() {
@@ -1261,12 +1356,15 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				var dataDisks []map[string]interface{}
 				for _, v := range newNodeGroup["data_disks"].(*schema.Set).List() {
 					dataDiskMap := v.(map[string]interface{})
-					dataDisks = append(dataDisks, map[string]interface{}{
-						"Category":         dataDiskMap["category"],
-						"Size":             dataDiskMap["size"],
-						"PerformanceLevel": dataDiskMap["performance_level"],
-						"Count":            dataDiskMap["count"],
-					})
+					dataDisk := map[string]interface{}{
+						"Category": dataDiskMap["category"],
+						"Size":     dataDiskMap["size"],
+						"Count":    dataDiskMap["count"],
+					}
+					if value, exists := dataDiskMap["performance_level"]; exists && value.(string) != "" {
+						dataDisk["PerformanceLevel"] = value.(string)
+					}
+					dataDisks = append(dataDisks, dataDisk)
 				}
 				nodeGroupParam := map[string]interface{}{
 					"NodeGroupType":      newNodeGroup["node_group_type"],
@@ -1276,15 +1374,15 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"SpotBidPrices":      spotBidPrices,
 					"WithPublicIp":       newNodeGroup["with_public_ip"],
 					"NodeCount":          newNodeGroup["node_count"],
-					"SystemDisk": map[string]interface{}{
-						"Category":         systemDiskMap["category"],
-						"Size":             systemDiskMap["size"],
-						"PerformanceLevel": systemDiskMap["performance_level"],
-						"Count":            systemDiskMap["count"],
-					},
 					"DataDisks":          dataDisks,
 					"GracefulShutdown":   newNodeGroup["graceful_shutdown"],
 					"SpotInstanceRemedy": newNodeGroup["spot_instance_remedy"],
+				}
+				if value, exists := newNodeGroup["deployment_set_strategy"]; exists && value.(string) != "" {
+					nodeGroupParam["DeploymentSetStrategy"] = value.(string)
+				}
+				if value, exists := newNodeGroup["node_resize_strategy"]; exists && value.(string) != "" {
+					nodeGroupParam["NodeResizeStrategy"] = value.(string)
 				}
 				vSwitchIDList := newNodeGroup["vswitch_ids"].(*schema.Set).List()
 				if len(vSwitchIDList) > 0 {
@@ -1294,6 +1392,15 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					}
 					nodeGroupParam["VSwitchIds"] = vSwitchIDs
 				}
+				systemDisk := map[string]interface{}{
+					"Category": systemDiskMap["category"],
+					"Size":     systemDiskMap["size"],
+					"Count":    systemDiskMap["count"],
+				}
+				if value, exists := systemDiskMap["performance_level"]; exists && value.(string) != "" {
+					systemDisk["PerformanceLevel"] = value.(string)
+				}
+				nodeGroupParam["SystemDisk"] = systemDisk
 
 				instanceTypeList := newNodeGroup["instance_types"].(*schema.Set).List()
 				if len(instanceTypeList) > 0 {

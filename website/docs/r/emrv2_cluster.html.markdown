@@ -117,8 +117,9 @@ resource "alicloud_emrv2_cluster" "default" {
     node_group_type = "MASTER"
   }
   node_groups {
-    spot_instance_remedy = "false"
-    node_group_type      = "CORE"
+    spot_instance_remedy    = "false"
+    deployment_set_strategy = "CLUSTER"
+    node_group_type         = "CORE"
     vswitch_ids = [
       "${alicloud_vswitch.default.id}"
     ]
@@ -167,6 +168,8 @@ resource "alicloud_emrv2_cluster" "default" {
     security_group_id    = alicloud_security_group.default.id
   }
 
+  log_collect_strategy = jsonencode({ "open" : ["all"], "close" : [""] })
+
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   cluster_name      = var.name
   payment_type      = "PayAsYouGo"
@@ -184,6 +187,7 @@ The following arguments are supported:
 * `release_version` - (Required, ForceNew) EMR Version, e.g. EMR-5.10.0. You can find the all valid EMR Version in emr web console.
 * `cluster_name` - (Required) The name of emr cluster. The name length must be less than 64. Supported characters: chinese character, english character, number, "-", "_".
 * `deploy_mode` - (Optional, ForceNew) The deploy mode of EMR cluster. Supported value: NORMAL or HA.
+* `log_collect_strategy` - (Optional, Available since v1.218.1) The log collect strategy of EMR cluster. 
 * `security_mode` - (Optional) The security mode of EMR cluster. Supported value: NORMAL or KERBEROS.
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
 * `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
@@ -199,6 +203,7 @@ The `subscription_config` block supports the following:
 * `payment_duration_unit` - (Required) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `payment_duration` - (Required) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
+* `auto_pay_order` - (Optional, Available since v1.218.1) Auto pay order for payment type of subscription, ’true’ or ‘false’ .
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
 
@@ -231,7 +236,7 @@ The `node_attributes` block supports the following:
 
 The node_groups mapping supports the following: 
 
-* `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK.
+* `node_group_type` - (Required) The node group type of emr cluster, supported value: MASTER, CORE or TASK. Node group type of GATEWAY is available since v1.218.1.
 * `node_group_name` - (Required) The node group name of emr cluster.
 * `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
@@ -246,6 +251,8 @@ The node_groups mapping supports the following:
 * `graceful_shutdown` - (Optional) Enable emr cluster of task node graceful decommission, ’true’ or ‘false’ .
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
 * `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below.
+* `deployment_set_strategy` - (Optional, Available since v1.218.1) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP.
+* `node_resize_strategy` - (Optional, Available since v1.218.1) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
 
 ### `node_groups-subscription_config`
 
@@ -254,6 +261,7 @@ The subscription_config mapping supports the following:
 * `payment_duration_unit` - (Required) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `payment_duration` - (Required) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48.
 * `auto_renew` - (Optional) Auto renew for prepaid, ’true’ or ‘false’ . Default value: false.
+* `auto_pay_order` - (Optional, Available since v1.218.1) Auto pay order for payment type of subscription, ’true’ or ‘false’ .
 * `auto_renew_duration_unit` - (Optional) If paymentType is Subscription, this should be specified. Supported value: Month or Year.
 * `auto_renew_duration` - (Optional) If paymentType is Subscription, this should be specified. Supported value: 1、2、3、4、5、6、7、8、9、12、24、36、48. 
 
