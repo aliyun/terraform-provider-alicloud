@@ -263,9 +263,13 @@ func (s *LogService) DescribeLogtailConfig(id string) (*sls.LogConfig, error) {
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		raw, err := s.client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
 			requestInfo = slsClient
+			slsClient.RetryTimeOut = 30 * time.Second
 			return slsClient.GetConfig(projectName, configName)
 		})
 		if err != nil {
+			if IsExpectedErrors(err, []string{"unconvertable", "Unconvertable"}) {
+				return resource.NonRetryableError(err)
+			}
 			if IsExpectedErrors(err, []string{"InternalServerError"}) {
 				return resource.RetryableError(err)
 			}
