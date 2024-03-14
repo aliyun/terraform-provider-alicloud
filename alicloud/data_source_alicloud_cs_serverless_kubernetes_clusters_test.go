@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
+func TestAccAliCloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 
 	rand := acctest.RandIntRange(1000000, 9999999)
 	resourceId := "data.alicloud_cs_serverless_kubernetes_clusters.default"
@@ -86,7 +84,6 @@ func TestAccAlicloudCSServerlessKubernetesClustersDataSource(t *testing.T) {
 		fakeMapFunc:  fakeCSServerlessKubernetesClustersMapFunc,
 	}
 	preCheck := func() {
-		testAccPreCheckWithRegions(t, true, connectivity.ServerlessKubernetesSupportedRegions)
 	}
 	csServerlessKubernetesClustersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, allConf)
 }

@@ -968,7 +968,18 @@ func updateControlPlaneLog(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	_, err = csClient.UpdateControlPlaneLog(tea.String(d.Id()), request)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		_, err = csClient.UpdateControlPlaneLog(tea.String(d.Id()), request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -989,7 +1000,20 @@ func checkControlPlaneLogEnable(d *schema.ResourceData, meta interface{}) error 
 	if err != nil {
 		return err
 	}
-	response, err := client.CheckControlPlaneLogEnable(tea.String(d.Id()))
+	var response *roacs.CheckControlPlaneLogEnableResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = client.CheckControlPlaneLogEnable(tea.String(d.Id()))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return err
 	}

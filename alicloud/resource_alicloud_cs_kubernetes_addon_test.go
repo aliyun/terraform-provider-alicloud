@@ -440,12 +440,14 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   new_nat_gateway      = false
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = false
+  is_enterprise_security_group = true
   addons {
     name = "terway-eniip"
   }
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
+  count                = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? 0 : 1
   name                 = var.name
   cluster_id           = local.cluster_id
   vswitch_ids          = [local.vswitch_id]

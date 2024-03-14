@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCSKubernetesVersionDataSource(t *testing.T) {
+func TestAccAliCloudCSKubernetesVersionDataSource(t *testing.T) {
 	resourceId := "data.alicloud_cs_kubernetes_version.default"
 	testAccCheck := resourceAttrInit(resourceId, map[string]string{}).resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
