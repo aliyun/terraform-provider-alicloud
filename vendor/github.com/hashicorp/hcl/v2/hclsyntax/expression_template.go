@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package hclsyntax
 
 import (
@@ -35,17 +38,21 @@ func (e *TemplateExpr) Value(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) 
 
 		if partVal.IsNull() {
 			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid template interpolation value",
-				Detail: fmt.Sprintf(
-					"The expression result is null. Cannot include a null value in a string template.",
-				),
+				Severity:    hcl.DiagError,
+				Summary:     "Invalid template interpolation value",
+				Detail:      "The expression result is null. Cannot include a null value in a string template.",
 				Subject:     part.Range().Ptr(),
 				Context:     &e.SrcRange,
 				Expression:  part,
 				EvalContext: ctx,
 			})
 			continue
+		}
+
+		// Unmark the part and merge its marks into the set
+		unmarkedVal, partMarks := partVal.Unmark()
+		for k, v := range partMarks {
+			marks[k] = v
 		}
 
 		if !partVal.IsKnown() {
@@ -57,7 +64,7 @@ func (e *TemplateExpr) Value(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) 
 			continue
 		}
 
-		strVal, err := convert.Convert(partVal, cty.String)
+		strVal, err := convert.Convert(unmarkedVal, cty.String)
 		if err != nil {
 			diags = append(diags, &hcl.Diagnostic{
 				Severity: hcl.DiagError,
@@ -74,21 +81,28 @@ func (e *TemplateExpr) Value(ctx *hcl.EvalContext) (cty.Value, hcl.Diagnostics) 
 			continue
 		}
 
-		// Unmark the part and merge its marks into the set
-		unmarked, partMarks := strVal.Unmark()
-		for k, v := range partMarks {
-			marks[k] = v
+		// If we're just continuing to validate after we found an unknown value
+		// then we'll skip appending so that "buf" will contain only the
+		// known prefix of the result.
+		if isKnown && !diags.HasErrors() {
+			buf.WriteString(strVal.AsString())
 		}
-
-		buf.WriteString(unmarked.AsString())
 	}
 
 	var ret cty.Value
 	if !isKnown {
 		ret = cty.UnknownVal(cty.String)
+		if !diags.HasErrors() { // Invalid input means our partial result buffer is suspect
+			if knownPrefix := buf.String(); knownPrefix != "" {
+				ret = ret.Refine().StringPrefix(knownPrefix).NewValue()
+			}
+		}
 	} else {
 		ret = cty.StringVal(buf.String())
 	}
+
+	// A template rendering result is never null.
+	ret = ret.RefineNotNull()
 
 	// Apply the full set of marks to the returned value
 	return ret.WithMarks(marks), diags
