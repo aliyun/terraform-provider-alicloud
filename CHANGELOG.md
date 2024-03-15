@@ -1,4 +1,47 @@
-## 1.218.1 (Unreleased)
+## 1.219.0 (Unreleased)
+
+- **New Resource:** `alicloud_log_alert_resource` [GH-7032]
+- **New Resource:** `alicloud_api_gateway_plugin_attachment` [GH-7034]
+
+ENHANCEMENTS:
+
+- client: update brain_industrial endpoint. [GH-7019]
+- resource/alicloud_event_bridge_rule: Update action UpdateTargets to PutTargets to fix update error. [GH-7009]
+- resource/alicloud_adb_db_cluster: Added the field disk_encryption, kms_id; Added retry strategy for error code OperationDenied.OrderProcessing. [GH-7012]
+- resource/alicloud_db_instance: adjust instance creation port. [GH-7027]
+- resource/alicloud_api_gateway_api: add element to fc_service_config. [GH-7034]
+- resource/alicloud_quotas_quota_alarm: Support for international languages. [GH-7035]
+- resource/alicloud_polardb_cluster: modify the upgrade_type wait cluster maxscale proxy status. [GH-7036]
+- resource/alicloud_polardb_cluster_endpoint: Remove ModifyEndpointAddress stateconf. resource/alicloud_polardb_endpoint: Remove ModifyEndpointAddress stateconf. resource/alicloud_polardb_endpoint_address: Remove ModifyEndPointAddress stateconf.. resource/alicloud_polardb_primary_endpoint: Remove ModifyEndPointAddress stateconf. [GH-7038]
+- resource/alicloud_cs_kubernetes_node_pool: add new attributes compensate_with_on_demand, data_disks.bursting_enabled, data_disks.provisioned_iops, kubelet_configuration.allowed_unsafe_sysctls, kubelet_configuration.container_log_max_files etc. [GH-7039]
+- resource/alicloud_oss_bucket: add new attribute resource_group_id. [GH-7040]
+- resource/alicloud_arms_environment: add new attribute drop_metrics, managed_type. [GH-7042]
+- resource/alicloud_resource_manager_account: update status 'deleting' as target. [GH-7043]
+- resource/alicloud_oos_patch_baseline: add new attribute: approved_patches, approved_patches_enable_non_security, resource_group_id, sources, tags. [GH-7044]
+- resource/alicloud_alikafka_instance_allowed_ip_attachment: Supported port_range set to 9094/9094, 9095/9095. [GH-7046]
+- resource/alicloud_emrv2_cluster: optimized emrv2 cluster node group type. [GH-7048]
+- resource/alicloud_logtail_config: Add last_modify_time parameter to resourceAlicloudLogtailConfig for conditional state refresh. [GH-7049]
+- resource/alicloud_scdn_domain: deprecated from version 1.219.0; resource/alicloud_scdn_domain_config: deprecated from version 1.219.0; data-source/alicloud_cms_service:deprecated from version 1.219.0. [GH-7050]
+- resource/alicloud_amqp_instance: add new attribute auto_renew, create_time, max_connections, period_cycle, serverless_charge_type. [GH-7054]
+- resource/alicloud_vpc_public_ip_address_pool_cidr_block: add new attribute cidr_mask. [GH-7056]
+- resource/alicloud_logtail_config: Fall back to server config on UpdateConfig failure and avoid using server config after GetConfig errors. [GH-7057]
+- resource/alicloud_ecs_launch_template: remove default value for system_disk.performance_level. [GH-7059]
+- resource/alicloud_quotas_*: Support for international languages; data-source/alicloud_quotas_*: Support for international languages. [GH-7060]
+- resource/alicloud_vpc_network_acl_attachment: add retry code for delete. [GH-7061]
+- resource/alicloud_instance: remove default value for system_disk_category. [GH-7062]
+- data-source/alicloud_log_alert_resource: replace InitProjectAlertResource function. [GH-7032]
+- docs: fix examples for adb, gpdb, mse, ros, service_mesh. [GH-7020]
+- docs: modify subcategory for dfs. [GH-7030]
+- docs: modify subcategory for ebs. [GH-7031]
+- docs: Improved the document cloud_firewall_control_policy. [GH-7051]
+- docs: improve the alicloud_nlb_load_balancer attribute address_ip_version. [GH-7053]
+- docs: fmt for quotas_quota_applications. [GH-7063]
+
+BUG FIXES:
+
+- resource/alicloud_alb_server_group: Fixed the create, update error caused by field health_check_config. [GH-7037]
+- resource/alicloud_oss_bucket_replication: Fix rule-id bug. [GH-7041]
+
 ## 1.218.0 (March 04, 2024)
 
 - **New Resource:** `alicloud_api_gateway_instance` ([#6921](https://github.com/aliyun/terraform-provider-alicloud/issues/6921))

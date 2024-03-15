@@ -13,7 +13,7 @@ Using this resource can init SLS Alert resources automatically.
 
 For information about SLS Alert and how to use it, see [SLS Alert Overview](https://www.alibabacloud.com/help/en/doc-detail/209202.html)
 
--> **NOTE:** Available since v1.218.1.
+-> **NOTE:** Available since v1.219.0.
 
 ## Example Usage
 

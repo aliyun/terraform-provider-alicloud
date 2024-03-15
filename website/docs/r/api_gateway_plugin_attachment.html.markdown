@@ -13,7 +13,7 @@ Provides a plugin attachment resource.It is used for attaching a specific plugin
 
 For information about Api Gateway Plugin attachment and how to use it, see [Attach Plugin to specified API](https://www.alibabacloud.com/help/en/api-gateway/developer-reference/api-cloudapi-2016-07-14-attachplugin)
 
--> **NOTE:** Available since v1.218.1.
+-> **NOTE:** Available since v1.219.0.
 
 -> **NOTE:** Terraform will auto build plugin attachment while it uses `alicloud_api_gateway_plugin_attachment` to build.
 
