@@ -653,7 +653,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.PerformanceLevel"] = v
 	}
 
-	request["SystemDisk.Category"] = "cloud_efficiency"
 	if v, ok := d.GetOk("system_disk_category"); ok {
 		request["SystemDisk.Category"] = v
 	}

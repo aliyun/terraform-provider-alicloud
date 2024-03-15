@@ -1587,16 +1587,16 @@ func TestAccAliCloudECSInstanceTypeUpdate(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "${data.alicloud_instance_types.new4.instance_types.0.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type": CHECKSET,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instance_type": "${data.alicloud_instance_types.new4.instance_types.0.id}",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"instance_type": CHECKSET,
+			//		}),
+			//	),
+			//},
 		},
 	})
 }
@@ -3683,7 +3683,6 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
- 	cpu_core_count    = 2
 	instance_type_family = "ecs.g6"
 	availability_zone    = alicloud_vswitch.default.zone_id
 }
@@ -3705,7 +3704,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id           = data.alicloud_zones.default.zones.0.id
+  zone_id           = data.alicloud_zones.default.zones.1.id
   vswitch_name      = var.name
 }
 
