@@ -125,9 +125,10 @@ On other OSs such as Linux, the host name can contain a maximum of 64 characters
 
 * `resource_group_id` - (Optional, Available since 1.57.0, Modifiable in 1.115.0) The Id of resource group which the instance belongs.
 * `period_unit` - (Optional) The duration unit that you will buy the resource. It is valid when `instance_charge_type` is 'PrePaid'. Valid value: ["Week", "Month"]. Default to "Month".
-* `period` - (Optional) The duration that you will buy the resource, in month. It is valid when `instance_charge_type` is `PrePaid`. Valid values:
+* `period` - (Optional) The duration that you will buy the resource, in month. It is valid and required when `instance_charge_type` is `PrePaid`. Valid values:
     - [1-9, 12, 24, 36, 48, 60] when `period_unit` in "Month"
     - [1-3] when `period_unit` in "Week"
+  
 -> **NOTE:** The attribute `period` is only used to create Subscription instance or modify the PayAsYouGo instance to Subscription. Once effect, it will not be modified that means running `terraform apply` will not effect the resource.
 
 * `renewal_status` - (Optional) Whether to renew an ECS instance automatically or not. It is valid when `instance_charge_type` is `PrePaid`. Default to "Normal". Valid values:
