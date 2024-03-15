@@ -13,7 +13,7 @@ Using this data source can init SLS Alert resources automatically.
 
 For information about SLS Alert and how to use it, see [SLS Alert Overview](https://www.alibabacloud.com/help/en/doc-detail/209202.html)
 
--> **DEPRECATED:**  This resource  has been deprecated from version `1.218.1`. Please use new resource [alicloud_log_alert_resource](https://www.terraform.io/docs/providers/alicloud/r/log_alert_resource).
+-> **DEPRECATED:**  This resource  has been deprecated from version `1.219.0`. Please use new resource [alicloud_log_alert_resource](https://www.terraform.io/docs/providers/alicloud/r/log_alert_resource).
 
 -> **NOTE:** Available since v1.161.0.
 
