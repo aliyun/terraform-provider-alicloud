@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"regexp"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -184,17 +185,18 @@ func dataSourceAlicloudQuotasQuotaAlarmsRead(d *schema.ResourceData, meta interf
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClient()
+	conn, err := client.NewQuotasClientV2()
 	if err != nil {
 		return WrapError(err)
 	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_quotas_quota_alarms", action, AlibabaCloudSdkGoERROR)
 		}
+		response = response["body"].(map[string]interface{})
 		addDebug(action, response, request)
 
 		resp, err := jsonpath.Get("$.QuotaAlarms", response)

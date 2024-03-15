@@ -3,10 +3,11 @@ package alicloud
 
 import (
 	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -92,7 +93,7 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 	action := "CreateTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClient()
+	conn, err := client.NewQuotasClientV2()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -130,7 +131,7 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 	}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -147,7 +148,7 @@ func resourceAliCloudQuotasTemplateQuotaCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_quota", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["Id"]))
+	d.SetId(fmt.Sprint(response["body"].(map[string]interface{})["Id"]))
 
 	return resourceAliCloudQuotasTemplateQuotaUpdate(d, meta)
 }
@@ -188,7 +189,7 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 	var response map[string]interface{}
 	update := false
 	action := "ModifyTemplateQuotaItem"
-	conn, err := client.NewQuotasClient()
+	conn, err := client.NewQuotasClientV2()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -242,7 +243,7 @@ func resourceAliCloudQuotasTemplateQuotaUpdate(d *schema.ResourceData, meta inte
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -269,7 +270,7 @@ func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta inte
 	action := "DeleteTemplateQuotaItem"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	conn, err := client.NewQuotasClient()
+	conn, err := client.NewQuotasClientV2()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -279,7 +280,7 @@ func resourceAliCloudQuotasTemplateQuotaDelete(d *schema.ResourceData, meta inte
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {

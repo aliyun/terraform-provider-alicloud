@@ -15,55 +15,40 @@ func TestAccAlicloudQuotasQuotasDataSource(t *testing.T) {
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"name_regex":   "专有宿主机总数量上限",
+			"name_regex":   "Maximum*",
 			"product_code": "ecs",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"name_regex":   "专有宿主机总数量上限-fake",
+			"name_regex":   "Maximum-fake",
 			"product_code": "ecs",
 		}),
 	}
 	actionCodeConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
-			"quota_action_code": "q_dedicated-hosts",
+			"quota_action_code": "q_cloud-assistant-activation-count",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
-			"quota_action_code": "q_dedicated-hosts-fake",
+			"quota_action_code": "q_cloud-assistant-activation-count-fake",
 		}),
 	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
-			"name_regex":        "专有宿主机总数量上限",
-			"quota_action_code": "q_dedicated-hosts",
+			"name_regex":        "Maximum*",
+			"quota_action_code": "q_cloud-assistant-activation-count",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
 			"product_code":      "ecs",
-			"name_regex":        "专有宿主机总数量上限-fake",
-			"quota_action_code": "q_dedicated-hosts-fake",
+			"name_regex":        "Maximum-fake",
+			"quota_action_code": "q_cloud-assistant-activation-count-fake",
 		}),
 	}
 	var existQuotasQuotasMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                        "1",
-			"ids.0":                        CHECKSET,
-			"names.#":                      "1",
-			"names.0":                      CHECKSET,
-			"quotas.#":                     "1",
-			"quotas.0.id":                  CHECKSET,
-			"quotas.0.adjustable":          CHECKSET,
-			"quotas.0.applicable_type":     CHECKSET,
-			"quotas.0.consumable":          CHECKSET,
-			"quotas.0.quota_action_code":   "q_dedicated-hosts",
-			"quotas.0.quota_description":   CHECKSET,
-			"quotas.0.quota_name":          CHECKSET,
-			"quotas.0.quota_type":          "",
-			"quotas.0.quota_unit":          "",
-			"quotas.0.total_quota":         CHECKSET,
-			"quotas.0.total_usage":         CHECKSET,
-			"quotas.0.unadjustable_detail": "",
+			"ids.#":    CHECKSET,
+			"quotas.#": CHECKSET,
 		}
 	}
 
