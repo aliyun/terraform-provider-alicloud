@@ -46,7 +46,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 						"description": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+							ValidateFunc: validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
 						},
 						"encrypted": {
 							Type:     schema.TypeBool,
@@ -55,7 +55,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 						"name": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+							ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
 						},
 						"performance_level": {
 							Type:     schema.TypeString,
@@ -79,7 +79,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+				ValidateFunc: validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
 			},
 			"enable_vm_os_config": {
 				Type:     schema.TypeBool,
@@ -88,7 +88,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"host_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^\..*)|(^\-.*)|(.*\-$)|(.*\.$)`), "It cannot begin or end with period (.), hyphen (-).")),
+				ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^\..*)|(^\-.*)|(.*\-$)|(.*\.$)`), "It cannot begin or end with period (.), hyphen (-).")),
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -97,49 +97,49 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"image_owner_alias": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
+				ValidateFunc: StringInSlice([]string{"system", "self", "others", "marketplace", ""}, false),
 				Default:      "",
 			},
 			"instance_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				ValidateFunc: StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 			},
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+				ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
+				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"internet_max_bandwidth_in": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(1, 200),
+				ValidateFunc: IntBetween(1, 200),
 			},
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"io_optimized": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"none", "optimized"}, false),
+				ValidateFunc: StringInSlice([]string{"none", "optimized"}, false),
 			},
 			"key_pair_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 128),
+				ValidateFunc: StringLenBetween(2, 128),
 			},
 			"launch_template_name": {
 				Type:          schema.TypeString,
@@ -164,12 +164,12 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 						"description": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+							ValidateFunc: validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
 						},
 						"name": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+							ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
 						},
 						"primary_ip": {
 							Type:         schema.TypeString,
@@ -191,7 +191,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"classic", "vpc"}, false),
+				ValidateFunc: StringInSlice([]string{"classic", "vpc"}, false),
 			},
 			"password_inherit": {
 				Type:     schema.TypeBool,
@@ -216,7 +216,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"security_enhancement_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Active", "Deactive"}, false),
+				ValidateFunc: StringInSlice([]string{"Active", "Deactive"}, false),
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -232,7 +232,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"spot_duration": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"0", "1", "2", "3", "4", "5", "6"}, false),
+				ValidateFunc: StringInSlice([]string{"0", "1", "2", "3", "4", "5", "6"}, false),
 				Default:      "1",
 			},
 			"spot_price_limit": {
@@ -242,7 +242,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"system_disk": {
 				Type:     schema.TypeSet,
@@ -255,7 +255,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 							Type:          schema.TypeString,
 							Optional:      true,
 							Computed:      true,
-							ValidateFunc:  validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							ValidateFunc:  StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 							ConflictsWith: []string{"system_disk_category"},
 						},
 						"delete_with_instance": {
@@ -267,7 +267,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 							Type:          schema.TypeString,
 							Optional:      true,
 							Computed:      true,
-							ValidateFunc:  validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+							ValidateFunc:  validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
 							ConflictsWith: []string{"system_disk_description"},
 						},
 						"iops": {
@@ -278,20 +278,20 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 							Type:          schema.TypeString,
 							Optional:      true,
 							Computed:      true,
-							ValidateFunc:  validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+							ValidateFunc:  validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
 							ConflictsWith: []string{"system_disk_name"},
 						},
 						"performance_level": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
-							Default:      "PL0",
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 						},
 						"size": {
 							Type:          schema.TypeInt,
 							Optional:      true,
 							Computed:      true,
-							ValidateFunc:  validation.IntBetween(20, 500),
+							ValidateFunc:  IntBetween(20, 500),
 							ConflictsWith: []string{"system_disk_size"},
 						},
 						"encrypted": {
@@ -343,7 +343,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+				ValidateFunc:  StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 				Deprecated:    "Field 'system_disk_category' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
@@ -351,7 +351,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.All(validation.StringLenBetween(2, 256), validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
+				ValidateFunc:  validation.All(StringLenBetween(2, 256), StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\".")),
 				Deprecated:    "Field 'system_disk_description' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
@@ -359,7 +359,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+				ValidateFunc:  validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
 				Deprecated:    "Field 'system_disk_name' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
@@ -367,7 +367,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.IntBetween(20, 500),
+				ValidateFunc:  IntBetween(20, 500),
 				Deprecated:    "Field 'system_disk_size' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
