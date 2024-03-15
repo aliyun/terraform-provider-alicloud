@@ -2,14 +2,13 @@
 subcategory: "RabbitMQ (AMQP)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_amqp_instance"
-sidebar_current: "docs-alicloud-resource-amqp-instance"
 description: |-
-  Provides a Alicloud RabbitMQ (AMQP) Instance resource.
+  Provides a Alicloud Amqp Instance resource.
 ---
 
 # alicloud_amqp_instance
 
-Provides a RabbitMQ (AMQP) Instance resource.
+Provides a Amqp Instance resource. The instance of Amqp.
 
 For information about RabbitMQ (AMQP) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/message-queue-for-rabbitmq/latest/createinstance).
 
@@ -20,73 +19,76 @@ For information about RabbitMQ (AMQP) Instance and how to use it, see [What is I
 Basic Usage
 
 ```terraform
-resource "alicloud_amqp_instance" "professional" {
-  instance_type  = "professional"
-  max_tps        = 1000
-  queue_capacity = 50
-  support_eip    = true
-  max_eip_tps    = 128
-  payment_type   = "Subscription"
-  period         = 1
+variable "name" {
+  default = "terraform-example"
 }
 
-resource "alicloud_amqp_instance" "enterprise" {
-  instance_type  = "enterprise"
-  max_tps        = 3000
-  queue_capacity = 200
-  storage_size   = 700
-  support_eip    = false
-  max_eip_tps    = 128
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+
+resource "alicloud_amqp_instance" "default" {
+  instance_name  = var.name
+  instance_type  = "professional"
+  max_tps        = "1000"
+  queue_capacity = "50"
+  period_cycle   = "Year"
+  support_eip    = "false"
+  period         = "1"
+  auto_renew     = "true"
   payment_type   = "Subscription"
-  period         = 1
 }
 ```
 
 ### Deleting `alicloud_amqp_instance` or removing it from your configuration
 
-The `alicloud_amqp_instance` resource allows you to manage `payment_type = "Subscription"` amqp instance, but Terraform cannot destroy it.
-Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the amqp Instance.
-You can resume managing the subscription db instance via the AlibabaCloud Console.
+The `alicloud_amqp_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
+You can resume managing the subscription instance via the AlibabaCloud Console.
 
 ## Argument Reference
 
 The following arguments are supported:
-
-* `instance_name` - (Optional, Available in v1.131.0+) The instance name.
-* `instance_type` - (Required, ForceNew) The Instance Type. Valid values: `professional`, `enterprise`, `vip`.
-* `max_eip_tps` - (Optional) The max eip tps. It is valid when `support_eip` is true. The valid value is [128, 45000] with the step size 128.
-* `max_tps` - (Required) The peak TPS traffic. The smallest valid value is 1000 and the largest value is 100,000.
-* `modify_type` - (Optional) The modify type. Valid values: `Downgrade`, `Upgrade`. It is required when updating other attributes.
-* `payment_type` - (Required) The payment type. Valid values: `Subscription`.
-* `period` - (Optional) The period. Valid values: `1`, `12`, `2`, `24`, `3`, `6`.
-* `queue_capacity` - (Required) The queue capacity. The smallest value is 50 and the step size 5.
-* `renewal_duration` - (Optional) RenewalDuration. Valid values: `1`, `12`, `2`, `3`, `6`.
-* `renewal_duration_unit` - (Optional) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years. Valid values: `Month`, `Year`.
-* `renewal_status` - (Optional) Whether to renew an instance automatically or not. Default to "ManualRenewal".
-  - `AutoRenewal`: Auto renewal.
-  - `ManualRenewal`: Manual renewal.
-  - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
-  
-* `storage_size` - (Optional) The storage size. It is valid when `instance_type` is vip.
-* `support_eip` - (Required) Whether to support EIP.
-* `logistics` - (Optional) The logistic information This parameter is not required when you create a ApsaraMQ for RabbitMQ instance. You do not need to specify this parameter.
+* `auto_renew` - (Optional, Available since v1.129.0) Renewal method. Automatic renewal: true; Manual renewal: false. When RenewalStatus has a value, the value of RenewalStatus shall prevail.
+* `instance_name` - (Optional, Computed) The instance name.
+* `instance_type` - (Optional, Computed) Instance type. Valid values are as follows:  professional: professional Edition enterprise: enterprise Edition vip: Platinum Edition.
+* `max_connections` - (Optional, Computed, Available since v1.129.0) The maximum number of connections, according to the value given on the purchase page of the cloud message queue RabbitMQ version console.
+* `max_eip_tps` - (Optional) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
+* `max_tps` - (Optional, Computed) Configure the private network TPS traffic peak, please set the value according to the cloud message queue RabbitMQ version of the console purchase page given.
+* `modify_type` - (Optional) Type of instance lifting and lowering:
+  - Upgrade: Upgrade
+  - Downgrade: Downgrading.
+* `payment_type` - (Required, ForceNew) The Payment type. Valid value: Subscription: prepaid. PayAsYouGo: Post-paid.
+* `period` - (Optional) Prepayment cycle, unit: periodCycle.  This parameter is valid when PaymentType is set to Subscription.
+* `period_cycle` - (Optional, Available since v1.129.0) Prepaid cycle units. Value: Month. Year: Year.
+* `queue_capacity` - (Optional, Computed) Configure the maximum number of queues. The value range is as follows:  Professional version:[50,1000], minimum modification step size is 5  Enterprise Edition:[200,6000], minimum modification step size is 100  Platinum version:[10000,80000], minimum modification step size is 100.
+* `renewal_duration` - (Optional, Computed) The number of automatic renewal cycles.
+* `renewal_duration_unit` - (Optional, Computed) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years.
+* `renewal_status` - (Optional, Computed) The renewal status. Value: AutoRenewal: automatic renewal. ManualRenewal: manual renewal. NotRenewal: no renewal.
+* `serverless_charge_type` - (Optional, Available since v1.129.0) The billing type of the serverless instance. Value: onDemand.
+* `storage_size` - (Optional, Computed) Configure the message storage space. Unit: GB. The value is as follows:  Professional Edition and Enterprise Edition: Fixed to 0. Description A value of 0 indicates that the Professional Edition and Enterprise Edition instances do not charge storage fees, but do not have storage space. Platinum version example: m × 100, where the value range of m is [7,28].
+* `support_eip` - (Optional) Whether to support public network.
+* `support_tracing` - (Optional, Computed) Whether to activate the message trace function. The values are as follows:  true: Enable message trace function false: message trace function is not enabled Description The Platinum Edition instance provides the 15-day message trace function free of charge. The trace function can only be enabled and the trace storage duration can only be set to 15 days. For instances of other specifications, you can enable or disable the trace function.
+* `tracing_storage_time` - (Optional, Computed) Configure the storage duration of message traces. Unit: Days. The value is as follows:  3:3 days 7:7 days 15:15 days This parameter is valid when SupportTracing is true.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Instance.
+* `id` - The ID of the resource supplied above.
+* `create_time` - OrderCreateTime.
 * `status` - The status of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 60 min) Used when create the Instance.
+* `create` - (Defaults to 5 mins) Used when create the Instance.
+* `delete` - (Defaults to 5 mins) Used when delete the Instance.
+* `update` - (Defaults to 5 mins) Used when update the Instance.
 
 ## Import
 
-RabbitMQ (AMQP) Instance can be imported using the id, e.g.
+Amqp Instance can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_amqp_instance.example <id>
