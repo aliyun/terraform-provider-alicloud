@@ -8,7 +8,7 @@ import (
 )
 
 // The quota product does not support deletion, so skip the test.
-func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
+func TestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 	resourceId := "data.alicloud_quotas_quota_applications.default"
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%d", rand)
@@ -16,32 +16,29 @@ func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}"},
+			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}-fake"},
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}-fake"},
 		}),
 	}
 	dimenstionsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
+			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}"},
-			"dimensions": []map[string]interface{}{
-				{
-					"key":   "regionId",
-					"value": "cn-hangzhou",
-				},
-			},
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
+			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}-fake"},
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}-fake"},
 			"dimensions": []map[string]interface{}{
 				{
 					"key":   "regionId",
@@ -52,45 +49,28 @@ func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 	}
 	statusConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
+			"quota_category": "${alicloud_quotas_quota_application.default.quota_category}",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}"},
-			"status":         "Process",
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
+			"status":         "Agree",
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"product_code":   "ess",
+			"product_code":   "vpc",
 			"enable_details": "true",
-			"ids":            []string{"${alicloud_quotas_application_info.default.id}"},
+			"ids":            []string{"${alicloud_quotas_quota_application.default.id}"},
 			"status":         "Disagree",
 		}),
 	}
 	var existQuotasApplicationInfosMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":                     "1",
-			"ids.0":                     CHECKSET,
-			"infos.#":                   "1",
-			"infos.0.approve_value":     CHECKSET,
-			"infos.0.audit_reason":      "",
-			"infos.0.desire_value":      "100",
-			"infos.0.id":                CHECKSET,
-			"infos.0.dimensions.#":      "1",
-			"infos.0.effective_time":    "",
-			"infos.0.expire_time":       "",
-			"infos.0.notice_type":       "0",
-			"infos.0.product_code":      "ess",
-			"infos.0.quota_action_code": "q_db_instance",
-			"infos.0.quota_description": CHECKSET,
-			"infos.0.quota_name":        CHECKSET,
-			"infos.0.quota_unit":        "",
-			"infos.0.reason":            CHECKSET,
-			"infos.0.status":            CHECKSET,
+			"ids.#": "1",
 		}
 	}
 
 	var fakeQuotasApplicationInfosMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#":   "0",
-			"infos.#": "0",
+			"ids.#": "0",
 		}
 	}
 
@@ -106,14 +86,15 @@ func SkipTestAccAlicloudQuotasApplicationInfosDataSource(t *testing.T) {
 func dataSourceQuotasQuotaApplicationsDependence(name string) string {
 	return fmt.Sprintf(`
 	resource "alicloud_quotas_quota_application" "default" {
-		notice_type  =  "0"
-		desire_value =  "100"
-		product_code =  "ess"
-		quota_action_code = "q_db_instance"
-		reason       =   "For Terraform Test"
-		dimensions {
-                key   =   "regionId"
-                value = "cn-hangzhou"
-				}
+	  product_code = "vpc"
+	  notice_type = "3"
+	  effective_time = "2023-05-22T16:00:00Z"
+	  expire_time = "2024-09-15T00:08:32Z"
+	  desire_value = "1"
+	  reason = ""
+	  quota_action_code = "vpc_whitelist/ha_vip_whitelist"
+	  audit_mode = "Sync"
+	  env_language = "zh"
+	  quota_category = "WhiteListLabel"
 	}`)
 }

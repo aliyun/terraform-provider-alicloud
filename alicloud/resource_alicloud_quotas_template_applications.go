@@ -3,10 +3,11 @@ package alicloud
 
 import (
 	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
+	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -185,8 +186,7 @@ func resourceAliCloudQuotasTemplateApplicationsCreate(d *schema.ResourceData, me
 	action := "CreateQuotaApplicationsForTemplate"
 	var request map[string]interface{}
 	var response map[string]interface{}
-	query := make(map[string]interface{})
-	conn, err := client.NewQuotasClient()
+	conn, err := client.NewQuotasClientV2()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -230,7 +230,7 @@ func resourceAliCloudQuotasTemplateApplicationsCreate(d *schema.ResourceData, me
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-05-10"), StringPointer("AK"), query, request, &runtime)
+		response, err = conn.CallApi(rpcParam(action, "POST", "2020-05-10"), &openapi.OpenApiRequest{Query: nil, Body: request, HostMap: nil}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -247,10 +247,10 @@ func resourceAliCloudQuotasTemplateApplicationsCreate(d *schema.ResourceData, me
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_quotas_template_applications", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["BatchQuotaApplicationId"]))
+	d.SetId(fmt.Sprint(response["body"].(map[string]interface{})["BatchQuotaApplicationId"]))
 
 	quotasServiceV2 := QuotasServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(response["BatchQuotaApplicationId"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, quotasServiceV2.QuotasTemplateApplicationsStateRefreshFunc(d.Id(), "BatchQuotaApplicationId", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(response["body"].(map[string]interface{})["BatchQuotaApplicationId"])}, d.Timeout(schema.TimeoutCreate), 5*time.Second, quotasServiceV2.QuotasTemplateApplicationsStateRefreshFunc(d.Id(), "BatchQuotaApplicationId", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

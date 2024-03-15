@@ -18,13 +18,26 @@ This data source provides the Quotas Quota Applications of the current Alibaba C
 Basic Usage
 
 ```terraform
-data "alicloud_quotas_quota_applications" "example" {
-  product_code = "ess"
-  ids          = ["4621F886-81E9-xxxx-xxxx"]
+resource "alicloud_quotas_quota_application" "default" {
+	product_code      = "vpc"
+	notice_type       = "3"
+	effective_time    = "2023-05-22T16:00:00Z"
+	expire_time       = "2024-09-15T00:08:32Z"
+	desire_value      = "1"
+	reason            = ""
+	quota_action_code = "vpc_whitelist/ha_vip_whitelist"
+	audit_mode        = "Sync"
+	env_language      = "zh"
+	quota_category    = "WhiteListLabel"
 }
 
-output "first_quotas_quota_application_id" {
-  value = data.alicloud_quotas_quota_applications.example.applications.0.id
+data "alicloud_quotas_quota_applications" "default" {
+	product_code   = "vpc"
+	enable_details = "true"
+	quota_category = alicloud_quotas_quota_application.default.quota_category
+	ids = [
+		"${alicloud_quotas_quota_application.default.id}"
+	]
 }
 ```
 
@@ -38,7 +51,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `product_code` - (Required, ForceNew) The product code.
 * `quota_action_code` - (Optional, ForceNew) The ID of quota action.
-* `quota_category` - (Optional, ForceNew) The quota category. Valid values: `CommonQuota`, `FlowControl`.
+* `quota_category` - (Optional, ForceNew) The quota category. Valid values: `CommonQuota`, `FlowControl`, `WhiteListLabel`.
 * `status` - (Optional, ForceNew) The status of the quota application. Valid Values: `Agree`, `Disagree` and `Process`.
 
 #### Block dimensions

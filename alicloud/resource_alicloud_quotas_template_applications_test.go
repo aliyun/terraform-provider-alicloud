@@ -21,7 +21,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5294(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotastemplateapplications%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%squotasapp%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5294)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -91,7 +91,7 @@ variable "name" {
 }
 
 resource "alicloud_resource_manager_account" "account" {
-  display_name = "tf-testacc-666"
+  display_name = var.name
 }
 
 
@@ -182,7 +182,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotastemplateapplications%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%squotastp%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5278)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -199,7 +199,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 					"quota_category":    "WhiteListLabel",
 					"aliyun_uids": []string{
 						"${alicloud_resource_manager_account.account.id}"},
-					"expire_time":  "2023-12-26T16:00:00Z",
+					"expire_time":  "2024-12-26T16:00:00Z",
 					"desire_value": "1",
 					"notice_type":  "0",
 					"env_language": "zh",
@@ -212,7 +212,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5278(t *testing.T) {
 						"effective_time":    "2023-12-03T16:00:00Z",
 						"quota_category":    "WhiteListLabel",
 						"aliyun_uids.#":     "1",
-						"expire_time":       "2023-12-26T16:00:00Z",
+						"expire_time":       "2024-12-26T16:00:00Z",
 						"desire_value":      "1",
 						"notice_type":       "0",
 						"env_language":      "zh",
@@ -241,7 +241,7 @@ variable "name" {
 }
 
 resource "alicloud_resource_manager_account" "account" {
-  display_name = "tf-testacc-888"
+  display_name = var.name
 }
 
 
