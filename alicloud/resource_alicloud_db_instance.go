@@ -1930,7 +1930,15 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	if v, ok := d.GetOk("port"); ok && v.(string) != "" {
 		request["Port"] = v
 	}
-	if request["Engine"] == "PostgreSQL" || request["Engine"] == "MySQL" || request["Engine"] == "SQLServer" {
+	if request["Engine"] == "MySQL" {
+		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
+			request["RoleARN"] = v.(string)
+		}
+		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
+			request["EncryptionKey"] = v.(string)
+		}
+	}
+	if request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {
 		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 			request["RoleARN"] = v.(string)
 		}
