@@ -1198,7 +1198,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_domain":                                            resourceAlicloudWafDomain(),
 			"alicloud_cen_route_map":                                         resourceAlicloudCenRouteMap(),
 			"alicloud_resource_manager_role":                                 resourceAlicloudResourceManagerRole(),
-			"alicloud_resource_manager_resource_group":                       resourceAlicloudResourceManagerResourceGroup(),
+			"alicloud_resource_manager_resource_group":                       resourceAliCloudResourceManagerResourceGroup(),
 			"alicloud_resource_manager_folder":                               resourceAlicloudResourceManagerFolder(),
 			"alicloud_resource_manager_handshake":                            resourceAlicloudResourceManagerHandshake(),
 			"alicloud_cen_private_zone":                                      resourceAlicloudCenPrivateZone(),
