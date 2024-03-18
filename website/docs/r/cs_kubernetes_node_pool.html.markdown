@@ -526,6 +526,7 @@ The rollout_policy mapping supports the following:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<cluster_id>:<node_pool_id>`.
 * `node_pool_id` - The first ID of the resource.
+* `scaling_group_id` - The ID of the scaling group.
 
 ## Timeouts
 
