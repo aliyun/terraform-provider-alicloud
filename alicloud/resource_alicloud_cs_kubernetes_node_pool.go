@@ -537,6 +537,10 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 					},
 				},
 			},
+			"scaling_group_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"scaling_policy": {
 				Type:             schema.TypeString,
 				Optional:         true,
@@ -1367,6 +1371,7 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("period", scaling_group1Raw["period"])
 	d.Set("period_unit", scaling_group1Raw["period_unit"])
 	d.Set("platform", scaling_group1Raw["platform"])
+	d.Set("scaling_group_id", scaling_group1Raw["scaling_group_id"])
 	d.Set("scaling_policy", scaling_group1Raw["scaling_policy"])
 	d.Set("security_group_id", scaling_group1Raw["security_group_id"])
 	d.Set("soc_enabled", scaling_group1Raw["soc_enabled"])
