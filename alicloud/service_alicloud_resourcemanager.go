@@ -49,36 +49,52 @@ func (s *ResourcemanagerService) DescribeResourceManagerRole(id string) (object 
 
 func (s *ResourcemanagerService) DescribeResourceManagerResourceGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetResourceGroup"
+
 	conn, err := s.client.NewResourcemanagerClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetResourceGroup"
+
 	request := map[string]interface{}{
-		"RegionId":        s.client.RegionId,
 		"ResourceGroupId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-03-31"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.ResourceGroup"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceGroup", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceGroup", id)), NotFoundWithResponse, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$.ResourceGroup", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ResourceGroup", response)
 	}
-	if vv, ok := v.(map[string]interface{})["Status"].(string); ok && vv == "PendingDelete" {
+
+	if status, ok := v.(map[string]interface{})["Status"].(string); ok && status == "PendingDelete" {
 		log.Printf("[WARN] Removing ResourceManagerResourceGroup  %s because it's already gone", id)
-		return v.(map[string]interface{}), WrapErrorf(Error(GetNotFoundMessage("ResourceManagerResourceGroup", id)), NotFoundMsg, ProviderERROR)
+		return v.(map[string]interface{}), WrapErrorf(Error(GetNotFoundMessage("ResourceManager:ResourceGroup", id)), NotFoundWithResponse, response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -98,6 +114,7 @@ func (s *ResourcemanagerService) ResourceManagerResourceGroupStateRefreshFunc(id
 				return object, object["Status"].(string), WrapError(Error(FailedToReachTargetStatus, object["Status"].(string)))
 			}
 		}
+
 		return object, object["Status"].(string), nil
 	}
 }
