@@ -10,7 +10,8 @@ import (
 )
 
 // Skip Test,Because each account can only be opened once
-func SkipTestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
+func TestAccAliCloudThreatDetectionInstance_basic1826(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap1826)
@@ -145,7 +146,8 @@ variable "name" {
 
 // Test ThreatDetection Instance. >>> Resource test cases, automatically generated.
 // Case 4253
-func SkipTestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
+func TestAccAliCloudThreatDetectionInstance_basic4253(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
@@ -621,7 +623,8 @@ variable "name" {
 }
 
 // Case 4253  twin
-func SkipTestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
+func TestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
@@ -710,7 +713,8 @@ func SkipTestAccAliCloudThreatDetectionInstance_basic4253_twin(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
+func TestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)
@@ -801,7 +805,8 @@ func SkipTestAccAliCloudThreatDetectionInstance_basic4253_intl(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
+func TestAccAliCloudThreatDetectionInstance_basic4253_twin_fix(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_threat_detection_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudThreatDetectionInstanceMap4253)

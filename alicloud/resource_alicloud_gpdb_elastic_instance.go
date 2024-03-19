@@ -386,8 +386,3 @@ func convertGpdbInstancePaymentTypeResponse(source string) string {
 	}
 	return source
 }
-
-func convertDBInstanceClassToInstanceSpec(instanceClass string) string {
-	splitClass := strings.Split(instanceClass, ".")
-	return strings.ToUpper(splitClass[len(splitClass)-1])
-}

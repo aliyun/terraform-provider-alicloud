@@ -1264,7 +1264,8 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 }
 
 // Memcache Instance has been offline since 2023-08-13
-func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
+func TestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
+	t.Skip("Pending")
 	var v r_kvstore.DBInstanceAttribute
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)

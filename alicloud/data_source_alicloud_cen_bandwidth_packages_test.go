@@ -12,7 +12,8 @@ import (
 )
 
 // Skip this testcase because of the account cannot purchase non-internal products.
-func SkipTestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
+func TestAccAlicloudCenBandwidthPackagesDataSource(t *testing.T) {
+	t.Skip("Pending")
 	rand := acctest.RandIntRange(1000000, 99999999)
 	idConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenBandwidthPackagesDataSourceConfig(rand, map[string]string{

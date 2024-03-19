@@ -2,8 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"log"
-	"regexp"
 	"strings"
 	"time"
 
@@ -1142,106 +1140,6 @@ func (s *VpcService) DescribeTags(resourceId string, resourceTags map[string]int
 	response, _ := raw.(*vpc.ListTagResourcesResponse)
 
 	return response.TagResources.TagResource, nil
-}
-
-func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagResourceType) error {
-	if d.HasChange("tags") {
-		added, removed := parsingTags(d)
-		conn, err := s.client.NewVpcClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		if len(removed) > 0 {
-			action := "UnTagResources"
-			request := map[string]interface{}{
-				"RegionId":     s.client.RegionId,
-				"ResourceId.1": d.Id(),
-				"ResourceType": string(resourceType),
-			}
-			for i, key := range removed {
-				request[fmt.Sprintf("TagKey.%d", i+1)] = key
-			}
-
-			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-
-					}
-					return resource.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-		}
-
-		if len(added) > 0 {
-			action := "TagResources"
-			request := map[string]interface{}{
-				"RegionId":     s.client.RegionId,
-				"ResourceId.1": d.Id(),
-				"ResourceType": string(resourceType),
-			}
-			count := 1
-			for key, value := range added {
-				request[fmt.Sprintf("Tag.%d.Key", count)] = key
-				request[fmt.Sprintf("Tag.%d.Value	", count)] = value
-				count++
-			}
-
-			wait := incrementalWait(2*time.Second, 1*time.Second)
-			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-
-					}
-					return resource.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
-		}
-
-		d.SetPartial("tags")
-	}
-
-	return nil
-}
-
-func (s *VpcService) tagsToMap(tags []vpc.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ignoreTag(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-	return result
-}
-
-func (s *VpcService) ignoreTag(t vpc.TagResource) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
 }
 
 func (s *VpcService) SetInstanceSecondaryCidrBlocks(d *schema.ResourceData) error {

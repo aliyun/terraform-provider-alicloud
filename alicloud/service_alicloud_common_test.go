@@ -273,17 +273,6 @@ func getResourceDescribeMethod(resourceId string) (string, error) {
 	return describeName, nil
 }
 
-// check attribute func and check resource exist
-func (rac *resourceAttrCheck) resourceAttrMapCheck() resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		err := rac.resourceCheck.checkResourceExists()(s)
-		if err != nil {
-			return WrapError(err)
-		}
-		return rac.resourceAttr.resourceAttrMapCheck()(s)
-	}
-}
-
 // execute the callback before check attribute and check resource exist
 func (rac *resourceAttrCheck) resourceAttrMapCheckWithCallback(callback func()) resource.TestCheckFunc {
 	return func(s *terraform.State) error {

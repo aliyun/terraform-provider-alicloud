@@ -104,7 +104,8 @@ func testSweepCenBandwidthLimit(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
+func TestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v cbn.CenInterRegionBandwidthLimit
 	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider
@@ -151,7 +152,8 @@ func SkipTestAccAlicloudCenBandwidthLimit_basic(t *testing.T) {
 }
 
 // Skip this testcase because of the account cannot purchase non-internal products.
-func SkipTestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
+func TestAccAlicloudCenBandwidthLimit_multi(t *testing.T) {
+	t.Skip("Pending")
 	var v cbn.CenInterRegionBandwidthLimit
 	resourceId := "alicloud_cen_bandwidth_limit.default"
 	var providers []*schema.Provider

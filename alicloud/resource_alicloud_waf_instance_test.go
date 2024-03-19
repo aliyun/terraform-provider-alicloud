@@ -21,7 +21,8 @@ import (
 )
 
 // Skip this testcase because you can only have one instance.
-func SkipTestAccAlicloudWAFInstance_basic(t *testing.T) {
+func TestAccAlicloudWAFInstance_basic(t *testing.T) {
+	t.Skip("Pending: You can only have one instance.")
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.WAFSupportRegions)
 	resourceId := "alicloud_waf_instance.default"

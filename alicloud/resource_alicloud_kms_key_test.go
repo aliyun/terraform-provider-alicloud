@@ -259,7 +259,8 @@ var KmsKeyMap = map[string]string{
 	"protection_level":    "SOFTWARE",
 }
 
-func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
+func TestAccAlicloudKMSKey_DKMS(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
 	ra := resourceAttrInit(resourceId, KmsKeyMap)

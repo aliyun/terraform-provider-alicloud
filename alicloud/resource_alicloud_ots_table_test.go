@@ -8,7 +8,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAccAlicloudOtsTable_basic(t *testing.T) {
@@ -408,50 +407,4 @@ var otsTableBasicMap = map[string]string{
 	"time_to_live":                  "-1",
 	"max_version":                   "1",
 	"deviation_cell_version_in_sec": "86400",
-}
-
-func testAccCheckOtsTableExist(n string, table *tablestore.DescribeTableResponse) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found OTS table: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no OTS table ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		response, err := otsService.DescribeOtsTable(rs.Primary.ID)
-
-		if err != nil {
-			return fmt.Errorf("Error finding OTS table %s: %#v", rs.Primary.ID, err)
-		}
-
-		table = response
-		return nil
-	}
-}
-
-func testAccCheckOtsTableDestroy(s *terraform.State) error {
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ots_table" {
-			continue
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		if _, err := otsService.DescribeOtsTable(rs.Primary.ID); err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		}
-		return fmt.Errorf("error! Ots table still exists")
-	}
-
-	return nil
 }

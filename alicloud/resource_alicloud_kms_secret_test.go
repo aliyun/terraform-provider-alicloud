@@ -239,7 +239,8 @@ func TestAccAlicloudKMSSecret_Basic(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudKMSSecret_DKMS(t *testing.T) {
+func TestAccAlicloudKMSSecret_DKMS(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_secret.default"
 	rand := acctest.RandIntRange(1000000, 9999999)

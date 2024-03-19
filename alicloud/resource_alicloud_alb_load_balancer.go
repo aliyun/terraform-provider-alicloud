@@ -917,13 +917,6 @@ func convertAlbLoadBalancerBillingConfigPayTypeResponse(source interface{}) inte
 	}
 	return source
 }
-func convertAlbRegionIdResponse(source interface{}) interface{} {
-	switch source {
-	case "cn-hangzhou-onebox-nebula":
-		return "cn-hangzhou"
-	}
-	return source
-}
 func convertAlbLoadBalancerBillingConfigPayTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":

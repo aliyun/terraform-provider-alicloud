@@ -73,16 +73,6 @@ const (
 	S4Large  = "slb.s4.large"
 )
 
-type ListenerErr struct {
-	ErrType string
-	Err     error
-}
-
-func (e *ListenerErr) Error() string {
-	return e.ErrType + " " + e.Err.Error()
-
-}
-
 func expandBackendServersToString(list []interface{}, weight int, serverType string) string {
 	if len(list) < 1 {
 		return ""

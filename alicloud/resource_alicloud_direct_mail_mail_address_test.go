@@ -119,7 +119,8 @@ func testSweepDirectMailAddress(region string) error {
 }
 
 // this resource depends on user's account which tf account not support
-func SkipTestAccAlicloudDirectMailMailAddress_basic0(t *testing.T) {
+func TestAccAlicloudDirectMailMailAddress_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_direct_mail_mail_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudDirectMailMailAddressMap0)

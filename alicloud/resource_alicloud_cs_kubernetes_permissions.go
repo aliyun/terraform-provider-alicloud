@@ -259,21 +259,6 @@ func describeUserPermission(client *cs.Client, uid string) ([]*cs.DescribeUserPe
 	return resp.Body, nil
 }
 
-func grantPermissions(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
-	if body == nil {
-		body = []*cs.GrantPermissionsRequestBody{}
-	}
-	req := &cs.GrantPermissionsRequest{
-		Body: body,
-	}
-	_, err := client.GrantPermissions(tea.String(uid), req)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func grantPermissionsForAddPerm(client *cs.Client, uid string, body []*cs.GrantPermissionsRequestBody) error {
 	existPerms, err := describeUserPermission(client, uid)
 	if err != nil {

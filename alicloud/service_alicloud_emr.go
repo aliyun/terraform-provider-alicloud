@@ -325,14 +325,6 @@ func (s *EmrService) tagsFromMap(m map[string]interface{}) []emr.TagResourcesTag
 	return result
 }
 
-func (s *EmrService) tagsToMap(tags []emr.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		result[t.TagKey] = t.TagValue
-	}
-	return result
-}
-
 func (s *EmrService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
 	conn, err := s.client.NewEmrClient()
 	if err != nil {

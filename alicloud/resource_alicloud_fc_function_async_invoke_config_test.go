@@ -363,15 +363,6 @@ func getMnsTopicArn(topicName string) string {
 	return fmt.Sprintf("acs:mns:%s:%s:/topics/%s/messages", region, account, topicName)
 }
 
-func getFcFunctionArn(serviceName string, qualifier string, functionName string) string {
-	region := os.Getenv("ALICLOUD_REGION")
-	account := os.Getenv("ALICLOUD_ACCOUNT_ID")
-	if qualifier == "" {
-		qualifier = "LATEST"
-	}
-	return fmt.Sprintf("acs:fc:%s:%s:services/%s.%s/functions/%s", region, account, serviceName, qualifier, functionName)
-}
-
 func resourceFcFunctionAsyncInvokeConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {

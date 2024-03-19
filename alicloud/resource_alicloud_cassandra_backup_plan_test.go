@@ -20,7 +20,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudCassandraBackupPlan_basic0(t *testing.T) {
+func TestAccAlicloudCassandraBackupPlan_basic0(t *testing.T) {
+	t.Skip("Pending")
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
 	var v map[string]interface{}

@@ -1050,7 +1050,8 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 }
 
 // auto_scaling has concurrent config conflict
-func SkipTestAccAliCloudCSKubernetesNodePool_ScalingConflict(t *testing.T) {
+func TestAccAliCloudCSKubernetesNodePool_ScalingConflict(t *testing.T) {
+	t.Skip("Pending")
 	var v *cs.NodePoolDetail
 
 	resourceId := "alicloud_cs_kubernetes_node_pool.autoscaling"
@@ -2260,51 +2261,6 @@ var AlicloudAckNodepoolMap5288 = map[string]string{
 	"system_disk_category":     CHECKSET,
 }
 
-func AlicloudAckNodepoolBasicDependence5288(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c0196d207b11d4a25ae4cad2a6f029a38"
-}
-
-variable "password" {
-  default = "spot_instance"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_resource_manager_resource_group" "default" {
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vsw2" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.10.0/24"
-  zone_id    = data.alicloud_zones.default.zones.1.id
-}
-
-resource "alicloud_vswitch" "vsw3" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.11.0/24"
-  zone_id    = data.alicloud_zones.default.zones.2.id
-}
-
-
-`, name)
-}
-
 // Case 节点池测试_kubelet 5291
 func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 	var v map[string]interface{}
@@ -2868,54 +2824,6 @@ var AlicloudAckNodepoolMap5291 = map[string]string{
 	"system_disk_category":     CHECKSET,
 }
 
-func AlicloudAckNodepoolBasicDependence5291(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c9ce5d0afd36e4eb6857522b1d0246bd7"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_ecs_elasticity_assurance" "default0yDzRS" {
-  instance_amount                     = "1"
-  zone_id                             = ["${alicloud_vswitch.vsw1.zone_id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["ecs.u1-c1m2.xlarge"]
-}
-
-resource "alicloud_ecs_elasticity_assurance" "default4NZTlr" {
-  instance_amount                     = "1"
-  zone_id                             = ["${alicloud_vswitch.vsw1.zone_id}"]
-  period                              = "1"
-  private_pool_options_match_criteria = "Open"
-  assurance_times                     = "Unlimited"
-  period_unit                         = "Month"
-  instance_type                       = ["ecs.u1-c1m2.xlarge"]
-}
-
-
-`, name)
-}
-
 // Case 节点池测试-PrePaid 5266
 func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 	var v map[string]interface{}
@@ -3355,34 +3263,6 @@ var AlicloudAckNodepoolMap5266 = map[string]string{
 	"security_group_id":        CHECKSET,
 	"management.#":             CHECKSET,
 	"system_disk_category":     CHECKSET,
-}
-
-func AlicloudAckNodepoolBasicDependence5266(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c0196d207b11d4a25ae4cad2a6f029a38"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.4.4.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-
-`, name)
 }
 
 // Case 节点池测试_basic 5172
@@ -4008,66 +3888,6 @@ var AlicloudAckNodepoolMap5172 = map[string]string{
 	"system_disk_category":     CHECKSET,
 }
 
-func AlicloudAckNodepoolBasicDependence5172(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c0196d207b11d4a25ae4cad2a6f029a38"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_resource_manager_resource_group" "default" {
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_vswitch" "vsw2" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.10.0/24"
-  zone_id    = data.alicloud_zones.default.zones.1.id
-}
-
-resource "alicloud_vswitch" "vsw3" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.11.0/24"
-  zone_id    = data.alicloud_zones.default.zones.2.id
-}
-
-resource "alicloud_ecs_auto_snapshot_policy" "defaultrt8z7K" {
-  time_points               = ["1", "22", "23"]
-  repeat_weekdays           = ["1", "2", "3"]
-  auto_snapshot_policy_name = var.name
-
-  retention_days = "-1"
-}
-
-resource "alicloud_ecs_deployment_set" "default" {
-  group_count         = "3"
-  strategy            = "Availability"
-  deployment_set_name = var.name
-
-}
-
-
-`, name)
-}
-
 // Case 节点池测试_soc 5401
 func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 	var v map[string]interface{}
@@ -4291,34 +4111,6 @@ var AlicloudAckNodepoolMap5401 = map[string]string{
 	"system_disk_category":     CHECKSET,
 }
 
-func AlicloudAckNodepoolBasicDependence5401(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c0196d207b11d4a25ae4cad2a6f029a38"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-
-`, name)
-}
-
 // Case 节点池测试_teeconfig 5628
 func TestAccAliCloudAckNodepool_basic5628(t *testing.T) {
 	var v map[string]interface{}
@@ -4529,34 +4321,6 @@ var AlicloudAckNodepoolMap5628 = map[string]string{
 	"security_group_id":        CHECKSET,
 	"management.#":             CHECKSET,
 	"system_disk_category":     CHECKSET,
-}
-
-func AlicloudAckNodepoolBasicDependence5628(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-
-variable "cluster" {
-  default = "c0196d207b11d4a25ae4cad2a6f029a38"
-}
-
-variable "password" {
-  default = "tf-example123456"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-resource "alicloud_vswitch" "vsw1" {
-  vpc_id     = "vpc-bp1b444zex5kv0jwh0je4"
-  cidr_block = "10.0.9.0/24"
-  zone_id    = data.alicloud_zones.default.zones.0.id
-}
-
-
-`, name)
 }
 
 // Case 节点池测试_spot_instance 5288  twin

@@ -1979,12 +1979,6 @@ func (s *RdsService) ignoreTag(t Tag) bool {
 	return false
 }
 
-func (s *RdsService) tagsToString(tags []Tag) string {
-	v, _ := json.Marshal(s.tagsToMap(tags))
-
-	return string(v)
-}
-
 func (s *RdsService) DescribeDBProxy(id string) (map[string]interface{}, error) {
 	action := "DescribeDBProxy"
 	request := map[string]interface{}{

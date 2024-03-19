@@ -13,7 +13,8 @@ import (
 )
 
 // The dependent resource alidns_instance is prepaid so skip current test case.
-func SkipTestAccAlicloudAlidnsDomainAttachment_basic(t *testing.T) {
+func TestAccAlicloudAlidnsDomainAttachment_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v alidns.DescribeInstanceDomainsResponse
 
 	resourceId := "alicloud_alidns_domain_attachment.default"

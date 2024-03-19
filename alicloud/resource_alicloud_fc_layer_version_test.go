@@ -9,7 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudFCLayerVersion_basic0(t *testing.T) {
+func TestAccAlicloudFCLayerVersion_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_fc_layer_version.default"
 	ra := resourceAttrInit(resourceId, AlicloudFcLayerVersionMap0)

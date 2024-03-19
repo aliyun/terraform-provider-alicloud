@@ -143,50 +143,6 @@ func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failSta
 	}
 }
 
-func (s *CbnService) setResourceTags(d *schema.ResourceData, resourceType string) error {
-	oldItems, newItems := d.GetChange("tags")
-	added := make([]cbn.TagResourcesTag, 0)
-	for key, value := range newItems.(map[string]interface{}) {
-		added = append(added, cbn.TagResourcesTag{
-			Key:   key,
-			Value: value.(string),
-		})
-	}
-	removed := make([]string, 0)
-	for key := range oldItems.(map[string]interface{}) {
-		removed = append(removed, key)
-	}
-	if len(removed) > 0 {
-		request := cbn.CreateUntagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.TagKey = &removed
-		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.UntagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	if len(added) > 0 {
-		request := cbn.CreateTagResourcesRequest()
-		request.RegionId = s.client.RegionId
-		request.ResourceId = &[]string{d.Id()}
-		request.ResourceType = resourceType
-		request.Tag = &added
-		raw, err := s.client.WithCbnClient(func(cbnClient *cbn.Client) (interface{}, error) {
-			return cbnClient.TagResources(request)
-		})
-		addDebug(request.GetActionName(), raw)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-	}
-	return nil
-}
-
 func (s *CbnService) DescribeCenRouteMap(id string) (object cbn.RouteMap, err error) {
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {

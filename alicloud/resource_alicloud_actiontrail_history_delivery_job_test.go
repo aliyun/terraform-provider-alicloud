@@ -116,7 +116,8 @@ func testSweepActionTrailHistoryDeliveryJob(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudActiontrailHistoryDeliveryJob_basic0(t *testing.T) {
+func TestAccAlicloudActiontrailHistoryDeliveryJob_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.ActiontrailSupportRegions)
 	resourceId := "alicloud_actiontrail_history_delivery_job.default"

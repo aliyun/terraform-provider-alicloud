@@ -138,11 +138,6 @@ func resourceAliCloudKmsClientKeyRead(d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func resourceAliCloudKmsClientKeyUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[INFO] Cannot update resource Alicloud Resource Client Key.")
-	return nil
-}
-
 func resourceAliCloudKmsClientKeyDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)

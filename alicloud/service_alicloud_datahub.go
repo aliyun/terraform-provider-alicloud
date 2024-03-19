@@ -188,14 +188,6 @@ func (s *DatahubService) WaitForDatahubTopic(id string, status Status, timeout i
 	}
 }
 
-func convUint64ToDate(t uint64) string {
-	return time.Unix(int64(t), 0).Format("2006-01-02 15:04:05")
-}
-
-func getNow() string {
-	return time.Now().Format("2006-01-02 15:04:05")
-}
-
 func getRecordSchema(typeMap map[string]interface{}) (recordSchema *datahub.RecordSchema) {
 	recordSchema = datahub.NewRecordSchema()
 

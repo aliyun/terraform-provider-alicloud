@@ -214,7 +214,8 @@ func TestAccAlicloudOpenSearchAppGroup_basic0(t *testing.T) {
 }
 
 // There is an api error： InternalError. Reopen it after the error has been fixed.
-func SkipTestAccAlicloudOpenSearchAppGroup_basic1(t *testing.T) {
+func TestAccAlicloudOpenSearchAppGroup_basic1(t *testing.T) {
+	t.Skip("Pending")
 	checkoutSupportedRegions(t, true, connectivity.OpenSearchSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_open_search_app_group.default"

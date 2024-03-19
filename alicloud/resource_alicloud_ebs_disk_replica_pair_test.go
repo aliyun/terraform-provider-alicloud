@@ -10,7 +10,8 @@ import (
 )
 
 // Case 1
-func SkipTestAccAlicloudDiskDiskReplicaPair_basic(t *testing.T) {
+func TestAccAlicloudDiskDiskReplicaPair_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_ebs_disk_replica_pair.default"
 	ra := resourceAttrInit(resourceId, AlicloudDiskDiskReplicaPairMap)

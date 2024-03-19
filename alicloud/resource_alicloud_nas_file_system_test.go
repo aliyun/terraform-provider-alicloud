@@ -705,23 +705,6 @@ data "alicloud_vswitches" "default" {
 `, name)
 }
 
-func AlicloudNasFileSystemBasicDependence5(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-
-data "alicloud_nas_zones" "default" {
-  file_system_type = "standard"
-}
-
-locals {
-  count_size = length(data.alicloud_nas_zones.default.zones)
-  zone_id = data.alicloud_nas_zones.default.zones[local.count_size - 1].zone_id
-}
-`, name)
-}
-
 func TestUnitAlicloudNASFileSystem(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_nas_file_system"].Schema).Data(nil, nil)

@@ -9,7 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudHbrHanaBackupClient_basic0(t *testing.T) {
+func TestAccAlicloudHbrHanaBackupClient_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_hbr_hana_backup_client.default"

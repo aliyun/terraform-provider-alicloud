@@ -10,7 +10,8 @@ import (
 )
 
 // Case 1
-func SkipTestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
+func TestAccAlicloudEbsDedicatedBlockStorageCluster_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	testAccPreCheckWithRegions(t, true, connectivity.EbsDedicatedBlockStorageClusterRegions)
 	resourceId := "alicloud_ebs_dedicated_block_storage_cluster.default"

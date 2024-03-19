@@ -13,7 +13,8 @@ import (
 	Because there are two lines between enabling remote disaster recovery and generating remote disaster recovery, the generation time of the remote disaster recovery set cannot be determined, the query cannot be determined to have a value, and the OpenAPI will return normally without a value. All users skip the 'Test' and have passed the 'Test' offline simulation.
 */
 
-func SkipTestAccAlicloudRdsCrossRegionBackupsDataSource(t *testing.T) {
+func TestAccAlicloudRdsCrossRegionBackupsDataSource(t *testing.T) {
+	t.Skip("Pending")
 	rand := acctest.RandInt()
 	testConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRdsCrossRegionBackupsDataSourceName(rand, map[string]string{

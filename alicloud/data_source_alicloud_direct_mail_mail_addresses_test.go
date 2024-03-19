@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func SkipTestAccAlicloudDirectMailMailAddressesDataSource(t *testing.T) {
+func TestAccAlicloudDirectMailMailAddressesDataSource(t *testing.T) {
+	t.Skip("Pending")
 	rand := acctest.RandIntRange(10000, 99999)
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudDirectMailMailAddressesDataSourceName(rand, map[string]string{

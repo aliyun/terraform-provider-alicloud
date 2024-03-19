@@ -2,8 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"log"
-	"regexp"
 	"strings"
 	"time"
 
@@ -260,108 +258,6 @@ func (s *AdbService) WaitForAdbInstance(id string, status Status, timeout int) e
 		time.Sleep(DefaultIntervalShort * time.Second)
 	}
 	return nil
-}
-
-func (s *AdbService) setClusterTags(d *schema.ResourceData) error {
-	if d.HasChange("tags") {
-		oraw, nraw := d.GetChange("tags")
-		o := oraw.(map[string]interface{})
-		n := nraw.(map[string]interface{})
-		create, remove := s.diffTags(s.tagsFromMap(o), s.tagsFromMap(n))
-
-		if len(remove) > 0 {
-			var tagKey []string
-			for _, v := range remove {
-				tagKey = append(tagKey, v.Key)
-			}
-			request := adb.CreateUntagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.ResourceType = "cluster"
-			request.TagKey = &tagKey
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAdbClient(func(client *adb.Client) (interface{}, error) {
-				return client.UntagResources(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		}
-
-		if len(create) > 0 {
-			request := adb.CreateTagResourcesRequest()
-			request.ResourceId = &[]string{d.Id()}
-			request.Tag = &create
-			request.ResourceType = "cluster"
-			request.RegionId = s.client.RegionId
-			raw, err := s.client.WithAdbClient(func(client *adb.Client) (interface{}, error) {
-				return client.TagResources(request)
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		}
-
-		d.SetPartial("tags")
-	}
-
-	return nil
-}
-
-func (s *AdbService) diffTags(oldTags, newTags []adb.TagResourcesTag) ([]adb.TagResourcesTag, []adb.TagResourcesTag) {
-	// First, we're creating everything we have
-	create := make(map[string]interface{})
-	for _, t := range newTags {
-		create[t.Key] = t.Value
-	}
-
-	// Build the list of what to remove
-	var remove []adb.TagResourcesTag
-	for _, t := range oldTags {
-		old, ok := create[t.Key]
-		if !ok || old != t.Value {
-			// Delete it!
-			remove = append(remove, t)
-		}
-	}
-
-	return s.tagsFromMap(create), remove
-}
-
-func (s *AdbService) tagsToMap(tags []adb.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ignoreTag(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-	return result
-}
-
-func (s *AdbService) tagsFromMap(m map[string]interface{}) []adb.TagResourcesTag {
-	result := make([]adb.TagResourcesTag, 0, len(m))
-	for k, v := range m {
-		result = append(result, adb.TagResourcesTag{
-			Key:   k,
-			Value: v.(string),
-		})
-	}
-
-	return result
-}
-
-func (s *AdbService) ignoreTag(t adb.TagResource) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagValue)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
 }
 
 func (s *AdbService) DescribeTags(resourceId string, resourceType TagResourceType) (tags []adb.TagResource, err error) {

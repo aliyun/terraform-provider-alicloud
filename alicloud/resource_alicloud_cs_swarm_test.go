@@ -12,7 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func SkipTestAccAlicloudCSSwarm_vpc(t *testing.T) {
+func TestAccAlicloudCSSwarm_vpc(t *testing.T) {
+	t.Skip("Pending")
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
@@ -38,7 +39,8 @@ func SkipTestAccAlicloudCSSwarm_vpc(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
+func TestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
+	t.Skip("Pending")
 	var container cs.ClusterType
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{
@@ -79,7 +81,8 @@ func SkipTestAccAlicloudCSSwarm_vpc_zero_node(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
+func TestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
+	t.Skip("Pending")
 	var container cs.ClusterType
 
 	resource.Test(t, resource.TestCase{
@@ -106,7 +109,8 @@ func SkipTestAccAlicloudCSSwarm_vpc_noslb(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCSSwarm_update(t *testing.T) {
+func TestAccAlicloudCSSwarm_update(t *testing.T) {
+	t.Skip("Pending")
 	var container cs.ClusterType
 	rand := acctest.RandIntRange(10000, 999999)
 	resource.Test(t, resource.TestCase{

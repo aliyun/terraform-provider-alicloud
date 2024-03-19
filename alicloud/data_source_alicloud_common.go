@@ -71,20 +71,3 @@ func outputInstancesSchema() map[string]*schema.Schema {
 		},
 	}
 }
-
-func outputShortVpcsSchema() map[string]*schema.Schema {
-	return map[string]*schema.Schema{
-		"region_id": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
-		"vpc_id": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
-		"vpc_name": {
-			Type:     schema.TypeString,
-			Computed: true,
-		},
-	}
-}

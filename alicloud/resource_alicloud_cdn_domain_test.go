@@ -83,7 +83,8 @@ func testSweepCdnDomains(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudCDNDomain_basic(t *testing.T) {
+func TestAccAlicloudCDNDomain_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 	resource.Test(t, resource.TestCase{
@@ -114,7 +115,8 @@ func SkipTestAccAlicloudCDNDomain_basic(t *testing.T) {
 
 // Skip this testcase because of the old API can not support overseas.
 // It should be open after using new API
-func SkipTestAccAlicloudCDNDomain_https(t *testing.T) {
+func TestAccAlicloudCDNDomain_https(t *testing.T) {
+	t.Skip("Pending")
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 
@@ -144,7 +146,8 @@ func SkipTestAccAlicloudCDNDomain_https(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCDNDomain_domestic(t *testing.T) {
+func TestAccAlicloudCDNDomain_domestic(t *testing.T) {
+	t.Skip("Pending")
 	var v cdn.DomainDetail
 	rand := acctest.RandInt()
 

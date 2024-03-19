@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudCENTransitRouterGrantAttachment_basic0(t *testing.T) {
+func TestAccAlicloudCENTransitRouterGrantAttachment_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_transit_router_grant_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterGrantAttachmentMap0)

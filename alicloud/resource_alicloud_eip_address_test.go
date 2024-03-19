@@ -527,7 +527,8 @@ variable "name" {
 `, name)
 }
 
-func SkipTestAccAliCloudEIPAddress_basic3(t *testing.T) {
+func TestAccAliCloudEIPAddress_basic3(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap3)
@@ -621,7 +622,8 @@ func TestAccAliCloudEIPAddress_basic4(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudEIPAddress_basic5(t *testing.T) {
+func TestAccAliCloudEIPAddress_basic5(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap0)
@@ -887,7 +889,8 @@ func TestAccAliCloudEIPAddress_basic9(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudEIPAddress_basic9_ip(t *testing.T) {
+func TestAccAliCloudEIPAddress_basic9_ip(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap0)

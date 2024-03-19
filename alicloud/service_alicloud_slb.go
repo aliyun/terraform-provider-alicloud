@@ -3,8 +3,6 @@ package alicloud
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -620,22 +618,6 @@ func (s *SlbService) WaitForSlbServerCertificate(id string, status Status, timeo
 	return nil
 }
 
-func toSlbTagsString(tags []Tag) string {
-	slbTags := make([]SlbTag, 0, len(tags))
-
-	for _, tag := range tags {
-		slbTag := SlbTag{
-			TagKey:   tag.Key,
-			TagValue: tag.Value,
-		}
-		slbTags = append(slbTags, slbTag)
-	}
-
-	b, _ := json.Marshal(slbTags)
-
-	return string(b)
-}
-
 func (s *SlbService) DescribeDomainExtensionAttribute(domainExtensionId string) (*slb.DescribeDomainExtensionAttributeResponse, error) {
 	response := &slb.DescribeDomainExtensionAttributeResponse{}
 	request := slb.CreateDescribeDomainExtensionAttributeRequest()
@@ -758,29 +740,6 @@ func (s *SlbService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 	d.SetPartial("tags")
 
 	return nil
-}
-
-func (s *SlbService) tagsToMap(tags []slb.TagResource) map[string]string {
-	result := make(map[string]string)
-	for _, t := range tags {
-		if !s.ignoreTag(t) {
-			result[t.TagKey] = t.TagValue
-		}
-	}
-	return result
-}
-
-func (s *SlbService) ignoreTag(t slb.TagResource) bool {
-	filter := []string{"^aliyun", "^acs:", "^http://", "^https://"}
-	for _, v := range filter {
-		log.Printf("[DEBUG] Matching prefix %v with %v\n", v, t.TagKey)
-		ok, _ := regexp.MatchString(v, t.TagKey)
-		if ok {
-			log.Printf("[DEBUG] Found Alibaba Cloud specific t %s (val: %s), ignoring.\n", t.TagKey, t.TagValue)
-			return true
-		}
-	}
-	return false
 }
 
 func (s *SlbService) diffTags(oldTags, newTags []slb.TagResourcesTag) ([]slb.TagResourcesTag, []slb.TagResourcesTag) {

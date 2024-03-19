@@ -133,7 +133,8 @@ func testAccCheckVpnGatewayDestroy(s *terraform.State) error {
 
 // At present, some properties of this resource do not support modification, including: period, bandwidth, enable_ipsec,
 // enable_ssl, ssl_connections etc.
-func SkipTestAccAlicloudVPNGatewayBasic(t *testing.T) {
+func TestAccAlicloudVPNGatewayBasic(t *testing.T) {
+	t.Skip("Pending")
 	var v vpc.DescribeVpnGatewayResponse
 
 	resourceId := "alicloud_vpn_gateway.default"

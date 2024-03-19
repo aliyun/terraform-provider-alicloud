@@ -414,7 +414,8 @@ data "alicloud_instances" "default" {
 }
 
 // Test this case need use a custom `source_identifier`
-func SkipTestAccAlicloudConfigRule_basic1(t *testing.T) {
+func TestAccAlicloudConfigRule_basic1(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_config_rule.default"
 	ra := resourceAttrInit(resourceId, ConfigRuleMap1)

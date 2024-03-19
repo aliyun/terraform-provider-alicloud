@@ -21,7 +21,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
+func TestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
@@ -74,7 +75,8 @@ func SkipTestAccAlicloudScdnDomainConfig_ip_allow_list(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
+func TestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)
@@ -127,7 +129,8 @@ func SkipTestAccAlicloudScdnDomainConfig_referer_white_list(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
+func TestAccAlicloudScdnDomainConfig_filetype_based_ttl_set(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain_config.default"
 	ra := resourceAttrInit(resourceId, scdnDomainConfigBasicMap)

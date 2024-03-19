@@ -244,30 +244,6 @@ var cenInstanceAttachmentMap = map[string]string{
 	"child_instance_region_id": CHECKSET,
 }
 
-func testAccCenInstanceAttachmentBasic(rand int, region string) string {
-	return fmt.Sprintf(`
-	variable "name"{
-	    default = "tf-testAcc%sCenInstanceAttachmentBasic-%d"
-	}
-
-	resource "alicloud_cen_instance" "default" {
-	    name = "${var.name}"
-	    description = "tf-testAccCenInstanceAttachmentBasicDescription"
-	}
-
-	resource "alicloud_vpc" "default" {
-	    vpc_name = "${var.name}"
-	    cidr_block = "192.168.0.0/16"
-	}
-
-	resource "alicloud_cen_instance_attachment" "default" {
-	    instance_id = "${alicloud_cen_instance.default.id}"
-	    child_instance_id = "${alicloud_vpc.default.id}"
-	    child_instance_type = "VPC"
-	    child_instance_region_id = "%s"
-	}
-	`, region, rand, region)
-}
 func testAccCenInstanceAttachmentMultiSameRegion(rand int, region string) string {
 	return fmt.Sprintf(`
 	provider "alicloud" {

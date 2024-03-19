@@ -6,10 +6,10 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -20,30 +20,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-
-	"github.com/denverdino/aliyungo/cs"
-
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-
-	"gopkg.in/yaml.v2"
-
-	"math"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/denverdino/aliyungo/common"
+	"github.com/denverdino/aliyungo/cs"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"github.com/mitchellh/go-homedir"
+	"gopkg.in/yaml.v2"
 )
 
 type PayType string
@@ -271,17 +262,6 @@ const (
 // ValidProtocols network protocol list
 var ValidProtocols = []Protocol{Http, Https, Tcp, Udp}
 
-// simple array value check method, support string type only
-func isProtocolValid(value string) bool {
-	res := false
-	for _, v := range ValidProtocols {
-		if string(v) == value {
-			res = true
-		}
-	}
-	return res
-}
-
 // default region for all resource
 const DEFAULT_REGION = "cn-beijing"
 
@@ -317,14 +297,6 @@ func convertListStringToListInterface(list []string) []interface{} {
 	vs := make([]interface{}, 0, len(list))
 	for _, v := range list {
 		vs = append(vs, v)
-	}
-	return vs
-}
-
-func expandIntList(configured []interface{}) []int {
-	vs := make([]int, 0, len(configured))
-	for _, v := range configured {
-		vs = append(vs, v.(int))
 	}
 	return vs
 }
@@ -428,10 +400,6 @@ func convertIntergerToString(configured int) string {
 	return strconv.Itoa(configured)
 }
 
-func convertFloat64ToString(configured float64) string {
-	return strconv.FormatFloat(configured, 'E', -1, 64)
-}
-
 func convertJsonStringToList(configured string) ([]interface{}, error) {
 	result := make([]interface{}, 0)
 	if err := json.Unmarshal([]byte(configured), &result); err != nil {
@@ -439,23 +407,6 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 	}
 
 	return result, nil
-}
-
-func convertJsonStringToObject(configured interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(configured.(string)), &result); err != nil {
-		return nil
-	}
-
-	return result
-}
-
-func convertObjectToJsonString(m interface{}) string {
-	if result, err := json.Marshal(m); err != nil {
-		return ""
-	} else {
-		return string(result)
-	}
 }
 
 func convertMaptoJsonString(m map[string]interface{}) (string, error) {
@@ -476,14 +427,6 @@ func convertMapToJsonStringIgnoreError(m map[string]interface{}) string {
 		return ""
 	} else {
 		return string(result)
-	}
-}
-
-func convertInterfaceToJsonString(m interface{}) (string, error) {
-	if result, err := json.Marshal(m); err != nil {
-		return "", err
-	} else {
-		return string(result), nil
 	}
 }
 
@@ -584,12 +527,6 @@ const (
 	KubernetesNodeWorker = ResourceType("Worker")
 )
 
-func getPagination(pageNumber, pageSize int) (pagination common.Pagination) {
-	pagination.PageSize = pageSize
-	pagination.PageNumber = pageNumber
-	return
-}
-
 const CharityPageUrl = "http://promotion.alicdn.com/help/oss/error.html"
 
 func userDataHashSum(user_data string) string {
@@ -609,17 +546,6 @@ func Trim(v string) string {
 		return v
 	}
 	return strings.Trim(v, " ")
-}
-
-func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
-	if strings.TrimSpace(string(value)) == "" {
-		return
-	}
-	v, err = strconv.Atoi(string(value))
-	if err != nil {
-		return v, fmt.Errorf("Converting integer %s to int got an error: %#v.", value, err)
-	}
-	return
 }
 
 func GetUserHomeDir() (string, error) {
@@ -1215,19 +1141,6 @@ func splitMultiZoneId(id string) (ids []string) {
 	return
 }
 
-func Case2Camel(name string) string {
-	name = strings.Replace(name, "_", " ", -1)
-	name = strings.Title(name)
-	return strings.Replace(name, " ", "", -1)
-}
-
-func FirstLower(s string) string {
-	if s == "" {
-		return ""
-	}
-	return strings.ToLower(s[:1]) + s[1:]
-}
-
 // SplitSlice Divides the slice into blocks of the specified size
 func SplitSlice(xs []interface{}, chunkSize int) [][]interface{} {
 	if len(xs) == 0 {
@@ -1606,28 +1519,6 @@ func IsSubCollection(sub []string, full []string) bool {
 	return true
 }
 
-func MergeMaps(maps ...map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	for _, m := range maps {
-		for key, value := range m {
-			item, existed := result[key]
-			if !existed {
-				result[key] = value
-				continue
-			}
-			newValue, ok := value.([]map[string]interface{})
-			if !ok || len(newValue) != 1 {
-				continue
-			}
-			if preValue, ok := item.([]map[string]interface{}); ok && len(preValue) == 1 {
-				result[key] = MergeMaps(preValue[0], newValue[0])
-			}
-		}
-	}
-	return result
-}
-
 func InArray(target string, strArray []string) bool {
 	for _, element := range strArray {
 		if target == element {
@@ -1662,43 +1553,6 @@ func rpcParam(action, method, version string) *openapi.Params {
 		ReqBodyType: tea.String("formData"),
 		BodyType:    tea.String("json"),
 	}
-}
-
-func genXmlParam(action, method, version, path string) *openapi.Params {
-	return &openapi.Params{
-		Action:      tea.String(action),
-		Version:     tea.String(version),
-		Protocol:    tea.String("HTTPS"),
-		Pathname:    tea.String(path),
-		Method:      tea.String(method),
-		AuthType:    tea.String("AK"),
-		ReqBodyType: tea.String("xml"),
-		BodyType:    tea.String("xml"),
-	}
-}
-
-type MyMap map[string]interface{}
-
-type xmlMapEntry struct {
-	XMLName xml.Name
-	Value   interface{} `xml:",chardata"`
-}
-
-func (m MyMap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
-	if len(m) == 0 {
-		return nil
-	}
-
-	err := e.EncodeToken(start)
-	if err != nil {
-		return err
-	}
-
-	for k, v := range m {
-		e.Encode(xmlMapEntry{XMLName: xml.Name{Local: k}, Value: v})
-	}
-
-	return e.EncodeToken(start.End())
 }
 
 func expandSingletonToList(singleton interface{}) []interface{} {

@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func SkipTestAccAlicloudEbsDedicatedBlockStorageClusterDataSource(t *testing.T) {
+func TestAccAlicloudEbsDedicatedBlockStorageClusterDataSource(t *testing.T) {
+	t.Skip("Pending")
 	rand := acctest.RandIntRange(1000000, 9999999)
 
 	idsConf := dataSourceTestAccConfig{

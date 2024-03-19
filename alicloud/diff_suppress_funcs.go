@@ -250,14 +250,6 @@ func PostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	return true
 }
 
-func ChargeTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// payment_type is the instance_charge_type's replacement.
-	if _, ok := d.GetOk("payment_type"); ok {
-		return true
-	}
-	return false
-}
-
 func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("instance_charge_type"); ok && strings.ToLower(v.(string)) == "prepaid" && d.Get("auto_renew").(bool) {
 		return false
@@ -477,16 +469,6 @@ func workerDataDiskSizeSuppressFunc(k, old, new string, d *schema.ResourceData) 
 	return !ok || !(d.Id() == "") && !d.Get("force_update").(bool)
 }
 
-func imageIdSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	// setting image_id is not recommended, but is needed by some users.
-	// when image_id is left blank, server will set a random default to it, we only know the default value after creation.
-	// we suppress diff here to prevent unintentional force new action.
-
-	// if we want to change cluster's image_id to default, we have to find out what the default image_id is,
-	// then fill that image_id in this field.
-	return new == "" || !(d.Id() == "") && !d.Get("force_update").(bool)
-}
-
 func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 
 	oldVersion := strings.Split(strings.Split(old, "_")[0], ".")
@@ -498,13 +480,6 @@ func esVersionDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool 
 		}
 	}
 
-	return false
-}
-
-func vpnSslConnectionsDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if enable_ssl, ok := d.GetOk("enable_ssl"); !ok || !enable_ssl.(bool) {
-		return true
-	}
 	return false
 }
 
@@ -567,36 +542,6 @@ func sagDnatEntryTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if d.Get("user_name").(string) == "" {
 		return true
-	}
-	return false
-}
-
-func cmsClientInfoSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	for _, v := range d.Get("escalations_info").([]interface{}) {
-		mapping := v.(map[string]interface{})
-		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
-			return true
-		}
-	}
-	return false
-}
-
-func cmsClientWarnSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	for _, v := range d.Get("escalations_warn").([]interface{}) {
-		mapping := v.(map[string]interface{})
-		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
-			return true
-		}
-	}
-	return false
-}
-
-func cmsClientCriticalSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	for _, v := range d.Get("escalations_critical").([]interface{}) {
-		mapping := v.(map[string]interface{})
-		if mapping["statistics"] == "" || mapping["comparison_operator"] == "" || mapping["threshold"] == "" || mapping["times"] == "" {
-			return true
-		}
 	}
 	return false
 }
@@ -698,32 +643,6 @@ func StorageAutoScaleDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 		return false
 	}
 	return true
-}
-
-func CmsAlarmDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if new == "" {
-		return true
-	}
-	if old == "" {
-		return false
-	}
-	if new == old {
-		return false
-	}
-
-	new = strings.TrimSuffix(strings.TrimPrefix(new, "["), "]")
-	old = strings.TrimSuffix(strings.TrimPrefix(old, "["), "]")
-	var newvlist, oldvlist []string
-	for _, v := range strings.Split(new, "}") {
-		newvlist = append(newvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
-	}
-	for _, v := range strings.Split(old, "}") {
-		oldvlist = append(oldvlist, strings.Trim(strings.TrimSpace(v), ",")+"}")
-	}
-	sort.Strings(newvlist)
-	sort.Strings(oldvlist)
-	return strings.Join(newvlist, " ") == strings.Join(oldvlist, " ")
-
 }
 
 func esDataNodeDiskPerformanceLevelDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {

@@ -8,7 +8,8 @@ import (
 )
 
 // The test parameter encodedsaml_metadata_document should not be exposed
-func SkipTestAccAlicloudRAMSamlProvidersDataSource(t *testing.T) {
+func TestAccAlicloudRAMSamlProvidersDataSource(t *testing.T) {
+	t.Skip("Pending")
 	resourceId := "data.alicloud_ram_saml_providers.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccSamlProviders%d", rand)

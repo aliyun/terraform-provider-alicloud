@@ -151,11 +151,3 @@ func resourceAliCloudCloudMonitorServiceBasicPublicDelete(d *schema.ResourceData
 	}
 	return nil
 }
-
-func convertCloudMonitorServicePostTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "cms_basic_public_cn":
-		return "postPayV2"
-	}
-	return source
-}

@@ -123,7 +123,8 @@ func testSweepEdasK8sApplication(region string) error {
 }
 
 // There is an managed_kubernetes resource diff error, skip it temporarily
-func SkipTestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
+func TestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v *edas.Applcation
 	resourceId := "alicloud_edas_k8s_application.default"
 	ra := resourceAttrInit(resourceId, edasK8sApplicationBasicMap)
@@ -275,7 +276,8 @@ func SkipTestAccAlicloudEdasK8sApplication_basic(t *testing.T) {
 }
 
 // There is an managed_kubernetes resource diff error, skip it temporarily
-func SkipTestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
+func TestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v *edas.Applcation
 	resourceId := "alicloud_edas_k8s_application.default"
 	ra := resourceAttrInit(resourceId, edasK8sApplicationBasicMap)
@@ -400,7 +402,8 @@ func SkipTestAccAlicloudEdasK8sApplicationJar_basic(t *testing.T) {
 }
 
 // There is an managed_kubernetes resource diff error, skip it temporarily
-func SkipTestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
+func TestAccAlicloudEdasK8sApplication_multi(t *testing.T) {
+	t.Skip("Pending")
 	var v *edas.Applcation
 	resourceId := "alicloud_edas_k8s_application.default.1"
 	ra := resourceAttrInit(resourceId, edasK8sApplicationBasicMap)
