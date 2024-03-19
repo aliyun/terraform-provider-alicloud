@@ -924,13 +924,14 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 		requestInfo = ossClient
 		return ossClient.GetBucketResourceGroup(d.Id())
 	})
-	if err != nil {
+	if err != nil && !IsExpectedErrors(err, []string{"NotImplemented"}) {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetBucketResourceGroup", AliyunOssGoSdk)
 	}
-	addDebug("GetBucketResourceGroup", raw, requestInfo, request)
-
-	resourceGroup, _ := raw.(oss.GetBucketResourceGroupResult)
-	d.Set("resource_group_id", resourceGroup.ResourceGroupId)
+	if err == nil {
+		addDebug("GetBucketResourceGroup", raw, requestInfo, request)
+		resourceGroup, _ := raw.(oss.GetBucketResourceGroupResult)
+		d.Set("resource_group_id", resourceGroup.ResourceGroupId)
+	}
 
 	return nil
 }
