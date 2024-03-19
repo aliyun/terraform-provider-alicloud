@@ -52,7 +52,7 @@ func testSweepIMMProject(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewImmClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 	}
 	for {
 		runtime := util.RuntimeOptions{}
@@ -71,7 +71,7 @@ func testSweepIMMProject(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.Projects", response)
@@ -100,7 +100,7 @@ func testSweepIMMProject(region string) error {
 			var response map[string]interface{}
 			conn, err := client.NewImmClient()
 			if err != nil {
-				log.Printf("[ERROR] %s get an error: %#v", action, err)
+				log.Printf("[ERROR] %s get an error: %v", action, err)
 			}
 			request := map[string]interface{}{
 				"Project": item["Project"],
@@ -120,7 +120,7 @@ func testSweepIMMProject(region string) error {
 			})
 			addDebug(action, response, request)
 			if err != nil {
-				log.Printf("[ERROR] %s get an error: %#v", action, err)
+				log.Printf("[ERROR] %s get an error: %v", action, err)
 				return nil
 			}
 			if sweeped {

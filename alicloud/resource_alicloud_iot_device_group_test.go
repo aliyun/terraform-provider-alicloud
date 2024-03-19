@@ -55,7 +55,7 @@ func testSweepDeviceGroup(region string) error {
 		runtime.SetAutoretry(true)
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			log.Printf("[ERROR] %s got an error: %#v", action, err)
+			log.Printf("[ERROR] %s got an error: %v", action, err)
 			return nil
 		}
 		addDebug(action, response, request)

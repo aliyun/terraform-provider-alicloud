@@ -74,7 +74,7 @@ func testSweepLogProjectsWithPrefixAndSuffix(region string, prefixes, suffixes [
 					if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 						skip = false
 					} else {
-						log.Printf("[ERROR] DescribeCluster got an error: %#v", err)
+						log.Printf("[ERROR] DescribeCluster got an error: %v", err)
 					}
 				} else {
 					cluster, _ := raw.(cs.ClusterType)

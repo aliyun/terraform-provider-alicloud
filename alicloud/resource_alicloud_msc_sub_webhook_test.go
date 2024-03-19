@@ -48,7 +48,7 @@ func testSweepMscSubWebhook(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewMscopensubscriptionClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 	}
 	for {
 		runtime := util.RuntimeOptions{}
@@ -67,7 +67,7 @@ func testSweepMscSubWebhook(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 

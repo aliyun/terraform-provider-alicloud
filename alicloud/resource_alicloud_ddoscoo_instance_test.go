@@ -70,7 +70,7 @@ func testSweepDdoscooInstances(region string) error {
 		})
 
 		if err != nil {
-			log.Printf("[ERROR] %s get an error %#v", action, err)
+			log.Printf("[ERROR] %s get an error %v", action, err)
 		}
 		resp, err := jsonpath.Get("$.Instances", response)
 		if resp == nil || len(resp.([]interface{})) < 1 || err != nil {
@@ -228,7 +228,7 @@ func testSweepDdoscooInstances(region string) error {
 		}
 		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", fmt.Sprint(v["InstanceId"]), err)
+			log.Printf("[ERROR] Deleting Instance %s got an error: %v", fmt.Sprint(v["InstanceId"]), err)
 		}
 	}
 	return nil

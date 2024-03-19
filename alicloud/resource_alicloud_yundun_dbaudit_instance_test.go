@@ -98,7 +98,7 @@ func testSweepDbauditInstances(region string) error {
 			return dbauditClient.RefundInstance(releaseReq)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
+			log.Printf("[ERROR] Deleting Instance %s got an error: %v", v.InstanceId, err)
 		}
 		// 释放产生的 sls project
 		_, err = client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {

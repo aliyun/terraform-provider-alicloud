@@ -54,7 +54,7 @@ func testSweepEcdNasFileSystem(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewGwsecdClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 	}
 	for {
 		runtime := util.RuntimeOptions{}
@@ -73,7 +73,7 @@ func testSweepEcdNasFileSystem(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.FileSystems", response)

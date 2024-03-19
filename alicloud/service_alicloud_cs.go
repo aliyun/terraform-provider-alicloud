@@ -1023,7 +1023,7 @@ func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs
 	}
 
 	if state, err := s.WaitForUpgradeCluster(clusterId, "CancelUpgrade"); err != nil || state != cs.Task_Status_Success {
-		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
+		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %v", clusterId, err)
 	}
 
 	return WrapError(upgradeError)

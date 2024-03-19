@@ -40,7 +40,7 @@ func testSweepAlidnsDomainGroup(region string) error {
 			return dnsClient.DescribeDomainGroups(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+			log.Printf("[ERROR] %s get an error: %v", request.GetActionName(), err)
 		}
 		addDebug(request.GetActionName(), raw)
 		response, _ := raw.(*alidns.DescribeDomainGroupsResponse)
@@ -70,7 +70,7 @@ func testSweepAlidnsDomainGroup(region string) error {
 			return dnsClient.DeleteDomainGroup(removeRequest)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+			log.Printf("[ERROR] %s get an error: %v", request.GetActionName(), err)
 		}
 		addDebug(request.GetActionName(), raw)
 	}

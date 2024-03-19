@@ -42,7 +42,7 @@ func testSweepSaeIngress(region string) error {
 	action := "/pop/v1/sam/namespace/describeNamespaceList"
 	conn, err := client.NewServerlessClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 		return nil
 	}
 
@@ -50,7 +50,7 @@ func testSweepSaeIngress(region string) error {
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 		return nil
 	}
 	if respBody, isExist := response["body"]; isExist {
@@ -71,14 +71,14 @@ func testSweepSaeIngress(region string) error {
 		action = "/pop/v1/sam/ingress/IngressList"
 		conn, err = client.NewServerlessClient()
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		request["RegionId"] = StringPointer(client.RegionId)
 		request["NamespaceId"] = StringPointer(item["NamespaceId"].(string))
 		response, err = conn.DoRequest(StringPointer("2019-05-06"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), request, nil, nil, &util.RuntimeOptions{})
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		if respBody, isExist := response["body"]; isExist {

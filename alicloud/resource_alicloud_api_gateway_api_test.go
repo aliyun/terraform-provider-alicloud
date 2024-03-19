@@ -42,7 +42,7 @@ func testSweepApiGatewayApi(region string) error {
 		return cloudApiClient.DescribeApis(req)
 	})
 	if err != nil {
-		log.Printf("[ERROR] %s got an error %#v", req.GetActionName(), err)
+		log.Printf("[ERROR] %s got an error %v", req.GetActionName(), err)
 		return nil
 	}
 	apis := raw.(*cloudapi.DescribeApisResponse)

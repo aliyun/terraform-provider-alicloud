@@ -1026,7 +1026,7 @@ func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, per
 	UnStandardRFC3339 := "2006-01-02T15:04Z07:00"
 	create, err := time.Parse(time.RFC3339, createTimeStr)
 	if err != nil {
-		log.Printf("Parase the CreateTime %#v failed and error is: %#v.", createTime, err)
+		log.Printf("Parase the CreateTime %#v failed and error is: %v", createTime, err)
 		create, err = time.Parse(UnStandardRFC3339, createTimeStr)
 		if err != nil {
 			return 0, WrapError(err)
@@ -1034,7 +1034,7 @@ func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, per
 	}
 	end, err := time.Parse(time.RFC3339, endTimeStr)
 	if err != nil {
-		log.Printf("Parase the EndTime %#v failed and error is: %#v.", endTime, err)
+		log.Printf("Parase the EndTime %#v failed and error is: %v", endTime, err)
 		end, err = time.Parse(UnStandardRFC3339, endTimeStr)
 		if err != nil {
 			return 0, WrapError(err)
