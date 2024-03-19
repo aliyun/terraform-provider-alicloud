@@ -264,7 +264,7 @@ func dataSourceAlicloudOssBucketsRead(d *schema.ResourceData, meta interface{}) 
 			return ossClient.ListBuckets(options...)
 		})
 		if err != nil {
-			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_oss_bucket", "ListBuckets", AliyunOssGoSdk)
 		}
 		if debugOn() {
 			addDebug("ListBuckets", raw, requestInfo, map[string]interface{}{"options": options})
