@@ -159,13 +159,13 @@ func resourceAlicloudCSApplicationCreate(d *schema.ResourceData, meta interface{
 		}
 		return err
 	}); err != nil {
-		return fmt.Errorf("Creating container application got an error: %#v", err)
+		return fmt.Errorf("Creating container application got an error: %w", err)
 	}
 
 	d.SetId(fmt.Sprintf("%s%s%s", clusterName, COLON_SEPARATED, args.Name))
 
 	if err := csService.WaitForContainerApplication(clusterName, args.Name, Running, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("Waitting for container application %#v got an error: %#v", cs.Running, err)
+		return fmt.Errorf("Waitting for container application %#v got an error: %w", cs.Running, err)
 	}
 
 	return resourceAlicloudCSApplicationRead(d, meta)
@@ -298,7 +298,7 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 				return nil, csProjectClient.RollBackBlueGreenProject(parts[1], true)
 			})
 		}
-		return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
+		return fmt.Errorf("Rollbacking container application blue-green got an error: %w", err)
 	}
 	if update {
 		for {
@@ -323,15 +323,15 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 						return err
 					})
 					if err != nil {
-						return fmt.Errorf("Rollbacking container application blue-green got an error: %#v", err)
+						return fmt.Errorf("Rollbacking container application blue-green got an error: %w", err)
 					}
 					err = csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium)
 					if err != nil {
-						return fmt.Errorf("After rolling back blue-green project, waitting for container application %#v got an error: %#v", Running, err)
+						return fmt.Errorf("After rolling back blue-green project, waitting for container application %#v got an error: %w", Running, err)
 					}
 					continue
 				}
-				return fmt.Errorf("Updating container application got an error: %#v", err)
+				return fmt.Errorf("Updating container application got an error: %w", err)
 			}
 			break
 		}
@@ -348,12 +348,12 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 			return err
 		})
 		if err != nil {
-			return fmt.Errorf("Confirmming container application blue-green got an error: %#v", err)
+			return fmt.Errorf("Confirmming container application blue-green got an error: %w", err)
 		}
 	}
 
 	if err := csService.WaitForContainerApplication(parts[0], parts[1], Running, DefaultTimeoutMedium); err != nil {
-		return fmt.Errorf("After updating, waitting for container application %#v got an error: %#v", Running, err)
+		return fmt.Errorf("After updating, waitting for container application %#v got an error: %w", Running, err)
 	}
 
 	d.Partial(false)
@@ -385,7 +385,7 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 				return nil
 			}
 			if !IsExpectedErrors(err, []string{"Unable to reach primary cluster manager", AliyunGoClientFailure}) {
-				return resource.NonRetryableError(fmt.Errorf("Deleting container application %s got an error: %#v.", appName, err))
+				return resource.NonRetryableError(fmt.Errorf("Deleting container application %s got an error: %w", appName, err))
 			}
 		}
 
@@ -407,12 +407,12 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 			if IsExpectedErrors(err, []string{"Not Found", "Unable to reach primary cluster manager"}) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, err))
+			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %w", appName, err))
 		}
 		if project.Name == "" {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Deleting container application %s timeout: %#v.", appName, err))
+		return resource.RetryableError(fmt.Errorf("Deleting container application %s timeout: %w", appName, err))
 	})
 }

@@ -69,7 +69,7 @@ func testSweepOSSBuckets(region string) error {
 			return ossClient.Bucket(name)
 		})
 		if err != nil {
-			return fmt.Errorf("Error getting bucket (%s): %#v", name, err)
+			return fmt.Errorf("Error getting bucket (%s): %w", name, err)
 		}
 		bucket, _ := raw.(*oss.Bucket)
 		if objects, err := bucket.ListObjects(options...); err != nil {

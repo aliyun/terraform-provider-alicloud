@@ -50,7 +50,7 @@ func testSweepDFSFileSystem(region string) error {
 	action := "ListFileSystems"
 	conn, err := client.NewAlidfsClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 	}
 	var response map[string]interface{}
 	runtime := util.RuntimeOptions{}
@@ -69,7 +69,7 @@ func testSweepDFSFileSystem(region string) error {
 	})
 
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 		return nil
 	}
 

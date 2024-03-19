@@ -47,7 +47,7 @@ func dataSourceAlicloudFcZonesRead(d *schema.ResourceData, meta interface{}) err
 		return fcClient.GetAccountSettings(fc.NewGetAccountSettingsInput())
 	})
 	if err != nil {
-		return WrapError(fmt.Errorf("[API ERROR] FC GetAccountSettings: %#v", err))
+		return WrapError(fmt.Errorf("[API ERROR] FC GetAccountSettings: %w", err))
 	}
 	addDebug("GetAccountSettings", raw, clientInfo)
 	out, _ := raw.(*fc.GetAccountSettingsOutput)

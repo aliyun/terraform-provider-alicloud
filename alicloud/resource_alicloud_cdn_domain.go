@@ -335,14 +335,14 @@ func resourceAlicloudCdnDomainCreate(d *schema.ResourceData, meta interface{}) e
 		return cdnClient.AddCdnDomain(args)
 	})
 	if err != nil {
-		return fmt.Errorf("AddCdnDomain got an error: %#v", err)
+		return fmt.Errorf("AddCdnDomain got an error: %w", err)
 	}
 
 	d.SetId(args.DomainName)
 
 	err = WaitForDomainStatus(d.Id(), Configuring, 60, meta)
 	if err != nil {
-		return fmt.Errorf("Timeout when Cdn Domain Available. Error: %#v", err)
+		return fmt.Errorf("Timeout when Cdn Domain Available. Error: %w", err)
 	}
 
 	return resourceAlicloudCdnDomainUpdate(d, meta)
@@ -380,7 +380,7 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 				return cdnClient.ModifyCdnDomain(args)
 			})
 			if err != nil {
-				return fmt.Errorf("ModifyCdnDomain got an error: %#v", err)
+				return fmt.Errorf("ModifyCdnDomain got an error: %w", err)
 			}
 		}
 	}
@@ -442,7 +442,7 @@ func resourceAlicloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if d.IsNewResource() {
 			err := WaitForDomainStatus(d.Id(), Online, 360, meta)
 			if err != nil {
-				return fmt.Errorf("Timeout when Cdn Domain Online. Error: %#v", err)
+				return fmt.Errorf("Timeout when Cdn Domain Online. Error: %w", err)
 			}
 		}
 		if err := certificateConfigUpdate(client, d); err != nil {
@@ -459,7 +459,7 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 
 	domain, err := DescribeDomainDetail(d.Id(), meta)
 	if err != nil {
-		return fmt.Errorf("DescribeDomainDetail got an error: %#v", err)
+		return fmt.Errorf("DescribeDomainDetail got an error: %w", err)
 	}
 	d.Set("domain_name", domain.DomainName)
 	d.Set("sources", domain.Sources.Source)
@@ -475,7 +475,7 @@ func resourceAlicloudCdnDomainRead(d *schema.ResourceData, meta interface{}) err
 		return cdnClient.DescribeDomainConfigs(describeConfigArgs)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeDomainConfigs got an error: %#v", err)
+		return fmt.Errorf("DescribeDomainConfigs got an error: %w", err)
 	}
 	resp, _ := raw.(cdn.DomainConfigResponse)
 	configs := resp.DomainConfigs
@@ -601,7 +601,7 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) {
 				return resource.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
+			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %w", d.Id(), err))
 		}
 		return nil
 	})
@@ -850,7 +850,7 @@ func certificateConfigUpdate(client *connectivity.AliyunClient, d *schema.Resour
 	if okServerCertificate && args.ServerCertificateStatus != "off" {
 		err := WaitForServerCertificate(client, d.Id(), args.ServerCertificate, 360)
 		if err != nil {
-			return fmt.Errorf("Timeout waiting for Cdn server certificate. Error: %#v", err)
+			return fmt.Errorf("Timeout waiting for Cdn server certificate. Error: %w", err)
 		}
 	}
 	return nil
@@ -889,7 +889,7 @@ func httpHeaderConfigUpdate(client *connectivity.AliyunClient, d *schema.Resourc
 			return cdnClient.SetHttpHeaderConfig(args)
 		})
 		if err != nil {
-			return fmt.Errorf("SetHttpHeaderConfig got an error: %#v", err)
+			return fmt.Errorf("SetHttpHeaderConfig got an error: %w", err)
 		}
 	}
 
@@ -913,7 +913,7 @@ func cacheConfigUpdate(client *connectivity.AliyunClient, d *schema.ResourceData
 			return cdnClient.DeleteCacheExpiredConfig(args)
 		})
 		if err != nil {
-			return fmt.Errorf("DeleteCacheExpiredConfig got an error: %#v", err)
+			return fmt.Errorf("DeleteCacheExpiredConfig got an error: %w", err)
 		}
 	}
 
@@ -958,7 +958,7 @@ func describeDomainDetailClient(Id string, client *connectivity.AliyunClient) (d
 		return cdnClient.DescribeCdnDomainDetail(args)
 	})
 	if e != nil {
-		err = fmt.Errorf("DescribeCdnDomainDetail got an error: %#v", e)
+		err = fmt.Errorf("DescribeCdnDomainDetail got an error: %w", e)
 		return
 	}
 	response, _ := raw.(cdn.DomainResponse)

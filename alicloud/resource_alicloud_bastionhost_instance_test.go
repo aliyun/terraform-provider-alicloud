@@ -91,7 +91,7 @@ func testSweepBastionhostInstances(region string) error {
 			return bastionhostClient.RefundInstance(releaseReq)
 		})
 		if err != nil {
-			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", v.InstanceId, err)
+			log.Printf("[ERROR] Deleting Instance %s got an error: %v", v.InstanceId, err)
 		}
 	}
 

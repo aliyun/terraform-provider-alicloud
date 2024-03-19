@@ -56,7 +56,7 @@ func testAliCloudEcsNetworkInterface(region string) error {
 
 		resp, err := jsonpath.Get("$.NetworkInterfaceSets.NetworkInterfaceSet", response)
 		if err != nil {
-			log.Printf("[ERROR] jsonpath Get NetworkInterface failed, %#v", err)
+			log.Printf("[ERROR] jsonpath Get NetworkInterface failed, %v", err)
 			continue
 		}
 
@@ -99,12 +99,12 @@ func testAliCloudEcsNetworkInterface(region string) error {
 				runtime.SetAutoretry(true)
 				response, err = conn.DoRequest(StringPointer(actionDetach), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, requestDetach, &runtime)
 				if err != nil {
-					log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
+					log.Printf("[ERROR] Detach NetworkInterface failed, %v", err)
 					continue
 				}
 				stateConf := BuildStateConf([]string{}, []string{"Available"}, DefaultTimeout, 5*time.Second, ecsService.EcsNetworkInterfaceStateRefreshFunc(item["NetworkInterfaceId"].(string), []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					log.Printf("[ERROR] Detach NetworkInterface failed, %#v", err)
+					log.Printf("[ERROR] Detach NetworkInterface failed, %v", err)
 					continue
 				}
 			}

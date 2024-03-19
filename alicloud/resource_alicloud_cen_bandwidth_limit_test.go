@@ -69,7 +69,7 @@ func testSweepCenBandwidthLimit(region string) error {
 	for _, v := range insts {
 		cen, err := cbnService.DescribeCenInstance(v.CenId)
 		if err != nil {
-			log.Printf("[ERROR] Failed to describe cen instance, error: %#v", err)
+			log.Printf("[ERROR] Failed to describe cen instance, error: %v", err)
 			continue
 		}
 		name := fmt.Sprint(cen["Name"])

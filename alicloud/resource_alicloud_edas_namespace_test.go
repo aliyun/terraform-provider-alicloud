@@ -54,7 +54,7 @@ func testSweepEdasNamespace(region string) error {
 	var response map[string]interface{}
 	conn, err := aliyunClient.NewEdasClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 		return nil
 	}
 
@@ -74,7 +74,7 @@ func testSweepEdasNamespace(region string) error {
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 		return nil
 	}
 	if respBody, isExist := response["body"]; isExist {

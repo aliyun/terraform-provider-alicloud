@@ -96,7 +96,7 @@ func testSweepAdbDbInstances(region string) error {
 					}
 					return resource.NonRetryableError(err)
 				}
-				log.Printf("[ERROR] Deleting ADB cluster failed with error: %#v", err)
+				log.Printf("[ERROR] Deleting ADB cluster failed with error: %v", err)
 				return nil
 			})
 		}

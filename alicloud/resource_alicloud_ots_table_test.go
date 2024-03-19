@@ -427,7 +427,7 @@ func testAccCheckOtsTableExist(n string, table *tablestore.DescribeTableResponse
 		response, err := otsService.DescribeOtsTable(rs.Primary.ID)
 
 		if err != nil {
-			return fmt.Errorf("Error finding OTS table %s: %#v", rs.Primary.ID, err)
+			return fmt.Errorf("Error finding OTS table %s: %w", rs.Primary.ID, err)
 		}
 
 		table = response

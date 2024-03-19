@@ -51,7 +51,7 @@ func testSweepHBROtsBackupPlan(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewHbrClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", "NewHbrClient", err)
+		log.Printf("[ERROR] %s get an error: %v", "NewHbrClient", err)
 		return nil
 	}
 	for {
@@ -71,7 +71,7 @@ func testSweepHBROtsBackupPlan(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		resp, err := jsonpath.Get("$.BackupPlans.BackupPlan", response)

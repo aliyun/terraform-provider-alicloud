@@ -244,7 +244,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 
 	locationClient, err := location.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
-		return "", fmt.Errorf("Unable to initialize the location client: %#v", err)
+		return "", fmt.Errorf("Unable to initialize the location client: %w", err)
 
 	}
 	defer locationClient.Shutdown()
@@ -276,7 +276,7 @@ func (client *AliyunClient) describeEndpointForService(serviceCode string) (stri
 		return nil
 	})
 	if err != nil {
-		return "", fmt.Errorf("Describe %s endpoint using region: %#v got an error: %#v.", serviceCode, client.RegionId, err)
+		return "", fmt.Errorf("Describe %s endpoint using region: %#v got an error: %w", serviceCode, client.RegionId, err)
 	}
 	if endpointResult == "" {
 		return "", fmt.Errorf("There is no any available endpoint for %s in region %s.", serviceCode, client.RegionId)

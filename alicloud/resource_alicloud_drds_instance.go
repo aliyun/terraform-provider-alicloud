@@ -265,7 +265,7 @@ func resourceAliCloudDRDSInstanceDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	if !response.Success {
-		return WrapError(Error("failed to delete instance timeout "+"and got an error: %#v", err))
+		return WrapError(Error("failed to delete instance timeout "+"and got an error: %v", err))
 	}
 
 	//0 -> RUN, 1->DO_CREATE, 2->EXCEPTION, 3->EXPIRE, 4->DO_RELEASE, 5->RELEASE, 6->UPGRADE, 7->DOWNGRADE, 10->VersionUpgrade, 11->VersionRollback, 14->RESTART

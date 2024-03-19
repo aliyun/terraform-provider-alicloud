@@ -53,7 +53,7 @@ func testSweepEaisInstance(region string) error {
 	var response map[string]interface{}
 	conn, err := client.NewEaisClient()
 	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
+		log.Printf("[ERROR] %s get an error: %v", action, err)
 	}
 
 	for {
@@ -73,7 +73,7 @@ func testSweepEaisInstance(region string) error {
 		})
 		addDebug(action, response, request)
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", action, err)
+			log.Printf("[ERROR] %s get an error: %v", action, err)
 			return nil
 		}
 		v, err := jsonpath.Get("$.Instances.Instance", response)

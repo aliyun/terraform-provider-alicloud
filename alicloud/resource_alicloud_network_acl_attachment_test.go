@@ -45,7 +45,7 @@ func testSweepNetworkAclAttachment(region string) error {
 			return vpcClient.DescribeNetworkAcls(request)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s get an error: %#v", request.GetActionName(), err)
+			log.Printf("[ERROR] %s get an error: %v", request.GetActionName(), err)
 		}
 		response, _ := raw.(*vpc.DescribeNetworkAclsResponse)
 		if len(response.NetworkAcls.NetworkAcl) < 1 {

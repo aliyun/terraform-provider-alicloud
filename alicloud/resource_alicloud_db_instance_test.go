@@ -137,7 +137,7 @@ func testSweepDBInstances(region string) error {
 				addDebug(action, response, request)
 				return nil
 			}); err != nil {
-				log.Printf("[ERROR] ReleaseReadWriteSplittingConnection error: %#v", err)
+				log.Printf("[ERROR] ReleaseReadWriteSplittingConnection error: %v", err)
 			}
 		}
 

@@ -38,7 +38,7 @@ func testSweepDcdnDomain(region string) error {
 			return dcdnClient.DescribeDcdnUserDomains(queryRequest)
 		})
 		if err != nil {
-			log.Printf("[ERROR] %s get an error %#v", queryRequest.GetActionName(), err)
+			log.Printf("[ERROR] %s get an error %v", queryRequest.GetActionName(), err)
 		}
 		addDebug(queryRequest.GetActionName(), raw)
 		response, _ := raw.(*dcdn.DescribeDcdnUserDomainsResponse)

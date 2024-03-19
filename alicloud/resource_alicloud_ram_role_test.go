@@ -87,7 +87,7 @@ func testSweepRamRoles(region string) error {
 					return ramClient.DetachPolicyFromRole(request)
 				})
 				if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist"}) {
-					log.Printf("[ERROR] Failed detach Policy %s: %#v", v.PolicyName, err)
+					log.Printf("[ERROR] Failed detach Policy %s: %v", v.PolicyName, err)
 				}
 			}
 		}

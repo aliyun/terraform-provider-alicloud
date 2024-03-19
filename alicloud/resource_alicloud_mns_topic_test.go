@@ -39,7 +39,7 @@ func testSweepMnsTopics(region string) error {
 				return topicManager.ListTopicDetail(nextMaker, 1000, namePrefix)
 			})
 			if err != nil {
-				return fmt.Errorf("get topicDetails  error: %#v", err)
+				return fmt.Errorf("get topicDetails  error: %w", err)
 			}
 			topicDetails, _ := raw.(ali_mns.TopicDetails)
 			for _, attr := range topicDetails.Attrs {

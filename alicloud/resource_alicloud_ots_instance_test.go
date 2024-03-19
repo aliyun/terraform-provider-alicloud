@@ -90,7 +90,7 @@ func testSweepOtsInstances(region string) error {
 			return tableStoreClient.ListTable()
 		})
 		if err != nil {
-			log.Printf("[ERROR] List OTS Instance %s table stores got an error: %#v.", name, err)
+			log.Printf("[ERROR] List OTS Instance %s table stores got an error: %v", name, err)
 		}
 		tables, _ := raw.(*tablestore.ListTableResponse)
 		if tables != nil && len(tables.TableNames) > 0 {
@@ -101,7 +101,7 @@ func testSweepOtsInstances(region string) error {
 				if _, err := otsService.client.WithTableStoreClient(name, func(tableStoreClient *tablestore.TableStoreClient) (interface{}, error) {
 					return tableStoreClient.DeleteTable(req)
 				}); err != nil {
-					log.Printf("[ERROR] Delete OTS Instance %s table store %s got an error: %#v.", name, t, err)
+					log.Printf("[ERROR] Delete OTS Instance %s table store %s got an error: %v", name, t, err)
 				}
 			}
 			time.Sleep(30 * time.Second)
@@ -128,7 +128,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 		})
 	})
 	if err != nil {
-		log.Printf("[ERROR] List OTS Tunnel failed, instance: %s, table: %s, error: %#v", instanceName, tableName, err)
+		log.Printf("[ERROR] List OTS Tunnel failed, instance: %s, table: %s, error: %v", instanceName, tableName, err)
 		return
 	}
 
@@ -141,7 +141,7 @@ func sweepTunnelsInTable(client *connectivity.AliyunClient, instanceName string,
 					TunnelName: t.TunnelName,
 				})
 			}); err != nil {
-				log.Printf("[ERROR] Delete OTS Tunnel failed, instance: %s, table: %s, tunnel: %s, error: %#v", instanceName, tableName, t.TunnelName, err)
+				log.Printf("[ERROR] Delete OTS Tunnel failed, instance: %s, table: %s, tunnel: %s, error: %v", instanceName, tableName, t.TunnelName, err)
 			}
 		}
 	}

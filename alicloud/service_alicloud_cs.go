@@ -87,7 +87,7 @@ func (s *CsService) GetContainerClusterByName(name string) (cluster cs.ClusterTy
 	})
 
 	if err != nil {
-		return cluster, fmt.Errorf("Describe cluster failed by name %s: %#v.", name, err)
+		return cluster, fmt.Errorf("Describe cluster failed by name %s: %w", name, err)
 	}
 
 	if len(clusters) < 1 {
@@ -141,7 +141,7 @@ func (s *CsService) DescribeContainerApplication(clusterName, appName string) (a
 		if IsExpectedErrors(err, []string{"Not Found"}) {
 			return app, GetNotFoundErrorFromString(GetNotFoundMessage("Container Application", appName))
 		}
-		return app, fmt.Errorf("Getting Application failed by name %s: %#v.", appName, err)
+		return app, fmt.Errorf("Getting Application failed by name %s: %w", appName, err)
 	}
 	if app.Name != appName {
 		return app, GetNotFoundErrorFromString(GetNotFoundMessage("Container Application", appName))
@@ -1023,7 +1023,7 @@ func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs
 	}
 
 	if state, err := s.WaitForUpgradeCluster(clusterId, "CancelUpgrade"); err != nil || state != cs.Task_Status_Success {
-		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
+		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %v", clusterId, err)
 	}
 
 	return WrapError(upgradeError)

@@ -39,7 +39,7 @@ func testSweepMnsQueues(region string) error {
 				return queueManager.ListQueueDetail(nextMaker, 1000, namePrefix)
 			})
 			if err != nil {
-				return fmt.Errorf("get queueDetails  error: %#v", err)
+				return fmt.Errorf("get queueDetails  error: %w", err)
 			}
 			queueDetails, _ := raw.(ali_mns.QueueDetails)
 			for _, attr := range queueDetails.Attrs {

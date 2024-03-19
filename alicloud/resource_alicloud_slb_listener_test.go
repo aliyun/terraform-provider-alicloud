@@ -1593,14 +1593,14 @@ func testAccCheckSlbListenerDestroy(s *terraform.State) error {
 			port, err = strconv.Atoi(parts[1])
 		}
 		if err != nil {
-			return fmt.Errorf("Parsing SlbListener's id got an error: %#v", err)
+			return fmt.Errorf("Parsing SlbListener's id got an error: %w", err)
 		}
 		loadBalancer, err := slbService.DescribeSlb(parts[0])
 		if err != nil {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %#v", err)
+			return fmt.Errorf("DescribeLoadBalancerAttribute got an error: %w", err)
 		}
 		if len(parts) == 3 {
 			for _, portAndProtocol := range loadBalancer.ListenerPortsAndProtocol.ListenerPortAndProtocol {

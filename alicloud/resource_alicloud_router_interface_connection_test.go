@@ -27,7 +27,7 @@ func testAccCheckRouterInterfaceConnectionExists(n string) resource.TestCheckFun
 
 		response, err := vpcService.DescribeRouterInterfaceConnection(rs.Primary.ID, client.RegionId)
 		if err != nil {
-			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
+			return fmt.Errorf("Error finding interface %s: %w", rs.Primary.ID, err)
 		}
 		if response.Status != string(Active) {
 			return fmt.Errorf("Error connection router interface id %s is not Active.", response.RouterInterfaceId)

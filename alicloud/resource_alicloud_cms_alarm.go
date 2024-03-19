@@ -378,7 +378,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 	dims := make([]map[string]interface{}, 0)
 	if fmt.Sprint(object["Resources"]) != "" {
 		if err := json.Unmarshal([]byte(object["Resources"].(string)), &dims); err != nil {
-			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
+			return fmt.Errorf("Unmarshaling Dimensions got an error: %w", err)
 		}
 	}
 
@@ -509,7 +509,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 
 		if len(dimList) > 0 {
 			if bytes, err := json.Marshal(dimList); err != nil {
-				return fmt.Errorf("Marshaling dimensions to json string got an error: %#v.", err)
+				return fmt.Errorf("Marshaling dimensions to json string got an error: %w", err)
 			} else {
 				request["Resources"] = string(bytes[:])
 			}
@@ -834,7 +834,7 @@ func resourceAliCloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %w", err))
 		}
 		return nil
 	})

@@ -112,7 +112,7 @@ func testAccCheckRouterInterfaceExists(n string, ri *vpc.RouterInterfaceType) re
 
 		response, err := vpcService.DescribeRouterInterface(rs.Primary.ID, client.RegionId)
 		if err != nil {
-			return fmt.Errorf("Error finding interface %s: %#v", rs.Primary.ID, err)
+			return fmt.Errorf("Error finding interface %s: %w", rs.Primary.ID, err)
 		}
 		ri = &response
 		return nil
