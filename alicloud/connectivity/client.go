@@ -4107,7 +4107,7 @@ func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.\"", productCode, err, fmt.Sprintf("mhub.%s.aliyuncs.com", client.config.RegionId))
+			return nil, fmt.Errorf("[ERROR] loading %s endpoint got an error: %w. Using the endpoint %s instead.\"", productCode, err, fmt.Sprintf("mhub.%s.aliyuncs.com", client.config.RegionId))
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {

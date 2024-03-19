@@ -201,7 +201,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return polarDBClient.DescribeRegions(request)
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err))
+			return WrapError(fmt.Errorf("[ERROR] DescribeRegions got an error: %w", err))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		regions, _ := raw.(*polardb.DescribeRegionsResponse)
@@ -226,7 +226,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return rkvClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("[ERROR] DescribeAvailableResource got an error: %#v", err))
+			return WrapError(fmt.Errorf("[ERROR] DescribeAvailableResource got an error: %w", err))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		zones, _ := raw.(*r_kvstore.DescribeAvailableResourceResponse)
@@ -294,7 +294,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return adbClient.DescribeRegions(request)
 		})
 		if err != nil {
-			return WrapError(fmt.Errorf("[ERROR] DescribeRegions got an error: %#v", err))
+			return WrapError(fmt.Errorf("[ERROR] DescribeRegions got an error: %w", err))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		regions, _ := raw.(*adb.DescribeRegionsResponse)

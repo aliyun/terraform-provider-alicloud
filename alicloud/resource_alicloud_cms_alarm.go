@@ -834,7 +834,7 @@ func resourceAliCloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Describe alarm rule got an error: %w", err))
 		}
 		return nil
 	})

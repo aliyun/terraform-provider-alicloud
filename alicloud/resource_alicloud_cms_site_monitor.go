@@ -251,7 +251,7 @@ func resourceAlicloudCmsSiteMonitorDelete(d *schema.ResourceData, meta interface
 				wait()
 				return resource.RetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("Deleting site monitor got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Deleting site monitor got an error: %w", err))
 		}
 
 		_, err = cmsService.DescribeSiteMonitor(d.Id(), "")
@@ -259,10 +259,10 @@ func resourceAlicloudCmsSiteMonitorDelete(d *schema.ResourceData, meta interface
 			if NotFoundError(err) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("DescribeSiteMonitor got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("DescribeSiteMonitor got an error: %w", err))
 		}
 
-		return resource.RetryableError(fmt.Errorf("Deleting site monitor got an error: %#v", err))
+		return resource.RetryableError(fmt.Errorf("Deleting site monitor got an error: %w", err))
 
 	})
 }

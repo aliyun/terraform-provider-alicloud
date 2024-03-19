@@ -385,7 +385,7 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 				return nil
 			}
 			if !IsExpectedErrors(err, []string{"Unable to reach primary cluster manager", AliyunGoClientFailure}) {
-				return resource.NonRetryableError(fmt.Errorf("Deleting container application %s got an error: %#v.", appName, err))
+				return resource.NonRetryableError(fmt.Errorf("Deleting container application %s got an error: %w", appName, err))
 			}
 		}
 
@@ -407,12 +407,12 @@ func resourceAlicloudCSApplicationDelete(d *schema.ResourceData, meta interface{
 			if IsExpectedErrors(err, []string{"Not Found", "Unable to reach primary cluster manager"}) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %#v.", appName, err))
+			return resource.NonRetryableError(fmt.Errorf("Getting container application %s got an error: %w", appName, err))
 		}
 		if project.Name == "" {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Deleting container application %s timeout: %#v.", appName, err))
+		return resource.RetryableError(fmt.Errorf("Deleting container application %s timeout: %w", appName, err))
 	})
 }

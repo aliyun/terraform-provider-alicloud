@@ -601,7 +601,7 @@ func resourceAlicloudCdnDomainDelete(d *schema.ResourceData, meta interface{}) e
 			if IsExpectedErrors(err, []string{"ServiceBusy"}) {
 				return resource.RetryableError(fmt.Errorf("The specified Domain is configuring, please retry later."))
 			}
-			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %#v.", d.Id(), err))
+			return resource.NonRetryableError(fmt.Errorf("Error deleting cdn domain %s: %w", d.Id(), err))
 		}
 		return nil
 	})
@@ -958,7 +958,7 @@ func describeDomainDetailClient(Id string, client *connectivity.AliyunClient) (d
 		return cdnClient.DescribeCdnDomainDetail(args)
 	})
 	if e != nil {
-		err = fmt.Errorf("DescribeCdnDomainDetail got an error: %#v", e)
+		err = fmt.Errorf("DescribeCdnDomainDetail got an error: %w", e)
 		return
 	}
 	response, _ := raw.(cdn.DomainResponse)

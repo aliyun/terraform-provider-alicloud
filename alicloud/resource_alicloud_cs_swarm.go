@@ -393,7 +393,7 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 			if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 				return nil
 			}
-			return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
+			return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %w", err))
 		}
 
 		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
@@ -403,13 +403,13 @@ func resourceAlicloudCSSwarmDelete(d *schema.ResourceData, meta interface{}) err
 			if IsExpectedErrors(err, []string{"ErrorClusterNotFound"}) {
 				return nil
 			}
-			return resource.NonRetryableError(fmt.Errorf("Describe container cluster got an error: %#v", err))
+			return resource.NonRetryableError(fmt.Errorf("Describe container cluster got an error: %w", err))
 		}
 		resp, _ := raw.(cs.ClusterType)
 		if resp.ClusterID == "" {
 			return nil
 		}
 
-		return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %#v", err))
+		return resource.RetryableError(fmt.Errorf("Deleting container cluster got an error: %w", err))
 	})
 }
