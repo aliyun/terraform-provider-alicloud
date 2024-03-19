@@ -617,7 +617,7 @@ func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
 	}
 	v, err = strconv.Atoi(string(value))
 	if err != nil {
-		return v, fmt.Errorf("Converting integer %s to int got an error: %#v.", value, err)
+		return v, fmt.Errorf("Converting integer %s to int got an error: %w", value, err)
 	}
 	return
 }
@@ -625,7 +625,7 @@ func ConvertIntegerToInt(value requests.Integer) (v int, err error) {
 func GetUserHomeDir() (string, error) {
 	usr, err := user.Current()
 	if err != nil {
-		return "", fmt.Errorf("Get current user got an error: %#v.", err)
+		return "", fmt.Errorf("Get current user got an error: %w", err)
 	}
 	return usr.HomeDir, nil
 }
@@ -641,7 +641,7 @@ func writeToFile(filePath string, data interface{}) error {
 	default:
 		bs, err := json.MarshalIndent(data, "", "\t")
 		if err != nil {
-			return fmt.Errorf("MarshalIndent data %#v got an error: %#v", data, err)
+			return fmt.Errorf("MarshalIndent data %#v got an error: %w", data, err)
 		}
 		out = string(bs)
 	}
@@ -703,7 +703,7 @@ func (a *Invoker) Run(f func() error) error {
 			catcher.RetryCount--
 
 			if catcher.RetryCount <= 0 {
-				return fmt.Errorf("Retry timeout and got an error: %#v.", err)
+				return fmt.Errorf("Retry timeout and got an error: %w", err)
 			} else {
 				time.Sleep(time.Duration(catcher.RetryWaitSeconds) * time.Second)
 				return a.Run(f)

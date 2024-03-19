@@ -32,7 +32,7 @@ func (s *EcsService) JudgeRegionValidation(key, region string) error {
 		return ecsClient.DescribeRegions(request)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeRegions got an error: %#v", err)
+		return fmt.Errorf("DescribeRegions got an error: %w", err)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ecs.DescribeRegionsResponse)

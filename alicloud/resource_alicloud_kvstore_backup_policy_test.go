@@ -156,7 +156,7 @@ func testAccCheckKVStoreBackupPolicyDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Error Describe DB backup policy: %#v", err)
+			return fmt.Errorf("Error Describe DB backup policy: %w", err)
 		}
 		return fmt.Errorf("KVStore Instance %s Policy sitll exists.", rs.Primary.ID)
 	}

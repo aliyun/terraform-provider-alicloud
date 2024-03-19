@@ -193,7 +193,7 @@ func testCheckZoneLength(name string) resource.TestCheckFunc {
 		i, err := strconv.Atoi(is.Attributes["zones.#"])
 
 		if err != nil {
-			return fmt.Errorf("convert zone length err: %#v", err)
+			return fmt.Errorf("convert zone length err: %w", err)
 		}
 
 		if i <= 0 {

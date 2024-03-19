@@ -284,7 +284,7 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		}
 		ecsconn, err := ecs.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the ECS client: %w", err)
 		}
 		ecs.SetClientProperty(ecsconn, "EndpointMap", map[string]string{
 			client.RegionId: endpoint,
@@ -320,7 +320,7 @@ func (client *AliyunClient) WithOfficalCSClient(do func(*officalCS.Client) (inte
 		}
 		csconn, err := officalCS.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CS client: %w", err)
 		}
 
 		csconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -350,7 +350,7 @@ func (client *AliyunClient) WithPolarDBClient(do func(*polardb.Client) (interfac
 
 		polarDBconn, err := polardb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the PolarDB client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the PolarDB client: %w", err)
 
 		}
 
@@ -380,7 +380,7 @@ func (client *AliyunClient) WithSlbClient(do func(*slb.Client) (interface{}, err
 		}
 		slbconn, err := slb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SLB client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the SLB client: %w", err)
 		}
 
 		slbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -409,7 +409,7 @@ func (client *AliyunClient) WithVpcClient(do func(*vpc.Client) (interface{}, err
 		}
 		vpcconn, err := vpc.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the VPC client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the VPC client: %w", err)
 		}
 
 		vpcconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -449,7 +449,7 @@ func (client *AliyunClient) NewEcsClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -475,7 +475,7 @@ func (client *AliyunClient) NewVpcClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -502,7 +502,7 @@ func (client *AliyunClient) NewRdsClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -528,7 +528,7 @@ func (client *AliyunClient) NewPolarDBClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -546,7 +546,7 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 		}
 		cenconn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CEN client: %w", err)
 		}
 
 		cenconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -575,7 +575,7 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 		}
 		essconn, err := ess.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ESS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the ESS client: %w", err)
 		}
 
 		essconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -696,7 +696,7 @@ func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, err
 
 		ossconn, err := oss.New(endpoint, "", "", clientOptions...)
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the OSS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the OSS client: %w", err)
 		}
 
 		client.ossconn = ossconn
@@ -709,7 +709,7 @@ func (client *AliyunClient) WithOssBucketByName(bucketName string, do func(*oss.
 	return client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
 		bucket, err := client.ossconn.Bucket(bucketName)
 		if err != nil {
-			return nil, fmt.Errorf("unable to get the bucket %s: %#v", bucketName, err)
+			return nil, fmt.Errorf("unable to get the bucket %s: %w", bucketName, err)
 		}
 		return do(bucket)
 	})
@@ -728,7 +728,7 @@ func (client *AliyunClient) WithDnsClient(do func(*alidns.Client) (interface{}, 
 
 		dnsconn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DNS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DNS client: %w", err)
 		}
 		dnsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		dnsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -760,7 +760,7 @@ func (client *AliyunClient) WithRamClient(do func(*ram.Client) (interface{}, err
 
 		ramconn, err := ram.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RAM client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the RAM client: %w", err)
 		}
 		ramconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		ramconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -846,7 +846,7 @@ func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error
 		}
 		crconn, err := cr.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CR client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CR client: %w", err)
 		}
 		crconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		crconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -877,7 +877,7 @@ func (client *AliyunClient) WithCrEEClient(do func(*cr_ee.Client) (interface{}, 
 		}
 		creeconn, err := cr_ee.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CR EE client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CR EE client: %w", err)
 		}
 		creeconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		creeconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -927,7 +927,7 @@ func (client *AliyunClient) WithCdnClient_new(do func(*cdn_new.Client) (interfac
 		}
 		cdnconn, err := cdn_new.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CDN client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CDN client: %w", err)
 		}
 		cdnconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		cdnconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -956,7 +956,7 @@ func (client *AliyunClient) WithOtsClient(do func(*ots.Client) (interface{}, err
 		}
 		otsconn, err := ots.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the OTS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the OTS client: %w", err)
 		}
 
 		otsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -996,7 +996,7 @@ func (client *AliyunClient) NewOtsRoaClient(productCode string) (*roa.Client, er
 
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -1024,7 +1024,7 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 		}
 		cmsconn, err := cms.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CMS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CMS client: %w", err)
 		}
 
 		cmsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1053,7 +1053,7 @@ func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, err
 		}
 		stsconn, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the STS client: %w", err)
 		}
 
 		stsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1075,7 +1075,7 @@ func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{
 	if client.logpopconn == nil {
 		logpopconn, err := slsPop.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the sls client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the sls client: %w", err)
 		}
 		logpopconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		logpopconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1142,7 +1142,7 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 		drdsconn, err := drds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DRDS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DRDS client: %w", err)
 
 		}
 		drdsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1171,7 +1171,7 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 		}
 		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DDS client: %w", err)
 		}
 
 		ddsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1200,7 +1200,7 @@ func (client *AliyunClient) WithGpdbClient(do func(*gpdb.Client) (interface{}, e
 		}
 		gpdbconn, err := gpdb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the GPDB client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the GPDB client: %w", err)
 		}
 		gpdbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		gpdbconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1236,7 +1236,7 @@ func (client *AliyunClient) NewGpdbClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -1272,7 +1272,7 @@ func (client *AliyunClient) WithFcClient(do func(*fc.Client) (interface{}, error
 
 		fcconn, err := fc.NewClient(fmt.Sprintf("https://%s.%s", accountId, endpoint), string(ApiVersion20160815), client.config.AccessKey, client.config.SecretKey, clientOptions...)
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the FC client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the FC client: %w", err)
 		}
 
 		fcconn.Config.UserAgent = client.getUserAgent()
@@ -1295,7 +1295,7 @@ func (client *AliyunClient) WithCloudApiClient(do func(*cloudapi.Client) (interf
 		}
 		cloudapiconn, err := cloudapi.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the CloudAPI client: %w", err)
 		}
 		cloudapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		cloudapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1317,7 +1317,7 @@ func (client *AliyunClient) NewTeaCommonClient(endpoint string) (*rpc.Client, er
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the tea client: %#v", err)
+		return nil, fmt.Errorf("unable to initialize the tea client: %w", err)
 	}
 
 	return conn, nil
@@ -1328,7 +1328,7 @@ func (client *AliyunClient) NewTeaRoaCommonClient(endpoint string) (*roa.Client,
 
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the tea roa client: %#v", err)
+		return nil, fmt.Errorf("unable to initialize the tea roa client: %w", err)
 	}
 
 	return conn, nil
@@ -1418,7 +1418,7 @@ func (client *AliyunClient) WithElasticsearchClient(do func(*elasticsearch.Clien
 		}
 		elasticsearchconn, err := elasticsearch.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Elasticsearch client: %w", err)
 		}
 		elasticsearchconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		elasticsearchconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1454,7 +1454,7 @@ func (client *AliyunClient) NewElasticsearchClient() (*roa.Client, error) {
 
 	conn, err := roa.NewClient(&roaSdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, err
 }
@@ -1541,7 +1541,7 @@ func (client *AliyunClient) WithCsProjectClient(clusterId, endpoint string, clus
 		var err error
 		csProjectClient, err = cs.NewProjectClient(clusterId, endpoint, clusterCerts)
 		if err != nil {
-			return nil, fmt.Errorf("Getting Application Client failed by cluster id %s: %#v.", clusterCerts, err)
+			return nil, fmt.Errorf("Getting Application Client failed by cluster id %s: %w", clusterCerts, err)
 		}
 		csProjectClient.SetDebug(false)
 		csProjectClient.SetUserAgent(client.getUserAgent())
@@ -1679,7 +1679,7 @@ func (client *AliyunClient) GetCallerIdentity() (*sts.GetCallerIdentityResponse,
 	}
 	stsClient, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
+		return nil, fmt.Errorf("unable to initialize the STS client: %w", err)
 	}
 
 	stsClient.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -1714,7 +1714,7 @@ func (client *AliyunClient) WithDdoscooClient(do func(*ddoscoo.Client) (interfac
 
 		ddoscooconn, err := ddoscoo.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DDOSCOO client: %w", err)
 		}
 		ddoscooconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		ddoscooconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1744,7 +1744,7 @@ func (client *AliyunClient) WithDdosbgpClient(do func(*ddosbgp.Client) (interfac
 
 		ddosbgpconn, err := ddosbgp.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DDOSBGP client: %w", err)
 		}
 		ddosbgpconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		ddosbgpconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1775,7 +1775,7 @@ func (client *AliyunClient) WithBssopenapiClient(do func(*bssopenapi.Client) (in
 		// Domestic account is business.aliyuncs.com (region is cn-hangzhou) and International account is business.ap-southeast-1.aliyuncs.com (region is ap-southeast-1)
 		bssopenapiconn, err := bssopenapi.NewClientWithOptions(string(Hangzhou), client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the BSSOPENAPI client: %w", err)
 		}
 		bssopenapiconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		bssopenapiconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1811,7 +1811,7 @@ func (client *AliyunClient) WithAlikafkaClient(do func(*alikafka.Client) (interf
 		}
 		alikafkaconn, err := alikafka.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %w", err)
 		}
 		alikafkaconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		alikafkaconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1838,7 +1838,7 @@ func (client *AliyunClient) WithEmrClient(do func(*emr.Client) (interface{}, err
 		}
 		emrConn, err := emr.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the E-MapReduce client: %w", err)
 		}
 		emrConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		emrConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1866,7 +1866,7 @@ func (client *AliyunClient) WithSagClient(do func(*smartag.Client) (interface{},
 		}
 		sagconn, err := smartag.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the SAG client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the SAG client: %w", err)
 		}
 		sagconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		sagconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1887,7 +1887,7 @@ func (client *AliyunClient) WithDbauditClient(do func(*yundun_dbaudit.Client) (i
 	if client.dbauditconn == nil {
 		dbauditconn, err := yundun_dbaudit.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the DBAUDIT client: %w", err)
 		}
 		dbauditconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		dbauditconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1907,7 +1907,7 @@ func (client *AliyunClient) WithBastionhostClient(do func(*yundun_bastionhost.Cl
 	if client.bastionhostconn == nil {
 		bastionhostconn, err := yundun_bastionhost.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the BASTIONHOST client: %w", err)
 		}
 		bastionhostconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		bastionhostconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1935,7 +1935,7 @@ func (client *AliyunClient) WithMarketClient(do func(*market.Client) (interface{
 		}
 		marketconn, err := market.NewClientWithOptions(client.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Market client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Market client: %w", err)
 		}
 		marketconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		marketconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -1963,7 +1963,7 @@ func (client *AliyunClient) WithHbaseClient(do func(*hbase.Client) (interface{},
 		}
 		hbaseconn, err := hbase.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the hbase client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the hbase client: %w", err)
 		}
 		hbaseconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		hbaseconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2002,7 +2002,7 @@ func (client *AliyunClient) NewAdbClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -2021,7 +2021,7 @@ func (client *AliyunClient) WithAdbClient(do func(*adb.Client) (interface{}, err
 
 		adbconn, err := adb.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the adb client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the adb client: %w", err)
 
 		}
 		adbconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
@@ -2056,7 +2056,7 @@ func (client *AliyunClient) NewCbnClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2080,7 +2080,7 @@ func (client *AliyunClient) WithCbnClient(do func(*cbn.Client) (interface{}, err
 
 		cbnConn, err := cbn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Cbnclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Cbnclient: %w", err)
 		}
 		cbnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		cbnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2107,7 +2107,7 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		}
 		edasconn, err := edas.NewClientWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the ALIKAFKA client: %w", err)
 		}
 		edasconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		edasconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2138,7 +2138,7 @@ func (client *AliyunClient) WithAlidnsClient(do func(*alidns.Client) (interface{
 
 		alidnsConn, err := alidns.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Alidnsclient: %w", err)
 		}
 		alidnsConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		alidnsConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2162,7 +2162,7 @@ func (client *AliyunClient) WithCassandraClient(do func(*cassandra.Client) (inte
 		}
 		cassandraConn, err := cassandra.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Cassandraclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Cassandraclient: %w", err)
 		}
 		cassandraConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		cassandraConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2192,7 +2192,7 @@ func (client *AliyunClient) WithEciClient(do func(*eci.Client) (interface{}, err
 
 		eciConn, err := eci.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Eciclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Eciclient: %w", err)
 		}
 		eciConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		eciConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2222,7 +2222,7 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 
 		dcdnConn, err := dcdn.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the Dcdnclient: %w", err)
 		}
 		dcdnConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		dcdnConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2265,7 +2265,7 @@ func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (inter
 
 		r_kvstoreConn, err := r_kvstore.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %#v", err)
+			return nil, fmt.Errorf("unable to initialize the RKvstoreclient: %w", err)
 		}
 		r_kvstoreConn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
 		r_kvstoreConn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
@@ -2298,7 +2298,7 @@ func (client *AliyunClient) NewOnsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2321,7 +2321,7 @@ func (client *AliyunClient) NewCmsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2346,7 +2346,7 @@ func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2369,7 +2369,7 @@ func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2382,7 +2382,7 @@ func (client *AliyunClient) NewBssopenapiClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2405,7 +2405,7 @@ func (client *AliyunClient) NewFnfClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2428,7 +2428,7 @@ func (client *AliyunClient) NewRosClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2453,7 +2453,7 @@ func (client *AliyunClient) NewPvtzClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2476,7 +2476,7 @@ func (client *AliyunClient) NewPrivatelinkClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2501,7 +2501,7 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2524,7 +2524,7 @@ func (client *AliyunClient) NewOdpsClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2547,7 +2547,7 @@ func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2572,7 +2572,7 @@ func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2595,7 +2595,7 @@ func (client *AliyunClient) NewEciClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2618,7 +2618,7 @@ func (client *AliyunClient) NewActiontrailClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2641,7 +2641,7 @@ func (client *AliyunClient) NewMseClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2664,7 +2664,7 @@ func (client *AliyunClient) NewHitsdbClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2689,7 +2689,7 @@ func (client *AliyunClient) NewAistudioClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2714,7 +2714,7 @@ func (client *AliyunClient) NewEipanycastClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2737,7 +2737,7 @@ func (client *AliyunClient) NewOosClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2762,7 +2762,7 @@ func (client *AliyunClient) NewImsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2788,7 +2788,7 @@ func (client *AliyunClient) NewRamClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2814,7 +2814,7 @@ func (client *AliyunClient) NewResourcemanagerClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2839,7 +2839,7 @@ func (client *AliyunClient) NewQuotasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2864,7 +2864,7 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	openapiConfig.Endpoint = tea.String(endpoint)
 	result, err := openapi.NewClient(&openapiConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return result, nil
 }
@@ -2887,7 +2887,7 @@ func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2912,7 +2912,7 @@ func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2935,7 +2935,7 @@ func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2958,7 +2958,7 @@ func (client *AliyunClient) NewAdsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -2981,7 +2981,7 @@ func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3004,7 +3004,7 @@ func (client *AliyunClient) NewSlbClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3029,7 +3029,7 @@ func (client *AliyunClient) NewKmsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3054,7 +3054,7 @@ func (client *AliyunClient) NewAlidnsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3077,7 +3077,7 @@ func (client *AliyunClient) NewHbaseClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3100,7 +3100,7 @@ func (client *AliyunClient) NewDmClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3123,7 +3123,7 @@ func (client *AliyunClient) NewEventbridgeClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3146,7 +3146,7 @@ func (client *AliyunClient) NewOnsproxyClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3171,7 +3171,7 @@ func (client *AliyunClient) NewCdsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3196,7 +3196,7 @@ func (client *AliyunClient) NewHbrClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3224,7 +3224,7 @@ func (client *AliyunClient) NewCasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3249,7 +3249,7 @@ func (client *AliyunClient) NewArmsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3274,7 +3274,7 @@ func (client *AliyunClient) NewCloudfwClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3299,7 +3299,7 @@ func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3322,7 +3322,7 @@ func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3347,7 +3347,7 @@ func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3372,7 +3372,7 @@ func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3397,7 +3397,7 @@ func (client *AliyunClient) NewCloudphoneClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3422,7 +3422,7 @@ func (client *AliyunClient) NewScdnClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3447,7 +3447,7 @@ func (client *AliyunClient) NewDataworkspublicClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3473,7 +3473,7 @@ func (client *AliyunClient) NewCdnClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3498,7 +3498,7 @@ func (client *AliyunClient) NewCddcClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3523,7 +3523,7 @@ func (client *AliyunClient) NewMscopensubscriptionClient() (*rpc.Client, error) 
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3547,7 +3547,7 @@ func (client *AliyunClient) NewSddpClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3572,7 +3572,7 @@ func (client *AliyunClient) NewBastionhostClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3597,7 +3597,7 @@ func (client *AliyunClient) NewSasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3622,7 +3622,7 @@ func (client *AliyunClient) NewAlidfsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3647,7 +3647,7 @@ func (client *AliyunClient) NewEhpcClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3672,7 +3672,7 @@ func (client *AliyunClient) NewEnsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3697,7 +3697,7 @@ func (client *AliyunClient) NewIotClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3722,7 +3722,7 @@ func (client *AliyunClient) NewImmClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3747,7 +3747,7 @@ func (client *AliyunClient) NewClickhouseClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3772,7 +3772,7 @@ func (client *AliyunClient) NewDtsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3797,7 +3797,7 @@ func (client *AliyunClient) NewDgClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3822,7 +3822,7 @@ func (client *AliyunClient) NewCloudssoClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3847,7 +3847,7 @@ func (client *AliyunClient) NewSwasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3872,7 +3872,7 @@ func (client *AliyunClient) NewVsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3897,7 +3897,7 @@ func (client *AliyunClient) NewQuickbiClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3922,7 +3922,7 @@ func (client *AliyunClient) NewDevopsrdcClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3947,7 +3947,7 @@ func (client *AliyunClient) NewVodClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3972,7 +3972,7 @@ func (client *AliyunClient) NewOpensearchClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -3997,7 +3997,7 @@ func (client *AliyunClient) NewGdsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4022,7 +4022,7 @@ func (client *AliyunClient) NewDbfsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4047,7 +4047,7 @@ func (client *AliyunClient) NewEaisClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4072,7 +4072,7 @@ func (client *AliyunClient) NewCloudauthClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4097,7 +4097,7 @@ func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4120,7 +4120,7 @@ func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4144,7 +4144,7 @@ func (client *AliyunClient) NewServicemeshClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4169,7 +4169,7 @@ func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4194,7 +4194,7 @@ func (client *AliyunClient) NewEdsuserClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4219,7 +4219,7 @@ func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4244,7 +4244,7 @@ func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4269,7 +4269,7 @@ func (client *AliyunClient) NewAlikafkaClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -4295,7 +4295,7 @@ func (client *AliyunClient) NewEssClient() (*rpc.Client, error) {
 
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -4322,7 +4322,7 @@ func (client *AliyunClient) NewDdosbasicClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4347,7 +4347,7 @@ func (client *AliyunClient) NewSmartagClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4372,7 +4372,7 @@ func (client *AliyunClient) NewTagClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4397,7 +4397,7 @@ func (client *AliyunClient) NewEdasClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4423,7 +4423,7 @@ func (client *AliyunClient) NewEdasschedulerxClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4448,7 +4448,7 @@ func (client *AliyunClient) NewEhsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4473,7 +4473,7 @@ func (client *AliyunClient) NewDysmsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4504,7 +4504,7 @@ func (client *AliyunClient) NewFcClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(fmt.Sprintf("%s.%s", accountId, endpoint))
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4529,7 +4529,7 @@ func (client *AliyunClient) NewDdosbgpClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4555,7 +4555,7 @@ func (client *AliyunClient) NewApigatewayClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4580,7 +4580,7 @@ func (client *AliyunClient) NewVpcpeerClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4605,7 +4605,7 @@ func (client *AliyunClient) NewCbsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4630,7 +4630,7 @@ func (client *AliyunClient) NewNlbClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4655,7 +4655,7 @@ func (client *AliyunClient) NewEbsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4680,7 +4680,7 @@ func (client *AliyunClient) NewMnsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4705,7 +4705,7 @@ func (client *AliyunClient) NewBpstudioClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4732,7 +4732,7 @@ func (client *AliyunClient) NewDasClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4758,7 +4758,7 @@ func (client *AliyunClient) NewCloudfirewallClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4784,7 +4784,7 @@ func (client *AliyunClient) NewThreatdetectionClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4810,7 +4810,7 @@ func (client *AliyunClient) NewSrvcatalogClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4836,7 +4836,7 @@ func (client *AliyunClient) NewVpcPeerClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4862,7 +4862,7 @@ func (client *AliyunClient) NewEfloClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4887,7 +4887,7 @@ func (client *AliyunClient) NewOceanbaseClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4913,7 +4913,7 @@ func (client *AliyunClient) NewBeebotClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4941,7 +4941,7 @@ func (client *AliyunClient) NewComputenestClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 
 	return conn, nil
@@ -4966,7 +4966,7 @@ func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -4990,7 +4990,7 @@ func (client *AliyunClient) NewEipClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5014,7 +5014,7 @@ func (client *AliyunClient) NewCbwpClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5045,7 +5045,7 @@ func (client *AliyunClient) NewFcv2Client() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(fmt.Sprintf("%s.%s", accountId, endpoint))
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5069,7 +5069,7 @@ func (client *AliyunClient) NewDrdsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5093,7 +5093,7 @@ func (client *AliyunClient) NewAckoneClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5147,7 +5147,7 @@ func (client *AliyunClient) NewRocketmqClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5171,7 +5171,7 @@ func (client *AliyunClient) NewResourceCenterClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5195,7 +5195,7 @@ func (client *AliyunClient) NewHologramClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5219,7 +5219,7 @@ func (client *AliyunClient) NewRealtimecomputeClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5243,7 +5243,7 @@ func (client *AliyunClient) NewVpngatewayClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5268,7 +5268,7 @@ func (client *AliyunClient) NewAckClient() (*roa.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := roa.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5328,7 +5328,7 @@ func (client *AliyunClient) NewExpressconnectClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5350,7 +5350,7 @@ func (client *AliyunClient) NewCloudmonitorserviceClient() (*rpc.Client, error) 
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5374,7 +5374,7 @@ func (client *AliyunClient) NewWafv3Client() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5398,7 +5398,7 @@ func (client *AliyunClient) NewDfsClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }
@@ -5422,7 +5422,7 @@ func (client *AliyunClient) NewAmqpClient() (*rpc.Client, error) {
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s client: %w", productCode, err)
 	}
 	return conn, nil
 }

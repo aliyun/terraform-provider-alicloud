@@ -371,7 +371,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 			return fcClient.GetAccountSettings(fc.NewGetAccountSettingsInput())
 		})
 		if err != nil {
-			return fmt.Errorf("[API ERROR] FC GetAccountSettings: %#v", err)
+			return fmt.Errorf("[API ERROR] FC GetAccountSettings: %w", err)
 		}
 		addDebug("GetAccountSettings", raw, clientInfo)
 		out, _ := raw.(*fc.GetAccountSettingsOutput)
@@ -426,7 +426,7 @@ func dataSourceAlicloudZonesRead(d *schema.ResourceData, meta interface{}) error
 		return ecsClient.DescribeZones(req)
 	})
 	if err != nil {
-		return fmt.Errorf("DescribeZones got an error: %#v", err)
+		return fmt.Errorf("DescribeZones got an error: %w", err)
 	}
 	addDebug(req.GetActionName(), raw, req.RpcRequest, req)
 	resp, _ := raw.(*ecs.DescribeZonesResponse)

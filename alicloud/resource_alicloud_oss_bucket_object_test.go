@@ -168,7 +168,7 @@ func testAccCheckOssBucketObjectExistsWithProviders(n string, bucket string, obj
 			})
 			buck, _ := raw.(*oss.Bucket)
 			if err != nil {
-				return fmt.Errorf("Error getting bucket: %#v", err)
+				return fmt.Errorf("Error getting bucket: %w", err)
 			}
 			object, err := buck.GetObjectMeta(rs.Primary.ID)
 			log.Printf("[WARN]get oss bucket object %#v", bucket)
@@ -202,7 +202,7 @@ func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider
 			return ossClient.Bucket(rs.Primary.ID)
 		})
 		if err != nil {
-			return fmt.Errorf("Error getting bucket: %#v", err)
+			return fmt.Errorf("Error getting bucket: %w", err)
 		}
 		bucket, _ = raw.(*oss.Bucket)
 	}
@@ -221,7 +221,7 @@ func testAccCheckOssBucketObjectDestroyWithProvider(s *terraform.State, provider
 			if IsExpectedErrors(err, []string{"NoSuchBucket"}) {
 				return nil
 			}
-			return fmt.Errorf("IsObjectExist got an error: %#v", err)
+			return fmt.Errorf("IsObjectExist got an error: %w", err)
 		}
 
 		if !exist {

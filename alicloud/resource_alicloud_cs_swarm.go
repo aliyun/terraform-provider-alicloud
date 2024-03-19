@@ -203,7 +203,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 
 	vsw, err := vpcService.DescribeVSwitch(args.VSwitchID)
 	if err != nil {
-		return fmt.Errorf("Error DescribeVSwitches: %#v", err)
+		return fmt.Errorf("Error DescribeVSwitches: %w", err)
 	}
 
 	if vsw.CidrBlock == args.SubnetCIDR {
@@ -225,7 +225,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	})
 
 	if err != nil {
-		return fmt.Errorf("Creating container Cluster got an error: %#v", err)
+		return fmt.Errorf("Creating container Cluster got an error: %w", err)
 	}
 	cluster, _ := raw.(cs.ClusterCommonResponse)
 	d.SetId(cluster.ClusterID)
@@ -239,7 +239,7 @@ func resourceAlicloudCSSwarmCreate(d *schema.ResourceData, meta interface{}) err
 	})
 
 	if err != nil {
-		return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
+		return fmt.Errorf("Waitting for container Cluster %#v got an error: %w", cs.Running, err)
 	}
 
 	return resourceAlicloudCSSwarmUpdate(d, meta)
@@ -268,7 +268,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 			})
 		})
 		if err != nil {
-			return fmt.Errorf("Resize Cluster got an error: %#v", err)
+			return fmt.Errorf("Resize Cluster got an error: %w", err)
 		}
 
 		_, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
@@ -280,7 +280,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		})
 
 		if err != nil {
-			return fmt.Errorf("Waitting for container Cluster %#v got an error: %#v", cs.Running, err)
+			return fmt.Errorf("Waitting for container Cluster %#v got an error: %w", cs.Running, err)
 		}
 	}
 
@@ -295,7 +295,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 			return nil, csClient.ModifyClusterName(d.Id(), clusterName)
 		})
 		if err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
+			return fmt.Errorf("Modify Cluster Name got an error: %w", err)
 		}
 		d.SetPartial("name")
 		d.SetPartial("name_prefix")
@@ -355,7 +355,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 			}
 			inst, err := ecsService.DescribeInstance(node.InstanceId)
 			if err != nil {
-				return fmt.Errorf("[ERROR] QueryInstancesById %s: %#v.", node.InstanceId, err)
+				return fmt.Errorf("[ERROR] QueryInstancesById %s: %w", node.InstanceId, err)
 			}
 			mapping["eip"] = inst.EipAddress.IpAddress
 			oneNode = inst
@@ -367,7 +367,7 @@ func resourceAlicloudCSSwarmRead(d *schema.ResourceData, meta interface{}) error
 		d.Set("instance_type", oneNode.InstanceType)
 		disks, err := ecsService.DescribeDisksByType(oneNode.InstanceId, DiskTypeData)
 		if err != nil {
-			return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %#v.", resp[0].InstanceId, err)
+			return fmt.Errorf("[ERROR] DescribeDisks By Id %s: %w", resp[0].InstanceId, err)
 		}
 		for _, disk := range disks {
 			d.Set("disk_size", disk.Size)

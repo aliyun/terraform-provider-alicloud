@@ -117,7 +117,7 @@ func testAccCheckRouteTableAttachmentDestroy(s *terraform.State) error {
 			if NotFoundError(err) {
 				continue
 			}
-			return fmt.Errorf("Describe Route Table attachment error %#v", err)
+			return fmt.Errorf("Describe Route Table attachment error %w", err)
 		}
 	}
 	return nil
