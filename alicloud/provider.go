@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
@@ -82,8 +81,9 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCOUNT_ID", os.Getenv("ALICLOUD_ACCOUNT_ID")),
 				Description: descriptions["account_id"],
 			},
-			"assume_role":  assumeRoleSchema(),
-			"sign_version": signVersionSchema(),
+			"assume_role":           assumeRoleSchema(),
+			"sign_version":          signVersionSchema(),
+			"assume_role_with_oidc": assumeRoleWithOidcSchema(),
 			"fc": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -1795,7 +1795,16 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 			config.RamRoleArn, config.RamRoleSessionName, config.RamRolePolicy, config.RamRoleSessionExpiration, config.RamRoleExternalId)
 	}
 
-	if err := config.MakeConfigByEcsRoleName(); err != nil {
+	if v, ok := d.GetOk("assume_role_with_oidc"); ok && len(v.([]interface{})) == 1 {
+		config.AssumeRoleWithOidc, err = getAssumeRoleWithOIDCConfig(v.([]interface{})[0].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("[INFO] assume_role_with_oidc configuration set: (RoleArn: %q, SessionName: %q, SessionExpiration: %d, OIDCProviderArn: %s)",
+			config.AssumeRoleWithOidc.RoleARN, config.AssumeRoleWithOidc.RoleSessionName, config.AssumeRoleWithOidc.DurationSeconds, config.AssumeRoleWithOidc.OIDCProviderArn)
+	}
+
+	if err := config.RefreshAuthCredential(); err != nil {
 		return nil, err
 	}
 
@@ -2355,6 +2364,59 @@ func assumeRoleSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Description: descriptions["external_id"],
+				},
+			},
+		},
+	}
+}
+
+func assumeRoleWithOidcSchema() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		MaxItems: 1,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"oidc_provider_arn": {
+					Type:        schema.TypeString,
+					Required:    true,
+					Description: "ARN of the OIDC IdP.",
+					DefaultFunc: schema.EnvDefaultFunc("ALIBABA_CLOUD_OIDC_PROVIDER_ARN", ""),
+				},
+				"oidc_token_file": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The file path of OIDC token that is issued by the external IdP.",
+					DefaultFunc: schema.EnvDefaultFunc("ALIBABA_CLOUD_OIDC_TOKEN_FILE", ""),
+					//ExactlyOneOf: []string{"assume_role_with_oidc.0.oidc_token", "assume_role_with_oidc.0.oidc_token_file"},
+				},
+				"oidc_token": {
+					Type:         schema.TypeString,
+					Optional:     true,
+					ValidateFunc: validation.StringLenBetween(4, 20000),
+					//ExactlyOneOf: []string{"assume_role_with_oidc.0.oidc_token", "assume_role_with_oidc.0.oidc_token_file"},
+				},
+				"role_arn": {
+					Type:        schema.TypeString,
+					Required:    true,
+					Description: "ARN of a RAM role to assume prior to making API calls.",
+					DefaultFunc: schema.EnvDefaultFunc("ALIBABA_CLOUD_ROLE_ARN", ""),
+				},
+				"role_session_name": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The custom name of the role session. Set this parameter based on your business requirements. In most cases, this parameter is set to the identity of the user who calls the operation, for example, the username.",
+					DefaultFunc: schema.EnvDefaultFunc("ALIBABA_CLOUD_ROLE_SESSION_NAME", ""),
+				},
+				"policy": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Description: "The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.",
+				},
+				"session_expiration": {
+					Type:        schema.TypeInt,
+					Optional:    true,
+					Description: "The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.",
 				},
 			},
 		},
@@ -3476,6 +3538,64 @@ func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error
 	}
 
 	return response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken, nil
+}
+
+func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.AssumeRoleWithOidc, error) {
+	if tfMap == nil {
+		return nil, nil
+	}
+
+	assumeRole := connectivity.AssumeRoleWithOidc{}
+
+	if v, ok := tfMap["session_expiration"].(int); ok && v != 0 {
+		assumeRole.DurationSeconds = v
+	}
+
+	if v, ok := tfMap["policy"].(string); ok && v != "" {
+		assumeRole.Policy = v
+	}
+
+	if v, ok := tfMap["role_arn"].(string); ok && v != "" {
+		assumeRole.RoleARN = v
+	}
+
+	if v, ok := tfMap["role_session_name"].(string); ok && v != "" {
+		assumeRole.RoleSessionName = v
+	}
+	if assumeRole.RoleSessionName == "" {
+		assumeRole.RoleSessionName = "terraform"
+	}
+
+	if v, ok := tfMap["oidc_provider_arn"].(string); ok && v != "" {
+		assumeRole.OIDCProviderArn = v
+	}
+
+	missingOidcToken := true
+	if v, ok := tfMap["oidc_token"].(string); ok && v != "" {
+		assumeRole.OIDCToken = v
+		missingOidcToken = false
+	}
+
+	if v, ok := tfMap["oidc_token_file"].(string); ok && v != "" {
+		assumeRole.OIDCTokenFile = v
+		if assumeRole.OIDCToken == "" {
+			token, err := os.ReadFile(v)
+			if err != nil {
+				return nil, fmt.Errorf("reading oidc_token_file failed. Error: %s", err)
+			}
+			assumeRole.OIDCToken = string(token)
+		}
+		missingOidcToken = false
+	}
+	if missingOidcToken {
+		return nil, fmt.Errorf("\"assume_role_with_oidc.0.oidc_token\": one of `assume_role_with_oidc.0.oidc_token,assume_role_with_oidc.0.oidc_token_file` must be specified")
+	}
+
+	if assumeRole.OIDCToken == "" {
+		return nil, fmt.Errorf("\"assume_role_with_oidc.0.oidc_token\" or \"assume_role_with_oidc.0.oidc_token_file\" content can not be empty")
+	}
+
+	return &assumeRole, nil
 }
 
 type CredentialsURIResponse struct {
