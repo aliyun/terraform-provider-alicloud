@@ -97,8 +97,9 @@ The following methods are supported, in this order, and explained below:
 - Static credentials
 - Environment variables
 - Shared credentials/configuration file  
-- ECS Role
-- Assume role
+- ECS Instance Role
+- Assuming A RAM Role
+- Assuming A RAM Role With OIDC
 - Sidecar Credentials
 
 ### Static credentials
@@ -149,7 +150,7 @@ provider "alicloud" {
 }
 ```
 
-### ECS Role
+### ECS Instance Role
 
 If you're running Terraform from an ECS instance with RAM Instance using RAM Role,
 Terraform will just access
@@ -173,7 +174,7 @@ provider "alicloud" {
 
 -> **NOTE:** At present, the [MNS Resources](https://www.terraform.io/docs/providers/alicloud/r/mns_queue) does not support ECS Role Credential.
 
-### Assume role
+### Assuming A RAM Role
 
 If provided with a role ARN, Terraform will attempt to assume this role using the supplied credentials.
 
@@ -181,11 +182,33 @@ Usage:
 
 ```terraform
 provider "alicloud" {
+  access_key = "<One-AccessKeyId-With-AssumeRole-Policy>"
+  secret_key = "<One-AccessKeySecret-With-AssumeRole-Policy>"
   assume_role {
     role_arn           = "acs:ram::ACCOUNT_ID:role/ROLE_NAME"
-    policy             = "POLICY"
-    session_name       = "SESSION_NAME"
+    policy             = "Policy Content"
+    session_name       = "A Role Session Name"
     session_expiration = 999
+  }
+}
+```
+
+### Assuming A RAM Role With OIDC
+
+If provided with a role ARN and a token from a service account OpenID Connect (OIDC),
+the Alibaba CLoud Provider will attempt to assume this role using the supplied credentials.
+
+Usage:
+
+```terraform
+provider "alicloud" {
+  access_key = "<One-AccessKeyId-With-Accessing-AssumeRoleWithOIDC-Policy>"
+  secret_key = "<One-AccessKeySecret-With-Accessing-AssumeRoleWithOIDC-Policy>"
+  assume_role_with_oidc {
+    oidc_provider_arn = "acs:ram::ACCOUNT_ID:oidc-provider/ROLE_NAME"
+    role_arn          = "acs:ram::ACCOUNT_ID:role/ROLE_NAME"
+    oidc_token_file   = "/Users/tf_user/secrets/rrsa-tokens/token"
+    role_session_name = "A Role Session Name"
   }
 }
 ```
@@ -254,7 +277,9 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `profile` - (Optional, Available since 1.49.0) This is the Alicloud profile name as set in the shared credentials file. It can also be sourced from the `ALICLOUD_PROFILE` environment variable.
 
-* `assume_role` - (Optional) An [`assume_role`](#assume_role) block. Only one `assume_role` block may be in the configuration.
+* `assume_role` - (Optional) An [`assume_role` Configuration Block](#assume_role-configuration-block) block. Only one `assume_role` block may be in the configuration.
+
+* `assume_role_with_oidc` - (Optional, Available since v1.220.0) Configuration block for assuming an RAM role using an OIDC. See the [`assume_role_with_oidc` Configuration Block](#assume_role_with_oidc-configuration-block) section below. Only one `assume_role_with_oidc` block may be in the configuration.
 
 * `endpoints` - (Optional) An [`endpoints`](#endpoints) block to support custom endpoints.
 
@@ -271,7 +296,7 @@ The length should not more than 128(Before 1.207.2, it should not more than 64).
 
 * `max_retry_timeout` - (Optional, Available since 1.183.0) The maximum retry timeout in second of the request. Default to `0`.
 
-### `assume_role`
+### `assume_role` Configuration Block
 
 * `role_arn` - (Required) The ARN of the role to assume. If ARN is set to an empty string, it does not perform role switching. It supports environment variable `ALICLOUD_ASSUME_ROLE_ARN`.
   Terraform executes configuration on account with provided credentials.
@@ -288,6 +313,20 @@ The length should not more than 128(Before 1.207.2, it should not more than 64).
 * `external_id` - (Optional, Available since 1.207.1) The external ID of the RAM role. 
   This parameter is provided by an external party and is used to prevent the confused deputy problem. 
   The value must be 2 to 1,224 characters in length and can contain letters, digits, and the following special characters:`= , . @ : / - _`.
+
+### assume_role_with_oidc Configuration Block
+
+The `assume_role_with_oidc` configuration block supports the following arguments:
+
+* `oidc_provider_arn` - (Required) ARN of the OIDC IdP. Can also be set with the `ALIBABA_CLOUD_OIDC_PROVIDER_ARN` environment variable.
+* `role_arn` - (Required) ARN of the RAM Role to assume. Can also be set with the `ALIBABA_CLOUD_ROLE_ARN` environment variable.
+* `oidc_token` - (Optional) Value of a RRSA security token from an OIDC Idp. One of `oidc_token` or `oidc_token_file` is required.
+* `oidc_token_file` - (Optional) File containing a RRSA security token from an OIDC. One of `oidc_token_file` or `oidc_token` is required.
+  Can also be set with the `ALIBABA_CLOUD_OIDC_TOKEN_FILE` environment variable.
+* `role_session_name` - (Optional) The session name to use when assuming the role. If omitted, 'terraform' is passed to the AssumeRoleWithOIDC call as session name. 
+  Can also be set with the `ALIBABA_CLOUD_ROLE_SESSION_NAME` environment variable.
+* `session_expiration` - (Optional) The validity period of the STS token. Unit: seconds. Default value: 3600. Minimum value: 900. Maximum value: the value of the MaxSessionDuration parameter when creating a ram role.
+* `policy` - (Optional) The policy that specifies the permissions of the returned STS token. You can use this parameter to grant the STS token fewer permissions than the permissions granted to the RAM role.
  
 ### `endpoints`
 

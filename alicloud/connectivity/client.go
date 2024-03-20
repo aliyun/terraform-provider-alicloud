@@ -1041,35 +1041,6 @@ func (client *AliyunClient) WithCmsClient(do func(*cms.Client) (interface{}, err
 	return do(client.cmsconn)
 }
 
-func (client *AliyunClient) WithStsClient(do func(*sts.Client) (interface{}, error)) (interface{}, error) {
-	// Initialize the STS client if necessary
-	if client.stsconn == nil {
-		endpoint := client.config.StsEndpoint
-		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, STSCode)
-		}
-		if endpoint != "" {
-			endpoints.AddEndpointMapping(client.config.RegionId, string(STSCode), endpoint)
-		}
-		stsconn, err := sts.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize the STS client: %#v", err)
-		}
-
-		stsconn.SetReadTimeout(time.Duration(client.config.ClientReadTimeout) * time.Millisecond)
-		stsconn.SetConnectTimeout(time.Duration(client.config.ClientConnectTimeout) * time.Millisecond)
-		stsconn.SourceIp = client.config.SourceIp
-		stsconn.SecureTransport = client.config.SecureTransport
-		stsconn.AppendUserAgent(Terraform, client.config.TerraformVersion)
-		stsconn.AppendUserAgent(Provider, providerVersion)
-		stsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
-		stsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
-		client.stsconn = stsconn
-	}
-
-	return do(client.stsconn)
-}
-
 func (client *AliyunClient) WithLogPopClient(do func(*slsPop.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the HBase client if necessary
 	if client.logpopconn == nil {
