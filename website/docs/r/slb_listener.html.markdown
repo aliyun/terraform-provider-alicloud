@@ -4,30 +4,33 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_slb_listener"
 sidebar_current: "docs-alicloud-resource-slb-listener"
 description: |-
-  Provides an Application Load Banlancer resource.
+  Provides a Alicloud Classic Load Balancer (SLB) Listener resource.
 ---
 
 # alicloud_slb_listener
 
-Provides an Application Load Balancer Listener resource.
+Provides a Classic Load Balancer (SLB) Load Balancer Listener resource.
 
-For information about slb and how to use it, see [What is Server Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
+For information about Classic Load Balancer (SLB) and how to use it, see [What is Classic Load Balancer](https://www.alibabacloud.com/help/doc-detail/27539.htm).
 
-For information about listener and how to use it, to see the following:
+For information about listener and how to use it, please see the following:
 
-* [Configure a HTTP Listener](https://www.alibabacloud.com/help/doc-detail/27592.htm).
-* [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
-* [Configure a TCP Listener](https://www.alibabacloud.com/help/doc-detail/27594.htm).
-* [Configure a UDP Listener](https://www.alibabacloud.com/help/doc-detail/27595.htm).
+* [Configure a HTTP Classic Load Balancer (SLB) Listener](https://www.alibabacloud.com/help/doc-detail/27592.htm).
+* [Configure a HTTPS Classic Load Balancer (SLB) Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
+* [Configure a TCP Classic Load Balancer (SLB) Listener](https://www.alibabacloud.com/help/doc-detail/27594.htm).
+* [Configure a UDP Classic Load Balancer (SLB) Listener](https://www.alibabacloud.com/help/doc-detail/27595.htm).
 
 -> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
 variable "name" {
   default = "tf-example"
 }
+
 resource "random_integer" "default" {
   min = 10000
   max = 99999
@@ -92,51 +95,173 @@ resource "alicloud_slb_acl_entry_attachment" "second" {
 
 The following arguments are supported:
 
-* `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
-* `frontend_port` - (Required, ForceNew) Port used by the Server Load Balancer instance frontend. Valid value range: [1-65535].
-* `backend_port` - (Optional, ForceNew) Port used by the Server Load Balancer instance backend. Valid value range: [1-65535].
-* `protocol` - (Required, ForceNew) The protocol to listen on. Valid values are [`http`, `https`, `tcp`, `udp`].
-* `bandwidth` - (Optional, Computed) Bandwidth peak of Listener. For the public network instance charged per traffic consumed, the Bandwidth on Listener can be set to -1, indicating the bandwidth peak is unlimited. Valid values are [-1, 1-1000] in Mbps.
-* `description` - (Optional, Available since 1.69.0) The description of slb listener. This description can have a string of 1 to 80 characters. Default value: null.
-* `scheduler` - (Optional) Scheduling algorithm,  Valid values: `wrr`, `rr`, `wlc`, `sch`, `tcp`, `qch`. Default to `wrr`. 
-  Only when `protocol` is `tcp` or `udp`, `scheduler` can be set to `sch`. Only when instance is guaranteed-performance instance and `protocol` is `tcp` or `udp`, `scheduler` can be set to `tch`. Only when instance is guaranteed-performance instance and `protocol` is `udp`, `scheduler` can be set to `qch`.
-* `sticky_session` - (Optional) Whether to enable session persistence, Valid values are `on` and `off`. Default to `off`.
-* `sticky_session_type` - (Optional) Mode for handling the cookie. If `sticky_session` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `insert` and `server`. `insert` means it is inserted from Server Load Balancer; `server` means the Server Load Balancer learns from the backend server.
-* `cookie_timeout` - (Optional) Cookie timeout. It is mandatory when `sticky_session` is "on" and `sticky_session_type` is "insert". Otherwise, it will be ignored. Valid value range: [1-86400] in seconds.
-* `cookie` - (Optional) The cookie configured on the server. It is mandatory when `sticky_session` is "on" and `sticky_session_type` is "server". Otherwise, it will be ignored. Valid value：String in line with RFC 2965, with length being 1- 200. It only contains characters such as ASCII codes, English letters and digits instead of the comma, semicolon or spacing, and it cannot start with $.
-* `persistence_timeout` - (Optional) Timeout of connection persistence. Valid value range: [0-3600] in seconds. Default to 0 and means closing it.
-* `health_check` - (Optional) Whether to enable health check. Valid values are`on` and `off`. TCP and UDP listener's HealthCheck is always on, so it will be ignore when launching TCP or UDP listener.
-* `health_check_type` - (Optional) Type of health check. Valid values are: `tcp` and `http`. Default to `tcp` . TCP supports TCP and HTTP health check mode, you can select the particular mode depending on your application.
-* `health_check_domain` - (Optional) Domain name used for health check. When it used to launch TCP listener, `health_check_type` must be "http". Its length is limited to 1-80 and only characters such as letters, digits, ‘-‘ and ‘.’ are allowed. When it is not set or empty,  Server Load Balancer uses the private network IP address of each backend server as Domain used for health check.
-* `health_check_uri` - (Optional) URI used for health check. When it used to launch TCP listener, `health_check_type` must be "http". Its length is limited to 1-80 and it must start with /. Only characters such as letters, digits, ‘-’, ‘/’, ‘.’, ‘%’, ‘?’, #’ and ‘&’ are allowed.
-* `health_check_connect_port` - (Optional) The port that is used for health checks. Valid value range: [0-65535]. Default to `0` means that the port on a backend server is used for health checks.
-* `healthy_threshold` - (Optional) The number of health checks that an unhealthy backend server must consecutively pass before it can be declared healthy. In this case, the health check state is changed from fail to success. It is required when `health_check` is on. Valid value range: [2-10] in seconds. Default to 3. **NOTE:** This parameter takes effect only if the `health_check` parameter is set to `on`.
-* `unhealthy_threshold` - (Optional) The number of health checks that a healthy backend server must consecutively fail before it can be declared unhealthy. In this case, the health check state is changed from success to fail. It is required when `health_check` is on. Valid value range: [2-10] in seconds. Default to 3. **NOTE:** This parameter takes effect only if the `health_check` parameter is set to `on`.
-* `health_check_timeout` - (Optional) Maximum timeout of each health check response. It is required when `health_check` is on. Valid value range: [1-300] in seconds. Default to 5. Note: If `health_check_timeout` < `health_check_interval`, its will be replaced by `health_check_interval`.
-* `health_check_interval` - (Optional) Time interval of health checks. It is required when `health_check` is on. Valid value range: [1-50] in seconds. Default to 2.
-* `health_check_http_code` - (Optional) Regular health check HTTP status code. Multiple codes are segmented by “,”. It is required when `health_check` is on. Default to `http_2xx`.  Valid values are: `http_2xx`,  `http_3xx`, `http_4xx` and `http_5xx`.
-* `health_check_method` - (Optional, Available since 1.70.0) HealthCheckMethod used for health check.Valid values: ["head", "get"] `http` and `https` support regions ap-northeast-1, ap-southeast-1, ap-southeast-2, ap-southeast-3, us-east-1, us-west-1, eu-central-1, ap-south-1, me-east-1, cn-huhehaote, cn-zhangjiakou, ap-southeast-5, cn-shenzhen, cn-hongkong, cn-qingdao, cn-chengdu, eu-west-1, cn-hangzhou", cn-beijing, cn-shanghai.This function does not support the TCP protocol .
-* `ssl_certificate_id` - (Deprecated) SLB Server certificate ID. It has been deprecated from 1.59.0 and using `server_certificate_id` instead. 
-* `server_certificate_id` - (Optional, Available since 1.59.0) SLB Server certificate ID. It is required when `protocol` is `https`. The `server_certificate_id` is also required when the value of the `ssl_certificate_id`  is Empty.
-* `ca_certificate_id` - (Optional, Available since 1.104) SLB CA certificate ID. Only when `protocol` is `https` can be specified.
-* `gzip` - (Optional) Whether to enable "Gzip Compression". If enabled, files of specific file types will be compressed, otherwise, no files will be compressed. Default to true. Available since v1.13.0+.
-* `x_forwarded_for` - (Optional) Whether to set additional HTTP Header field "X-Forwarded-For" (documented below). Available since v1.13.0+. See [`x_forwarded_for`](#x_forwarded_for) below.
-* `acl_status` - (Optional) Whether to enable "acl(access control list)", the acl is specified by `acl_id`. Valid values are `on` and `off`. Default to `off`.
-* `acl_type` - (Optional) Mode for handling the acl specified by acl_id. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored. Valid values are `white` and `black`. `white` means the Listener can only be accessed by client ip belongs to the acl; `black` means the Listener can not be accessed by client ip belongs to the acl.
-* `acl_id` - (Optional) the id of access control list to be apply on the listener, is the id of resource alicloud_slb_acl. If `acl_status` is "on", it is mandatory. Otherwise, it will be ignored.
-* `established_timeout` - (Optional) Timeout of tcp listener established connection idle timeout. Valid value range: [10-900] in seconds. Default to 900.
-* `idle_timeout` - (Optional) Timeout of http or https listener established connection idle timeout. Valid value range: [1-60] in seconds. Default to 15.
-* `request_timeout` - (Optional) Timeout of http or https listener request (which does not get response from backend) timeout. Valid value range: [1-180] in seconds. Default to 60.
-* `enable_http2` - (Optional) Whether to enable https listener support http2 or not. Valid values are `on` and `off`. Default to `on`.
-* `tls_cipher_policy` - (Optional)  Https listener TLS cipher policy. Valid values are `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`. Default to `tls_cipher_policy_1_0`. Currently the `tls_cipher_policy` can not be updated when load balancer instance is "Shared-Performance".
-* `server_group_id` - (Optional) the id of server group to be apply on the listener, is the id of resource `alicloud_slb_server_group`.
-* `listener_forward` - (Optional, ForceNew, Available since 1.40.0) Whether to enable http redirect to https, Valid values are `on` and `off`. Default to `off`.
-* `master_slave_server_group_id` - (Optional) The ID of the master slave server group.
-* `forward_port` - (Optional, ForceNew, Available since 1.40.0) The port that http redirect to https.
-* `delete_protection_validation` - (Optional, Available since 1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default to false.
-* `proxy_protocol_v2_enabled` - (Optional, Available since 1.187.0) Whether to support carrying the client source address to the backend server through the Proxy Protocol. Valid values are `true` and `false`. Default to `false`.
+* `HTTP Listener` - See [`HTTP Listener`](#HTTP Listener) below.
+* `HTTPS Listener` -  See [`HTTPS Listener`](#HTTPS Listener) below.
+* `TCP Listener` -  See [`TCP Listener`](#TCP Listener) below.
+* `UDP Listener` -  See [`UDP Listener`](#UDP Listener) below.
 
--> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port,listener_forward,load_balancer_id,frontend_port,protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
+### HTTP Listener
+
+The HTTP Listener supports the following:
+
+* `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
+* `protocol` - (Required, ForceNew) The protocol to listen on. Valid values: `http`.
+* `frontend_port` - (Required, Int, ForceNew) The frontend port that is used by the CLB instance. Valid values: `1` to `65535`.
+* `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
+* `bandwidth` - (Optional, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
+  - `-1`: If you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
+  - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
+-> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+* `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
+  - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
+  - `rr`: Requests are distributed to backend servers in sequence.
+* `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
+* `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
+* `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
+* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `sticky_session` - (Optional) Specifies whether to enable session persistence. Default value: `off`. Valid values: `on`, `off`.
+* `sticky_session_type` - (Optional) The method that is used to handle a cookie. Valid values: `insert`, `server`. **NOTE:** If `sticky_session` is set to `on`, `sticky_session_type` is required. Otherwise, it will be ignored.
+* `cookie_timeout` - (Optional, Int) The timeout period of a cookie. Unit: seconds. Valid values: `1` to `86400`. **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `insert`, `cookie_timeout` is required. Otherwise, it will be ignored.
+* `cookie` - (Optional) The cookie that is configured on the server. The `cookie` must be `1` to `200` characters in length and can contain only ASCII characters and digits. It cannot contain commas (,), semicolons (;), or space characters. It cannot start with a dollar sign ($). **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `server`, `cookie` is required. Otherwise, it will be ignored.
+* `health_check` - (Optional) Specifies whether to enable the health check feature. Default value: `on`. Valid values: `on`, `off`. **NOTE:** `TCP` and `UDP` listener's HealthCheck is always on, so it will be ignored when launching `TCP` or `UDP` listener.
+* `health_check_method` - (Optional, Available since v1.70.0) The health check method used in HTTP health checks. Valid values: `head`, `get`. **NOTE:** `health_check_method` takes effect only if `health_check` is set to `on`.
+* `health_check_domain` - (Optional) The domain name that is used for health checks. **NOTE:** `health_check_domain` takes effect only if `health_check` is set to `on`.
+* `health_check_uri` - (Optional) The URI that is used for health checks. The `health_check_uri` must be `1` to `80` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), percent signs (%), question marks (?), number signs (#), and ampersands (&). The URI must start with a forward slash (/) but cannot be a single forward slash (/).
+**NOTE:** `health_check_uri` takes effect only if `health_check` is set to `on`.
+* `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks. Valid values: `0` to `65535`. **NOTE:** `health_check_connect_port` takes effect only if `health_check` is set to `on`.
+* `healthy_threshold` - (Optional, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. Default value: `3`. Valid values: `2` to `10`. **NOTE:** `healthy_threshold` takes effect only if `health_check` is set to `on`.
+* `unhealthy_threshold` - (Optional, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. Default value: `3`. Valid values: `2` to `10`. **NOTE:** `unhealthy_threshold` takes effect only if `health_check` is set to `on`.
+* `health_check_timeout` - (Optional, Int) The timeout period of a health check response. Unit: seconds. Default value: `5`. Valid values: `1` to `300`. **NOTE:** If `health_check_timeout` < `health_check_interval`, `health_check_timeout` will be replaced by `health_check_interval`. `health_check_timeout` takes effect only if `health_check` is set to `on`.
+* `health_check_interval` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds. Default value: `2`. Valid values: `1` to `50`. **NOTE:** `health_check_interval` takes effect only if `health_check` is set to `on`.
+* `health_check_http_code` - (Optional) The HTTP status code for a successful health check. Separate multiple HTTP status codes with commas (`,`). Default value: `http_2xx`. Valid values: `http_2xx`, `http_3xx`, `http_4xx` and `http_5xx`. **NOTE:** `health_check_http_code` takes effect only if `health_check` is set to `on`.
+* `gzip` - (Optional, Bool, Available since v1.13.0) Specifies whether to enable GZIP compression to compress specific types of files. Default value: `true`. Valid values: `true`, `false`.
+* `idle_timeout` - (Optional, Int) The timeout period of an idle connection. Unit: seconds. Default value: `15`. Valid values: `1` to `60`.
+* `request_timeout` - (Optional, Int) The timeout period of a request. Unit: seconds. Default value: `60`. Valid values: `1` to `180`.
+* `forward_port` - (Optional, ForceNew, Int, Available since v1.40.0) The listening port that is used to redirect HTTP requests to HTTPS.
+* `listener_forward` - (Optional, ForceNew, Available since v1.40.0) Specifies whether to enable HTTP-to-HTTPS redirection. Default value: `off`. Valid values: `on`, `off`.
+* `x_forwarded_for` - (Optional, Set, Available since v1.13.0) Whether to set additional HTTP Header field "X-Forwarded-For". See [`x_forwarded_for`](#x_forwarded_for) below.
+* `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+
+### HTTPS Listener
+
+The HTTPS Listener supports the following:
+
+* `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
+* `protocol` - (Required, ForceNew) The protocol to listen on. Valid values: `https`.
+* `frontend_port` - (Required, Int, ForceNew) The frontend port that is used by the CLB instance. Valid values: `1` to `65535`.
+* `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
+  - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
+  - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
+-> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+* `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
+* `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
+  - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
+  - `rr`: Requests are distributed to backend servers in sequence.
+* `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
+* `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
+* `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
+* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `sticky_session` - (Optional) Specifies whether to enable session persistence. Default value: `off`. Valid values: `on`, `off`.
+* `sticky_session_type` - (Optional) The method that is used to handle a cookie. Valid values: `insert`, `server`. **NOTE:** If `sticky_session` is set to `on`, `sticky_session_type` is required. Otherwise, it will be ignored.
+* `cookie_timeout` - (Optional, Int) The timeout period of a cookie. Unit: seconds. Valid values: `1` to `86400`. **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `insert`, `cookie_timeout` is required. Otherwise, it will be ignored.
+* `cookie` - (Optional) The cookie that is configured on the server. The `cookie` must be `1` to `200` characters in length and can contain only ASCII characters and digits. It cannot contain commas (,), semicolons (;), or space characters. It cannot start with a dollar sign ($). **NOTE:** If `sticky_session` is set to `on`, and `sticky_session_type` is set to `server`, `cookie` is required. Otherwise, it will be ignored.
+* `health_check` - (Optional) Specifies whether to enable the health check feature. Default value: `on`. Valid values: `on`, `off`. **NOTE:** `TCP` and `UDP` listener's HealthCheck is always on, so it will be ignored when launching `TCP` or `UDP` listener.
+* `health_check_method` - (Optional, Available since v1.70.0) The health check method used in HTTP health checks. Valid values: `head`, `get`. **NOTE:** `health_check_method` takes effect only if `health_check` is set to `on`.
+* `health_check_domain` - (Optional) The domain name that is used for health checks. **NOTE:** `health_check_domain` takes effect only if `health_check` is set to `on`.
+* `health_check_uri` - (Optional) The URI that is used for health checks. The `health_check_uri` must be `1` to `80` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), percent signs (%), question marks (?), number signs (#), and ampersands (&). The URI must start with a forward slash (/) but cannot be a single forward slash (/).
+**NOTE:** `health_check_uri` takes effect only if `health_check` is set to `on`.
+* `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks. Valid values: `0` to `65535`. **NOTE:** `health_check_connect_port` takes effect only if `health_check` is set to `on`.
+* `healthy_threshold` - (Optional, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. Default value: `3`. Valid values: `2` to `10`. **NOTE:** `healthy_threshold` takes effect only if `health_check` is set to `on`.
+* `unhealthy_threshold` - (Optional, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. Default value: `3`. Valid values: `2` to `10`. **NOTE:** `unhealthy_threshold` takes effect only if `health_check` is set to `on`.
+* `health_check_timeout` - (Optional, Int) The timeout period of a health check response. Unit: seconds. Default value: `5`. Valid values: `1` to `300`. **NOTE:** If `health_check_timeout` < `health_check_interval`, `health_check_timeout` will be replaced by `health_check_interval`. `health_check_timeout` takes effect only if `health_check` is set to `on`.
+* `health_check_interval` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds. Default value: `2`. Valid values: `1` to `50`. **NOTE:** `health_check_interval` takes effect only if `health_check` is set to `on`.
+* `health_check_http_code` - (Optional) The HTTP status code for a successful health check. Separate multiple HTTP status codes with commas (`,`). Default value: `http_2xx`. Valid values: `http_2xx`, `http_3xx`, `http_4xx` and `http_5xx`. **NOTE:** `health_check_http_code` takes effect only if `health_check` is set to `on`.
+* `server_certificate_id` - (Optional, Available since v1.59.0) The ID of the server certificate. **NOTE:** `server_certificate_id` is also required when the value of the `ssl_certificate_id` is Empty.
+* `ca_certificate_id` - (Optional, Available since v1.104) The ID of the certification authority (CA) certificate.
+* `gzip` - (Optional, Bool, Available since v1.13.0) Specifies whether to enable GZIP compression to compress specific types of files. Default value: `true`. Valid values: `true`, `false`.
+* `idle_timeout` - (Optional, Int) The timeout period of an idle connection. Unit: seconds. Default value: `15`. Valid values: `1` to `60`.
+* `request_timeout` - (Optional, Int) The timeout period of a request. Unit: seconds. Default value: `60`. Valid values: `1` to `180`.
+* `enable_http2` - (Optional) Specifies whether to enable HTTP/2. Default value: `on`. Valid values: `on`, `off`.
+* `tls_cipher_policy` - (Optional) The Transport Layer Security (TLS) security policy. Default value: `tls_cipher_policy_1_0`. Valid values: `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`.
+* `x_forwarded_for` - (Optional, Set, Available since v1.13.0) Whether to set additional HTTP Header field "X-Forwarded-For". See [`x_forwarded_for`](#x_forwarded_for) below.
+* `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+* `ssl_certificate_id` - (Deprecated since v1.59.0) The ID of the server certificate. **NOTE:** Field `ssl_certificate_id` has been deprecated from provider version 1.59.0. New field `server_certificate_id` instead.
+
+### TCP Listener
+
+The TCP Listener supports the following:
+
+* `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
+* `protocol` - (Required, ForceNew) The protocol to listen on. Valid values: `tcp`.
+* `frontend_port` - (Required, Int, ForceNew) The frontend port that is used by the CLB instance. Valid values: `1` to `65535`.
+* `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
+  - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
+  - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
+-> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+* `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
+* `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
+  - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
+  - `rr`: Requests are distributed to backend servers in sequence.
+  - `sch`: Specifies consistent hashing that is based on source IP addresses. Requests from the same source IP address are distributed to the same backend server.
+  - `tch`: Specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are distributed to the same backend server.
+**NOTE:** Only high-performance CLB instances support the `sch` and `tch` consistent hashing algorithms.
+* `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
+* `master_slave_server_group_id` - (Optional) The ID of the primary/secondary server group. **NOTE:** You cannot set both `server_group_id` and `master_slave_server_group_id`.
+* `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
+* `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
+* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `persistence_timeout` - (Optional, Int) The timeout period of session persistence. Unit: seconds. Default value: `0`. Valid values: `0` to `3600`.
+* `health_check_type` - (Optional) The type of health checks. Default value: `tcp`. Valid values: `tcp`, `http`.
+* `health_check_domain` - (Optional) The domain name that is used for health checks.
+* `health_check_uri` - (Optional) The URI that is used for health checks. The `health_check_uri` must be `1` to `80` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), percent signs (%), question marks (?), number signs (#), and ampersands (&). The URI must start with a forward slash (/) but cannot be a single forward slash (/).
+**NOTE:** You can set `health_check_uri` when the `TCP` listener requires `HTTP` health checks. If you do not set `health_check_uri`, `TCP` health checks will be performed.
+* `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks. Valid values: `0` to `65535`. **NOTE:** If `health_check_connect_port` is not set, the backend port specified by `backend_port` is used for health checks.
+* `healthy_threshold` - (Optional, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. Default value: `3`. Valid values: `2` to `10`.
+* `unhealthy_threshold` - (Optional, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. Default value: `3`. Valid values: `2` to `10`.
+* `health_check_timeout` - (Optional, Int) The maximum timeout period of a health check response. Unit: seconds. Default value: `5`. Valid values: `1` to `300`.
+* `health_check_interval` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds. Default value: `2`. Valid values: `1` to `50`.
+* `health_check_http_code` - (Optional) The HTTP status code for a successful health check. Separate multiple HTTP status codes with commas (`,`). Default value: `http_2xx`. Valid values: `http_2xx`, `http_3xx`, `http_4xx` and `http_5xx`.
+* `established_timeout` - (Optional, Int) The timeout period of a connection. Unit: seconds. Default value: `900`. Valid values: `10` to `900`.
+* `proxy_protocol_v2_enabled` - (Optional, Bool, Available since v1.187.0) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Default value: `false`. Valid values: `true`, `false`.
+* `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+
+### UDP Listener
+
+The UDP Listener supports the following:
+
+* `load_balancer_id` - (Required, ForceNew) The Load Balancer ID which is used to launch a new listener.
+* `protocol` - (Required, ForceNew) The protocol to listen on. Valid values: `udp`.
+* `frontend_port` - (Required, Int, ForceNew) The frontend port that is used by the CLB instance. Valid values: `1` to `65535`.
+* `bandwidth` - (Required, Int) The maximum bandwidth of the listener. Unit: Mbit/s. Valid values:
+  - `-1`: For a pay-by-data-transfer Internet-facing CLB instance, if you set `bandwidth` to `-1`, the bandwidth of the listener is unlimited.
+  - `1` to `1000`: The sum of the maximum bandwidth that you specify for all listeners of the CLB instance cannot exceed the maximum bandwidth of the CLB instance.
+-> **NOTE:** Currently, this `bandwidth` is available on `Domestic Site Account`.
+* `backend_port` - (Optional, Int, ForceNew) The backend port that is used by the CLB instance. Valid values: `1` to `65535`. **NOTE:** If `server_group_id` is not set, `backend_port` is required.
+* `scheduler` - (Optional) The scheduling algorithm. Default value: `wrr`. Valid values:
+  - `wrr`: Backend servers with higher weights receive more requests than those with lower weights.
+  - `rr`: Requests are distributed to backend servers in sequence.
+  - `sch`: Specifies consistent hashing that is based on source IP addresses. Requests from the same source IP address are distributed to the same backend server.
+  - `tch`: Specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are distributed to the same backend server.
+  - `qch`: Specifies consistent hashing that is based on QUIC connection IDs. Requests that contain the same QUIC connection ID are distributed to the same backend server.
+**NOTE:** Only high-performance CLB instances support the `sch`, `tch`, and `qch` consistent hashing algorithms.
+* `server_group_id` - (Optional) The ID of the vServer group. It's the ID of resource `alicloud_slb_server_group`.
+* `master_slave_server_group_id` - (Optional) The ID of the primary/secondary server group. **NOTE:** You cannot set both `server_group_id` and `master_slave_server_group_id`.
+* `acl_status` - (Optional) Specifies whether to enable access control. Default value: `off`. Valid values: `on`, `off`.
+* `acl_type` - (Optional) The type of the network ACL. Valid values: `black`, `white`. **NOTE:** If `acl_status` is set to `on`, `acl_type` is required. Otherwise, it will be ignored.
+* `acl_id` - (Optional) The ID of the network ACL that is associated with the listener. **NOTE:** If `acl_status` is set to `on`, `acl_id` is required. Otherwise, it will be ignored.
+* `health_check_connect_port` - (Optional, Int) The backend port that is used for health checks. Valid values: `0` to `65535`. **NOTE:** If `health_check_connect_port` is not set, the backend port specified by `backend_port` is used for health checks.
+* `healthy_threshold` - (Optional, Int) The number of times that an unhealthy backend server must consecutively pass health checks before it is declared healthy. Default value: `3`. Valid values: `2` to `10`.
+* `unhealthy_threshold` - (Optional, Int) The number of times that a healthy backend server must consecutively fail health checks before it is declared unhealthy. Default value: `3`. Valid values: `2` to `10`.
+* `health_check_timeout` - (Optional, Int) The maximum timeout period of a health check response. Unit: seconds. Default value: `5`. Valid values: `1` to `300`.
+* `health_check_interval` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds. Default value: `2`. Valid values: `1` to `50`.
+* `proxy_protocol_v2_enabled` - (Optional, Bool, Available since v1.187.0) Specifies whether to use the Proxy protocol to pass client IP addresses to backend servers. Default value: `false`. Valid values: `true`, `false`.
+* `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
+* `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
+
+-> **NOTE:** Once enable the http redirect to https function, any parameters excepted forward_port, listener_forward, load_balancer_id, frontend_port, protocol will be ignored. More info, please refer to [Redirect http to https](https://www.alibabacloud.com/help/doc-detail/89151.htm?spm=a2c63.p38356.b99.186.42f66384mpjUTB).
 
 -> **NOTE:** Advantanced feature such as `tls_cipher_policy`, can not be updated when load balancer instance is "Shared-Performance". More info, please refer to [Configure a HTTPS Listener](https://www.alibabacloud.com/help/doc-detail/27593.htm).
 
@@ -144,64 +269,29 @@ The following arguments are supported:
 
 The x_forwarded_for mapping supports the following:
 
-* `retrive_slb_ip` - (Optional) Whether to use the XForwardedFor_SLBIP header to obtain the public IP address of the SLB instance. Default to false.
-* `retrive_slb_id` - (Optional) Whether to use the XForwardedFor header to obtain the ID of the SLB instance. Default to false.
-* `retrive_slb_proto` - (Optional) Whether to use the XForwardedFor_proto header to obtain the protocol used by the listener. Default to false.
-* `retrive_client_ip` - (Computed) Whether to retrieve the client ip. It is read-only attribute.
-
-## Listener fields and protocol mapping
-
-load balance support 4 protocol to listen on, they are `http`,`https`,`tcp`,`udp`, the every listener support which portocal following:
-
-listener parameter | support protocol | value range |
-------------- | ------------- | ------------- | 
-backend_port | http & https & tcp & udp | 1-65535 | 
-frontend_port | http & https & tcp & udp | 1-65535 |
-protocol | http & https & tcp & udp |
-bandwidth | http & https & tcp & udp | -1 / 1-1000 |
-scheduler | http & https & tcp & udp | wrr, rr, wlc, tch, qch |
-sticky_session | http & https | on or off |
-sticky_session_type | http & https | insert or server | 
-cookie_timeout | http & https | 1-86400  | 
-cookie | http & https |   | 
-persistence_timeout | tcp & udp | 0-3600 | 
-health_check | http & https | on or off | 
-health_check_type | tcp | tcp or http | 
-health_check_domain | http & https & tcp | 
-health_check_method | http & https & tcp | 
-health_check_uri | http & https & tcp |  | 
-health_check_connect_port | http & https & tcp & udp | 1-65535 or -520 | 
-healthy_threshold | http & https & tcp & udp | 1-10 | 
-unhealthy_threshold | http & https & tcp & udp | 1-10 | 
-health_check_timeout | http & https & tcp & udp | 1-300 |
-health_check_interval | http & https & tcp & udp | 1-50 |
-health_check_http_code | http & https & tcp | http_2xx,http_3xx,http_4xx,http_5xx | 
-server_certificate_id | https |  |
-gzip | http & https | true or false  |
-x_forwarded_for | http & https |  |
-acl_status | http & https & tcp & udp | on or off |
-acl_type   | http & https & tcp & udp | white or black |
-acl_id     | http & https & tcp & udp | the id of resource alicloud_slb_acl|
-established_timeout | tcp       | 10-900|
-idle_timeout |http & https      | 1-60  |
-request_timeout |http & https   | 1-180 |
-enable_http2    |https          | on or off |
-tls_cipher_policy |https        |  tls_cipher_policy_1_0, tls_cipher_policy_1_1, tls_cipher_policy_1_2, tls_cipher_policy_1_2_strict |
-server_group_id    | http & https & tcp & udp | the id of resource alicloud_slb_server_group |
-
-The listener mapping supports the following:
+* `retrive_slb_ip` - (Optional, Bool) Indicates whether the SLB-IP header is used to retrieve the virtual IP address (VIP) requested by the client. Default value: `false`. Valid values: `true`, `false`.
+* `retrive_slb_id` - (Optional, Bool) Indicates whether the SLB-ID header is used to retrieve the ID of the CLB instance. Default value: `false`. Valid values: `true`, `false`.
+* `retrive_slb_proto` - (Optional, Bool) Specifies whether to use the X-Forwarded-Proto header to retrieve the listener protocol. Default value: `false`. Valid values: `true`, `false`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The ID of the load balancer listener. Its format as `<load_balancer_id>:<protocol>:<frontend_port>`. 
-  Before version 1.57.1, the foramt as `<load_balancer_id>:<frontend_port>`.
+* `id` - The resource ID in terraform of Listener. It formats as `<load_balancer_id>:<protocol>:<frontend_port>`.
+-> **NOTE:** Before provider version 1.57.1, it formats as `<load_balancer_id>:<frontend_port>`.
+* `x_forwarded_for` - Whether to set additional HTTP Header field "X-Forwarded-For".
+  * `retrive_client_ip` - Whether to retrieve the client ip.
 
 ## Import
 
-Load balancer listener can be imported using the id, e.g.
+Classic Load Balancer (SLB) Load Balancer Listener can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_slb_listener.example "lb-abc123456:tcp:22"
+$ terraform import alicloud_slb_listener.example <load_balancer_id>:<protocol>:<frontend_port>
+```
+
+**NOTE:** Before provider version 1.57.1, Classic Load Balancer (SLB) Load Balancer Listener can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_slb_listener.example <load_balancer_id>:<frontend_port>
 ```
