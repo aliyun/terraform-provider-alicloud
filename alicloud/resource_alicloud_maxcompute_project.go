@@ -84,7 +84,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 			"properties": {
 				Optional: true,
 				Computed: true,
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -102,7 +102,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -140,7 +140,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 						"table_lifecycle": {
 							Optional: true,
 							Computed: true,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -174,7 +174,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				MaxItems: 1,
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enable_download_privilege": {
@@ -201,7 +201,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 							Optional: true,
 							Computed: true,
 							MaxItems: 1,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"exception_policy": {
@@ -264,7 +264,7 @@ func resourceAlicloudMaxcomputeProjectCreate(d *schema.ResourceData, meta interf
 	}
 	if v, ok := d.GetOk("properties"); ok {
 		properties := make(map[string]interface{})
-		propertiesOrigin := v.(*schema.Set).List()
+		propertiesOrigin := v.([]interface{})
 		propertiesRaw := make(map[string]interface{})
 		if len(propertiesOrigin) > 0 {
 			propertiesRaw = propertiesOrigin[0].(map[string]interface{})
@@ -274,7 +274,7 @@ func resourceAlicloudMaxcomputeProjectCreate(d *schema.ResourceData, meta interf
 			if typeSystem, ok := propertiesRaw["type_system"]; ok {
 				properties["typeSystem"] = typeSystem
 			}
-			encryptionOrigin := propertiesRaw["encryption"].(*schema.Set).List()
+			encryptionOrigin := propertiesRaw["encryption"].([]interface{})
 			if len(encryptionOrigin) > 0 {
 				encryptionRaw, encryptionRawOk := encryptionOrigin[0].(map[string]interface{})
 				if encryptionRawOk {
@@ -413,7 +413,7 @@ func resourceAlicloudMaxcomputeProjectUpdate(d *schema.ResourceData, meta interf
 		if v, ok := d.GetOk("properties"); ok {
 			update = true
 			properties := make(map[string]interface{})
-			propertiesOrigin := v.(*schema.Set).List()
+			propertiesOrigin := v.([]interface{})
 			propertiesRaw := make(map[string]interface{})
 			if len(propertiesOrigin) > 0 {
 				propertiesRaw = propertiesOrigin[0].(map[string]interface{})
@@ -435,7 +435,7 @@ func resourceAlicloudMaxcomputeProjectUpdate(d *schema.ResourceData, meta interf
 				if timezone, ok := propertiesRaw["timezone"]; ok {
 					properties["timezone"] = timezone
 				}
-				tableLifecycleOrigin := propertiesRaw["table_lifecycle"].(*schema.Set).List()
+				tableLifecycleOrigin := propertiesRaw["table_lifecycle"].([]interface{})
 				if len(tableLifecycleOrigin) > 0 {
 					tableLifecycleRaw, tableLifecycleRawOk := tableLifecycleOrigin[0].(map[string]interface{})
 					if tableLifecycleRawOk {
@@ -522,7 +522,7 @@ func resourceAlicloudMaxcomputeProjectUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("security_properties") || d.IsNewResource() {
 		if v, ok := d.GetOk("security_properties"); ok {
 			update = true
-			securityPropertiesRaw := v.(*schema.Set).List()
+			securityPropertiesRaw := v.([]interface{})
 			if len(securityPropertiesRaw) > 0 {
 				securityPropertiesRawFirst := securityPropertiesRaw[0].(map[string]interface{})
 				securityPropertiesMap := make(map[string]interface{})
@@ -532,7 +532,7 @@ func resourceAlicloudMaxcomputeProjectUpdate(d *schema.ResourceData, meta interf
 				securityPropertiesMap["objectCreatorHasGrantPermission"] = securityPropertiesRawFirst["object_creator_has_grant_permission"]
 				securityPropertiesMap["labelSecurity"] = securityPropertiesRawFirst["label_security"]
 				securityPropertiesMap["enableDownloadPrivilege"] = securityPropertiesRawFirst["enable_download_privilege"]
-				projectProtectionRaw := securityPropertiesRawFirst["project_protection"].(*schema.Set).List()
+				projectProtectionRaw := securityPropertiesRawFirst["project_protection"].([]interface{})
 				if len(projectProtectionRaw) > 0 {
 					projectProtection := make(map[string]interface{})
 					projectProtectionRawFirst := projectProtectionRaw[0].(map[string]interface{})
