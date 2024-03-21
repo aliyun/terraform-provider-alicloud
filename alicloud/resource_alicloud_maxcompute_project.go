@@ -84,7 +84,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 			"properties": {
 				Optional: true,
 				Computed: true,
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -102,7 +102,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -140,7 +140,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 						"table_lifecycle": {
 							Optional: true,
 							Computed: true,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -174,7 +174,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				MaxItems: 1,
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"enable_download_privilege": {
@@ -201,7 +201,7 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 							Optional: true,
 							Computed: true,
 							MaxItems: 1,
-							Type:     schema.TypeSet,
+							Type:     schema.TypeList,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"exception_policy": {
