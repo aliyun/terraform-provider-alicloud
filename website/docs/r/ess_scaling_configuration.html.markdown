@@ -188,6 +188,9 @@ The instancePatternInfo mapping supports the following:
 * `instance_family_level` - (Optional) The instance family level in instancePatternInfo.
 * `max_price` - (Optional) The maximum hourly price for a pay-as-you-go instance or a preemptible instance in instancePatternInfo.
 * `memory` - (Optional) The memory size that is specified for an instance type in instancePatternInfo.
+* `burstable_performance` - (Optional, Available since v1.220.0) Specifies whether to include burstable instance types.  Valid values: Exclude, Include, Required.
+* `excluded_instance_types` - (Optional, Available since v1.220.0) Instance type N that you want to exclude. You can use wildcard characters, such as an asterisk (*), to exclude an instance type or an instance family.
+* `architectures` - (Optional, Available since v1.220.0) Architecture N of instance type N. Valid values: X86, Heterogeneous, BareMetal, Arm, SuperComputeCluster.
 
 ### `instance_type_override`
 

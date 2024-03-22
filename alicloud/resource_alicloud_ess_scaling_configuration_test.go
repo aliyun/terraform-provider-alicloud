@@ -1231,12 +1231,16 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_pattern_info": []map[string]string{{
-						"instance_family_level": "EntryLevel",
-						"cores":                 "4",
-						"memory":                "4.0",
-						"max_price":             "2.1",
-					},
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "4.0",
+							"max_price":               "2.1",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
