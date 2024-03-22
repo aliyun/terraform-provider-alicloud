@@ -41,6 +41,11 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"parent_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"config_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -93,6 +98,9 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	config[0] = map[string]interface{}{
 		"functionArgs": args,
 		"functionName": d.Get("function_name").(string),
+	}
+	if v, ok := d.GetOk("parent_id"); ok {
+		config[0]["parent_id"] = v.(string)
 	}
 	bytconfig, _ := json.Marshal(config)
 
@@ -181,6 +189,10 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 			"functionArgs": args,
 			"functionName": parts[1],
 			"configId":     parts[2],
+		}
+
+		if v, ok := d.GetOk("parent_id"); ok {
+			config[0]["parent_id"] = v.(string)
 		}
 
 		bytconfig, _ := json.Marshal(config)
@@ -280,6 +292,7 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 
 	d.Set("status", val["Status"])
 	d.Set("function_args", funArgs)
+	d.Set("parent_id", val["ParentId"])
 
 	return nil
 }
