@@ -20,6 +20,8 @@ The official website mark more regions. Or you can call [DescribeRegions](https:
 
 -> **NOTE:**  Create Cassandra cluster or change cluster type and storage would cost 30 minutes. Please make full preparation.
 
+-> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.219.1`.
+
 ## Example Usage
 
 ### Create a cassandra cluster

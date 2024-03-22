@@ -13,6 +13,8 @@ This data source provides the Cassandra Backup Plans of the current Alibaba Clou
 
 -> **NOTE:** Available in v1.128.0+.
 
+-> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.219.1`.
+
 ## Example Usage
 
 Basic Usage
