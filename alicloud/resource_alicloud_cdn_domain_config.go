@@ -100,7 +100,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 		"functionName": d.Get("function_name").(string),
 	}
 	if v, ok := d.GetOk("parent_id"); ok {
-		config[0]["parent_id"] = v.(string)
+		config[0]["parentId"] = v.(string)
 	}
 	bytconfig, _ := json.Marshal(config)
 
@@ -172,7 +172,7 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	update := false
-	if d.HasChange("function_args") {
+	if d.HasChange("function_args") || d.HasChange("parent_id") {
 		update = true
 		config := make([]map[string]interface{}, 1)
 		functionArgs := d.Get("function_args").(*schema.Set).List()
@@ -192,7 +192,7 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		if v, ok := d.GetOk("parent_id"); ok {
-			config[0]["parent_id"] = v.(string)
+			config[0]["parentId"] = v
 		}
 
 		bytconfig, _ := json.Marshal(config)
