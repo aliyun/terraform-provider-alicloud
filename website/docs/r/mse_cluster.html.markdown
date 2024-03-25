@@ -50,6 +50,13 @@ resource "alicloud_mse_cluster" "example" {
 }
 ```
 
+### Deleting `alicloud_mse_cluster` or removing it from your configuration
+
+The `alicloud_mse_cluster` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
+You can resume managing the subscription instance via the AlibabaCloud Console.
+
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -66,6 +73,9 @@ The following arguments are supported:
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
+* `payment_type` - (Optional, ForceNew, Computed, Available since v1.219.1) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
+* `tags` - (Optional, Map, Computed, Available since v1.219.1) The tag of the resource.
+* `resource_group_id` - (Optional, Computed, Available since v1.219.1) The resource group of the resource.
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
 * `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
@@ -84,7 +94,7 @@ The following attributes are exported:
 * `app_version` - (Available in v1.205.0+) The application version.
 * `status` - The status of MSE Cluster.
 
-#### Timeouts
+## Timeouts
 
 -> **NOTE:** Available in 1.188.0+.
 
