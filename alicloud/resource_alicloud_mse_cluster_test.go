@@ -112,6 +112,7 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		IDRefreshName: resourceId,
@@ -180,10 +181,12 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_specification": "MSE_SC_2_4_60_c",
+					"resource_group_id":     "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_specification": "MSE_SC_2_4_60_c",
+						"resource_group_id":     CHECKSET,
 					}),
 				),
 			},
@@ -212,6 +215,7 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		IDRefreshName: resourceId,
@@ -302,6 +306,7 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -389,6 +394,7 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		IDRefreshName: resourceId,
@@ -425,6 +431,162 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAlicloudMSECluster_PrePaid(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithTime(t, []int{22})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_60_c",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_2_0_0",
+					"instance_count":        "1",
+					"net_type":              "privatenet",
+					"payment_type":          "Subscription",
+					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+					"connection_type":       "slb",
+					"mse_version":           "mse_dev",
+					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_60_c",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_2_0_0",
+						"instance_count":        "1",
+						"net_type":              "privatenet",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+						"connection_type":       "slb",
+						"mse_version":           "mse_dev",
+						"vpc_id":                CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -447,6 +609,9 @@ func MseClusterBasicdependence(name string) string {
 	data "alicloud_vswitches" "default" {
 	  vpc_id = data.alicloud_vpcs.default.ids.0
 	}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+}
 `)
 }
 

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
 
@@ -80,6 +81,19 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Required:     true,
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"privatenet", "pubnet"}, false),
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+			},
+			"tags": tagsSchema(),
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"private_slb_specification": {
 				Type:     schema.TypeString,
@@ -179,6 +193,9 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("vswitch_id"); ok {
 		request["VSwitchId"] = v
 	}
+	if v, ok := d.GetOk("payment_type"); ok {
+		request["ChargeType"] = convertMsePaymentTypeToChargeType(v)
+	}
 
 	request["Region"] = client.RegionId
 
@@ -247,6 +264,10 @@ func resourceAlicloudMseClusterRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("cluster_id", object["ClusterId"])
 	d.Set("app_version", object["AppVersion"])
 	d.Set("status", object["InitStatus"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
+	d.Set("payment_type", convertMseChargeTypeToPaymentType(object["ChargeType"]))
+	tagsMaps, _ := jsonpath.Get("$.Tags", object)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
@@ -260,6 +281,43 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		return WrapError(err)
 	}
 	d.Partial(true)
+
+	update := false
+	action := "ChangeResourceGroup"
+	conn, err = client.NewMseClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request := make(map[string]interface{})
+
+	request["ResourceId"] = d.Id()
+	request["ResourceRegionId"] = client.RegionId
+	if d.HasChange("resource_group_id") {
+		update = true
+		request["ResourceGroupId"] = d.Get("resource_group_id")
+	}
+
+	request["ResourceType"] = "Cluster"
+	if update {
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		d.SetPartial("resource_group_id")
+	}
 
 	if d.HasChange("acl_entry_list") {
 		request := map[string]interface{}{
@@ -288,8 +346,8 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("acl_entry_list")
 	}
-	update := false
-	request := map[string]interface{}{
+	update = false
+	request = map[string]interface{}{
 		"InstanceId": d.Id(),
 	}
 	if d.HasChange("cluster_alias_name") {
@@ -372,11 +430,29 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		d.SetPartial("instance_count")
 	}
 
+	update = false
+	if d.HasChange("tags") {
+		update = true
+		mseServiceV2 := MseService{client}
+		if err := mseServiceV2.SetResourceTags(d, "CLUSTER"); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("tags")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudMseClusterRead(d, meta)
 }
 
 func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) error {
+
+	if v, ok := d.GetOk("payment_type"); ok {
+		if v == "Subscription" {
+			log.Printf("[WARN] Cannot destroy resource alicloud_mse_cluster which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
+			return nil
+		}
+	}
+
 	client := meta.(*connectivity.AliyunClient)
 	mseService := MseService{client}
 	action := "DeleteCluster"
@@ -413,4 +489,24 @@ func resourceAlicloudMseClusterDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
+}
+
+func convertMseChargeTypeToPaymentType(source interface{}) interface{} {
+	switch source {
+	case "POSTPAY":
+		return "PayAsYouGo"
+	case "PREPAY":
+		return "Subscription"
+	}
+	return source
+}
+
+func convertMsePaymentTypeToChargeType(source interface{}) interface{} {
+	switch source {
+	case "PayAsYouGo":
+		return "POSTPAY"
+	case "Subscription":
+		return "PREPAY"
+	}
+	return source
 }
