@@ -23,8 +23,13 @@ For more information about how to authorize a RAM user by attaching RAM policies
 ## Example Usage
 
 ```terraform
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 variable "vpc_cidr" {
@@ -68,7 +73,7 @@ resource "alicloud_vswitch" "default" {
 
 # Create a new RAM cluster.
 resource "alicloud_cs_managed_kubernetes" "default" {
-  name                 = var.name
+  name                 = "${var.name}-${random_integer.default.result}"
   cluster_spec         = "ack.pro.small"
   version              = data.alicloud_cs_kubernetes_version.default.metadata.0.version
   worker_vswitch_ids   = split(",", join(",", alicloud_vswitch.default.*.id))
@@ -80,7 +85,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
 
 # Create a new RAM user.
 resource "alicloud_ram_user" "user" {
-  name = var.name
+  name = "${var.name}-${random_integer.default.result}"
 }
 
 # Create a cluster permission for user.

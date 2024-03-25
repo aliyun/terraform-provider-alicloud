@@ -27,7 +27,7 @@ func getTimezone(region string) string {
 	return timeZone
 }
 
-func TestAccAlicloudCSServerlessKubernetes_basic(t *testing.T) {
+func TestAccAliCloudCSServerlessKubernetes_basic(t *testing.T) {
 	var v *cs.ServerlessClusterResponse
 	resourceId := "alicloud_cs_serverless_kubernetes.default"
 	ra := resourceAttrInit(resourceId, csServerlessKubernetesBasicMap)

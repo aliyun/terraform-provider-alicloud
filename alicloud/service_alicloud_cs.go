@@ -17,7 +17,7 @@ import (
 
 	"encoding/json"
 
-	"github.com/alibabacloud-go/cs-20151215/v4/client"
+	"github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
 )

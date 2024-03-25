@@ -24,25 +24,43 @@ import (
 
 var defaultUserAgent = fmt.Sprintf("AlibabaCloud (%s; %s) Golang/%s Core/%s TeaDSL/1", runtime.GOOS, runtime.GOARCH, strings.Trim(runtime.Version(), "go"), "0.01")
 
+type ExtendsParameters struct {
+	Headers map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+}
+
+func (s ExtendsParameters) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ExtendsParameters) GoString() string {
+	return s.String()
+}
+
+func (s *ExtendsParameters) SetHeaders(v map[string]*string) *ExtendsParameters {
+	s.Headers = v
+	return s
+}
+
 type RuntimeOptions struct {
-	Autoretry      *bool   `json:"autoretry" xml:"autoretry"`
-	IgnoreSSL      *bool   `json:"ignoreSSL" xml:"ignoreSSL"`
-	Key            *string `json:"key,omitempty" xml:"key,omitempty"`
-	Cert           *string `json:"cert,omitempty" xml:"cert,omitempty"`
-	Ca             *string `json:"ca,omitempty" xml:"ca,omitempty"`
-	MaxAttempts    *int    `json:"maxAttempts" xml:"maxAttempts"`
-	BackoffPolicy  *string `json:"backoffPolicy" xml:"backoffPolicy"`
-	BackoffPeriod  *int    `json:"backoffPeriod" xml:"backoffPeriod"`
-	ReadTimeout    *int    `json:"readTimeout" xml:"readTimeout"`
-	ConnectTimeout *int    `json:"connectTimeout" xml:"connectTimeout"`
-	LocalAddr      *string `json:"localAddr" xml:"localAddr"`
-	HttpProxy      *string `json:"httpProxy" xml:"httpProxy"`
-	HttpsProxy     *string `json:"httpsProxy" xml:"httpsProxy"`
-	NoProxy        *string `json:"noProxy" xml:"noProxy"`
-	MaxIdleConns   *int    `json:"maxIdleConns" xml:"maxIdleConns"`
-	Socks5Proxy    *string `json:"socks5Proxy" xml:"socks5Proxy"`
-	Socks5NetWork  *string `json:"socks5NetWork" xml:"socks5NetWork"`
-	KeepAlive      *bool   `json:"keepAlive" xml:"keepAlive"`
+	Autoretry         *bool              `json:"autoretry" xml:"autoretry"`
+	IgnoreSSL         *bool              `json:"ignoreSSL" xml:"ignoreSSL"`
+	Key               *string            `json:"key,omitempty" xml:"key,omitempty"`
+	Cert              *string            `json:"cert,omitempty" xml:"cert,omitempty"`
+	Ca                *string            `json:"ca,omitempty" xml:"ca,omitempty"`
+	MaxAttempts       *int               `json:"maxAttempts" xml:"maxAttempts"`
+	BackoffPolicy     *string            `json:"backoffPolicy" xml:"backoffPolicy"`
+	BackoffPeriod     *int               `json:"backoffPeriod" xml:"backoffPeriod"`
+	ReadTimeout       *int               `json:"readTimeout" xml:"readTimeout"`
+	ConnectTimeout    *int               `json:"connectTimeout" xml:"connectTimeout"`
+	LocalAddr         *string            `json:"localAddr" xml:"localAddr"`
+	HttpProxy         *string            `json:"httpProxy" xml:"httpProxy"`
+	HttpsProxy        *string            `json:"httpsProxy" xml:"httpsProxy"`
+	NoProxy           *string            `json:"noProxy" xml:"noProxy"`
+	MaxIdleConns      *int               `json:"maxIdleConns" xml:"maxIdleConns"`
+	Socks5Proxy       *string            `json:"socks5Proxy" xml:"socks5Proxy"`
+	Socks5NetWork     *string            `json:"socks5NetWork" xml:"socks5NetWork"`
+	KeepAlive         *bool              `json:"keepAlive" xml:"keepAlive"`
+	ExtendsParameters *ExtendsParameters `json:"extendsParameters,omitempty" xml:"extendsParameters,omitempty"`
 }
 
 var processStartTime int64 = time.Now().UnixNano() / 1e6
@@ -156,6 +174,11 @@ func (s *RuntimeOptions) SetKeepAlive(v bool) *RuntimeOptions {
 	return s
 }
 
+func (s *RuntimeOptions) SetExtendsParameters(v *ExtendsParameters) *RuntimeOptions {
+	s.ExtendsParameters = v
+	return s
+}
+
 func ReadAsString(body io.Reader) (*string, error) {
 	byt, err := ioutil.ReadAll(body)
 	if err != nil {
@@ -220,11 +243,13 @@ func ToJSONString(a interface{}) *string {
 		}
 		return tea.String(string(byt))
 	}
-	byt, err := json.Marshal(a)
-	if err != nil {
+	byt := bytes.NewBuffer([]byte{})
+	jsonEncoder := json.NewEncoder(byt)
+	jsonEncoder.SetEscapeHTML(false)
+	if err := jsonEncoder.Encode(a); err != nil {
 		return nil
 	}
-	return tea.String(string(byt))
+	return tea.String(string(bytes.TrimSpace(byt.Bytes())))
 }
 
 func DefaultNumber(reaNum, defaultNum *int) *int {

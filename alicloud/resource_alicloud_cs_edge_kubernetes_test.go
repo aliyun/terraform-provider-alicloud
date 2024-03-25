@@ -83,7 +83,7 @@ var edgeCheckMap = map[string]string{
 	"is_enterprise_security_group": "true",
 }
 
-func TestAccAlicloudEdgeKubernetes(t *testing.T) {
+func TestAccAliCloudEdgeKubernetes(t *testing.T) {
 	var cluster *cs.KubernetesClusterDetail
 	resourceId := "alicloud_cs_edge_kubernetes.default"
 	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
@@ -200,7 +200,7 @@ func TestAccAlicloudEdgeKubernetes(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
+func TestAccAliCloudEdgeKubernetes_essd(t *testing.T) {
 	var cluster *cs.KubernetesClusterDetail
 	resourceId := "alicloud_cs_edge_kubernetes.default"
 	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
@@ -355,7 +355,7 @@ func TestAccAlicloudEdgeKubernetes_essd(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEdgeKubernetes_pro(t *testing.T) {
+func TestAccAliCloudEdgeKubernetes_pro(t *testing.T) {
 	var cluster *cs.KubernetesClusterDetail
 	resourceId := "alicloud_cs_edge_kubernetes.default"
 	resourceAttr := resourceAttrInit(resourceId, edgeCheckMap)
