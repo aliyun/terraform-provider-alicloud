@@ -1068,7 +1068,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cr_ee_sync_rule":                                       resourceAlicloudCrEESyncRule(),
 			"alicloud_cdn_domain":                                            resourceAlicloudCdnDomain(),
 			"alicloud_cdn_domain_new":                                        resourceAliCloudCdnDomain(),
-			"alicloud_cdn_domain_config":                                     resourceAlicloudCdnDomainConfig(),
+			"alicloud_cdn_domain_config":                                     resourceAliCloudCdnDomainConfig(),
 			"alicloud_router_interface":                                      resourceAlicloudRouterInterface(),
 			"alicloud_router_interface_connection":                           resourceAlicloudRouterInterfaceConnection(),
 			"alicloud_ots_table":                                             resourceAlicloudOtsTable(),
