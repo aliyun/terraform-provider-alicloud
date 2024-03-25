@@ -55,10 +55,9 @@ func resourceAliCloudNlbServerGroupServerAttachment() *schema.Resource {
 				Computed: true,
 			},
 			"server_type": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Ecs", "Eni", "Eci", "Ip"}, false),
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -114,7 +113,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -163,6 +162,12 @@ func resourceAliCloudNlbServerGroupServerAttachmentRead(d *schema.ResourceData, 
 	d.Set("server_type", objectRaw["ServerType"])
 	d.Set("zone_id", objectRaw["ZoneId"])
 
+	parts := strings.Split(d.Id(), ":")
+	d.Set("server_group_id", parts[0])
+	d.Set("server_id", parts[1])
+	d.Set("server_type", parts[2])
+	d.Set("port", parts[3])
+
 	return nil
 }
 
@@ -210,7 +215,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentUpdate(d *schema.ResourceData
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -264,7 +269,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.serverGroup"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -275,6 +280,9 @@ func resourceAliCloudNlbServerGroupServerAttachmentDelete(d *schema.ResourceData
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.serverGroup", "ResourceNotFound.BackendServer"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
