@@ -631,6 +631,7 @@ func (s *NlbServiceV2) DescribeAsyncNlbServerGroupStateRefreshFunc(d *schema.Res
 }
 
 // DescribeNlbServerGroup >>> Encapsulated.
+
 // DescribeNlbServerGroupServerAttachment <<< Encapsulated get interface for Nlb ServerGroupServerAttachment.
 
 func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object map[string]interface{}, err error) {
@@ -651,7 +652,7 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 	query = make(map[string]interface{})
 	request["ServerGroupId"] = parts[0]
 	request["ServerIds.1"] = parts[1]
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -669,8 +670,8 @@ func (s *NlbServiceV2) DescribeNlbServerGroupServerAttachment(id string) (object
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
