@@ -8,10 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v4/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
 )
 
-func TestAccAlicloudCSAutoscalingConfig_basic(t *testing.T) {
+func TestAccAliCloudCSAutoscalingConfig_basic(t *testing.T) {
 	var v *cs.CreateAutoscalingConfigRequest
 	resourceId := "alicloud_cs_autoscaling_config.default"
 	serviceFunc := func() interface{} {
@@ -136,7 +136,7 @@ resource "alicloud_cs_managed_kubernetes" "default" {
   cluster_spec         = "ack.pro.small"
   worker_vswitch_ids   = [local.vswitch_id]
   new_nat_gateway      = false
-  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+  pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 37)
   service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
   slb_internet_enabled = true
 }

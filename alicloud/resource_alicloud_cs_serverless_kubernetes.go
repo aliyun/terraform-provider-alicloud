@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v4/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -444,7 +444,8 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	}
 
 	vswitchIds := []string{}
-	resources, _ := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	request := &roacs.DescribeClusterResourcesRequest{}
+	resources, _ := rosClient.DescribeClusterResources(tea.String(d.Id()), request)
 	for _, resource := range resources.Body {
 		if tea.StringValue(resource.ResourceType) == "VSWITCH" {
 			vswitchIds = append(vswitchIds, tea.StringValue(resource.InstanceId))

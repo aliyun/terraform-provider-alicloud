@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v4/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -1781,7 +1781,8 @@ func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error)
 	if err != nil {
 		return "", err
 	}
-	clusterResources, err := rosClient.DescribeClusterResources(tea.String(d.Id()))
+	request := &roacs.DescribeClusterResourcesRequest{}
+	clusterResources, err := rosClient.DescribeClusterResources(tea.String(d.Id()), request)
 	if err != nil {
 		return "", err
 	}

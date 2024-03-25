@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
-	cs "github.com/alibabacloud-go/cs-20151215/v4/client"
+	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 

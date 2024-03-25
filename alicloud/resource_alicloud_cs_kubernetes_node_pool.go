@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	roacs "github.com/alibabacloud-go/cs-20151215/v4/client"
+	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/denverdino/aliyungo/cs"
 
 	"github.com/PaesslerAG/jsonpath"
