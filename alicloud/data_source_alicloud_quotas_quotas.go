@@ -65,7 +65,7 @@ func dataSourceAlicloudQuotasQuotas() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CommonQuota", "FlowControl"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"CommonQuota", "FlowControl", "WhiteListLabel"}, false),
 			},
 			"names": {
 				Type:     schema.TypeList,

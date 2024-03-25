@@ -61,7 +61,7 @@ The following arguments are supported:
 * `batch_quota_application_id` - (ForceNew, Optional) The ID of the quota application batch.
 * `product_code` - (ForceNew, Optional) Cloud service name abbreviation.> For more information about cloud services that support quota centers, see [Cloud services that support quota centers](~~ 182368 ~~).
 * `quota_action_code` - (ForceNew, Optional) The quota ID.
-* `quota_category` - (ForceNew, Optional) The quota type. Value:-CommonQuota (default): Generic quota.-FlowControl:API rate quota.-WhiteListLabel: Equity quota.
+* `quota_category` - (ForceNew, Optional) The quota type. Value: `CommonQuota`, `FlowControl` and `WhiteListLabel`.
 * `ids` - (Optional, ForceNew, Computed) A list of Template Applications IDs.
 * `output_file` - (Optional, ForceNew) File name where to save data source results (after running `terraform plan`).
 

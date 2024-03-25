@@ -38,7 +38,7 @@ The following arguments are supported:
 * `quota_action_code` - (Optional, ForceNew) The quota action code.
 * `group_code` - (Optional, ForceNew) The group code.
 * `key_word` - (Optional, ForceNew) The key word.
-* `quota_category` - (Optional, ForceNew) The category of quota. Valid Values: `FlowControl` and `CommonQuota`.
+* `quota_category` - (Optional, ForceNew) The category of quota. Valid Values: `FlowControl` and `CommonQuota`, `WhiteListLabel`.
 * `sort_field` - (Optional, ForceNew) Cloud service ECS specification quota supports setting sorting fields. Valid Values: `TIME`, `TOTAL` and `RESERVED`.
 * `sort_order` - (Optional, ForceNew) Ranking of cloud service ECS specification quota support. Valid Values: `Ascending` and `Descending`.
 * `dimensions` - (Optional, ForceNew) The dimensions.
