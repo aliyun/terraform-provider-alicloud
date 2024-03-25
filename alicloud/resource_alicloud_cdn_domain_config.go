@@ -17,12 +17,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCdnDomainConfig() *schema.Resource {
+func resourceAliCloudCdnDomainConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCdnDomainConfigCreate,
-		Read:   resourceAlicloudCdnDomainConfigRead,
-		Update: resourceAlicloudCdnDomainConfigUpdate,
-		Delete: resourceAlicloudCdnDomainConfigDelete,
+		Create: resourceAliCloudCdnDomainConfigCreate,
+		Read:   resourceAliCloudCdnDomainConfigRead,
+		Update: resourceAliCloudCdnDomainConfigUpdate,
+		Delete: resourceAliCloudCdnDomainConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,18 +35,17 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 			"domain_name": {
 				Type:         schema.TypeString,
 				Required:     true,
+				ForceNew:     true,
 				ValidateFunc: validation.StringLenBetween(5, 67),
 			},
 			"function_name": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
-			"config_id": {
+			"parent_id": {
 				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
+				Optional: true,
 				Computed: true,
 			},
 			"function_args": {
@@ -66,11 +65,19 @@ func resourceAlicloudCdnDomainConfig() *schema.Resource {
 					},
 				},
 			},
+			"config_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 	var response map[string]interface{}
@@ -94,6 +101,9 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 		"functionArgs": args,
 		"functionName": d.Get("function_name").(string),
 	}
+	if v, ok := d.GetOk("parent_id"); ok {
+		config[0]["parentId"] = v.(string)
+	}
 	bytconfig, _ := json.Marshal(config)
 
 	request := map[string]interface{}{
@@ -105,7 +115,7 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -114,12 +124,14 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cdn_domain_config", action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.DomainConfigList.DomainConfigModel", response)
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, "request.DomainNames", "$.DomainConfigList.DomainConfigModel", err)
@@ -141,10 +153,11 @@ func resourceAlicloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	if err != nil {
 		return WrapError(err)
 	}
-	return resourceAlicloudCdnDomainConfigRead(d, meta)
+
+	return resourceAliCloudCdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 	var response map[string]interface{}
@@ -164,7 +177,7 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	update := false
-	if d.HasChange("function_args") {
+	if d.HasChange("function_args") || d.HasChange("parent_id") {
 		update = true
 		config := make([]map[string]interface{}, 1)
 		functionArgs := d.Get("function_args").(*schema.Set).List()
@@ -183,6 +196,10 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 			"configId":     parts[2],
 		}
 
+		if v, ok := d.GetOk("parent_id"); ok {
+			config[0]["parentId"] = v
+		}
+
 		bytconfig, _ := json.Marshal(config)
 		request["Functions"] = string(bytconfig)
 	}
@@ -193,7 +210,7 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -202,12 +219,14 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cdn_domain_config", action, AlibabaCloudSdkGoERROR)
 		}
+
 		v, err := jsonpath.Get("$.DomainConfigList.DomainConfigModel", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, "request.DomainNames", "$.DomainConfigList.DomainConfigModel", err)
@@ -228,16 +247,16 @@ func resourceAlicloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	return resourceAlicloudCdnDomainConfigRead(d, meta)
+	return resourceAliCloudCdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 
 	v, err := cdnService.DescribeCdnDomainConfig(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -257,7 +276,7 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 
 		arg := k.(map[string]interface{})
 		// This two function args is extra, filter them to pass test check.
-		if arg["ArgName"] == "aliyun_id" || arg["ArgName"] == "scheme_origin_port" {
+		if arg["ArgName"] == "aliyun_id" || arg["ArgName"] == "scheme_origin_port" || arg["ArgName"] == "dsl" || arg["ArgName"] == "session_timeout" || arg["ArgName"] == "oss_pri_buckets" {
 			continue
 		}
 		// private_oss_tbl always is changed and used to enable Alibaba Cloud OSS Private Bucket Back to Source Authorization
@@ -280,11 +299,12 @@ func resourceAlicloudCdnDomainConfigRead(d *schema.ResourceData, meta interface{
 
 	d.Set("status", val["Status"])
 	d.Set("function_args", funArgs)
+	d.Set("parent_id", val["ParentId"])
 
 	return nil
 }
 
-func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cdnService := &CdnService{client: client}
 
@@ -317,7 +337,7 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -326,14 +346,14 @@ func resourceAlicloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
-
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
 
