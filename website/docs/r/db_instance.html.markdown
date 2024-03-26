@@ -714,6 +714,7 @@ The following arguments are supported:
   - Yes
   - No
 
+* `db_param_group_id` - (Optional, Available since v1.222.0) Parameter template ID. Only MySQL and PostgreSQL support this parameter. If this parameter is not specified, the default parameter template is used. You can also customize a parameter template and use it here.
 
 ### `parameters`
 

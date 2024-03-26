@@ -476,6 +476,10 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"db_param_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"storage_auto_scale": {
 				Type:         schema.TypeString,
 				ValidateFunc: StringInSlice([]string{"Enable", "Disable"}, false),
@@ -1848,6 +1852,13 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	}
 	d.Set("tcp_connection_type", res["TcpConnectionType"])
 
+	response, err := rdsService.DescribeParameters(d.Id())
+	dbParamGroupInfo := response["ParamGroupInfo"].(map[string]interface{})
+	if err != nil {
+		return WrapError(err)
+	}
+	d.Set("db_param_group_id", dbParamGroupInfo["ParamGroupId"].(string))
+
 	return nil
 }
 
@@ -1923,7 +1934,9 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	if v, ok := d.GetOk("resource_group_id"); ok && v.(string) != "" {
 		request["ResourceGroupId"] = v
 	}
-
+	if v, ok := d.GetOk("db_param_group_id"); ok && v.(string) != "" {
+		request["DBParamGroupId"] = v
+	}
 	if v, ok := d.GetOk("target_minor_version"); ok && v.(string) != "" {
 		request["TargetMinorVersion"] = v
 	}
