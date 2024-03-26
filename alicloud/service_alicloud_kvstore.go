@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -202,7 +202,6 @@ func (s *KvstoreService) setInstanceTags(d *schema.ResourceData) error {
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	return nil

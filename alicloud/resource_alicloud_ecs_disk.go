@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudEcsDisk() *schema.Resource {
@@ -36,11 +36,6 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry"}, false),
 				Default:      "cloud_efficiency",
-			},
-			"dedicated_block_storage_cluster_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'dedicated_block_storage_cluster_id' is unavailable and it has been removed since 1.208.0.",
 			},
 			"delete_auto_snapshot": {
 				Type:     schema.TypeBool,
@@ -333,7 +328,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if err := ecsService.SetResourceTags(d, "disk"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if !d.IsNewResource() && d.HasChange("size") {
 		request := map[string]interface{}{
@@ -363,8 +358,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("size")
-		d.SetPartial("type")
+
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		request := map[string]interface{}{
@@ -390,7 +384,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -429,9 +423,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("category")
-		d.SetPartial("dry_run")
-		d.SetPartial("performance_level")
+
 	}
 	update = false
 	modifyDiskChargeTypeReq := map[string]interface{}{
@@ -470,8 +462,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_id")
-		d.SetPartial("payment_type")
+
 	}
 	update = false
 	modifyDiskAttributeReq := map[string]interface{}{
@@ -523,12 +514,7 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("delete_auto_snapshot")
-		d.SetPartial("delete_with_instance")
-		d.SetPartial("description")
-		d.SetPartial("name")
-		d.SetPartial("disk_name")
-		d.SetPartial("enable_auto_snapshot")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudEcsDiskRead(d, meta)

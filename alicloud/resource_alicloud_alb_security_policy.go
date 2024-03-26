@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudAlbSecurityPolicy() *schema.Resource {
@@ -135,7 +135,7 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if err := albService.SetResourceTags(d, "securitypolicy"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -166,7 +166,7 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	updateSecurityPolicyAttributeReq := map[string]interface{}{
@@ -218,9 +218,7 @@ func resourceAlicloudAlbSecurityPolicyUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("ciphers")
-		d.SetPartial("security_policy_name")
-		d.SetPartial("tls_versions")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudAlbSecurityPolicyRead(d, meta)

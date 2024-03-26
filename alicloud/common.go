@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"hash/crc32"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,9 +21,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"github.com/denverdino/aliyungo/cs"
 
@@ -34,7 +36,7 @@ import (
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/fc-go-sdk"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"gopkg.in/yaml.v2"
 
@@ -1362,7 +1364,7 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 				}
 			}
 		}
-		diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
+		helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: oldValue, New: newValue})
 
 		if objectKey != "" {
 			for removeKey, removeValue := range dOld.State().Attributes {
@@ -1370,9 +1372,9 @@ func newInstanceDiff(resourceName string, attributes, attributesDiff map[string]
 					if _, ok := dNew.State().Attributes[removeKey]; !ok {
 						// If the attribue has complex elements, there should remove the key, not setting it to empty
 						if len(strings.Split(removeKey, ".")) > 2 {
-							diff.DelAttribute(removeKey)
+							helper.DelAttribute(diff, removeKey)
 						} else {
-							diff.SetAttribute(removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
+							helper.SetAttribute(diff, removeKey, &terraform.ResourceAttrDiff{Old: removeValue, New: ""})
 						}
 					}
 				}
@@ -1746,4 +1748,32 @@ func convertPaymentTypeToChargeType(source interface{}) interface{} {
 		return "PrePaid"
 	}
 	return source
+}
+
+// HashString hashes a string to a unique hashcode.
+//
+// crc32 returns a uint32, but for our use we need
+// and non negative integer. Here we cast to an integer
+// and invert it if the result is negative.
+func HashString(s string) int {
+	v := int(crc32.ChecksumIEEE([]byte(s)))
+	if v >= 0 {
+		return v
+	}
+	if -v >= 0 {
+		return -v
+	}
+	// v == MinInt
+	return 0
+}
+
+// HashString hashes a list of strings to a unique hashcode.
+func HashStrings(strings []string) string {
+	var buf bytes.Buffer
+
+	for _, s := range strings {
+		buf.WriteString(fmt.Sprintf("%s-", s))
+	}
+
+	return fmt.Sprintf("%d", String(buf.String()))
 }

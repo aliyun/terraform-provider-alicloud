@@ -6,8 +6,7 @@ import (
 	"sort"
 
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudRamPolicyDocument() *schema.Resource {
@@ -117,7 +116,7 @@ func dataSourceAlicloudRamPolicyDocumentRead(d *schema.ResourceData, meta interf
 
 		d.Set("document", doc)
 
-		d.SetId(tea.ToString(hashcode.String(doc)))
+		d.SetId(tea.ToString(HashString(doc)))
 	}
 
 	return nil

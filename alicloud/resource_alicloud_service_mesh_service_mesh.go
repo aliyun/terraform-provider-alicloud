@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
@@ -186,7 +186,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"prometheus": {
 							Type:     schema.TypeList,
 							Computed: true,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"use_external": {
@@ -1172,34 +1171,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("tracing")
-		d.SetPartial("trace_sampling")
-		d.SetPartial("telemetry")
-		d.SetPartial("customized_zipkin")
-		d.SetPartial("outbound_traffic_policy")
-		d.SetPartial("include_ip_ranges")
-		d.SetPartial("enable_namespaces_by_default")
-		d.SetPartial("http10_enabled")
-		d.SetPartial("log_level")
-		d.SetPartial("request_cpu")
-		d.SetPartial("request_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("limit_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("request_cpu")
-		d.SetPartial("limit_memory")
-		d.SetPartial("enabled")
-		d.SetPartial("enabled")
-		d.SetPartial("exclude_namespaces")
-		d.SetPartial("enabled")
-		d.SetPartial("request_memory")
-		d.SetPartial("request_memory")
-		d.SetPartial("limit_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("request_cpu")
-		d.SetPartial("enabled")
-		d.SetPartial("auto_injection_policy_enabled")
-		d.SetPartial("project")
+
 	}
 	update = false
 	action = "UpdateMeshCRAggregation"
@@ -1242,7 +1214,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("cr_aggregation_enabled")
+
 	}
 	update = false
 	action = "UpgradeMeshEditionPartially"
@@ -1283,7 +1255,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("version")
+
 	}
 
 	if d.HasChange("cluster_ids") {
@@ -1333,10 +1305,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("cluster_ids")
 
 			}
-			d.SetPartial("cluster_ids")
+
 		}
 
 		if len(added.([]interface{})) > 0 {
@@ -1381,10 +1352,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("cluster_ids")
 
 			}
-			d.SetPartial("cluster_ids")
+
 		}
 	}
 	if d.HasChange("tags") {
@@ -1392,7 +1362,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err := serviceMeshServiceV2.SetResourceTags(d, "servicemesh"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudServiceMeshServiceMeshRead(d, meta)

@@ -11,8 +11,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
@@ -657,7 +657,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("security_group_id")
 	}
 
 	update = false
@@ -700,7 +699,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("name")
 	}
 
 	if !d.IsNewResource() && (d.HasChange("instance_charge_type") && d.Get("instance_charge_type").(string) == "PrePaid") {
@@ -747,8 +745,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("period")
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_ip_list") {
@@ -763,13 +759,12 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("security_ip_list")
 	}
 
 	if !d.IsNewResource() && (d.HasChange("account_password") || d.HasChange("kms_encrypted_password")) {
 		var accountPassword string
 		if accountPassword = d.Get("account_password").(string); accountPassword != "" {
-			d.SetPartial("account_password")
+
 		} else if kmsPassword := d.Get("kms_encrypted_password").(string); kmsPassword != "" {
 			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
 			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
@@ -779,8 +774,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 			accountPassword = decryptResp
 
-			d.SetPartial("kms_encrypted_password")
-			d.SetPartial("kms_encryption_context")
 		}
 
 		err := ddsService.ResetAccountPassword(d, accountPassword, "shardingInstance")
@@ -834,7 +827,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("backup_time") || d.HasChange("backup_period") {
@@ -842,8 +834,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("backup_time")
-		d.SetPartial("backup_period")
 	}
 
 	if d.HasChange("tde_status") {
@@ -887,7 +877,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("tde_status")
 	}
 
 	if err := ddsService.setInstanceTags(d); err != nil {
@@ -901,7 +890,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("mongo_list")
 	}
 
 	if !d.IsNewResource() && d.HasChange("shard_list") {
@@ -911,7 +899,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 			return WrapError(err)
 		}
 
-		d.SetPartial("shard_list")
 	}
 
 	d.Partial(false)

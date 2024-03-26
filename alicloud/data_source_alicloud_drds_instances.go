@@ -5,8 +5,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/drds"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudDRDSInstances() *schema.Resource {
@@ -14,15 +13,14 @@ func dataSourceAlicloudDRDSInstances() *schema.Resource {
 		Read: dataSourceAlicloudDRDSInstancesRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				Deprecated:   "Field 'name_regex' is deprecated and will be removed in a future release. Please use 'description_regex' instead.",
+				Type:     schema.TypeString,
+				Optional: true,
+
+				Deprecated: "Field 'name_regex' is deprecated and will be removed in a future release. Please use 'description_regex' instead.",
 			},
 			"description_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

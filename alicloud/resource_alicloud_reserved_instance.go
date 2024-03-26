@@ -7,13 +7,13 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudReservedInstance() *schema.Resource {
@@ -269,7 +269,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err := ecsService.SetResourceTags(d, "reservedinstance"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	update := false
@@ -304,9 +304,6 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-		d.SetPartial("name")
-		d.SetPartial("reserved_instance_name")
-		d.SetPartial("description")
 	}
 
 	if d.HasChanges("auto_renew_period", "renewal_status") {
@@ -344,8 +341,7 @@ func resourceAliCloudReservedInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_renew_period")
-		d.SetPartial("renewal_status")
+
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{"Active"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ecsService.EcsReservedInstanceStateRefreshFunc(d, []string{}))

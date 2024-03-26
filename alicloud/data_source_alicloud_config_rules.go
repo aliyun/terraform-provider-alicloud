@@ -8,9 +8,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudConfigRules() *schema.Resource {
@@ -18,10 +18,10 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 		Read: dataSourceAlicloudConfigRulesRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,
@@ -36,26 +36,6 @@ func dataSourceAlicloudConfigRules() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"ACTIVE", "DELETING", "DELETING_RESULTS", "EVALUATING", "INACTIVE"}, false),
 				Deprecated:   "Field 'config_rule_state' has been deprecated from provider version 1.124.1. New field 'status' instead.",
-			},
-			"member_id": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				ForceNew: true,
-				Removed:  "Field 'member_id' has been removed from provider version 1.146.0. Please Use the Resource alicloud_config_aggregate_config_rule",
-			},
-			"message_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ConfigurationItemChangeNotification", "ScheduledNotification", "ConfigurationSnapshotDeliveryCompleted"}, false),
-				Removed:      "Field 'message_type' has been removed from provider version 1.124.1. ",
-			},
-			"multi_account": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-				Default:  false,
-				Removed:  "Field 'multi_account' has been removed from provider version 1.146.0. Please Use the Resource alicloud_config_aggregate_config_rule",
 			},
 			"risk_level": {
 				Type:         schema.TypeInt,

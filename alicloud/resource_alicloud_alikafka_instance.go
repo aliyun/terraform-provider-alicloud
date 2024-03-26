@@ -11,9 +11,9 @@ import (
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudAlikafkaInstance() *schema.Resource {
@@ -120,7 +120,7 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     validation.ValidateJsonString,
+				ValidateFunc:     validation.StringIsJSON,
 				DiffSuppressFunc: alikafkaInstanceConfigDiffSuppressFunc,
 			},
 			"kms_key_id": {
@@ -451,7 +451,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("name")
+
 	}
 
 	// Process paid type change, note only support change from post to pre pay.
@@ -499,7 +499,6 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			return WrapError(errors.New("paid type only support change from post pay to pre pay"))
 		}
 
-		d.SetPartial("paid_type")
 	}
 
 	update := false
@@ -601,12 +600,6 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("partition_num")
-		d.SetPartial("disk_size")
-		d.SetPartial("io_max")
-		d.SetPartial("io_max_spec")
-		d.SetPartial("spec_type")
-		d.SetPartial("eip_max")
 	}
 
 	if d.HasChange("service_version") {
@@ -651,7 +644,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("service_version")
+
 	}
 
 	if d.HasChange("config") {
@@ -690,7 +683,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("config")
+
 	}
 
 	d.Partial(false)

@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudEcsAutoSnapshotPolicy() *schema.Resource {
@@ -190,7 +190,7 @@ func resourceAlicloudEcsAutoSnapshotPolicyUpdate(d *schema.ResourceData, meta in
 		if err := ecsService.SetResourceTags(d, "snapshotpolicy"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -243,13 +243,7 @@ func resourceAlicloudEcsAutoSnapshotPolicyUpdate(d *schema.ResourceData, meta in
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("copied_snapshots_retention_days")
-		d.SetPartial("enable_cross_region_copy")
-		d.SetPartial("name")
-		d.SetPartial("repeat_weekdays")
-		d.SetPartial("retention_days")
-		d.SetPartial("target_copy_regions")
-		d.SetPartial("time_points")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudEcsAutoSnapshotPolicyRead(d, meta)

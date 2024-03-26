@@ -4,13 +4,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudEssAlarm() *schema.Resource {
@@ -264,16 +264,7 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetPartial("name")
-	d.SetPartial("description")
-	d.SetPartial("alarm_actions")
-	d.SetPartial("metric_name")
-	d.SetPartial("statistics")
-	d.SetPartial("threshold")
-	d.SetPartial("comparison_operator")
-	d.SetPartial("evaluation_count")
-	d.SetPartial("cloud_monitor_group_id")
-	d.SetPartial("dimensions")
+
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("enable") {
@@ -299,7 +290,7 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 			}
 			addDebug(disableAlarmRequest.GetActionName(), raw)
 		}
-		d.SetPartial("enable")
+
 	}
 	d.Partial(false)
 	return resourceAliyunEssAlarmRead(d, meta)

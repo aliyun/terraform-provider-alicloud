@@ -9,9 +9,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudNatGateway() *schema.Resource {
@@ -93,43 +93,6 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				ValidateFunc: validation.Any(
 					validation.IntBetween(1, 9),
 					validation.IntInSlice([]int{12, 24, 36})),
-			},
-			"bandwidth_packages": {
-				Type: schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"ip_count": {
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-						"bandwidth": {
-							Type:     schema.TypeInt,
-							Required: true,
-						},
-						"zone": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Computed: true,
-						},
-						"public_ip_addresses": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
-				MaxItems: 4,
-				Optional: true,
-				Removed:  "Field 'bandwidth_packages' has been removed from provider version 1.121.0.",
-			},
-			"bandwidth_package_ids": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'bandwidth_package_ids' has been removed from provider version 1.121.0.",
-			},
-			"spec": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'spec' has been removed from provider version 1.121.0, replace by 'specification'.",
 			},
 			"snat_table_ids": {
 				Type:     schema.TypeString,
@@ -333,7 +296,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := vpcService.SetResourceTags(d, "NATGATEWAY"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if d.HasChange("deletion_protection") {
 		var response map[string]interface{}
@@ -369,7 +332,6 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("deletion_protection")
 	}
 	update := false
 	request := map[string]interface{}{
@@ -418,9 +380,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("name")
-		d.SetPartial("nat_gateway_name")
+
 	}
 	if !d.IsNewResource() && d.HasChange("specification") {
 		request := map[string]interface{}{
@@ -453,7 +413,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("specification")
+
 	}
 	update = false
 	updateNatGatewayNatTypeReq := map[string]interface{}{
@@ -500,9 +460,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("nat_type")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("dry_run")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudNatGatewayRead(d, meta)

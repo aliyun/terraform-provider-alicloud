@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudConfigRemediation() *schema.Resource {
@@ -41,7 +41,7 @@ func resourceAliCloudConfigRemediation() *schema.Resource {
 			"params": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 			},
 			"remediation_id": {
 				Type:     schema.TypeString,
@@ -204,9 +204,7 @@ func resourceAlicloudConfigRemediationUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("params")
-		d.SetPartial("invoke_type")
-		d.SetPartial("remediation_template_id")
+
 	}
 
 	return resourceAlicloudConfigRemediationRead(d, meta)

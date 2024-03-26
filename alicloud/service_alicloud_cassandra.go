@@ -11,8 +11,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type CassandraService struct {
@@ -223,7 +223,6 @@ func (s *CassandraService) setInstanceTags(d *schema.ResourceData) error {
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
-	d.SetPartial("tags")
 	return nil
 }
 

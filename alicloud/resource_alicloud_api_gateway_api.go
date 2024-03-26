@@ -10,11 +10,11 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cloudapi"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliyunApigatewayApi() *schema.Resource {
@@ -586,18 +586,6 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
-		d.SetPartial("name")
-		d.SetPartial("description")
-		d.SetPartial("auth_type")
-		d.SetPartial("service_type")
-		d.SetPartial("http_service_config")
-		d.SetPartial("http_vpc_service_config")
-		d.SetPartial("fc_service_config")
-		d.SetPartial("mock_service_config")
-		d.SetPartial("request_parameters")
-		d.SetPartial("constant_parameters")
-		d.SetPartial("system_parameters")
-
 	}
 
 	if update || d.HasChange("stage_names") {
@@ -607,7 +595,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 				return WrapError(err)
 			}
 		}
-		d.SetPartial("stage_names")
+
 	}
 
 	d.Partial(false)

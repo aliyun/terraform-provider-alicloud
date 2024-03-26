@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudNasFileSystem() *schema.Resource {
@@ -176,7 +176,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if err := nasService.SetResourceTags(d, "filesystem"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.IsNewResource() {
@@ -206,7 +206,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
+
 	}
 	if d.HasChange("capacity") {
 		request := map[string]interface{}{
@@ -235,7 +235,7 @@ func resourceAlicloudNasFileSystemUpdate(d *schema.ResourceData, meta interface{
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("capacity")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudNasFileSystemRead(d, meta)

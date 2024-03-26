@@ -8,9 +8,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudPolarDBAccount() *schema.Resource {
@@ -193,7 +193,6 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("account_description")
 	}
 
 	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
@@ -212,7 +211,7 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 		}
 
 		if password != "" {
-			d.SetPartial("account_password")
+
 			request.NewAccountPassword = password
 		} else {
 			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
@@ -221,8 +220,7 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 				return WrapError(err)
 			}
 			request.NewAccountPassword = decryptResp
-			d.SetPartial("kms_encrypted_password")
-			d.SetPartial("kms_encryption_context")
+
 		}
 
 		if err := resource.Retry(5*time.Minute, func() *resource.RetryError {
@@ -242,7 +240,6 @@ func resourceAlicloudPolarDBAccountUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("account_password")
 	}
 
 	d.Partial(false)

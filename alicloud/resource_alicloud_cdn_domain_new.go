@@ -12,8 +12,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCdnDomain() *schema.Resource {
@@ -53,12 +53,6 @@ func resourceAliCloudCdnDomain() *schema.Resource {
 							Type:      schema.TypeString,
 							Optional:  true,
 							Sensitive: true,
-						},
-						"force_set": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Removed:      "Field 'force_set' has been removed from provider version 1.206.0",
-							ValidateFunc: StringInSlice([]string{"1", "0"}, false),
 						},
 						"cert_id": {
 							Type:     schema.TypeString,
@@ -378,7 +372,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	action = "SetCdnDomainSSLCertificate"
@@ -456,7 +450,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("certificate_config")
+
 	}
 
 	update = false
@@ -466,7 +460,7 @@ func resourceAliCloudCdnDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := cdnServiceV2.SetResourceTags(d, "DOMAIN"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudCdnDomainRead(d, meta)

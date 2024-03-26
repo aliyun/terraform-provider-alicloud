@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
 	"log"
 	"os"
 	"reflect"
@@ -15,13 +16,13 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -513,15 +514,15 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 		for _, key := range []string{"resource_group_id"} {
 			switch p["alicloud_dcdn_ipa_domain"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
@@ -547,15 +548,15 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 		for _, key := range []string{"resource_group_id"} {
 			switch p["alicloud_dcdn_ipa_domain"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
@@ -576,17 +577,17 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 		for _, key := range []string{"resource_group_id", "sources"} {
 			switch p["alicloud_dcdn_ipa_domain"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeSet:
-				diff.SetAttribute("sources.0.content", &terraform.ResourceAttrDiff{Old: "content", New: "content_update"})
-				diff.SetAttribute("sources.0.port", &terraform.ResourceAttrDiff{Old: "8888", New: "8888"})
-				diff.SetAttribute("sources.0.priority", &terraform.ResourceAttrDiff{Old: "priority", New: "priority"})
-				diff.SetAttribute("sources.0.type", &terraform.ResourceAttrDiff{Old: "type", New: "type"})
-				diff.SetAttribute("sources.0.weight", &terraform.ResourceAttrDiff{Old: "10", New: "9"})
+				helper.SetAttribute(diff, "sources.0.content", &terraform.ResourceAttrDiff{Old: "content", New: "content_update"})
+				helper.SetAttribute(diff, "sources.0.port", &terraform.ResourceAttrDiff{Old: "8888", New: "8888"})
+				helper.SetAttribute(diff, "sources.0.priority", &terraform.ResourceAttrDiff{Old: "priority", New: "priority"})
+				helper.SetAttribute(diff, "sources.0.type", &terraform.ResourceAttrDiff{Old: "type", New: "type"})
+				helper.SetAttribute(diff, "sources.0.weight", &terraform.ResourceAttrDiff{Old: "10", New: "9"})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
@@ -600,7 +601,7 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusOfflineAttributeNotFoundErrorAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
+		helper.SetAttribute(diff, "status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -612,7 +613,7 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusOfflineAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
+		helper.SetAttribute(diff, "status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -657,7 +658,7 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusOnlineAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "offline", New: "online"})
+		helper.SetAttribute(diff, "status", &terraform.ResourceAttrDiff{Old: "offline", New: "online"})
 
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
@@ -703,7 +704,7 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusOfflineAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
+		helper.SetAttribute(diff, "status", &terraform.ResourceAttrDiff{Old: "online", New: "offline"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -741,7 +742,7 @@ func TestUnitAlicloudDCDNIpaDomain(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusOnlineAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("status", &terraform.ResourceAttrDiff{Old: "offline", New: "online"})
+		helper.SetAttribute(diff, "status", &terraform.ResourceAttrDiff{Old: "offline", New: "online"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_dcdn_ipa_domain"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {

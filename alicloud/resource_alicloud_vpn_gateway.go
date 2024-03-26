@@ -4,7 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"time"
 
@@ -12,8 +12,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVPNGatewayVPNGateway() *schema.Resource {
@@ -371,9 +371,7 @@ func resourceAliCloudVPNGatewayVPNGatewayUpdate(d *schema.ResourceData, meta int
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("auto_propagate")
-		d.SetPartial("vpn_gateway_name")
+
 	}
 	update = false
 	action = "MoveVpnResourceGroup"
@@ -411,7 +409,7 @@ func resourceAliCloudVPNGatewayVPNGatewayUpdate(d *schema.ResourceData, meta int
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -419,7 +417,7 @@ func resourceAliCloudVPNGatewayVPNGatewayUpdate(d *schema.ResourceData, meta int
 		if err := vPNGatewayServiceV2.SetResourceTags(d, "VpnGateWay"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVPNGatewayVPNGatewayRead(d, meta)

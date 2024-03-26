@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEipAddress() *schema.Resource {
@@ -413,9 +413,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("bandwidth")
-		d.SetPartial("description")
-		d.SetPartial("address_name")
+
 	}
 	update = false
 	action = "SetHighDefinitionMonitorLogStatus"
@@ -464,8 +462,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("log_project")
-		d.SetPartial("log_store")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -504,7 +501,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	action = "DeletionProtection"
@@ -545,7 +542,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("deletion_protection")
+
 	}
 
 	if d.HasChange("tags") {
@@ -553,7 +550,7 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := eipServiceV2.SetResourceTags(d, "EIP"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudEipAddressRead(d, meta)

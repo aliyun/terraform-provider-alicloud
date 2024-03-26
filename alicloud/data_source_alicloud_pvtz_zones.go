@@ -7,8 +7,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudPvtzZones() *schema.Resource {
@@ -55,10 +55,10 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 				Computed: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -145,16 +145,6 @@ func dataSourceAlicloudPvtzZones() *schema.Resource {
 						"name": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"creation_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'creation_time' has been removed from provider version 1.107.0",
-						},
-						"update_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Field 'update_time' has been removed from provider version 1.107.0",
 						},
 					},
 				},

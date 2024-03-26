@@ -6,8 +6,7 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudOtsTables() *schema.Resource {
@@ -30,10 +29,9 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 				MinItems: 1,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -78,7 +76,6 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 4,
 						},
 						"defined_column": {
 							Type:     schema.TypeList,
@@ -95,7 +92,6 @@ func dataSourceAlicloudOtsTables() *schema.Resource {
 									},
 								},
 							},
-							MaxItems: 32,
 						},
 						"time_to_live": {
 							Type:     schema.TypeInt,

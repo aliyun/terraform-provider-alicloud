@@ -10,13 +10,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudSDDPDataLimit_basic0(t *testing.T) {
@@ -339,8 +340,8 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 
 	t.Run("UpdateModifySDDPDataLimitAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
+		helper.SetAttribute(diff, "audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
+		helper.SetAttribute(diff, "log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -361,8 +362,8 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	})
 	t.Run("UpdateModifySDDPDataLimitAttributeNoRetryErrorAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
+		helper.SetAttribute(diff, "audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
+		helper.SetAttribute(diff, "log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
 		resourceData, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -378,9 +379,9 @@ func TestUnitAlicloudSDDPDataLimit(t *testing.T) {
 	})
 	t.Run("UpdateModifySDDPDataLimitAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
-		diff.SetAttribute("log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
-		diff.SetAttribute("lang", &terraform.ResourceAttrDiff{Old: "zh", New: "us"})
+		helper.SetAttribute(diff, "audit_status", &terraform.ResourceAttrDiff{Old: "0", New: "1"})
+		helper.SetAttribute(diff, "log_store_day", &terraform.ResourceAttrDiff{Old: "30", New: "365"})
+		helper.SetAttribute(diff, "lang", &terraform.ResourceAttrDiff{Old: "zh", New: "us"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_sddp_data_limit"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {

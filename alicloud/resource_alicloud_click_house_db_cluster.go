@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudClickHouseDbCluster() *schema.Resource {
@@ -37,11 +37,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"db_cluster_ip_array_attribute": {
-							Type:     schema.TypeString,
-							Optional: true,
-							Removed:  "Field 'db_cluster_ip_array_attribute' has been removed from provider",
-						},
 						"db_cluster_ip_array_name": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -338,7 +333,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("db_cluster_description")
+
 	}
 	update = false
 	modifyDBClusterMaintainTimeReq := map[string]interface{}{
@@ -372,7 +367,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_time")
+
 	}
 	if d.HasChange("db_cluster_access_white_list") {
 
@@ -453,7 +448,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 				}
 			}
 		}
-		d.SetPartial("db_cluster_access_white_list")
+
 	}
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}
@@ -490,7 +485,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
-			d.SetPartial("status")
+
 		}
 		stateConf := BuildStateConf([]string{"RESTARTING"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {

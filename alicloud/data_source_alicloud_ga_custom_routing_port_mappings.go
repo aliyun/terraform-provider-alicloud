@@ -1,16 +1,15 @@
 package alicloud
 
 import (
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudGaCustomRoutingPortMappings() *schema.Resource {
@@ -220,7 +219,7 @@ func dataSourceAlicloudGaCustomRoutingPortMappingsRead(d *schema.ResourceData, m
 		s = append(s, mapping)
 	}
 
-	d.SetId(tea.ToString(hashcode.String("GaCustomRoutingPortMappings")))
+	d.SetId(tea.ToString(HashString("GaCustomRoutingPortMappings")))
 
 	if err := d.Set("custom_routing_port_mappings", s); err != nil {
 		return WrapError(err)

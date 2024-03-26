@@ -9,8 +9,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCassandraCluster() *schema.Resource {
@@ -299,7 +299,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyIpWhitelistGroupReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("ip_white")
+
 	}
 	if d.HasChange("security_groups") {
 		modifySecurityGroupsReq := cassandra.CreateModifySecurityGroupsRequest()
@@ -322,7 +322,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_groups")
+
 	}
 	if d.HasChange("enable_public") {
 		if d.Get("enable_public").(bool) {
@@ -356,7 +356,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		d.SetPartial("enable_public")
+
 	}
 	if (d.HasChange("maintain_end_time") || d.HasChange("maintain_start_time")) && d.Get("maintain_end_time").(string) != "" && d.Get("maintain_start_time").(string) != "" {
 		modifyInstanceMaintainTimeReq := cassandra.CreateModifyInstanceMaintainTimeRequest()
@@ -370,8 +370,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMaintainTimeReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_end_time")
-		d.SetPartial("maintain_start_time")
+
 	}
 	if d.IsNewResource() {
 		d.Partial(false)
@@ -388,7 +387,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("cluster_name")
+
 	}
 	if d.HasChange("data_center_name") {
 		request := cassandra.CreateModifyDataCenterRequest()
@@ -402,7 +401,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("data_center_name")
+
 	}
 	update := false
 	modifyInstanceTypeReq := cassandra.CreateModifyInstanceTypeRequest()
@@ -424,7 +423,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
+
 	}
 	update = false
 	resizeDiskSizeReq := cassandra.CreateResizeDiskSizeRequest()
@@ -446,7 +445,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("disk_size")
+
 	}
 	update = false
 	resizeNodeCountReq := cassandra.CreateResizeNodeCountRequest()
@@ -468,7 +467,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("node_count")
+
 	}
 	if d.HasChange("password") {
 		request := cassandra.CreateModifyAccountPasswordRequest()
@@ -482,7 +481,7 @@ func resourceAlicloudCassandraClusterUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("password")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCassandraClusterRead(d, meta)

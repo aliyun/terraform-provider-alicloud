@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudRosStack() *schema.Resource {
@@ -96,7 +96,7 @@ func resourceAlicloudRosStack() *schema.Resource {
 			"stack_policy_body": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -122,7 +122,7 @@ func resourceAlicloudRosStack() *schema.Resource {
 			"template_body": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -304,7 +304,7 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		if err := rosService.SetResourceTags(d, "stack"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -390,11 +390,7 @@ func resourceAlicloudRosStackUpdate(d *schema.ResourceData, meta interface{}) er
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("disable_rollback")
-		d.SetPartial("parameters")
-		d.SetPartial("ram_role_name")
-		d.SetPartial("stack_policy_body")
-		d.SetPartial("timeout_in_minutes")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudRosStackRead(d, meta)

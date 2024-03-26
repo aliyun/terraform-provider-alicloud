@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliyunSlbAttachment() *schema.Resource {
@@ -119,11 +119,11 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 
 	if d.HasChange("server_type") {
 		update = true
-		d.SetPartial("server_type")
+
 	}
 	if d.HasChange("weight") {
 		update = true
-		d.SetPartial("weight")
+
 	}
 	if d.HasChange("instance_ids") {
 		o, n := d.GetChange("instance_ids")
@@ -178,7 +178,7 @@ func resourceAliyunSlbAttachmentUpdate(d *schema.ResourceData, meta interface{})
 		if len(add) < 1 && len(remove) < 1 {
 			update = true
 		}
-		d.SetPartial("instance_ids")
+
 	}
 
 	if update {

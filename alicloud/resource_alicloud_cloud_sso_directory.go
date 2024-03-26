@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCloudSsoDirectory() *schema.Resource {
@@ -166,7 +166,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("mfa_authentication_status")
+
 	}
 	update = false
 	setSCIMSynchronizationStatusReq := map[string]interface{}{
@@ -200,7 +200,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("scim_synchronization_status")
+
 	}
 	update = false
 	updateDirectoryReq := map[string]interface{}{
@@ -234,7 +234,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("directory_name")
+
 	}
 	update = false
 	setExternalSAMLIdentityProviderReq := map[string]interface{}{
@@ -276,7 +276,7 @@ func resourceAlicloudCloudSsoDirectoryUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("saml_identity_provider_configuration")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudSsoDirectoryRead(d, meta)

@@ -8,9 +8,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEcsNetworkInterface() *schema.Resource {
@@ -343,7 +343,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		if err := ecsService.SetResourceTags(d, "eni"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	update := false
 	updateSecurityGroup := false
@@ -395,12 +395,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("name")
-		d.SetPartial("network_interface_name")
-		d.SetPartial("queue_number")
-		d.SetPartial("security_groups")
-		d.SetPartial("security_group_ids")
+
 		if updateSecurityGroup {
 			time.Sleep(500 * time.Millisecond)
 		}
@@ -436,7 +431,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("private_ip_addresses")
+
 		}
 		if added.Len() > 0 {
 			assignprivateipaddressesrequest := map[string]interface{}{
@@ -461,7 +456,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("private_ip_addresses")
+
 		}
 		if err := ecsService.WaitForPrivateIpsListChanged(d.Id(), expandStringList(newPrivateIpAddressesSet.List())); err != nil {
 			return WrapError(err)
@@ -497,7 +492,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("private_ips")
+
 		}
 		if added.Len() > 0 {
 			assignprivateipaddressesrequest := map[string]interface{}{
@@ -522,7 +517,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("private_ips")
+
 		}
 		if err := ecsService.WaitForPrivateIpsListChanged(d.Id(), expandStringList(newPrivateIpsSet.List())); err != nil {
 			return WrapError(err)
@@ -589,7 +584,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapError(err)
 			}
-			d.SetPartial("private_ips_count")
+
 		}
 	}
 	if d.HasChange("secondary_private_ip_address_count") {
@@ -654,7 +649,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapError(err)
 			}
-			d.SetPartial("secondary_private_ip_address_count")
+
 		}
 	}
 	if d.HasChange("ipv6_address_count") {
@@ -719,8 +714,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapError(err)
 			}
-			d.SetPartial("ipv6_address_count")
-			d.SetPartial("ipv6_addresses")
+
 		}
 	}
 
@@ -787,8 +781,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("ipv6_address_count")
-		d.SetPartial("ipv6_addresses")
+
 	}
 
 	if d.HasChange("ipv4_prefix_count") {
@@ -853,8 +846,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapError(err)
 			}
-			d.SetPartial("ipv4_prefix_count")
-			d.SetPartial("ipv4_prefixes")
+
 		}
 	}
 
@@ -921,8 +913,7 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("ipv4_prefix_count")
-		d.SetPartial("ipv4_prefixes")
+
 	}
 	return resourceAlicloudEcsNetworkInterfaceRead(d, meta)
 }

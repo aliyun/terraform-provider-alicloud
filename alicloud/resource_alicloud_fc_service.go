@@ -6,14 +6,14 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudFCService() *schema.Resource {
@@ -417,15 +417,15 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if d.HasChange("role") {
 		request.Role = StringPointer(d.Get("role").(string))
-		d.SetPartial("role")
+
 	}
 	if d.HasChange("internet_access") {
 		request.InternetAccess = BoolPointer(d.Get("internet_access").(bool))
-		d.SetPartial("internet_access")
+
 	}
 	if d.HasChange("description") {
 		request.Description = StringPointer(d.Get("description").(string))
-		d.SetPartial("description")
+
 	}
 	if d.HasChange("log_config") {
 		project, logstore, enable_request_metrics, enable_instance_metrics, err := parseLogConfig(d, meta)
@@ -438,7 +438,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 			EnableRequestMetrics:  BoolPointer(enable_request_metrics),
 			EnableInstanceMetrics: BoolPointer(enable_instance_metrics),
 		}
-		d.SetPartial("log_config")
+
 	}
 
 	if d.HasChange("vpc_config") {
@@ -447,7 +447,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		request.VPCConfig = vpcConfig
-		d.SetPartial("vpc_config")
+
 	}
 
 	if d.HasChange("nas_config") {
@@ -456,7 +456,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		request.NASConfig = nasConfig
-		d.SetPartial("nas_config")
+
 	}
 
 	if d.HasChange("tracing_config") {
@@ -465,7 +465,7 @@ func resourceAlicloudFCServiceUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapError(err)
 		}
 		request.TracingConfig = tracingConfig
-		d.SetPartial("tracing_config")
+
 	}
 
 	if request != nil {

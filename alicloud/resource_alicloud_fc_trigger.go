@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudFCTrigger() *schema.Resource {
@@ -106,7 +106,7 @@ func resourceAlicloudFCTrigger() *schema.Resource {
 					// The read config is json rawMessage and it does not contains space and enter.
 					return old == removeSpaceAndEnter(new)
 				},
-				ValidateFunc:  validation.ValidateJsonString,
+				ValidateFunc:  validation.StringIsJSON,
 				ConflictsWith: []string{"config"},
 			},
 			"type": {

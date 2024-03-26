@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudSddpRule() *schema.Resource {
@@ -292,8 +292,7 @@ func resourceAlicloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("status")
-		d.SetPartial("lang")
+
 	}
 
 	update = false
@@ -382,20 +381,7 @@ func resourceAlicloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("category")
-		d.SetPartial("content")
-		d.SetPartial("custom_type")
-		d.SetPartial("rule_name")
-		d.SetPartial("content_category")
-		d.SetPartial("description")
-		d.SetPartial("lang")
-		d.SetPartial("product_code")
-		d.SetPartial("product_id")
-		d.SetPartial("risk_level_id")
-		d.SetPartial("rule_type")
-		d.SetPartial("stat_express")
-		d.SetPartial("target")
-		d.SetPartial("warn_level")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudSddpRuleRead(d, meta)

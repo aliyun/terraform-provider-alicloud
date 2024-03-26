@@ -4,7 +4,7 @@ import (
 	"github.com/alibabacloud-go/cs-20151215/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudCSClusterCredential() *schema.Resource {
@@ -35,8 +35,9 @@ func dataSourceAlicloudCSClusterCredential() *schema.Resource {
 				Computed:  true,
 				Sensitive: true,
 			},
+			// NOTICE: 这里需要Review
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{

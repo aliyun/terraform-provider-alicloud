@@ -10,8 +10,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudOceanBaseInstance() *schema.Resource {
@@ -301,7 +301,7 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("instance_name")
+
 	}
 	update = false
 	action = "ModifyInstanceNodeNum"
@@ -342,7 +342,7 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("node_num")
+
 	}
 	update = false
 	action = "ModifyInstanceSpec"
@@ -386,8 +386,7 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_class")
-		d.SetPartial("disk_size")
+
 	}
 
 	d.Partial(false)

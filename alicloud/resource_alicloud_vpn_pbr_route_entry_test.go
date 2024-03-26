@@ -11,13 +11,14 @@ import (
 	"github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudVPNPbrRouteEntry_basic0(t *testing.T) {
@@ -298,9 +299,9 @@ func TestUnitAlicloudVPNPbrRouteEntry(t *testing.T) {
 		for _, key := range []string{"weight", "publish_vpc"} {
 			switch p["alicloud_vpn_pbr_route_entry"].Schema[key].Type {
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, diff)
@@ -326,9 +327,9 @@ func TestUnitAlicloudVPNPbrRouteEntry(t *testing.T) {
 		for _, key := range []string{"weight", "publish_vpc"} {
 			switch p["alicloud_vpn_pbr_route_entry"].Schema[key].Type {
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
 			}
 		}
 		resourceData, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, diff)
@@ -349,9 +350,9 @@ func TestUnitAlicloudVPNPbrRouteEntry(t *testing.T) {
 		for _, key := range []string{"weight", "publish_vpc"} {
 			switch p["alicloud_vpn_pbr_route_entry"].Schema[key].Type {
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(100), New: strconv.Itoa(0)})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_vpn_pbr_route_entry"].Schema).Data(nil, diff)

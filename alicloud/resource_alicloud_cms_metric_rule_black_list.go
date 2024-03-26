@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCmsMetricRuleBlackList() *schema.Resource {
@@ -270,7 +270,7 @@ func resourceAlicloudCmsMetricRuleBlackListUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("is_enable")
+
 	}
 
 	update = false
@@ -364,16 +364,7 @@ func resourceAlicloudCmsMetricRuleBlackListUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("category")
-		d.SetPartial("effective_time")
-		d.SetPartial("enable_end_time")
-		d.SetPartial("enable_start_time")
-		d.SetPartial("instances")
-		d.SetPartial("metric_rule_black_list_name")
-		d.SetPartial("metrics")
-		d.SetPartial("namespace")
-		d.SetPartial("scope_type")
-		d.SetPartial("scope_value")
+
 	}
 
 	d.Partial(false)

@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudGaEndpointGroup() *schema.Resource {
@@ -397,7 +397,6 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(err)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	update := false
@@ -562,18 +561,6 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("endpoint_request_protocol")
-		d.SetPartial("health_check_enabled")
-		d.SetPartial("health_check_path")
-		d.SetPartial("health_check_port")
-		d.SetPartial("health_check_protocol")
-		d.SetPartial("health_check_interval_seconds")
-		d.SetPartial("threshold_count")
-		d.SetPartial("traffic_percentage")
-		d.SetPartial("name")
-		d.SetPartial("description")
-		d.SetPartial("endpoint_configurations")
-		d.SetPartial("port_overrides")
 	}
 
 	d.Partial(false)

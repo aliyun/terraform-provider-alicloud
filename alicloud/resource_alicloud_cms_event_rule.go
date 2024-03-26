@@ -6,8 +6,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCloudMonitorServiceEventRule() *schema.Resource {
@@ -691,11 +691,6 @@ func resourceAliCloudCloudMonitorServiceEventRuleUpdate(d *schema.ResourceData, 
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
-		d.SetPartial("group_id")
-		d.SetPartial("silence_time")
-		d.SetPartial("description")
-		d.SetPartial("status")
-		d.SetPartial("event_pattern")
 	}
 
 	update = false
@@ -920,7 +915,6 @@ func resourceAliCloudCloudMonitorServiceEventRuleUpdate(d *schema.ResourceData, 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("resource_group_id")
 	}
 
 	d.Partial(false)

@@ -3,11 +3,11 @@ package alicloud
 import (
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/smartag"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudSagDnatEntry() *schema.Resource {
@@ -41,7 +41,7 @@ func resourceAlicloudSagDnatEntry() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.SingleIP(),
+				ValidateFunc:     validation.IsIPAddress,
 				DiffSuppressFunc: sagDnatEntryTypeDiffSuppressFunc,
 			},
 			"external_port": {
@@ -53,7 +53,7 @@ func resourceAlicloudSagDnatEntry() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.SingleIP(),
+				ValidateFunc: validation.IsIPAddress,
 			},
 			"internal_port": {
 				Type:     schema.TypeString,

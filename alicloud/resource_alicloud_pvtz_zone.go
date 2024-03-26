@@ -8,9 +8,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudPvtzZone() *schema.Resource {
@@ -75,16 +75,6 @@ func resourceAlicloudPvtzZone() *schema.Resource {
 				ForceNew:      true,
 				Deprecated:    "Field 'name' has been deprecated from version 1.107.0. Use 'zone_name' instead.",
 				ConflictsWith: []string{"zone_name"},
-			},
-			"creation_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'creation_time' has been removed from provider version 1.107.0",
-			},
-			"update_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'update_time' has been removed from provider version 1.107.0",
 			},
 			"user_info": {
 				Type:     schema.TypeSet,
@@ -256,7 +246,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("proxy_pattern")
+
 	}
 	update = false
 	updateZoneRemarkReq := map[string]interface{}{
@@ -290,7 +280,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("remark")
+
 	}
 
 	update = false
@@ -353,8 +343,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("sync_status")
-		d.SetPartial("user_info")
+
 	}
 	update = false
 	if d.HasChange("tags") {
@@ -362,7 +351,7 @@ func resourceAlicloudPvtzZoneUpdate(d *schema.ResourceData, meta interface{}) er
 		if err := pvtzService.SetResourceTags(d, "ZONE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudPvtzZoneRead(d, meta)

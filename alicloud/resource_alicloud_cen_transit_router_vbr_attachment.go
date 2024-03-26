@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCenTransitRouterVbrAttachment() *schema.Resource {
@@ -230,7 +230,7 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 		if err := cbnService.SetResourceTags(d, "TransitRouterVbrAttachment"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("auto_publish_route_enabled") {
@@ -279,10 +279,6 @@ func resourceAlicloudCenTransitRouterVbrAttachmentUpdate(d *schema.ResourceData,
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("auto_publish_route_enabled")
-		d.SetPartial("resource_type")
-		d.SetPartial("transit_router_attachment_description")
-		d.SetPartial("transit_router_attachment_name")
 	}
 
 	d.Partial(false)

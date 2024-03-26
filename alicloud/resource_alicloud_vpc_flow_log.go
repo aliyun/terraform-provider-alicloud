@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcFlowLog() *schema.Resource {
@@ -257,9 +257,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("flow_log_name")
-		d.SetPartial("aggregation_interval")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -295,7 +293,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("status") {
@@ -386,7 +384,7 @@ func resourceAlicloudVpcFlowLogUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := vpcServiceV2.SetResourceTags(d, "FLOWLOG"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudVpcFlowLogRead(d, meta)

@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudWafDomain() *schema.Resource {
@@ -329,7 +329,7 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("cluster_type")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -410,18 +410,7 @@ func resourceAlicloudWafDomainUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("is_access_product")
-		d.SetPartial("connection_time")
-		d.SetPartial("http2_port")
-		d.SetPartial("http_port")
-		d.SetPartial("http_to_user_ip")
-		d.SetPartial("https_port")
-		d.SetPartial("https_redirect")
-		d.SetPartial("load_balancing")
-		d.SetPartial("log_headers")
-		d.SetPartial("read_time")
-		d.SetPartial("source_ips")
-		d.SetPartial("write_time")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudWafDomainRead(d, meta)

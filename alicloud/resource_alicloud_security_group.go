@@ -7,8 +7,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliyunSecurityGroup() *schema.Resource {
@@ -193,13 +193,12 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("resource_group_id")
 	}
 
 	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
 		return WrapError(err)
 	} else {
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") || d.IsNewResource() && d.Get("security_group_type").(string) != "enterprise" {
@@ -226,8 +225,6 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("inner_access")
-		d.SetPartial("inner_access_policy")
 	}
 
 	if d.IsNewResource() {
@@ -258,8 +255,6 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("name")
-		d.SetPartial("description")
 	}
 
 	d.Partial(false)

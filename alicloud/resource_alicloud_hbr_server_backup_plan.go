@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudHbrServerBackupPlan() *schema.Resource {
@@ -283,10 +283,7 @@ func resourceAlicloudHbrServerBackupPlanUpdate(d *schema.ResourceData, meta inte
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("retention")
-		d.SetPartial("detail")
-		d.SetPartial("ecs_server_backup_plan_name")
-		d.SetPartial("schedule")
+
 	}
 	if d.HasChange("disabled") {
 		object, err := hbrService.DescribeHbrServerBackupPlan(d.Id())
@@ -327,7 +324,7 @@ func resourceAlicloudHbrServerBackupPlanUpdate(d *schema.ResourceData, meta inte
 				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 			}
 		}
-		d.SetPartial("disabled")
+
 	}
 
 	d.Partial(false)

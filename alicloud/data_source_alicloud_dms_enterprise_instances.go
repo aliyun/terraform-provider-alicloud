@@ -7,8 +7,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
@@ -18,14 +18,12 @@ func dataSourceAlicloudDmsEnterpriseInstances() *schema.Resource {
 			"name_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validation.ValidateRegexp,
 				ForceNew:      true,
 				ConflictsWith: []string{"instance_alias_regex"},
 			},
 			"instance_alias_regex": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				ValidateFunc:  validation.ValidateRegexp,
 				ForceNew:      true,
 				ConflictsWith: []string{"name_regex"},
 			},

@@ -7,8 +7,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
@@ -51,11 +51,6 @@ func dataSourceAlicloudKmsKeyVersions() *schema.Resource {
 						"key_version_id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"creation_date": {
-							Type:     schema.TypeString,
-							Computed: true,
-							Removed:  "Attribute 'creation_date' has been removed and using 'create_time' instead.",
 						},
 					},
 				},

@@ -11,13 +11,13 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
@@ -539,7 +539,7 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	// upgrade cluster version
@@ -643,8 +643,6 @@ func modifyKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
 			return err
 		}
 	}
-	d.SetPartial("deletion_protection")
-	d.SetPartial("enable_rrsa")
 
 	return nil
 }

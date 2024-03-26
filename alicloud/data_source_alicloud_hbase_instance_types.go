@@ -3,13 +3,13 @@ package alicloud
 import (
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	mapset "github.com/deckarep/golang-set"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudHBaseInstanceTypes() *schema.Resource {

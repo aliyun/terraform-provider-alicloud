@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSlbListener() *schema.Resource {
@@ -53,12 +53,6 @@ func resourceAliCloudSlbListener() *schema.Resource {
 				ValidateFunc: validation.IntBetween(1, 65535),
 				Optional:     true,
 				ForceNew:     true,
-			},
-
-			"instance_port": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field 'instance_port' has been removed since 1.211.0",
 			},
 
 			"lb_protocol": {
@@ -591,14 +585,12 @@ func resourceAliCloudSlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 
-	d.SetPartial("gzip")
 	if d.Get("gzip").(bool) {
 		httpArgs.QueryParams["Gzip"] = string(OnFlag)
 	} else {
 		httpArgs.QueryParams["Gzip"] = string(OffFlag)
 	}
 
-	d.SetPartial("x_forwarded_for")
 	if len(d.Get("x_forwarded_for").([]interface{})) > 0 && (d.Get("protocol").(string) == "http" || d.Get("protocol").(string) == "https") {
 		xff := d.Get("x_forwarded_for").([]interface{})[0].(map[string]interface{})
 		if xff["retrive_slb_ip"].(bool) {

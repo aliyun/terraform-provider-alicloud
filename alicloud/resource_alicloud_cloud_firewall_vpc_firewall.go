@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCloudFirewallVpcFirewall() *schema.Resource {
@@ -564,11 +564,6 @@ func resourceAliCloudCloudFirewallVpcFirewallUpdate(d *schema.ResourceData, meta
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("vpc_firewall_name")
-		d.SetPartial("member_uid")
-		d.SetPartial("lang")
-		d.SetPartial("local_vpc")
-		d.SetPartial("peer_vpc")
 	}
 
 	update = false
@@ -627,9 +622,6 @@ func resourceAliCloudCloudFirewallVpcFirewallUpdate(d *schema.ResourceData, meta
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("status")
-		d.SetPartial("member_uid")
-		d.SetPartial("lang")
 	}
 
 	d.Partial(false)

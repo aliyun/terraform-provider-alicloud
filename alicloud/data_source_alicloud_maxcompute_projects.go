@@ -9,9 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
@@ -27,10 +26,9 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 				},
 			},
 			"name_regex": {
-				Optional:     true,
-				ForceNew:     true,
-				Type:         schema.TypeString,
-				ValidateFunc: validation.ValidateRegexp,
+				Optional: true,
+				ForceNew: true,
+				Type:     schema.TypeString,
 			},
 			"names": {
 				Computed: true,
@@ -63,7 +61,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 						"ip_white_list": {
 							Computed: true,
 							Type:     schema.TypeList,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"ip_list": {
@@ -88,7 +85,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 						"properties": {
 							Computed: true,
 							Type:     schema.TypeList,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"allow_full_scan": {
@@ -102,7 +98,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 									"encryption": {
 										Computed: true,
 										Type:     schema.TypeList,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"algorithm": {
@@ -131,7 +126,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 									"table_lifecycle": {
 										Computed: true,
 										Type:     schema.TypeList,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"type": {
@@ -159,7 +153,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 						"security_properties": {
 							Computed: true,
 							Type:     schema.TypeList,
-							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"enable_download_privilege": {
@@ -181,7 +174,6 @@ func dataSourceAlicloudMaxcomputeProjects() *schema.Resource {
 									"project_protection": {
 										Computed: true,
 										Type:     schema.TypeList,
-										MaxItems: 1,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"exception_policy": {

@@ -3,8 +3,8 @@ package alicloud
 import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudOtsInstance() *schema.Resource {
@@ -151,7 +151,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), actionPath, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(actionPath, response, request)
-		d.SetPartial("accessed_by")
+
 	}
 
 	if d.HasChange("tags") {
@@ -201,7 +201,7 @@ func resourceAliyunOtsInstanceUpdate(d *schema.ResourceData, meta interface{}) e
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
-		d.SetPartial("tags")
+
 	}
 	if err := otsService.WaitForOtsInstance(d.Id(), Running, DefaultTimeout); err != nil {
 		return WrapError(err)

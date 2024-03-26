@@ -5,9 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/encryption"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudRamAccessKey() *schema.Resource {
@@ -89,11 +88,12 @@ func resourceAlicloudRamAccessKeyCreate(d *schema.ResourceData, meta interface{}
 
 	if v, ok := d.GetOk("pgp_key"); ok {
 		pgpKey := v.(string)
-		encryptionKey, err := encryption.RetrieveGPGKey(pgpKey)
+		// NOTICE: 这里需要处理
+		encryptionKey, err := pgpKey, err
 		if err != nil {
 			return WrapError(err)
 		}
-		fingerprint, encrypted, err := encryption.EncryptValue(encryptionKey, response.AccessKey.AccessKeySecret, "Alicloud RAM Access Key Secret")
+		fingerprint, encrypted, err := encryptionKey, response.AccessKey.AccessKeySecret, nil
 		if err != nil {
 			return WrapError(err)
 		}

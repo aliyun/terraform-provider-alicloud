@@ -13,8 +13,8 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSlsLogStore() *schema.Resource {
@@ -525,13 +525,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_split")
-		d.SetPartial("append_meta")
-		d.SetPartial("hot_ttl")
-		d.SetPartial("mode")
-		d.SetPartial("retention_period")
-		d.SetPartial("max_split_shard_count")
-		d.SetPartial("enable_web_tracking")
+
 	}
 	update = false
 	parts = strings.Split(d.Id(), ":")
@@ -575,7 +569,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("metering_mode")
+
 	}
 
 	d.Partial(false)

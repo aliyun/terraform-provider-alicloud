@@ -5,8 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
@@ -20,10 +20,10 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 				ForceNew: true,
 			},
 			"username": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Required: true,
+
+				ForceNew: true,
 			},
 			"acl_resource_type": {
 				Type:         schema.TypeString,
@@ -32,10 +32,9 @@ func dataSourceAlicloudAlikafkaSaslAcls() *schema.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Group", "Topic"}, false),
 			},
 			"acl_resource_name": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

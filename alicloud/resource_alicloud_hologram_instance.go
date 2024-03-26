@@ -10,8 +10,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudHologramInstance() *schema.Resource {
@@ -351,7 +351,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
+
 	}
 	update = false
 	instanceId = d.Id()
@@ -408,9 +408,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("cpu")
-		d.SetPartial("storage_size")
-		d.SetPartial("cold_storage_size")
+
 	}
 	update = false
 	action = fmt.Sprintf("/api/v1/tag/changeResourceGroup")
@@ -453,7 +451,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	instanceId = d.Id()
@@ -498,7 +496,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("gateway_count")
+
 	}
 	update = false
 	instanceId = d.Id()
@@ -561,9 +559,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("vpc_id")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("type")
+
 	}
 
 	if d.HasChange("status") {
@@ -660,7 +656,7 @@ func resourceAliCloudHologramInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err := hologramServiceV2.SetResourceTags(d, ""); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudHologramInstanceRead(d, meta)

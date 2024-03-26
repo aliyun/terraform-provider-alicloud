@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
@@ -598,11 +598,6 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("db_instance_plan_name")
-		d.SetPartial("plan_start_date")
-		d.SetPartial("plan_end_date")
-		d.SetPartial("plan_desc")
-		d.SetPartial("plan_config")
 	}
 
 	if d.HasChange("status") {
@@ -656,7 +651,6 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 
-			d.SetPartial("status")
 		}
 	}
 

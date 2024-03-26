@@ -12,10 +12,11 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -816,15 +817,15 @@ func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 		for _, key := range []string{"min_ready_instances"} {
 			switch p["alicloud_sae_application_scaling_rule"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, diff)
@@ -850,15 +851,15 @@ func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 		for _, key := range []string{"min_ready_instances"} {
 			switch p["alicloud_sae_application_scaling_rule"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, diff)
@@ -879,23 +880,23 @@ func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 		for _, key := range []string{"min_ready_instances", "min_ready_instance_ratio"} {
 			switch p["alicloud_sae_application_scaling_rule"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(1200)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
-		diff.SetAttribute("scaling_rule_metric.0.max_replicas", &terraform.ResourceAttrDiff{Old: "3", New: "4"})
-		diff.SetAttribute("scaling_rule_metric.0.scale_up_rules.0.step", &terraform.ResourceAttrDiff{Old: "100", New: "110"})
-		diff.SetAttribute("scaling_rule_metric.0.scale_down_rules.0.step", &terraform.ResourceAttrDiff{Old: "100", New: "110"})
-		diff.SetAttribute("scaling_rule_metric.0.metrics.0.metric_target_average_utilization", &terraform.ResourceAttrDiff{Old: "20", New: "30"})
-		diff.SetAttribute("scaling_rule_timer.0.begin_date", &terraform.ResourceAttrDiff{Old: "2021-03-25", New: "2021-03-26"})
-		diff.SetAttribute("scaling_rule_timer.0.schedules.0.max_replicas", &terraform.ResourceAttrDiff{Old: "50", New: "60"})
+		helper.SetAttribute(diff, "scaling_rule_metric.0.max_replicas", &terraform.ResourceAttrDiff{Old: "3", New: "4"})
+		helper.SetAttribute(diff, "scaling_rule_metric.0.scale_up_rules.0.step", &terraform.ResourceAttrDiff{Old: "100", New: "110"})
+		helper.SetAttribute(diff, "scaling_rule_metric.0.scale_down_rules.0.step", &terraform.ResourceAttrDiff{Old: "100", New: "110"})
+		helper.SetAttribute(diff, "scaling_rule_metric.0.metrics.0.metric_target_average_utilization", &terraform.ResourceAttrDiff{Old: "20", New: "30"})
+		helper.SetAttribute(diff, "scaling_rule_timer.0.begin_date", &terraform.ResourceAttrDiff{Old: "2021-03-25", New: "2021-03-26"})
+		helper.SetAttribute(diff, "scaling_rule_timer.0.schedules.0.max_replicas", &terraform.ResourceAttrDiff{Old: "50", New: "60"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&roa.Client{}), "DoRequest", func(_ *roa.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]*string, _ map[string]*string, _ interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
@@ -907,7 +908,7 @@ func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusRunningAttributeAbnormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("scaling_rule_enable", &terraform.ResourceAttrDiff{Old: "false", New: "true"})
+		helper.SetAttribute(diff, "scaling_rule_enable", &terraform.ResourceAttrDiff{Old: "false", New: "true"})
 		resourceData1, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		retryFlag := true
@@ -938,7 +939,7 @@ func TestUnitAlicloudSAEApplicationScalingRule(t *testing.T) {
 	})
 	t.Run("UpdateModifyStatusRunningAttributeNormal", func(t *testing.T) {
 		diff := terraform.NewInstanceDiff()
-		diff.SetAttribute("scaling_rule_enable", &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
+		helper.SetAttribute(diff, "scaling_rule_enable", &terraform.ResourceAttrDiff{Old: strconv.FormatBool(false), New: strconv.FormatBool(true)})
 		resourceData1, _ := schema.InternalMap(p["alicloud_sae_application_scaling_rule"].Schema).Data(nil, diff)
 		resourceData1.SetId(d.Id())
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&roa.Client{}), "DoRequest", func(_ *roa.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]*string, _ map[string]*string, _ interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {

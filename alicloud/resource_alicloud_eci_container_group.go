@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudEciContainerGroup() *schema.Resource {
@@ -625,36 +625,6 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 									"value": {
 										Type:     schema.TypeString,
 										Optional: true,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			"eci_security_context": {
-				Type:     schema.TypeSet,
-				Removed:  "Field 'eci_security_context' has been removed from provider version ?",
-				Optional: true,
-				ForceNew: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"sysctls": {
-							Type:     schema.TypeList,
-							Optional: true,
-							ForceNew: true,
-							Elem: &schema.Resource{
-								Schema: map[string]*schema.Schema{
-									"name": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
-									},
-									"value": {
-										Type:     schema.TypeString,
-										Optional: true,
-										ForceNew: true,
 									},
 								},
 							},

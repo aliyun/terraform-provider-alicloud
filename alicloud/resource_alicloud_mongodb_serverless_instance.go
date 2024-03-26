@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudMongodbServerlessInstance() *schema.Resource {
@@ -300,7 +300,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("db_instance_description")
+
 	}
 	if d.HasChange("maintain_end_time") || d.HasChange("maintain_start_time") {
 		request := map[string]interface{}{
@@ -325,8 +325,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_end_time")
-		d.SetPartial("maintain_start_time")
+
 	}
 	if d.HasChange("security_ip_groups") {
 		oraw, nraw := d.GetChange("security_ip_groups")
@@ -396,7 +395,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 				}
 			}
 		}
-		d.SetPartial("security_ip_groups")
+
 	}
 	if !d.IsNewResource() && (d.HasChange("db_instance_storage") || d.HasChange("capacity_unit")) {
 		request := map[string]interface{}{
@@ -429,8 +428,7 @@ func resourceAlicloudMongodbServerlessInstanceUpdate(d *schema.ResourceData, met
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("capacity_unit")
-		d.SetPartial("db_instance_storage")
+
 	}
 	d.Partial(false)
 

@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -10,8 +11,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudNlbLoadBalancer() *schema.Resource {
@@ -223,7 +224,7 @@ func resourceAliCloudNlbLoadBalancer() *schema.Resource {
 				},
 			},
 		},
-		CustomizeDiff: func(diff *schema.ResourceDiff, v interface{}) error {
+		CustomizeDiff: func(context context.Context, diff *schema.ResourceDiff, v interface{}) error {
 			for _, key := range diff.GetChangedKeysPrefix("zone_mappings") {
 				// If the set contains computed key, there are some diff changes when one of element has been changed,
 				// and there aims to ignore the diff
@@ -512,7 +513,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("address_type")
+
 	}
 	update = false
 	action = "UpdateLoadBalancerAttribute"
@@ -565,8 +566,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("load_balancer_name")
-		d.SetPartial("cross_zone_enabled")
+
 	}
 	update = false
 	action = "UpdateLoadBalancerZones"
@@ -715,10 +715,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("enabled")
-		d.SetPartial("reason")
-		d.SetPartial("status")
-		d.SetPartial("reason")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -758,7 +755,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("ipv6_address_type") {
@@ -989,7 +986,6 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("bandwidth_package_id")
 	}
 
 	if d.HasChange("tags") {
@@ -997,7 +993,7 @@ func resourceAliCloudNlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err := nlbServiceV2.SetResourceTags(d, "loadbalancer"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if d.HasChange("security_group_ids") {
 		oldEntry, newEntry := d.GetChange("security_group_ids")
