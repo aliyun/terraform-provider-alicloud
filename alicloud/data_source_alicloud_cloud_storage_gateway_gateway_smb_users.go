@@ -5,13 +5,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudCloudStorageGatewayGatewaySmbUsers() *schema.Resource {
@@ -31,10 +29,10 @@ func dataSourceAlicloudCloudStorageGatewayGatewaySmbUsers() *schema.Resource {
 				Computed: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

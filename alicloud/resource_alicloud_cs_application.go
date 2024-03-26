@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"sort"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/cs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCSApplication() *schema.Resource {
@@ -264,22 +264,22 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 	update := false
 	if d.HasChange("description") {
 		update = true
-		d.SetPartial("description")
+
 	}
 
 	if d.HasChange("template") {
 		update = true
-		d.SetPartial("template")
+
 	}
 
 	if d.HasChange("environment") {
 		update = true
-		d.SetPartial("environment")
+
 	}
 
 	if d.HasChange("version") {
 		update = true
-		d.SetPartial("version")
+
 	}
 
 	if d.HasChange("latest_image") {
@@ -288,7 +288,7 @@ func resourceAlicloudCSApplicationUpdate(d *schema.ResourceData, meta interface{
 
 	if d.HasChange("blue_green") {
 		update = true
-		d.SetPartial("blue_green")
+
 	}
 
 	if !d.HasChange("version") && !blue_green {

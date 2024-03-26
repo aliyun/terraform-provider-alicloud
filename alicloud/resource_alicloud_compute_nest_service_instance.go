@@ -6,8 +6,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudComputeNestServiceInstance() *schema.Resource {
@@ -356,7 +356,7 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 		if err := computeNestService.SetResourceTags(d, "serviceinstance"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	update := false
@@ -400,7 +400,6 @@ func resourceAlicloudComputeNestServiceInstanceUpdate(d *schema.ResourceData, me
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("resource_group_id")
 	}
 
 	d.Partial(false)

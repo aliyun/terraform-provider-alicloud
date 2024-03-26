@@ -17,8 +17,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type PolarDBService struct {
@@ -969,7 +969,7 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 			return WrapError(err)
 		}
 	}
-	d.SetPartial("parameters")
+
 	return nil
 }
 
@@ -1004,9 +1004,6 @@ func (s *PolarDBService) CreateClusterParamsModifyParameters(d *schema.ResourceD
 	// wait instance parameter expect after modifying
 	if err := s.WaitForPolarDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
 		return WrapError(err)
-	}
-	for _, i := range changeParams {
-		d.SetPartial(i)
 	}
 	return nil
 }
@@ -1052,7 +1049,6 @@ func (s *PolarDBService) setClusterTags(d *schema.ResourceData) error {
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -1656,7 +1652,7 @@ func (s *PolarDBService) ModifyDBClusterAccessWhitelist(d *schema.ResourceData) 
 				return WrapError(err)
 			}
 		}
-		d.SetPartial("db_cluster_ip_array")
+
 	}
 	return nil
 }

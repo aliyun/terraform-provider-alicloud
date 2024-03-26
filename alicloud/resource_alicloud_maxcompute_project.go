@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudMaxcomputeProject() *schema.Resource {
@@ -24,24 +24,6 @@ func resourceAlicloudMaxcomputeProject() *schema.Resource {
 			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"order_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo"}, false),
-				Removed:      "Field 'order_type' has been removed from provider version 1.196.0.",
-			},
-			"name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(3, 27),
-				Removed:      "Field 'name' has been removed from provider version 1.196.0.",
-			},
-			"specification_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"OdpsStandard"}, false),
-				Removed:      "Field 'specification_type' has been removed from provider version 1.196.0.",
-			},
 			"comment": {
 				Optional: true,
 				Type:     schema.TypeString,

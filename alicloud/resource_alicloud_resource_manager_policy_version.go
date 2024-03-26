@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
@@ -33,7 +33,7 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.ValidateJsonString,
+				ValidateFunc: validation.StringIsJSON,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
@@ -43,17 +43,6 @@ func resourceAlicloudResourceManagerPolicyVersion() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-			},
-			"create_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'create_date' has been removed from provider version 1.100.0.",
-			},
-			"version_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-				ForceNew: true,
-				Removed:  "Field 'version_id' has been removed from provider version 1.100.0.",
 			},
 		},
 	}

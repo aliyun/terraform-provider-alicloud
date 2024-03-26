@@ -9,8 +9,8 @@ import (
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type SlsServiceV2 struct {
@@ -232,7 +232,7 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 		}
-		d.SetPartial("tags")
+
 	}
 
 	return nil

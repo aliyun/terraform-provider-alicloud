@@ -8,8 +8,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCenInstance() *schema.Resource {
@@ -200,17 +200,14 @@ func resourceAlicloudCenInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("cen_instance_name")
-		d.SetPartial("name")
-		d.SetPartial("description")
-		d.SetPartial("protection_level")
+
 	}
 
 	if d.HasChange("tags") {
 		if err := cbnService.SetResourceTags(d, "cen"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCenInstanceRead(d, meta)

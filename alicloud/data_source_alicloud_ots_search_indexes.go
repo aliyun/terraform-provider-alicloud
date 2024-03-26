@@ -6,8 +6,7 @@ import (
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudOtsSearchIndexes() *schema.Resource {
@@ -35,10 +34,9 @@ func dataSourceAlicloudOtsSearchIndexes() *schema.Resource {
 				ForceNew: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,

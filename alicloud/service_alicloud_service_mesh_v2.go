@@ -8,8 +8,8 @@ import (
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type ServiceMeshServiceV2 struct {
@@ -264,7 +264,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			}
 
 		}
-		d.SetPartial("tags")
+
 	}
 
 	return nil

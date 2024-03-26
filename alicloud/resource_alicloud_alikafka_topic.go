@@ -8,8 +8,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alikafka"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudAlikafkaTopic() *schema.Resource {
@@ -163,7 +163,7 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyRemarkRequest.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("remark")
+
 	}
 
 	if d.HasChange("partition_num") {
@@ -198,7 +198,7 @@ func resourceAlicloudAlikafkaTopicUpdate(d *schema.ResourceData, meta interface{
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyPartitionReq.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("partition_num")
+
 		}
 	}
 

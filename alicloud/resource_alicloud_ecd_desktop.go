@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEcdDesktop() *schema.Resource {
@@ -275,7 +275,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := ecdService.SetResourceTags(d, "ALIYUN::GWS::INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	request := map[string]interface{}{
 		"DesktopId": d.Id(),
@@ -306,7 +306,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("desktop_name")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("policy_group_id") {
@@ -337,7 +337,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("policy_group_id")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("end_user_ids") {
@@ -371,7 +371,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("end_user_ids")
+
 	}
 
 	if d.HasChange("status") {
@@ -442,7 +442,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 			if _, err := stateConf.WaitForState(); err != nil {
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	if d.HasChange("desktop_type") || d.HasChange("root_disk_size_gib") || d.HasChange("user_disk_size_gib") {
@@ -487,7 +487,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("desktop_type")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("payment_type") {
@@ -540,7 +540,7 @@ func resourceAlicloudEcdDesktopUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 			}
 		}
-		d.SetPartial("payment_type")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudEcdDesktopRead(d, meta)

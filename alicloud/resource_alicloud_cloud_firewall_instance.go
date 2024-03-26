@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCloudFirewallInstance() *schema.Resource {
@@ -96,11 +96,6 @@ func resourceAlicloudCloudFirewallInstance() *schema.Resource {
 			"logistics": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"cfw_service": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Attribute 'cfw_service' does not support longer, and it has been removed since v1.209.1",
 			},
 			"cfw_account": {
 				Type:     schema.TypeBool,
@@ -389,10 +384,7 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("payment_type")
-		d.SetPartial("renewal_duration")
-		d.SetPartial("renewal_duration_unit")
+
 	}
 
 	update = false
@@ -519,15 +511,9 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("payment_type")
-		//d.SetPartial("cfw_service")
-		d.SetPartial("fw_vpc_number")
-		d.SetPartial("ip_number")
-		d.SetPartial("cfw_log_storage")
-		d.SetPartial("cfw_log")
-		d.SetPartial("band_width")
-		d.SetPartial("spec")
-		d.SetPartial("instance_count")
+
+		//
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudFirewallInstanceRead(d, meta)

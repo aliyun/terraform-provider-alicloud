@@ -8,7 +8,7 @@ import (
 
 	_ "github.com/stretchr/testify/assert"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 )
 
 func TestAccAlicloudAmqpStaticAccountDataSource(t *testing.T) {

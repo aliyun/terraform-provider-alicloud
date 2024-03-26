@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudGaAcl() *schema.Resource {
@@ -185,7 +185,7 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 		if err := gaService.SetResourceTags(d, "acl"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	update := false
@@ -233,7 +233,6 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("acl_name")
 	}
 
 	if !d.IsNewResource() && d.HasChange("acl_entries") {
@@ -338,7 +337,6 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 			}
 		}
 
-		d.SetPartial("acl_entries")
 	}
 
 	d.Partial(false)

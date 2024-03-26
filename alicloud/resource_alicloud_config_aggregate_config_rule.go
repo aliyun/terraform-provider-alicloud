@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudConfigAggregateConfigRule() *schema.Resource {
@@ -332,7 +332,7 @@ func resourceAlicloudConfigAggregateConfigRuleUpdate(d *schema.ResourceData, met
 				}
 			}
 		}
-		d.SetPartial("status")
+
 	}
 	d.Partial(false)
 	stateConf := BuildStateConf([]string{}, []string{"ACTIVE", "INACTIVE"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, configService.ConfigAggregateConfigRuleStateRefreshFunc(d.Id(), []string{}))

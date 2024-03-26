@@ -7,8 +7,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudCRRepos() *schema.Resource {
@@ -17,14 +16,12 @@ func dataSourceAlicloudCRRepos() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"namespace": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -71,8 +68,9 @@ func dataSourceAlicloudCRRepos() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						// NOTICE: 这里需要Review
 						"domain_list": {
-							Type:     schema.TypeMap,
+							Type:     schema.TypeList,
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{

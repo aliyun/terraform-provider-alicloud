@@ -5,9 +5,9 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCenFlowlog() *schema.Resource {
@@ -135,8 +135,7 @@ func resourceAlicloudCenFlowlogUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("flow_log_name")
+
 	}
 	if d.HasChange("status") {
 		object, err := cbnService.DescribeCenFlowlog(d.Id())
@@ -189,7 +188,7 @@ func resourceAlicloudCenFlowlogUpdate(d *schema.ResourceData, meta interface{}) 
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

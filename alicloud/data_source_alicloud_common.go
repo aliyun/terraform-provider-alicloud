@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 // Generates a hash for the set hash function used by the ID
@@ -16,7 +15,7 @@ func dataResourceIdHash(ids []string) string {
 		buf.WriteString(fmt.Sprintf("%s-", id))
 	}
 
-	return fmt.Sprintf("%d", hashcode.String(buf.String()))
+	return fmt.Sprintf("%d", HashString(buf.String()))
 }
 
 func outputInstancesSchema() map[string]*schema.Schema {

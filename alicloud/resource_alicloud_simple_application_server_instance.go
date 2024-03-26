@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudSimpleApplicationServerInstance() *schema.Resource {
@@ -197,7 +197,7 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("image_id")
+
 	}
 	update = false
 	upgradeInstanceReq := map[string]interface{}{
@@ -233,7 +233,7 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("plan_id")
+
 	}
 	update = false
 	updateInstanceAttributeReq := map[string]interface{}{
@@ -277,8 +277,7 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("password")
+
 	}
 	if d.HasChange("status") {
 		object, err := swasOpenService.DescribeSimpleApplicationServerInstance(d.Id())
@@ -377,7 +376,7 @@ func resourceAlicloudSimpleApplicationServerInstanceUpdate(d *schema.ResourceDat
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

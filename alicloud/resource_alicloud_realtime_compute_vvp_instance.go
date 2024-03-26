@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudRealtimeComputeVvpInstance() *schema.Resource {
@@ -408,7 +408,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -416,7 +416,7 @@ func resourceAliCloudRealtimeComputeVvpInstanceUpdate(d *schema.ResourceData, me
 		if err := realtimeComputeServiceV2.SetResourceTags(d, "vvpinstance"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudRealtimeComputeVvpInstanceRead(d, meta)

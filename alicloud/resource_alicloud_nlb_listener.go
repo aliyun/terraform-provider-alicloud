@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudNlbListener() *schema.Resource {
@@ -488,7 +488,7 @@ func resourceAliCloudNlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		if err := nlbServiceV2.SetResourceTags(d, "listener"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	return resourceAliCloudNlbListenerRead(d, meta)
 }

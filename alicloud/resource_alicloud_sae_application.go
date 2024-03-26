@@ -9,8 +9,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSaeApplication() *schema.Resource {
@@ -802,27 +802,6 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"update_strategy_v2"},
 				Deprecated:    "Field `update_strategy` has been deprecated from provider version 1.211.0. New field `update_strategy_v2` instead.",
-			},
-			"nas_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `nas_id` has been removed from provider version 1.211.0.",
-			},
-			"mount_host": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `mount_host` has been removed from provider version 1.211.0.",
-			},
-			"mount_desc": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field `mount_desc` has been removed from provider version 1.211.0.",
-			},
-			"version_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Removed:  "Field `version_id` has been removed from provider version 1.211.0.",
 			},
 		},
 	}
@@ -2175,7 +2154,7 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		if err := saeService.SetResourceTags(d, "application"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	update := false
@@ -3046,65 +3025,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("replicas")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("package_version")
-		d.SetPartial("package_url")
-		d.SetPartial("image_url")
-		d.SetPartial("cpu")
-		d.SetPartial("memory")
-		d.SetPartial("command")
-		d.SetPartial("web_container")
-		d.SetPartial("jdk")
-		d.SetPartial("jar_start_options")
-		d.SetPartial("jar_start_args")
-		d.SetPartial("auto_enable_application_scaling_rule")
-		d.SetPartial("batch_wait_time")
-		d.SetPartial("change_order_desc")
-		d.SetPartial("edas_container_version")
-		d.SetPartial("enable_ahas")
-		d.SetPartial("enable_grey_tag_route")
-		d.SetPartial("min_ready_instances")
-		d.SetPartial("min_ready_instance_ratio")
-		d.SetPartial("oss_ak_id")
-		d.SetPartial("oss_ak_secret")
-		d.SetPartial("php_arms_config_location")
-		d.SetPartial("php_config")
-		d.SetPartial("php_config_location")
-		d.SetPartial("security_group_id")
-		d.SetPartial("termination_grace_period_seconds")
-		d.SetPartial("timezone")
-		d.SetPartial("war_start_options")
-		d.SetPartial("acr_instance_id")
-		d.SetPartial("acr_assume_role_arn")
-		d.SetPartial("micro_registration")
-		d.SetPartial("envs")
-		d.SetPartial("sls_configs")
-		d.SetPartial("php")
-		d.SetPartial("image_pull_secrets")
-		d.SetPartial("command_args_v2")
-		d.SetPartial("custom_host_alias_v2")
-		d.SetPartial("oss_mount_descs_v2")
-		d.SetPartial("config_map_mount_desc_v2")
-		d.SetPartial("liveness_v2")
-		d.SetPartial("readiness_v2")
-		d.SetPartial("post_start_v2")
-		d.SetPartial("pre_stop_v2")
-		d.SetPartial("tomcat_config_v2")
-		d.SetPartial("update_strategy_v2")
-		d.SetPartial("nas_configs")
-		d.SetPartial("kafka_configs")
-		d.SetPartial("pvtz_discovery_svc")
-		d.SetPartial("command_args")
-		d.SetPartial("custom_host_alias")
-		d.SetPartial("oss_mount_descs")
-		d.SetPartial("config_map_mount_desc")
-		d.SetPartial("liveness")
-		d.SetPartial("readiness")
-		d.SetPartial("post_start")
-		d.SetPartial("pre_stop")
-		d.SetPartial("tomcat_config")
-		d.SetPartial("update_strategy")
 	}
 
 	update = false
@@ -3156,7 +3076,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 			return WrapError(fmt.Errorf("%s failed, response: %v", "POST "+action, response))
 		}
 
-		d.SetPartial("app_description")
 	}
 
 	//	【Exists】update status
@@ -3253,7 +3172,6 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 				}
 			}
 
-			d.SetPartial("status")
 		}
 	}
 

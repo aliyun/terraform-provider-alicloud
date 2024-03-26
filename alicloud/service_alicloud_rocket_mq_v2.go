@@ -10,8 +10,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type RocketmqServiceV2 struct {
@@ -243,7 +243,7 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			}
 
 		}
-		d.SetPartial("tags")
+
 	}
 
 	return nil

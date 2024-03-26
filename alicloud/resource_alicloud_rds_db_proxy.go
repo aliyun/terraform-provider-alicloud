@@ -8,11 +8,11 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudRdsDBProxy() *schema.Resource {
@@ -388,8 +388,7 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("effective_time")
-		d.SetPartial("effective_specific_time")
+
 	}
 	if d.HasChanges("db_proxy_endpoint_read_write_mode", "read_only_instance_max_delay_time", "read_only_instance_distribution_type", "db_proxy_features", "read_only_instance_weight") {
 		action := "ModifyDBProxyEndpoint"

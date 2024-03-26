@@ -7,9 +7,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
@@ -72,11 +72,6 @@ func dataSourceAlicloudClickHouseDbClusters() *schema.Resource {
 							Computed: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
-									"db_cluster_ip_array_attribute": {
-										Type:     schema.TypeString,
-										Computed: true,
-										Removed:  "Field 'db_cluster_ip_array_attribute' has been removed from provider",
-									},
 									"db_cluster_ip_array_name": {
 										Type:     schema.TypeString,
 										Computed: true,

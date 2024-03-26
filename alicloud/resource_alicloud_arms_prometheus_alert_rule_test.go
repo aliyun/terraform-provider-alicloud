@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
 	"os"
 	"reflect"
 	"strconv"
@@ -10,14 +11,14 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudARMSPrometheusAlertRule_basic0(t *testing.T) {
@@ -510,21 +511,21 @@ func TestUnitAlicloudARMSPrometheusAlertRule(t *testing.T) {
 		for _, key := range []string{"duration", "expression", "message", "prometheus_alert_rule_name", "annotations", "dispatch_rule_id", "labels", "notify_type"} {
 			switch p["alicloud_arms_prometheus_alert_rule"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(2)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(2)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			case schema.TypeSet:
-				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
+				helper.SetAttribute(diff, fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
 				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
 					ipConfigArg := ipConfig.(map[string]interface{})
 					for field := range p["alicloud_arms_prometheus_alert_rule"].Schema[key].Elem.(*schema.Resource).Schema {
-						diff.SetAttribute(fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
+						helper.SetAttribute(diff, fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
 					}
 				}
 			}
@@ -553,21 +554,21 @@ func TestUnitAlicloudARMSPrometheusAlertRule(t *testing.T) {
 		for _, key := range []string{"duration", "expression", "message", "prometheus_alert_rule_name", "annotations", "dispatch_rule_id", "labels", "notify_type"} {
 			switch p["alicloud_arms_prometheus_alert_rule"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			case schema.TypeSet:
-				diff.SetAttribute(fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
+				helper.SetAttribute(diff, fmt.Sprintf("%s.#", key), &terraform.ResourceAttrDiff{Old: "1", New: "1"})
 				for _, ipConfig := range d.Get(key).(*schema.Set).List() {
 					ipConfigArg := ipConfig.(map[string]interface{})
 					for field := range p["alicloud_arms_prometheus_alert_rule"].Schema[key].Elem.(*schema.Resource).Schema {
-						diff.SetAttribute(fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
+						helper.SetAttribute(diff, fmt.Sprintf("%s.%d.%s", key, rand, field), &terraform.ResourceAttrDiff{Old: ipConfigArg[field].(string), New: ipConfigArg[field].(string) + "_update"})
 					}
 				}
 			}

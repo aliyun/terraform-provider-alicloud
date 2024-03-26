@@ -9,12 +9,12 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/denverdino/aliyungo/common"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudElasticsearch() *schema.Resource {
@@ -470,7 +470,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("description")
 	}
 
 	if d.HasChange("private_whitelist") {
@@ -482,7 +481,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("private_whitelist")
 	}
 
 	if d.HasChange("enable_public") {
@@ -494,7 +492,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("enable_public")
 	}
 
 	if d.HasChange("public_whitelist") {
@@ -506,7 +503,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("public_whitelist")
 	}
 
 	if d.HasChange("enable_kibana_public_network") {
@@ -518,7 +514,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("enable_kibana_public_network")
 	}
 
 	if d.HasChange("kibana_whitelist") {
@@ -530,7 +525,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("kibana_whitelist")
 	}
 
 	if d.HasChange("enable_kibana_private_network") {
@@ -542,7 +536,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("enable_kibana_private_network")
 	}
 
 	if d.HasChange("kibana_private_whitelist") {
@@ -554,7 +547,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("kibana_private_whitelist")
 	}
 
 	if d.HasChange("tags") {
@@ -562,7 +554,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("protocol") {
@@ -585,7 +576,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			}
 		}
 
-		d.SetPartial("protocol")
 	}
 
 	if d.HasChange("setting_config") {
@@ -625,7 +615,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("setting_config")
+
 	}
 
 	if d.Get("instance_charge_type").(string) == string(PrePaid) && (d.HasChange("renew_status") || d.HasChange("auto_renew_duration") || d.HasChange("renewal_duration_unit")) {
@@ -633,9 +623,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("renew_status")
-		d.SetPartial("auto_renew_duration")
-		d.SetPartial("renewal_duration_unit")
 	}
 
 	if d.IsNewResource() {
@@ -648,14 +635,11 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("period")
 	} else if d.Get("instance_charge_type").(string) == string(PrePaid) && d.HasChange("period") {
 		if err := renewInstance(d, meta); err != nil {
 			return WrapError(err)
 		}
 
-		d.SetPartial("period")
 	}
 
 	if d.HasChange("data_node_amount") {
@@ -668,7 +652,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("data_node_amount")
 	}
 
 	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") || d.HasChange("data_node_disk_performance_level") {
@@ -681,11 +664,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("data_node_spec")
-		d.SetPartial("data_node_disk_size")
-		d.SetPartial("data_node_disk_type")
-		d.SetPartial("data_node_disk_encrypted")
-		d.SetPartial("data_node_disk_performance_level")
 	}
 
 	if d.HasChange("master_node_spec") || d.HasChange("master_node_disk_type") {
@@ -698,8 +676,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("master_node_spec")
-		d.SetPartial("master_node_disk_type")
 	}
 
 	if d.HasChange("kibana_node_spec") {
@@ -712,7 +688,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("kibana_node_spec")
 	}
 
 	if d.HasChange("client_node_spec") || d.HasChange("client_node_amount") {
@@ -725,8 +700,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("client_node_spec")
-		d.SetPartial("client_node_amount")
 	}
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
@@ -739,7 +712,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
-		d.SetPartial("password")
 	}
 
 	d.Partial(false)

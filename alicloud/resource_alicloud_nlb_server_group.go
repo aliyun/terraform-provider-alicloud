@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudNlbServerGroup() *schema.Resource {
@@ -496,20 +496,7 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("connection_drain_enabled")
-		d.SetPartial("connection_drain_timeout")
-		d.SetPartial("scheduler")
-		d.SetPartial("preserve_client_ip_enabled")
-		d.SetPartial("health_check_enabled")
-		d.SetPartial("health_check_type")
-		d.SetPartial("health_check_connect_port")
-		d.SetPartial("healthy_threshold")
-		d.SetPartial("unhealthy_threshold")
-		d.SetPartial("health_check_connect_timeout")
-		d.SetPartial("health_check_interval")
-		d.SetPartial("health_check_domain")
-		d.SetPartial("health_check_url")
-		d.SetPartial("http_check_method")
+
 	}
 	update = false
 	action = "UpdateServerGroupAttribute"
@@ -552,7 +539,7 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("server_group_name")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -592,7 +579,7 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -600,7 +587,7 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if err := nlbServiceV2.SetResourceTags(d, "servergroup"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudNlbServerGroupRead(d, meta)

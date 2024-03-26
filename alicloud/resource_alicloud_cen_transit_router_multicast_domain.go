@@ -5,8 +5,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"time"
 )
@@ -140,7 +140,7 @@ func resourceAliCloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceDat
 		if err := cbnService.SetResourceTags(d, "TransitRouterMulticastDomain"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	request := map[string]interface{}{
@@ -194,8 +194,6 @@ func resourceAliCloudCenTransitRouterMulticastDomainUpdate(d *schema.ResourceDat
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("transit_router_multicast_domain_name")
-		d.SetPartial("transit_router_multicast_domain_description")
 	}
 
 	d.Partial(false)

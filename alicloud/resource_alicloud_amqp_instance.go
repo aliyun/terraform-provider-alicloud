@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudAmqpInstance() *schema.Resource {
@@ -389,9 +389,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("renewal_duration_unit")
-		d.SetPartial("renewal_duration")
-		d.SetPartial("renewal_status")
+
 	}
 	update = false
 	action = "UpdateInstanceName"
@@ -427,7 +425,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("instance_name")
+
 	}
 	update = false
 	action = "UpdateInstance"
@@ -539,15 +537,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
-		d.SetPartial("support_eip")
-		d.SetPartial("max_eip_tps")
-		d.SetPartial("queue_capacity")
-		d.SetPartial("max_connections")
-		d.SetPartial("storage_size")
-		d.SetPartial("support_tracing")
-		d.SetPartial("tracing_storage_time")
-		d.SetPartial("max_tps")
+
 	}
 
 	d.Partial(false)

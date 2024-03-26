@@ -10,8 +10,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcIpv6Address() *schema.Resource {
@@ -205,8 +205,7 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("ipv6_address_name")
-		d.SetPartial("ipv6_address_description")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -244,7 +243,7 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -252,7 +251,7 @@ func resourceAliCloudVpcIpv6AddressUpdate(d *schema.ResourceData, meta interface
 		if err := vpcServiceV2.SetResourceTags(d, "ipv6address"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcIpv6AddressRead(d, meta)

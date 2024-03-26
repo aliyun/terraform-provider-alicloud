@@ -1,14 +1,15 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
@@ -20,7 +21,7 @@ func resourceAlicloudPvtzZoneAttachment() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		CustomizeDiff: func(d *schema.ResourceDiff, v interface{}) error {
+		CustomizeDiff: func(context context.Context, d *schema.ResourceDiff, v interface{}) error {
 			if d.HasChange("vpcs") {
 				d.SetNewComputed("vpc_ids")
 			} else if d.HasChange("vpc_ids") {

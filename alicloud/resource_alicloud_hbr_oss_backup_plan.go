@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudHbrOssBackupPlan() *schema.Resource {
@@ -228,11 +228,7 @@ func resourceAlicloudHbrOssBackupPlanUpdate(d *schema.ResourceData, meta interfa
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("retention")
-		d.SetPartial("vault_id")
-		d.SetPartial("oss_backup_plan_name")
-		d.SetPartial("prefix")
-		d.SetPartial("schedule")
+
 	}
 	if d.HasChange("disabled") {
 		object, err := hbrService.DescribeHbrOssBackupPlan(d.Id())
@@ -278,7 +274,7 @@ func resourceAlicloudHbrOssBackupPlanUpdate(d *schema.ResourceData, meta interfa
 			}
 		}
 	}
-	d.SetPartial("disabled")
+
 	d.Partial(false)
 	return resourceAlicloudHbrOssBackupPlanRead(d, meta)
 }

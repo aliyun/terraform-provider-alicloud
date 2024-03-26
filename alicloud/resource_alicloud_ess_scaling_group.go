@@ -9,15 +9,15 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudEssScalingGroup() *schema.Resource {
@@ -336,7 +336,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		if err := essService.SetResourceTags(d, d.Id(), client); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("scaling_group_name") {
@@ -424,18 +424,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	d.SetPartial("scaling_group_name")
-	d.SetPartial("min_size")
-	d.SetPartial("max_size")
-	d.SetPartial("desired_capacity")
-	d.SetPartial("default_cooldown")
-	d.SetPartial("vswitch_ids")
-	d.SetPartial("removal_policies")
-	d.SetPartial("on_demand_base_capacity")
-	d.SetPartial("on_demand_percentage_above_base_capacity")
-	d.SetPartial("spot_instance_pools")
-	d.SetPartial("spot_instance_remedy")
-	d.SetPartial("group_deletion_protection")
+
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	if d.HasChange("loadbalancer_ids") {
@@ -444,7 +433,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("loadbalancer_ids")
+
 	}
 
 	if d.HasChange("db_instance_ids") {
@@ -453,7 +442,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("db_instance_ids")
+
 	}
 
 	if d.HasChange("protected_instances") {
@@ -462,7 +451,7 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("protected_instances")
+
 	}
 
 	d.Partial(false)

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
@@ -104,11 +104,11 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
-	providerFactories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
+	providerFactories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
 			p := Provider()
 			providers = append(providers, p.(*schema.Provider))
-			return p, nil
+			return p.(*schema.Provider), nil
 		},
 	}
 
@@ -540,11 +540,11 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *test
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
-	providerFactories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
+	providerFactories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
 			p := Provider()
 			providers = append(providers, p.(*schema.Provider))
-			return p, nil
+			return p.(*schema.Provider), nil
 		},
 	}
 
@@ -587,11 +587,11 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_region(t *te
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
-	providerFactories := map[string]terraform.ResourceProviderFactory{
-		"alicloud": func() (terraform.ResourceProvider, error) {
+	providerFactories := map[string]func() (*schema.Provider, error){
+		"alicloud": func() (*schema.Provider, error) {
 			p := Provider()
 			providers = append(providers, p.(*schema.Provider))
-			return p, nil
+			return p.(*schema.Provider), nil
 		},
 	}
 

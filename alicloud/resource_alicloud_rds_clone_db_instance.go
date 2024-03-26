@@ -9,8 +9,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudRdsCloneDbInstance() *schema.Resource {
@@ -778,7 +778,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_upgrade_minor_version")
+
 	}
 	update = false
 	modifyDBInstanceDescriptionReq := map[string]interface{}{
@@ -812,7 +812,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("db_instance_description")
+
 	}
 	update = false
 	modifyDBInstanceMaintainTimeReq := map[string]interface{}{
@@ -849,7 +849,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_time")
+
 	}
 	update = false
 	modifyDBInstanceHAConfigReq := map[string]interface{}{
@@ -889,7 +889,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("sync_mode")
+
 	}
 	update = false
 	switchDBInstanceVpcReq := map[string]interface{}{
@@ -940,9 +940,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("private_ip_address")
-		d.SetPartial("vpc_id")
-		d.SetPartial("vswitch_id")
+
 	}
 	update = false
 	modifyDBInstanceConnectionStringReq := map[string]interface{}{
@@ -990,7 +988,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("connection_string")
+
 	}
 	update = false
 	modifyDBInstanceTDEReq := map[string]interface{}{
@@ -1047,7 +1045,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("encryption_key")
+
 	}
 	update = false
 	modifySecurityIpsReq := map[string]interface{}{
@@ -1085,7 +1083,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("security_ips")
+
 	}
 	update = false
 	modifyDBInstanceSSLReq := map[string]interface{}{
@@ -1182,15 +1180,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("connection_string")
-		d.SetPartial("acl")
-		d.SetPartial("ca_type")
-		d.SetPartial("client_ca_cert")
-		d.SetPartial("client_cert_revocation_list")
-		d.SetPartial("replication_acl")
-		d.SetPartial("server_cert")
-		d.SetPartial("server_key")
-		d.SetPartial("ssl_enabled")
+
 	}
 	update = false
 	modifyDBInstanceSpecReq := map[string]interface{}{
@@ -1333,12 +1323,7 @@ func resourceAlicloudRdsCloneDbInstanceUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("db_instance_class")
-		d.SetPartial("db_instance_storage")
-		d.SetPartial("db_instance_storage_type")
-		d.SetPartial("dedicated_host_group_id")
-		d.SetPartial("engine_version")
-		d.SetPartial("zone_id")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudRdsCloneDbInstanceRead(d, meta)

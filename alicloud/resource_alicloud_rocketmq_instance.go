@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudRocketmqInstance() *schema.Resource {
@@ -588,8 +588,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("remark")
+
 	}
 	update = false
 	action = fmt.Sprintf("/resourceGroup/change")
@@ -628,7 +627,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	instanceId = d.Id()
@@ -671,7 +670,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_time")
+
 	}
 
 	update = false
@@ -732,9 +731,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("auto_renew")
-		d.SetPartial("auto_renew_period")
-		d.SetPartial("auto_renew_period_unit")
+
 	}
 
 	if d.HasChange("tags") {
@@ -742,7 +739,7 @@ func resourceAliCloudRocketmqInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err := rocketmqServiceV2.SetResourceTags(d, ""); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudRocketmqInstanceRead(d, meta)

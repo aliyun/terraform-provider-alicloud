@@ -5,13 +5,10 @@ import (
 	"regexp"
 	"sort"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudCSKubernetesAddons() *schema.Resource {
@@ -32,9 +29,8 @@ func dataSourceAlicloudCSKubernetesAddons() *schema.Resource {
 				Computed: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"names": {
 				Type:     schema.TypeList,
@@ -120,7 +116,7 @@ func dataAlicloudCSKubernetesAddonsRead(d *schema.ResourceData, meta interface{}
 	d.Set("names", names)
 	d.Set("addons", result)
 
-	d.SetId(tea.ToString(hashcode.String(clusterId)))
+	d.SetId(tea.ToString(HashString(clusterId)))
 	return nil
 }
 

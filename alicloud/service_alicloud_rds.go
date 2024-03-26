@@ -15,8 +15,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type RdsService struct {
@@ -434,7 +434,6 @@ func (s *RdsService) ModifyPgHbaConfig(d *schema.ResourceData, attribute string)
 	if desResponse["LastModifyStatus"] == "failed" {
 		return WrapError(Error(desResponse["ModifyStatusReason"].(string)))
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -470,7 +469,6 @@ func (s *RdsService) ModifyDBInstanceDeletionProtection(d *schema.ResourceData, 
 	if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return WrapError(err)
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -506,7 +504,6 @@ func (s *RdsService) ModifyHADiagnoseConfig(d *schema.ResourceData, attribute st
 	if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 		return WrapError(err)
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -598,7 +595,6 @@ func (s *RdsService) ModifyParameters(d *schema.ResourceData, attribute string) 
 			return WrapError(err)
 		}
 	}
-	d.SetPartial(attribute)
 	return nil
 }
 
@@ -1902,7 +1898,7 @@ func (s *RdsService) setInstanceTags(d *schema.ResourceData) error {
 		if err := s.WaitForDBInstance(d.Id(), Running, DefaultLongTimeout); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
 	"os"
 	"reflect"
 	"strconv"
@@ -10,14 +11,14 @@ import (
 	"github.com/agiledragon/gomonkey/v2"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func TestAccAlicloudECDNetworkPackage_basic0(t *testing.T) {
@@ -235,15 +236,15 @@ func TestUnitAlicloudECDNetworkPackage(t *testing.T) {
 		for _, key := range []string{"bandwidth"} {
 			switch p["alicloud_ecd_network_package"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(20)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(20)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData, _ := schema.InternalMap(p["alicloud_ecd_network_package"].Schema).Data(nil, diff)
@@ -270,15 +271,15 @@ func TestUnitAlicloudECDNetworkPackage(t *testing.T) {
 		for _, key := range []string{"bandwidth"} {
 			switch p["alicloud_ecd_network_package"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(20)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(20)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			}
 		}
 		resourceData, _ := schema.InternalMap(p["alicloud_ecd_network_package"].Schema).Data(nil, diff)

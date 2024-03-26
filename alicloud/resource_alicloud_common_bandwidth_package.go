@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCbwpCommonBandwidthPackage() *schema.Resource {
@@ -273,8 +273,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageUpdate(d *schema.ResourceData, me
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("bandwidth_package_name")
+
 	}
 	update = false
 	action = "ModifyCommonBandwidthPackageSpec"
@@ -313,7 +312,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageUpdate(d *schema.ResourceData, me
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("bandwidth")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -349,7 +348,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageUpdate(d *schema.ResourceData, me
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	action = "DeletionProtection"
@@ -387,7 +386,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageUpdate(d *schema.ResourceData, me
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("deletion_protection")
+
 	}
 
 	update = false
@@ -397,7 +396,7 @@ func resourceAliCloudCbwpCommonBandwidthPackageUpdate(d *schema.ResourceData, me
 		if err := cbwpServiceV2.SetResourceTags(d, "COMMONBANDWIDTHPACKAGE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudCbwpCommonBandwidthPackageRead(d, meta)

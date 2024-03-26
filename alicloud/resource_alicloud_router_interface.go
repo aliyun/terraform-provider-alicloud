@@ -5,13 +5,13 @@ import (
 
 	"github.com/denverdino/aliyungo/common"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudRouterInterface() *schema.Resource {
@@ -171,7 +171,7 @@ func resourceAlicloudRouterInterfaceUpdate(d *schema.ResourceData, meta interfac
 	}
 
 	if d.HasChange("specification") && !d.IsNewResource() {
-		d.SetPartial("specification")
+
 		request := vpc.CreateModifyRouterInterfaceSpecRequest()
 		request.RegionId = string(client.Region)
 		request.RouterInterfaceId = d.Id()
@@ -348,27 +348,27 @@ func buildAlicloudRouterInterfaceModifyAttrArgs(d *schema.ResourceData, meta int
 	attributeUpdate := false
 
 	if d.HasChange("health_check_source_ip") {
-		d.SetPartial("health_check_source_ip")
+
 		request.HealthCheckSourceIp = sourceIp.(string)
 		request.HealthCheckTargetIp = targetIp.(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("health_check_target_ip") {
-		d.SetPartial("health_check_target_ip")
+
 		request.HealthCheckTargetIp = targetIp.(string)
 		request.HealthCheckSourceIp = sourceIp.(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("name") {
-		d.SetPartial("name")
+
 		request.Name = d.Get("name").(string)
 		attributeUpdate = true
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
+
 		request.Description = d.Get("description").(string)
 		attributeUpdate = true
 	}

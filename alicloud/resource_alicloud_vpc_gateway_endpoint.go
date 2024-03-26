@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcGatewayEndpoint() *schema.Resource {
@@ -209,9 +209,7 @@ func resourceAliCloudVpcGatewayEndpointUpdate(d *schema.ResourceData, meta inter
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("gateway_endpoint_name")
-		d.SetPartial("gateway_endpoint_descrption")
-		d.SetPartial("policy_document")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -246,7 +244,7 @@ func resourceAliCloudVpcGatewayEndpointUpdate(d *schema.ResourceData, meta inter
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	update = false
@@ -256,7 +254,7 @@ func resourceAliCloudVpcGatewayEndpointUpdate(d *schema.ResourceData, meta inter
 		if err := vpcServiceV2.SetResourceTags(d, "GatewayEndpoint"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcGatewayEndpointRead(d, meta)

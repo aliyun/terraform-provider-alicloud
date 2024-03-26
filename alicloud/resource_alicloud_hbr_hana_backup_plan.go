@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudHbrHanaBackupPlan() *schema.Resource {
@@ -206,9 +206,7 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("backup_prefix")
-		d.SetPartial("plan_name")
-		d.SetPartial("schedule")
+
 	}
 	if d.HasChange("status") {
 		object, err := hbrService.DescribeHbrHanaBackupPlan(d.Id())
@@ -272,7 +270,7 @@ func resourceAlicloudHbrHanaBackupPlanUpdate(d *schema.ResourceData, meta interf
 					return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

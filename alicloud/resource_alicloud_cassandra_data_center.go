@@ -8,8 +8,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cassandra"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCassandraDataCenter() *schema.Resource {
@@ -268,7 +268,7 @@ func resourceAlicloudCassandraDataCenterUpdate(d *schema.ResourceData, meta inte
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		d.SetPartial("enable_public")
+
 	}
 	if d.IsNewResource() {
 		d.Partial(false)
@@ -287,7 +287,7 @@ func resourceAlicloudCassandraDataCenterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("data_center_name")
+
 	}
 	if d.HasChange("instance_type") {
 		request := cassandra.CreateModifyInstanceTypeRequest()
@@ -305,7 +305,7 @@ func resourceAlicloudCassandraDataCenterUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
+
 	}
 	if d.HasChange("disk_size") {
 		request := cassandra.CreateResizeDiskSizeRequest()
@@ -323,7 +323,7 @@ func resourceAlicloudCassandraDataCenterUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("disk_size")
+
 	}
 	if d.HasChange("node_count") {
 		request := cassandra.CreateResizeNodeCountRequest()
@@ -341,7 +341,7 @@ func resourceAlicloudCassandraDataCenterUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("node_count")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCassandraDataCenterRead(d, meta)

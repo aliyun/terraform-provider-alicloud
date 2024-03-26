@@ -11,9 +11,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
@@ -174,7 +174,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 						"primary_ip": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.SingleIP(),
+							ValidateFunc: validation.IsIPAddress,
 						},
 						"security_group_id": {
 							Type:     schema.TypeString,
@@ -802,7 +802,7 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		if err := ecsService.SetResourceTemplateTags(d, "launchtemplate"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("template_tags")
+
 	}
 	versions, err := getLaunchTemplateVersions(d.Id(), meta)
 	if err != nil {
@@ -1176,49 +1176,7 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_release_time")
-		d.SetPartial("data_disks")
-		d.SetPartial("deployment_set_id")
-		d.SetPartial("description")
-		d.SetPartial("enable_vm_os_config")
-		d.SetPartial("host_name")
-		d.SetPartial("image_id")
-		d.SetPartial("image_owner_alias")
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("instance_name")
-		d.SetPartial("instance_type")
-		d.SetPartial("internet_charge_type")
-		d.SetPartial("internet_max_bandwidth_in")
-		d.SetPartial("internet_max_bandwidth_out")
-		d.SetPartial("io_optimized")
-		d.SetPartial("key_pair_name")
-		d.SetPartial("launch_template_name")
-		d.SetPartial("name")
-		d.SetPartial("network_interfaces")
-		d.SetPartial("network_type")
-		d.SetPartial("password_inherit")
-		d.SetPartial("period")
-		d.SetPartial("private_ip_address")
-		d.SetPartial("ram_role_name")
-		d.SetPartial("resource_group_id")
-		d.SetPartial("security_enhancement_strategy")
-		d.SetPartial("security_group_id")
-		d.SetPartial("security_group_ids")
-		d.SetPartial("spot_duration")
-		d.SetPartial("spot_price_limit")
-		d.SetPartial("spot_strategy")
-		d.SetPartial("system_disk")
-		d.SetPartial("system_disk_category")
-		d.SetPartial("system_disk_description")
-		d.SetPartial("system_disk_name")
-		d.SetPartial("system_disk_size")
-		d.SetPartial("tags")
-		d.SetPartial("user_data")
-		d.SetPartial("userdata")
-		d.SetPartial("vswitch_id")
-		d.SetPartial("version_description")
-		d.SetPartial("vpc_id")
-		d.SetPartial("zone_id")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudEcsLaunchTemplateRead(d, meta)

@@ -13,7 +13,7 @@ import (
 	roacs "github.com/alibabacloud-go/cs-20151215/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
@@ -23,8 +23,8 @@ import (
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	aliyungoecs "github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"gopkg.in/yaml.v2"
 )
 
@@ -161,157 +161,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
-			// worker configurations
-			"worker_vswitch_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
-				},
-				Removed:  "Field 'worker_vswitch_ids' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'vswitch_ids' to replace it",
-				MinItems: 1,
-			},
-			"worker_instance_types": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-				MinItems: 1,
-				MaxItems: 10,
-				Removed:  "Field 'worker_instance_types' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_types' to replace it",
-			},
-			"worker_number": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field 'worker_number' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'desired_size' to replace it",
-			},
-			"worker_disk_size": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.IntBetween(20, 32768),
-				Removed:      "Field 'worker_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
-			},
-			"worker_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'worker_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_category' to replace it",
-			},
-			"worker_disk_performance_level": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
-				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
-				Removed:          "Field 'worker_disk_performance_level' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_performance_level' to replace it",
-			},
-			"worker_disk_snapshot_policy_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'worker_disk_snapshot_policy_id' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_snapshot_policy_id' to replace it",
-			},
-			"worker_data_disk_size": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				ValidateFunc:     validation.IntBetween(20, 32768),
-				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
-				Removed:          "Field 'worker_data_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.size' to replace it",
-			},
-			"worker_data_disk_category": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'worker_data_disk_category' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.category' to replace it",
-			},
-			"worker_data_disks": {
-				Optional: true,
-				Type:     schema.TypeList,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"size": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"category": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
-						},
-						"snapshot_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"device": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"kms_key_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"encrypted": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"auto_snapshot_policy_id": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"performance_level": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				Removed: "Field 'worker_data_disks' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks' to replace it",
-			},
-			"worker_instance_charge_type": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Optional: true,
-				Removed:  "Field 'worker_instance_charge_type' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'instance_charge_type' to replace it",
-			},
-			"worker_period_unit": {
-				Type:             schema.TypeString,
-				Optional:         true,
-				Computed:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
-				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Removed:          "Field 'worker_period_unit' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
-			},
-			"worker_period": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
-				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Removed:          "Field 'worker_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period' to replace it",
-			},
-			"worker_auto_renew": {
-				Type:             schema.TypeBool,
-				Optional:         true,
-				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Removed:          "Field 'worker_auto_renew' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew' to replace it",
-			},
-			"worker_auto_renew_period": {
-				Type:             schema.TypeInt,
-				Optional:         true,
-				Computed:         true,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
-				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
-				Removed:          "Field 'worker_auto_renew_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
-			},
-			"exclude_autoscaler_nodes": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Field 'exclude_autoscaler_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
-			},
 			// global configurations
 			// Terway network
 			"pod_vswitch_ids": {
@@ -404,13 +253,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
-			// cpu policy options of kubelet
-			"cpu_policy": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
-				Removed:      "Field 'cpu_policy' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'cpu_policy' to replace it",
-			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -474,15 +316,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"node_port_range": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
-			},
+			// NOTICE: 这里需要Review
 			"runtime": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -506,28 +342,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew:    true,
 				Description: "cluster local domain",
 			},
-			"taints": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"key": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-						"effect": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
-						},
-					},
-				},
-				Removed: "Field 'taints' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'taints' to replace it",
-			},
 			"rds_instances": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -539,12 +353,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-			},
-			// computed parameters
-			"kube_config": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'kube_config' has been removed from provider version 1.212.0. New DataSource 'alicloud_cs_cluster_credential' manage your cluster's kube config.",
 			},
 			"client_cert": {
 				Type:     schema.TypeString,
@@ -559,7 +367,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 			},
 			"certificate_authority": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -578,8 +386,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					},
 				},
 			},
+			// NOTICE: 这里需要review
 			"connections": {
-				Type:     schema.TypeMap,
+				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -655,119 +464,6 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						},
 					},
 				},
-			},
-			"worker_nodes": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"name": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"private_ip": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
-				Removed: "Field 'worker_nodes' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes.",
-			},
-			// remove parameters below
-			// mix vswitch_ids between master and worker is not a good guidance to create cluster
-			"worker_instance_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'worker_instance_type' has been removed from provider version 1.75.0. New field 'worker_instance_types' replaces it.",
-			},
-			"vswitch_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
-				},
-				MinItems: 3,
-				MaxItems: 5,
-				Removed:  "Field 'vswitch_ids' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replace it.",
-			},
-			// single instance type would cause extra troubles
-			"master_instance_type": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'master_instance_type' has been removed from provider version 1.75.0. New field 'master_instance_types' replaces it.",
-			},
-			// force update is a high risk operation
-			"force_update": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-				Removed:  "Field 'force_update' has been removed from provider version 1.75.0.",
-			},
-			"availability_zone": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field 'availability_zone' has been removed from provider version 1.212.0.",
-			},
-			// single az would be never supported.
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'vswitch_id' has been removed from provider version 1.75.0. New field 'master_vswitch_ids' and 'worker_vswitch_ids' replaces it.",
-			},
-			// worker_numbers in array is a hell of management
-			"worker_numbers": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type:    schema.TypeInt,
-					Default: 3,
-				},
-				MinItems: 1,
-				MaxItems: 3,
-				Removed:  "Field 'worker_numbers' has been removed from provider version 1.75.0. New field 'worker_number' replaces it.",
-			},
-			"nodes": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Removed:  "Field 'nodes' has been removed from provider version 1.9.4. New field 'master_nodes' replaces it.",
-			},
-			// too hard to use this config
-			"log_config": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"type": {
-							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{KubernetesClusterLoggingTypeSLS}, false),
-							Required:     true,
-						},
-						"project": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
-					},
-				},
-				Removed: "Field 'log_config' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
-			},
-			"cluster_network_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
-				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
-			},
-			"user_data": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Removed:  "Field 'user_data' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'user_data' to replace it",
 			},
 			"node_name_mode": {
 				Type:         schema.TypeString,
@@ -873,7 +569,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
 		}
 		addDebug("ModifyCluster", response, requestInfo)
-		d.SetPartial("resource_group_id")
+
 	}
 
 	// modify cluster name
@@ -902,8 +598,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 			requestMap["ClusterName"] = clusterName
 			addDebug("ModifyClusterName", response, requestInfo, requestMap)
 		}
-		d.SetPartial("name")
-		d.SetPartial("name_prefix")
+
 	}
 
 	if !d.IsNewResource() && d.HasChanges("deletion_protection", "maintenance_window", "enable_rrsa") {
@@ -957,8 +652,6 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	d.SetPartial("tags")
-
 	UpgradeAlicloudKubernetesCluster(d, meta)
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
@@ -980,7 +673,7 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
 			request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v)
 		}
-		d.SetPartial("maintenance_window")
+
 	}
 
 	// modify cluster rrsa policy
@@ -1001,7 +694,7 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 			return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
 		}
 		request.SetEnableRrsa(enableRRSA)
-		d.SetPartial("enable_rrsa")
+
 	}
 
 	if err := invoker.Run(func() error {
@@ -1770,7 +1463,6 @@ func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.Mai
 		requestMap["maintenance_window"] = requestInfo.DeletionProtection
 		addDebug("ModifyCluster", response, requestInfo, requestMap)
 	}
-	d.SetPartial("maintenance_window")
 
 	return nil
 }

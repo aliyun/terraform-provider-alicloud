@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/internal/helper"
 	"log"
 	"os"
 	"reflect"
@@ -11,18 +12,18 @@ import (
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea/tea"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
 
 	"github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
 func init() {
@@ -548,22 +549,22 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 		for _, key := range []string{"copied_snapshots_retention_days", "enable_cross_region_copy", "name", "repeat_weekdays", "retention_days", "target_copy_regions", "time_points"} {
 			switch p["alicloud_ecs_auto_snapshot_policy"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			case schema.TypeSet:
-				diff.SetAttribute("repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
-				diff.SetAttribute("time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
+				helper.SetAttribute(diff, "time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, diff)
@@ -590,22 +591,22 @@ func TestUnitAlicloudECSAutoSnapshotPolicy(t *testing.T) {
 		for _, key := range []string{"copied_snapshots_retention_days", "enable_cross_region_copy", "name", "repeat_weekdays", "retention_days", "target_copy_regions", "time_points", "tags"} {
 			switch p["alicloud_ecs_auto_snapshot_policy"].Schema[key].Type {
 			case schema.TypeString:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: d.Get(key).(string), New: d.Get(key).(string) + "_update"})
 			case schema.TypeBool:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.FormatBool(d.Get(key).(bool)), New: strconv.FormatBool(true)})
 			case schema.TypeInt:
-				diff.SetAttribute(key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
+				helper.SetAttribute(diff, key, &terraform.ResourceAttrDiff{Old: strconv.Itoa(d.Get(key).(int)), New: strconv.Itoa(3)})
 			case schema.TypeMap:
-				diff.SetAttribute("tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
-				diff.SetAttribute("tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
-				diff.SetAttribute("tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
+				helper.SetAttribute(diff, "tags.%", &terraform.ResourceAttrDiff{Old: "0", New: "2"})
+				helper.SetAttribute(diff, "tags.For", &terraform.ResourceAttrDiff{Old: "", New: "Test"})
+				helper.SetAttribute(diff, "tags.Created", &terraform.ResourceAttrDiff{Old: "", New: "TF"})
 			case schema.TypeSet:
-				diff.SetAttribute("repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
-				diff.SetAttribute("time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
-				diff.SetAttribute("time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "repeat_weekdays.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "repeat_weekdays.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "target_copy_regions.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "target_copy_regions.0", &terraform.ResourceAttrDiff{Old: "", New: "cn-beijing"})
+				helper.SetAttribute(diff, "time_points.#", &terraform.ResourceAttrDiff{Old: "", New: "1"})
+				helper.SetAttribute(diff, "time_points.0", &terraform.ResourceAttrDiff{Old: "", New: "1"})
 			}
 		}
 		resourceData1, _ := schema.InternalMap(p["alicloud_ecs_auto_snapshot_policy"].Schema).Data(nil, diff)

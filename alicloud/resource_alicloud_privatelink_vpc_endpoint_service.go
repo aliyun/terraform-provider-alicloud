@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudPrivateLinkVpcEndpointService() *schema.Resource {
@@ -277,11 +277,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("service_description")
-		d.SetPartial("auto_accept_connection")
-		d.SetPartial("connect_bandwidth")
-		d.SetPartial("zone_affinity_enabled")
-		d.SetPartial("service_support_ipv6")
+
 	}
 	update = false
 	action = "ChangeResourceGroup"
@@ -324,7 +320,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -332,7 +328,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceUpdate(d *schema.ResourceData,
 		if err := privateLinkServiceV2.SetResourceTags(d, "vpcendpointservice"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudPrivateLinkVpcEndpointServiceRead(d, meta)

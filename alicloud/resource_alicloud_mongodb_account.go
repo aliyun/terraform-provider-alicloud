@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudMongodbAccount() *schema.Resource {
@@ -155,7 +155,7 @@ func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("account_description")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("account_password") {
@@ -185,7 +185,7 @@ func resourceAlicloudMongodbAccountUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("account_password")
+
 	}
 
 	d.Partial(false)

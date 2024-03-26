@@ -10,8 +10,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"strconv"
 )
 
@@ -264,39 +264,6 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 				//ValidateFunc: IntBetween(0, 24),
 				ConflictsWith: []string{"effective_interval"},
 				Deprecated:    "Field `end_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.",
-			},
-			"operator": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ValidateFunc: StringInSlice([]string{
-					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
-				}, false),
-				Removed: "Field `operator` has been removed from provider version 1.216.0. New field `escalations_critical.comparison_operator` instead.",
-			},
-			"statistics": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field `statistics` has been removed from provider version 1.216.0. New field `escalations_critical.statistics` instead.",
-			},
-			"threshold": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field `threshold` has been removed from provider version 1.216.0. New field `escalations_critical.threshold` instead.",
-			},
-			"triggered_count": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-				Removed:  "Field `triggered_count` has been removed from provider version 1.216.0. New field `escalations_critical.times` instead.",
-			},
-			"notify_type": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntInSlice([]int{0, 1}),
-				Removed:      "Field `notify_type` has been removed from provider version 1.50.0.",
 			},
 		},
 	}
@@ -662,22 +629,6 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetPartial("name")
-	d.SetPartial("contact_groups")
-	d.SetPartial("metric_dimensions")
-	d.SetPartial("effective_interval")
-	d.SetPartial("period")
-	d.SetPartial("silence_time")
-	d.SetPartial("webhook")
-	d.SetPartial("escalations_critical")
-	d.SetPartial("escalations_info")
-	d.SetPartial("escalations_warn")
-	d.SetPartial("prometheus")
-	d.SetPartial("tags")
-	d.SetPartial("dimensions")
-	d.SetPartial("start_time")
-	d.SetPartial("end_time")
-
 	if d.Get("enabled").(bool) {
 		action := "EnableMetricRules"
 		enableMetricRequest := make(map[string]interface{})
@@ -723,8 +674,6 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	if err := cmsService.WaitForCmsAlarm(d.Id(), d.Get("enabled").(bool), 102); err != nil {
 		return WrapError(err)
 	}
-
-	d.SetPartial("enabled")
 
 	update := false
 	putMetricRuleTargetsReq := map[string]interface{}{
@@ -793,7 +742,6 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
-		d.SetPartial("targets")
 	}
 
 	d.Partial(false)

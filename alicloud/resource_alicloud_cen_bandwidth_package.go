@@ -8,9 +8,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cbn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCenBandwidthPackage() *schema.Resource {
@@ -270,7 +270,7 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		if err := cenService.WaitForCenBandwidthPackage(d.Id(), Idle, d.Get("bandwidth").(int), DefaultCenTimeout); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("bandwidth")
+
 	}
 	update := false
 	request := cbn.CreateModifyCenBandwidthPackageAttributeRequest()
@@ -306,9 +306,7 @@ func resourceAlicloudCenBandwidthPackageUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("cen_bandwidth_package_name")
-		d.SetPartial("name")
-		d.SetPartial("description")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCenBandwidthPackageRead(d, meta)

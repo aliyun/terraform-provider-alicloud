@@ -6,12 +6,12 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCddcDedicatedHost() *schema.Resource {
@@ -209,7 +209,7 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		if err := cddcService.SetResourceTags(d, "DEDICATEDHOST"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("host_name") || d.HasChange("allocation_status") {
@@ -244,7 +244,7 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("host_name")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("host_class") {
@@ -274,7 +274,7 @@ func resourceAlicloudCddcDedicatedHostUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("host_class")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCddcDedicatedHostRead(d, meta)

@@ -8,8 +8,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudQuotasQuotaAlarms() *schema.Resource {
@@ -17,10 +16,10 @@ func dataSourceAlicloudQuotasQuotaAlarms() *schema.Resource {
 		Read: dataSourceAlicloudQuotasQuotaAlarmsRead,
 		Schema: map[string]*schema.Schema{
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"ids": {
 				Type:     schema.TypeList,

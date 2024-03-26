@@ -6,7 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/hbase"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudHBaseZones() *schema.Resource {
@@ -14,12 +14,6 @@ func dataSourceAlicloudHBaseZones() *schema.Resource {
 		Read: dataSourceAlicloudHBaseZonesRead,
 
 		Schema: map[string]*schema.Schema{
-			"multi": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-				Removed:  "Field 'multi' has been removed from provider version 1.99.0.",
-			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -37,12 +31,6 @@ func dataSourceAlicloudHBaseZones() *schema.Resource {
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
-						},
-						"multi_zone_ids": {
-							Type:     schema.TypeList,
-							Computed: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							Removed:  "Field 'multi_zone_ids' has been removed from provider version 1.99.0.",
 						},
 					},
 				},

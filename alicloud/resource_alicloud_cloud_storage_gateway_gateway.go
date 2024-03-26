@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCloudStorageGatewayGateway() *schema.Resource {
@@ -255,8 +255,7 @@ func resourceAlicloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("description")
-		d.SetPartial("gateway_name")
+
 	}
 
 	if d.HasChange("public_network_bandwidth") {
@@ -295,7 +294,7 @@ func resourceAlicloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 		if err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("public_network_bandwidth")
+
 	}
 
 	if d.HasChange("gateway_class") {
@@ -329,7 +328,6 @@ func resourceAlicloudCloudStorageGatewayGatewayUpdate(d *schema.ResourceData, me
 			if fmt.Sprint(response["Success"]) == "false" {
 				return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 			}
-			d.SetPartial("gateway_class")
 
 			err = gatewayDescribeTasks(d, meta, d.Id())
 			if err != nil {

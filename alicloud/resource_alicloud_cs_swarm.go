@@ -5,15 +5,15 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	newsdk "github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/denverdino/aliyungo/ecs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudCSSwarm() *schema.Resource {
@@ -255,7 +255,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		if ni <= oi {
 			return fmt.Errorf("The node number must greater than the current. The cluster's current node number is %d.", oi)
 		}
-		d.SetPartial("node_number")
+
 		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
 			return nil, csClient.ResizeCluster(d.Id(), &cs.ClusterResizeArgs{
 				Size:             int64(ni),
@@ -297,8 +297,7 @@ func resourceAlicloudCSSwarmUpdate(d *schema.ResourceData, meta interface{}) err
 		if err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
 			return fmt.Errorf("Modify Cluster Name got an error: %#v", err)
 		}
-		d.SetPartial("name")
-		d.SetPartial("name_prefix")
+
 	}
 
 	d.Partial(false)

@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudTsdbInstance() *schema.Resource {
@@ -221,7 +221,7 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("instance_alias")
+
 	}
 	update = false
 	modifyHiTSDBInstanceClassReq := map[string]interface{}{
@@ -264,8 +264,7 @@ func resourceAlicloudTsdbInstanceUpdate(d *schema.ResourceData, meta interface{}
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_class")
-		d.SetPartial("instance_storage")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudTsdbInstanceRead(d, meta)

@@ -9,11 +9,11 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/elasticsearch"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type ElasticsearchService struct {
@@ -650,7 +650,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 		return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
 	}
 	if password != "" {
-		d.SetPartial("password")
+
 		content["esAdminPassword"] = password
 	} else {
 		kmsService := KmsService{meta.(*connectivity.AliyunClient)}
@@ -659,8 +659,7 @@ func updatePassword(d *schema.ResourceData, meta interface{}) error {
 			return WrapError(err)
 		}
 		content["esAdminPassword"] = decryptResp
-		d.SetPartial("kms_encrypted_password")
-		d.SetPartial("kms_encryption_context")
+
 	}
 	requestQuery := map[string]*string{
 		"clientToken": StringPointer(buildClientToken(action)),

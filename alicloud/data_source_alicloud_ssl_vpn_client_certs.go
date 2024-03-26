@@ -6,8 +6,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
@@ -31,10 +30,10 @@ func dataSourceAlicloudSslVpnClientCerts() *schema.Resource {
 			},
 
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 
 			"output_file": {

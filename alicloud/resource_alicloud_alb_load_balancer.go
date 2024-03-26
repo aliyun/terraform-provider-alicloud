@@ -9,8 +9,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudAlbLoadBalancer() *schema.Resource {
@@ -443,9 +443,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("load_balancer_name")
-		d.SetPartial("reason")
-		d.SetPartial("status")
 	}
 	update = false
 	action = "UpdateLoadBalancerEdition"
@@ -489,7 +486,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("load_balancer_edition")
 	}
 	update = false
 	action = "EnableLoadBalancerAccessLog"
@@ -540,8 +536,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("log_project")
-		d.SetPartial("log_store")
 	}
 	update = false
 	action = "DisableLoadBalancerAccessLog"
@@ -588,8 +582,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("log_project")
-		d.SetPartial("log_store")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -630,7 +622,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
 	}
 	update = false
 	action = "UpdateLoadBalancerAddressTypeConfig"
@@ -686,7 +677,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("address_type")
 	}
 
 	if d.HasChange("enabled") {
@@ -833,7 +823,6 @@ func resourceAliCloudAlbLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		if err := albServiceV2.SetResourceTags(d, "loadbalancer"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudAlbLoadBalancerRead(d, meta)

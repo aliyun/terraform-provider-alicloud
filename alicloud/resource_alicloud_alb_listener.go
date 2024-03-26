@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudAlbListener() *schema.Resource {
@@ -716,7 +716,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	update := false
@@ -777,8 +776,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("access_log_record_customized_headers_enabled")
-		d.SetPartial("access_log_tracing_config")
 	}
 
 	update = false
@@ -970,19 +967,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("certificates")
-		d.SetPartial("default_actions")
-		d.SetPartial("server_group_id")
-		d.SetPartial("type")
-		d.SetPartial("gzip_enabled")
-		d.SetPartial("http2_enabled")
-		d.SetPartial("idle_timeout")
-		d.SetPartial("listener_description")
-		d.SetPartial("quic_config")
-		d.SetPartial("request_timeout")
-		d.SetPartial("security_policy_id")
-		d.SetPartial("xforwarded_for_config")
-		d.SetPartial("x_forwarded_for_config")
 	}
 
 	if d.HasChange("acl_config") {
@@ -1157,7 +1141,6 @@ func resourceAliCloudAlbListenerUpdate(d *schema.ResourceData, meta interface{})
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			d.SetPartial("status")
 		}
 	}
 

@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCloudSsoAccessConfiguration() *schema.Resource {
@@ -324,9 +324,7 @@ func resourceAlicloudCloudSsoAccessConfigurationUpdate(d *schema.ResourceData, m
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("relay_state")
-		d.SetPartial("session_duration")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudSsoAccessConfigurationRead(d, meta)

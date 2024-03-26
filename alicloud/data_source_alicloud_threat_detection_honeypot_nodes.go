@@ -5,13 +5,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudThreatDetectionHoneypotNodes() *schema.Resource {
@@ -24,10 +22,10 @@ func dataSourceAlicloudThreatDetectionHoneypotNodes() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"node_id": {
 				Optional: true,

@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-
 	"github.com/alibabacloud-go/tea/tea"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const MASKED_CONFIG_KEY_PREFIX = "x-ui"
@@ -61,7 +59,7 @@ func dataAlicloudCSKubernetesAddonMetadataRead(d *schema.ResourceData, meta inte
 	d.Set("version", version)
 	d.Set("config_schema", config)
 
-	d.SetId(tea.ToString(hashcode.String(clusterId)))
+	d.SetId(tea.ToString(HashString(clusterId)))
 	return nil
 }
 

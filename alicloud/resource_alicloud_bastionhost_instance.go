@@ -8,11 +8,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudBastionhostInstance() *schema.Resource {
@@ -460,21 +460,21 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if err := bastionhostService.setInstanceTags(d, TagResourceInstance); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("description") {
 		if err := bastionhostService.UpdateBastionhostInstanceDescription(d.Id(), d.Get("description").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("description")
+
 	}
 
 	if d.HasChange("resource_group_id") {
 		if err := bastionhostService.UpdateResourceGroup(d.Id(), d.Get("resource_group_id").(string)); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("license_code") {
@@ -488,7 +488,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("license_code")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
@@ -504,7 +504,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_group_ids")
+
 	}
 
 	_, ok := d.GetOkExists("enable_public_access")
@@ -535,7 +535,6 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("enable_public_access")
 	}
 
 	if d.HasChange("ad_auth_server") {
@@ -576,7 +575,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("ad_auth_server")
+
 		}
 	}
 
@@ -619,7 +618,7 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("ldap_auth_server")
+
 		}
 	}
 
@@ -688,9 +687,6 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, setRenewalResponse))
 		}
 
-		d.SetPartial("renewal_status")
-		d.SetPartial("renew_period")
-		d.SetPartial("renewal_period_unit")
 	}
 
 	update = false
@@ -732,7 +728,6 @@ func resourceAlicloudBastionhostInstanceUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("public_white_list")
 	}
 
 	d.Partial(false)

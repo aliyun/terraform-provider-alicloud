@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,22 +14,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/mutexkv"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/mitchellh/go-homedir"
 )
 
 // Provider returns a schema.Provider for alicloud
-func Provider() terraform.ResourceProvider {
+func Provider() interface{} {
 	provider := &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"access_key": {
@@ -2029,7 +2025,8 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 }
 
 // This is a global MutexKV for use within this plugin.
-var alicloudMutexKV = mutexkv.NewMutexKV()
+// NOTICE: 这里需要改造
+// var alicloudMutexKV = mutexkv.NewMutexKV()
 
 var descriptions map[string]string
 
@@ -3433,7 +3430,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["oceanbase"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["beebot"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["computenest"].(string)))
-	return hashcode.String(buf.String())
+	return HashString(buf.String())
 }
 
 func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{}, error) {

@@ -12,13 +12,12 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/hashicorp/go-uuid"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 
 	"strconv"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudDBInstance() *schema.Resource {
@@ -406,13 +405,6 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
-			"zone_id_slave_b": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-				Removed:  "The parameter 'zone_id_slave_b' has been removed from provider version v1.213.1.",
-			},
 			"ca_type": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -607,7 +599,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 
 func parameterToHash(v interface{}) int {
 	m := v.(map[string]interface{})
-	return hashcode.String(m["name"].(string) + "|" + m["value"].(string))
+	return HashString(m["name"].(string) + "|" + m["value"].(string))
 }
 
 func resourceAliCloudDBInstanceCreate(d *schema.ResourceData, meta interface{}) error {
@@ -724,9 +716,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		addDebug(action, response, request)
 
 		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		d.SetPartial("storage_auto_scale")
-		d.SetPartial("storage_threshold")
-		d.SetPartial("storage_upper_bound")
+
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -761,8 +751,6 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_charge_type")
-		d.SetPartial("period")
 
 	}
 
@@ -789,8 +777,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("auto_renew")
-		d.SetPartial("auto_renew_period")
+
 	}
 
 	if d.HasChange("security_group_ids") || d.HasChange("security_group_id") {
@@ -806,8 +793,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_group_ids")
-		d.SetPartial("security_group_id")
+
 	}
 
 	if d.HasChange("monitoring_period") {
@@ -850,7 +836,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("maintain_time")
+
 	}
 	if d.HasChange("auto_upgrade_minor_version") {
 		action := "ModifyDBInstanceAutoUpgradeMinorVersion"
@@ -872,7 +858,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("auto_upgrade_minor_version")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(MySQL) {
@@ -903,8 +889,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		addDebug(action, response, request)
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		d.SetPartial("engine_version")
-		d.SetPartial("effective_time")
+
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
@@ -926,7 +911,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_ip_mode")
+
 	}
 
 	if d.HasChange("sql_collector_status") {
@@ -951,7 +936,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("sql_collector_status")
+
 	}
 
 	if d.Get("sql_collector_status").(string) == "Enabled" && d.HasChange("sql_collector_config_value") && d.Get("engine").(string) == string(MySQL) {
@@ -971,7 +956,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("sql_collector_config_value")
+
 	}
 
 	if d.HasChanges("ssl_action", "ssl_connection_string") {
@@ -1077,8 +1062,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("ssl_action")
-		d.SetPartial("ssl_connection_string")
+
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -1115,7 +1099,6 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		d.SetPartial("tde_status")
 
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -1164,8 +1147,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConfNodeId.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("node_id")
-		d.SetPartial("force")
+
 	}
 	if d.HasChanges("ha_config", "manual_ha_time") {
 		action := "ModifyHASwitchConfig"
@@ -1199,8 +1181,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		addDebug(action, response, request)
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
-		d.SetPartial("ha_config")
-		d.SetPartial("manual_ha_time")
+
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -1259,9 +1240,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), connectAction, AlibabaCloudSdkGoERROR)
 			}
 			addDebug(connectAction, response, connectRequest)
-			d.SetPartial("port")
-			d.SetPartial("connection_string")
-			d.SetPartial("babelfish_port")
+
 			// wait instance status is running after modifying
 			stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 			if _, err := stateConf.WaitForState(); err != nil {
@@ -1292,7 +1271,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
+
 	}
 
 	if d.HasChange("security_ips") {
@@ -1350,11 +1329,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_ips")
-		d.SetPartial("db_instance_ip_array_name")
-		d.SetPartial("db_instance_ip_array_attribute")
-		d.SetPartial("security_ip_type")
-		d.SetPartial("whitelist_network_type")
+
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		action := "ModifyResourceGroup"
@@ -1373,7 +1348,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update := false
 	action := "ModifyDBInstanceSpec"
@@ -1462,11 +1437,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				return resource.NonRetryableError(err)
 			}
 			addDebug(action, response, request)
-			d.SetPartial("instance_type")
-			d.SetPartial("instance_storage")
-			d.SetPartial("db_instance_storage_type")
-			d.SetPartial("effective_time")
-			d.SetPartial("serverless_config")
+
 			return nil
 		})
 
@@ -1528,8 +1499,6 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("vswitch_id")
-		d.SetPartial("private_ip_address")
 
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
@@ -1575,7 +1544,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("target_minor_version")
+
 		// wait instance status is running after modifying
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())

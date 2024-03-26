@@ -9,9 +9,9 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/alidns"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudAlidnsRecord() *schema.Resource {
@@ -201,9 +201,7 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("status")
-		d.SetPartial("lang")
-		d.SetPartial("user_client_ip")
+
 	}
 	update = false
 	updateDomainRecordRemarkReq := alidns.CreateUpdateDomainRecordRemarkRequest()
@@ -222,7 +220,7 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), updateDomainRecordRemarkReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("remark")
+
 	}
 	update = false
 	updateDomainRecordReq := alidns.CreateUpdateDomainRecordRequest()
@@ -264,11 +262,7 @@ func resourceAlicloudAlidnsRecordUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), updateDomainRecordReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("rr")
-		d.SetPartial("type")
-		d.SetPartial("value")
-		d.SetPartial("line")
-		d.SetPartial("ttl")
+
 	}
 	d.Partial(false)
 

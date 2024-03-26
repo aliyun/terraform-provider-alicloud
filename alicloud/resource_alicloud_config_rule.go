@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudConfigRule() *schema.Resource {
@@ -35,7 +35,6 @@ func resourceAliCloudConfigRule() *schema.Resource {
 			"compliance": {
 				Type:     schema.TypeList,
 				Computed: true,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"compliance_type": {
@@ -467,17 +466,7 @@ func resourceAlicloudConfigRuleUpdate(d *schema.ResourceData, meta interface{}) 
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		d.SetPartial("description")
-		d.SetPartial("maximum_execution_frequency")
-		d.SetPartial("tag_key_scope")
-		d.SetPartial("tag_value_scope")
-		d.SetPartial("region_ids_scope")
-		d.SetPartial("resource_group_ids_scope")
-		d.SetPartial("exclude_resource_ids_scope")
-		d.SetPartial("risk_level")
-		d.SetPartial("config_rule_trigger_types")
-		d.SetPartial("input_parameters")
-		d.SetPartial("resource_types_scope")
+
 	}
 
 	if d.HasChange("status") {

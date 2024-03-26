@@ -17,8 +17,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type EcsService struct {
@@ -787,7 +787,7 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 	if err != nil {
 		return WrapError(err)
 	} else {
-		d.SetPartial("tags")
+
 	}
 
 	request := ecs.CreateModifyImageAttributeRequest()
@@ -811,9 +811,7 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("name")
-		d.SetPartial("image_name")
-		d.SetPartial("description")
+
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
@@ -1581,7 +1579,7 @@ func (s *EcsService) SetResourceTags(d *schema.ResourceData, resourceType string
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
-		d.SetPartial("tags")
+
 	}
 	return nil
 }
@@ -1930,7 +1928,7 @@ func (s *EcsService) SetResourceTemplateTags(d *schema.ResourceData, resourceTyp
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
-		d.SetPartial("template_tags")
+
 	}
 	return nil
 }
@@ -2924,7 +2922,7 @@ func (s *EcsService) SetInstanceSetResourceTags(d *schema.ResourceData, resource
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
-			d.SetPartial("tags")
+
 		}
 	}
 	return nil

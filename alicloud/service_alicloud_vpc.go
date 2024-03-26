@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	"fmt"
 
@@ -1215,7 +1215,6 @@ func (s *VpcService) setInstanceTags(d *schema.ResourceData, resourceType TagRes
 			}
 		}
 
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -1284,7 +1283,7 @@ func (s *VpcService) SetInstanceSecondaryCidrBlocks(d *schema.ResourceData) erro
 				addDebug(action, response, request)
 			}
 		}
-		d.SetPartial("secondary_cidr_blocks")
+
 	}
 	return nil
 }
@@ -1496,7 +1495,7 @@ func (s *VpcService) SetResourceTags(d *schema.ResourceData, resourceType string
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 		}
-		d.SetPartial("tags")
+
 	}
 	return nil
 }

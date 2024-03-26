@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudExpressConnectVirtualBorderRouter() *schema.Resource {
@@ -292,7 +292,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		}
 	}
 	if d.HasChange("include_cross_account_vbr") {
-		d.SetPartial("include_cross_account_vbr")
+
 	}
 	includeCrossAccountVbr := true
 	if v, ok := d.GetOkExists("include_cross_account_vbr"); ok {
@@ -383,20 +383,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("circuit_code")
-		d.SetPartial("description")
-		d.SetPartial("detect_multiplier")
-		d.SetPartial("enable_ipv6")
-		d.SetPartial("local_gateway_ip")
-		d.SetPartial("local_ipv6_gateway_ip")
-		d.SetPartial("min_rx_interval")
-		d.SetPartial("min_tx_interval")
-		d.SetPartial("peer_gateway_ip")
-		d.SetPartial("peer_ipv6_gateway_ip")
-		d.SetPartial("peering_ipv6_subnet_mask")
-		d.SetPartial("peering_subnet_mask")
-		d.SetPartial("virtual_border_router_name")
-		d.SetPartial("vlan_id")
+
 	}
 	if d.HasChange("status") {
 		object, err := vpcService.DescribeExpressConnectVirtualBorderRouter(d.Id(), includeCrossAccountVbr)
@@ -466,7 +453,7 @@ func resourceAlicloudExpressConnectVirtualBorderRouterUpdate(d *schema.ResourceD
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

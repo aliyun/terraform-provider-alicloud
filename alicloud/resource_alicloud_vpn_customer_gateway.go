@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVPNGatewayCustomerGateway() *schema.Resource {
@@ -197,7 +197,7 @@ func resourceAliCloudVPNGatewayCustomerGatewayUpdate(d *schema.ResourceData, met
 		if err := vPNGatewayServiceV2.SetResourceTags(d, "CUSTOMERGATEWAY"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	return resourceAliCloudVPNGatewayCustomerGatewayRead(d, meta)
 }

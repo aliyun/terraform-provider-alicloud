@@ -7,9 +7,9 @@ import (
 
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudKvstoreAccount() *schema.Resource {
@@ -190,7 +190,7 @@ func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("account_privilege")
+
 	}
 	if d.HasChange("description") {
 		request := r_kvstore.CreateModifyAccountDescriptionRequest()
@@ -204,7 +204,7 @@ func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
+
 	}
 	if d.HasChange("account_password") || d.HasChange("kms_encrypted_password") {
 		request := r_kvstore.CreateResetAccountPasswordRequest()
@@ -238,9 +238,7 @@ func resourceAlicloudKvstoreAccountUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("kms_encrypted_password")
-		d.SetPartial("kms_encryption_context")
-		d.SetPartial("account_password")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudKvstoreAccountRead(d, meta)

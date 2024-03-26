@@ -6,12 +6,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudKmsSecret() *schema.Resource {
@@ -253,7 +253,7 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := kmsService.SetResourceTags(d, "secret"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		request := map[string]interface{}{
@@ -277,7 +277,7 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
+
 	}
 	update := false
 	request := map[string]interface{}{
@@ -317,10 +317,7 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("secret_data")
-		d.SetPartial("version_id")
-		d.SetPartial("secret_data_type")
-		d.SetPartial("version_stages")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudKmsSecretRead(d, meta)

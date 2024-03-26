@@ -18,8 +18,8 @@ import (
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudAckNodepool() *schema.Resource {
@@ -738,25 +738,6 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"instances", "desired_size"},
 				Deprecated:    "Field 'node_count' has been deprecated from provider version 1.158.0. New field 'desired_size' instead.",
-			},
-			"rollout_policy": {
-				Type:     schema.TypeList,
-				Optional: true,
-				MaxItems: 1,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"max_unavailable": {
-							Type:     schema.TypeInt,
-							Optional: true,
-						},
-					},
-				},
-				Removed: "Field 'rollout_policy' has been removed from provider version 1.184.0. Please use new field 'rolling_policy' instead it to ensure the config takes effect",
-			},
-			"vpc_id": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'vpc_id' has been removed from provider version 1.218.0.",
 			},
 			"kms_encryption_context": {
 				Type:     schema.TypeMap,
@@ -2436,8 +2417,6 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
-	d.SetPartial("node_count")
 
 	return nil
 }

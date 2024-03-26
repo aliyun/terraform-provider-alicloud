@@ -10,8 +10,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudSlsProject() *schema.Resource {
@@ -209,7 +209,7 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
+
 	}
 	update = false
 	action = fmt.Sprintf("/resourcegroup")
@@ -249,7 +249,7 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -257,7 +257,7 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := slsServiceV2.SetResourceTags(d, "PROJECT"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if d.HasChange("policy") {
 		var requestInfo *sls.Client
@@ -275,7 +275,7 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateProjectPolicy", AliyunLogGoSdkERROR)
 		}
 		addDebug("UpdateProjectPolicy", raw, requestInfo, request)
-		d.SetPartial("policy")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudSlsProjectRead(d, meta)

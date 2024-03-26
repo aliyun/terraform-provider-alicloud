@@ -13,9 +13,8 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudKvstoreInstance() *schema.Resource {
@@ -186,11 +185,6 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Immediately", "MaintainTime"}, false),
-			},
-			"modify_mode": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Removed:  "Field `modify_mode` has been removed from provider version 1.216.0.",
 			},
 			"node_type": {
 				Type:         schema.TypeString,
@@ -378,7 +372,7 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 					},
 				},
 				Set: func(v interface{}) int {
-					return hashcode.String(
+					return HashString(
 						v.(map[string]interface{})["name"].(string) + "|" + v.(map[string]interface{})["value"].(string))
 				},
 				Optional:      true,
@@ -776,14 +770,14 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			d.SetPartial("payment_type")
+
 		}
 	}
 	if d.HasChange("tags") {
 		if err := r_kvstoreService.SetResourceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("config") {
@@ -805,7 +799,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("config")
+
 	}
 
 	if d.HasChange("vpc_auth_mode") && d.Get("vswitch_id") != "" {
@@ -823,7 +817,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("vpc_auth_mode")
+
 	}
 	if d.HasChange("security_group_id") {
 		request := r_kvstore.CreateModifySecurityGroupConfigurationRequest()
@@ -840,7 +834,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("security_group_id")
+
 	}
 	update := false
 	request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
@@ -862,8 +856,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_renew")
-		d.SetPartial("auto_renew_period")
+
 	}
 	update = false
 	modifyInstanceMaintainTimeReq := r_kvstore.CreateModifyInstanceMaintainTimeRequest()
@@ -884,8 +877,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifyInstanceMaintainTimeReq.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("maintain_end_time")
-		d.SetPartial("maintain_start_time")
+
 	}
 	if d.HasChange("ssl_enable") {
 		request := r_kvstore.CreateModifyInstanceSSLRequest()
@@ -902,7 +894,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("ssl_enable")
+
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		request := r_kvstore.CreateModifyResourceGroupRequest()
@@ -920,7 +912,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 	update = false
 	migrateToOtherZoneReq := r_kvstore.CreateMigrateToOtherZoneRequest()
@@ -964,9 +956,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("availability_zone")
-		d.SetPartial("zone_id")
-		d.SetPartial("vswitch_id")
+
 	}
 	update = false
 	modifyBackupPolicyReq := r_kvstore.CreateModifyBackupPolicyRequest()
@@ -994,8 +984,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("backup_period")
-		d.SetPartial("backup_time")
+
 	}
 	update = false
 	modifyInstanceAttributeReq := r_kvstore.CreateModifyInstanceAttributeRequest()
@@ -1046,12 +1035,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("db_instance_name")
-		d.SetPartial("instance_release_protection")
-		d.SetPartial("kms_encrypted_password")
-		d.SetPartial("kms_encryption_context")
-		d.SetPartial("password")
+
 	}
 	update = false
 	modifyDBInstanceConnectionStringReq := r_kvstore.CreateModifyDBInstanceConnectionStringRequest()
@@ -1079,8 +1063,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("private_connection_prefix")
-		d.SetPartial("private_connection_port")
+
 	}
 	update = false
 	modifySecurityIpsReq := r_kvstore.CreateModifySecurityIpsRequest()
@@ -1121,9 +1104,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("security_ips")
-		d.SetPartial("security_ip_group_attribute")
-		d.SetPartial("security_ip_group_name")
 	}
 	update = false
 	modifyInstanceSpecReq := r_kvstore.CreateModifyInstanceSpecRequest()
@@ -1191,8 +1171,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("engine_version")
-		d.SetPartial("instance_class")
 	}
 	update = false
 	modifyInstanceMajorVersionReq := r_kvstore.CreateModifyInstanceMajorVersionRequest()
@@ -1217,7 +1195,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("engine_version")
+
 	}
 	if d.HasChange("parameters") {
 		request := r_kvstore.CreateModifyInstanceConfigRequest()
@@ -1246,7 +1224,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 			}
 		}
 
-		d.SetPartial("parameters")
 	}
 	if d.HasChange("enable_public") {
 		prefix := d.Get("connection_string_prefix").(string)
@@ -1288,7 +1265,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
-		d.SetPartial("enable_public")
+
 	}
 	update = false
 	modifyInstanceTDERequest := map[string]interface{}{
@@ -1340,10 +1317,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("tde_status")
-		d.SetPartial("encryption_name")
-		d.SetPartial("encryption_key")
-		d.SetPartial("role_arn")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("shard_count") {
@@ -1398,7 +1372,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 
-			d.SetPartial("shard_count")
 		}
 
 		if added > 0 {
@@ -1442,7 +1415,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 
-			d.SetPartial("shard_count")
 		}
 
 	}

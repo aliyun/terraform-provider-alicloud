@@ -9,8 +9,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudArmsEnvironment() *schema.Resource {
@@ -263,7 +263,7 @@ func resourceAliCloudArmsEnvironmentUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("environment_name")
+
 	}
 	update = false
 	action = "ChangeResourceGroup"
@@ -301,7 +301,7 @@ func resourceAliCloudArmsEnvironmentUpdate(d *schema.ResourceData, meta interfac
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -309,7 +309,7 @@ func resourceAliCloudArmsEnvironmentUpdate(d *schema.ResourceData, meta interfac
 		if err := armsServiceV2.SetResourceTags(d, "environment"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudArmsEnvironmentRead(d, meta)

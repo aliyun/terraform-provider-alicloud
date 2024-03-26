@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
@@ -288,7 +288,7 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 		if err := cbnService.SetResourceTags(d, "TransitRouterVpcAttachment"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -358,9 +358,6 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("auto_publish_route_enabled")
-		d.SetPartial("transit_router_attachment_name")
-		d.SetPartial("transit_router_attachment_description")
 	}
 
 	if !d.IsNewResource() && d.HasChange("zone_mappings") {
@@ -443,7 +440,6 @@ func resourceAliCloudCenTransitRouterVpcAttachmentUpdate(d *schema.ResourceData,
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("zone_mappings")
 	}
 
 	d.Partial(false)

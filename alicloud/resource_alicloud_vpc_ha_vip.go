@@ -10,8 +10,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcHaVip() *schema.Resource {
@@ -262,8 +262,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("ha_vip_name")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -302,7 +301,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	update = false
@@ -312,7 +311,7 @@ func resourceAlicloudVpcHaVipUpdate(d *schema.ResourceData, meta interface{}) er
 		if err := vpcServiceV2.SetResourceTags(d, "HAVIP"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudVpcHaVipRead(d, meta)

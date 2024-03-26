@@ -11,8 +11,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEnsInstance() *schema.Resource {
@@ -524,9 +524,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("host_name")
-		d.SetPartial("password")
+
 	}
 	update = false
 	action = "ModifyPrepayInstanceSpec"
@@ -566,7 +564,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
+
 	}
 	update = false
 	action = "ModifyPostPaidInstanceSpec"
@@ -606,7 +604,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
+
 	}
 	update = false
 	action = "ModifyInstanceChargeType"
@@ -658,7 +656,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("payment_type")
+
 	}
 
 	if d.HasChange("status") {

@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
@@ -409,7 +409,7 @@ func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("group_id")
+
 	}
 	update = false
 	modifyMetricRuleTemplateReq := map[string]interface{}{
@@ -506,10 +506,7 @@ func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("rest_version")
-		d.SetPartial("alert_templates")
-		d.SetPartial("description")
-		d.SetPartial("metric_rule_template_name")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCmsMetricRuleTemplateRead(d, meta)

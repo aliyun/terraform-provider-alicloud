@@ -9,8 +9,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/blues/jsonata-go"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 type VPNGatewayServiceV2 struct {
@@ -184,7 +184,7 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 		}
-		d.SetPartial("tags")
+
 	}
 
 	return nil

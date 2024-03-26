@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcTrafficMirrorSession() *schema.Resource {
@@ -288,14 +288,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("traffic_mirror_session_description")
-		d.SetPartial("traffic_mirror_session_name")
-		d.SetPartial("traffic_mirror_target_id")
-		d.SetPartial("traffic_mirror_target_type")
-		d.SetPartial("traffic_mirror_filter_id")
-		d.SetPartial("virtual_network_id")
-		d.SetPartial("priority")
-		d.SetPartial("enabled")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -332,7 +325,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	update = false
@@ -431,7 +424,7 @@ func resourceAliCloudVpcTrafficMirrorSessionUpdate(d *schema.ResourceData, meta 
 		if err := vpcServiceV2.SetResourceTags(d, "TrafficMirrorSession"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcTrafficMirrorSessionRead(d, meta)

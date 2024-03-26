@@ -1,15 +1,16 @@
 package alicloud
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAliCloudAlbServerGroup() *schema.Resource {
@@ -554,7 +555,6 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			return WrapError(err)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	update := false
@@ -706,10 +706,6 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("server_group_name")
-		d.SetPartial("scheduler")
-		d.SetPartial("sticky_session_config")
-		d.SetPartial("health_check_config")
 	}
 
 	update = false
@@ -752,7 +748,6 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("resource_group_id")
 	}
 
 	update = false
@@ -887,7 +882,6 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			}
 		}
 
-		d.SetPartial("servers")
 	}
 
 	d.Partial(false)
@@ -946,7 +940,7 @@ func resourceAliCloudAlbServerGroupDelete(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAlbServerGroupCustomizeDiff(diff *schema.ResourceDiff, v interface{}) error {
+func resourceAlbServerGroupCustomizeDiff(context context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	groupType := diff.Get("server_group_type").(string)
 	if groupType == "Fc" {
 		// Fc load balancers do not support vpc_id, protocol

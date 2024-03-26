@@ -6,8 +6,7 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/polardb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAlicloudPolarDBDatabases() *schema.Resource {
@@ -20,9 +19,8 @@ func dataSourceAlicloudPolarDBDatabases() *schema.Resource {
 				Required: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 
 			"names": {

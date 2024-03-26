@@ -5,8 +5,8 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ram"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudRamGroupMembership() *schema.Resource {
@@ -59,7 +59,7 @@ func resourceAlicloudRamGroupMembershipUpdate(d *schema.ResourceData, meta inter
 	d.Partial(true)
 
 	if d.HasChange("user_names") {
-		d.SetPartial("user_names")
+
 		o, n := d.GetChange("user_names")
 		if o == nil {
 			o = new(schema.Set)

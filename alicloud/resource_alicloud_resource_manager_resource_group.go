@@ -8,8 +8,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudResourceManagerResourceGroup() *schema.Resource {
@@ -68,11 +68,6 @@ func resourceAliCloudResourceManagerResourceGroup() *schema.Resource {
 						},
 					},
 				},
-			},
-			"create_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-				Removed:  "Field 'create_date' has been removed from provider version 1.114.0.",
 			},
 		},
 	}
@@ -234,7 +229,6 @@ func resourceAliCloudResourceManagerResourceGroupUpdate(d *schema.ResourceData, 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("display_name")
 	}
 
 	if d.HasChange("tags") {
@@ -242,7 +236,6 @@ func resourceAliCloudResourceManagerResourceGroupUpdate(d *schema.ResourceData, 
 			return WrapError(err)
 		}
 
-		d.SetPartial("tags")
 	}
 
 	d.Partial(false)

@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudExpressConnectPhysicalConnection() *schema.Resource {
@@ -248,14 +248,7 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("bandwidth")
-		d.SetPartial("circuit_code")
-		d.SetPartial("description")
-		d.SetPartial("line_operator")
-		d.SetPartial("peer_location")
-		d.SetPartial("physical_connection_name")
-		d.SetPartial("port_type")
-		d.SetPartial("redundant_physical_connection_id")
+
 	}
 	if d.HasChange("status") {
 		object, err := vpcService.DescribeExpressConnectPhysicalConnection(d.Id())
@@ -342,7 +335,7 @@ func resourceAlicloudExpressConnectPhysicalConnectionUpdate(d *schema.ResourceDa
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

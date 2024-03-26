@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudMseCluster() *schema.Resource {
@@ -344,7 +344,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("acl_entry_list")
+
 	}
 	update = false
 	request = map[string]interface{}{
@@ -375,7 +375,7 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("cluster_alias_name")
+
 	}
 
 	update = false
@@ -426,8 +426,6 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
-		d.SetPartial("cluster_specification")
-		d.SetPartial("instance_count")
 	}
 
 	update = false

@@ -8,9 +8,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudExpressConnectRouterInterface() *schema.Resource {
@@ -461,17 +461,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("delete_health_check_ip")
-		d.SetPartial("description")
-		d.SetPartial("hc_rate")
-		d.SetPartial("hc_threshold")
-		d.SetPartial("health_check_source_ip")
-		d.SetPartial("health_check_target_ip")
-		d.SetPartial("opposite_interface_id")
-		d.SetPartial("opposite_interface_owner_id")
-		d.SetPartial("opposite_router_id")
-		d.SetPartial("opposite_router_type")
-		d.SetPartial("router_interface_name")
+
 	}
 
 	update = false
@@ -506,7 +496,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("spec")
+
 	}
 
 	if d.HasChange("status") {
@@ -590,7 +580,7 @@ func resourceAlicloudExpressConnectRouterInterfaceUpdate(d *schema.ResourceData,
 				}
 
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

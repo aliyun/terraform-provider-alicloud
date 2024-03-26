@@ -8,9 +8,8 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks() *schema.Resource {
@@ -100,7 +99,7 @@ func dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocksRead(d *schema.Resource
 
 	s = append(s, mapping)
 
-	d.SetId(tea.ToString(hashcode.String(fmt.Sprint(request["EndpointGroupRegion"]))))
+	d.SetId(tea.ToString(fmt.Sprint(request["EndpointGroupRegion"])))
 
 	if err := d.Set("endpoint_group_ip_address_cidr_blocks", s); err != nil {
 		return WrapError(err)

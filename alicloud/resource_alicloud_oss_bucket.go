@@ -9,9 +9,8 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAlicloudOssBucket() *schema.Resource {
@@ -952,35 +951,35 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "SetBucketACL", AliyunOssGoSdk)
 		}
 		addDebug("SetBucketACL", raw, requestInfo, request)
-		d.SetPartial("acl")
+
 	}
 
 	if d.HasChange("cors_rule") {
 		if err := resourceAlicloudOssBucketCorsUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("cors_rule")
+
 	}
 
 	if d.HasChange("website") {
 		if err := resourceAlicloudOssBucketWebsiteUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("website")
+
 	}
 
 	if d.HasChange("logging") {
 		if err := resourceAlicloudOssBucketLoggingUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("logging")
+
 	}
 
 	if d.HasChange("referer_config") {
 		if err := resourceAlicloudOssBucketRefererUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("referer_config")
+
 	}
 
 	//set access_monitor status to enable before lifecycle rule
@@ -996,7 +995,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := resourceAlicloudOssBucketLifecycleRuleUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("lifecycle_rule")
+
 	}
 
 	//set access_monitor status to disable after lifecycle rule
@@ -1004,42 +1003,42 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		if err := resourceAlicloudOssBucketAccessMonitorUpdate(client, d, false); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("access_monitor")
+
 	}
 
 	if d.HasChange("policy") {
 		if err := resourceAlicloudOssBucketPolicyUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("policy")
+
 	}
 
 	if d.HasChange("server_side_encryption_rule") {
 		if err := resourceAlicloudOssBucketEncryptionUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("server_side_encryption_rule")
+
 	}
 
 	if d.HasChange("tags") {
 		if err := resourceAlicloudOssBucketTaggingUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if d.HasChange("versioning") {
 		if err := resourceAlicloudOssBucketVersioningUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("versioning")
+
 	}
 
 	if d.HasChange("transfer_acceleration") {
 		if err := resourceAlicloudOssBucketTransferAccUpdate(client, d); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("transfer_acceleration")
+
 	}
 
 	if d.HasChange("resource_group_id") {
@@ -1056,7 +1055,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "PutBucketResourceGroup", AliyunOssGoSdk)
 		}
 		addDebug("PutBucketResourceGroup", raw, requestInfo, request)
-		d.SetPartial("resource_group_id")
+
 	}
 
 	d.Partial(false)
@@ -1756,7 +1755,7 @@ func expirationHash(v interface{}) int {
 	if v, ok := m["expired_object_delete_marker"]; ok {
 		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
-	return hashcode.String(buf.String())
+	return HashString(buf.String())
 }
 
 func transitionsHash(v interface{}) int {
@@ -1777,7 +1776,7 @@ func transitionsHash(v interface{}) int {
 	if v, ok := m["return_to_std_when_visit"]; ok {
 		buf.WriteString(fmt.Sprintf("%v-", v.(bool)))
 	}
-	return hashcode.String(buf.String())
+	return HashString(buf.String())
 }
 
 func abortMultipartUploadHash(v interface{}) int {
@@ -1789,5 +1788,5 @@ func abortMultipartUploadHash(v interface{}) int {
 	if v, ok := m["days"]; ok {
 		buf.WriteString(fmt.Sprintf("%d-", v.(int)))
 	}
-	return hashcode.String(buf.String())
+	return HashString(buf.String())
 }

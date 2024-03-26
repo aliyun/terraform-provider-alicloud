@@ -9,27 +9,15 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func dataSourceAlicloudSlbLoadBalancers() *schema.Resource {
 	return &schema.Resource{
 		Read: dataSourceAlicloudSlbLoadBalancersRead,
 		Schema: map[string]*schema.Schema{
-			"master_availability_zone": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Removed:  "Field 'master_availability_zone' has removed from v1.123.1 and replace by 'master_zone_id'.",
-			},
-			"slave_availability_zone": {
-				Type:     schema.TypeString,
-				Optional: true,
-				ForceNew: true,
-				Removed:  "Field 'slave_availability_zone' has removed from v1.123.1 and replace by 'slave_zone_id'.",
-			},
 			"address": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -61,10 +49,10 @@ func dataSourceAlicloudSlbLoadBalancers() *schema.Resource {
 				Computed: true,
 			},
 			"name_regex": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
+				Type:     schema.TypeString,
+				Optional: true,
+
+				ForceNew: true,
 			},
 			"names": {
 				Type:     schema.TypeList,

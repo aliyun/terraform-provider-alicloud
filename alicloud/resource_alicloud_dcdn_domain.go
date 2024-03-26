@@ -7,9 +7,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudDcdnDomain() *schema.Resource {
@@ -260,7 +260,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := dcdnService.SetResourceTags(d, "DOMAIN"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 
 	if !d.IsNewResource() && d.HasChange("scope") {
@@ -293,7 +293,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("scope")
+
 	}
 
 	update := false
@@ -352,10 +352,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("scope")
-		d.SetPartial("ssl_protocol")
-		d.SetPartial("cert_name")
-		d.SetPartial("ssl_pub")
+
 	}
 
 	update = false
@@ -407,8 +404,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
-		d.SetPartial("sources")
+
 	}
 
 	if d.HasChange("status") {
@@ -484,7 +480,7 @@ func resourceAlicloudDcdnDomainUpdate(d *schema.ResourceData, meta interface{}) 
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
 			}
-			d.SetPartial("status")
+
 		}
 	}
 	d.Partial(false)

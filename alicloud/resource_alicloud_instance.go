@@ -11,15 +11,15 @@ import (
 
 	"github.com/denverdino/aliyungo/common"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"encoding/base64"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudInstance() *schema.Resource {
@@ -137,13 +137,6 @@ func resourceAliCloudInstance() *schema.Resource {
 					return d.Get("kms_encrypted_password") == ""
 				},
 				Elem: schema.TypeString,
-			},
-			"io_optimized": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Attribute io_optimized has been deprecated on instance resource. All the launched alicloud instances will be IO optimized. Suggest to remove it from your template.",
-				Removed:    "Attribute 'io_optimized' has been removed from provider version 1.213.1.",
 			},
 			"is_outdated": {
 				Type:     schema.TypeBool,
@@ -295,13 +288,6 @@ func resourceAliCloudInstance() *schema.Resource {
 						},
 					},
 				},
-			},
-			//subnet_id and vswitch_id both exists, cause compatible old version, and aws habit.
-			"subnet_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
-				Removed:  "Field 'subnet_id' has been removed from version 1.210.0",
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -1221,7 +1207,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err := setTags(client, TagResourceInstance, d); err != nil {
 			return WrapError(err)
 		} else {
-			d.SetPartial("tags")
+
 		}
 	}
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
@@ -1237,13 +1223,13 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if err := setVolumeTags(client, TagResourceDisk, d); err != nil {
 		return WrapError(err)
 	} else {
-		d.SetPartial("volume_tags")
+
 	}
 
 	if d.HasChange("security_groups") {
@@ -1268,7 +1254,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				}
 			}
 
-			d.SetPartial("security_groups")
 		}
 	}
 
@@ -1298,7 +1283,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
 			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-			d.SetPartial("system_disk_size")
+
 		}
 
 		if d.HasChange("system_disk_auto_snapshot_policy_id") {
@@ -1325,7 +1310,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("system_disk_auto_snapshot_policy_id")
+
 		}
 
 		if d.HasChange("system_disk_name") || d.HasChange("system_disk_description") {
@@ -1352,8 +1337,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("system_disk_name")
-			d.SetPartial("system_disk_description")
+
 		}
 	}
 
@@ -1384,7 +1368,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("auto_release_time")
+
 	}
 
 	typeUpdate, err := modifyInstanceType(d, meta, run)
@@ -1482,7 +1466,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			}
 		}
 		if d.HasChange("status") {
-			d.SetPartial("status")
+
 		}
 	}
 
@@ -1491,7 +1475,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 	}
 
 	if d.HasChange("force_delete") {
-		d.SetPartial("force_delete")
+
 	}
 
 	if err := modifyInstanceChargeType(d, meta, false); err != nil {
@@ -1518,8 +1502,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("renewal_status")
-		d.SetPartial("auto_renew_period")
+
 	}
 
 	if d.HasChange("secondary_private_ips") {
@@ -1569,7 +1552,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
 			addDebug(action, response, request)
-			d.SetPartial("secondary_private_ips")
+
 		}
 		if len(create) > 0 {
 			action := "AssignPrivateIpAddresses"
@@ -1597,7 +1580,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
-			d.SetPartial("secondary_private_ips")
+
 		}
 
 	}
@@ -1646,7 +1629,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 				if err != nil {
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
-				d.SetPartial("secondary_private_ip_address_count")
+
 			}
 			if diff < 0 {
 				diff *= -1
@@ -1676,7 +1659,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				addDebug(action, response, request)
-				d.SetPartial("secondary_private_ip_address_count")
+
 			}
 		}
 	}
@@ -1712,7 +1695,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("deployment_set_id")
+
 	}
 
 	if d.HasChange("maintenance_time") || d.HasChange("maintenance_action") || d.HasChange("maintenance_notify") {
@@ -1763,9 +1746,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("maintenance_time")
-		d.SetPartial("maintenance_action")
-		d.SetPartial("maintenance_notify")
 	}
 
 	if d.HasChange("http_endpoint") || d.HasChange("http_tokens") {
@@ -1802,8 +1782,6 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
-		d.SetPartial("http_endpoint")
-		d.SetPartial("http_tokens")
 	}
 
 	d.Partial(false)
@@ -1917,7 +1895,6 @@ func modifyInstanceChargeType(d *schema.ResourceData, meta interface{}, forceDel
 			return WrapError(err)
 		}
 
-		d.SetPartial("instance_charge_type")
 		return nil
 	}
 
@@ -2027,19 +2004,19 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	request["InstanceId"] = d.Id()
 
 	if d.HasChange("instance_name") {
-		d.SetPartial("instance_name")
+
 		request["InstanceName"] = d.Get("instance_name").(string)
 		update = true
 	}
 
 	if d.HasChange("description") {
-		d.SetPartial("description")
+
 		request["Description"] = d.Get("description").(string)
 		update = true
 	}
 
 	if d.HasChange("user_data") {
-		d.SetPartial("user_data")
+
 		v := d.Get("user_data")
 		_, base64DecodeError := base64.StdEncoding.DecodeString(v.(string))
 		if base64DecodeError == nil {
@@ -2053,7 +2030,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	}
 
 	if d.HasChange("host_name") {
-		d.SetPartial("host_name")
+
 		request["HostName"] = d.Get("host_name").(string)
 		update = true
 		reboot = true
@@ -2061,7 +2038,7 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
 		if v := d.Get("password").(string); v != "" {
-			d.SetPartial("password")
+
 			request["Password"] = v
 			update = true
 			reboot = true
@@ -2073,21 +2050,20 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 				return reboot, WrapError(err)
 			}
 			request["Password"] = decryptResp
-			d.SetPartial("kms_encrypted_password")
-			d.SetPartial("kms_encryption_context")
+
 			update = true
 			reboot = true
 		}
 	}
 
 	if d.HasChange("deletion_protection") {
-		d.SetPartial("deletion_protection")
+
 		request["DeletionProtection"] = requests.NewBoolean(d.Get("deletion_protection").(bool))
 		update = true
 	}
 
 	if d.HasChange("credit_specification") {
-		d.SetPartial("credit_specification")
+
 		request["CreditSpecification"] = d.Get("credit_specification").(string)
 		update = true
 	}
@@ -2174,9 +2150,7 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), request.VSwitchId, request.PrivateIpAddress); err != nil {
 			return update, WrapError(err)
 		}
-		d.SetPartial("vswitch_id")
-		d.SetPartial("subnet_id")
-		d.SetPartial("private_ip")
+
 	}
 	return update, nil
 }
@@ -2277,7 +2251,7 @@ func modifyInstanceType(d *schema.ResourceData, meta interface{}, run bool) (boo
 
 			time.Sleep(DefaultIntervalShort * time.Second)
 		}
-		d.SetPartial("instance_type")
+
 	}
 	return update, nil
 }
@@ -2297,7 +2271,7 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 	if d.HasChange("internet_charge_type") {
 		request.NetworkChargeType = d.Get("internet_charge_type").(string)
 		update = true
-		d.SetPartial("internet_charge_type")
+
 	}
 
 	if d.HasChange("internet_max_bandwidth_out") {
@@ -2307,13 +2281,13 @@ func modifyInstanceNetworkSpec(d *schema.ResourceData, meta interface{}) error {
 		}
 		request.InternetMaxBandwidthOut = requests.NewInteger(n.(int))
 		update = true
-		d.SetPartial("internet_max_bandwidth_out")
+
 	}
 
 	if d.HasChange("internet_max_bandwidth_in") {
 		request.InternetMaxBandwidthIn = requests.NewInteger(d.Get("internet_max_bandwidth_in").(int))
 		update = true
-		d.SetPartial("internet_max_bandwidth_in")
+
 	}
 
 	//An instance that was successfully modified once cannot be modified again within 5 minutes.

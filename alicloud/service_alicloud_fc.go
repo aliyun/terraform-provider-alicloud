@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/fc-go-sdk"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -223,7 +223,7 @@ func ValidateFcTriggerConfig(v interface{}, k string) (ws []string, errors []err
 	if v == nil {
 		return
 	}
-	_, errors = validation.ValidateJsonString(v, k)
+	_, errors = validation.StringIsJSON(v, k)
 	if errors != nil && len(errors) > 0 {
 		return
 	}

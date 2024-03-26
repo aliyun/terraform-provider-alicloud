@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudDbfsDbfsInstance() *schema.Resource {
@@ -313,7 +313,7 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("fs_name")
+
 	}
 	update = false
 	action = "ResizeDbfs"
@@ -354,7 +354,7 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("size")
+
 	}
 	update = false
 	action = "UpdateDbfs"
@@ -401,9 +401,7 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("used_scene")
-		d.SetPartial("instance_type")
-		d.SetPartial("advanced_features")
+
 	}
 	update = false
 	action = "ModifyPerformanceLevel"
@@ -440,7 +438,7 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("performance_level")
+
 	}
 
 	if d.HasChange("tags") {
@@ -529,7 +527,6 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 		}
 
-		d.SetPartial("tags")
 	}
 
 	if d.HasChange("ecs_list") {
@@ -618,7 +615,6 @@ func resourceAliCloudDbfsDbfsInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 		}
 
-		d.SetPartial("ecs_list")
 	}
 	d.Partial(false)
 	return resourceAliCloudDbfsDbfsInstanceRead(d, meta)

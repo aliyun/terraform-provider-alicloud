@@ -7,11 +7,11 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliyunVpnRouteEntry() *schema.Resource {
@@ -209,7 +209,7 @@ func resourceAliyunVpnRouteEntryUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("public_vpc")
+
 	}
 
 	weightRequest := map[string]interface{}{
@@ -248,7 +248,7 @@ func resourceAliyunVpnRouteEntryUpdate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_route_entry", action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("weight")
+
 	}
 
 	d.Partial(false)

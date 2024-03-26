@@ -8,9 +8,9 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceAlicloudCloudSsoUser() *schema.Resource {
@@ -193,7 +193,7 @@ func resourceAlicloudCloudSsoUserUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("status")
+
 	}
 	update = false
 	updateUserReq := map[string]interface{}{
@@ -248,11 +248,7 @@ func resourceAlicloudCloudSsoUserUpdate(d *schema.ResourceData, meta interface{}
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("display_name")
-		d.SetPartial("email")
-		d.SetPartial("first_name")
-		d.SetPartial("last_name")
+
 	}
 	d.Partial(false)
 	return resourceAlicloudCloudSsoUserRead(d, meta)

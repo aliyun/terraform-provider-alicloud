@@ -7,8 +7,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudEventBridgeRule() *schema.Resource {
@@ -410,8 +410,6 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
-		d.SetPartial("filter_pattern")
-		d.SetPartial("description")
 	}
 
 	update = false
@@ -521,7 +519,6 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
 
-		d.SetPartial("targets")
 	}
 
 	if d.HasChange("status") {
@@ -616,7 +613,6 @@ func resourceAliCloudEventBridgeRuleUpdate(d *schema.ResourceData, meta interfac
 				}
 			}
 
-			d.SetPartial("status")
 		}
 	}
 

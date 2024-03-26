@@ -10,8 +10,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcDhcpOptionsSet() *schema.Resource {
@@ -288,12 +288,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("domain_name_servers")
-		d.SetPartial("domain_name")
-		d.SetPartial("dhcp_options_set_name")
-		d.SetPartial("dhcp_options_set_description")
-		d.SetPartial("lease_time")
-		d.SetPartial("ipv6_lease_time")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -330,7 +325,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("associate_vpcs") {
@@ -388,10 +383,9 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("vpc_id")
 
 			}
-			d.SetPartial("associate_vpcs")
+
 		}
 
 		if added.Len() > 0 {
@@ -442,10 +436,9 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("vpc_id")
 
 			}
-			d.SetPartial("associate_vpcs")
+
 		}
 
 	}
@@ -454,7 +447,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if err := vpcServiceV2.SetResourceTags(d, "DhcpOptionsSet"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcDhcpOptionsSetRead(d, meta)

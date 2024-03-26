@@ -8,8 +8,8 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
@@ -292,8 +292,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("vpc_endpoint_name")
-		d.SetPartial("endpoint_description")
+
 	}
 	update = false
 	action = "ChangeResourceGroup"
@@ -336,7 +335,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("tags") {
@@ -344,7 +343,7 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if err := privateLinkServiceV2.SetResourceTags(d, "VpcEndpoint"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
 		oldEntry, newEntry := d.GetChange("security_group_ids")
@@ -396,10 +395,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("security_group_ids")
 
 			}
-			d.SetPartial("security_group_ids")
+
 		}
 
 		if len(rl) > 0 {
@@ -443,10 +441,9 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("security_group_ids")
 
 			}
-			d.SetPartial("security_group_ids")
+
 		}
 	}
 	d.Partial(false)

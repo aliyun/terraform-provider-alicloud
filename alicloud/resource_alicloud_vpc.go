@@ -9,8 +9,8 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func resourceAliCloudVpcVpc() *schema.Resource {
@@ -332,9 +332,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("vpc_name")
-		d.SetPartial("cidr_block")
+
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -370,7 +368,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
+
 	}
 
 	if d.HasChange("classic_link_enabled") {
@@ -497,10 +495,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("secondary_cidr_blocks")
 
 			}
-			d.SetPartial("secondary_cidr_blocks")
+
 		}
 
 		if len(added.([]interface{})) > 0 {
@@ -546,10 +543,9 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("secondary_cidr_blocks")
 
 			}
-			d.SetPartial("secondary_cidr_blocks")
+
 		}
 	}
 	update = false
@@ -559,7 +555,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err := vpcServiceV2.SetResourceTags(d, "VPC"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
+
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcVpcRead(d, meta)
