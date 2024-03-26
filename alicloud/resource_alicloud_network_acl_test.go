@@ -155,7 +155,7 @@ func testSweepNetworkAcl(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCNetworkAcl_basic(t *testing.T) {
+func TestAccAliCloudVpcNetworkAcl_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
@@ -323,7 +323,7 @@ func TestAccAlicloudVPCNetworkAcl_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCNetworkAcl_basic1(t *testing.T) {
+func TestAccAliCloudVpcNetworkAcl_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
@@ -377,6 +377,198 @@ func TestAccAlicloudVPCNetworkAcl_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudVpcNetworkAcl_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_network_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNetworkAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNetworkAclBasicDependence2)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-6"})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":           "${alicloud_vpc.default.id}",
+					"network_acl_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":           CHECKSET,
+						"network_acl_name": name,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"egress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "engress test",
+							"destination_cidr_ip":    "2408:4004:cc:400::/56",
+							"network_acl_entry_name": "tf-testacc78924",
+							"policy":                 "accept",
+							"protocol":               "icmpv6",
+							"ip_version":             "IPV6",
+							"entry_type":             "custom",
+							"port":                   "-1/-1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"egress_acl_entries.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ingress_acl_entries": []map[string]interface{}{
+						{
+							"description":            "ingress test",
+							"network_acl_entry_name": "tf-testacc78999",
+							"policy":                 "accept",
+							"protocol":               "icmpv6",
+							"source_cidr_ip":         "2408:4004:cc:400::/56",
+							"ip_version":             "IPV6",
+							"entry_type":             "custom",
+							"port":                   "-1/-1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ingress_acl_entries.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"network_acl_name": name + "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"network_acl_name": name + "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resources": []map[string]interface{}{
+						{
+							"resource_id":   "${alicloud_vswitch.default0.id}",
+							"resource_type": "VSwitch",
+						},
+						{
+							"resource_id":   "${alicloud_vswitch.default1.id}",
+							"resource_type": "VSwitch",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resources.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resources": []map[string]interface{}{
+						{
+							"resource_id":   "${alicloud_vswitch.default0.id}",
+							"resource_type": "VSwitch",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resources.#": "1",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVpcNetworkAcl_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_network_acl.default"
+	ra := resourceAttrInit(resourceId, AlicloudNetworkAclMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNetworkAcl")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snetworkacl%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNetworkAclBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":      "${alicloud_vpc.default.id}",
+					"name":        name,
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":      CHECKSET,
+						"name":        name,
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_network_acl_id": "${alicloud_network_acl.copyed.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_network_acl_id"},
+			},
+		},
+	})
+}
+
 var AlicloudNetworkAclMap0 = map[string]string{}
 
 func AlicloudNetworkAclBasicDependence0(name string) string {
@@ -407,12 +599,65 @@ resource "alicloud_vswitch" "default1" {
   zone_id           = data.alicloud_zones.default.ids.0
 }
 
+resource "alicloud_network_acl" "copyed" {
+  vpc_id           = alicloud_vpc.default.id
+  network_acl_name = var.name
+  description      = var.name
+  ingress_acl_entries {
+    description            = "${var.name}-ingress"
+    network_acl_entry_name = "${var.name}-ingress"
+    source_cidr_ip         = "10.0.0.0/24"
+    policy                 = "accept"
+    port                   = "20/80"
+    protocol               = "tcp"
+  }
+  egress_acl_entries {
+    description            = "${var.name}-egress"
+    network_acl_entry_name = "${var.name}-egress"
+    destination_cidr_ip    = "10.0.0.0/24"
+    policy                 = "accept"
+    port                   = "20/80"
+    protocol               = "tcp"
+  }
+}
+`, name)
+}
+
+func AlicloudNetworkAclBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+			default = "%[1]s"
+		}
+variable "name_change" {
+			default = "%[1]s_change"
+		}
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+resource "alicloud_vpc" "default" {
+  cidr_block = "192.168.0.0/16"
+  vpc_name = var.name
+  enable_ipv6 = "true"
+}
+resource "alicloud_vswitch" "default0" {
+  vpc_id            = alicloud_vpc.default.id
+  vswitch_name      = var.name
+  cidr_block        = cidrsubnets(alicloud_vpc.default.cidr_block, 4, 4)[0]
+  zone_id           = data.alicloud_zones.default.ids.0
+}
+resource "alicloud_vswitch" "default1" {
+  vpc_id            = alicloud_vpc.default.id
+  vswitch_name      = var.name_change
+  cidr_block        = cidrsubnets(alicloud_vpc.default.cidr_block, 4, 4)[1]
+  zone_id           = data.alicloud_zones.default.ids.0
+}
+
 `, name)
 }
 
 // Test Vpc NetworkAcl. >>> Resource test cases, automatically generated.
 // Case 2583
-func TestAccAlicloudVpcNetworkAcl_basic2583(t *testing.T) {
+func TestAccAliCloudVpcNetworkAcl_basic2583(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcNetworkAclMap2583)
@@ -570,7 +815,7 @@ resource "alicloud_vpc" "defaultVpc" {
 }
 
 // Case 2583  twin
-func TestAccAlicloudVpcNetworkAcl_basic2583_twin(t *testing.T) {
+func TestAccAliCloudVpcNetworkAcl_basic2583_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_network_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcNetworkAclMap2583)
@@ -600,6 +845,8 @@ func TestAccAlicloudVpcNetworkAcl_basic2583_twin(t *testing.T) {
 							"description":            "ingress test change",
 							"network_acl_entry_name": "tf-testacc78999",
 							"policy":                 "accept",
+							"ip_version":             "IPV4",
+							"entry_type":             "custom",
 							"port":                   "20/80",
 							"protocol":               "tcp",
 							"source_cidr_ip":         "10.0.0.0/24",
@@ -610,6 +857,8 @@ func TestAccAlicloudVpcNetworkAcl_basic2583_twin(t *testing.T) {
 							"description":            "engress test change",
 							"destination_cidr_ip":    "10.0.0.0/24",
 							"network_acl_entry_name": "tf-testacc78924",
+							"ip_version":             "IPV4",
+							"entry_type":             "custom",
 							"policy":                 "accept",
 							"port":                   "20/80",
 							"protocol":               "tcp",
