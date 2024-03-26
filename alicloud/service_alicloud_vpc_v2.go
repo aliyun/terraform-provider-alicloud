@@ -1185,7 +1185,6 @@ func (s *VpcServiceV2) VpcGatewayRouteTableAttachmentStateRefreshFunc(id string,
 // DescribeVpcNetworkAcl <<< Encapsulated get interface for Vpc NetworkAcl.
 
 func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -1197,14 +1196,15 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["NetworkAclId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -1219,8 +1219,9 @@ func (s *VpcServiceV2) DescribeVpcNetworkAcl(id string) (object map[string]inter
 	})
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidNetworkAcl.NotFound"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("NetworkAcl", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1242,7 +1243,9 @@ func (s *VpcServiceV2) VpcNetworkAclStateRefreshFunc(id string, field string, fa
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
