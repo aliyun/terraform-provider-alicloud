@@ -416,7 +416,7 @@ resource "alicloud_oss_bucket" "bucket-accelerate" {
 The following arguments are supported:
 
 * `bucket` - (Optional, ForceNew) The name of the bucket. If omitted, Terraform will assign a random and unique name.
-* `acl` - (Optional) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Can be "private", "public-read" and "public-read-write". Defaults to "private".
+* `acl` - (Optional, Computed, Deprecated since 1.220.0) The [canned ACL](https://www.alibabacloud.com/help/doc-detail/31898.htm) to apply. Can be "private", "public-read" and "public-read-write". This property has been deprecated since 1.220.0, please use the resource `alicloud_oss_bucket_acl` instead.
 * `cors_rule` - (Optional) A rule of  [Cross-Origin Resource Sharing](https://www.alibabacloud.com/help/doc-detail/31903.htm). The items of core rule are no more than 10 for every OSS bucket. See [`cors_rule`](#cors_rule) below.
 * `website` - (Optional) A website configuration. See [`website`](#website) below.
 * `logging` - (Optional) A Settings of [bucket logging](https://www.alibabacloud.com/help/doc-detail/31900.htm). See [`logging`](#logging) below.
