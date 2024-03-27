@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -26,6 +27,25 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			Update: schema.DefaultTimeout(60 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew_period": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 6, 12, 24, 36}),
+				DiffSuppressFunc: clickhousePostPaidAndRenewDiffSuppressFunc,
+			},
+			"renewal_status": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     StringInSlice([]string{"AutoRenewal", "Normal", "NotRenewal"}, false),
+				DiffSuppressFunc: clickhousePostPaidDiffSuppressFunc,
+			},
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"category": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -175,6 +195,10 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	request["DBClusterClass"] = d.Get("db_cluster_class")
 	if v, ok := d.GetOk("db_cluster_description"); ok {
 		request["DBClusterDescription"] = v
+	}
+	if v, ok := d.GetOk("auto_renew"); ok {
+		log.Printf("auto_renew %v", v)
+		request["AutoRenew"] = v
 	}
 	request["DBClusterNetworkType"] = d.Get("db_cluster_network_type")
 	request["DBClusterVersion"] = d.Get("db_cluster_version")
@@ -455,6 +479,51 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		}
 		d.SetPartial("db_cluster_access_white_list")
 	}
+
+	if (d.Get("payment_type").(string) == "Subscription") && d.HasChange("auto_renew_period") {
+		update = true
+		if d.Get("renewal_status").(string) == string(RenewAutoRenewal) {
+			period := d.Get("auto_renew_period").(int)
+			request["Duration"] = strconv.Itoa(period)
+			request["PeriodUnit"] = string(Month)
+			if period > 9 {
+				request["Duration"] = strconv.Itoa(period / 12)
+				request["PeriodUnit"] = string(Year)
+			}
+		}
+	}
+	if (d.Get("payment_type").(string) == "Subscription") && d.HasChange("renewal_status") {
+		update = true
+		request["RenewalStatus"] = d.Get("renewal_status")
+	}
+	if update {
+		action := "ModifyAutoRenewAttribute"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("auto_renew_period")
+		d.SetPartial("renewal_status")
+	}
+
 	if d.HasChange("status") {
 		clickhouseService := ClickhouseService{client}
 		object, err := clickhouseService.DescribeClickHouseDbCluster(d.Id())
