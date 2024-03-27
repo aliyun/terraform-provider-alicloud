@@ -34,7 +34,7 @@ resource "alicloud_dcdn_ipa_domain" "example" {
   status            = "online"
   sources {
     content  = "www.alicloud-provider.cn"
-    port     = 80
+    port     = 8898
     priority = "20"
     type     = "domain"
     weight   = 10

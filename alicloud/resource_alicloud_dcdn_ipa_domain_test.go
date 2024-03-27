@@ -141,6 +141,7 @@ func TestAccAlicloudDCDNIpaDomain_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"domain_name": "${var.domain_name}",
+					"scope":       "overseas",
 					"sources": []map[string]interface{}{
 						{
 							"content":  "www.alicloud-provider.cn",
@@ -155,6 +156,7 @@ func TestAccAlicloudDCDNIpaDomain_basic0(t *testing.T) {
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
 						"domain_name":       name,
+						"scope":             "overseas",
 						"sources.#":         "1",
 					}),
 				),
@@ -256,7 +258,7 @@ func TestAccAlicloudDCDNIpaDomain_basic1(t *testing.T) {
 							"weight":   "10",
 						},
 					},
-					"scope":             "global",
+					"scope":             "overseas",
 					"status":            "online",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 				}),
@@ -266,7 +268,7 @@ func TestAccAlicloudDCDNIpaDomain_basic1(t *testing.T) {
 						"domain_name":       name,
 						"sources.#":         "1",
 						"status":            "online",
-						"scope":             "global",
+						"scope":             "overseas",
 					}),
 				),
 			},
