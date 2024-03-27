@@ -60,7 +60,7 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 			},
 			"policy_name": {
 				Type:          schema.TypeString,
-				Optional:      true,
+				Optional:      false,
 				Computed:      true,
 				ForceNew:      true,
 				ConflictsWith: []string{"name"},
