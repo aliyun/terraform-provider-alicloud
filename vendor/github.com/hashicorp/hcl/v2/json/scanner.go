@@ -1,13 +1,16 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package json
 
 import (
 	"fmt"
 
-	"github.com/apparentlymart/go-textseg/v12/textseg"
+	"github.com/apparentlymart/go-textseg/v15/textseg"
 	"github.com/hashicorp/hcl/v2"
 )
 
-//go:generate stringer -type tokenType scanner.go
+//go:generate go run golang.org/x/tools/cmd/stringer -type tokenType scanner.go
 type tokenType rune
 
 const (

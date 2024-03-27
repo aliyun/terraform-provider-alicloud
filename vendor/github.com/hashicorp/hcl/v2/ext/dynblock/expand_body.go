@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package dynblock
 
 import (
@@ -13,6 +16,8 @@ type expandBody struct {
 	original   hcl.Body
 	forEachCtx *hcl.EvalContext
 	iteration  *iteration // non-nil if we're nested inside another "dynamic" block
+
+	checkForEach []func(cty.Value, hcl.Expression, *hcl.EvalContext) hcl.Diagnostics
 
 	// These are used with PartialContent to produce a "remaining items"
 	// body to return. They are nil on all bodies fresh out of the transformer.
@@ -63,6 +68,7 @@ func (b *expandBody) PartialContent(schema *hcl.BodySchema) (*hcl.BodyContent, h
 		original:     b.original,
 		forEachCtx:   b.forEachCtx,
 		iteration:    b.iteration,
+		checkForEach: b.checkForEach,
 		hiddenAttrs:  make(map[string]struct{}),
 		hiddenBlocks: make(map[string]hcl.BlockHeaderSchema),
 	}
@@ -201,28 +207,14 @@ func (b *expandBody) expandBlocks(schema *hcl.BodySchema, rawBlocks hcl.Blocks, 
 					}
 				}
 			} else {
-				// If our top-level iteration value isn't known then we're forced
-				// to compromise since HCL doesn't have any concept of an
-				// "unknown block". In this case then, we'll produce a single
-				// dynamic block with the iterator values set to DynamicVal,
-				// which at least makes the potential for a block visible
-				// in our result, even though it's not represented in a fully-accurate
-				// way.
+				// If our top-level iteration value isn't known then we
+				// substitute an unknownBody, which will cause the entire block
+				// to evaluate to an unknown value.
 				i := b.iteration.MakeChild(spec.iteratorName, cty.DynamicVal, cty.DynamicVal)
 				block, blockDiags := spec.newBlock(i, b.forEachCtx)
 				diags = append(diags, blockDiags...)
 				if block != nil {
-					block.Body = b.expandChild(block.Body, i)
-
-					// We additionally force all of the leaf attribute values
-					// in the result to be unknown so the calling application
-					// can, if necessary, use that as a heuristic to detect
-					// when a single nested block might be standing in for
-					// multiple blocks yet to be expanded. This retains the
-					// structure of the generated body but forces all of its
-					// leaf attribute values to be unknown.
-					block.Body = unknownBody{block.Body}
-
+					block.Body = unknownBody{b.expandChild(block.Body, i)}
 					blocks = append(blocks, block)
 				}
 			}
@@ -247,6 +239,7 @@ func (b *expandBody) expandChild(child hcl.Body, i *iteration) hcl.Body {
 	chiCtx := i.EvalContext(b.forEachCtx)
 	ret := Expand(child, chiCtx)
 	ret.(*expandBody).iteration = i
+	ret.(*expandBody).checkForEach = b.checkForEach
 	return ret
 }
 

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package dynblock
 
 import (
@@ -35,11 +38,44 @@ func (b *expandBody) decodeSpec(blockS *hcl.BlockHeaderSchema, rawSpec *hcl.Bloc
 		return nil, diags
 	}
 
+	//// iterator attribute
+
+	iteratorName := blockS.Type
+	if iteratorAttr := specContent.Attributes["iterator"]; iteratorAttr != nil {
+		itTraversal, itDiags := hcl.AbsTraversalForExpr(iteratorAttr.Expr)
+		diags = append(diags, itDiags...)
+		if itDiags.HasErrors() {
+			return nil, diags
+		}
+
+		if len(itTraversal) != 1 {
+			diags = append(diags, &hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Invalid dynamic iterator name",
+				Detail:   "Dynamic iterator must be a single variable name.",
+				Subject:  itTraversal.SourceRange().Ptr(),
+			})
+			return nil, diags
+		}
+
+		iteratorName = itTraversal.RootName()
+	}
+
 	//// for_each attribute
 
 	eachAttr := specContent.Attributes["for_each"]
 	eachVal, eachDiags := eachAttr.Expr.Value(b.forEachCtx)
 	diags = append(diags, eachDiags...)
+	if diags.HasErrors() {
+		return nil, diags
+	}
+	for _, check := range b.checkForEach {
+		moreDiags := check(eachVal, eachAttr.Expr, b.forEachCtx)
+		diags = append(diags, moreDiags...)
+		if moreDiags.HasErrors() {
+			return nil, diags
+		}
+	}
 
 	if !eachVal.CanIterateElements() && eachVal.Type() != cty.DynamicPseudoType {
 		// We skip this error for DynamicPseudoType because that means we either
@@ -67,28 +103,7 @@ func (b *expandBody) decodeSpec(blockS *hcl.BlockHeaderSchema, rawSpec *hcl.Bloc
 		return nil, diags
 	}
 
-	//// iterator attribute
-
-	iteratorName := blockS.Type
-	if iteratorAttr := specContent.Attributes["iterator"]; iteratorAttr != nil {
-		itTraversal, itDiags := hcl.AbsTraversalForExpr(iteratorAttr.Expr)
-		diags = append(diags, itDiags...)
-		if itDiags.HasErrors() {
-			return nil, diags
-		}
-
-		if len(itTraversal) != 1 {
-			diags = append(diags, &hcl.Diagnostic{
-				Severity: hcl.DiagError,
-				Summary:  "Invalid dynamic iterator name",
-				Detail:   "Dynamic iterator must be a single variable name.",
-				Subject:  itTraversal.SourceRange().Ptr(),
-			})
-			return nil, diags
-		}
-
-		iteratorName = itTraversal.RootName()
-	}
+	//// labels attribute
 
 	var labelExprs []hcl.Expression
 	if labelsAttr := specContent.Attributes["labels"]; labelsAttr != nil {

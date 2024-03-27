@@ -3,8 +3,8 @@ package msgpack
 import (
 	"bytes"
 
-	"github.com/vmihailenco/msgpack/v4"
-	msgpackCodes "github.com/vmihailenco/msgpack/v4/codes"
+	"github.com/vmihailenco/msgpack/v5"
+	msgpackCodes "github.com/vmihailenco/msgpack/v5/msgpcode"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -30,8 +30,7 @@ func unmarshal(dec *msgpack.Decoder, ty cty.Type, path cty.Path) (cty.Value, err
 	if msgpackCodes.IsExt(peek) {
 		// We just assume _all_ extensions are unknown values,
 		// since we don't have any other extensions.
-		dec.Skip() // skip what we've peeked
-		return cty.UnknownVal(ty), nil
+		return unmarshalUnknownValue(dec, ty, path)
 	}
 	if ty == cty.DynamicPseudoType {
 		return unmarshalDynamic(dec, path)
