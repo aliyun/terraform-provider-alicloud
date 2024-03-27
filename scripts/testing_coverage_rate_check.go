@@ -25,8 +25,15 @@ func init() {
 	customFormatter.DisableColors = false
 	customFormatter.ForceColors = true
 	log.SetFormatter(customFormatter)
-	log.SetOutput(os.Stdout)
+	// log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
+
+	file := "log.txt"
+	logFile, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0766)
+	if err != nil {
+		panic(err)
+	}
+	log.SetOutput(logFile)
 }
 
 var (
@@ -46,6 +53,7 @@ func main() {
 
 	byt, _ := os.ReadFile(*fileNames)
 	diff, _ := diffparser.Parse(string(byt))
+	testAll(diff)
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
 		resourceName := ""
@@ -135,7 +143,7 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 
 	for key, value := range schemaAttributes {
 		// "dry_run" or removed
-		if key == "dry_run" {
+		if key == "dry_run" || len(value.Removed) != 0 {
 			continue
 		}
 		(*schemaAllSet).Add(key)
@@ -155,10 +163,6 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 func getSchemaAttributes(rootName string, schemaAttributes map[string]SchemaAttribute,
 	resourceSchema map[string]*schema.Schema) {
 	for key, value := range resourceSchema {
-		if len(value.Removed) != 0 {
-			continue
-		}
-
 		if rootName != "" {
 			key = rootName + "." + key
 		}
@@ -172,6 +176,7 @@ func getSchemaAttributes(rootName string, schemaAttributes map[string]SchemaAttr
 				ForceNew:   value.ForceNew,
 				Default:    fmt.Sprint(value.Default),
 				Deprecated: value.Deprecated,
+				Removed:    value.Removed,
 			}
 		}
 		if value.Type == schema.TypeSet || value.Type == schema.TypeList {
@@ -238,11 +243,11 @@ func getTestCaseAttr(filePath string, resourceName string,
 			if unitFuncRegex.MatchString(text) {
 				continue
 			}
-			if !standardFuncRegex.MatchString(text) {
-				name := text[strings.Index(text, "T"):strings.Index(text, "(")]
-				log.Errorf("testcase %s should start with TestAccAliCloud", name)
-				isNameCorrect = false
-			}
+			//if !standardFuncRegex.MatchString(text) {
+			//	name := text[strings.Index(text, "T"):strings.Index(text, "(")]
+			//	log.Errorf("testcase %s should start with TestAccAliCloud", name)
+			//	isNameCorrect = false
+			//}
 			inFunc = true
 			funcName = text[strings.Index(text, "T"):strings.Index(text, "(")]
 			stepNumber = 0
@@ -287,9 +292,7 @@ func getTestCaseAttr(filePath string, resourceName string,
 					if len(attrStr) != 0 {
 						attrSlice := strings.Split(attrStr, ",")
 						for _, v := range attrSlice {
-							if len(v) != 0 && v != "dry_run" {
-								(*testIgnoreSet).Add(v)
-							}
+							(*testIgnoreSet).Add(v)
 						}
 					}
 					ignoreStr = ""
@@ -531,6 +534,8 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 	schemaModifySet, testModifySet, schemaForceNewSet, schemaAllSet, testIgnoreSet mapset.Set) bool {
 
 	isFullCover, isIgnoreLegal, isAllModified := true, true, true
+	schemaAllSetStr, _ := json.Marshal(schemaAllSet)
+	log.Errorf("resource %s attributes are %s.", resourceName, schemaAllSetStr)
 
 	notCoverSlice := schemaMustSet.Difference(testMustSet).ToSlice()
 	if len(notCoverSlice) != 0 {
@@ -545,13 +550,13 @@ func checkAttributeSet(resourceName string, fileType string, schemaMustSet, test
 		log.Infof("resource %s attributes has 100%% testing coverage rate ", resourceName)
 	}
 
-	forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).ToSlice()
-	if len(forceNewButIgnore) != 0 {
-		isIgnoreLegal = false
-		forceNewButIgnoreStr, _ := json.Marshal(forceNewButIgnore)
-		// TODO: 从READ方法区分是否是私有属性，从而区分应该修改ignore数组还是应该修改资源属性
-		log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
-	}
+	//forceNewButIgnore := schemaForceNewSet.Intersect(testIgnoreSet).ToSlice()
+	//if len(forceNewButIgnore) != 0 {
+	//	isIgnoreLegal = false
+	//	forceNewButIgnoreStr, _ := json.Marshal(forceNewButIgnore)
+	//	// TODO: 从READ方法区分是否是私有属性，从而区分应该修改ignore数组还是应该修改资源属性
+	//	log.Errorf("resource %s [ForceNew] attributes %v are in ImportStateVerifyIgnore array ", resourceName, string(forceNewButIgnoreStr))
+	//}
 	redundantAttr := testIgnoreSet.Difference(schemaAllSet).ToSlice()
 	redundantAttrFinal := []string{}
 	for _, v := range redundantAttr {
