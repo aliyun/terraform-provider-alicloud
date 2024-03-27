@@ -35,9 +35,10 @@ func resourceAlicloudOssBucket() *schema.Resource {
 
 			"acl": {
 				Type:         schema.TypeString,
-				Default:      oss.ACLPrivate,
+				Computed:     true,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"private", "public-read", "public-read-write"}, false),
+				Deprecated:   "Field 'acl' has been deprecated since provider version 1.220.0. New resource 'alicloud_oss_bucket_acl' instead.",
 			},
 
 			"cors_rule": {
