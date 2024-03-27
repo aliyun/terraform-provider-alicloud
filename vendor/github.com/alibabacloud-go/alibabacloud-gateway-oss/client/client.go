@@ -2,6 +2,7 @@
 package client
 
 import (
+	oss_util "github.com/alibabacloud-go/alibabacloud-gateway-oss-util/client"
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
 	array "github.com/alibabacloud-go/darabonba-array/client"
 	encodeutil "github.com/alibabacloud-go/darabonba-encode-util/client"
@@ -32,7 +33,7 @@ func (client *Client) Init() (_err error) {
 	if _err != nil {
 		return _err
 	}
-	client.Default_signed_params = []*string{tea.String("location"), tea.String("cors"), tea.String("objectMeta"), tea.String("uploadId"), tea.String("partNumber"), tea.String("security-token"), tea.String("position"), tea.String("img"), tea.String("style"), tea.String("styleName"), tea.String("replication"), tea.String("replicationProgress"), tea.String("replicationLocation"), tea.String("cname"), tea.String("qos"), tea.String("startTime"), tea.String("endTime"), tea.String("symlink"), tea.String("x-oss-process"), tea.String("response-content-type"), tea.String("response-content-language"), tea.String("response-expires"), tea.String("response-cache-control"), tea.String("response-content-disposition"), tea.String("response-content-encoding"), tea.String("udf"), tea.String("udfName"), tea.String("udfImage"), tea.String("udfId"), tea.String("udfImageDesc"), tea.String("udfApplication"), tea.String("udfApplicationLog"), tea.String("restore"), tea.String("callback"), tea.String("callback-var"), tea.String("policy"), tea.String("encryption"), tea.String("versions"), tea.String("versioning"), tea.String("versionId"), tea.String("wormId")}
+	client.Default_signed_params = []*string{tea.String("response-content-type"), tea.String("response-content-language"), tea.String("response-cache-control"), tea.String("logging"), tea.String("response-content-encoding"), tea.String("acl"), tea.String("uploadId"), tea.String("uploads"), tea.String("partNumber"), tea.String("group"), tea.String("link"), tea.String("delete"), tea.String("website"), tea.String("location"), tea.String("objectInfo"), tea.String("objectMeta"), tea.String("response-expires"), tea.String("response-content-disposition"), tea.String("cors"), tea.String("lifecycle"), tea.String("restore"), tea.String("qos"), tea.String("referer"), tea.String("stat"), tea.String("bucketInfo"), tea.String("append"), tea.String("position"), tea.String("security-token"), tea.String("live"), tea.String("comp"), tea.String("status"), tea.String("vod"), tea.String("startTime"), tea.String("endTime"), tea.String("x-oss-process"), tea.String("symlink"), tea.String("callback"), tea.String("callback-var"), tea.String("tagging"), tea.String("encryption"), tea.String("versions"), tea.String("versioning"), tea.String("versionId"), tea.String("policy"), tea.String("requestPayment"), tea.String("x-oss-traffic-limit"), tea.String("qosInfo"), tea.String("asyncFetch"), tea.String("x-oss-request-payer"), tea.String("sequential"), tea.String("inventory"), tea.String("inventoryId"), tea.String("continuation-token"), tea.String("callback"), tea.String("callback-var"), tea.String("worm"), tea.String("wormId"), tea.String("wormExtend"), tea.String("replication"), tea.String("replicationLocation"), tea.String("replicationProgress"), tea.String("transferAcceleration"), tea.String("cname"), tea.String("metaQuery"), tea.String("x-oss-ac-source-ip"), tea.String("x-oss-ac-subnet-mask"), tea.String("x-oss-ac-vpc-id"), tea.String("x-oss-ac-forward-allow"), tea.String("resourceGroup"), tea.String("style"), tea.String("styleName"), tea.String("x-oss-async-process"), tea.String("rtc"), tea.String("accessPoint"), tea.String("accessPointPolicy"), tea.String("httpsConfig"), tea.String("regionsV2"), tea.String("publicAccessBlock"), tea.String("policyStatus"), tea.String("redundancyTransition"), tea.String("redundancyType"), tea.String("redundancyProgress"), tea.String("dataAccelerator"), tea.String("verbose"), tea.String("accessPointForObjectProcess"), tea.String("accessPointConfigForObjectProcess"), tea.String("accessPointPolicyForObjectProcess"), tea.String("bucketArchiveDirectRead"), tea.String("responseHeader"), tea.String("userDefinedLogFieldsConfig")}
 	client.Except_signed_params = []*string{tea.String("list-type"), tea.String("regions")}
 	return nil
 }
@@ -76,6 +77,7 @@ func (client *Client) ModifyRequest(context *spi.InterceptorContext, attributeMa
 	}
 
 	config := context.Configuration
+	regionId := config.RegionId
 	credential := request.Credential
 	accessKeyId, _err := credential.GetAccessKeyId()
 	if _err != nil {
@@ -103,8 +105,10 @@ func (client *Client) ModifyRequest(context *spi.InterceptorContext, attributeMa
 				return _err
 			}
 
-			request.Stream = tea.ToReader(xml.ToXML(reqBodyMap))
+			xmlStr := xml.ToXML(reqBodyMap)
+			request.Stream = tea.ToReader(xmlStr)
 			request.Headers["content-type"] = tea.String("application/xml")
+			request.Headers["content-md5"] = encodeutil.Base64EncodeToString(signatureutil.MD5Sign(xmlStr))
 		} else if tea.BoolValue(string_.Equals(request.ReqBodyType, tea.String("json"))) {
 			reqBodyStr := util.ToJSONString(request.Body)
 			request.Stream = tea.ToReader(reqBodyStr)
@@ -138,7 +142,32 @@ func (client *Client) ModifyRequest(context *spi.InterceptorContext, attributeMa
 		"date":       util.GetDateUTCString(),
 		"user-agent": request.UserAgent,
 	}, request.Headers)
-	request.Headers["authorization"], _err = client.GetAuthorization(request.SignatureVersion, bucketName, request.Pathname, request.Method, request.Query, request.Headers, accessKeyId, accessKeySecret)
+	originPath := request.Pathname
+	originQuery := request.Query
+	if !tea.BoolValue(util.Empty(originPath)) {
+		pathAndQueries := string_.Split(originPath, tea.String("?"), tea.Int(2))
+		request.Pathname = pathAndQueries[0]
+		if tea.BoolValue(util.EqualNumber(array.Size(pathAndQueries), tea.Int(2))) {
+			pathQueries := string_.Split(pathAndQueries[1], tea.String("&"), nil)
+			for _, sub := range pathQueries {
+				item := string_.Split(sub, tea.String("="), nil)
+				queryKey := item[0]
+				queryValue := tea.String("")
+				if tea.BoolValue(util.EqualNumber(array.Size(item), tea.Int(2))) {
+					queryValue = item[1]
+				}
+
+				if tea.BoolValue(util.Empty(originQuery[tea.StringValue(queryKey)])) {
+					request.Query[tea.StringValue(queryKey)] = queryValue
+				}
+
+			}
+		}
+
+	}
+
+	signatureVersion := util.DefaultString(request.SignatureVersion, tea.String("v1"))
+	request.Headers["authorization"], _err = client.GetAuthorization(signatureVersion, bucketName, request.Pathname, request.Method, request.Query, request.Headers, accessKeyId, accessKeySecret, regionId)
 	if _err != nil {
 		return _err
 	}
@@ -169,6 +198,8 @@ func (client *Client) ModifyResponse(context *spi.InterceptorContext, attributeM
 				"data": map[string]interface{}{
 					"statusCode": tea.IntValue(response.StatusCode),
 					"requestId":  err["RequestId"],
+					"ecCode":     err["EC"],
+					"Recommend":  err["RecommendDoc"],
 					"hostId":     err["HostId"],
 				},
 			})
@@ -176,12 +207,14 @@ func (client *Client) ModifyResponse(context *spi.InterceptorContext, attributeM
 		} else {
 			headers := response.Headers
 			requestId := headers["x-oss-request-id"]
+			ecCode := headers["x-oss-ec-code"]
 			_err = tea.NewSDKError(map[string]interface{}{
 				"code":    tea.IntValue(response.StatusCode),
 				"message": nil,
 				"data": map[string]interface{}{
 					"statusCode": tea.IntValue(response.StatusCode),
 					"requestId":  tea.StringValue(requestId),
+					"ecCode":     tea.StringValue(ecCode),
 				},
 			})
 			return _err
@@ -227,17 +260,20 @@ func (client *Client) ModifyResponse(context *spi.InterceptorContext, attributeM
 				return _err
 			}
 
-			result := xml.ParseXml(bodyStr, nil)
-			list := map_.KeySet(result)
-			if tea.BoolValue(util.EqualNumber(array.Size(list), tea.Int(1))) {
-				tmp := list[0]
+			response.DeserializedBody = bodyStr
+			if !tea.BoolValue(util.Empty(bodyStr)) {
+				result, _err := oss_util.ParseXml(bodyStr, request.Action)
+				if _err != nil {
+					return _err
+				}
+
 				tryErr := func() (_e error) {
 					defer func() {
 						if r := tea.Recover(recover()); r != nil {
 							_e = r
 						}
 					}()
-					response.DeserializedBody, _err = util.AssertAsMap(result[tea.StringValue(tmp)])
+					response.DeserializedBody, _err = util.AssertAsMap(result)
 					if _err != nil {
 						return _err
 					}
@@ -254,8 +290,6 @@ func (client *Client) ModifyResponse(context *spi.InterceptorContext, attributeM
 					}
 					response.DeserializedBody = result
 				}
-			} else {
-				response.DeserializedBody = result
 			}
 
 		} else if tea.BoolValue(util.EqualString(request.BodyType, tea.String("binary"))) {
@@ -352,26 +386,144 @@ func (client *Client) GetHost(endpointType *string, bucketName *string, endpoint
 	return _result, _err
 }
 
-func (client *Client) GetAuthorization(signatureVersion *string, bucketName *string, pathname *string, method *string, query map[string]*string, headers map[string]*string, ak *string, secret *string) (_result *string, _err error) {
+func (client *Client) GetAuthorization(signatureVersion *string, bucketName *string, pathname *string, method *string, query map[string]*string, headers map[string]*string, ak *string, secret *string, regionId *string) (_result *string, _err error) {
 	sign := tea.String("")
-	if tea.BoolValue(util.IsUnset(signatureVersion)) || tea.BoolValue(string_.Equals(signatureVersion, tea.String("v1"))) {
-		sign, _err = client.GetSignatureV1(bucketName, pathname, method, query, headers, secret)
-		if _err != nil {
+	if !tea.BoolValue(util.IsUnset(signatureVersion)) {
+		if tea.BoolValue(string_.Equals(signatureVersion, tea.String("v1"))) {
+			sign, _err = client.GetSignatureV1(bucketName, pathname, method, query, headers, secret)
+			if _err != nil {
+				return _result, _err
+			}
+
+			_result = tea.String("OSS " + tea.StringValue(ak) + ":" + tea.StringValue(sign))
 			return _result, _err
 		}
 
-		_result = tea.String("OSS " + tea.StringValue(ak) + ":" + tea.StringValue(sign))
-		return _result, _err
-	} else {
-		sign, _err = client.GetSignatureV2(bucketName, pathname, method, query, headers, secret)
-		if _err != nil {
+		if tea.BoolValue(string_.Equals(signatureVersion, tea.String("v2"))) {
+			sign, _err = client.GetSignatureV2(bucketName, pathname, method, query, headers, secret)
+			if _err != nil {
+				return _result, _err
+			}
+
+			_result = tea.String("OSS2 AccessKeyId:" + tea.StringValue(ak) + ",Signature:" + tea.StringValue(sign))
 			return _result, _err
 		}
 
-		_result = tea.String("OSS2 AccessKeyId:" + tea.StringValue(ak) + ",Signature:" + tea.StringValue(sign))
+	}
+
+	dateTime := openapiutil.GetTimestamp()
+	dateTime = string_.Replace(dateTime, tea.String("-"), tea.String(""), nil)
+	dateTime = string_.Replace(dateTime, tea.String(":"), tea.String(""), nil)
+	headers["x-oss-date"] = dateTime
+	headers["x-oss-content-sha256"] = tea.String("UNSIGNED-PAYLOAD")
+	onlyDate := string_.SubString(dateTime, tea.Int(0), tea.Int(8))
+	cred := tea.String(tea.StringValue(ak) + "/" + tea.StringValue(onlyDate) + "/" + tea.StringValue(regionId) + "/oss/aliyun_v4_request")
+	sign, _err = client.GetSignatureV4(bucketName, pathname, method, query, headers, onlyDate, regionId, secret)
+	if _err != nil {
 		return _result, _err
 	}
 
+	_result = tea.String("OSS4-HMAC-SHA256 Credential=" + tea.StringValue(cred) + ", Signature=" + tea.StringValue(sign))
+	return _result, _err
+}
+
+func (client *Client) GetSignKey(secret *string, onlyDate *string, regionId *string) (_result []byte, _err error) {
+	temp := tea.String("aliyun_v4" + tea.StringValue(secret))
+	res := signatureutil.HmacSHA256Sign(onlyDate, temp)
+	res = signatureutil.HmacSHA256SignByBytes(regionId, res)
+	res = signatureutil.HmacSHA256SignByBytes(tea.String("oss"), res)
+	res = signatureutil.HmacSHA256SignByBytes(tea.String("aliyun_v4_request"), res)
+	_result = res
+	return _result, _err
+}
+
+func (client *Client) GetSignatureV4(bucketName *string, pathname *string, method *string, query map[string]*string, headers map[string]*string, onlyDate *string, regionId *string, secret *string) (_result *string, _err error) {
+	signingkey, _err := client.GetSignKey(secret, onlyDate, regionId)
+	if _err != nil {
+		return _result, _err
+	}
+
+	objectName := tea.String("/")
+	queryMap := make(map[string]*string)
+	if !tea.BoolValue(util.Empty(pathname)) {
+		objectName = pathname
+	}
+
+	canonicalizedUri := tea.String("/")
+	if !tea.BoolValue(util.Empty(bucketName)) {
+		canonicalizedUri = tea.String("/" + tea.StringValue(bucketName) + tea.StringValue(objectName))
+	}
+
+	// for java:
+	// String suffix = (!canonicalizedUri.equals("/") && canonicalizedUri.endsWith("/"))? "/" : "";
+	// canonicalizedUri = com.aliyun.openapiutil.Client.getEncodePath(canonicalizedUri) + suffix;
+	canonicalizedUri = openapiutil.GetEncodePath(canonicalizedUri)
+	for _, queryKey := range map_.KeySet(query) {
+		var queryValue *string
+		if !tea.BoolValue(util.Empty(query[tea.StringValue(queryKey)])) {
+			queryValue = encodeutil.PercentEncode(query[tea.StringValue(queryKey)])
+			queryValue = string_.Replace(queryValue, tea.String("+"), tea.String("%20"), nil)
+		}
+
+		queryKey = encodeutil.PercentEncode(queryKey)
+		queryKey = string_.Replace(queryKey, tea.String("+"), tea.String("%20"), nil)
+		// for go : queryMap[tea.StringValue(queryKey)] = queryValue
+		queryMap[tea.StringValue(queryKey)] = queryValue
+	}
+	canonicalizedQueryString, _err := client.BuildCanonicalizedQueryStringV4(queryMap)
+	if _err != nil {
+		return _result, _err
+	}
+
+	canonicalizedHeaders, _err := client.BuildCanonicalizedHeadersV4(headers)
+	if _err != nil {
+		return _result, _err
+	}
+
+	payload := tea.String("UNSIGNED-PAYLOAD")
+	canonicalRequest := tea.String(tea.StringValue(method) + "\n" + tea.StringValue(canonicalizedUri) + "\n" + tea.StringValue(canonicalizedQueryString) + "\n" + tea.StringValue(canonicalizedHeaders) + "\n\n" + tea.StringValue(payload))
+	hex := encodeutil.HexEncode(encodeutil.Hash(util.ToBytes(canonicalRequest), tea.String("ACS4-HMAC-SHA256")))
+	scope := tea.String(tea.StringValue(onlyDate) + "/" + tea.StringValue(regionId) + "/oss/aliyun_v4_request")
+	stringToSign := tea.String("OSS4-HMAC-SHA256\n" + tea.StringValue(headers["x-oss-date"]) + "\n" + tea.StringValue(scope) + "\n" + tea.StringValue(hex))
+	signature := signatureutil.HmacSHA256SignByBytes(stringToSign, signingkey)
+	_body := encodeutil.HexEncode(signature)
+	_result = _body
+	return _result, _err
+}
+
+func (client *Client) BuildCanonicalizedQueryStringV4(queryMap map[string]*string) (_result *string, _err error) {
+	canonicalizedQueryString := tea.String("")
+	if !tea.BoolValue(util.IsUnset(queryMap)) {
+		queryArray := map_.KeySet(queryMap)
+		sortedQueryArray := array.AscSort(queryArray)
+		separator := tea.String("")
+		for _, key := range sortedQueryArray {
+			canonicalizedQueryString = tea.String(tea.StringValue(canonicalizedQueryString) + tea.StringValue(separator) + tea.StringValue(key))
+			if !tea.BoolValue(util.Empty(queryMap[tea.StringValue(key)])) {
+				canonicalizedQueryString = tea.String(tea.StringValue(canonicalizedQueryString) + "=" + tea.StringValue(queryMap[tea.StringValue(key)]))
+			}
+
+			separator = tea.String("&")
+		}
+	}
+
+	_result = canonicalizedQueryString
+	return _result, _err
+}
+
+func (client *Client) BuildCanonicalizedHeadersV4(headers map[string]*string) (_result *string, _err error) {
+	canonicalizedHeaders := tea.String("")
+	headersArray := map_.KeySet(headers)
+	sortedHeadersArray := array.AscSort(headersArray)
+	for _, key := range sortedHeadersArray {
+		lowerKey := string_.ToLower(key)
+		if tea.BoolValue(string_.HasPrefix(lowerKey, tea.String("x-oss-"))) || tea.BoolValue(string_.Equals(lowerKey, tea.String("content-type"))) || tea.BoolValue(string_.Equals(lowerKey, tea.String("content-md5"))) {
+			canonicalizedHeaders = tea.String(tea.StringValue(canonicalizedHeaders) + tea.StringValue(key) + ":" + tea.StringValue(string_.Trim(headers[tea.StringValue(key)])) + "\n")
+		}
+
+	}
+	_result = canonicalizedHeaders
+	return _result, _err
 }
 
 func (client *Client) GetSignatureV1(bucketName *string, pathname *string, method *string, query map[string]*string, headers map[string]*string, secret *string) (_result *string, _err error) {
@@ -399,59 +551,15 @@ func (client *Client) GetSignatureV1(bucketName *string, pathname *string, metho
 }
 
 func (client *Client) BuildCanonicalizedResource(pathname *string, query map[string]*string) (_result *string, _err error) {
-	subResourcesMap := make(map[string]*string)
 	canonicalizedResource := pathname
-	if !tea.BoolValue(util.Empty(pathname)) {
-		paths := string_.Split(pathname, tea.String("?"), tea.Int(2))
-		canonicalizedResource = paths[0]
-		if tea.BoolValue(util.EqualNumber(array.Size(paths), tea.Int(2))) {
-			subResources := string_.Split(paths[1], tea.String("&"), nil)
-			for _, sub := range subResources {
-				hasExcepts := tea.Bool(false)
-				for _, excepts := range client.Except_signed_params {
-					if tea.BoolValue(string_.Contains(sub, excepts)) {
-						hasExcepts = tea.Bool(true)
-					}
-
-				}
-				if !tea.BoolValue(hasExcepts) {
-					item := string_.Split(sub, tea.String("="), nil)
-					key := item[0]
-					var value *string
-					if tea.BoolValue(util.EqualNumber(array.Size(item), tea.Int(2))) {
-						value = item[1]
-					}
-
-					subResourcesMap[tea.StringValue(key)] = value
-				}
-
-			}
-		}
-
-	}
-
-	subResourcesArray := map_.KeySet(subResourcesMap)
-	newQueryList := subResourcesArray
-	if !tea.BoolValue(util.IsUnset(query)) {
-		queryList := map_.KeySet(query)
-		newQueryList = array.Concat(queryList, subResourcesArray)
-	}
-
-	sortedParams := array.AscSort(newQueryList)
+	queryKeys := map_.KeySet(query)
+	sortedParams := array.AscSort(queryKeys)
 	separator := tea.String("?")
 	for _, paramName := range sortedParams {
 		if tea.BoolValue(array.Contains(client.Default_signed_params, paramName)) {
 			canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + tea.StringValue(separator) + tea.StringValue(paramName))
-			if !tea.BoolValue(util.IsUnset(query)) && !tea.BoolValue(util.IsUnset(query[tea.StringValue(paramName)])) {
+			if !tea.BoolValue(util.Empty(query[tea.StringValue(paramName)])) {
 				canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + "=" + tea.StringValue(query[tea.StringValue(paramName)]))
-			} else if !tea.BoolValue(util.IsUnset(subResourcesMap[tea.StringValue(paramName)])) {
-				canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + "=" + tea.StringValue(subResourcesMap[tea.StringValue(paramName)]))
-			}
-
-		} else if tea.BoolValue(array.Contains(subResourcesArray, paramName)) {
-			canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + tea.StringValue(separator) + tea.StringValue(paramName))
-			if !tea.BoolValue(util.IsUnset(subResourcesMap[tea.StringValue(paramName)])) {
-				canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + "=" + tea.StringValue(subResourcesMap[tea.StringValue(paramName)]))
 			}
 
 		}

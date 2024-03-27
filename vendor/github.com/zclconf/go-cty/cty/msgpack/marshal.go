@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/vmihailenco/msgpack/v4"
+	"github.com/vmihailenco/msgpack/v5"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 )
@@ -31,7 +31,11 @@ func Marshal(val cty.Value, ty cty.Type) ([]byte, error) {
 	var path cty.Path
 	var buf bytes.Buffer
 	enc := msgpack.NewEncoder(&buf)
-	enc.UseCompactEncoding(true)
+	enc.UseCompactInts(true)
+
+	// UseCompactFloats can fail on some platforms due to undefined behavior of
+	// float conversions
+	enc.UseCompactFloats(false)
 
 	err := marshal(val, ty, path, enc)
 	if err != nil {
@@ -53,11 +57,7 @@ func marshal(val cty.Value, ty cty.Type, path cty.Path, enc *msgpack.Encoder) er
 	}
 
 	if !val.IsKnown() {
-		err := enc.Encode(unknownVal)
-		if err != nil {
-			return path.NewError(err)
-		}
-		return nil
+		return marshalUnknownValue(val.Range(), path, enc)
 	}
 	if val.IsNull() {
 		err := enc.EncodeNil()
@@ -89,7 +89,7 @@ func marshal(val cty.Value, ty cty.Type, path cty.Path, enc *msgpack.Encoder) er
 				bf := val.AsBigFloat()
 				if iv, acc := bf.Int64(); acc == big.Exact {
 					err = enc.EncodeInt(iv)
-				} else if fv, acc := bf.Float64(); acc == big.Exact {
+				} else if fv, acc := bf.Float64(); acc == big.Exact && !bf.IsInt() {
 					err = enc.EncodeFloat64(fv)
 				} else {
 					err = enc.EncodeString(bf.Text('f', -1))

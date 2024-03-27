@@ -864,6 +864,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_acl":                                       resourceAliCloudOssBucketAcl(),
 			"alicloud_wafv3_defense_template":                               resourceAliCloudWafv3DefenseTemplate(),
 			"alicloud_dfs_vsc_mount_point":                                  resourceAliCloudDfsVscMountPoint(),
 			"alicloud_vpc_ipv6_address":                                     resourceAliCloudVpcIpv6Address(),

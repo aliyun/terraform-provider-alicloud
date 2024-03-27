@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package dynblock
 
 import (
@@ -19,6 +22,11 @@ type unknownBody struct {
 }
 
 var _ hcl.Body = unknownBody{}
+
+// hcldec.UnkownBody impl
+func (b unknownBody) Unknown() bool {
+	return true
+}
 
 func (b unknownBody) Content(schema *hcl.BodySchema) (*hcl.BodyContent, hcl.Diagnostics) {
 	content, diags := b.template.Content(schema)

@@ -5245,13 +5245,9 @@ func (client *AliyunClient) NewAckClient() (*roa.Client, error) {
 }
 
 func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
-	config := &openapi.Config{
-		AccessKeyId:     tea.String(client.config.AccessKey),
-		AccessKeySecret: tea.String(client.config.SecretKey),
-		SecurityToken:   tea.String(client.config.SecurityToken),
-	}
+	config := &client.teaRoaOpenapiConfig
 
-	productCode := "oss"
+	productCode := "OSS"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5275,6 +5271,11 @@ func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
 	openapiClient.Spi, _err = ossclient.NewClient()
 	if _err != nil {
 		return nil, _err
+	}
+
+	// SignVersion
+	if ossV, ok := client.config.SignVersion.Load("oss"); ok {
+		openapiClient.SignatureVersion = tea.String(ossV.(string))
 	}
 
 	return openapiClient, nil

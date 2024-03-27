@@ -1,18 +1,11 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package hclwrite
 
 import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
-
-var inKeyword = hclsyntax.Keyword([]byte{'i', 'n'})
-
-// placeholder token used when we don't have a token but we don't want
-// to pass a real "nil" and complicate things with nil pointer checks
-var nilToken = &Token{
-	Type:         hclsyntax.TokenNil,
-	Bytes:        []byte{},
-	SpacesBefore: 0,
-}
 
 // format rewrites tokens within the given sequence, in-place, to adjust the
 // whitespace around their content to achieve canonical formatting.
@@ -108,6 +101,14 @@ func formatIndent(lines []formatLine) {
 }
 
 func formatSpaces(lines []formatLine) {
+	// placeholder token used when we don't have a token but we don't want
+	// to pass a real "nil" and complicate things with nil pointer checks
+	nilToken := &Token{
+		Type:         hclsyntax.TokenNil,
+		Bytes:        []byte{},
+		SpacesBefore: 0,
+	}
+
 	for _, line := range lines {
 		for i, token := range line.lead {
 			var before, after *Token
@@ -119,7 +120,7 @@ func formatSpaces(lines []formatLine) {
 			if i < (len(line.lead) - 1) {
 				after = line.lead[i+1]
 			} else {
-				after = nilToken
+				continue
 			}
 			if spaceAfterToken(token, before, after) {
 				after.SpacesBefore = 1
@@ -143,7 +144,7 @@ func formatSpaces(lines []formatLine) {
 			if i < (len(line.assign) - 1) {
 				after = line.assign[i+1]
 			} else {
-				after = nilToken
+				continue
 			}
 			if spaceAfterToken(token, before, after) {
 				after.SpacesBefore = 1
@@ -156,7 +157,6 @@ func formatSpaces(lines []formatLine) {
 }
 
 func formatCells(lines []formatLine) {
-
 	chainStart := -1
 	maxColumns := 0
 
@@ -218,7 +218,6 @@ func formatCells(lines []formatLine) {
 	if chainStart != -1 {
 		closeCommentChain(len(lines))
 	}
-
 }
 
 // spaceAfterToken decides whether a particular subject token should have a
@@ -233,6 +232,11 @@ func spaceAfterToken(subject, before, after *Token) bool {
 
 	case subject.Type == hclsyntax.TokenIdent && after.Type == hclsyntax.TokenOParen:
 		// Don't split a function name from open paren in a call
+		return false
+
+	case (subject.Type == hclsyntax.TokenIdent && after.Type == hclsyntax.TokenDoubleColon) ||
+		(subject.Type == hclsyntax.TokenDoubleColon && after.Type == hclsyntax.TokenIdent):
+		// Don't split namespace segments in a function call
 		return false
 
 	case subject.Type == hclsyntax.TokenDot || after.Type == hclsyntax.TokenDot:
@@ -251,7 +255,7 @@ func spaceAfterToken(subject, before, after *Token) bool {
 		// No extra spaces within templates
 		return false
 
-	case inKeyword.TokenMatches(subject.asHCLSyntax()) && before.Type == hclsyntax.TokenIdent:
+	case hclsyntax.Keyword([]byte{'i', 'n'}).TokenMatches(subject.asHCLSyntax()) && before.Type == hclsyntax.TokenIdent:
 		// This is a special case for inside for expressions where a user
 		// might want to use a literal tuple constructor:
 		// [for x in [foo]: x]
@@ -451,11 +455,11 @@ func tokenBracketChange(tok *Token) int {
 // formatLine represents a single line of source code for formatting purposes,
 // splitting its tokens into up to three "cells":
 //
-// lead: always present, representing everything up to one of the others
-// assign: if line contains an attribute assignment, represents the tokens
-//    starting at (and including) the equals symbol
-// comment: if line contains any non-comment tokens and ends with a
-//    single-line comment token, represents the comment.
+//   - lead: always present, representing everything up to one of the others
+//   - assign: if line contains an attribute assignment, represents the tokens
+//     starting at (and including) the equals symbol
+//   - comment: if line contains any non-comment tokens and ends with a
+//     single-line comment token, represents the comment.
 //
 // When formatting, the leading spaces of the first tokens in each of these
 // cells is adjusted to align vertically their occurences on consecutive
