@@ -89,7 +89,9 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   addons {
     name = "knative"
   }
-
+  addons {
+    name = "managed-arms-prometheus"
+  }
 }
 ```
 
