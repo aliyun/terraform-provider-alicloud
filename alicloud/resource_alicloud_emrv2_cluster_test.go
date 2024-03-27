@@ -628,7 +628,7 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 					"cluster_name":      name,
 					"deploy_mode":       "NORMAL",
 					"security_mode":     "NORMAL",
-					"applications":         []string{"HADOOP-COMMON", "HDFS", "YARN"},
+					"applications":      []string{"HADOOP-COMMON", "HDFS", "YARN"},
 					"node_attributes": []map[string]interface{}{
 						{
 							"vpc_id":            "${alicloud_vpc.default.id}",
@@ -667,15 +667,15 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 							},
 						},
 						{
-							"node_group_type":               "CORE",
-							"node_group_name":               "emr-core",
-							"payment_type":                  "PayAsYouGo",
-							"vswitch_ids":                   []string{"${alicloud_vswitch.default.id}"},
-							"instance_types":                []string{"ecs.g7.xlarge"},
-							"node_count":                    "2",
-							"with_public_ip":                "false",
-							"graceful_shutdown":             "false",
-							"spot_instance_remedy":          "false",
+							"node_group_type":      "CORE",
+							"node_group_name":      "emr-core",
+							"payment_type":         "PayAsYouGo",
+							"vswitch_ids":          []string{"${alicloud_vswitch.default.id}"},
+							"instance_types":       []string{"ecs.g7.xlarge"},
+							"node_count":           "2",
+							"with_public_ip":       "false",
+							"graceful_shutdown":    "false",
+							"spot_instance_remedy": "false",
 							"system_disk": []map[string]interface{}{
 								{
 									"category":          "cloud_essd",
@@ -868,8 +868,8 @@ func TestAccAliCloudEmrV2Cluster_basic2(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"node_groups.#":        "4",
-						"force_sleep":          "60",
+						"node_groups.#": "4",
+						"force_sleep":   "60",
 					}),
 				),
 			},
