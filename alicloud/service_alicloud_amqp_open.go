@@ -324,7 +324,7 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
 		}
 		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(v.(map[string]interface{})["SourceExchange"]) == parts[2] {
+			if fmt.Sprint(v.(map[string]interface{})["SourceExchange"]) == parts[2] && parts[3] == fmt.Sprint(v.(map[string]interface{})["DestinationName"]) {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
