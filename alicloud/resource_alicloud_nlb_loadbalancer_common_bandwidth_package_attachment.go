@@ -116,11 +116,6 @@ func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentRead(d *sche
 	return nil
 }
 
-func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[INFO] Cannot update resource Alicloud Resource Loadbalancer Common Bandwidth Package Attachment.")
-	return nil
-}
-
 func resourceAliCloudNlbLoadbalancerCommonBandwidthPackageAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)

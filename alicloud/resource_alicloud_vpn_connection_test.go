@@ -4,44 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"strings"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func equalSubnet(astr string, bstr string) bool {
-	aArray := strings.Split(astr, ",")
-	bArray := strings.Split(bstr, ",")
-	if len(aArray) != len(bArray) {
-		return false
-	}
-
-	for _, item := range aArray {
-		if !strings.Contains(bstr, item) {
-			return false
-		}
-	}
-	return true
-}
-
-func testAccCheckVpnConnectionAttr(vpnConn *vpc.DescribeVpnConnectionResponse, localSubnet, remoteSubnet string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		if !equalSubnet(vpnConn.LocalSubnet, localSubnet) {
-			return WrapError(Error("wrong local subnet, expect %s, get %s", localSubnet, vpnConn.LocalSubnet))
-		}
-
-		if !equalSubnet(vpnConn.RemoteSubnet, remoteSubnet) {
-			return WrapError(Error("wrong remote subnet, expect %s, get %s", remoteSubnet, vpnConn.RemoteSubnet))
-		}
-
-		return nil
-	}
-}
 func TestAccAliCloudVPNConnectionBasic(t *testing.T) {
 	var v vpc.DescribeVpnConnectionResponse
 

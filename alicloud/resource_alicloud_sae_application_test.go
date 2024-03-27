@@ -2559,7 +2559,8 @@ func TestAccAliCloudSAEApplication_basicTags(t *testing.T) {
 }
 
 // Skip testing because code source settings cannot be configured.
-func SkipAccAliCloudSAEApplication_basic3(t *testing.T) {
+func TestAccAliCloudSAEApplication_basic3(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.SaeSupportRegions)
 	resourceId := "alicloud_sae_application.default"

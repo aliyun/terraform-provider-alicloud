@@ -5,56 +5,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
-
-func resourceAlicloudHavip() *schema.Resource {
-	return &schema.Resource{
-		Create: resourceAlicloudHavipCreate,
-		Read:   resourceAlicloudHavipRead,
-		Update: resourceAlicloudHavipUpdate,
-		Delete: resourceAlicloudHavipDelete,
-		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
-		},
-		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
-			Update: schema.DefaultTimeout(5 * time.Minute),
-			Delete: schema.DefaultTimeout(5 * time.Minute),
-		},
-		Schema: map[string]*schema.Schema{
-			"description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
-			},
-			"havip_name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"ip_address": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"vswitch_id": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-		},
-	}
-}
 
 func resourceAlicloudHavipCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)

@@ -9,7 +9,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var datahubProjectSuffixMin = 100000
@@ -214,27 +213,4 @@ func resourceDatahubProjectConfigDependence(name string) string {
 var datahubProjectBasicMap = map[string]string{
 	"name":    CHECKSET,
 	"comment": "project added by terraform",
-}
-
-func testAccCheckDatahubProjectExist(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found Datahub project: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no Datahub project ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		_, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
-			return dataHubClient.GetProject(rs.Primary.ID)
-		})
-
-		if err != nil {
-			return err
-		}
-		return nil
-	}
 }

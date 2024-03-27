@@ -91,7 +91,8 @@ func testSweepScdnDomain(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudScdnDomain_basic(t *testing.T) {
+func TestAccAlicloudScdnDomain_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_scdn_domain.default"
 	ra := resourceAttrInit(resourceId, ScdnDomainMap)

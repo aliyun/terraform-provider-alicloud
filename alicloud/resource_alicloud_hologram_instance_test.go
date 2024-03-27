@@ -1843,7 +1843,8 @@ func TestAccAliCloudHologramInstance_basic4785_twin(t *testing.T) {
 }
 
 // Case 3916  twin
-func SkipTestAccAliCloudHologramInstance_basic3916_twin(t *testing.T) {
+func TestAccAliCloudHologramInstance_basic3916_twin(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_hologram_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudHologramInstanceMap3916)

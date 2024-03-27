@@ -82,7 +82,8 @@ func testSweepApiGatewayApp(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
+func TestAccAlicloudApigatewayApp_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v *cloudapi.DescribeAppResponse
 
 	resourceId := "alicloud_api_gateway_app.default"
@@ -189,7 +190,8 @@ func SkipTestAccAlicloudApigatewayApp_basic(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudApigatewayApp_multi(t *testing.T) {
+func TestAccAlicloudApigatewayApp_multi(t *testing.T) {
+	t.Skip("Pending")
 	var v *cloudapi.DescribeAppResponse
 	resourceId := "alicloud_api_gateway_app.default.9"
 	ra := resourceAttrInit(resourceId, apigatewayAppBasicMap)

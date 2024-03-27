@@ -1494,18 +1494,6 @@ func resourceAliCloudKvstoreInstanceDelete(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func convertModifyModeRequest(input int) string {
-	switch input {
-	case 0:
-		return "Cover"
-	case 1:
-		return "Append"
-	case 2:
-		return "Delete"
-	}
-	return ""
-}
-
 func refreshParameters(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}

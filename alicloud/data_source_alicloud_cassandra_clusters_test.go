@@ -37,7 +37,8 @@ var checkCassandraInfo = dataSourceAttr{
 	fakeMapFunc:  fakeCassandraMapFunc,
 }
 
-func SkipTestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
+func TestAccAlicloudCassandraClustersDataSourceNewCluster(t *testing.T) {
+	t.Skip("Pending")
 	// Cassandra has been offline
 	t.Skip("Cassandra has been offline")
 	rand := acctest.RandInt()

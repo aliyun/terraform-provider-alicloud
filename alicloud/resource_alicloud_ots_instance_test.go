@@ -2,21 +2,18 @@ package alicloud
 
 import (
 	"fmt"
-	"testing"
-
-	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
-
 	"log"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore"
+	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -415,28 +412,4 @@ var otsInstanceBasicMap = map[string]string{
 	"accessed_by":   "Any",
 	"instance_type": CHECKSET,
 	"description":   CHECKSET,
-}
-
-func testAccCheckOtsInstanceExist(n string, instance *ots.InstanceInfo) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found OTS table: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no OTS table ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-		otsService := OtsService{client}
-
-		response, err := otsService.DescribeOtsInstance(rs.Primary.ID)
-
-		if err != nil {
-			return err
-		}
-		instance = &response
-		return nil
-	}
 }

@@ -4,23 +4,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
-
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/aliyun/fc-go-sdk"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
-
-	"strings"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -245,13 +239,6 @@ func testAccPreCheckKMSForKeyIdImport(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithCmsContactGroupSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_CMS_CONTACT_GROUP")); v == "" {
-		t.Skipf("Skipping the test case with no cms contact group setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("SAG_INSTANCE_ID")); v == "" {
 		t.Skipf("Skipping the test case with no sag instance id setting")
@@ -259,27 +246,9 @@ func testAccPreCheckWithSmartAccessGatewaySetting(t *testing.T) {
 	}
 }
 
-func testAccPreCheckWithResourceManagerFloderIdSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID1")); v == "" {
-		t.Skip("Skipping the test case with no sag folder id setting")
-		t.Skipped()
-	}
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_RESOURCE_MANAGER_FOLDER_ID2")); v == "" {
-		t.Skip("Skipping the test case with no sag folder id setting")
-		t.Skipped()
-	}
-}
-
 func testAccPreCheckWithEnvVariable(t *testing.T, envVariableName string) {
 	if v := strings.TrimSpace(os.Getenv(envVariableName)); v == "" {
 		t.Skipf("Skipping the test case with no env variable %s", envVariableName)
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithSlbInstanceSetting(t *testing.T) {
-	if v := strings.TrimSpace(os.Getenv("ALICLOUD_SLB_INSTANCE_ID")); v == "" {
-		t.Skipf("Skipping the test case with no slb instance id setting")
 		t.Skipped()
 	}
 }
@@ -325,76 +294,6 @@ func testAccPreCheckEnterpriseAccountEnabled(t *testing.T) {
 	enable := os.Getenv("ENTERPRISE_ACCOUNT_ENABLED")
 	if enable != "true" {
 		t.Skipf("Skipping the test case because the enterprise account is not enabled.")
-		t.Skipped()
-	}
-}
-
-func testAccPreCheckWithNoDefaultVpc(t *testing.T) {
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeVpcsRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-	request.IsDefault = requests.NewBoolean(true)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVpcs(request)
-	})
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	response, _ := raw.(*vpc.DescribeVpcsResponse)
-
-	if len(response.Vpcs.Vpc) < 1 {
-		request.IsDefault = requests.NewBoolean(false)
-		request.VpcName = "default"
-		raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-			return vpcClient.DescribeVpcs(request)
-		})
-		if err != nil {
-			t.Skipf("Skipping the test case with err: %s", err)
-			t.Skipped()
-		}
-		response2, _ := raw.(*vpc.DescribeVpcsResponse)
-		if len(response2.Vpcs.Vpc) < 1 {
-			t.Skipf("Skipping the test case with there is no default vpc")
-			t.Skipped()
-		}
-	}
-}
-
-func testAccPreCheckWithNoDefaultVswitch(t *testing.T) {
-	region := os.Getenv("ALICLOUD_REGION")
-	rawClient, err := sharedClientForRegion(region)
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	client := rawClient.(*connectivity.AliyunClient)
-	request := vpc.CreateDescribeVSwitchesRequest()
-	request.RegionId = string(client.Region)
-	request.PageSize = requests.NewInteger(PageSizeSmall)
-	request.PageNumber = requests.NewInteger(1)
-	request.IsDefault = requests.NewBoolean(true)
-
-	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
-		return vpcClient.DescribeVSwitches(request)
-	})
-	if err != nil {
-		t.Skipf("Skipping the test case with err: %s", err)
-		t.Skipped()
-	}
-	response, _ := raw.(*vpc.DescribeVSwitchesResponse)
-
-	if len(response.VSwitches.VSwitch) < 1 {
-		t.Skipf("Skipping the test case with there is no default vswitche")
 		t.Skipped()
 	}
 }

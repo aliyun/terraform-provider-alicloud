@@ -35,7 +35,8 @@ var checkCassandraDcInfo = dataSourceAttr{
 	fakeMapFunc:  fakeCassandraDcMapFunc,
 }
 
-func SkipTestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
+func TestAccAlicloudCassandraDataCentersDataSourceNewDataCenter(t *testing.T) {
+	t.Skip("Pending")
 	// Cloud database Cassandra has been closed for sale
 	t.Skip("Cloud database Cassandra has been closed for sale")
 	rand := acctest.RandInt()

@@ -1,7 +1,6 @@
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -139,23 +138,6 @@ func (s *ConfigService) ConfigConfigurationRecorderStateRefreshFunc(id string, f
 		}
 		return object, object["ConfigurationRecorderStatus"].(string), nil
 	}
-}
-
-func (s *ConfigService) convertAggregatorAccountsToString(v []interface{}) (string, error) {
-	arrayMaps := make([]interface{}, len(v))
-	for i, vv := range v {
-		item := vv.(map[string]interface{})
-		arrayMaps[i] = map[string]interface{}{
-			"AccountId":   item["account_id"],
-			"AccountName": item["account_name"],
-			"AccountType": item["account_type"],
-		}
-	}
-	maps, err := json.Marshal(arrayMaps)
-	if err != nil {
-		return "", WrapError(err)
-	}
-	return string(maps), nil
 }
 
 func (s *ConfigService) DescribeConfigAggregator(id string) (object map[string]interface{}, err error) {

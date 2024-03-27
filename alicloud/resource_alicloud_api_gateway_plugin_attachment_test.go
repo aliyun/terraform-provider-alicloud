@@ -10,7 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudApiGatewayPluginAttachment(t *testing.T) {
+func TestAccAlicloudApiGatewayPluginAttachment(t *testing.T) {
+	t.Skip("Pending")
 	var v *cloudapi.PluginAttribute
 
 	resourceId := "alicloud_api_gateway_plugin_attachment.default"

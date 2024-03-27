@@ -678,11 +678,3 @@ func convertDbfsInstancePaymentTypeResponse(source string) string {
 	}
 	return source
 }
-
-func convertDbfsDBFSInfoPayTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "postpaid":
-		return "PayAsYouGo"
-	}
-	return source
-}

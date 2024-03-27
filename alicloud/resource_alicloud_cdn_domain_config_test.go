@@ -1169,7 +1169,8 @@ func TestAccAlicloudCDNDomainConfig_forward_scheme(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCDNDomainConfig_green_manager(t *testing.T) {
+func TestAccAlicloudCDNDomainConfig_green_manager(t *testing.T) {
+	t.Skip("Pending")
 	// the function: green_manager has been deleted
 	t.Skip()
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs

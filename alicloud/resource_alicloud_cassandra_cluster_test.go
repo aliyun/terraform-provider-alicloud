@@ -87,7 +87,8 @@ func testSweepCassandraCluster(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudCassandraCluster_basic(t *testing.T) {
+func TestAccAlicloudCassandraCluster_basic(t *testing.T) {
+	t.Skip("Pending")
 	t.Skip("The cloud database Cassandra has been closed for sale. For the use of Cassandra in the future, Lindorm is recommended")
 	var v cassandra.Cluster
 	resourceId := "alicloud_cassandra_cluster.default"

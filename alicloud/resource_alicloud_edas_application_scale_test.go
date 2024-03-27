@@ -12,7 +12,8 @@ import (
 )
 
 // There is an api bug, and skip the case temporarily
-func SkipTestAccAlicloudEdasApplicationScale_basic(t *testing.T) {
+func TestAccAlicloudEdasApplicationScale_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v *edas.Applcation
 	resourceId := "alicloud_edas_application_scale.default"
 

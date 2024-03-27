@@ -462,7 +462,8 @@ data "alicloud_config_aggregators" "default" {}
 }
 
 // Test this case need use a custom `source_identifier`
-func SkipTestAccAlicloudConfigAggregateConfigRule_basic1(t *testing.T) {
+func TestAccAlicloudConfigAggregateConfigRule_basic1(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_config_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateConfigRuleMap1)

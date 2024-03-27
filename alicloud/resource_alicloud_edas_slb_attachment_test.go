@@ -12,7 +12,8 @@ import (
 )
 
 // There is an EDAS api bug, and skip it
-func SkipTestAccAlicloudEdasSlbAttachment_basic(t *testing.T) {
+func TestAccAlicloudEdasSlbAttachment_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v *edas.Applcation
 	resourceId := "alicloud_edas_slb_attachment.default"
 

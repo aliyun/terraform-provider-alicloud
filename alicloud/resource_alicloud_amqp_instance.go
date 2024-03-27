@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -615,15 +616,6 @@ func resourceAliCloudAmqpInstanceDelete(d *schema.ResourceData, meta interface{}
 	return nil
 }
 
-func convertAmqpInstanceSupportEipRequest(source interface{}) interface{} {
-	switch source {
-	case false:
-		return "eip_false"
-	case true:
-		return "eip_true"
-	}
-	return ""
-}
 func convertAmqpInstanceInstanceTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PROFESSIONAL":

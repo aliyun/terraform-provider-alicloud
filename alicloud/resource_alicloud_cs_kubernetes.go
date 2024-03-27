@@ -1747,34 +1747,6 @@ func flattenMaintenanceWindowConfig(config *cs.MaintenanceWindow) (m []map[strin
 	return
 }
 
-func modifyMaintenanceWindow(d *schema.ResourceData, meta interface{}, mw cs.MaintenanceWindow) error {
-	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-
-	var response interface{}
-	var requestInfo cs.ModifyClusterArgs
-
-	requestInfo.MaintenanceWindow = mw
-
-	if err := invoker.Run(func() error {
-		_, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
-		})
-		return err
-	}); err != nil && !IsExpectedErrors(err, []string{"ErrorModifyMaintenanceWindowFailed"}) {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = d.Id()
-		requestMap["maintenance_window"] = requestInfo.DeletionProtection
-		addDebug("ModifyCluster", response, requestInfo, requestMap)
-	}
-	d.SetPartial("maintenance_window")
-
-	return nil
-}
-
 // getApiServerSlbID gets cluster's API server SLB ID.
 func getApiServerSlbID(d *schema.ResourceData, meta interface{}) (string, error) {
 	rosClient, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()

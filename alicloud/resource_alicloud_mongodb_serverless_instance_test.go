@@ -19,7 +19,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
+func TestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)
@@ -173,7 +174,8 @@ func SkipTestAccAlicloudMongoDBServerlessInstance_basic0(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
+func TestAccAlicloudMongoDBServerlessInstance_basic1(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_serverless_instance.default"
 	checkoutSupportedRegions(t, true, connectivity.MongoDBServerlessSupportRegions)

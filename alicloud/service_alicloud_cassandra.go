@@ -282,23 +282,6 @@ func (s *CassandraService) ignoreTag(t cassandra.Tag) bool {
 	return false
 }
 
-func (s *CassandraService) DescribeAccounts(id string) (object cassandra.DescribeAccountsResponse, err error) {
-	request := cassandra.CreateDescribeAccountsRequest()
-	request.RegionId = s.client.RegionId
-	request.ClusterId = id
-
-	raw, err := s.client.WithCassandraClient(func(cassandraClient *cassandra.Client) (interface{}, error) {
-		return cassandraClient.DescribeAccounts(request)
-	})
-	if err != nil {
-		err = WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
-		return
-	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	response, _ := raw.(*cassandra.DescribeAccountsResponse)
-	return *response, nil
-}
-
 func (s *CassandraService) DescribeCassandraBackupPlan(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewCdsClient()

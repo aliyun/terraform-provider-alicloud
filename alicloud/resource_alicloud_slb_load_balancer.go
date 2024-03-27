@@ -746,15 +746,6 @@ func convertSlbLoadBalancerPaymentTypeRequest(source interface{}) interface{} {
 	}
 	return source
 }
-func convertSlbLoadBalancerInstanceChargeTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "PostPaid":
-		return "PayOnDemand"
-	case "PrePaid":
-		return "PrePay"
-	}
-	return source
-}
 func convertSlbLoadBalancerInternetChargeTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "paybybandwidth":
@@ -770,15 +761,6 @@ func convertSlbLoadBalancerPaymentTypeResponse(source interface{}) interface{} {
 		return "PayAsYouGo"
 	case "PrePay":
 		return "Subscription"
-	}
-	return source
-}
-func convertSlbLoadBalancerInstanceChargeTypeResponse(source interface{}) interface{} {
-	switch source {
-	case "PayOnDemand":
-		return "PostPaid"
-	case "PrePay":
-		return "PrePaid"
 	}
 	return source
 }

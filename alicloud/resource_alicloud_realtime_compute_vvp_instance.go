@@ -481,15 +481,6 @@ func convertRealtimeComputeInstancesChargeTypeResponse(source interface{}) inter
 	}
 	return source
 }
-func convertRealtimeComputeDescribeInstancesRequestChargeTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "PayAsYouGo":
-		return "POST"
-	case "Subscription":
-		return "PRE"
-	}
-	return source
-}
 func convertRealtimeComputeCreateInstanceRequestChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":

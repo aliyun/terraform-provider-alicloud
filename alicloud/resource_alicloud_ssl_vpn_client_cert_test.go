@@ -14,7 +14,6 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func init() {
@@ -164,28 +163,6 @@ func TestAccAlicloudSslVpnClientCert_basic(t *testing.T) {
 		},
 	})
 
-}
-
-func testAccCheckSslVpnClientCertDestroy(s *terraform.State) error {
-	client := testAccProvider.Meta().(*connectivity.AliyunClient)
-	vpnGatewayService := VpnGatewayService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ssl_vpn_client_cert" {
-			continue
-		}
-
-		_, err := vpnGatewayService.DescribeSslVpnClientCert(rs.Primary.ID)
-
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return WrapError(err)
-		}
-	}
-
-	return nil
 }
 
 func testAccSslVpnClientCertConfigBasic(rand int) string {

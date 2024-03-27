@@ -11,7 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func SkipTestAccAlicloudGPDBConnectionUpdate(t *testing.T) {
+func TestAccAlicloudGPDBConnectionUpdate(t *testing.T) {
+	t.Skip("Pending")
 	var v *gpdb.DBInstanceNetInfo
 
 	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)

@@ -11,7 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func SkipTestAccAlicloudCSApplication_swarm(t *testing.T) {
+func TestAccAlicloudCSApplication_swarm(t *testing.T) {
+	t.Skip("Pending")
 	var basic, env cs.GetProjectResponse
 	var swarm cs.ClusterType
 
@@ -42,7 +43,8 @@ func SkipTestAccAlicloudCSApplication_swarm(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCSApplication_update(t *testing.T) {
+func TestAccAlicloudCSApplication_update(t *testing.T) {
+	t.Skip("Pending")
 	var basic cs.GetProjectResponse
 	var swarm cs.ClusterType
 

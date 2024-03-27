@@ -181,9 +181,3 @@ func resourceAliCloudNlbLoadBalancerSecurityGroupAttachmentDelete(d *schema.Reso
 	}
 	return nil
 }
-
-func convertNlbSecurityGroupIdsResponse(source interface{}) interface{} {
-	switch source {
-	}
-	return source
-}

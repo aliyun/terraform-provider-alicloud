@@ -2,14 +2,12 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/aliyun-datahub-sdk-go/datahub"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAccAlicloudDatahubTopic_basic(t *testing.T) {
@@ -224,31 +222,4 @@ var datahubTopicBasicMap = map[string]string{
 	"record_type":      "TUPLE",
 	"create_time":      CHECKSET,
 	"last_modify_time": CHECKSET,
-}
-
-func testAccCheckDatahubTopicExist(n string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[n]
-		if !ok {
-			return fmt.Errorf("not found Datahub topic: %s", n)
-		}
-
-		if rs.Primary.ID == "" {
-			return fmt.Errorf("no Datahub topic ID is set")
-		}
-
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		split := strings.Split(rs.Primary.ID, COLON_SEPARATED)
-		projectName := split[0]
-		topicName := split[1]
-		_, err := client.WithDataHubClient(func(dataHubClient datahub.DataHubApi) (interface{}, error) {
-			return dataHubClient.GetTopic(projectName, topicName)
-		})
-
-		if err != nil {
-			return err
-		}
-		return nil
-	}
 }

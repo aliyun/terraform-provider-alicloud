@@ -18,7 +18,8 @@ import (
 )
 
 // Skip this test because each account can only create one resource directory
-func SkipTestAccAliCloudResourceManagerResourceDirectory_basic(t *testing.T) {
+func TestAccAliCloudResourceManagerResourceDirectory_basic(t *testing.T) {
+	t.Skip("Pending")
 	var v map[string]interface{}
 	resourceId := "alicloud_resource_manager_resource_directory.default"
 	ra := resourceAttrInit(resourceId, ResourceManagerResourceDirectoryMap)

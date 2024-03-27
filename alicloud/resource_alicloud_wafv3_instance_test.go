@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Skip this testcase because you can only have one instance.
-func SkipTestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
+func TestAccAlicloudWafV3Instance_basic2294(t *testing.T) {
+	t.Skip("Pending: You can only have one instance.")
 	var v map[string]interface{}
 	resourceId := "alicloud_wafv3_instance.default"
 	ra := resourceAttrInit(resourceId, AlicloudWafV3InstanceMap2294)

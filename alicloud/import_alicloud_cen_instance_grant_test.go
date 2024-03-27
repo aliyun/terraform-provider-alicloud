@@ -12,7 +12,8 @@ import (
 )
 
 // This testcase can not work with multi account.
-func SkipTestAccAlicloudCenInstanceGrant_importBasic(t *testing.T) {
+func TestAccAlicloudCenInstanceGrant_importBasic(t *testing.T) {
+	t.Skip("Pending")
 	resourceName := "alicloud_cen_instance_grant.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	// multi provideris

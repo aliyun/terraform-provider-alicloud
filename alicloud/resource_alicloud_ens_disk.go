@@ -316,10 +316,3 @@ func convertEnsDisksDisksDiskChargeTypeResponse(source interface{}) interface{} 
 	}
 	return source
 }
-func convertEnsDiskChargeTypeRequest(source interface{}) interface{} {
-	switch source {
-	case "PayAsYouGo":
-		return "PostPaid"
-	}
-	return source
-}

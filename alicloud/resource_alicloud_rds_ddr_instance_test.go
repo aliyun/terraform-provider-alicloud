@@ -182,7 +182,8 @@ func testSweepDBDdrInstances(region string) error {
 	return nil
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
+func TestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
+	t.Skip("Pending")
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -431,7 +432,8 @@ func SkipTestAccAlicloudRdsDdrInstanceMysql(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
+func TestAccAlicloudRdsDdrInstanceMysqlTime(t *testing.T) {
+	t.Skip("Pending")
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -764,7 +766,8 @@ resource "alicloud_kms_key" "default" {
 `, name, startTime, endTime)
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
+func TestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
+	t.Skip("Pending")
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 
@@ -907,7 +910,8 @@ func SkipTestAccAlicloudRdsDdrInstanceSQLServer(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudRdsDdrInstanceSQLServerTime(t *testing.T) {
+func TestAccAlicloudRdsDdrInstanceSQLServerTime(t *testing.T) {
+	t.Skip("Pending")
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
 

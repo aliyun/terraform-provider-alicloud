@@ -113,11 +113,6 @@ func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentRead(d *schema.Resour
 	return nil
 }
 
-func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[INFO] Cannot update resource Alicloud Resource Gateway Endpoint Route Table Attachment.")
-	return nil
-}
-
 func resourceAliCloudVpcGatewayEndpointRouteTableAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)

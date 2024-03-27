@@ -8,7 +8,8 @@ import (
 )
 
 // Currently, Private network slb can only be created through the console.
-func SkipTestAccAlicloudPrivatelinkVpcEndpointServiceResourcesDataSource(t *testing.T) {
+func TestAccAlicloudPrivatelinkVpcEndpointServiceResourcesDataSource(t *testing.T) {
+	t.Skip("Pending")
 	resourceId := "data.alicloud_privatelink_vpc_endpoint_service_resources.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccPrivatelinkVpcEndpointServiceResources%d", rand)
