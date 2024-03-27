@@ -532,11 +532,11 @@ func TestAccAliCloudVPCVSwitch_basic5(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ipv6_cidr_block_mask": "10",
+					"ipv6_cidr_block_mask": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipv6_cidr_block_mask": "10",
+						"ipv6_cidr_block_mask": "0",
 					}),
 				),
 			},
