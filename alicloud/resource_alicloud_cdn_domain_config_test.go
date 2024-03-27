@@ -11,11 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -27,7 +27,7 @@ func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -82,8 +82,81 @@ func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-
 					testAccCheck(map[string]string{
+						"function_args.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"parent_id": "${alicloud_cdn_domain_config.parent.config_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parent_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set_new_twin(t *testing.T) {
+	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
+
+	resourceId := "alicloud_cdn_domain_config.default"
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
+
+	serviceFunc := func() interface{} {
+		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"domain_name":   "${alicloud_cdn_domain_new.default.domain_name}",
+					"function_name": "filetype_based_ttl_set",
+					"parent_id":     "${alicloud_cdn_domain_config.parent.config_id}",
+					"function_args": []map[string]interface{}{
+						{
+							"arg_name":  "ttl",
+							"arg_value": "300",
+						},
+						{
+							"arg_name":  "file_type",
+							"arg_value": "jpg",
+						},
+						{
+							"arg_name":  "weight",
+							"arg_value": "1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"domain_name":     name,
+						"function_name":   "filetype_based_ttl_set",
+						"parent_id":       CHECKSET,
 						"function_args.#": "3",
 					}),
 				),
@@ -97,11 +170,11 @@ func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set_new(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_ip_allow_list(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_ip_allow_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -113,7 +186,7 @@ func TestAccAlicloudCDNDomainConfig_ip_allow_list(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ip_list",
 		"arg_value": "110.110.110.110",
@@ -156,11 +229,11 @@ func TestAccAlicloudCDNDomainConfig_ip_allow_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_referer_white_list(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_referer_white_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -172,7 +245,7 @@ func TestAccAlicloudCDNDomainConfig_referer_white_list(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "refer_domain_allow_list",
 		"arg_value": "110.110.110.110",
@@ -215,11 +288,11 @@ func TestAccAlicloudCDNDomainConfig_referer_white_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_referer_black_list(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_referer_black_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -231,7 +304,7 @@ func TestAccAlicloudCDNDomainConfig_referer_black_list(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "refer_domain_deny_list",
 		"arg_value": "110.110.110.110",
@@ -274,11 +347,11 @@ func TestAccAlicloudCDNDomainConfig_referer_black_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -290,7 +363,7 @@ func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ttl",
 		"arg_value": "300",
@@ -354,11 +427,11 @@ func TestAccAlicloudCDNDomainConfig_filetype_based_ttl_set(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_oss_auth(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_oss_auth(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -370,7 +443,7 @@ func TestAccAlicloudCDNDomainConfig_oss_auth(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := defaultRegionToTest + strconv.Itoa(rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence_oss)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence2)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -410,11 +483,11 @@ func TestAccAlicloudCDNDomainConfig_oss_auth(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_ip_black_list(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_ip_black_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -426,7 +499,7 @@ func TestAccAlicloudCDNDomainConfig_ip_black_list(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ip_list",
 		"arg_value": "110.110.110.110",
@@ -470,11 +543,11 @@ func TestAccAlicloudCDNDomainConfig_ip_black_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_ip_white_list(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_ip_white_list(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -486,7 +559,7 @@ func TestAccAlicloudCDNDomainConfig_ip_white_list(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ip_list",
 		"arg_value": "110.110.110.110",
@@ -530,11 +603,11 @@ func TestAccAlicloudCDNDomainConfig_ip_white_list(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_error_page(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_error_page(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -546,7 +619,7 @@ func TestAccAlicloudCDNDomainConfig_error_page(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "error_code",
 		"arg_value": "502",
@@ -599,11 +672,11 @@ func TestAccAlicloudCDNDomainConfig_error_page(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_set_req_host_header(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_set_req_host_header(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -615,7 +688,7 @@ func TestAccAlicloudCDNDomainConfig_set_req_host_header(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "domain_name",
 		"arg_value": "alicloud-provider.cn",
@@ -659,11 +732,11 @@ func TestAccAlicloudCDNDomainConfig_set_req_host_header(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -675,7 +748,7 @@ func TestAccAlicloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "disable",
 		"arg_value": "on",
@@ -719,11 +792,11 @@ func TestAccAlicloudCDNDomainConfig_set_hashkey_args(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_aliauth(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_aliauth(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -735,7 +808,7 @@ func TestAccAlicloudCDNDomainConfig_aliauth(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "auth_type",
 		"arg_value": "no_auth",
@@ -789,11 +862,11 @@ func TestAccAlicloudCDNDomainConfig_aliauth(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_set_resp_header(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_set_resp_header(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -805,7 +878,7 @@ func TestAccAlicloudCDNDomainConfig_set_resp_header(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "key",
 		"arg_value": "expires",
@@ -859,11 +932,11 @@ func TestAccAlicloudCDNDomainConfig_set_resp_header(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_https_force(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_https_force(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -875,7 +948,7 @@ func TestAccAlicloudCDNDomainConfig_https_force(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -919,11 +992,11 @@ func TestAccAlicloudCDNDomainConfig_https_force(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_http_force(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_http_force(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -935,7 +1008,7 @@ func TestAccAlicloudCDNDomainConfig_http_force(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -979,11 +1052,11 @@ func TestAccAlicloudCDNDomainConfig_http_force(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_https_option(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_https_option(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -995,7 +1068,7 @@ func TestAccAlicloudCDNDomainConfig_https_option(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "http2",
 		"arg_value": "on",
@@ -1039,11 +1112,11 @@ func TestAccAlicloudCDNDomainConfig_https_option(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_l2_oss_key(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_l2_oss_key(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1055,7 +1128,7 @@ func TestAccAlicloudCDNDomainConfig_l2_oss_key(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "private_oss_auth",
 		"arg_value": "on",
@@ -1099,11 +1172,11 @@ func TestAccAlicloudCDNDomainConfig_l2_oss_key(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_forward_scheme(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_forward_scheme(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1115,7 +1188,7 @@ func TestAccAlicloudCDNDomainConfig_forward_scheme(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1169,13 +1242,13 @@ func TestAccAlicloudCDNDomainConfig_forward_scheme(t *testing.T) {
 	})
 }
 
-func SkipTestAccAlicloudCDNDomainConfig_green_manager(t *testing.T) {
+func SkipTestAccAliCloudCDNDomainConfig_green_manager(t *testing.T) {
 	// the function: green_manager has been deleted
 	t.Skip()
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1187,7 +1260,7 @@ func SkipTestAccAlicloudCDNDomainConfig_green_manager(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1231,11 +1304,11 @@ func SkipTestAccAlicloudCDNDomainConfig_green_manager(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_tmd_signature(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_tmd_signature(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1247,7 +1320,7 @@ func TestAccAlicloudCDNDomainConfig_tmd_signature(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ttl",
 		"arg_value": "10",
@@ -1351,11 +1424,11 @@ func TestAccAlicloudCDNDomainConfig_tmd_signature(t *testing.T) {
 }
 
 // Skip test due to product function conflict.
-//func TestAccAlicloudCDNDomainConfig_dynamic(t *testing.T) {
+//func TestAccAliCloudCDNDomainConfig_dynamic(t *testing.T) {
 //	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 //
 //	resourceId := "alicloud_cdn_domain_config.default"
-//	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+//	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 //
 //	serviceFunc := func() interface{} {
 //		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1367,7 +1440,7 @@ func TestAccAlicloudCDNDomainConfig_tmd_signature(t *testing.T) {
 //	testAccCheck := rac.resourceAttrMapUpdateSet()
 //	rand := acctest.RandIntRange(1000000, 9999999)
 //	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-//	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+//	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 //	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 //		"arg_name":  "enable",
 //		"arg_value": "on",
@@ -1406,17 +1479,16 @@ func TestAccAlicloudCDNDomainConfig_tmd_signature(t *testing.T) {
 //				ResourceName:            resourceId,
 //				ImportState:             true,
 //				ImportStateVerify:       true,
-//				ImportStateVerifyIgnore: []string{"domain_name"},
 //			},
 //		},
 //	})
 //}
 
-func TestAccAlicloudCDNDomainConfig_set_req_header(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_set_req_header(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1428,7 +1500,7 @@ func TestAccAlicloudCDNDomainConfig_set_req_header(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "key",
 		"arg_value": "tftest",
@@ -1482,11 +1554,11 @@ func TestAccAlicloudCDNDomainConfig_set_req_header(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_range(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_range(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1498,7 +1570,7 @@ func TestAccAlicloudCDNDomainConfig_range(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1542,11 +1614,11 @@ func TestAccAlicloudCDNDomainConfig_range(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_video_seek(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_video_seek(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1558,7 +1630,7 @@ func TestAccAlicloudCDNDomainConfig_video_seek(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1602,11 +1674,11 @@ func TestAccAlicloudCDNDomainConfig_video_seek(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_https_tls_version(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_https_tls_version(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1618,12 +1690,15 @@ func TestAccAlicloudCDNDomainConfig_https_tls_version(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "tls10",
 		"arg_value": "on",
 	}))
-
+	hashcode2 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
+		"arg_name":  "tls13",
+		"arg_value": "on",
+	}))
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1642,6 +1717,10 @@ func TestAccAlicloudCDNDomainConfig_https_tls_version(t *testing.T) {
 							"arg_name":  "tls10",
 							"arg_value": "on",
 						},
+						{
+							"arg_name":  "tls13",
+							"arg_value": "on",
+						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -1650,6 +1729,8 @@ func TestAccAlicloudCDNDomainConfig_https_tls_version(t *testing.T) {
 						"function_name": "https_tls_version",
 						"function_args." + hashcode1 + ".arg_name":  "tls10",
 						"function_args." + hashcode1 + ".arg_value": "on",
+						"function_args." + hashcode2 + ".arg_name":  "tls13",
+						"function_args." + hashcode2 + ".arg_value": "on",
 					}),
 				),
 			},
@@ -1662,11 +1743,11 @@ func TestAccAlicloudCDNDomainConfig_https_tls_version(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_HSTS(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_HSTS(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1678,7 +1759,7 @@ func TestAccAlicloudCDNDomainConfig_HSTS(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enabled",
 		"arg_value": "on",
@@ -1732,11 +1813,11 @@ func TestAccAlicloudCDNDomainConfig_HSTS(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1748,7 +1829,7 @@ func TestAccAlicloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "file_type",
 		"arg_value": "jpg",
@@ -1802,11 +1883,11 @@ func TestAccAlicloudCDNDomainConfig_filetype_force_ttl_code(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1818,7 +1899,7 @@ func TestAccAlicloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "code_string",
 		"arg_value": "302=0",
@@ -1872,11 +1953,11 @@ func TestAccAlicloudCDNDomainConfig_path_force_ttl_code(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_gzip(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_gzip(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1888,7 +1969,7 @@ func TestAccAlicloudCDNDomainConfig_gzip(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1932,11 +2013,11 @@ func TestAccAlicloudCDNDomainConfig_gzip(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_tesla(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_tesla(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1948,7 +2029,7 @@ func TestAccAlicloudCDNDomainConfig_tesla(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enable",
 		"arg_value": "on",
@@ -1992,11 +2073,11 @@ func TestAccAlicloudCDNDomainConfig_tesla(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_https_origin_sni(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_https_origin_sni(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -2008,7 +2089,7 @@ func TestAccAlicloudCDNDomainConfig_https_origin_sni(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "enabled",
 		"arg_value": "on",
@@ -2061,11 +2142,11 @@ func TestAccAlicloudCDNDomainConfig_https_origin_sni(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_brotli(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_brotli(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -2077,7 +2158,7 @@ func TestAccAlicloudCDNDomainConfig_brotli(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "brotli_level",
 		"arg_value": "1",
@@ -2126,17 +2207,16 @@ func TestAccAlicloudCDNDomainConfig_brotli(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"domain_name"},
 			},*/
 		},
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_ali_ua(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_ali_ua(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -2148,7 +2228,7 @@ func TestAccAlicloudCDNDomainConfig_ali_ua(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "ua",
 		"arg_value": "User-Agent",
@@ -2202,11 +2282,11 @@ func TestAccAlicloudCDNDomainConfig_ali_ua(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCDNDomainConfig_host_redirect(t *testing.T) {
+func TestAccAliCloudCDNDomainConfig_host_redirect(t *testing.T) {
 	var v *cdn.DomainConfigInDescribeCdnDomainConfigs
 
 	resourceId := "alicloud_cdn_domain_config.default"
-	ra := resourceAttrInit(resourceId, cdnDomainConfigBasicMap)
+	ra := resourceAttrInit(resourceId, AliCloudCDNDomainConfigMap0)
 
 	serviceFunc := func() interface{} {
 		return &CdnService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -2218,7 +2298,7 @@ func TestAccAlicloudCDNDomainConfig_host_redirect(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testacc%s%d.alicloud-provider.cn", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCdnDomainConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCDNDomainConfigBasicDependence0)
 	hashcode1 := strconv.Itoa(expirationCdnDomainConfigHash(map[string]interface{}{
 		"arg_name":  "regex",
 		"arg_value": "/$",
@@ -2282,46 +2362,72 @@ func TestAccAlicloudCDNDomainConfig_host_redirect(t *testing.T) {
 	})
 }
 
-func resourceCdnDomainConfigDependence(name string) string {
+var AliCloudCDNDomainConfigMap0 = map[string]string{
+	"parent_id": CHECKSET,
+	"config_id": CHECKSET,
+	"status":    CHECKSET,
+}
+
+func AliCloudCDNDomainConfigBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	resource "alicloud_cdn_domain_new" "default" {
-	  domain_name = "%s"
-	  cdn_type = "web"
-      scope = "overseas"
-      sources {
-         content = "www.aliyuntest.com"
-         type = "domain"
-         priority = 20
-         port = 80
-         weight = 10
-      }
+  		domain_name = "%s"
+  		cdn_type    = "web"
+  		scope       = "overseas"
+  		sources {
+    		content  = "www.aliyuntest.com"
+    		type     = "domain"
+    		priority = 20
+    		port     = 80
+    		weight   = 10
+  		}
 	}
 `, name)
 }
 
-func resourceCdnDomainConfigDependence_oss(name string) string {
+func AliCloudCDNDomainConfigBasicDependence1(name string) string {
 	return fmt.Sprintf(`
-	
 	resource "alicloud_cdn_domain_new" "default" {
-	  domain_name = "tf-testacc%s-oss.alicloud-provider.cn"
-	  cdn_type = "web"
-      scope = "overseas"
-      sources {
-         content = "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}"
-         type = "oss"
-         priority = 20
-         port = 80
-         weight = 10
-      }
+  		domain_name = "%s"
+  		cdn_type    = "web"
+  		scope       = "overseas"
+  		sources {
+    		content  = "www.aliyuntest.com"
+    		type     = "domain"
+    		priority = 20
+    		port     = 80
+    		weight   = 10
+  		}
+	}
+
+	resource "alicloud_cdn_domain_config" "parent" {
+  		domain_name   = alicloud_cdn_domain_new.default.domain_name
+  		function_name = "condition"
+  		function_args {
+    		arg_name  = "rule"
+    		arg_value = "{\"match\":{\"logic\":\"and\",\"criteria\":[{\"matchType\":\"clientipVer\",\"matchObject\":\"CONNECTING_IP\",\"matchOperator\":\"equals\",\"matchValue\":\"v6\",\"negate\":false}]},\"name\":\"example\",\"status\":\"enable\"}"
+  		}
+	}
+`, name)
+}
+
+func AliCloudCDNDomainConfigBasicDependence2(name string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_cdn_domain_new" "default" {
+  		domain_name = "tf-testacc%s-oss.alicloud-provider.cn"
+  		cdn_type    = "web"
+  		scope       = "overseas"
+  		sources {
+    		content  = "${alicloud_oss_bucket.default.bucket}.${alicloud_oss_bucket.default.extranet_endpoint}"
+    		type     = "oss"
+    		priority = 20
+    		port     = 80
+    		weight   = 10
+  		}
 	}
 
 	resource "alicloud_oss_bucket" "default" {
-	  bucket = "tf-testacc-domain-config-%s"
+  		bucket = "tf-testacc-domain-config-%s"
 	}
 `, name, name)
-}
-
-var cdnDomainConfigBasicMap = map[string]string{
-	"domain_name":   CHECKSET,
-	"function_name": CHECKSET,
 }
