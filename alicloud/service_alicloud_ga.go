@@ -86,15 +86,18 @@ func (s *GaService) GaAcceleratorStateRefreshFunc(id string, failStates []string
 
 func (s *GaService) DescribeGaListener(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeListener"
+
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeListener"
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"ListenerId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -110,17 +113,21 @@ func (s *GaService) DescribeGaListener(id string) (object map[string]interface{}
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.Listener", "UnknownError"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:GaListener", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:Listener", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -140,6 +147,7 @@ func (s *GaService) GaListenerStateRefreshFunc(id string, failStates []string) r
 				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
 			}
 		}
+
 		return object, fmt.Sprint(object["State"]), nil
 	}
 }
