@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCloudFirewallInstance() *schema.Resource {
+func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCloudFirewallInstanceCreate,
-		Read:   resourceAlicloudCloudFirewallInstanceRead,
-		Update: resourceAlicloudCloudFirewallInstanceUpdate,
-		Delete: resourceAlicloudCloudFirewallInstanceDelete,
+		Create: resourceAliCloudCloudFirewallInstanceCreate,
+		Read:   resourceAliCloudCloudFirewallInstanceRead,
+		Update: resourceAliCloudCloudFirewallInstanceUpdate,
+		Delete: resourceAliCloudCloudFirewallInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -25,7 +25,7 @@ func resourceAlicloudCloudFirewallInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Subscription"}, false),
+				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"period": {
 				Type:         schema.TypeInt,
@@ -187,7 +187,7 @@ func resourceAlicloudCloudFirewallInstance() *schema.Resource {
 		},
 	}
 }
-func resourceAlicloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateInstance"
@@ -291,9 +291,9 @@ func resourceAlicloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 	}
 	responseData := response["Data"].(map[string]interface{})
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
-	return resourceAlicloudCloudFirewallInstanceRead(d, meta)
+	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
 }
-func resourceAlicloudCloudFirewallInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	bssOpenApiService := BssOpenApiService{client}
@@ -316,7 +316,7 @@ func resourceAlicloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("end_time", getQueryInstanceObject["EndTime"])
 	return nil
 }
-func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
@@ -530,10 +530,60 @@ func resourceAlicloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		d.SetPartial("instance_count")
 	}
 	d.Partial(false)
-	return resourceAlicloudCloudFirewallInstanceRead(d, meta)
+	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
 }
-func resourceAlicloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudCloudFirewallInstance. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+	if d.Get("payment_type").(string) == "Subscription" {
+		log.Printf("[WARN] Cannot destroy resourceAliCloudCloudFirewallInstance. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "ReleasePostInstance"
+	var response map[string]interface{}
+
+	conn, err := client.NewCloudfwClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"InstanceId": d.Id(),
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
+
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	if fmt.Sprint(response["Success"]) == "false" || fmt.Sprint(response["ReleaseStatus"]) == "false" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
 	return nil
 }
 
@@ -546,6 +596,7 @@ func convertCloudFirewallInstanceVersion(source string) interface{} {
 	case "ultimate_version":
 		return 4
 	}
+
 	return source
 }
 
@@ -556,6 +607,7 @@ func convertCloudFirewallInstanceRenewalDurationUnitResponse(source interface{})
 	case "Y":
 		return "Year"
 	}
+
 	return source
 }
 
@@ -566,5 +618,6 @@ func convertCloudFirewallInstanceRenewalDurationUnitRequest(source interface{}) 
 	case "Year":
 		return "Y"
 	}
+
 	return source
 }
