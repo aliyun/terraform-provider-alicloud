@@ -74,6 +74,11 @@ variable "name" {
   default = "%s"
 }
 data "alicloud_account" "this" {}
+
+data "alicloud_cloud_monitor_service_enterprise_service" "current" {
+  enable = "On"
+}
+
 resource "alicloud_cms_namespace" "default" {
 	description = var.name
 	namespace = "tf-testacc-cloudmonitorservicenamespace"
