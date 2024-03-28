@@ -64,12 +64,12 @@ The following arguments are supported:
 * `db_cluster_version` - (Required, ForceNew) The DBCluster version. Valid values: `20.3.10.75`, `20.8.7.15`, `21.8.10.19`, `22.8.5.29`. **NOTE:** `19.15.2.2` is no longer supported. From version 1.191.0, `db_cluster_version` can be set to `22.8.5.29`.
 * `db_node_storage` - (Required, ForceNew) The db node storage.
 * `db_node_group_count` - (Required, ForceNew) The db node group count. The number should between 1 and 48.
-* `encryption_key` - (Optional, ForceNew) Key management service KMS key ID.
+* `encryption_key` - (Optional, ForceNew) Key management service KMS key ID. It is valid and required when encryption_type is `CloudDisk`.
 * `encryption_type` - (Optional, ForceNew) Currently only supports ECS disk encryption, with a value of CloudDisk, not encrypted when empty.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
-* `period` - (Optional, ForceNew) Pre-paid cluster of the pay-as-you-go cycle. Valid values: `Month`, `Year`.
+* `period` - (Optional, ForceNew) Pre-paid cluster of the pay-as-you-go cycle. It is valid and required when payment_type is `Subscription`. Valid values: `Month`, `Year`.
 * `storage_type` - (Required, ForceNew) Storage type of DBCluster. Valid values: `cloud_essd`, `cloud_efficiency`, `cloud_essd_pl2`, `cloud_essd_pl3`.
-* `used_time` - (Optional, ForceNew) The used time of DBCluster.
+* `used_time` - (Optional, ForceNew) The used time of DBCluster. It is valid and required when payment_type is `Subscription`.
 * `vswitch_id` - (Optional, ForceNew) The vswitch id of DBCluster.
 * `db_cluster_description` - (Optional) The DBCluster description.
 * `status` - (Optional) The status of the resource. Valid values: `Running`,`Creating`,`Deleting`,`Restarting`,`Preparing`.

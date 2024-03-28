@@ -17,6 +17,8 @@ For information about RDS remote disaster recovery instance and how to use it, s
 
 ## Example Usage
 
+Because the generation time of the disaster recovery set is uncertain, the query backup set may not have a value, so the following examples may not be executed successfully in one run.
+
 ### Create an RDS instance based on the remote disaster recovery set
 
 ```terraform
