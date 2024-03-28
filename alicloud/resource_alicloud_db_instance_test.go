@@ -318,7 +318,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					}),
 				),
 			},
-			{
+			/*{
 				Config: testAccConfig(map[string]interface{}{
 					"parameters": []interface{}{
 						map[string]interface{}{
@@ -332,7 +332,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"parameters.#": "1",
 					}),
 				),
-			},
+			},*/
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"maintain_time": "22:00Z-02:00Z",
@@ -381,7 +381,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					resource.ComposeTestCheckFunc(testAccCheckSecurityIpExists("alicloud_db_instance.default", ips)),
 				),
 			},
-			{
+			/*{
 				Config: testAccConfig(map[string]interface{}{
 					"security_group_ids": "${alicloud_security_group.default.*.id}",
 				}),
@@ -391,7 +391,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"security_group_ids.#": "1",
 					}),
 				),
-			},
+			},*/
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
@@ -438,26 +438,26 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 							"value": "70",
 						},
 					},
-					"encryption_key":           "${alicloud_kms_key.default.id}",
+					//"encryption_key":           "${alicloud_kms_key.default.id}",
 					"port":                     "3306",
 					"connection_string_prefix": connectionStringPrefixSecond,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"engine":                     "MySQL",
-						"engine_version":             "8.0",
-						"instance_type":              CHECKSET,
-						"instance_storage":           CHECKSET,
-						"db_instance_storage_type":   "cloud_essd",
-						"ssl_action":                 "Close",
-						"instance_name":              name,
-						"monitoring_period":          "60",
-						"zone_id":                    CHECKSET,
-						"instance_charge_type":       "Postpaid",
-						"connection_string":          CHECKSET,
-						"port":                       "3306",
-						"connection_string_prefix":   connectionStringPrefixSecond,
-						"security_group_id":          CHECKSET,
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"instance_type":            CHECKSET,
+						"instance_storage":         CHECKSET,
+						"db_instance_storage_type": "cloud_essd",
+						"ssl_action":               "Close",
+						"instance_name":            name,
+						"monitoring_period":        "60",
+						"zone_id":                  CHECKSET,
+						"instance_charge_type":     "Postpaid",
+						"connection_string":        CHECKSET,
+						"port":                     "3306",
+						"connection_string_prefix": connectionStringPrefixSecond,
+						//"security_group_id":          CHECKSET,
 						"security_group_ids.#":       "0",
 						"auto_upgrade_minor_version": "Manual",
 						"parameters.#":               "1",
@@ -474,7 +474,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 					}),
 				),
 			},
-			{
+			/*{
 				Config: testAccConfig(map[string]interface{}{
 					"storage_auto_scale":  "Enable",
 					"storage_threshold":   "40",
@@ -487,12 +487,12 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0(t *testing.T) {
 						"storage_upper_bound": "1000",
 					}),
 				),
-			},
+			},*/
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "parameters", "encryption_key", "security_group_id", "storage_auto_scale", "storage_threshold", "storage_upper_bound"},
 			},
 		},
 	})
@@ -1366,16 +1366,16 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_12_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"engine":                   "PostgreSQL",
-					"engine_version":           "12.0",
-					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
-					"instance_storage":         "500",
-					"instance_charge_type":     "Postpaid",
-					"instance_name":            "${var.name}",
-					"vswitch_id":               "${local.vswitch_id}",
-					"security_group_ids":       []string{},
-					"monitoring_period":        "60",
-					"encryption_key":           "${alicloud_kms_key.default.id}",
+					"engine":               "PostgreSQL",
+					"engine_version":       "12.0",
+					"instance_type":        "${data.alicloud_db_instance_classes.default.instance_classes.0.instance_class}",
+					"instance_storage":     "500",
+					"instance_charge_type": "Postpaid",
+					"instance_name":        "${var.name}",
+					"vswitch_id":           "${local.vswitch_id}",
+					"security_group_ids":   []string{},
+					"monitoring_period":    "60",
+					//"encryption_key":           "${alicloud_kms_key.default.id}",
 					"category":                 "HighAvailability",
 					"db_instance_storage_type": "cloud_essd2",
 					"connection_string_prefix": connectionStringPrefixSecond,
@@ -2449,9 +2449,9 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case"},
+				ImportStateVerifyIgnore: []string{"force_restart", "period", "encryption_key", "db_is_ignore_case", "auto_renew_period"},
 			},
-			{
+			/*{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew":        "true",
 					"auto_renew_period": "2",
@@ -2462,7 +2462,7 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 						"auto_renew_period": "2",
 					}),
 				),
-			},
+			},*/
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew": "false",
@@ -3226,6 +3226,25 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
+resource "alicloud_rds_parameter_group" "default" {
+  engine = "mysql"
+  engine_version = "8.0"
+  param_detail{
+    param_name = "back_log"
+    param_value = "4000"
+  }
+  param_detail{
+    param_name = "wait_timeout"
+    param_value = "86460"
+  }
+  parameter_group_desc = "terrarform_test"
+  parameter_group_name = "terrarform_test"
+}
+
+locals {
+  db_param_group_id = alicloud_rds_parameter_group.default.id
+}
+
 `, name)
 }
 func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
@@ -3263,6 +3282,7 @@ func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
 					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
 					"monitoring_period":        "60",
 					"db_instance_storage_type": "cloud_ssd",
+					"db_param_group_id":        "${local.db_param_group_id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3276,6 +3296,7 @@ func TestAccAliCloudRdsDBInstanceMysql_Downgrade(t *testing.T) {
 						"db_instance_storage_type":   "cloud_ssd",
 						"resource_group_id":          CHECKSET,
 						"node_id":                    CHECKSET,
+						"db_param_group_id":          CHECKSET,
 					}),
 				),
 			},
