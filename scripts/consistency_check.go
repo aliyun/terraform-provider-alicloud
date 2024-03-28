@@ -30,9 +30,9 @@ func init() {
 }
 
 var (
-	resourceNames = flag.String("resourceNames", "", "the names of the terraform resources to diff")
-	fileNames     = flag.String("fileNames", "", "the files to check diff")
-	filterList    = map[string][]string{
+	resourceNames     = flag.String("resourceNames", "", "the names of the terraform resources to diff")
+	consistFileNames  = flag.String("fileNames", "", "the files to check diff")
+	consistFilterList = map[string][]string{
 		"alicloud_amqp_instance":            {"logistics"},
 		"alicloud_cms_alarm":                {"notify_type"},
 		"alicloud_cs_serverless_kubernetes": {"private_zone", "create_v2_cluster"},
@@ -67,12 +67,12 @@ type ResourceAttribute struct {
 func main() {
 	exitCode := 0
 	flag.Parse()
-	if fileNames != nil && len(*fileNames) == 0 {
+	if consistFileNames != nil && len(*consistFileNames) == 0 {
 		log.Infof("the diff file is empty, shipped!")
 		return
 	}
 
-	byt, _ := ioutil.ReadFile(*fileNames)
+	byt, _ := ioutil.ReadFile(*consistFileNames)
 	diff, _ := diffparser.Parse(string(byt))
 	fileRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/(resource|data_source)[0-9a-zA-Z_]*_test.go")
@@ -302,7 +302,7 @@ func parseMatchLine(words []string, phase, rootName string) *ResourceAttribute {
 func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]ResourceAttribute, resourceSchemaDefined map[string]*schema.Schema) bool {
 	isConsistent := true
 	filteredList := set.NewSet()
-	if val, ok := filterList[resourceName]; ok {
+	if val, ok := consistFilterList[resourceName]; ok {
 		for _, v := range val {
 			filteredList.Add(v)
 		}
