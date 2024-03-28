@@ -352,6 +352,25 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 							Optional:     true,
 							ValidateFunc: validation.StringInSlice([]string{"EntryLevel", "EnterpriseLevel", "CreditEntryLevel"}, false),
 						},
+						"burstable_performance": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      "Include",
+							ValidateFunc: validation.StringInSlice([]string{"Exclude", "Include", "Required"}, false),
+						},
+						"excluded_instance_types": {
+							Type:     schema.TypeList,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+							Optional: true,
+						},
+						"architectures": {
+							Type: schema.TypeList,
+							Elem: &schema.Schema{
+								Type:         schema.TypeString,
+								ValidateFunc: validation.StringInSlice([]string{"X86", "Heterogeneous", "BareMental", "Arm", "SuperComputeCluster"}, false),
+							},
+							Optional: true,
+						},
 						"cores": {
 							Type:     schema.TypeInt,
 							Optional: true,
@@ -587,9 +606,14 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			if instanceFamilyLevel, ok := item["instance_family_level"].(string); ok && instanceFamilyLevel != "" {
 				instancePatternInfosMap["InstanceFamilyLevel"] = instanceFamilyLevel
 			}
+			if burstablePerformance, ok := item["burstable_performance"].(string); ok && burstablePerformance != "" {
+				instancePatternInfosMap["BurstablePerformance"] = burstablePerformance
+			}
 			instancePatternInfosMap["Memory"] = strconv.FormatFloat(item["memory"].(float64), 'f', 2, 64)
 			instancePatternInfosMap["MaxPrice"] = strconv.FormatFloat(item["max_price"].(float64), 'f', 2, 64)
 			instancePatternInfosMap["Cores"] = item["cores"].(int)
+			instancePatternInfosMap["Architectures"] = item["architectures"]
+			instancePatternInfosMap["ExcludedInstanceTypes"] = item["excluded_instance_types"]
 
 			instancePatternInfosMaps = append(instancePatternInfosMaps, instancePatternInfosMap)
 		}
@@ -778,7 +802,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	hasChangeInstanceTypeOverrides := d.HasChange("instance_type_override")
 	typeOverride := d.Get("instance_type_override")
 
-	if (hasChangeInstanceType || hasChangeInstanceTypes || d.Get("override").(bool)) && (!hasChangeInstanceTypeOverrides || len(typeOverride.(*schema.Set).List()) == 0) {
+	if (hasChangeInstanceType || hasChangeInstanceTypes) && (!hasChangeInstanceTypeOverrides || len(typeOverride.(*schema.Set).List()) == 0) {
 		instanceType := d.Get("instance_type").(string)
 		instanceTypes := d.Get("instance_types").([]interface{})
 		if instanceType == "" && (instanceTypes == nil || len(instanceTypes) == 0) {
@@ -839,6 +863,9 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				request["UserData"] = base64.StdEncoding.EncodeToString([]byte(v.(string)))
 			}
 		}
+		if v, ok := d.GetOk("user_data"); ok && v.(string) == "" {
+			request["UserData"] = ""
+		}
 		update = true
 	}
 	if d.HasChange("spot_price_limit") {
@@ -864,11 +891,18 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 			instancePatternInfos := make([]ess.ModifyScalingConfigurationInstancePatternInfo, 0)
 			for _, e := range v.(*schema.Set).List() {
 				pack := e.(map[string]interface{})
+				i := pack["excluded_instance_types"]
+				arr := toStringArray(i)
+				j := pack["architectures"]
+				arr1 := toStringArray(j)
 				l := ess.ModifyScalingConfigurationInstancePatternInfo{
-					InstanceFamilyLevel: pack["instance_family_level"].(string),
-					Memory:              strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
-					MaxPrice:            strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
-					Cores:               strconv.Itoa(pack["cores"].(int)),
+					InstanceFamilyLevel:  pack["instance_family_level"].(string),
+					Memory:               strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
+					MaxPrice:             strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
+					Cores:                strconv.Itoa(pack["cores"].(int)),
+					BurstablePerformance: pack["burstable_performance"].(string),
+					ExcludedInstanceType: &arr,
+					Architecture:         &arr1,
 				}
 				instancePatternInfos = append(instancePatternInfos, l)
 			}
@@ -1075,7 +1109,9 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		if base64DecodeError == nil {
 			d.Set("user_data", response["UserData"])
 		} else {
-			d.Set("user_data", userDataHashSum(response["UserData"].(string)))
+			if response["UserData"] != nil {
+				d.Set("user_data", userDataHashSum(response["UserData"].(string)))
+			}
 		}
 	} else {
 		if response["UserData"] != nil {
@@ -1155,13 +1191,27 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		result := make([]map[string]interface{}, 0)
 		for _, i := range v.(map[string]interface{})["InstancePatternInfo"].([]interface{}) {
 			r := i.(map[string]interface{})
+			var arr []string
+			var arr1 []string
+			if r["ExcludedInstanceTypes"] != nil {
+				i := r["ExcludedInstanceTypes"].(map[string]interface{})
+				arr = toStringArray(i["ExcludedInstanceType"])
+			}
+			if r["Architectures"] != nil {
+				j := r["Architectures"].(map[string]interface{})
+				arr1 = toStringArray(j["Architecture"])
+			}
+
 			f, _ := r["MaxPrice"].(json.Number).Float64()
 			maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
 			l := map[string]interface{}{
-				"instance_family_level": r["InstanceFamilyLevel"],
-				"memory":                r["Memory"],
-				"cores":                 r["Cores"],
-				"max_price":             maxPrice,
+				"instance_family_level":   r["InstanceFamilyLevel"],
+				"memory":                  r["Memory"],
+				"cores":                   r["Cores"],
+				"max_price":               maxPrice,
+				"excluded_instance_types": &arr,
+				"architectures":           &arr1,
+				"burstable_performance":   r["BurstablePerformance"],
 			}
 			result = append(result, l)
 		}
@@ -1297,4 +1347,13 @@ func activeSubstituteScalingConfiguration(d *schema.ResourceData, meta interface
 	}
 
 	return response.ScalingConfigurations.ScalingConfiguration, nil
+}
+
+func toStringArray(a interface{}) []string {
+	var paramSlice []string
+	strArr, _ := a.([]interface{})
+	for _, param := range strArr {
+		paramSlice = append(paramSlice, param.(string))
+	}
+	return paramSlice
 }
