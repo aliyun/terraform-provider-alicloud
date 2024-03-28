@@ -214,9 +214,9 @@ func (s *NlbServiceV2) DescribeAsyncGetJobStatus(d *schema.ResourceData, res map
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -539,51 +539,70 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 // DescribeNlbServerGroup <<< Encapsulated get interface for Nlb ServerGroup.
 
 func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]interface{}, err error) {
-	client := s.client
-	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "ListServerGroups"
-	conn, err := client.NewNlbClient()
+
+	conn, err := s.client.NewNlbClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	request["ServerGroupIds.1"] = id
-	request["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
+	request := map[string]interface{}{
+		"RegionId":       s.client.RegionId,
+		"ServerGroupIds": []string{id},
+		"MaxResults":     PageSizeXLarge,
+	}
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
 
 		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
-		return nil
-	})
 
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		resp, err := jsonpath.Get("$.ServerGroups", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ServerGroups", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Nlb:ServerGroup", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ServerGroupId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
 
-	v, err := jsonpath.Get("$.ServerGroups[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ServerGroups[*]", response)
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Nlb:ServerGroup", id)), NotFoundWithResponse, response)
 	}
 
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ServerGroup", id)), NotFoundMsg, response)
-	}
-
-	return v.([]interface{})[0].(map[string]interface{}), nil
+	return object, nil
 }
 
 func (s *NlbServiceV2) NlbServerGroupStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -604,6 +623,7 @@ func (s *NlbServiceV2) NlbServerGroupStateRefreshFunc(id string, field string, f
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
+
 		return object, currentStatus, nil
 	}
 }
@@ -626,6 +646,7 @@ func (s *NlbServiceV2) DescribeAsyncNlbServerGroupStateRefreshFunc(d *schema.Res
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
+
 		return object, currentStatus, nil
 	}
 }
