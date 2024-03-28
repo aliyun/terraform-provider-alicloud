@@ -34,8 +34,8 @@ func resourceAliCloudGaListener() *schema.Resource {
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "HTTP", "HTTPS"}, false),
 				Default:      "TCP",
+				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "HTTP", "HTTPS"}, false),
 			},
 			"proxy_protocol": {
 				Type:     schema.TypeBool,
@@ -51,16 +51,13 @@ func resourceAliCloudGaListener() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"Standard", "CustomRouting"}, false),
 			},
-			"name": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
+			"http_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"http1.1", "http2", "http3"}, false),
 			},
 			"client_affinity": {
 				Type:         schema.TypeString,
@@ -73,6 +70,14 @@ func resourceAliCloudGaListener() *schema.Resource {
 					}
 					return false
 				},
+			},
+			"name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"certificates": {
 				Type:     schema.TypeList,
@@ -151,6 +156,7 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("CreateListener")
 	request["AcceleratorId"] = d.Get("accelerator_id")
 
 	if v, ok := d.GetOk("protocol"); ok {
@@ -169,16 +175,20 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 		request["Type"] = v
 	}
 
+	if v, ok := d.GetOk("http_version"); ok {
+		request["HttpVersion"] = v
+	}
+
+	if v, ok := d.GetOk("client_affinity"); ok {
+		request["ClientAffinity"] = v
+	}
+
 	if v, ok := d.GetOk("name"); ok {
 		request["Name"] = v
 	}
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
-	}
-
-	if v, ok := d.GetOk("client_affinity"); ok {
-		request["ClientAffinity"] = v
 	}
 
 	if v, ok := d.GetOk("certificates"); ok {
@@ -220,18 +230,18 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotExist.BasicBandwidthPackage"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ga_listener", action, AlibabaCloudSdkGoERROR)
 	}
@@ -249,6 +259,7 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 func resourceAliCloudGaListenerRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
+
 	object, err := gaService.DescribeGaListener(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -264,9 +275,10 @@ func resourceAliCloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("proxy_protocol", object["ProxyProtocol"])
 	d.Set("security_policy_id", object["SecurityPolicyId"])
 	d.Set("listener_type", object["Type"])
+	d.Set("http_version", object["HttpVersion"])
+	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("name", object["Name"])
 	d.Set("description", object["Description"])
-	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("status", object["State"])
 
 	certificates := make([]map[string]interface{}, 0)
@@ -345,8 +357,9 @@ func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
-		"RegionId":   client.RegionId,
-		"ListenerId": d.Id(),
+		"RegionId":    client.RegionId,
+		"ClientToken": buildClientToken("UpdateListener"),
+		"ListenerId":  d.Id(),
 	}
 
 	if d.HasChange("certificates") {
@@ -408,6 +421,14 @@ func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		request["ProxyProtocol"] = v
 	}
 
+	if d.HasChange("http_version") {
+		update = true
+
+		if v, ok := d.GetOk("http_version"); ok {
+			request["HttpVersion"] = v
+		}
+	}
+
 	if d.HasChange("forwarded_for_config") {
 		update = true
 	}
@@ -432,10 +453,9 @@ func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			request["ClientToken"] = buildClientToken("UpdateListener")
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener"}) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -463,23 +483,25 @@ func resourceAliCloudGaListenerDelete(d *schema.ResourceData, meta interface{}) 
 	gaService := GaService{client}
 	action := "DeleteListener"
 	var response map[string]interface{}
+
 	conn, err := client.NewGaplusClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"ListenerId": d.Id(),
+		"ClientToken":   buildClientToken("DeleteListener"),
+		"AcceleratorId": d.Get("accelerator_id"),
+		"ListenerId":    d.Id(),
 	}
 
-	request["AcceleratorId"] = d.Get("accelerator_id")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("DeleteListener")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener", "Exist.ForwardingRule", "Exist.EndpointGroup"}) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.Listener", "Exist.ForwardingRule", "Exist.EndpointGroup"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
