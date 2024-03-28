@@ -61,8 +61,8 @@ func dataAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta interf
 
 	// Query existing permissions, DescribeUserPermission
 	uid := d.Get("uid").(string)
-	perms, _err := describeUserPermissions(client, uid)
-	if _err != nil {
+	perms, err := describeUserPermissions(client, uid)
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "DescribeUserPermission", err)
 	}
 
