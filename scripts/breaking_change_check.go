@@ -26,8 +26,8 @@ func init() {
 }
 
 var (
-	fileNames  = flag.String("fileNames", "", "the files to check diff")
-	filterList = map[string][]string{
+	breakFileNames  = flag.String("fileNames", "", "the files to check diff")
+	breakFilterList = map[string][]string{
 		"alicloud_amqp_instance":            {"logistics"},
 		"alicloud_cms_alarm":                {"notify_type"},
 		"alicloud_cs_serverless_kubernetes": {"private_zone", "create_v2_cluster"},
@@ -43,11 +43,11 @@ var (
 func main() {
 	exitCode := 0
 	flag.Parse()
-	if fileNames != nil && len(*fileNames) == 0 {
+	if breakFileNames != nil && len(*breakFileNames) == 0 {
 		log.Warningf("the diff file is empty")
 		return
 	}
-	byt, _ := ioutil.ReadFile(*fileNames)
+	byt, _ := ioutil.ReadFile(*breakFileNames)
 	diff, _ := diffparser.Parse(string(byt))
 	fileRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*.go")
 	fileTestRegex := regexp.MustCompile("alicloud/resource[0-9a-zA-Z_]*_test.go")
