@@ -229,6 +229,7 @@ func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field str
 }
 
 // DescribeOssBucketHttpsConfig >>> Encapsulated.
+
 // DescribeOssBucketCors <<< Encapsulated get interface for Oss BucketCors.
 
 func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]interface{}, err error) {

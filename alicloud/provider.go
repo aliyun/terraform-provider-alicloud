@@ -864,6 +864,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_cors":                                      resourceAliCloudOssBucketCors(),
 			"alicloud_oss_bucket_https_config":                              resourceAliCloudOssBucketHttpsConfig(),
 			"alicloud_oss_bucket_referer":                                   resourceAliCloudOssBucketReferer(),
 			"alicloud_oss_bucket_acl":                                       resourceAliCloudOssBucketAcl(),
