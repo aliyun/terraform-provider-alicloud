@@ -39,7 +39,7 @@ gh version
 
 cd $repo
 echo -e "\n$ git log -n 2"
-git log -n 2
+#git log -n 2
 prNum=${pr_id}
 #    if [[ $(gh pr diff ${prNum} --name-only | grep "^alicloud/") -lt 1 ]]; then
 #      echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to test."

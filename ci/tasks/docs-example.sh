@@ -48,7 +48,7 @@ gh version
 cd $repo
 
 echo -e "\n$ git log -n 2"
-git log -n 2
+#git log -n 2
 prNum=${pr_id}
 #find file
 changeFiles=$(gh pr diff ${pr_id} --name-only)
