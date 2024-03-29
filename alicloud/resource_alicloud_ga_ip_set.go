@@ -46,7 +46,7 @@ func resourceAliCloudGaIpSet() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6"}, false),
+				ValidateFunc: StringInSlice([]string{"IPv4", "IPv6", "DUAL_STACK"}, false),
 			},
 			"isp_type": {
 				Type:         schema.TypeString,
@@ -205,6 +205,7 @@ func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+
 	return resourceAliCloudGaIpSetRead(d, meta)
 }
 
