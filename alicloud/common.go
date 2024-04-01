@@ -1677,6 +1677,32 @@ func genXmlParam(action, method, version, path string) *openapi.Params {
 	}
 }
 
+func genJsonXmlParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		ReqBodyType: tea.String("json"),
+		BodyType:    tea.String("xml"),
+	}
+}
+
+func genXmlJsonParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		ReqBodyType: tea.String("xml"),
+		BodyType:    tea.String("json"),
+	}
+}
+
 type MyMap map[string]interface{}
 
 type xmlMapEntry struct {

@@ -56,6 +56,7 @@ if [[ ${#changeFiles[@]} -eq 0 ]]; then
   echo -e "\033[33m[WARNING]\033[0m the pr ${prNum} does not change provider code and there is no need to check."
   exit 0
 fi
+echo "counting example test"
 
 echo
 exampleCount=0
@@ -113,12 +114,15 @@ if [[ "${noNeedRun}" = "true" ]]; then
   exit 0
 fi
 
+echo "exampleCheck counted"
+
 exampleCheck=$(gh pr checks ${prNum} | grep "^DocsExampleTest")
 
 if [[ ${exampleCheck} == "" ]]; then
   echo -e "\033[31m the pr ${prNum} missing DocsExampleTest action checks and please checking it.\033[0m"
   exit 0
 fi
+echo "exampleCheck action refer"
 arrIN=(${exampleCheck//"actions"/ })
 ossObjectPath="github-actions"${arrIN[${#arrIN[@]} - 1]}
 echo "exampleCheck result: ${exampleCheck}"
