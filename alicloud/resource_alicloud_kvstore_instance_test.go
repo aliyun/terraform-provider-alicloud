@@ -277,6 +277,18 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_class": "redis.master.large.default",
+					"engine_version": "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_class": "redis.master.large.default",
+						"engine_version": "5.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 2].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.update.ids.0}",
 					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id}",
@@ -2391,6 +2403,7 @@ func KvstoreInstanceVpcTestdependence(name string) string {
 	}
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
+		cidr_block = "192.168.0.0/16"
 	}
 	data "alicloud_vswitches" "default" {
   		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
@@ -2419,6 +2432,7 @@ func KvstoreInstancePrePaidDependence(name string) string {
 	}
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
+		cidr_block = "192.168.0.0/16"
 	}
 	data "alicloud_vswitches" "default" {
   		zone_id = data.alicloud_kvstore_zones.default.zones[0].id
@@ -2443,6 +2457,7 @@ func KvstoreMemcacheInstanceVpcTestdependence(name string) string {
 	}
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
+		cidr_block = "192.168.0.0/16"
 	}
 	data "alicloud_vswitches" "default" {
   		zone_id = data.alicloud_kvstore_zones.default.zones[length(data.alicloud_kvstore_zones.default.ids) - 1].id
