@@ -1413,7 +1413,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_sso_group":                                       resourceAlicloudCloudSsoGroup(),
 			"alicloud_dts_synchronization_instance":                          resourceAlicloudDtsSynchronizationInstance(),
 			"alicloud_dts_synchronization_job":                               resourceAlicloudDtsSynchronizationJob(),
-			"alicloud_cloud_firewall_instance":                               resourceAlicloudCloudFirewallInstance(),
+			"alicloud_cloud_firewall_instance":                               resourceAliCloudCloudFirewallInstance(),
 			"alicloud_cr_endpoint_acl_policy":                                resourceAlicloudCrEndpointAclPolicy(),
 			"alicloud_actiontrail_history_delivery_job":                      resourceAlicloudActiontrailHistoryDeliveryJob(),
 			"alicloud_ecs_deployment_set":                                    resourceAlicloudEcsDeploymentSet(),
