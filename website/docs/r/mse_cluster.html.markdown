@@ -73,9 +73,9 @@ The following arguments are supported:
 * `disk_type` - (Optional, ForceNew) The type of Disk.
 * `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
 * `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
-* `payment_type` - (Optional, ForceNew, Computed, Available since v1.219.1) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
-* `tags` - (Optional, Map, Computed, Available since v1.219.1) The tag of the resource.
-* `resource_group_id` - (Optional, Computed, Available since v1.219.1) The resource group of the resource.
+* `payment_type` - (Optional, ForceNew, Computed, Available since v1.220.0) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
+* `tags` - (Optional, Map, Computed, Available since v1.220.0) The tag of the resource.
+* `resource_group_id` - (Optional, Computed, Available since v1.220.0) The resource group of the resource.
 * `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
 * `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
 * `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.

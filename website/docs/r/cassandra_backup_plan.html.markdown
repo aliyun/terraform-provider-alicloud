@@ -15,7 +15,7 @@ For information about Cassandra Backup Plan and how to use it, see [What is Back
 
 -> **NOTE:** Available in v1.128.0+.
 
--> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.219.1`.
+-> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
 

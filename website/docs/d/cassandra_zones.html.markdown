@@ -13,7 +13,7 @@ This data source provides availability zones for Cassandra that can be accessed 
 
 -> **NOTE:** Available in v1.88.0+.
 
--> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.219.1`.
+-> **DEPRECATED:**  This data source has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
 
