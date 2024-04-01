@@ -1,43 +1,44 @@
-## 1.220.0 (Unreleased)
+## 1.221.0 (Unreleased)
+## 1.220.0 (April 1, 2024)
 
-- **New Resource:** `alicloud_oss_bucket_acl` [GH-7052]
-- **New Resource:** `alicloud_oss_bucket_referer` [GH-7102]
-- **New Resource:** `alicloud_oss_bucket_https_config` [GH-7102]
-- **New Resource:** `alicloud_oss_bucket_policy` [GH-7102]
-- **New Datasource:** `alicloud_cloud_monitor_service_hybrid_double_writes` [GH-7096]
+- **New Resource:** `alicloud_oss_bucket_acl` ([#7052](https://github.com/aliyun/terraform-provider-alicloud/issues/7052))
+- **New Resource:** `alicloud_oss_bucket_referer` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
+- **New Resource:** `alicloud_oss_bucket_https_config` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
+- **New Resource:** `alicloud_oss_bucket_policy` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
+- **New Datasource:** `alicloud_cloud_monitor_service_hybrid_double_writes` ([#7096](https://github.com/aliyun/terraform-provider-alicloud/issues/7096))
 
 ENHANCEMENTS:
 
-- provider: supports assuming role with oidc. [GH-7079]
-- provider: Upgrades cs sdk to v5.0.0. [GH-7088]
-- resource/alicloud_cs_kubernetes_permissions: fix deleted and update bug; resource/alicloud_cs_kubernetes_addon: support cleanup_cloud_resources param for deleting addon ack-virtual-node; fix deleting for undeletable addons; compat for customized config; fix wrong status(success) after failing to create or update. [GH-6996]
-- resource/alicloud_ess_attachment: add attribute of entrusted lifecycle_hook and load_balancer_weights. [GH-7058]
-- resource/alicloud_resource_manager_resource_group: Added the field tags. [GH-7067]
-- resource/alicloud_oss_bucket: check NotImplemented error for resource group. [GH-7074]
-- resource/alicloud_mse_cluster: add new attribute payment_type, tags. [GH-7076]
-- resource/alicloud_cen_transit_router_multicast_domain: Added retry strategy for error code Operation.Blocking. [GH-7080]
-- resource/alicloud_maxcompute_project: update attributes properties, security_properties as TypeList. [GH-7082]
-- resource/alicloud_cdn_domain_config: Added the field parent_id. [GH-7089]
-- resource/alicloud_nlb_server_group_server_attachment: add retry code for create and delete operation. [GH-7090]
-- resource/alicloud_network_acl: add new attributes egress_acl_entries.entry_type, egress_acl_entries.ip_version. [GH-7092]
-- resource/alicloud_dcdn_ipa_domain: update default timeout for create and update, add retry strategy for ServiceBusy. [GH-7097]
-- resource/alicloud_oss_bucket: mark acl as Computed, Deprecated. [GH-7099]
-- resource/alicloud_ess_scaling_configuration: add burstable_performance excluded_instance_types and architectures attributes of instance_pattern_info. [GH-7101]
-- resource/alicloud_ga_listener: Added the field http_version. [GH-7103]
-- resource/alicloud_ga_ip_set: Supported ip_version set to DUAL_STACK. [GH-7109]
-- resource/alicloud_cloud_firewall_instance: Supported payment_type set to PayAsYouGo; Supported for new action ReleasePostInstance. [GH-7111]
-- docs: docs: mark referer_config, policy as Deprecated for alicloud_oss_bucket. [GH-7112]
-- docs: Improved the document alicloud_slb_rule. [GH-7081]
-- docs: Improved the document slb_listener. [GH-7083]
-- docs: Improved the document service_mesh_service_meshes. [GH-7084]
-- docs: deprecate the product cassandra. [GH-7085]
-- docs: improve docs for cms_service, click_house_db_cluster, ecs_instance, rds_ddr_instance. [GH-7098]
+- provider: supports assuming role with oidc. ([#7079](https://github.com/aliyun/terraform-provider-alicloud/issues/7079))
+- provider: Upgrades cs sdk to v5.0.0. ([#7088](https://github.com/aliyun/terraform-provider-alicloud/issues/7088))
+- resource/alicloud_cs_kubernetes_permissions: fix deleted and update bug; resource/alicloud_cs_kubernetes_addon: support cleanup_cloud_resources param for deleting addon ack-virtual-node; fix deleting for undeletable addons; compat for customized config; fix wrong status(success) after failing to create or update. ([#6996](https://github.com/aliyun/terraform-provider-alicloud/issues/6996))
+- resource/alicloud_ess_attachment: add attribute of entrusted lifecycle_hook and load_balancer_weights. ([#7058](https://github.com/aliyun/terraform-provider-alicloud/issues/7058))
+- resource/alicloud_resource_manager_resource_group: Added the field tags. ([#7067](https://github.com/aliyun/terraform-provider-alicloud/issues/7067))
+- resource/alicloud_oss_bucket: check NotImplemented error for resource group. ([#7074](https://github.com/aliyun/terraform-provider-alicloud/issues/7074))
+- resource/alicloud_mse_cluster: add new attribute payment_type, tags. ([#7076](https://github.com/aliyun/terraform-provider-alicloud/issues/7076))
+- resource/alicloud_cen_transit_router_multicast_domain: Added retry strategy for error code Operation.Blocking. ([#7080](https://github.com/aliyun/terraform-provider-alicloud/issues/7080))
+- resource/alicloud_maxcompute_project: update attributes properties, security_properties as TypeList. ([#7082](https://github.com/aliyun/terraform-provider-alicloud/issues/7082))
+- resource/alicloud_cdn_domain_config: Added the field parent_id. ([#7089](https://github.com/aliyun/terraform-provider-alicloud/issues/7089))
+- resource/alicloud_nlb_server_group_server_attachment: add retry code for create and delete operation. ([#7090](https://github.com/aliyun/terraform-provider-alicloud/issues/7090))
+- resource/alicloud_network_acl: add new attributes egress_acl_entries.entry_type, egress_acl_entries.ip_version. ([#7092](https://github.com/aliyun/terraform-provider-alicloud/issues/7092))
+- resource/alicloud_dcdn_ipa_domain: update default timeout for create and update, add retry strategy for ServiceBusy. ([#7097](https://github.com/aliyun/terraform-provider-alicloud/issues/7097))
+- resource/alicloud_oss_bucket: mark acl as Computed, Deprecated. ([#7099](https://github.com/aliyun/terraform-provider-alicloud/issues/7099))
+- resource/alicloud_ess_scaling_configuration: add burstable_performance excluded_instance_types and architectures attributes of instance_pattern_info. ([#7101](https://github.com/aliyun/terraform-provider-alicloud/issues/7101))
+- resource/alicloud_ga_listener: Added the field http_version. ([#7103](https://github.com/aliyun/terraform-provider-alicloud/issues/7103))
+- resource/alicloud_ga_ip_set: Supported ip_version set to DUAL_STACK. ([#7109](https://github.com/aliyun/terraform-provider-alicloud/issues/7109))
+- resource/alicloud_cloud_firewall_instance: Supported payment_type set to PayAsYouGo; Supported for new action ReleasePostInstance. ([#7111](https://github.com/aliyun/terraform-provider-alicloud/issues/7111))
+- docs: docs: mark referer_config, policy as Deprecated for alicloud_oss_bucket. ([#7112](https://github.com/aliyun/terraform-provider-alicloud/issues/7112))
+- docs: Improved the document alicloud_slb_rule. ([#7081](https://github.com/aliyun/terraform-provider-alicloud/issues/7081))
+- docs: Improved the document slb_listener. ([#7083](https://github.com/aliyun/terraform-provider-alicloud/issues/7083))
+- docs: Improved the document service_mesh_service_meshes. ([#7084](https://github.com/aliyun/terraform-provider-alicloud/issues/7084))
+- docs: deprecate the product cassandra. ([#7085](https://github.com/aliyun/terraform-provider-alicloud/issues/7085))
+- docs: improve docs for cms_service, click_house_db_cluster, ecs_instance, rds_ddr_instance. ([#7098](https://github.com/aliyun/terraform-provider-alicloud/issues/7098))
 
 BUG FIXES:
 
-- resource/alicloud_cs_kubernetes_node_pool: fix export Attribute scaling_group_id. [GH-7068]
-- resource/alicloud_db_instance: fix kms encryption issuess. [GH-7069]
-- data-source/alicloud_quotas_template_applications: fix description of quota_category. [GH-7087]
+- resource/alicloud_cs_kubernetes_node_pool: fix export Attribute scaling_group_id. ([#7068](https://github.com/aliyun/terraform-provider-alicloud/issues/7068))
+- resource/alicloud_db_instance: fix kms encryption issuess. ([#7069](https://github.com/aliyun/terraform-provider-alicloud/issues/7069))
+- data-source/alicloud_quotas_template_applications: fix description of quota_category. ([#7087](https://github.com/aliyun/terraform-provider-alicloud/issues/7087))
 
 ## 1.219.0 (March 18, 2024)
 
