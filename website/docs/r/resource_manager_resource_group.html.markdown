@@ -36,7 +36,7 @@ The following arguments are supported:
 
 * `display_name` - (Required) The display name of the resource group. The name must be 1 to 50 characters in length.
 * `resource_group_name` - (Optional, ForceNew, Available since v1.114.0) The unique identifier of the resource group. The identifier must be 3 to 50 characters in length and can contain letters, digits, and hyphens (-). The identifier must start with a letter.
-* `tags` - (Optional, Available since v1.219.1) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.220.0) A mapping of tags to assign to the resource.
 * `name` - (Optional, ForceNew, Deprecated since v1.114.0) Field `name` has been deprecated from provider version 1.114.0. New field `resource_group_name` instead.
 
 ## Attributes Reference
@@ -53,7 +53,7 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available since v1.219.1.
+-> **NOTE:** Available since v1.220.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
