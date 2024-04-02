@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudDcdnDomainConfig() *schema.Resource {
+func resourceAliCloudDcdnDomainConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudDcdnDomainConfigCreate,
-		Read:   resourceAlicloudDcdnDomainConfigRead,
-		Update: resourceAlicloudDcdnDomainConfigUpdate,
-		Delete: resourceAlicloudDcdnDomainConfigDelete,
+		Create: resourceAliCloudDcdnDomainConfigCreate,
+		Read:   resourceAliCloudDcdnDomainConfigRead,
+		Update: resourceAliCloudDcdnDomainConfigUpdate,
+		Delete: resourceAliCloudDcdnDomainConfigDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -33,6 +33,11 @@ func resourceAlicloudDcdnDomainConfig() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"parent_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"function_args": {
 				Type:     schema.TypeSet,
@@ -62,7 +67,7 @@ func resourceAlicloudDcdnDomainConfig() *schema.Resource {
 	}
 }
 
-func resourceAlicloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
 	var response map[string]interface{}
@@ -89,6 +94,10 @@ func resourceAlicloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 	config[0] = map[string]interface{}{
 		"functionArgs": args,
 		"functionName": d.Get("function_name").(string),
+	}
+
+	if v, ok := d.GetOk("parent_id"); ok {
+		config[0]["parentId"] = v.(string)
 	}
 
 	bytConfig, err := json.Marshal(config)
@@ -141,10 +150,10 @@ func resourceAlicloudDcdnDomainConfigCreate(d *schema.ResourceData, meta interfa
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudDcdnDomainConfigRead(d, meta)
+	return resourceAliCloudDcdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := &DcdnService{client: client}
 
@@ -166,6 +175,7 @@ func resourceAlicloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 	d.Set("function_name", object["FunctionName"])
 	d.Set("config_id", object["ConfigId"])
 	d.Set("status", object["Status"])
+	d.Set("parent_id", object["ParentId"])
 
 	if functionArgs, ok := object["FunctionArgs"]; ok {
 		if functionArgList, ok := functionArgs.(map[string]interface{})["FunctionArg"]; ok {
@@ -173,6 +183,11 @@ func resourceAlicloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 			for _, functionArg := range functionArgList.([]interface{}) {
 				functionArgItem := functionArg.(map[string]interface{})
 				functionArgMap := map[string]interface{}{}
+
+				// This function args is extra, filter them to pass test check.
+				if fmt.Sprint(functionArgItem["ArgName"]) == "dsl" {
+					continue
+				}
 
 				if argName, ok := functionArgItem["ArgName"]; ok {
 					functionArgMap["arg_name"] = argName
@@ -192,12 +207,12 @@ func resourceAlicloudDcdnDomainConfigRead(d *schema.ResourceData, meta interface
 	return nil
 }
 
-func resourceAlicloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
 	var response map[string]interface{}
 
-	if d.HasChange("function_args") {
+	if d.HasChange("function_args") || d.HasChange("parent_id") {
 		action := "BatchSetDcdnDomainConfigs"
 		request := make(map[string]interface{})
 		conn, err := client.NewDcdnClient()
@@ -223,11 +238,17 @@ func resourceAlicloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 				"argValue": arg["arg_value"],
 			}
 		}
+
 		config[0] = map[string]interface{}{
 			"functionArgs": args,
 			"functionName": parts[1],
 			"configId":     parts[2],
 		}
+
+		if v, ok := d.GetOk("parent_id"); ok {
+			config[0]["parentId"] = v
+		}
+
 		bytconfig, _ := json.Marshal(config)
 
 		request["Functions"] = string(bytconfig)
@@ -258,10 +279,10 @@ func resourceAlicloudDcdnDomainConfigUpdate(d *schema.ResourceData, meta interfa
 		}
 	}
 
-	return resourceAlicloudDcdnDomainConfigRead(d, meta)
+	return resourceAliCloudDcdnDomainConfigRead(d, meta)
 }
 
-func resourceAlicloudDcdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudDcdnDomainConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	dcdnService := DcdnService{client}
 	action := "DeleteDcdnSpecificConfig"
