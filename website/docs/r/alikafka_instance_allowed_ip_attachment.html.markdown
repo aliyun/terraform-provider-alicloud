@@ -15,6 +15,8 @@ For information about AliKafka Instance Allowed Ip Attachment and how to use it,
 
 -> **NOTE:** Available since v1.163.0.
 
+-> **DEPRECATED:** This resource has been deprecated from version `1.221.0`. Replace by `allowed_list` with the resource [alicloud_alikafka_instance](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/alikafka_instance).
+
 ## Example Usage
 
 Basic Usage

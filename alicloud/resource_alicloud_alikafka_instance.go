@@ -145,6 +145,58 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Optional: true,
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
+			"allowed_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"vpc_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"port_range": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: StringInSlice([]string{"9092/9092", "9094/9094", "9095/9095"}, false),
+									},
+									"allowed_ip_list": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+						"internet_list": {
+							Type:     schema.TypeSet,
+							Optional: true,
+							Computed: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"port_range": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: StringInSlice([]string{"9093/9093"}, false),
+									},
+									"allowed_ip_list": {
+										Type:     schema.TypeSet,
+										Optional: true,
+										Computed: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"tags": tagsSchema(),
 			"end_point": {
 				Type:     schema.TypeString,
@@ -376,6 +428,60 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 		d.Set("paid_type", PrePaid)
 	}
 
+	allowedIpList, err := alikafkaService.GetAllowedIpList(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if allowedList, ok := allowedIpList["AllowedList"]; ok {
+		allowedListMaps := make([]map[string]interface{}, 0)
+		allowedListMap := map[string]interface{}{}
+
+		if vpcList, ok := allowedList.(map[string]interface{})["VpcList"]; ok {
+			vpcListMaps := make([]map[string]interface{}, 0)
+			for _, vpcListValue := range vpcList.([]interface{}) {
+				vpcListArg := vpcListValue.(map[string]interface{})
+				vpcListMap := map[string]interface{}{}
+
+				if portRange, ok := vpcListArg["PortRange"]; ok {
+					vpcListMap["port_range"] = portRange
+				}
+
+				if vpcAllowedIpList, ok := vpcListArg["AllowedIpList"]; ok {
+					vpcListMap["allowed_ip_list"] = vpcAllowedIpList
+				}
+
+				vpcListMaps = append(vpcListMaps, vpcListMap)
+			}
+
+			allowedListMap["vpc_list"] = vpcListMaps
+		}
+
+		if internetList, ok := allowedList.(map[string]interface{})["InternetList"]; ok {
+			internetListMaps := make([]map[string]interface{}, 0)
+			for _, internetListValue := range internetList.([]interface{}) {
+				internetListArg := internetListValue.(map[string]interface{})
+				internetListMap := map[string]interface{}{}
+
+				if portRange, ok := internetListArg["PortRange"]; ok {
+					internetListMap["port_range"] = portRange
+				}
+
+				if internetAllowedIpList, ok := internetListArg["AllowedIpList"]; ok {
+					internetListMap["allowed_ip_list"] = internetAllowedIpList
+				}
+
+				internetListMaps = append(internetListMaps, internetListMap)
+			}
+
+			allowedListMap["internet_list"] = internetListMaps
+		}
+
+		allowedListMaps = append(allowedListMaps, allowedListMap)
+
+		d.Set("allowed_list", allowedListMaps)
+	}
+
 	quota, err := alikafkaService.GetQuotaTip(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -591,6 +697,13 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 			}
 		}
 
+		if d.HasChange("io_max_spec") {
+			stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("io_max_spec"))}, d.Timeout(schema.TimeoutUpdate), 0*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "IoMaxSpec", []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
+
 		stateConf = BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("eip_max"))}, d.Timeout(schema.TimeoutUpdate), 0*time.Second, alikafkaService.AliKafkaInstanceStateRefreshFunc(d.Id(), "EipMax", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -693,7 +806,233 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("config")
 	}
 
+	update = false
+	if d.HasChange("allowed_list") {
+		if d.HasChange("allowed_list.0.vpc_list") {
+			removed, added := d.GetChange("allowed_list.0.vpc_list")
+			deleteAllowedIpReq := map[string]interface{}{
+				"RegionId":        client.RegionId,
+				"UpdateType":      "delete",
+				"AllowedListType": "vpc",
+				"InstanceId":      d.Id(),
+			}
+
+			for _, vpcList := range removed.(*schema.Set).List() {
+				update = true
+				vpcListArg := vpcList.(map[string]interface{})
+
+				if portRange, ok := vpcListArg["port_range"]; ok {
+					deleteAllowedIpReq["PortRange"] = portRange
+				}
+
+				if allowedIpList, ok := vpcListArg["allowed_ip_list"]; ok {
+					for _, vpcAllowedIp := range allowedIpList.(*schema.Set).List() {
+						deleteAllowedIpReq["AllowedListIp"] = vpcAllowedIp
+
+						if update {
+							action := "UpdateAllowedIp"
+							conn, err := client.NewAlikafkaClient()
+							if err != nil {
+								return WrapError(err)
+							}
+
+							runtime := util.RuntimeOptions{}
+							runtime.SetAutoretry(true)
+							wait := incrementalWait(3*time.Second, 3*time.Second)
+							err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+								response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, deleteAllowedIpReq, &runtime)
+								if err != nil {
+									if NeedRetry(err) {
+										wait()
+										return resource.RetryableError(err)
+									}
+									return resource.NonRetryableError(err)
+								}
+								return nil
+							})
+							addDebug(action, response, deleteAllowedIpReq)
+
+							if err != nil {
+								return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+							}
+
+							if fmt.Sprint(response["Success"]) == "false" {
+								return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+							}
+						}
+					}
+				}
+			}
+
+			update = false
+			addAllowedIpReq := map[string]interface{}{
+				"RegionId":        client.RegionId,
+				"UpdateType":      "add",
+				"AllowedListType": "vpc",
+				"InstanceId":      d.Id(),
+			}
+
+			for _, vpcList := range added.(*schema.Set).List() {
+				update = true
+				vpcListArg := vpcList.(map[string]interface{})
+
+				if portRange, ok := vpcListArg["port_range"]; ok {
+					addAllowedIpReq["PortRange"] = portRange
+				}
+
+				if allowedIpList, ok := vpcListArg["allowed_ip_list"]; ok {
+					addAllowedIpReq["AllowedListIp"] = convertListToCommaSeparate(allowedIpList.(*schema.Set).List())
+				}
+
+				if update {
+					action := "UpdateAllowedIp"
+					conn, err := client.NewAlikafkaClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, addAllowedIpReq, &runtime)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, addAllowedIpReq)
+
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+
+					if fmt.Sprint(response["Success"]) == "false" {
+						return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+					}
+				}
+			}
+		}
+
+		if d.HasChange("allowed_list.0.internet_list") {
+			removed, added := d.GetChange("allowed_list.0.internet_list")
+			deleteAllowedIpReq := map[string]interface{}{
+				"RegionId":        client.RegionId,
+				"UpdateType":      "delete",
+				"AllowedListType": "internet",
+				"InstanceId":      d.Id(),
+			}
+
+			for _, internetList := range removed.(*schema.Set).List() {
+				update = true
+				internetListArg := internetList.(map[string]interface{})
+
+				if portRange, ok := internetListArg["port_range"]; ok {
+					deleteAllowedIpReq["PortRange"] = portRange
+				}
+
+				if allowedIpList, ok := internetListArg["allowed_ip_list"]; ok {
+					for _, internetAllowedIp := range allowedIpList.(*schema.Set).List() {
+						deleteAllowedIpReq["AllowedListIp"] = internetAllowedIp
+
+						if update {
+							action := "UpdateAllowedIp"
+							conn, err := client.NewAlikafkaClient()
+							if err != nil {
+								return WrapError(err)
+							}
+
+							runtime := util.RuntimeOptions{}
+							runtime.SetAutoretry(true)
+							wait := incrementalWait(3*time.Second, 3*time.Second)
+							err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+								response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, deleteAllowedIpReq, &runtime)
+								if err != nil {
+									if NeedRetry(err) {
+										wait()
+										return resource.RetryableError(err)
+									}
+									return resource.NonRetryableError(err)
+								}
+								return nil
+							})
+							addDebug(action, response, deleteAllowedIpReq)
+
+							if err != nil {
+								return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+							}
+
+							if fmt.Sprint(response["Success"]) == "false" {
+								return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+							}
+						}
+					}
+				}
+			}
+
+			update = false
+			addAllowedIpReq := map[string]interface{}{
+				"RegionId":        client.RegionId,
+				"UpdateType":      "add",
+				"AllowedListType": "internet",
+				"InstanceId":      d.Id(),
+			}
+
+			for _, internetList := range added.(*schema.Set).List() {
+				update = true
+				internetListArg := internetList.(map[string]interface{})
+
+				if portRange, ok := internetListArg["port_range"]; ok {
+					addAllowedIpReq["PortRange"] = portRange
+				}
+
+				if allowedIpList, ok := internetListArg["allowed_ip_list"]; ok {
+					addAllowedIpReq["AllowedListIp"] = convertListToCommaSeparate(allowedIpList.(*schema.Set).List())
+				}
+
+				if update {
+					action := "UpdateAllowedIp"
+					conn, err := client.NewAlikafkaClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, addAllowedIpReq, &runtime)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, addAllowedIpReq)
+
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+
+					if fmt.Sprint(response["Success"]) == "false" {
+						return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+					}
+				}
+			}
+		}
+
+		d.SetPartial("allowed_list")
+	}
+
 	d.Partial(false)
+
 	return resourceAliCloudAlikafkaInstanceRead(d, meta)
 }
 

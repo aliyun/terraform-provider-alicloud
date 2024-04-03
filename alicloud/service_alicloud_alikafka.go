@@ -730,15 +730,18 @@ func (s *AlikafkaService) tagsFromMap(m map[string]interface{}) []alikafka.TagRe
 
 func (s *AlikafkaService) GetAllowedIpList(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetAllowedIpList"
+
 	conn, err := s.client.NewAlikafkaClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetAllowedIpList"
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"InstanceId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -754,11 +757,18 @@ func (s *AlikafkaService) GetAllowedIpList(id string) (object map[string]interfa
 		return nil
 	})
 	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
