@@ -4,7 +4,7 @@ require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/alibabacloud-go/cs-20151215/v5 v5.0.0
-	github.com/alibabacloud-go/tea v1.2.2
+	github.com/alibabacloud-go/tea v1.2.1
 	github.com/alibabacloud-go/tea-roa v1.3.4
 	github.com/alibabacloud-go/tea-rpc v1.2.0
 	github.com/alibabacloud-go/tea-utils v1.4.5

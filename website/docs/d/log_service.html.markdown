@@ -7,19 +7,19 @@ description: |-
     Provides a datasource to open the Log service automatically.
 ---
 
-# alicloud\_log\_service
+# alicloud_log_service
 
 Using this data source can enable Log service automatically. If the service has been enabled, it will return `Opened`.
 
 For information about Log service and how to use it, see [What is Log Service](https://www.alibabacloud.com/help/product/28958.htm).
 
--> **NOTE:** Available in v1.96.0+
+-> **NOTE:** Available since v1.96.0
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_log_service" "open" {
-	enable = "On"
+  enable = "On"
 }
 ```
 

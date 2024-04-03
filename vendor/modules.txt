@@ -93,7 +93,7 @@ github.com/alibabacloud-go/fc-open-20210406/v2/client
 # github.com/alibabacloud-go/openapi-util v0.1.0
 ## explicit; go 1.14
 github.com/alibabacloud-go/openapi-util/service
-# github.com/alibabacloud-go/tea v1.2.2
+# github.com/alibabacloud-go/tea v1.2.1
 ## explicit; go 1.14
 github.com/alibabacloud-go/tea/tea
 github.com/alibabacloud-go/tea/utils
