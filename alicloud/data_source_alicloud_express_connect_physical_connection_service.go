@@ -60,7 +60,7 @@ func dataSourceAlicloudPhysicalConnectionServiceRead(d *schema.ResourceData, met
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"PURCHASE_QUANTITY_LIMIT"}) {
+		if IsExpectedErrors(err, []string{"PURCHASE_QUANTITY_LIMIT", "InvalidOperation.OrderOpened"}) {
 			d.SetId("PhysicalConnectionServiceHasBeenOpened")
 			d.Set("status", "Opened")
 			return nil
