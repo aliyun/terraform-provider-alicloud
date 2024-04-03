@@ -1,4 +1,13 @@
 ## 1.221.0 (Unreleased)
+## 1.220.1 (April 3, 2024)
+ENHANCEMENTS:
+
+- docs: Not support for ap-southeast-2 and ap-south-1 region. ([#7127](https://github.com/aliyun/terraform-provider-alicloud/pull/7127))
+
+BUG FIXES:
+
+- data-source/alicloud_log_service: Upgrade sdk. ([#7126](https://github.com/aliyun/terraform-provider-alicloud/pull/7126))
+
 ## 1.220.0 (April 1, 2024)
 
 - **New Resource:** `alicloud_oss_bucket_acl` ([#7052](https://github.com/aliyun/terraform-provider-alicloud/issues/7052))
