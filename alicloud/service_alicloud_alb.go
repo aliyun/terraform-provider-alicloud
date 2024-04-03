@@ -389,13 +389,13 @@ func (s *AlbService) AlbSecurityPolicyStateRefreshFunc(id string, failStates []s
 	}
 }
 
-func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, err error) {
+func (s *AlbService) ListServerGroupServers(id string) (objects []interface{}, err error) {
 	var response map[string]interface{}
 	action := "ListServerGroupServers"
 
 	conn, err := s.client.NewAlbClient()
 	if err != nil {
-		return object, WrapError(err)
+		return objects, WrapError(err)
 	}
 
 	request := map[string]interface{}{
@@ -421,26 +421,26 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 		addDebug(action, response, request)
 
 		if err != nil {
-			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+			return objects, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
 
 		if formatInt(response["TotalCount"]) == 0 {
-			return object, nil
+			return objects, nil
 		}
 
 		resp, err := jsonpath.Get("$.Servers", response)
 		if err != nil {
-			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Servers", response)
+			return objects, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Servers", response)
 		}
 
 		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+			return objects, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
 		}
 
 		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["ServerGroupId"]) == id {
 				idExist = true
-				return resp.([]interface{}), nil
+				objects = append(objects, v.(map[string]interface{}))
 			}
 		}
 
@@ -452,10 +452,10 @@ func (s *AlbService) ListServerGroupServers(id string) (object []interface{}, er
 	}
 
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
+		return objects, WrapErrorf(Error(GetNotFoundMessage("Alb:ServerGroup", id)), NotFoundWithResponse, response)
 	}
 
-	return object, nil
+	return objects, nil
 }
 
 func (s *AlbService) DescribeAlbServerGroup(id string) (object map[string]interface{}, err error) {
