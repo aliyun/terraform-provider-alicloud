@@ -218,11 +218,8 @@ func NewSDKError(obj map[string]interface{}) *SDKError {
 				}
 			}
 		}
-		byt := bytes.NewBuffer([]byte{})
-		jsonEncoder := json.NewEncoder(byt)
-		jsonEncoder.SetEscapeHTML(false)
-		jsonEncoder.Encode(data)
-		err.Data = String(string(bytes.TrimSpace(byt.Bytes())))
+		byt, _ := json.Marshal(data)
+		err.Data = String(string(byt))
 	}
 
 	if statusCode, ok := obj["statusCode"].(int); ok {
