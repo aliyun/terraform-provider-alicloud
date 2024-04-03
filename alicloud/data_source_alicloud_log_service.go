@@ -1,10 +1,9 @@
 package alicloud
 
 import (
+	slsPop "github.com/aliyun/alibaba-cloud-sdk-go/services/sls"
 	"time"
 
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
@@ -39,26 +38,28 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("status", "")
 		return nil
 	}
-	conn, err := meta.(*connectivity.AliyunClient).NewTeaCommonClient(fmt.Sprintf("%s.log.aliyuncs.com/open-api", meta.(*connectivity.AliyunClient).RegionId))
-	if err != nil {
-		return WrapError(err)
-	}
-	isNotOpened, err := waitServiceReady(conn, false)
+	isNotOpened, err := waitServiceReady(meta, false)
 	if err == nil {
 		d.SetId("LogServiceHasBeenOpened")
 		d.Set("status", "Opened")
 		return nil
 	}
 	if isNotOpened {
-		response, err := conn.DoRequest(StringPointer("OpenSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+		client := meta.(*connectivity.AliyunClient)
+		resp, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
+			request := slsPop.CreateOpenSlsServiceRequest()
+			return slsPopClient.OpenSlsService(request)
+		})
+		response := resp.(*slsPop.OpenSlsServiceResponse)
+		// response, err := conn.DoRequest(StringPointer("OpenSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 		addDebug("OpenSlsService", response, nil)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_log_service", "OpenLogService", AlibabaCloudSdkGoERROR)
 		}
-		if response["Success"] != nil && !response["Success"].(bool) {
+		if !response.Success {
 			return WrapErrorf(fmt.Errorf("%s", response), DataDefaultErrorMsg, "alicloud_log_service", "OpenLogService", AlibabaCloudSdkGoERROR)
 		}
-		_, err = waitServiceReady(conn, true)
+		_, err = waitServiceReady(meta, true)
 		if err == nil {
 			d.SetId("LogServiceHasBeenOpened")
 			d.Set("status", "Opened")
@@ -69,18 +70,28 @@ func dataSourceAlicloudLogServiceRead(d *schema.ResourceData, meta interface{}) 
 	return WrapError(err)
 }
 
-func waitServiceReady(conn *rpc.Client, hasOpened bool) (bool, error) {
+func waitServiceReady(meta interface{}, hasOpened bool) (bool, error) {
 	beginTime := time.Now().Unix()
+	client := meta.(*connectivity.AliyunClient)
 	for {
-		response, err := conn.DoRequest(StringPointer("GetSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
+		resp, err := client.WithLogPopClient(func(slsPopClient *slsPop.Client) (interface{}, error) {
+			request := slsPop.CreateGetSlsServiceRequest()
+			return slsPopClient.GetSlsService(request)
+		})
+		response := resp.(*slsPop.GetSlsServiceResponse)
+		//response, err := conn.DoRequest(StringPointer("GetSlsService"), nil, StringPointer("POST"), StringPointer("2019-10-23"), StringPointer("AK"), nil, nil, &util.RuntimeOptions{})
 		addDebug("GetSlsService", response, nil)
 		if err != nil {
 			return false, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_log_service", "GetLogService", AlibabaCloudSdkGoERROR)
 		}
-		if response["Success"] != nil && !response["Success"].(bool) {
+		addDebug("GetSlsService", response, nil)
+		if err != nil {
+			return false, WrapErrorf(err, DataDefaultErrorMsg, "alicloud_log_service", "GetLogService", AlibabaCloudSdkGoERROR)
+		}
+		if !response.Success {
 			return false, WrapErrorf(fmt.Errorf("%s", response), DataDefaultErrorMsg, "alicloud_log_service", "GetLogService", AlibabaCloudSdkGoERROR)
 		}
-		status := response["Status"].(string)
+		status := response.Status
 		if "Opened" == status {
 			return false, nil
 		}
