@@ -15,7 +15,7 @@ Provides a CAS Certificate resource.
 
 -> **NOTE:** The Certificate name which you want to add must be already registered and had not added by another account. Every Certificate name can only exist in a unique group.
 
--> **NOTE:** The Cas Certificate region only support cn-hangzhou, ap-south-1, me-east-1, eu-central-1, ap-northeast-1, ap-southeast-2.
+-> **NOTE:** The Cas Certificate region only support cn-hangzhou, me-east-1, eu-central-1, ap-northeast-1.
 
 -> **NOTE:** Available in 1.35.0+ .
 

@@ -26,7 +26,7 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "ap-southeast-2"
+  region = "ap-southeast-1"
 }
 
 resource "alicloud_vpn_customer_gateway" "default" {
