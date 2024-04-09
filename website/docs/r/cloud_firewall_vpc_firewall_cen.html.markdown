@@ -20,14 +20,15 @@ For information about Cloud Firewall Vpc Firewall Cen and how to use it, see [Wh
 Basic Usage
 
 ```terraform
+# These resource primary keys should be replaced with your actual values.
 resource "alicloud_cloud_firewall_vpc_firewall_cen" "default" {
-  cen_id = "cen-cjok7uyb5w2b27573v"
+  cen_id = "cen-xxx"
   local_vpc {
-    network_instance_id = "vpc-a2d4wzzfuumzuq6uog5w4"
+    network_instance_id = "vpc-xxx"
   }
   status            = "open"
-  member_uid        = "1415189284827022"
-  vpc_region        = "ap-south-1"
+  member_uid        = "14151*****827022"
+  vpc_region        = "cn-hangzhou"
   vpc_firewall_name = "tf-vpc-firewall-name"
 }
 ```
