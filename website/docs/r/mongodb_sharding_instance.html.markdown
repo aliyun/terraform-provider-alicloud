@@ -102,13 +102,14 @@ The following arguments are supported:
 * `backup_time` - (Optional, Available since v1.42.0) Sharding Instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
-* `mongo_list` - (Required, Set) The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
-* `shard_list` - (Required, Set) the shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
+* `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
+* `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
+* `config_server_list` - (Optional, ForceNew, Set, Available since v1.222.1) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
   - `UPGRADE`: The specifications are upgraded.
   - `DOWNGRADE`: The specifications are downgraded.
-    **NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
+**NOTE:** `order_type` is only applicable to instances when `instance_charge_type` is `PrePaid`.
 
 ### `mongo_list`
 
@@ -126,6 +127,13 @@ The shard_list supports the following:
   - 10-GB increments. Unit: GB.
 * `readonly_replicas` - (Optional, Int, Available since v1.126.0) The number of read-only nodes in shard node Default value: `0`. Valid values: `0` to `5`.
 
+### `config_server_list`
+
+The config_server_list supports the following:
+
+* `node_class` - (Optional, ForceNew) The instance type of the ConfigServer node. Valid values: `mdb.shard.2x.xlarge.d`, `dds.cs.mid`.
+* `node_storage` - (Optional, ForceNew, Int) The storage space of the ConfigServer node.
+
 ## Attributes Reference
 
 The following attributes are exported:
@@ -140,13 +148,11 @@ The following attributes are exported:
   * `node_id` - The ID of the shard node.
 * `config_server_list` - The information of the ConfigServer nodes.
   * `node_id` - The ID of the Config Server node.
-  * `node_class` - The node class of the Config Server node.
-  * `node_storage` - The node storage of the Config Server node.
-  * `node_description` - The description of the Config Server node.
   * `connect_string` - The connection address of the Config Server node.
   * `port` - The connection port of the Config Server node.
   * `max_connections` - The max connections of the Config Server node.
   * `max_iops` - The maximum IOPS of the Config Server node.
+  * `node_description` - The description of the Config Server node.
 
 ## Timeouts
 

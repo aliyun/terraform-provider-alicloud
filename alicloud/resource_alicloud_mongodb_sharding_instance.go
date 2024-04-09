@@ -151,7 +151,6 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 					return d.Get("engine_version").(string) < "4.0"
 				},
 			},
-			"tags": tagsSchema(),
 			"mongo_list": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -163,7 +162,6 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 							Type:     schema.TypeString,
 							Required: true,
 						},
-						//Computed
 						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -180,7 +178,7 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				},
 			},
 			"shard_list": {
-				Type:     schema.TypeList,
+				Type:     schema.TypeSet,
 				Required: true,
 				MinItems: 2,
 				MaxItems: 32,
@@ -200,7 +198,6 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 							Computed:     true,
 							ValidateFunc: IntBetween(0, 5),
 						},
-						//Computed
 						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -208,28 +205,27 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 					},
 				},
 			},
-			"retention_period": {
-				Type:     schema.TypeInt,
-				Computed: true,
-			},
 			"config_server_list": {
 				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
 				Computed: true,
+				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"node_id": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"node_class": {
 							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
 							Computed: true,
 						},
 						"node_storage": {
 							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
 							Computed: true,
 						},
-						"node_description": {
+						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -249,8 +245,17 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 							Type:     schema.TypeInt,
 							Computed: true,
 						},
+						"node_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
+			},
+			"tags": tagsSchema(),
+			"retention_period": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"order_type": {
 				Type:         schema.TypeString,
@@ -275,7 +280,6 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	request["Engine"] = "MongoDB"
-	request["ConfigServer"] = []map[string]interface{}{{"Class": "dds.cs.mid", "Storage": 20}}
 	request["EngineVersion"] = d.Get("engine_version")
 
 	if v, ok := d.GetOk("storage_engine"); ok {
@@ -380,7 +384,7 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 
 	shardList := d.Get("shard_list")
 	shardListMaps := make([]map[string]interface{}, 0)
-	for _, shardLists := range shardList.([]interface{}) {
+	for _, shardLists := range shardList.(*schema.Set).List() {
 		shardListMap := map[string]interface{}{}
 		shardListArg := shardLists.(map[string]interface{})
 
@@ -395,6 +399,28 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 	}
 
 	request["ReplicaSet"] = shardListMaps
+
+	if v, ok := d.GetOk("config_server_list"); ok {
+		configServerListMaps := make([]map[string]interface{}, 0)
+		for _, configServerList := range v.([]interface{}) {
+			configServerListMap := map[string]interface{}{}
+			configServerListArg := configServerList.(map[string]interface{})
+
+			if class, ok := configServerListArg["node_class"]; ok {
+				configServerListMap["Class"] = class
+			}
+
+			if storage, ok := configServerListArg["node_storage"]; ok {
+				configServerListMap["Storage"] = storage
+			}
+
+			configServerListMaps = append(configServerListMaps, configServerListMap)
+		}
+
+		request["ConfigServer"] = configServerListMaps
+	} else {
+		request["ConfigServer"] = []map[string]interface{}{{"Class": "dds.cs.mid", "Storage": 20}}
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -564,10 +590,6 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 				configServerListItemMap := make(map[string]interface{})
 				configServerListArg := configServerLists.(map[string]interface{})
 
-				if nodeId, ok := configServerListArg["NodeId"]; ok {
-					configServerListItemMap["node_id"] = nodeId
-				}
-
 				if nodeClass, ok := configServerListArg["NodeClass"]; ok {
 					configServerListItemMap["node_class"] = nodeClass
 				}
@@ -576,8 +598,8 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 					configServerListItemMap["node_storage"] = nodeStorage
 				}
 
-				if nodeDescription, ok := configServerListArg["NodeDescription"]; ok {
-					configServerListItemMap["node_description"] = nodeDescription
+				if nodeId, ok := configServerListArg["NodeId"]; ok {
+					configServerListItemMap["node_id"] = nodeId
 				}
 
 				if connectString, ok := configServerListArg["ConnectString"]; ok {
@@ -594,6 +616,10 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 
 				if maxIOPS, ok := configServerListArg["MaxIOPS"]; ok {
 					configServerListItemMap["max_iops"] = maxIOPS
+				}
+
+				if nodeDescription, ok := configServerListArg["NodeDescription"]; ok {
+					configServerListItemMap["node_description"] = nodeDescription
 				}
 
 				configServerListMaps = append(configServerListMaps, configServerListItemMap)
@@ -906,7 +932,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if !d.IsNewResource() && d.HasChange("shard_list") {
 		state, diff := d.GetChange("shard_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.(*schema.Set).Difference(diff.(*schema.Set)).List(), diff.(*schema.Set).Difference(state.(*schema.Set)).List())
 		if err != nil {
 			return WrapError(err)
 		}

@@ -435,6 +435,111 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_sharding_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBShardingInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBShardingInstance%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":       "4.4",
+					"storage_engine":       "WiredTiger",
+					"protocol_type":        "mongodb",
+					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"zone_id":              "${data.alicloud_mongodb_zones.default.zones.0.id}",
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"network_type":         "VPC",
+					"name":                 name,
+					"instance_charge_type": "PostPaid",
+					"security_ip_list":     []string{"10.168.1.12"},
+					"account_password":     "YourPassword_123",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"backup_time":          "11:00Z-12:00Z",
+					"backup_period":        []string{"Wednesday"},
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+					},
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "mdb.shard.8x.large.d",
+							"node_storage": "20",
+						},
+						{
+							"node_class":        "mdb.shard.8x.large.d",
+							"node_storage":      "30",
+							"readonly_replicas": "1",
+						},
+					},
+					"config_server_list": []map[string]interface{}{
+						{
+							"node_class":   "mdb.shard.2x.xlarge.d",
+							"node_storage": "30",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "ShardingInstance",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.4",
+						"storage_engine":       "WiredTiger",
+						"protocol_type":        "mongodb",
+						"vpc_id":               CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"zone_id":              CHECKSET,
+						"security_group_id":    CHECKSET,
+						"network_type":         "VPC",
+						"name":                 name,
+						"instance_charge_type": "PostPaid",
+						"security_ip_list.#":   "1",
+						"account_password":     "YourPassword_123",
+						"resource_group_id":    CHECKSET,
+						"backup_time":          "11:00Z-12:00Z",
+						"backup_period.#":      "1",
+						"mongo_list.#":         "2",
+						"shard_list.#":         "2",
+						"config_server_list.#": "1",
+						"tags.%":               "2",
+						"tags.Created":         "TF",
+						"tags.For":             "ShardingInstance",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+			},
+		},
+	})
+}
+
 var AliCloudMongoDBShardingInstanceMap0 = map[string]string{
 	"storage_engine":       CHECKSET,
 	"protocol_type":        CHECKSET,
@@ -446,8 +551,8 @@ var AliCloudMongoDBShardingInstanceMap0 = map[string]string{
 	"security_ip_list.#":   CHECKSET,
 	"resource_group_id":    CHECKSET,
 	"backup_time":          CHECKSET,
-	"retention_period":     CHECKSET,
 	"config_server_list.#": CHECKSET,
+	"retention_period":     CHECKSET,
 }
 
 func AliCloudMongoDBShardingInstanceBasicDependence0(name string) string {
