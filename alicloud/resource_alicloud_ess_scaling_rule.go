@@ -66,6 +66,28 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"scale_in_evaluation_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"scale_out_evaluation_count": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"min_adjustment_magnitude": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("scaling_rule_type"); ok && (v.(string) == "" || v.(string) == "SimpleScalingRule" || v.(string) == "StepScalingRule") {
+						if w, ok := d.GetOk("adjustment_type"); ok && w.(string) == "PercentChangeInCapacity" {
+							return false
+						}
+					}
+					return true
+				},
+			},
 			"metric_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -176,6 +198,9 @@ func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("cooldown", object.Cooldown)
 	d.Set("scaling_rule_type", object.ScalingRuleType)
 	d.Set("estimated_instance_warmup", object.EstimatedInstanceWarmup)
+	d.Set("scale_in_evaluation_count", object.ScaleInEvaluationCount)
+	d.Set("scale_out_evaluation_count", object.ScaleOutEvaluationCount)
+	d.Set("min_adjustment_magnitude", object.MinAdjustmentMagnitude)
 	d.Set("metric_name", object.MetricName)
 	targetValue, err := strconv.ParseFloat(strconv.FormatFloat(object.TargetValue, 'f', 3, 64), 64)
 	if err != nil {
@@ -241,6 +266,9 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 		if d.HasChange("adjustment_type") {
 			request.AdjustmentType = d.Get("adjustment_type").(string)
 		}
+		if d.HasChange("min_adjustment_magnitude") {
+			request.MinAdjustmentMagnitude = requests.NewInteger(d.Get("min_adjustment_magnitude").(int))
+		}
 		if d.HasChange("adjustment_value") {
 			request.AdjustmentValue = requests.NewInteger(d.Get("adjustment_value").(int))
 		}
@@ -248,20 +276,14 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request.Cooldown = requests.NewInteger(d.Get("cooldown").(int))
 		}
 	case string(TargetTrackingScalingRule):
-		//if d.HasChange("alarm_dimension") {
-		//	steps := make([]ess.ModifyScalingRuleAlarmDimension, 0)
-		//	for _, e := range d.Get("alarm_dimension").([]interface{}) {
-		//		pack := e.(map[string]interface{})
-		//		step := ess.ModifyScalingRuleAlarmDimension{
-		//			DimensionKey:   pack["dimension_key"].(string),
-		//			DimensionValue: pack["dimension_value"].(string),
-		//		}
-		//		steps = append(steps, step)
-		//	}
-		//	request.AlarmDimension = &steps
-		//}
 		if d.HasChange("metric_name") {
 			request.MetricName = d.Get("metric_name").(string)
+		}
+		if d.HasChange("scale_in_evaluation_count") {
+			request.ScaleInEvaluationCount = requests.NewInteger(d.Get("scale_in_evaluation_count").(int))
+		}
+		if d.HasChange("scale_out_evaluation_count") {
+			request.ScaleOutEvaluationCount = requests.NewInteger(d.Get("scale_out_evaluation_count").(int))
 		}
 		if d.HasChange("disable_scale_in") {
 			request.DisableScaleIn = requests.NewBoolean(d.Get("disable_scale_in").(bool))
@@ -277,6 +299,9 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			request.TargetValue = requests.NewFloat(targetValue)
 		}
 	case string(StepScalingRule):
+		if d.HasChange("min_adjustment_magnitude") {
+			request.MinAdjustmentMagnitude = requests.NewInteger(d.Get("min_adjustment_magnitude").(int))
+		}
 		if d.HasChange("step_adjustment") {
 			steps := make([]ess.ModifyScalingRuleStepAdjustment, 0)
 			for _, e := range d.Get("step_adjustment").([]interface{}) {
@@ -329,6 +354,9 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		if v, ok := d.GetOk("adjustment_type"); ok && v.(string) != "" {
 			request.AdjustmentType = v.(string)
 		}
+		if v, ok := d.GetOkExists("min_adjustment_magnitude"); ok {
+			request.MinAdjustmentMagnitude = requests.NewInteger(v.(int))
+		}
 		if v, ok := d.GetOkExists("adjustment_value"); ok {
 			request.AdjustmentValue = requests.NewInteger(v.(int))
 		}
@@ -338,6 +366,12 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 	case string(TargetTrackingScalingRule):
 		if v, ok := d.GetOk("estimated_instance_warmup"); ok {
 			request.EstimatedInstanceWarmup = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOk("scale_in_evaluation_count"); ok {
+			request.ScaleInEvaluationCount = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOk("scale_out_evaluation_count"); ok {
+			request.ScaleOutEvaluationCount = requests.NewInteger(v.(int))
 		}
 		if v, ok := d.GetOk("metric_name"); ok && v.(string) != "" {
 			request.MetricName = v.(string)
@@ -369,6 +403,9 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 		v, ok := d.GetOk("step_adjustment")
 		if v, ok := d.GetOk("adjustment_type"); ok && v.(string) != "" {
 			request.AdjustmentType = v.(string)
+		}
+		if v, ok := d.GetOkExists("min_adjustment_magnitude"); ok {
+			request.MinAdjustmentMagnitude = requests.NewInteger(v.(int))
 		}
 		if v, ok := d.GetOk("estimated_instance_warmup"); ok {
 			request.EstimatedInstanceWarmup = requests.NewInteger(v.(int))
