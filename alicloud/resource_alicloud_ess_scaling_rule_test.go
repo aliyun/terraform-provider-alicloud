@@ -471,7 +471,266 @@ func TestAccAliCloudEssScalingRuleMulti(t *testing.T) {
 		},
 	})
 }
+func TestAccAliCloudEssScalingSimpleRule_minAdjustmentMagnitude(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":         CHECKSET,
+		"adjustment_type":          "PercentChangeInCapacity",
+		"adjustment_value":         "2",
+		"min_adjustment_magnitude": "2",
+		"cooldown":                 "0",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
 
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingRuleConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"adjustment_type":          "PercentChangeInCapacity",
+					"min_adjustment_magnitude": "2",
+					"adjustment_value":         "2",
+					"cooldown":                 "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"adjustment_type":          "PercentChangeInCapacity",
+					"adjustment_value":         "1",
+					"min_adjustment_magnitude": "1",
+					"cooldown":                 "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_adjustment_magnitude": "1",
+						"adjustment_value":         "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":         "${alicloud_ess_scaling_group.default.id}",
+					"adjustment_type":          "PercentChangeInCapacity",
+					"adjustment_value":         "2",
+					"cooldown":                 "0",
+					"min_adjustment_magnitude": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+func TestAccAliCloudEssScalingStepRule_minAdjustmentMagnitude(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":  CHECKSET,
+		"scaling_rule_type": "StepScalingRule",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssStepScalingRuleConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssStepScalingRuleUpdate_step)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "StepScalingRule",
+					"min_adjustment_magnitude":  "2",
+					"adjustment_type":           "PercentChangeInCapacity",
+					"estimated_instance_warmup": "200",
+					"step_adjustment": []map[string]interface{}{
+						{
+							"metric_interval_lower_bound": "10.3",
+							"metric_interval_upper_bound": "20.1",
+							"scaling_adjustment":          "1",
+						},
+						{
+							"metric_interval_lower_bound": "20.1",
+							"scaling_adjustment":          "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "StepScalingRule",
+					"adjustment_type":           "PercentChangeInCapacity",
+					"min_adjustment_magnitude":  "1",
+					"estimated_instance_warmup": "200",
+					"step_adjustment": []map[string]interface{}{
+						{
+							"metric_interval_lower_bound": "10.3",
+							"metric_interval_upper_bound": "20.1",
+							"scaling_adjustment":          "1",
+						},
+						{
+							"metric_interval_lower_bound": "20.1",
+							"scaling_adjustment":          "2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"min_adjustment_magnitude": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"step_adjustment"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEssScalingTargetRule_scaleInEvaluationCountAndScaleOutEvaluationCount(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":           CHECKSET,
+		"scaling_rule_type":          "TargetTrackingScalingRule",
+		"metric_name":                "CpuUtilization",
+		"target_value":               "20.1",
+		"estimated_instance_warmup":  "200",
+		"scale_in_evaluation_count":  "15",
+		"scale_out_evaluation_count": "3",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"metric_name":               "CpuUtilization",
+					"target_value":              "20.1",
+					"estimated_instance_warmup": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":         "TargetTrackingScalingRule",
+					"metric_name":               "CpuUtilization",
+					"target_value":              "20.1",
+					"estimated_instance_warmup": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_in_evaluation_count":  CHECKSET,
+						"scale_out_evaluation_count": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":          "TargetTrackingScalingRule",
+					"metric_name":                "CpuUtilization",
+					"target_value":               "20.1",
+					"estimated_instance_warmup":  "200",
+					"scale_in_evaluation_count":  "5",
+					"scale_out_evaluation_count": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"scale_in_evaluation_count":  "5",
+						"scale_out_evaluation_count": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":           "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":          "TargetTrackingScalingRule",
+					"metric_name":                "CpuUtilization",
+					"target_value":               "20.1",
+					"estimated_instance_warmup":  "200",
+					"scale_in_evaluation_count":  "15",
+					"scale_out_evaluation_count": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	essService := EssService{client}
