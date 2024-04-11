@@ -613,6 +613,7 @@ func (srv *EssService) DescribeEssAttachment(id string, instanceIds []string) (i
 	request := ess.CreateDescribeScalingInstancesRequest()
 	request.RegionId = srv.client.RegionId
 	request.ScalingGroupId = id
+	request.CreationType = "Attached"
 	if len(instanceIds) > 0 {
 		request.InstanceId = &instanceIds
 	}
