@@ -10,15 +10,14 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudRamPolicy() *schema.Resource {
+func resourceAliCloudRamPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudRamPolicyCreate,
-		Read:   resourceAlicloudRamPolicyRead,
-		Update: resourceAlicloudRamPolicyUpdate,
-		Delete: resourceAlicloudRamPolicyDelete,
+		Create: resourceAliCloudRamPolicyCreate,
+		Read:   resourceAliCloudRamPolicyRead,
+		Update: resourceAliCloudRamPolicyUpdate,
+		Delete: resourceAliCloudRamPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -26,68 +25,87 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 			Delete: schema.DefaultTimeout(26 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"default_version": {
-				Type:     schema.TypeString,
-				Computed: true,
+			"policy_name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Computed:      true,
+				ConflictsWith: []string{"name"},
+			},
+			"policy_document": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  validatePolicyDocument(true),
+				ConflictsWith: []string{"document", "version", "statement"},
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"policy_document": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.ValidateJsonString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
-				ConflictsWith: []string{"document", "version", "statement"},
-			},
-			"document": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: validation.ValidateJsonString,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					equal, _ := compareJsonTemplateAreEquivalent(old, new)
-					return equal
-				},
-				Deprecated:    "Field 'document' has been deprecated from provider version 1.114.0. New field 'policy_document' instead.",
-				ConflictsWith: []string{"policy_document", "version", "statement"},
-			},
-			"policy_name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"name"},
-			},
-			"name": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				Deprecated:    "Field 'name' has been deprecated from provider version 1.114.0. New field 'policy_name' instead.",
-				ConflictsWith: []string{"policy_name"},
-			},
 			"rotate_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"DeleteOldestNonDefaultVersionWhenLimitExceeded", "None"}, false),
+				ValidateFunc: StringInSlice([]string{"None", "DeleteOldestNonDefaultVersionWhenLimitExceeded"}, false),
+			},
+			"force": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"version_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"default_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"attachment_count": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"name": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      true,
+				Computed:      true,
+				ConflictsWith: []string{"policy_name"},
+				Deprecated:    "Field `name` has been deprecated from provider version 1.114.0. New field `policy_name` instead.",
+			},
+			"document": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validatePolicyDocument(true),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
+				ConflictsWith: []string{"policy_document", "version", "statement"},
+				Deprecated:    "Field `document` has been deprecated from provider version 1.114.0. New field `policy_document` instead.",
+			},
+			"version": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				Default:       "1",
+				ConflictsWith: []string{"document"},
+				ValidateFunc:  StringInSlice([]string{"1"}, false),
+				Deprecated:    "Field `version` has been deprecated from version 1.49.0, and use field `document` to replace.",
+			},
 			"statement": {
-				Type:       schema.TypeSet,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'statement' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"document"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"effect": {
@@ -111,34 +129,13 @@ func resourceAlicloudRamPolicy() *schema.Resource {
 						},
 					},
 				},
-				ConflictsWith: []string{"document"},
-			},
-			"version": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Default:       "1",
-				ConflictsWith: []string{"document"},
-				// can only be '1' so far.
-				ValidateFunc: StringInSlice([]string{"1"}, false),
-				Deprecated:   "Field 'version' has been deprecated from version 1.49.0, and use field 'document' to replace. ",
-			},
-			"force": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"type": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"attachment_count": {
-				Type:     schema.TypeInt,
-				Computed: true,
+				Deprecated: "Field `statement` has been deprecated from version 1.49.0, and use field `document` to replace.",
 			},
 		},
 	}
 }
 
-func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreatePolicy"
@@ -147,8 +144,14 @@ func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+
+	if v, ok := d.GetOk("policy_name"); ok {
+		request["PolicyName"] = v
+	} else if v, ok := d.GetOk("name"); ok {
+		request["PolicyName"] = v
+	} else {
+		return WrapError(Error("One of `policy_name`, `name` must be specified."))
+
 	}
 
 	if v, ok := d.GetOk("policy_document"); ok {
@@ -161,22 +164,20 @@ func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapError(err)
 		}
+
 		request["PolicyDocument"] = doc
 	} else {
-		return WrapError(Error("One of 'policy_document', 'document', 'statement'  must be specified."))
-
+		return WrapError(Error("One of `policy_document`, `document`, `statement` must be specified."))
 	}
 
-	if v, ok := d.GetOk("policy_name"); ok {
-		request["PolicyName"] = v
-	} else if v, ok := d.GetOk("name"); ok {
-		request["PolicyName"] = v
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
@@ -185,23 +186,31 @@ func resourceAlicloudRamPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ram_policy", action, AlibabaCloudSdkGoERROR)
 	}
-	responsePolicy := response["Policy"].(map[string]interface{})
-	d.SetId(fmt.Sprint(responsePolicy["PolicyName"]))
 
-	return resourceAlicloudRamPolicyRead(d, meta)
+	if resp, err := jsonpath.Get("$.Policy", response); err != nil || resp == nil {
+		return WrapErrorf(err, IdMsg, "alicloud_ram_policy")
+	} else {
+		policyName := resp.(map[string]interface{})["PolicyName"]
+		d.SetId(fmt.Sprint(policyName))
+	}
+
+	return resourceAliCloudRamPolicyRead(d, meta)
 }
-func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRamPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ramService := RamService{client}
+
 	object, err := ramService.DescribeRamPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ram_policy ramService.DescribeRamPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
@@ -209,61 +218,87 @@ func resourceAlicloudRamPolicyRead(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	d.Set("policy_name", d.Id())
-	d.Set("name", d.Id())
-	d.Set("default_version", object["Policy"].(map[string]interface{})["DefaultVersion"])
-	d.Set("description", object["Policy"].(map[string]interface{})["Description"])
-	d.Set("policy_document", object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"])
-	d.Set("document", object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"])
-	d.Set("version_id", object["DefaultPolicyVersion"].(map[string]interface{})["VersionId"])
-	statement, version, err := ramService.ParsePolicyDocument(object["DefaultPolicyVersion"].(map[string]interface{})["PolicyDocument"].(string))
-	if err != nil {
-		return WrapError(err)
+	if policy, ok := object["Policy"]; ok {
+		policyArg := policy.(map[string]interface{})
+
+		d.Set("policy_name", policyArg["PolicyName"])
+		d.Set("description", policyArg["Description"])
+		d.Set("type", policyArg["PolicyType"])
+		d.Set("default_version", policyArg["DefaultVersion"])
+		d.Set("attachment_count", policyArg["AttachmentCount"])
+		d.Set("name", policyArg["PolicyName"])
 	}
-	d.Set("version", version)
-	d.Set("statement", statement)
-	d.Set("attachment_count", object["Policy"].(map[string]interface{})["AttachmentCount"])
-	d.Set("type", object["Policy"].(map[string]interface{})["PolicyType"])
+
+	if defaultPolicyVersion, ok := object["DefaultPolicyVersion"]; ok {
+		defaultPolicyVersionArg := defaultPolicyVersion.(map[string]interface{})
+
+		d.Set("policy_document", defaultPolicyVersionArg["PolicyDocument"])
+		d.Set("version_id", defaultPolicyVersionArg["VersionId"])
+		d.Set("document", defaultPolicyVersionArg["PolicyDocument"])
+
+		statement, version, err := ramService.ParsePolicyDocument(defaultPolicyVersionArg["PolicyDocument"].(string))
+		if err != nil {
+			return WrapError(err)
+		}
+
+		d.Set("version", version)
+		d.Set("statement", statement)
+	}
 
 	return nil
 }
-func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	update := false
+
 	request := map[string]interface{}{
-		"PolicyName": d.Id(),
+		"SetAsDefault": true,
+		"PolicyName":   d.Id(),
 	}
+
 	if d.HasChange("policy_document") {
 		update = true
-		request["PolicyDocument"] = d.Get("policy_document")
+
+		if v, ok := d.GetOk("policy_document"); ok {
+			request["PolicyDocument"] = v
+		}
 	}
+
 	if d.HasChange("document") {
 		update = true
-		request["PolicyDocument"] = d.Get("document")
+
+		if v, ok := d.GetOk("document"); ok {
+			request["PolicyDocument"] = v
+		}
 	}
-	request["SetAsDefault"] = true
-	if d.HasChange("statement") || d.HasChange("version") {
+
+	if d.HasChange("version") || d.HasChange("statement") {
 		ramService := RamService{client}
 		document, err := ramService.AssemblePolicyDocument(d.Get("statement").(*schema.Set).List(), d.Get("version").(string))
 		if err != nil {
 			return WrapError(err)
 		}
+
 		request["PolicyDocument"] = document
 	}
+
+	if v, ok := d.GetOk("rotate_strategy"); ok {
+		request["RotateStrategy"] = v
+	}
+
 	if update {
-		if _, ok := d.GetOk("rotate_strategy"); ok {
-			request["RotateStrategy"] = d.Get("rotate_strategy")
-		}
 		action := "CreatePolicyVersion"
 		conn, err := client.NewRamClient()
 		if err != nil {
 			return WrapError(err)
 		}
+
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -272,23 +307,28 @@ func resourceAlicloudRamPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudRamPolicyRead(d, meta)
+
+	return resourceAliCloudRamPolicyRead(d, meta)
 }
-func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePolicy"
 	var response map[string]interface{}
+
 	conn, err := client.NewRamClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"PolicyName": d.Id(),
 	}
@@ -298,11 +338,12 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			"PolicyName": d.Id(),
 			"PolicyType": "Custom",
 		}
+
 		listAction := "ListEntitiesForPolicy"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(listAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listRequest, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
@@ -311,9 +352,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(listAction, response, listRequest)
 			return nil
 		})
+		addDebug(listAction, response, listRequest)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -322,6 +364,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Users.User", response)
 		}
+
 		if userResp != nil && len(userResp.([]interface{})) > 0 {
 			for _, v := range userResp.([]interface{}) {
 				userAction := "DetachPolicyFromUser"
@@ -333,7 +376,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(userAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, userRequest, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
@@ -342,9 +385,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, userRequest)
 					return nil
 				})
+				addDebug(action, response, userRequest)
+
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 						return nil
@@ -353,10 +397,12 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				}
 			}
 		}
+
 		groupResp, err := jsonpath.Get("$.Groups.Group", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Groups.Group", response)
 		}
+
 		if groupResp != nil && len(groupResp.([]interface{})) > 0 {
 			for _, v := range groupResp.([]interface{}) {
 				groupAction := "DetachPolicyFromGroup"
@@ -368,7 +414,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(groupAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, groupRequest, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
@@ -377,9 +423,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, groupRequest)
 					return nil
 				})
+				addDebug(action, response, groupRequest)
+
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 						return nil
@@ -388,6 +435,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				}
 			}
 		}
+
 		roleResp, err := jsonpath.Get("$.Roles.Role", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Roles.Role", response)
@@ -403,7 +451,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(roleAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, roleRequest, &runtime)
 					if err != nil {
 						if NeedRetry(err) {
@@ -412,9 +460,10 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 						}
 						return resource.NonRetryableError(err)
 					}
-					addDebug(action, response, roleRequest)
 					return nil
 				})
+				addDebug(action, response, roleRequest)
+
 				if err != nil {
 					if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 						return nil
@@ -443,12 +492,15 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return nil
 		})
+		addDebug(action, response, listVersionsRequest)
+
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 				return nil
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		versionsResp, er := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
 		if er != nil {
 			return WrapErrorf(er, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
@@ -462,10 +514,11 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 						"PolicyName": d.Id(),
 						"VersionId":  v.(map[string]interface{})["VersionId"],
 					}
+
 					runtime := util.RuntimeOptions{}
 					runtime.SetAutoretry(true)
 					wait := incrementalWait(3*time.Second, 3*time.Second)
-					err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 						response, err = conn.DoRequest(StringPointer(versionAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, versionRequest, &util.RuntimeOptions{})
 						if err != nil {
 							if NeedRetry(err) {
@@ -474,9 +527,13 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 							}
 							return resource.NonRetryableError(err)
 						}
-						addDebug(versionAction, response, versionRequest)
 						return nil
 					})
+					addDebug(versionAction, response, versionRequest)
+
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), versionAction, AlibabaCloudSdkGoERROR)
+					}
 				}
 			}
 		}
@@ -485,7 +542,7 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeleteConflict.Policy.Group", "DeleteConflict.Policy.User", "DeleteConflict.Policy.Version", "DeleteConflict.Role.Policy"}) || NeedRetry(err) {
@@ -494,14 +551,16 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

@@ -104,35 +104,78 @@ func testSweepRamPolicies(region string) error {
 	return nil
 }
 
-func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
+func testAccCheckRamPolicyDestroy(s *terraform.State) error {
+	client := testAccProvider.Meta().(*connectivity.AliyunClient)
+	ramService := RamService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_ram_policy" {
+			continue
+		}
+
+		_, err := ramService.DescribeRamPolicy(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		}
+
+		return WrapError(Error("Error SecurityGroup still exist"))
+	}
+
+	return nil
+}
+
+func TestAccAliCloudRamPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default"
-	ra := resourceAttrInit(resourceId, ramPolicyMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudRamPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeRamPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  testAccCheckRamPolicyDestroy,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamPolicyCreateConfig(rand),
+				Config: testAccConfig(map[string]interface{}{
+					"policy_name":     name,
+					"policy_document": `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\",\"acs:oss:*:*:myphotos/*\"]}],\"Version\":\"1\"}`,
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
-						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
-						"force":       "true",
+						"policy_name":     name,
+						"policy_document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_document": `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\"]}],\"Version\":\"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force": "true",
 					}),
 				),
 			},
@@ -140,71 +183,188 @@ func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "rotate_strategy"},
-			},
-			{
-				Config: testAccRamPolicyNameConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
-						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
-						"force":       "true",
-					}),
-				),
-			},
-			{
-				Config: testAccRamPolicyDescriptionConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{"description": "this is a policy description test"}),
-				),
-			},
-			{
-				Config: testAccRamPolicyStatementConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(nil),
-				),
-			},
-			{
-				Config: testAccRamPolicyCreateConfig(rand),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
-						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
-						"type":        "Custom",
-						"description": "this is a policy test",
-						"version":     "1",
-						"force":       "true",
-					}),
-				),
+				ImportStateVerifyIgnore: []string{"rotate_strategy", "force"},
 			},
 		},
 	})
 }
 
-func TestAccAliCloudRAMPolicy_multi(t *testing.T) {
+func TestAccAliCloudRamPolicy_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy_name":     name,
+					"policy_document": `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\",\"acs:oss:*:*:myphotos/*\"]}],\"Version\":\"1\"}`,
+					"description":     name,
+					"rotate_strategy": "None",
+					"force":           "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy_name":     name,
+						"policy_document": CHECKSET,
+						"description":     name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rotate_strategy", "force"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRamPolicy_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":     name,
+					"document": `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\",\"acs:oss:*:*:myphotos/*\"]}],\"Version\":\"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":     name,
+						"document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"document": `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\"]}],\"Version\":\"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"document": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"force": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rotate_strategy", "force"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRamPolicy_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ram_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudRamPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRamPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudRamPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":            name,
+					"document":        `{\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"oss:*\",\"Resource\":[\"acs:oss:*:*:myphotos\",\"acs:oss:*:*:myphotos/*\"]}],\"Version\":\"1\"}`,
+					"description":     name,
+					"rotate_strategy": "None",
+					"force":           "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":        name,
+						"document":    CHECKSET,
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rotate_strategy", "force"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudRamPolicy_multi(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ram_policy.default.9"
-	ra := resourceAttrInit(resourceId, ramPolicyMap)
+	ra := resourceAttrInit(resourceId, AliCloudRamPolicyMap0)
 	serviceFunc := func() interface{} {
 		return &RamService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandIntRange(1000000, 9999999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  testAccCheckRamPolicyDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccRamPolicyMultiConfig(rand),
+				Config: testAccRamPolicyMultiConfig(name),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -213,177 +373,46 @@ func TestAccAliCloudRAMPolicy_multi(t *testing.T) {
 	})
 }
 
-var ramPolicyMap = map[string]string{
-	"name":             CHECKSET,
-	"policy_name":      CHECKSET,
-	"type":             "Custom",
-	"description":      "this is a policy test",
-	"version":          "1",
+var AliCloudRamPolicyMap0 = map[string]string{
+	"type":             CHECKSET,
+	"version_id":       CHECKSET,
+	"default_version":  CHECKSET,
 	"attachment_count": CHECKSET,
-	"statement.#":      "1",
 }
 
-func testAccRamPolicyCreateConfig(rand int) string {
+func AliCloudRamPolicyBasicDependence0(name string) string {
+	return ""
+}
+
+func testAccRamPolicyMultiConfig(name string) string {
 	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "default" {
-	  policy_name = "tf-testAcc%sRamPolicyConfig-%d"
-	  policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamPolicyNameConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "default" {
-	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamPolicyDescriptionConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "default" {
-	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy description test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-func testAccRamPolicyStatementConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "default" {
-	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-N"
-	  policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Allow",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy description test"
-	  force = true
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccRamPolicyMultiConfig(rand int) string {
-	return fmt.Sprintf(`
-	resource "alicloud_ram_policy" "default" {
-	  policy_name = "tf-testAcc%sRamPolicyConfig-%d-${count.index}"
-	  policy_document = <<EOF
-		{
-		  "Statement": [
-			{
-			  "Action": [
-				"oss:ListObjects",
-				"oss:ListObjects"
-			  ],
-			  "Effect": "Deny",
-			  "Resource": [
-				"acs:oss:*:*:mybucket",
-				"acs:oss:*:*:mybucket/*"
-			  ]
-			}
-		  ],
-			"Version": "1"
-		}
-	  EOF
-	  description = "this is a policy test"
-	  force = true
-	  count = 10
-	}`, defaultRegionToTest, rand)
-}
-
-func testAccCheckRamPolicyDestroy(s *terraform.State) error {
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_ram_policy" {
-			continue
-		}
-
-		// Try to find the policy
-		client := testAccProvider.Meta().(*connectivity.AliyunClient)
-
-		// Try to find the policy
-		conn, err := client.NewRamClient()
-		if err != nil {
-			return WrapError(err)
-		}
-		action := "GetPolicy"
-		request := map[string]interface{}{
-			"PolicyName": rs.Primary.ID,
-			"PolicyType": "Custom",
-		}
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil && !IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-			return WrapError(err)
-		}
+	variable "name" {
+  		default = "%s"
 	}
-	return nil
+
+	resource "alicloud_ram_policy" "default" {
+  		count           = 10
+  		policy_name     = "${var.name}-${count.index}"
+  		policy_document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Action": [
+				"oss:ListObjects",
+				"oss:ListObjects"
+			  ],
+			  "Effect": "Deny",
+			  "Resource": [
+				"acs:oss:*:*:mybucket",
+				"acs:oss:*:*:mybucket/*"
+			  ]
+			}
+		  ],
+			"Version": "1"
+		}
+	  EOF
+		description     = var.name
+  		force           = true
+}
+`, name)
 }
