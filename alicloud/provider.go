@@ -868,6 +868,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_oss_bucket_policy":                                    resourceAliCloudOssBucketPolicy(),
 			"alicloud_oss_bucket_https_config":                              resourceAliCloudOssBucketHttpsConfig(),
 			"alicloud_oss_bucket_referer":                                   resourceAliCloudOssBucketReferer(),
+			"alicloud_hbr_policy_binding":                                   resourceAliCloudHbrPolicyBinding(),
+			"alicloud_hbr_policy":                                           resourceAliCloudHbrPolicy(),
 			"alicloud_oss_bucket_acl":                                       resourceAliCloudOssBucketAcl(),
 			"alicloud_wafv3_defense_template":                               resourceAliCloudWafv3DefenseTemplate(),
 			"alicloud_dfs_vsc_mount_point":                                  resourceAliCloudDfsVscMountPoint(),

@@ -1,0 +1,120 @@
+---
+subcategory: "Hybrid Backup Recovery (HBR)"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_hbr_policy_binding"
+description: |-
+  Provides a Alicloud HBR Policy Binding resource.
+---
+
+# alicloud_hbr_policy_binding
+
+Provides a HBR Policy Binding resource. A policy binding relationship consists of a data source, a policy, and binding options.
+
+For information about HBR Policy Binding and how to use it, see [What is Policy Binding](https://www.alibabacloud.com/help/en/cloud-backup/developer-reference/api-hbr-2017-09-08-createpolicybindings).
+
+-> **NOTE:** Available since v1.221.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+resource "random_integer" "default" {
+  max = 99999
+  min = 10000
+}
+
+resource "alicloud_hbr_vault" "defaultyk84Hc" {
+  vault_type = "STANDARD"
+  vault_name = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_hbr_policy" "defaultoqWvHQ" {
+  policy_name = "example-value-${random_integer.default.result}"
+  rules {
+    rule_type    = "BACKUP"
+    backup_type  = "COMPLETE"
+    schedule     = "I|1631685600|P1D"
+    retention    = "7"
+    archive_days = "0"
+    vault_id     = alicloud_hbr_vault.defaultyk84Hc.id
+  }
+  policy_description = "policy example"
+}
+
+resource "alicloud_oss_bucket" "defaultKtt2XY" {
+  storage_class = "Standard"
+  bucket        = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_hbr_policy_binding" "default" {
+  source_type                = "OSS"
+  disabled                   = "false"
+  policy_id                  = alicloud_hbr_policy.defaultoqWvHQ.id
+  data_source_id             = alicloud_oss_bucket.defaultKtt2XY.bucket
+  policy_binding_description = "policy binding example (update)"
+  source                     = "prefix-example-update/"
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `advanced_options` - (Optional, ForceNew) Backup Advanced Options. See [`advanced_options`](#advanced_options) below.
+* `data_source_id` - (Optional, ForceNew, Computed) The data source ID.
+* `disabled` - (Optional) Whether the policy is effective for the data source.
+  - true: Pause
+  - false: not paused.
+* `exclude` - (Optional) This parameter is required only when the value of SourceType is ECS_FILE or File. Indicates a file type that does not need to be backed up. All files of this type are not backed up. A maximum of 255 characters is supported.
+* `include` - (Optional) This parameter is required only when the value of SourceType is ECS_FILE or File. Indicates the file types to be backed up, and all files of these types are backed up. A maximum of 255 characters is supported.
+* `policy_binding_description` - (Optional) Resource Description.
+* `policy_id` - (Optional, ForceNew, Computed) The policy ID.
+* `source` - (Optional) When SourceType is OSS, a prefix is specified to be backed up. If it is not specified, the entire root directory of the Bucket is backed up.
+* `source_type` - (Optional, ForceNew, Computed) Data source type, value range:
+  - **UDM_ECS**: indicates the ECS instance backup.
+  - **OSS**: indicates an OSS backup.
+  - **NAS**: indicates an Alibaba Cloud NAS Backup. When you bind a file system to a policy, Cloud Backup automatically creates a mount point for the file system. If you no longer need the mount point, delete it manually.
+  - **ECS_FILE**: indicates that the ECS file is backed up.
+  - **File**: indicates a local File backup.
+* `speed_limit` - (Optional) This parameter is required only when the value of SourceType is ECS_FILE or File. Indicates backup flow control. The format is {start}{end}{bandwidth}. Multiple flow control configurations use partitioning, and no overlap in configuration time is allowed. start: start hour. end: end of hour. bandwidth: limit rate, in KB/s.
+
+### `advanced_options`
+
+The advanced_options supports the following:
+* `udm_detail` - (Optional, ForceNew) ECS Backup Advanced options. See [`udm_detail`](#advanced_options-udm_detail) below.
+
+### `advanced_options-udm_detail`
+
+The advanced_options-udm_detail supports the following:
+* `destination_kms_key_id` - (Optional) Custom KMS key ID of encrypted copy.
+* `disk_id_list` - (Optional) The list of backup disks. If it is empty, all disks are backed up.
+* `exclude_disk_id_list` - (Optional) List of cloud disk IDs that are not backed up.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.The value is formulated as `<policy_id>:<source_type>:<data_source_id>`.
+* `create_time` - The creation time of the resource.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Policy Binding.
+* `delete` - (Defaults to 5 mins) Used when delete the Policy Binding.
+* `update` - (Defaults to 5 mins) Used when update the Policy Binding.
+
+## Import
+
+HBR Policy Binding can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_hbr_policy_binding.example <policy_id>:<source_type>:<data_source_id>
+```
