@@ -263,11 +263,11 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 			{
 				// upgrade
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.26.3-aliyun.1",
+					"version": "1.26.15-aliyun.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.26.3-aliyun.1",
+						"version": "1.26.15-aliyun.1",
 					}),
 				),
 			},
@@ -551,4 +551,5 @@ var csManagedKubernetesBasicMap = map[string]string{
 	"slb_internet":                       CHECKSET,
 	"slb_intranet":                       CHECKSET,
 	"cluster_spec":                       CHECKSET,
+	"slb_id":                             CHECKSET,
 }

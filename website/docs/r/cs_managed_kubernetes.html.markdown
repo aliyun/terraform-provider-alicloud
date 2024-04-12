@@ -130,7 +130,7 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
   name         = var.name
   cluster_spec = "ack.pro.small"
   # version can not be defined in variables.tf.
-  version            = "1.26.3-aliyun.1"
+  # version            = "1.26.3-aliyun.1"
   worker_vswitch_ids = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
   pod_vswitch_ids    = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
   new_nat_gateway    = true
@@ -211,14 +211,14 @@ The following arguments are supported:
 ### Network params
 
 * `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
-* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway.Be careful the `pod_vswitch_ids` can not equal to `worker_vswitch_ids` or `master_vswitch_ids` but must be in same availability zones.
+* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` but must be in same availability zones.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
 
--> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specific the `pod_vswitch_ids` field and addons with `terway-eniip`.
-If you want to use `Flannel` as CNI network plugin, You need to specific the `pod_cidr` field and addons with `flannel`.
+-> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
+If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
 
 ### Computed params
 
@@ -572,7 +572,7 @@ The following attributes are exported:
 * `vpc_id` - The ID of VPC where the current cluster is located.
 * `slb_intranet` - The ID of private load balancer where the current cluster master node is located.
 * `slb_internet` - The public ip of load balancer.
-* `slb_id` - (Deprecated) The ID of load balancer.
+* `slb_id` - The ID of APIServer load balancer.
 * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.
 * `worker_nodes` - (Removed from version 1.212.0) List of cluster worker nodes.
   * `id` - ID of the node.

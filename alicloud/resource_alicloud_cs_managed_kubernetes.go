@@ -210,7 +210,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type:         schema.TypeString,
 					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
-				MaxItems: 10,
 			},
 			"pod_cidr": {
 				Type:     schema.TypeString,
@@ -535,9 +534,8 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				},
 			},
 			"slb_id": {
-				Type:       schema.TypeString,
-				Computed:   true,
-				Deprecated: "Field 'slb_id' has been deprecated from provider version 1.9.2. New field 'slb_internet' replaces it.",
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"slb_internet": {
 				Type:     schema.TypeString,
