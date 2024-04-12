@@ -219,7 +219,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                           name,
-					"version":                        "1.26.3-aliyun.1",
+					"version":                        "1.26.15-aliyun.1",
 					"master_vswitch_ids":             []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":          []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"master_disk_category":           "cloud_essd",
@@ -256,7 +256,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                          name,
-						"version":                       "1.26.3-aliyun.1",
+						"version":                       "1.26.15-aliyun.1",
 						"master_disk_category":          "cloud_essd",
 						"master_disk_performance_level": "PL0",
 						"master_disk_size":              "80",
@@ -451,11 +451,11 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 			},
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
-			//		"version": "1.26.3-aliyun.1",
+			//		"version": "1.26.15-aliyun.1",
 			//	}),
 			//	Check: resource.ComposeTestCheckFunc(
 			//		testAccCheck(map[string]string{
-			//			"version": "1.26.3-aliyun.1",
+			//			"version": "1.26.15-aliyun.1",
 			//		}),
 			//	),
 			//},
@@ -634,6 +634,7 @@ var csKubernetesBasicMap = map[string]string{
 	"resource_group_id":                  CHECKSET,
 	"slb_internet":                       CHECKSET,
 	"slb_intranet":                       CHECKSET,
+	"slb_id":                             CHECKSET,
 }
 
 func TestUnit_parseRRSAMetadata(t *testing.T) {
