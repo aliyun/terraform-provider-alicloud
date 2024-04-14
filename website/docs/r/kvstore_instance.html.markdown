@@ -221,7 +221,7 @@ The following arguments are supported:
   **NOTE:** This functionality is supported by Cluster mode (Redis 2.8, 4.0, 5.0) and Standard mode( Redis 2.8 only).
 * `force_upgrade`- (Optional, Bool, Available since v1.101.0) Specifies whether to forcibly change the type. Default value: `true`.
 * `dedicated_host_group_id`- (Optional, ForceNew, Available since v1.101.0) The ID of the dedicated cluster. This parameter is required when you create an ApsaraDB for Redis instance in a dedicated cluster.
-* `coupon_no`- (Optional, Available since v1.101.0) The coupon code.
+* `coupon_no`- (Optional, Available since v1.101.0) The coupon code. **NOTE:** The default value `youhuiquan_promotion_option_id_for_blank` removed since v1.216.0, this can cause your status file to change even if it has not been modified, so please review your change plan before apply change plan.
 * `business_info`- (Optional, Available since v1.101.0) The ID of the event or the business information.
 * `auto_use_coupon`- (Optional, Bool, ForceNew, Available since v1.101.0) Specifies whether to use a coupon. Default value: `false`.
 * `instance_release_protection`- (Optional, Bool, Available since v1.101.0) Whether to open the release protection.
