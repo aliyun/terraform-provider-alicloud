@@ -1821,6 +1821,10 @@ func (s *VpcService) DeleteAclResources(id string) (object map[string]interface{
 	}
 	for _, val := range resources {
 		item, _ := val.(map[string]interface{})
+		if item["Status"] == "UNBINDING" {
+			continue
+		}
+
 		deleteResources = append(deleteResources, map[string]interface{}{
 			"ResourceId":   item["ResourceId"],
 			"ResourceType": item["ResourceType"],
