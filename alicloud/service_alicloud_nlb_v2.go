@@ -529,13 +529,13 @@ func (s *NlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribeNlbServerGroup <<< Encapsulated get interface for Nlb ServerGroup.
 
 func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]interface{}, err error) {
@@ -551,7 +551,7 @@ func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]inte
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServerGroupIds.1"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -569,8 +569,8 @@ func (s *NlbServiceV2) DescribeNlbServerGroup(id string) (object map[string]inte
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

@@ -33,7 +33,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"DualStack", "Ipv4"}, false),
+				ValidateFunc: StringInSlice([]string{"DualStack", "Ipv4"}, true),
 			},
 			"any_port_enabled": {
 				Type:     schema.TypeBool,
@@ -65,7 +65,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(1, 50),
+							ValidateFunc: IntBetween(0, 50),
 						},
 						"health_check_connect_port": {
 							Type:         schema.TypeInt,
@@ -93,13 +93,13 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 						"http_check_method": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"GET", "HEAD"}, false),
+							ValidateFunc: StringInSlice([]string{"GET", "HEAD"}, true),
 						},
 						"health_check_connect_timeout": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: IntBetween(1, 300),
+							ValidateFunc: IntBetween(0, 300),
 						},
 						"health_check_domain": {
 							Type:     schema.TypeString,
@@ -109,6 +109,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 						"health_check_enabled": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							Computed: true,
 						},
 						"health_check_http_code": {
 							Type:     schema.TypeList,
@@ -120,7 +121,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							Computed:     true,
-							ValidateFunc: StringInSlice([]string{"TCP", "HTTP"}, false),
+							ValidateFunc: StringInSlice([]string{"TCP", "HTTP"}, true),
 						},
 					},
 				},
@@ -135,7 +136,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, false),
+				ValidateFunc: StringInSlice([]string{"TCP", "UDP", "TCPSSL"}, true),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -146,7 +147,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Wrr", "Rr", "Qch", "Tch"}, false),
+				ValidateFunc: StringInSlice([]string{"Wrr", "Rr", "Qch", "Tch", "Sch", "Wlc"}, true),
 			},
 			"server_group_name": {
 				Type:     schema.TypeString,
@@ -157,7 +158,7 @@ func resourceAliCloudNlbServerGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Instance", "Ip"}, false),
+				ValidateFunc: StringInSlice([]string{"Instance", "Ip"}, true),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -496,20 +497,6 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("connection_drain_enabled")
-		d.SetPartial("connection_drain_timeout")
-		d.SetPartial("scheduler")
-		d.SetPartial("preserve_client_ip_enabled")
-		d.SetPartial("health_check_enabled")
-		d.SetPartial("health_check_type")
-		d.SetPartial("health_check_connect_port")
-		d.SetPartial("healthy_threshold")
-		d.SetPartial("unhealthy_threshold")
-		d.SetPartial("health_check_connect_timeout")
-		d.SetPartial("health_check_interval")
-		d.SetPartial("health_check_domain")
-		d.SetPartial("health_check_url")
-		d.SetPartial("http_check_method")
 	}
 	update = false
 	action = "UpdateServerGroupAttribute"
@@ -552,7 +539,6 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("server_group_name")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -592,7 +578,6 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("tags") {
@@ -600,7 +585,6 @@ func resourceAliCloudNlbServerGroupUpdate(d *schema.ResourceData, meta interface
 		if err := nlbServiceV2.SetResourceTags(d, "servergroup"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudNlbServerGroupRead(d, meta)

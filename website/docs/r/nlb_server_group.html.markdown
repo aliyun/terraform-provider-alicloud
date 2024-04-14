@@ -58,30 +58,24 @@ resource "alicloud_nlb_server_group" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `address_ip_version` - (Optional, ForceNew, Computed) Protocol version. Value:
-  - **ipv4**:IPv4 type.
-  - **DualStack**: Double Stack type.
+* `address_ip_version` - (Optional, ForceNew, Computed) The protocol version. Valid values: `Ipv4` (default), `DualStack`.
 * `any_port_enabled` - (Optional, ForceNew, Computed, Available since v1.214.0) Full port forwarding.
-* `connection_drain_enabled` - (Optional, Computed, Available since v1.214.0) Whether to open the connection gracefully interrupted. Value:
-  - **true**: on.
-  - **false**: closed.
+* `connection_drain_enabled` - (Optional, Computed, Available since v1.214.0) Specifies whether to enable connection draining.
 * `connection_drain_timeout` - (Optional, Computed) Set the connection elegant interrupt timeout. Unit: seconds. Valid values: **10** ~ **900**.
 * `health_check` - (Optional, ForceNew, Computed) Health check configuration information. See [`health_check`](#health_check) below.
-* `preserve_client_ip_enabled` - (Optional, Computed) Whether to enable the client address retention function. Value:
-  - **true**: on.
-  - **false**: closed.
--> **NOTE:**  special instructions: When **AddressIPVersion** is of the **ipv4** type, the default value is **true**. **Addrestipversion** can only be **false** when the value of **ipv6** is **ipv6**, and can be **true** when supported by the underlying layer * *.
-* `protocol` - (Optional, ForceNew, Computed) The backend Forwarding Protocol. Valid values: **TCP**, **UDP**, or **TCPSSL**.
-* `resource_group_id` - (Optional, Computed) The ID of the resource group to which the server group belongs.
-* `scheduler` - (Optional, Computed) Scheduling algorithm. Value:
-  - **Wrr**: Weighted polling. The higher the weight of the backend server, the higher the probability of being polled.
-  - **Rr**: polls external requests are distributed to backend servers in sequence according to the access order. sch: Source IP hash: The same source address is scheduled to the same backend server.
-  - **Tch**: Quadruple hash, based on the consistent hash of the Quad (source IP, Destination IP, source port, and destination port), the same stream is scheduled to the same backend server.
-  - **Qch**: a QUIC ID hash that allows you to hash requests with the same QUIC ID to the same backend server.
-* `server_group_name` - (Required) The name of the server group.
-* `server_group_type` - (Optional, ForceNew, Computed) Server group type. Value:
-  - **Instance**: The server type. You can add **Ecs**, **Ens**, and **Eci** instances to the server group.
-  - **Ip**: Ip address type. You can add Ip addresses to a server group of this type.
+* `preserve_client_ip_enabled` - (Optional, Computed) Indicates whether client address retention is enabled. Special instructions: When **AddressIPVersion** is of the **ipv4** type, the default value is **true**. **Addrestipversion** can only be **false** when the value of **ipv6** is **ipv6**, and can be **true** when supported by the underlying layer.
+* `protocol` - (Optional, ForceNew, Computed) The backend protocol. Valid values: `TCP` (default), `UDP`, and `TCPSSL`.
+* `resource_group_id` - (Optional, Computed)  The ID of the resource group to which the security group belongs.
+* `scheduler` - (Optional, Computed) The routing algorithm. Valid values:
+  - `Wrr` (default): The Weighted Round Robin algorithm is used. Backend servers with higher weights receive more requests than backend servers with lower weights.
+  - `Rr`: The round-robin algorithm is used. Requests are forwarded to backend servers in sequence.
+  - `Sch`: Source IP hashing is used. Requests from the same source IP address are forwarded to the same backend server.
+  - `Tch`: Four-element hashing is used. It specifies consistent hashing that is based on four factors: source IP address, destination IP address, source port, and destination port. Requests that contain the same information based on the four factors are forwarded to the same backend server.
+  - `Qch`: QUIC ID hashing is used. Requests that contain the same QUIC ID are forwarded to the same backend server.
+* `server_group_name` - (Required) The name of the server group. The name must be 2 to 128 characters in length, and can contain letters, digits, periods (.), underscores (_), and hyphens (-). The name must start with a letter.
+* `server_group_type` - (Optional, ForceNew, Computed) The type of the server group. Valid values: 
+  - `Instance` (default): allows you to specify `Ecs`, `Ens`, or `Eci`.
+  - `Ip`: allows you to specify IP addresses.
 * `tags` - (Optional, Map) Label.
 * `vpc_id` - (Required, ForceNew) The ID of the VPC to which the server group belongs.
 
@@ -102,11 +96,11 @@ The health_check supports the following:
   - **false**: closed.
 * `health_check_http_code` - (Optional, Computed) Health status return code. Multiple status codes are separated by commas (,). Valid values: **http\_2xx**, **http\_3xx**, **http\_4xx**, and **http\_5xx**.
 -> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
-* `health_check_interval` - (Optional, Computed) Time interval of health examination. Unit: seconds.Valid values: **5** ~ **50**.
+* `health_check_interval` - (Optional, Computed) Time interval of health examination. Unit: seconds.  Valid values: **5** ~ **50**.
 * `health_check_type` - (Optional, Computed) Health check protocol. Valid values: **TCP** or **HTTP**.
 * `health_check_url` - (Optional, Computed) Health check path.
 -> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
-* `healthy_threshold` - (Optional, Computed) After the health check is successful, the health check status of the backend server is determined from **failed** to **successful * *.Valid values: **2** to **10 * *.
+* `healthy_threshold` - (Optional, Computed) After the health check is successful, the health check status of the backend server is determined from **failed** to **successful**.  Valid values: **2** to **10**.
 * `http_check_method` - (Optional) The health check method. Valid values: **GET** or **HEAD**.
 -> **NOTE:**  This parameter takes effect only when **HealthCheckType** is **HTTP**.
 * `unhealthy_threshold` - (Optional, Computed) After the health check fails for many times in a row, the health check status of the backend server is determined from **Success** to **Failure**. Valid values: **2** to **10**.
