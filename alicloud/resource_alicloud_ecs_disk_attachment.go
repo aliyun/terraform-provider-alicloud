@@ -100,7 +100,7 @@ func resourceAlicloudEcsDiskAttachmentCreate(d *schema.ResourceData, meta interf
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, DiskInvalidOperation) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -203,7 +203,7 @@ func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interf
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, DiskInvalidOperation) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DisksDetachingOnEcsExceeded","IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
