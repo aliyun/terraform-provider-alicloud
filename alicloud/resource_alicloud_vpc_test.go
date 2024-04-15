@@ -356,6 +356,28 @@ func TestAccAliCloudVPC_enableIpv6(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ipv6":     "false",
+						"ipv6_cidr_block": "",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ipv6":     "true",
+						"ipv6_cidr_block": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"secondary_cidr_blocks": []string{"10.0.0.0/8"},
 				}),
 				Check: resource.ComposeTestCheckFunc(

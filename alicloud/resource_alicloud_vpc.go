@@ -53,6 +53,10 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"ipv4_ipam_pool_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"ipv6_cidr_block": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -94,7 +98,7 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Type:       schema.TypeList,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'SecondaryCidrBlocks' has been deprecated from provider version 1.206.0. Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.",
+				Deprecated: "Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0. Field 'secondary_cidr_blocks' has been deprecated from provider version 1.185.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_ipv4_cidr_block'. `secondary_cidr_blocks` attributes and `alicloud_vpc_ipv4_cidr_block` resource cannot be used at the same time.",
 				Elem:       &schema.Schema{Type: schema.TypeString},
 			},
 			"status": {
@@ -119,23 +123,25 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'name' has been deprecated from provider version 1.119.0. New field 'vpc_name' instead.",
+				Deprecated: "Field 'name' has been deprecated since provider version 1.119.0. New field 'vpc_name' instead.",
 			},
 			"router_table_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
-				Deprecated: "Field 'router_table_id' has been deprecated from provider version 1.206.0. New field 'route_table_id' instead.",
+				Deprecated: "Field 'router_table_id' has been deprecated since provider version 1.221.0. New field 'route_table_id' instead.",
 			},
 		},
 	}
 }
 
 func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateVpc"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
@@ -150,6 +156,7 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("name"); ok {
 		request["VpcName"] = v
 	}
+
 	if v, ok := d.GetOk("vpc_name"); ok {
 		request["VpcName"] = v
 	}
@@ -159,15 +166,11 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
-	if v, ok := d.GetOkExists("dry_run"); ok {
-		request["DryRun"] = v
-	}
 	if v, ok := d.GetOk("user_cidrs"); ok {
-		jsonPathResult5, err := jsonpath.Get("$", v)
-		if err != nil {
-			return WrapError(err)
+		jsonPathResult4, err := jsonpath.Get("$", v)
+		if err == nil && jsonPathResult4 != "" {
+			request["UserCidr"] = convertListToCommaSeparate(jsonPathResult4.([]interface{}))
 		}
-		request["UserCidr"] = convertListToCommaSeparate(jsonPathResult5.([]interface{}))
 	}
 	if v, ok := d.GetOk("ipv6_isp"); ok {
 		request["Ipv6Isp"] = v
@@ -175,9 +178,22 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 	if v, ok := d.GetOkExists("enable_ipv6"); ok {
 		request["EnableIpv6"] = v
 	}
+	if v, ok := d.GetOk("ipv4_ipam_pool_id"); ok {
+		request["Ipv4IpamPoolId"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -198,7 +214,7 @@ func resourceAliCloudVpcVpcCreate(d *schema.ResourceData, meta interface{}) erro
 	d.SetId(fmt.Sprint(response["VpcId"]))
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -224,11 +240,13 @@ func resourceAliCloudVpcVpcRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("classic_link_enabled", objectRaw["ClassicLinkEnabled"])
 	d.Set("create_time", objectRaw["CreationTime"])
 	d.Set("description", objectRaw["Description"])
+	d.Set("enable_ipv6", objectRaw["EnabledIpv6"])
 	d.Set("ipv6_cidr_block", objectRaw["Ipv6CidrBlock"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("router_id", objectRaw["VRouterId"])
 	d.Set("status", objectRaw["Status"])
 	d.Set("vpc_name", objectRaw["VpcName"])
+
 	ipv6CidrBlock7Raw, _ := jsonpath.Get("$.Ipv6CidrBlocks.Ipv6CidrBlock", objectRaw)
 	ipv6CidrBlocksMaps := make([]map[string]interface{}, 0)
 	if ipv6CidrBlock7Raw != nil {
@@ -237,12 +255,15 @@ func resourceAliCloudVpcVpcRead(d *schema.ResourceData, meta interface{}) error 
 			ipv6CidrBlockChild1Raw := ipv6CidrBlockChild1Raw.(map[string]interface{})
 			ipv6CidrBlocksMap["ipv6_cidr_block"] = ipv6CidrBlockChild1Raw["Ipv6CidrBlock"]
 			ipv6CidrBlocksMap["ipv6_isp"] = ipv6CidrBlockChild1Raw["Ipv6Isp"]
+
 			ipv6CidrBlocksMaps = append(ipv6CidrBlocksMaps, ipv6CidrBlocksMap)
 		}
 	}
 	d.Set("ipv6_cidr_blocks", ipv6CidrBlocksMaps)
 	secondaryCidrBlock1Raw, _ := jsonpath.Get("$.SecondaryCidrBlocks.SecondaryCidrBlock", objectRaw)
 	d.Set("secondary_cidr_blocks", secondaryCidrBlock1Raw)
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
 	userCidr1Raw, _ := jsonpath.Get("$.UserCidrs.UserCidr", objectRaw)
 	d.Set("user_cidrs", userCidr1Raw)
 
@@ -254,15 +275,6 @@ func resourceAliCloudVpcVpcRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("route_table_id", objectRaw["RouteTableId"])
 	d.Set("router_id", objectRaw["RouterId"])
-	d.Set("status", objectRaw["Status"])
-
-	objectRaw, err = vpcServiceV2.DescribeListTagResources(d.Id())
-	if err != nil {
-		return WrapError(err)
-	}
-
-	tagsMaps, _ := jsonpath.Get("$.TagResources.TagResource", objectRaw)
-	d.Set("tags", tagsToMap(tagsMaps))
 
 	d.Set("name", d.Get("vpc_name"))
 	d.Set("router_table_id", d.Get("route_table_id"))
@@ -273,6 +285,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyVpcAttribute"
@@ -281,8 +294,8 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["VpcId"] = d.Id()
+	query = make(map[string]interface{})
+	query["VpcId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
@@ -293,6 +306,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		update = true
 		request["VpcName"] = d.Get("name")
 	}
+
 	if !d.IsNewResource() && d.HasChange("vpc_name") {
 		update = true
 		request["VpcName"] = d.Get("vpc_name")
@@ -303,16 +317,20 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		request["CidrBlock"] = d.Get("cidr_block")
 	}
 
-	if v, ok := d.GetOkExists("enable_ipv6"); ok {
-		request["EnableIPv6"] = v
+	if !d.IsNewResource() && d.HasChange("enable_ipv6") {
+		update = true
+		request["EnableIPv6"] = d.Get("enable_ipv6")
 	}
+
 	if v, ok := d.GetOk("ipv6_isp"); ok {
 		request["Ipv6Isp"] = v
 	}
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "OperationFailed.QueryCenIpv6Status", "IncorrectStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectVpcStatus"}) || NeedRetry(err) {
@@ -328,13 +346,10 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		vpcServiceV2 := VpcServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("description")
-		d.SetPartial("vpc_name")
-		d.SetPartial("cidr_block")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -343,19 +358,21 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["ResourceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
 
 	request["ResourceType"] = "VPC"
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -370,7 +387,6 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("classic_link_enabled") {
@@ -390,13 +406,15 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
-				request["VpcId"] = d.Id()
+				query = make(map[string]interface{})
+				query["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -421,13 +439,15 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
-				request["VpcId"] = d.Id()
+				query = make(map[string]interface{})
+				query["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -448,9 +468,7 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	update = false
 	if d.HasChange("secondary_cidr_blocks") {
-		update = true
 		oldEntry, newEntry := d.GetChange("secondary_cidr_blocks")
 		removed := oldEntry
 		added := newEntry
@@ -459,14 +477,14 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 			secondaryCidrBlocks := removed.([]interface{})
 
 			for _, item := range secondaryCidrBlocks {
-				action = "UnassociateVpcCidrBlock"
-				conn, err = client.NewVpcClient()
+				action := "UnassociateVpcCidrBlock"
+				conn, err := client.NewVpcClient()
 				if err != nil {
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
-				request["VpcId"] = d.Id()
+				query = make(map[string]interface{})
+				query["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
@@ -475,9 +493,11 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					}
 					request["SecondaryCidrBlock"] = jsonPathResult
 				}
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -493,28 +513,26 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				vpcServiceV2 := VpcServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Created", "Available"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+				stateConf := BuildStateConf([]string{}, []string{"Created", "Available"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("secondary_cidr_blocks")
 
 			}
-			d.SetPartial("secondary_cidr_blocks")
 		}
 
 		if len(added.([]interface{})) > 0 {
 			secondaryCidrBlocks := added.([]interface{})
 
 			for _, item := range secondaryCidrBlocks {
-				action = "AssociateVpcCidrBlock"
-				conn, err = client.NewVpcClient()
+				action := "AssociateVpcCidrBlock"
+				conn, err := client.NewVpcClient()
 				if err != nil {
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-
-				request["VpcId"] = d.Id()
+				query = make(map[string]interface{})
+				query["VpcId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
@@ -524,9 +542,11 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					request["SecondaryCidrBlock"] = jsonPathResult
 				}
 				request["IpVersion"] = "IPV4"
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -542,24 +562,19 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 				}
 				vpcServiceV2 := VpcServiceV2{client}
-				stateConf := BuildStateConf([]string{}, []string{"Created", "Available"}, d.Timeout(schema.TimeoutUpdate), 0, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+				stateConf := BuildStateConf([]string{}, []string{"Created", "Available"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("secondary_cidr_blocks")
 
 			}
-			d.SetPartial("secondary_cidr_blocks")
 		}
 	}
-	update = false
 	if d.HasChange("tags") {
-		update = true
 		vpcServiceV2 := VpcServiceV2{client}
 		if err := vpcServiceV2.SetResourceTags(d, "VPC"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcVpcRead(d, meta)
@@ -568,26 +583,29 @@ func resourceAliCloudVpcVpcUpdate(d *schema.ResourceData, meta interface{}) erro
 func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeleteVpc"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["VpcId"] = d.Id()
+	query["VpcId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "LastTokenProcessing", "OperationFailed.QueryCenIpv6Status", "IncorrectStatus", "OperationConflict", "SystemBusy", "ServiceUnavailable", "IncorrectVpcStatus",
-				"DependencyViolation.GatewayEndpoint", "DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup", "DependencyViolation.Ipv6Gateway", "DependencyViolation.Instance", "DependencyViolation.VSwitch"}) || NeedRetry(err) {
+			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -598,11 +616,14 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidResource.NotFound"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcVpcStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
