@@ -1,24 +1,25 @@
-## 1.221.0 (Unreleased)
+## 1.222.0 (Unreleased)
+## 1.221.0 (April 15, 2024)
 
-- **New Resource:** `alicloud_hbr_policy` [GH-7142]
-- **New Resource:** `alicloud_hbr_policy_binding` [GH-7142]
+- **New Resource:** `alicloud_hbr_policy` ([#7142](https://github.com/aliyun/terraform-provider-alicloud/issues/7142))
+- **New Resource:** `alicloud_hbr_policy_binding` ([#7142](https://github.com/aliyun/terraform-provider-alicloud/issues/7142))
 
 ENHANCEMENTS:
 
-- service: skip UNBINDING entries while deleting vpc networl acl. [GH-7147]
-- resource/alicloud_kvstore_instance: add asynchronous query for function delete. [GH-7110]
-- resource/alicloud_dcdn_domain_config: Added the field parent_id. [GH-7124]
-- resource/alicloud_ots_instance: not allowed to be accessed from the public network by default; data-source/alicloud_ots_instances: network property update. [GH-7135]
-- resource/alicloud_instance: remove the MaxItems of network_interfaces. [GH-7138]
-- resource/alicloud_ess_scaling_rule: Add attributes of scale_out_evaluation_count,scale_in_evaluation_count and min_adjustment_magnitude. [GH-7139]
-- resource/alicloud_ess_attachment: add filter for query. [GH-7140]
-- resource/alicloud_nlb_server_group: add new supprot type for scheduler. [GH-7146]
-- resource/alicloud_vpc_dhcp_options_set: support tag resource while create. [GH-7148]
-- resource/alicloud_vpc: support attribute enable_ipv6 modify. [GH-7150]
-- data-source/alicloud_express_connect_physical_connection_service: add errcode for service opened. [GH-7129]
-- docs: nonsupport region ap-south-1. [GH-7134]
-- docs: optimize for non-compatible changes for kvstore_instance. [GH-7145]
-- testcase: skip testcase for cms open service [GH-7149]
+- service: skip UNBINDING entries while deleting vpc networl acl. ([#7147](https://github.com/aliyun/terraform-provider-alicloud/issues/7147))
+- resource/alicloud_kvstore_instance: add asynchronous query for function delete. ([#7110](https://github.com/aliyun/terraform-provider-alicloud/issues/7110))
+- resource/alicloud_dcdn_domain_config: Added the field parent_id. ([#7124](https://github.com/aliyun/terraform-provider-alicloud/issues/7124))
+- resource/alicloud_ots_instance: not allowed to be accessed from the public network by default; data-source/alicloud_ots_instances: network property update. ([#7135](https://github.com/aliyun/terraform-provider-alicloud/issues/7135))
+- resource/alicloud_instance: remove the MaxItems of network_interfaces. ([#7138](https://github.com/aliyun/terraform-provider-alicloud/issues/7138))
+- resource/alicloud_ess_scaling_rule: Add attributes of scale_out_evaluation_count,scale_in_evaluation_count and min_adjustment_magnitude. ([#7139](https://github.com/aliyun/terraform-provider-alicloud/issues/7139))
+- resource/alicloud_ess_attachment: add filter for query. ([#7140](https://github.com/aliyun/terraform-provider-alicloud/issues/7140))
+- resource/alicloud_nlb_server_group: add new supprot type for scheduler. ([#7146](https://github.com/aliyun/terraform-provider-alicloud/issues/7146))
+- resource/alicloud_vpc_dhcp_options_set: support tag resource while create. ([#7148](https://github.com/aliyun/terraform-provider-alicloud/issues/7148))
+- resource/alicloud_vpc: support attribute enable_ipv6 modify. ([#7150](https://github.com/aliyun/terraform-provider-alicloud/issues/7150))
+- data-source/alicloud_express_connect_physical_connection_service: add errcode for service opened. ([#7129](https://github.com/aliyun/terraform-provider-alicloud/issues/7129))
+- docs: nonsupport region ap-south-1. ([#7134](https://github.com/aliyun/terraform-provider-alicloud/issues/7134))
+- docs: optimize for non-compatible changes for kvstore_instance. ([#7145](https://github.com/aliyun/terraform-provider-alicloud/issues/7145))
+- testcase: skip testcase for cms open service ([#7149](https://github.com/aliyun/terraform-provider-alicloud/issues/7149))
 
 ## 1.220.1 (April 3, 2024)
 
