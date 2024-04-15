@@ -186,7 +186,6 @@ func (s *VpcServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -1567,7 +1566,6 @@ func (s *VpcServiceV2) VpcIpv6InternetBandwidthStateRefreshFunc(id string, field
 // DescribeVpcDhcpOptionsSet <<< Encapsulated get interface for Vpc DhcpOptionsSet.
 
 func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -1580,7 +1578,7 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DhcpOptionsSetId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -1598,11 +1596,8 @@ func (s *VpcServiceV2) DescribeVpcDhcpOptionsSet(id string) (object map[string]i
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DhcpOptionsSet", id)), NotFoundMsg, response)
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1626,6 +1621,7 @@ func (s *VpcServiceV2) VpcDhcpOptionsSetStateRefreshFunc(id string, field string
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))

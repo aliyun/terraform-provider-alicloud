@@ -33,7 +33,7 @@ func resourceAliCloudVpcDhcpOptionsSet() *schema.Resource {
 				Type:       schema.TypeSet,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'associate_vpcs' has been deprecated from provider version 1.211.0. Field 'associate_vpcs' has been deprecated from provider version 1.153.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_dhcp_options_set_attachment' to attach DhcpOptionsSet and Vpc.",
+				Deprecated: "Field 'associate_vpcs' has been deprecated from provider version 1.153.0. Field 'associate_vpcs' has been deprecated from provider version 1.153.0 and it will be removed in the future version. Please use the new resource 'alicloud_vpc_dhcp_options_set_attachment' to attach DhcpOptionsSet and Vpc.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"vpc_id": {
@@ -103,6 +103,7 @@ func resourceAliCloudVpcDhcpOptionsSetCreate(d *schema.ResourceData, meta interf
 	action := "CreateDhcpOptionsSet"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
@@ -135,15 +136,20 @@ func resourceAliCloudVpcDhcpOptionsSetCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.Vpc", "OperationConflict", "IncorrectStatus", "ServiceUnavailable", "LastTokenProcessing", "SystemBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -187,6 +193,7 @@ func resourceAliCloudVpcDhcpOptionsSetRead(d *schema.ResourceData, meta interfac
 	d.Set("owner_id", objectRaw["OwnerId"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["Status"])
+
 	dhcpOptions1RawObj, _ := jsonpath.Get("$.DhcpOptions", objectRaw)
 	dhcpOptions1Raw := make(map[string]interface{})
 	if dhcpOptions1RawObj != nil {
@@ -196,6 +203,7 @@ func resourceAliCloudVpcDhcpOptionsSetRead(d *schema.ResourceData, meta interfac
 	d.Set("domain_name_servers", dhcpOptions1Raw["DomainNameServers"])
 	d.Set("ipv6_lease_time", dhcpOptions1Raw["Ipv6LeaseTime"])
 	d.Set("lease_time", dhcpOptions1Raw["LeaseTime"])
+
 	associateVpcs1Raw := objectRaw["AssociateVpcs"]
 	associateVpcsMaps := make([]map[string]interface{}, 0)
 	if associateVpcs1Raw != nil {
@@ -204,6 +212,7 @@ func resourceAliCloudVpcDhcpOptionsSetRead(d *schema.ResourceData, meta interfac
 			associateVpcsChild1Raw := associateVpcsChild1Raw.(map[string]interface{})
 			associateVpcsMap["associate_status"] = associateVpcsChild1Raw["AssociateStatus"]
 			associateVpcsMap["vpc_id"] = associateVpcsChild1Raw["VpcId"]
+
 			associateVpcsMaps = append(associateVpcsMaps, associateVpcsMap)
 		}
 	}
@@ -218,6 +227,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "UpdateDhcpOptionsSetAttribute"
@@ -226,7 +236,8 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["DhcpOptionsSetId"] = d.Id()
+	query = make(map[string]interface{})
+	query["DhcpOptionsSetId"] = d.Id()
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChange("domain_name_servers") {
@@ -267,7 +278,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 			request["ClientToken"] = buildClientToken(action)
 
 			if err != nil {
@@ -288,12 +299,6 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("domain_name_servers")
-		d.SetPartial("domain_name")
-		d.SetPartial("dhcp_options_set_name")
-		d.SetPartial("dhcp_options_set_description")
-		d.SetPartial("lease_time")
-		d.SetPartial("ipv6_lease_time")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -302,9 +307,10 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["ResourceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
 		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
@@ -315,7 +321,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -330,7 +336,6 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("associate_vpcs") {
@@ -350,7 +355,8 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-				request["DhcpOptionsSetId"] = d.Id()
+				query = make(map[string]interface{})
+				query["DhcpOptionsSetId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
 				if v, ok := item.(map[string]interface{}); ok {
@@ -367,7 +373,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -388,10 +394,8 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("vpc_id")
 
 			}
-			d.SetPartial("associate_vpcs")
 		}
 
 		if added.Len() > 0 {
@@ -404,7 +408,8 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
-				request["DhcpOptionsSetId"] = d.Id()
+				query = make(map[string]interface{})
+				query["DhcpOptionsSetId"] = d.Id()
 				request["RegionId"] = client.RegionId
 				request["ClientToken"] = buildClientToken(action)
 				if v, ok := item.(map[string]interface{}); ok {
@@ -421,7 +426,7 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 					request["ClientToken"] = buildClientToken(action)
 
 					if err != nil {
@@ -442,10 +447,8 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("vpc_id")
 
 			}
-			d.SetPartial("associate_vpcs")
 		}
 
 	}
@@ -454,7 +457,6 @@ func resourceAliCloudVpcDhcpOptionsSetUpdate(d *schema.ResourceData, meta interf
 		if err := vpcServiceV2.SetResourceTags(d, "DhcpOptionsSet"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudVpcDhcpOptionsSetRead(d, meta)
@@ -466,12 +468,13 @@ func resourceAliCloudVpcDhcpOptionsSetDelete(d *schema.ResourceData, meta interf
 	action := "DeleteDhcpOptionsSet"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["DhcpOptionsSetId"] = d.Id()
+	query["DhcpOptionsSetId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
@@ -483,7 +486,7 @@ func resourceAliCloudVpcDhcpOptionsSetDelete(d *schema.ResourceData, meta interf
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

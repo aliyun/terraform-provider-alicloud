@@ -106,7 +106,7 @@ func testSweepVpcDhcpOptionsSet(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCDhcpOptionsSet_basic0(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSet_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
@@ -281,7 +281,7 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSet_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
@@ -322,7 +322,7 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCDhcpOptionsSet_basic2(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSet_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
@@ -371,7 +371,7 @@ func TestAccAlicloudVPCDhcpOptionsSet_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCDhcpOptionsSet_basic3(t *testing.T) {
+func TestAccAliCloudVPCDhcpOptionsSet_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_dhcp_options_set.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCDhcpOptionsSetMap0)
