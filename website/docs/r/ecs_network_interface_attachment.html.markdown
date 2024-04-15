@@ -98,6 +98,7 @@ The following arguments are supported:
 * `network_interface_id` - (Required, ForceNew) The network interface id.
 * `trunk_network_instance_id` - (Optional) The trunk network instance id.
 * `wait_for_network_configuration_ready` - (Optional) The wait for network configuration ready.
+* `network_card_index` - (Optional, Available since 1.221.0) Specifies the physical NIC index for network card. The value of network card index is related to the instance specification family. If the instance specification does not support network card, it cannot be specified. If yes, see [Instance Specification Family](https://help.aliyun.com/zh/ecs/user-guide/overview-of-instance-families).
 
 ## Attributes Reference
 

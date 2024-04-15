@@ -42,6 +42,12 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Computed:      true,
 				ConflictsWith: []string{"name"},
 			},
+			"network_interface_traffic_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"name": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -184,6 +190,9 @@ func resourceAlicloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
+	if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
+		request["NetworkInterfaceTrafficMode"] = v
+	}
 
 	if v, ok := d.GetOk("network_interface_name"); ok {
 		request["NetworkInterfaceName"] = v
@@ -289,6 +298,7 @@ func resourceAlicloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 	d.Set("name", object["NetworkInterfaceName"])
 	d.Set("primary_ip_address", object["PrivateIpAddress"])
 	d.Set("private_ip", object["PrivateIpAddress"])
+	d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
 	privateIps := make([]interface{}, 0, len(object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{})))
 	for _, v := range object["PrivateIpSets"].(map[string]interface{})["PrivateIpSet"].([]interface{}) {
 		if !v.(map[string]interface{})["Primary"].(bool) {
