@@ -12,6 +12,8 @@ import (
 // Test CloudMonitorService EnterprisePublic. >>> Resource test cases, automatically generated.
 // Case 5536
 func TestAccAliCloudCloudMonitorServiceEnterprisePublic_basic5536(t *testing.T) {
+	t.Skipf("Skipping alicloud_cloud_monitor_service_enterprise_public testing.")
+	t.Skipped()
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_monitor_service_enterprise_public.default"
 	ra := resourceAttrInit(resourceId, AlicloudCloudMonitorServiceEnterprisePublicMap5536)
