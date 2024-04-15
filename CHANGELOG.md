@@ -1,4 +1,25 @@
 ## 1.221.0 (Unreleased)
+
+- **New Resource:** `alicloud_hbr_policy` [GH-7142]
+- **New Resource:** `alicloud_hbr_policy_binding` [GH-7142]
+
+ENHANCEMENTS:
+
+- service: skip UNBINDING entries while deleting vpc networl acl. [GH-7147]
+- resource/alicloud_kvstore_instance: add asynchronous query for function delete. [GH-7110]
+- resource/alicloud_dcdn_domain_config: Added the field parent_id. [GH-7124]
+- resource/alicloud_ots_instance: not allowed to be accessed from the public network by default; data-source/alicloud_ots_instances: network property update. [GH-7135]
+- resource/alicloud_instance: remove the MaxItems of network_interfaces. [GH-7138]
+- resource/alicloud_ess_scaling_rule: Add attributes of scale_out_evaluation_count,scale_in_evaluation_count and min_adjustment_magnitude. [GH-7139]
+- resource/alicloud_ess_attachment: add filter for query. [GH-7140]
+- resource/alicloud_nlb_server_group: add new supprot type for scheduler. [GH-7146]
+- resource/alicloud_vpc_dhcp_options_set: support tag resource while create. [GH-7148]
+- resource/alicloud_vpc: support attribute enable_ipv6 modify. [GH-7150]
+- data-source/alicloud_express_connect_physical_connection_service: add errcode for service opened. [GH-7129]
+- docs: nonsupport region ap-south-1. [GH-7134]
+- docs: optimize for non-compatible changes for kvstore_instance. [GH-7145]
+- testcase: skip testcase for cms open service [GH-7149]
+
 ## 1.220.1 (April 3, 2024)
 
 ENHANCEMENTS:
