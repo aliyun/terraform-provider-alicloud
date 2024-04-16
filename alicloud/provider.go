@@ -1345,7 +1345,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_msc_sub_contact":                                       resourceAlicloudMscSubContact(),
 			"alicloud_express_connect_physical_connection":                   resourceAlicloudExpressConnectPhysicalConnection(),
 			"alicloud_alb_load_balancer":                                     resourceAliCloudAlbLoadBalancer(),
-			"alicloud_sddp_rule":                                             resourceAlicloudSddpRule(),
+			"alicloud_sddp_rule":                                             resourceAliCloudSddpRule(),
 			"alicloud_bastionhost_user_group":                                resourceAlicloudBastionhostUserGroup(),
 			"alicloud_security_center_group":                                 resourceAlicloudSecurityCenterGroup(),
 			"alicloud_alb_acl":                                               resourceAlicloudAlbAcl(),

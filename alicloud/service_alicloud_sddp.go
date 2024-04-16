@@ -16,16 +16,18 @@ type SddpService struct {
 
 func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeRules"
+
 	conn, err := s.client.NewSddpClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeRules"
+
 	request := map[string]interface{}{
+		"PageSize":    PageSizeLarge,
 		"CurrentPage": 1,
-		"PageSize":    100,
-		"CustomType":  1,
 	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -43,31 +45,39 @@ func (s *SddpService) DescribeSddpRule(id string) (object map[string]interface{}
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.Items", response)
+
+		resp, err := jsonpath.Get("$.Items", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Sddp:Rule", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
+
+		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["Id"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
+
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("SDDP", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Sddp:Rule", id)), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
 
 func (s *SddpService) DescribeSddpConfig(id string) (object map[string]interface{}, err error) {

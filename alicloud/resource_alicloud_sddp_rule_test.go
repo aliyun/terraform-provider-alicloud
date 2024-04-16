@@ -19,10 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
+func TestAccAliCloudSDDPRule_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
 	resourceId := "alicloud_sddp_rule.default"
-	ra := resourceAttrInit(resourceId, AlicloudSDDPRuleMap0)
+	ra := resourceAttrInit(resourceId, AliCloudSDDPRuleMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeSddpRule")
@@ -30,11 +31,10 @@ func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%ssddprule%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSDDPRuleBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSDDPRuleBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SddpSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -42,21 +42,21 @@ func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":  "2",
-					"content":   "tf-testACC",
-					"rule_name": "${var.name}",
+					"rule_name": name,
+					"category":  "0",
+					"content":   `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent\"}],\"ruleRelation\":\"AND\"}]`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":  "2",
-						"content":   "tf-testACC",
 						"rule_name": name,
+						"category":  "0",
+						"content":   CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"rule_name": "${var.name}-update",
+					"rule_name": name + "-update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -66,31 +66,31 @@ func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"content": "tf-testACCContent",
+					"category": "2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"content": "tf-testACCContent",
+						"category": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category": "0",
+					"content": `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent-update\"}],\"ruleRelation\":\"AND\"}]`,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category": "0",
+						"content": CHECKSET,
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"lang": "zh",
+					"risk_level_id": "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"lang": "zh",
+						"risk_level_id": "5",
 					}),
 				),
 			},
@@ -101,66 +101,6 @@ func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"rule_type": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "DescriptionAlone",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "DescriptionAlone",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"risk_level_id": "4",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"risk_level_id": "4",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"stat_express": "StatExpress",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"stat_express": "StatExpress",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"warn_level": "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"warn_level": "1",
 					}),
 				),
 			},
@@ -186,80 +126,121 @@ func TestAccAlicloudSDDPRule_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"target": "Content",
+					"warn_level": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"target": "Content",
+						"warn_level": "1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"content_category": "106",
+					"status": "0",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"content_category": "106",
+						"status": "0",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"category":         "0",
-					"content":          "tf-testACC-all",
-					"rule_name":        "${var.name}-all",
-					"description":      "DescriptionAlone",
-					"risk_level_id":    "4",
-					"stat_express":     "StatExpress",
-					"warn_level":       "1",
-					"product_code":     "OSS",
-					"product_id":       "2",
-					"lang":             "en",
-					"status":           "1",
-					"rule_type":        "1",
-					"target":           "Content",
-					"content_category": "104",
+					"status": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"category":         "0",
-						"content":          "tf-testACC-all",
-						"rule_name":        name + "-all",
-						"description":      "DescriptionAlone",
-						"risk_level_id":    "4",
-						"stat_express":     "StatExpress",
-						"warn_level":       "1",
-						"product_code":     "OSS",
-						"product_id":       "2",
-						"status":           "1",
-						"lang":             "en",
-						"rule_type":        "1",
-						"target":           "Content",
-						"content_category": "104",
+						"status": "1",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"ids", "lang", "rule_type"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type", "lang"},
 			},
 		},
 	})
 }
 
-var AlicloudSDDPRuleMap0 = map[string]string{}
-
-func AlicloudSDDPRuleBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
+func TestAccAliCloudSDDPRule_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.SddpSupportRegions)
+	resourceId := "alicloud_sddp_rule.default"
+	ra := resourceAttrInit(resourceId, AliCloudSDDPRuleMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SddpService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeSddpRule")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%ssddprule%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudSDDPRuleBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"rule_name":        name,
+					"category":         "0",
+					"content":          `[{\"rule\":[{\"operator\":\"contains\",\"target\":\"content\",\"value\":\"tf-testACCContent\"}],\"ruleRelation\":\"AND\"}]`,
+					"content_category": "106",
+					"risk_level_id":    "5",
+					"rule_type":        "1",
+					"product_code":     "OSS",
+					"product_id":       "2",
+					"warn_level":       "1",
+					"stat_express":     name,
+					"target":           "tf-target",
+					"status":           "1",
+					"description":      name,
+					"lang":             "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"rule_name":        name,
+						"category":         "0",
+						"content":          CHECKSET,
+						"content_category": "106",
+						"risk_level_id":    "5",
+						"rule_type":        "1",
+						"product_code":     "OSS",
+						"product_id":       "2",
+						"warn_level":       "1",
+						"stat_express":     name,
+						"target":           "tf-target",
+						"status":           "1",
+						"description":      name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"rule_type", "lang"},
+			},
+		},
+	})
 }
-`, name)
+
+var AliCloudSDDPRuleMap0 = map[string]string{
+	"content_category": CHECKSET,
+	"status":           CHECKSET,
+	"custom_type":      CHECKSET,
 }
 
-func TestUnitAlicloudSDDPRule(t *testing.T) {
+func AliCloudSDDPRuleBasicDependence0(name string) string {
+	return ""
+}
+
+func TestUnitAliCloudSDDPRule(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_sddp_rule"].Schema).Data(nil, nil)
@@ -349,7 +330,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSddpRuleCreate(dInit, rawClient)
+	err = resourceAliCloudSddpRuleCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -375,7 +356,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSddpRuleCreate(dInit, rawClient)
+		err := resourceAliCloudSddpRuleCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -402,7 +383,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSddpRuleUpdate(dExisted, rawClient)
+	err = resourceAliCloudSddpRuleUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyRuleStatus
@@ -441,7 +422,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSddpRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudSddpRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -515,7 +496,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSddpRuleUpdate(dExisted, rawClient)
+		err := resourceAliCloudSddpRuleUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -554,7 +535,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSddpRuleRead(dExisted, rawClient)
+		err := resourceAliCloudSddpRuleRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -573,7 +554,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudSddpRuleDelete(dExisted, rawClient)
+	err = resourceAliCloudSddpRuleDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -595,7 +576,7 @@ func TestUnitAlicloudSDDPRule(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudSddpRuleDelete(dExisted, rawClient)
+		err := resourceAliCloudSddpRuleDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
