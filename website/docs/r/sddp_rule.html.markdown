@@ -21,12 +21,26 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf_example_name"
+  default = "tf-example-name"
 }
+
 resource "alicloud_sddp_rule" "default" {
-  category      = "0"
-  content       = "content"
   rule_name     = var.name
+  category      = "2"
+  content       = <<EOF
+  [
+    {
+      "rule": [
+        {
+          "operator": "contains",
+          "target": "content",
+          "value": "tf-testACCContent"
+        }
+      ],
+      "ruleRelation": "AND"
+    }
+  ]
+  EOF
   risk_level_id = "4"
   product_code  = "OSS"
 }
@@ -36,43 +50,47 @@ resource "alicloud_sddp_rule" "default" {
 
 The following arguments are supported:
 
-* `category` - (Required, ForceNew) Sensitive Data Identification Rules for the Type of. Valid values:
-  * `0`: Keyword.
-  * `2`: Regular expression.
-* `content` - (Required, ForceNew) Sensitive Data Identification Rules the Content.
-* `content_category` - (Optional) The Content Classification.
-* `custom_type` - (Optional, ForceNew) Sensitive Data Identification Rules of Type. Valid values: 
-  * `0`: the Built-in.
-  * `1`: The User-Defined.
-* `description` - (Optional) Sensitive Data Identification a Description of the Rule Information.
-* `lang` - (Optional) The Request and Receive the Language of the Message Type. Valid values:
-  * `zh`: Chinese.
-  * `en`: English.
-* `product_code` - (Optional) Product Code. Valid values: `OSS`,`RDS`,`ODPS`(MaxCompute).
-* `product_id` - (Optional) Product ID. Valid values: 
-  * `1`:MaxCompute
-  * `2`:OSS
-  * `5`:RDS.
-* `risk_level_id` - (Optional) Sensitive Data Identification Rules of Risk Level ID. Valid values: 
-  * `2`:S1, Weak Risk Level. 
-  * `3`:S2, Medium Risk Level. 
-  * `4`:S3 High Risk Level. 
-  * `5`:S4, the Highest Risk Level.
-* `rule_name` - (Required, ForceNew) Sensitive Data Identification Name of the Rule.
-* `rule_type` - (Optional) Rule Type.
-* `stat_express` - (Optional) Triggered the Alarm Conditions.
-* `status` - (Optional, Computed) Sensitive Data Identification Rules Detection State of.
-* `target` - (Optional) The Target of rule.
-* `warn_level` - (Optional) The Level of Risk. Valid values: 
-  * `1`: Weak warn Level. 
-  * `2`: Medium Risk Level. 
-  * `3`: High Risk Level.
+* `rule_name` - (Required) The name of the sensitive data detection rule. **NOTE:** From version 1.221.1, `rule_name` can be modified.
+* `category` - (Required, Int) The content type of the sensitive data detection rule. Valid values:
+  - `0`: Keyword.
+  - `2`: Regular expression.
+**NOTE:** From version 1.221.1, `category` can be modified.
+* `content` - (Required) The content of the sensitive data detection rule. **NOTE:** From version 1.221.1, `content` can be modified.
+* `content_category` - (Optional, ForceNew) The type of the content in the sensitive data detection rule. **NOTE:** From version 1.221.1, `content_category` cannot be modified.
+* `risk_level_id` - (Optional) The sensitivity level of the sensitive data that hits the sensitive data detection rule. Valid values:
+  - `2`: S1, which indicates the low sensitivity level.
+  - `3`: S2, which indicates the medium sensitivity level.
+  - `4`: S3, which indicates the high sensitivity level.
+  - `5`: S4, which indicates the highest sensitivity level.
+* `rule_type` - (Optional, Int) The type of the sensitive data detection rule. Valid values:
+  - `1`: Sensitive data detection rule.
+  - `2`: Audit rule.
+  - `3`: Anomalous event detection rule.
+* `product_code` - (Optional) The name of the service to which data in the column of the table belongs. Valid values: `OSS`, `RDS`, `ODPS`(MaxCompute).
+* `product_id` - (Optional) The ID of the service to which the data asset belongs. Valid values:
+  - `1`:MaxCompute.
+  - `2`:OSS.
+  - `5`:RDS.
+* `warn_level` - (Optional, Int) The risk level of the alert that is triggered. Valid values:
+  - `1`: Low warn Level.
+  - `2`: Medium Risk Level.
+  - `3`: High Risk Level.
+* `stat_express` - (Optional, ForceNew) The statistical expression. **NOTE:** From version 1.221.1, `stat_express` cannot be modified.
+* `target` - (Optional, ForceNew) The code of the service to which the sensitive data detection rule is applied. **NOTE:** From version 1.221.1, `target` cannot be modified.
+* `status` - (Optional) Sensitive Specifies whether to enable the sensitive data detection rule. Valid values:
+  - `0`: Disable.
+  - `1`: Enable.
+* `description` - (Optional, ForceNew) The description of the rule. **NOTE:** From version 1.221.1, `description` cannot be modified.
+* `lang` - (Optional) The language of the content within the request and response. Default value: `zh`. Valid values:
+  - `zh`: Chinese.
+  - `en`: English.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Rule.
+* `custom_type` - The type of the sensitive data detection rule. **NOTE:** From version 1.221.1, `custom_type` cannot be specified when create Rule.
 
 ## Import
 
