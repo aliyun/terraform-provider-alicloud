@@ -1830,6 +1830,9 @@ func (s *VpcService) DeleteAclResources(id string) (object map[string]interface{
 			"ResourceType": item["ResourceType"],
 		})
 	}
+	if len(deleteResources) == 0 {
+		return nil, nil
+	}
 
 	var response map[string]interface{}
 	request := map[string]interface{}{
