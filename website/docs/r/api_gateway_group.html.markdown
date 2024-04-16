@@ -32,7 +32,7 @@ resource "alicloud_api_gateway_group" "default" {
 The following arguments are supported:
 
 * `name` - (Required) The name of the api gateway group. Defaults to null.
-* `description` - (Required) The description of the api gateway group. Defaults to null.
+* `description` - (Optional) The description of the api gateway group. Defaults to null.
 * `instance_id` - (Optional, ForceNew, Available in 1.179.0+)	The id of the api gateway.
 
 ## Attributes Reference

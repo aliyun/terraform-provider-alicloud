@@ -25,7 +25,7 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 			},
 			"description": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 			},
 			"sub_domain": {
 				Type:     schema.TypeString,

@@ -99,7 +99,7 @@ func testSweepApiGatewayGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
+func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 	var v *cloudapi.DescribeApiGroupResponse
 
 	resourceId := "alicloud_api_gateway_group.default"
@@ -178,7 +178,7 @@ func TestAccAlicloudApigatewayGroup_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudApigatewayGroup_basic01(t *testing.T) {
+func TestAccAliCloudApigatewayGroup_basic01(t *testing.T) {
 	var v *cloudapi.DescribeApiGroupResponse
 
 	resourceId := "alicloud_api_gateway_group.default"
@@ -228,7 +228,7 @@ func TestAccAlicloudApigatewayGroup_basic01(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudApigatewayGroup_multi(t *testing.T) {
+func TestAccAliCloudApigatewayGroup_multi(t *testing.T) {
 	var v *cloudapi.DescribeApiGroupResponse
 	resourceId := "alicloud_api_gateway_group.default.9"
 	ra := resourceAttrInit(resourceId, apigatewayGroupBasicMap)
