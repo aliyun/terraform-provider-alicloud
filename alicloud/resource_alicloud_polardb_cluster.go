@@ -912,68 +912,6 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("deletion_lock")
 	}
 
-	if d.IsNewResource() {
-		d.Partial(false)
-		return resourceAlicloudPolarDBClusterRead(d, meta)
-	}
-
-	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
-		if d.HasChange("db_node_class") {
-			request := polardb.CreateModifyDBNodeClassRequest()
-			request.RegionId = client.RegionId
-			request.DBClusterId = d.Id()
-			request.ModifyType = d.Get("modify_type").(string)
-			request.DBNodeTargetClass = d.Get("db_node_class").(string)
-			if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
-				request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
-			}
-			//wait asynchronously cluster nodes num the same
-			if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
-				return WrapError(err)
-			}
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-					return polarDBClient.ModifyDBNodeClass(request)
-				})
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-				if err != nil {
-					if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-			}
-			// wait cluster status change from Creating to running
-			stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
-			}
-			d.SetPartial("db_node_class")
-		}
-	}
-
-	if d.HasChange("description") {
-		request := polardb.CreateModifyDBClusterDescriptionRequest()
-		request.RegionId = client.RegionId
-		request.DBClusterId = d.Id()
-		request.DBClusterDescription = d.Get("description").(string)
-
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.ModifyDBClusterDescription(request)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-		d.SetPartial("description")
-	}
-
 	if d.HasChange("serverless_steady_switch") {
 		// Enable steady state
 		if d.HasChanges("scale_min", "scale_max", "scale_ro_num_min", "scale_ro_num_max", "scale_ap_ro_num_min", "scale_ap_ro_num_max") {
@@ -1080,6 +1018,68 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				return WrapErrorf(err, IdMsg, d.Id())
 			}
 		}
+	}
+
+	if d.IsNewResource() {
+		d.Partial(false)
+		return resourceAlicloudPolarDBClusterRead(d, meta)
+	}
+
+	if v, ok := d.GetOk("creation_category"); !ok || v.(string) != "Basic" {
+		if d.HasChange("db_node_class") {
+			request := polardb.CreateModifyDBNodeClassRequest()
+			request.RegionId = client.RegionId
+			request.DBClusterId = d.Id()
+			request.ModifyType = d.Get("modify_type").(string)
+			request.DBNodeTargetClass = d.Get("db_node_class").(string)
+			if v, ok := d.GetOk("sub_category"); ok && v.(string) != "" {
+				request.SubCategory = convertPolarDBSubCategoryUpdateRequest(v.(string))
+			}
+			//wait asynchronously cluster nodes num the same
+			if err := polarDBService.WaitForPolarDBNodeClass(d.Id(), DefaultLongTimeout); err != nil {
+				return WrapError(err)
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+					return polarDBClient.ModifyDBNodeClass(request)
+				})
+				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				if err != nil {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+			}
+			// wait cluster status change from Creating to running
+			stateConf := BuildStateConf([]string{"ClassChanging", "ClassChanged"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("db_node_class")
+		}
+	}
+
+	if d.HasChange("description") {
+		request := polardb.CreateModifyDBClusterDescriptionRequest()
+		request.RegionId = client.RegionId
+		request.DBClusterId = d.Id()
+		request.DBClusterDescription = d.Get("description").(string)
+
+		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+			return polarDBClient.ModifyDBClusterDescription(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		d.SetPartial("description")
 	}
 
 	if !d.IsNewResource() && d.HasChanges("scale_min", "scale_max", "allow_shut_down", "scale_ro_num_min", "scale_ro_num_max", "seconds_until_auto_pause", "scale_ap_ro_num_min", "scale_ap_ro_num_max") {
