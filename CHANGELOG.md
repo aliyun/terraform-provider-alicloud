@@ -16,6 +16,7 @@ ENHANCEMENTS:
 - resource/alicloud_nlb_server_group: add new supprot type for scheduler. ([#7146](https://github.com/aliyun/terraform-provider-alicloud/issues/7146))
 - resource/alicloud_vpc_dhcp_options_set: support tag resource while create. ([#7148](https://github.com/aliyun/terraform-provider-alicloud/issues/7148))
 - resource/alicloud_vpc: support attribute enable_ipv6 modify. ([#7150](https://github.com/aliyun/terraform-provider-alicloud/issues/7150))
+- resource/alicloud_network_acl: Optimized cleanup before delete NetworkAcl. ([#7156](https://github.com/aliyun/terraform-provider-alicloud/pull/7156))
 - data-source/alicloud_express_connect_physical_connection_service: add errcode for service opened. ([#7129](https://github.com/aliyun/terraform-provider-alicloud/issues/7129))
 - docs: nonsupport region ap-south-1. ([#7134](https://github.com/aliyun/terraform-provider-alicloud/issues/7134))
 - docs: optimize for non-compatible changes for kvstore_instance. ([#7145](https://github.com/aliyun/terraform-provider-alicloud/issues/7145))
