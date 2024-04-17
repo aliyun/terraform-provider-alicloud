@@ -19,7 +19,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/denverdino/aliyungo/common"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 type instanceTypeWithOriginalPrice struct {
@@ -41,7 +40,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^ecs\..*`), "prefix must be 'ecs.'"),
 			},
 			"cpu_core_count": {
 				Type:     schema.TypeInt,
@@ -69,20 +68,25 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				ForceNew: true,
 				Default:  PostPaid,
 				// %q must contain a valid InstanceChargeType, expected common.PrePaid, common.PostPaid
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 			},
 			"network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Vpc", "Classic"}, false),
+				ValidateFunc: StringInSlice([]string{"Vpc", "Classic"}, false),
+			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"spot_strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
 				Default:      NoSpot,
-				ValidateFunc: validation.StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
+				ValidateFunc: StringInSlice([]string{"NoSpot", "SpotAsPriceGo", "SpotWithPriceLimit"}, false),
 			},
 			"eni_amount": {
 				Type:     schema.TypeInt,
@@ -93,7 +97,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(KubernetesNodeMaster),
 					string(KubernetesNodeWorker),
 				}, false),
@@ -106,7 +110,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					"CPU",
 					"Memory",
 					"Price",
@@ -116,7 +120,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "cloud_essd_entry"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "cloud_essd_entry"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -280,6 +284,12 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOk("gpu_spec"); ok {
 		request["GPUSpec"] = v
+	}
+	if v, ok := d.GetOk("system_disk_category"); ok {
+		request["SystemDiskCategory"] = v
+	}
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
 	}
 
 	conn, err := client.NewEcsClient()
