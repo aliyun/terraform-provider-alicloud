@@ -76,7 +76,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			},
 			"period": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     IntInSlice([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
+				ValidateFunc:     IntInSlice([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24, 36}),
 				Optional:         true,
 				DiffSuppressFunc: PostPaidDiffSuppressFunc,
 			},
@@ -487,7 +487,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			},
 			"storage_threshold": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     IntInSlice([]int{10, 20, 30, 40, 50}),
+				ValidateFunc:     IntInSlice([]int{0, 10, 20, 30, 40, 50}),
 				DiffSuppressFunc: StorageAutoScaleDiffSuppressFunc,
 				Optional:         true,
 			},
@@ -1943,27 +1943,13 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 	if v, ok := d.GetOk("port"); ok && v.(string) != "" {
 		request["Port"] = v
 	}
-	if request["Engine"] == "MySQL" {
+
+	if request["Engine"] == "MySQL" || request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {
 		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
 			request["RoleARN"] = v.(string)
 		}
 		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
 			request["EncryptionKey"] = v.(string)
-		}
-	}
-	if request["Engine"] == "PostgreSQL" || request["Engine"] == "SQLServer" {
-		if v, ok := d.GetOk("role_arn"); ok && v.(string) != "" {
-			request["RoleARN"] = v.(string)
-		}
-		if v, ok := d.GetOk("encryption_key"); ok && v.(string) != "" {
-			request["EncryptionKey"] = v.(string)
-			if ro, ok := request["RoleARN"].(string); !ok || ro == "" {
-				roleArn, err := findKmsRoleArn(client, v.(string))
-				if err != nil {
-					return nil, WrapError(err)
-				}
-				request["RoleARN"] = roleArn
-			}
 		}
 	}
 
