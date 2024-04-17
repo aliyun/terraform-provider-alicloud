@@ -7,7 +7,7 @@ description: |-
     Provides a list of ECS Instance Types to be used by the alicloud_instance resource.
 ---
 
-# alicloud\_instance\_types
+# alicloud_instance_types
 
 This data source provides the ECS instance types of Alibaba Cloud.
 
@@ -15,46 +15,92 @@ This data source provides the ECS instance types of Alibaba Cloud.
 
 ~> **NOTE:** If one instance type is sold out, it will not be exported.
 
+-> **NOTE:** Available since v1.0.0.
+
 ## Example Usage
 
-```
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
 # Declare the data source
-data "alicloud_instance_types" "types_ds" {
-  cpu_core_count = 1
-  memory_size    = 2
+data "alicloud_instance_types" "default" {
+  availability_zone    = data.alicloud_zones.default.zones.0.id
+  instance_type_family = "ecs.sn1ne"
 }
 
-# Create ECS instance with the first matched instance_type
-
-resource "alicloud_instance" "instance" {
-  instance_type = "${data.alicloud_instance_types.types_ds.instance_types.0.id}"
-
-  # Other properties...
+data "alicloud_images" "default" {
+  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  most_recent = true
+  owners      = "system"
 }
 
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_security_group" "default" {
+  name   = var.name
+  vpc_id = alicloud_vpc.default.id
+}
+
+resource "alicloud_ecs_network_interface" "default" {
+  network_interface_name = var.name
+  vswitch_id             = alicloud_vswitch.default.id
+  security_group_ids     = [alicloud_security_group.default.id]
+}
+
+resource "alicloud_instance" "default" {
+  count                      = 14
+  image_id                   = data.alicloud_images.default.images[0].id
+  instance_type              = data.alicloud_instance_types.default.instance_types[0].id
+  instance_name              = var.name
+  security_groups            = alicloud_security_group.default.*.id
+  internet_charge_type       = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone          = data.alicloud_zones.default.zones.0.id
+  instance_charge_type       = "PostPaid"
+  system_disk_category       = "cloud_efficiency"
+  vswitch_id                 = alicloud_vswitch.default.id
+}
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `availability_zone` - (Optional) The zone where instance types are supported.
-* `cpu_core_count` - (Optional) Filter the results to a specific number of cpu cores.
-* `memory_size` - (Optional) Filter the results to a specific memory size in GB.
-* `gpu_amount` - (Optional, Available in 1.69.0+) The GPU amount of an instance type.
-* `gpu_spec` - (Optional, Available in 1.69.0+) The GPU spec of an instance type.
-* `instance_type_family` - (Optional) Filter the results based on their family name. For example: 'ecs.n4'.
-* `instance_charge_type` - (Optional) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
-* `network_type` - (Optional) Filter the results by network type. Valid values: `Classic` and `Vpc`.
-* `spot_strategy` - (Optional) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
-* `eni_amount` - (Optional) Filter the result whose network interface number is no more than `eni_amount`.
-* `kubernetes_node_role` - (Optional) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes)
+* `availability_zone` - (Optional, ForceNew) The zone where instance types are supported.
+* `cpu_core_count` - (Optional, ForceNew) Filter the results to a specific number of cpu cores.
+* `memory_size` - (Optional, ForceNew) Filter the results to a specific memory size in GB.
+* `sorted_by` - (Optional, ForceNew) Sort mode, valid values: `CPU`, `Memory`, `Price`.
+* `gpu_amount` - (Optional, ForceNew, Available in 1.69.0+) The GPU amount of an instance type.
+* `gpu_spec` - (Optional, ForceNew, Available in 1.69.0+) The GPU spec of an instance type.
+* `instance_type_family` - (Optional, ForceNew) Filter the results based on their family name. For example: 'ecs.n4'.
+* `instance_type` - (Optional, ForceNew, Available since 1.222.0) Instance specifications. For more information, see instance Specification Family, or you can call the describe instance types interface to get the latest specification table.
+* `instance_charge_type` - (Optional, ForceNew) Filter the results by charge type. Valid values: `PrePaid` and `PostPaid`. Default to `PostPaid`.
+* `network_type` - (Optional, ForceNew) Filter the results by network type. Valid values: `Classic` and `Vpc`.
+* `spot_strategy` - (Optional, ForceNew) Filter the results by ECS spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `eni_amount` - (Optional, ForceNew) Filter the result whose network interface number is no more than `eni_amount`.
+* `kubernetes_node_role` - (Optional, ForceNew) Filter the result which is used to create a [kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_kubernetes)
  and [managed kubernetes cluster](https://www.terraform.io/docs/providers/alicloud/r/cs_managed_kubernetes). Optional Values: `Master` and `Worker`.
 * `is_outdated` - (Optional, type: bool) If true, outdated instance types are included in the results. Default to false.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `system_disk_category` - (Optional, Available in 1.120.0+) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`. 
+* `system_disk_category` - (Optional, ForceNew, Available since 1.120.0) Filter the results by system disk category. Valid values: `cloud`, `ephemeral_ssd`, `cloud_essd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd_entry`. 
   **NOTE**: Its default value `cloud_efficiency` has been removed from the version v1.150.0.
-* `image_id` - (Optional, Available in 1.163.0+) The ID of the image.
+* `image_id` - (Optional, ForceNew, Available in 1.163.0+) The ID of the image.
 * `minimum_eni_ipv6_address_quantity` (Optional, ForceNew, Available in 1.193.0+) The minimum number of IPv6 addresses per ENI. **Note:** If an instance type supports fewer IPv6 addresses per ENI than the specified value, information about the instance type is not queried.
 
 ## Attributes Reference
@@ -64,6 +110,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of instance type IDs.
 * `instance_types` - A list of image types. Each element contains the following attributes:
   * `id` - ID of the instance type.
+  * `price` - The price of instance type.
   * `cpu_core_count` - Number of CPU cores.
   * `memory_size` - Size of memory, measured in GB.
   * `family` - The instance type family.
