@@ -424,7 +424,9 @@ func resourceAliCloudAlbServerGroupRead(d *schema.ResourceData, meta interface{}
 			stickySessionConfigMap["cookie_timeout"] = cookieTimeout
 		}
 
-		stickySessionConfigMaps = append(stickySessionConfigMaps, stickySessionConfigMap)
+		if len(stickySessionConfigMap) > 0 {
+			stickySessionConfigMaps = append(stickySessionConfigMaps, stickySessionConfigMap)
+		}
 
 		d.Set("sticky_session_config", stickySessionConfigMaps)
 	}
