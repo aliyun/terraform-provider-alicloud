@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_oss_bucket_referer
 
-Provides a OSS Bucket Referer resource. Bucket Referer configuration.
+Provides a OSS Bucket Referer resource. Bucket Referer configuration (Hotlink protection).
 
 For information about OSS Bucket Referer and how to use it, see [What is Bucket Referer](https://www.alibabacloud.com/help/en/oss/user-guide/hotlink-protection).
 
@@ -62,11 +62,11 @@ resource "alicloud_oss_bucket_referer" "default" {
 
 The following arguments are supported:
 * `allow_empty_referer` - (Required) Whether to allow empty Referer request headers.
-* `allow_truncate_query_string` - (Optional, Computed) Allow phase request parameters.
+* `allow_truncate_query_string` - (Optional, Computed) Specifies whether to truncate the query string in the URL when the Referer is matched. Valid values: true, false.
 * `bucket` - (Required, ForceNew) Name of the Bucket.
 * `referer_blacklist` - (Optional) The container that holds the Referer blacklist.
 * `referer_list` - (Optional) The container that holds the Referer whitelist.
-* `truncate_path` - (Optional) Name of the bucket.
+* `truncate_path` - (Optional) Specifies whether to truncate the path and parts that follow the path in the URL when the Referer is matched. Valid values: true, false. If TruncatePath is set to true, the value of AllowTruncateQueryString must be also true because the query string follows the path component. When the path is truncated, the query string is also truncated.
 
 ## Attributes Reference
 
