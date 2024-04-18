@@ -119,7 +119,7 @@ The following arguments are supported:
     - TotalCapacity：[0, 1000]
 * `scaling_rule_name` - (Optional) Name shown for the scaling rule, which must contain 2-64 characters (English or Chinese), starting with numbers, English letters or Chinese characters, and can contain number, underscores `_`, hypens `-`, and decimal point `.`. If this parameter value is not specified, the default value is scaling rule id. 
 * `cooldown` - (Optional) The cooldown time of the scaling rule. This parameter is applicable only to simple scaling rules. Value range: [0, 86,400], in seconds. The default value is empty，if not set, the return value will be 0, which is the default value of integer.
-* `scaling_rule_type` - (Optional, ForceNew, Available since v1.58.0) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule". Default to "SimpleScalingRule".
+* `scaling_rule_type` - (Optional, ForceNew, Available since v1.58.0) The scaling rule type, either "SimpleScalingRule", "TargetTrackingScalingRule", "StepScalingRule", "PredictiveScalingRule". Default to "SimpleScalingRule".
 * `estimated_instance_warmup` - (Optional, Available since v1.58.0) The estimated time, in seconds, until a newly launched instance will contribute CloudMonitor metrics. Default to 300.
 * `min_adjustment_magnitude` - (Optional, Available since v1.221.0) The minimum number of instances that must be scaled. This parameter takes effect if you set ScalingRuleType to SimpleScalingRule or StepScalingRule, and AdjustmentType to PercentChangeInCapacity.
 * `scale_in_evaluation_count` - (Optional, Available since v1.221.0) The number of consecutive times that the event-triggered task created for scale-ins must meet the threshold conditions before an alert is triggered. After a target tracking scaling rule is created, an event-triggered task is automatically created and associated with the target tracking scaling rule.
@@ -130,6 +130,13 @@ The following arguments are supported:
 * `step_adjustment` - (Optional, Available since v1.58.0) Steps for StepScalingRule. See [`step_adjustment`](#step_adjustment) below.
 * `ari` - (Optional) The unique identifier of the scaling rule.
 * `alarm_dimension` - (Optional, ForceNew, Available since v1.216.0) AlarmDimension for StepScalingRule. See [`alarm_dimension`](#alarm_dimension) below.
+* `predictive_scaling_mode` - (Optional, Available since v1.222.0) The mode of the predictive scaling rule. Valid values: PredictAndScale, PredictOnly.
+* `initial_max_size` - (Optional, Available since v1.222.0) The maximum number of ECS instances that can be added to the scaling group. If you specify InitialMaxSize, you must also specify PredictiveValueBehavior.
+* `predictive_value_behavior` - (Optional, Available since v1.222.0) The action on the predicted maximum value. Valid values: MaxOverridePredictiveValue, PredictiveValueOverrideMax, PredictiveValueOverrideMaxWithBuffer.
+* `predictive_value_buffer` - (Optional, Available since v1.222.0) The ratio based on which the predicted value is increased if you set PredictiveValueBehavior to PredictiveValueOverrideMaxWithBuffer. If the predicted value increased by this ratio is greater than the initial maximum capacity, the increased value is used as the maximum value for prediction tasks. Valid values: 0 to 100.
+* `predictive_task_buffer_time` - (Optional, Available since v1.222.0) The amount of buffer time before the prediction task runs. By default, all prediction tasks that are automatically created by a predictive scaling rule run on the hour. You can specify a buffer time to run prediction tasks and prepare resources in advance. Valid values: 0 to 60. Unit: minutes.
+
+
 
 
 ### `step_adjustment`

@@ -30,7 +30,7 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 			"adjustment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"QuantityChangeInCapacity", "PercentChangeInCapacity", "TotalCapacity"}, false),
+				ValidateFunc: StringInSlice([]string{"QuantityChangeInCapacity", "PercentChangeInCapacity", "TotalCapacity"}, false),
 			},
 			"adjustment_value": {
 				Type:     schema.TypeInt,
@@ -55,10 +55,11 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 				Optional: true,
 				Default:  "SimpleScalingRule",
 				ForceNew: true,
-				ValidateFunc: validation.StringInSlice([]string{
+				ValidateFunc: StringInSlice([]string{
 					string(SimpleScalingRule),
 					string(TargetTrackingScalingRule),
 					string(StepScalingRule),
+					string(PredictiveScalingRule),
 				}, false),
 			},
 			"estimated_instance_warmup": {
@@ -91,6 +92,42 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 			"metric_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"predictive_scaling_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: StringInSlice([]string{
+					"PredictOnly",
+					"PredictAndScale",
+				}, false),
+			},
+			"initial_max_size": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"predictive_value_behavior": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ValidateFunc: StringInSlice([]string{
+					"MaxOverridePredictiveValue",
+					"PredictiveValueOverrideMax",
+					"PredictiveValueOverrideMaxWithBuffer",
+				}, false),
+			},
+			"predictive_value_buffer": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(0, 100),
+			},
+			"predictive_task_buffer_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntBetween(0, 60),
 			},
 			"target_value": {
 				Type:     schema.TypeFloat,
@@ -132,7 +169,7 @@ func resourceAlicloudEssScalingRule() *schema.Resource {
 						"dimension_key": {
 							Type:     schema.TypeString,
 							Optional: true,
-							ValidateFunc: validation.StringInSlice([]string{
+							ValidateFunc: StringInSlice([]string{
 								"rulePool",
 							}, false),
 						},
@@ -202,6 +239,11 @@ func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("scale_out_evaluation_count", object.ScaleOutEvaluationCount)
 	d.Set("min_adjustment_magnitude", object.MinAdjustmentMagnitude)
 	d.Set("metric_name", object.MetricName)
+	d.Set("predictive_scaling_mode", object.PredictiveScalingMode)
+	d.Set("initial_max_size", object.InitialMaxSize)
+	d.Set("predictive_value_behavior", object.PredictiveValueBehavior)
+	d.Set("predictive_value_buffer", object.PredictiveValueBuffer)
+	d.Set("predictive_task_buffer_time", object.PredictiveTaskBufferTime)
 	targetValue, err := strconv.ParseFloat(strconv.FormatFloat(object.TargetValue, 'f', 3, 64), 64)
 	if err != nil {
 		return WrapError(err)
@@ -327,6 +369,32 @@ func resourceAliyunEssScalingRuleUpdate(d *schema.ResourceData, meta interface{}
 			}
 			request.StepAdjustment = &steps
 		}
+	case string(PredictiveScalingRule):
+		if d.HasChange("metric_name") {
+			request.MetricName = d.Get("metric_name").(string)
+		}
+		if d.HasChange("target_value") {
+			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(d.Get("target_value").(float64), 'f', 3, 64), 64)
+			if err != nil {
+				return WrapError(err)
+			}
+			request.TargetValue = requests.NewFloat(targetValue)
+		}
+		if d.HasChange("initial_max_size") {
+			request.InitialMaxSize = requests.NewInteger(d.Get("initial_max_size").(int))
+		}
+		if d.HasChange("predictive_value_buffer") {
+			request.PredictiveValueBuffer = requests.NewInteger(d.Get("predictive_value_buffer").(int))
+		}
+		if d.HasChange("predictive_task_buffer_time") {
+			request.PredictiveTaskBufferTime = requests.NewInteger(d.Get("predictive_task_buffer_time").(int))
+		}
+		if d.HasChange("predictive_scaling_mode") {
+			request.PredictiveScalingMode = d.Get("predictive_scaling_mode").(string)
+		}
+		if d.HasChange("predictive_value_behavior") {
+			request.PredictiveValueBehavior = d.Get("predictive_value_behavior").(string)
+		}
 	}
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
@@ -434,6 +502,32 @@ func buildAlicloudEssScalingRuleArgs(d *schema.ResourceData, meta interface{}) (
 				steps = append(steps, step)
 			}
 			request.StepAdjustment = &steps
+		}
+	case string(PredictiveScalingRule):
+		if v, ok := d.GetOk("metric_name"); ok && v.(string) != "" {
+			request.MetricName = v.(string)
+		}
+		if v, ok := d.GetOk("target_value"); ok {
+			targetValue, err := strconv.ParseFloat(strconv.FormatFloat(v.(float64), 'f', 3, 64), 64)
+			if err != nil {
+				return nil, WrapError(err)
+			}
+			request.TargetValue = requests.NewFloat(targetValue)
+		}
+		if v, ok := d.GetOk("predictive_scaling_mode"); ok && v.(string) != "" {
+			request.PredictiveScalingMode = v.(string)
+		}
+		if v, ok := d.GetOk("predictive_value_behavior"); ok && v.(string) != "" {
+			request.PredictiveValueBehavior = v.(string)
+		}
+		if v, ok := d.GetOkExists("predictive_value_buffer"); ok {
+			request.PredictiveValueBuffer = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOkExists("predictive_task_buffer_time"); ok {
+			request.PredictiveTaskBufferTime = requests.NewInteger(v.(int))
+		}
+		if v, ok := d.GetOkExists("initial_max_size"); ok {
+			request.InitialMaxSize = requests.NewInteger(v.(int))
 		}
 	}
 	return request, nil
