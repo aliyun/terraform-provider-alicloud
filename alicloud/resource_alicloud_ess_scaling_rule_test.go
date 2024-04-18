@@ -251,6 +251,116 @@ func TestAccAliCloudEssScalingRule_target_tracking_rule_basic(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssScalingRule_predictive_rule_basic(t *testing.T) {
+	var v ess.ScalingRule
+	rand := acctest.RandIntRange(1000, 999999)
+	resourceId := "alicloud_ess_scaling_rule.default"
+	basicMap := map[string]string{
+		"scaling_group_id":            CHECKSET,
+		"scaling_rule_type":           "PredictiveScalingRule",
+		"metric_name":                 "CpuUtilization",
+		"target_value":                "20.1",
+		"predictive_scaling_mode":     "PredictAndScale",
+		"initial_max_size":            "1",
+		"predictive_value_behavior":   "MaxOverridePredictiveValue",
+		"predictive_value_buffer":     "0",
+		"predictive_task_buffer_time": "0",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssTargetTrackingScalingRuleConfig-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssTargetTrackingScalingRuleConfig)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  testAccCheckEssScalingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type": "PredictiveScalingRule",
+					"metric_name":       "CpuUtilization",
+					"target_value":      "20.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type": "PredictiveScalingRule",
+					"metric_name":       "IntranetRx",
+					"target_value":      "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_name":                 "IntranetRx",
+						"target_value":                "20",
+						"predictive_scaling_mode":     CHECKSET,
+						"initial_max_size":            CHECKSET,
+						"predictive_value_behavior":   CHECKSET,
+						"predictive_value_buffer":     CHECKSET,
+						"predictive_task_buffer_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":            "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":           "PredictiveScalingRule",
+					"metric_name":                 "IntranetRx",
+					"target_value":                "20",
+					"predictive_scaling_mode":     "PredictOnly",
+					"initial_max_size":            "1",
+					"predictive_value_behavior":   "PredictiveValueOverrideMaxWithBuffer",
+					"predictive_value_buffer":     "1",
+					"predictive_task_buffer_time": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"predictive_scaling_mode":     "PredictOnly",
+						"initial_max_size":            "1",
+						"predictive_value_behavior":   "PredictiveValueOverrideMaxWithBuffer",
+						"predictive_value_buffer":     "1",
+						"predictive_task_buffer_time": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"scaling_group_id":            "${alicloud_ess_scaling_group.default.id}",
+					"scaling_rule_type":           "PredictiveScalingRule",
+					"metric_name":                 "CpuUtilization",
+					"target_value":                "20.1",
+					"predictive_scaling_mode":     "PredictAndScale",
+					"initial_max_size":            "1",
+					"predictive_value_behavior":   "MaxOverridePredictiveValue",
+					"predictive_value_buffer":     "0",
+					"predictive_task_buffer_time": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(basicMap),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func TestAccAliCloudEssScalingRule_target_tracking_rule_alarm_dimension(t *testing.T) {
 	var v ess.ScalingRule
 	rand := acctest.RandIntRange(1000, 999999)

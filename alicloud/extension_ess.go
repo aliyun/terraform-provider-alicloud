@@ -10,6 +10,7 @@ const (
 	SimpleScalingRule         = ScalingRuleType("SimpleScalingRule")
 	TargetTrackingScalingRule = ScalingRuleType("TargetTrackingScalingRule")
 	StepScalingRule           = ScalingRuleType("StepScalingRule")
+	PredictiveScalingRule     = ScalingRuleType("PredictiveScalingRule")
 )
 
 type BatchSize int
