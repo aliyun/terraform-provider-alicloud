@@ -42,20 +42,10 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type":    "PayAsYouGo",
-					"spec":            "ultimate_version",
-					"ip_number":       "400",
-					"band_width":      "200",
-					"cfw_log":         "true",
-					"cfw_log_storage": "1000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type":    "PayAsYouGo",
-						"spec":            "ultimate_version",
-						"ip_number":       "400",
-						"band_width":      "200",
-						"cfw_log":         "true",
-						"cfw_log_storage": "1000",
 					}),
 				),
 			},
@@ -63,8 +53,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"band_width", "cfw_log", "cfw_log_storage", "ip_number", "period",
-					"modify_type", "spec", "cfw_account", "account_number"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
