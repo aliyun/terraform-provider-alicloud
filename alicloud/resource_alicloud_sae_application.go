@@ -227,10 +227,11 @@ func resourceAliCloudSaeApplication() *schema.Resource {
 				Computed: true,
 			},
 			"command_args_v2": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:          schema.TypeList,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"command_args"},
+				Elem:          &schema.Schema{Type: schema.TypeString},
 			},
 			"custom_host_alias_v2": {
 				Type:          schema.TypeList,
@@ -2434,434 +2435,424 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		deployApplicationReq["ImagePullSecrets"] = StringPointer(v.(string))
 	}
 
-	if !d.IsNewResource() && (d.HasChange("command_args_v2") || d.HasChange("command_args")) {
+	if !d.IsNewResource() && d.HasChange("command_args_v2") {
 		update = true
-	}
-	if v, ok := d.GetOk("command_args_v2"); ok {
-		deployApplicationReq["CommandArgs"] = StringPointer(convertListToJsonString(v.([]interface{})))
-	} else if v, ok := d.GetOk("command_args"); ok {
-		deployApplicationReq["CommandArgs"] = StringPointer(v.(string))
+
+		if v, ok := d.GetOk("command_args_v2"); ok {
+			deployApplicationReq["CommandArgs"] = StringPointer(convertListToJsonString(v.([]interface{})))
+		}
 	}
 
-	if !d.IsNewResource() && (d.HasChange("custom_host_alias_v2") || d.HasChange("custom_host_alias")) {
+	if !d.IsNewResource() && d.HasChange("custom_host_alias_v2") {
 		update = true
-	}
-	if v, ok := d.GetOk("custom_host_alias_v2"); ok {
-		customHostAliasMaps := make([]map[string]interface{}, 0)
-		for _, customHostAlias := range v.([]interface{}) {
-			customHostAliasMap := map[string]interface{}{}
-			customHostAliasArg := customHostAlias.(map[string]interface{})
 
-			if hostName, ok := customHostAliasArg["host_name"]; ok && hostName.(string) != "" {
-				customHostAliasMap["hostName"] = hostName
-			}
+		if v, ok := d.GetOk("custom_host_alias_v2"); ok {
+			customHostAliasMaps := make([]map[string]interface{}, 0)
+			for _, customHostAlias := range v.([]interface{}) {
+				customHostAliasMap := map[string]interface{}{}
+				customHostAliasArg := customHostAlias.(map[string]interface{})
 
-			if ip, ok := customHostAliasArg["ip"]; ok && ip.(string) != "" {
-				customHostAliasMap["ip"] = ip
-			}
-
-			customHostAliasMaps = append(customHostAliasMaps, customHostAliasMap)
-		}
-
-		customHostAliasJson, err := convertListMapToJsonString(customHostAliasMaps)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["CustomHostAlias"] = StringPointer(customHostAliasJson)
-	} else if v, ok := d.GetOk("custom_host_alias"); ok {
-		deployApplicationReq["CustomHostAlias"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("oss_mount_descs_v2") || d.HasChange("oss_mount_descs")) {
-		update = true
-	}
-	if v, ok := d.GetOk("oss_mount_descs_v2"); ok {
-		ossMountDescsMaps := make([]map[string]interface{}, 0)
-		for _, ossMountDescs := range v.([]interface{}) {
-			ossMountDescsMap := map[string]interface{}{}
-			ossMountDescsArg := ossMountDescs.(map[string]interface{})
-
-			if bucketName, ok := ossMountDescsArg["bucket_name"]; ok && bucketName.(string) != "" {
-				ossMountDescsMap["bucketName"] = bucketName
-			}
-
-			if bucketPath, ok := ossMountDescsArg["bucket_path"]; ok && bucketPath.(string) != "" {
-				ossMountDescsMap["bucketPath"] = bucketPath
-			}
-
-			if mountPath, ok := ossMountDescsArg["mount_path"]; ok && mountPath.(string) != "" {
-				ossMountDescsMap["mountPath"] = mountPath
-			}
-
-			if readOnly, ok := ossMountDescsArg["read_only"]; ok {
-				ossMountDescsMap["readOnly"] = readOnly
-			}
-
-			ossMountDescsMaps = append(ossMountDescsMaps, ossMountDescsMap)
-		}
-
-		ossMountDescsJson, err := convertListMapToJsonString(ossMountDescsMaps)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["OssMountDescs"] = StringPointer(ossMountDescsJson)
-	} else if v, ok := d.GetOk("oss_mount_descs"); ok {
-		deployApplicationReq["OssMountDescs"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("config_map_mount_desc_v2") || d.HasChange("config_map_mount_desc")) {
-		update = true
-	}
-	if v, ok := d.GetOk("config_map_mount_desc_v2"); ok {
-		configMapMountDescMaps := make([]map[string]interface{}, 0)
-		for _, configMapMountDesc := range v.([]interface{}) {
-			configMapMountDescMap := map[string]interface{}{}
-			configMapMountDescArg := configMapMountDesc.(map[string]interface{})
-
-			if configMapId, ok := configMapMountDescArg["config_map_id"]; ok && configMapId.(string) != "" {
-				configMapMountDescMap["configMapId"] = configMapId
-			}
-
-			if mountPath, ok := configMapMountDescArg["mount_path"]; ok && mountPath.(string) != "" {
-				configMapMountDescMap["mountPath"] = mountPath
-			}
-
-			if key, ok := configMapMountDescArg["key"]; ok && key.(string) != "" {
-				configMapMountDescMap["key"] = key
-			}
-
-			configMapMountDescMaps = append(configMapMountDescMaps, configMapMountDescMap)
-		}
-
-		configMapMountDescJson, err := convertListMapToJsonString(configMapMountDescMaps)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["ConfigMapMountDesc"] = StringPointer(configMapMountDescJson)
-	} else if v, ok := d.GetOk("config_map_mount_desc"); ok {
-		deployApplicationReq["ConfigMapMountDesc"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("liveness_v2") || d.HasChange("liveness")) {
-		update = true
-	}
-	if v, ok := d.GetOk("liveness_v2"); ok {
-		livenessMap := map[string]interface{}{}
-		for _, livenessList := range v.([]interface{}) {
-			livenessArg := livenessList.(map[string]interface{})
-
-			if initialDelaySeconds, ok := livenessArg["initial_delay_seconds"]; ok {
-				livenessMap["initialDelaySeconds"] = initialDelaySeconds
-			}
-
-			if periodSeconds, ok := livenessArg["period_seconds"]; ok {
-				livenessMap["periodSeconds"] = periodSeconds
-			}
-
-			if timeoutSeconds, ok := livenessArg["timeout_seconds"]; ok {
-				livenessMap["timeoutSeconds"] = timeoutSeconds
-			}
-
-			if exec, ok := livenessArg["exec"]; ok && len(exec.([]interface{})) > 0 {
-				execMap := map[string]interface{}{}
-				for _, execList := range exec.([]interface{}) {
-					execArg := execList.(map[string]interface{})
-
-					if command, ok := execArg["command"]; ok {
-						execMap["command"] = command
-					}
+				if hostName, ok := customHostAliasArg["host_name"]; ok && hostName.(string) != "" {
+					customHostAliasMap["hostName"] = hostName
 				}
 
-				livenessMap["exec"] = execMap
-			}
-
-			if tcpSocket, ok := livenessArg["tcp_socket"]; ok && len(tcpSocket.([]interface{})) > 0 {
-				tcpSocketMap := map[string]interface{}{}
-				for _, tcpSocketList := range tcpSocket.([]interface{}) {
-					tcpSocketArg := tcpSocketList.(map[string]interface{})
-
-					if port, ok := tcpSocketArg["port"]; ok {
-						tcpSocketMap["port"] = port
-					}
+				if ip, ok := customHostAliasArg["ip"]; ok && ip.(string) != "" {
+					customHostAliasMap["ip"] = ip
 				}
 
-				livenessMap["tcpSocket"] = tcpSocketMap
+				customHostAliasMaps = append(customHostAliasMaps, customHostAliasMap)
 			}
 
-			if httpGet, ok := livenessArg["http_get"]; ok && len(httpGet.([]interface{})) > 0 {
-				httpGetMap := map[string]interface{}{}
-				for _, httpGetList := range httpGet.([]interface{}) {
-					httpGetArg := httpGetList.(map[string]interface{})
+			customHostAliasJson, err := convertListMapToJsonString(customHostAliasMaps)
+			if err != nil {
+				return WrapError(err)
+			}
 
-					if path, ok := httpGetArg["path"]; ok && path.(string) != "" {
-						httpGetMap["path"] = path
-					}
+			deployApplicationReq["CustomHostAlias"] = StringPointer(customHostAliasJson)
+		}
+	}
 
-					if port, ok := httpGetArg["port"]; ok {
-						httpGetMap["port"] = port
-					}
+	if !d.IsNewResource() && d.HasChange("oss_mount_descs_v2") {
+		update = true
 
-					if scheme, ok := httpGetArg["scheme"]; ok && scheme.(string) != "" {
-						httpGetMap["scheme"] = scheme
-					}
+		if v, ok := d.GetOk("oss_mount_descs_v2"); ok {
+			ossMountDescsMaps := make([]map[string]interface{}, 0)
+			for _, ossMountDescs := range v.([]interface{}) {
+				ossMountDescsMap := map[string]interface{}{}
+				ossMountDescsArg := ossMountDescs.(map[string]interface{})
 
-					if keyWord, ok := httpGetArg["key_word"]; ok && keyWord.(string) != "" {
-						httpGetMap["keyWord"] = keyWord
+				if bucketName, ok := ossMountDescsArg["bucket_name"]; ok && bucketName.(string) != "" {
+					ossMountDescsMap["bucketName"] = bucketName
+				}
 
-						if isContainKeyWord, ok := d.GetOkExists("liveness_v2.0.http_get.0.is_contain_key_word"); ok {
-							httpGetMap["isContainKeyWord"] = isContainKeyWord
+				if bucketPath, ok := ossMountDescsArg["bucket_path"]; ok && bucketPath.(string) != "" {
+					ossMountDescsMap["bucketPath"] = bucketPath
+				}
+
+				if mountPath, ok := ossMountDescsArg["mount_path"]; ok && mountPath.(string) != "" {
+					ossMountDescsMap["mountPath"] = mountPath
+				}
+
+				if readOnly, ok := ossMountDescsArg["read_only"]; ok {
+					ossMountDescsMap["readOnly"] = readOnly
+				}
+
+				ossMountDescsMaps = append(ossMountDescsMaps, ossMountDescsMap)
+			}
+
+			ossMountDescsJson, err := convertListMapToJsonString(ossMountDescsMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["OssMountDescs"] = StringPointer(ossMountDescsJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("config_map_mount_desc_v2") {
+		update = true
+
+		if v, ok := d.GetOk("config_map_mount_desc_v2"); ok {
+			configMapMountDescMaps := make([]map[string]interface{}, 0)
+			for _, configMapMountDesc := range v.([]interface{}) {
+				configMapMountDescMap := map[string]interface{}{}
+				configMapMountDescArg := configMapMountDesc.(map[string]interface{})
+
+				if configMapId, ok := configMapMountDescArg["config_map_id"]; ok && configMapId.(string) != "" {
+					configMapMountDescMap["configMapId"] = configMapId
+				}
+
+				if mountPath, ok := configMapMountDescArg["mount_path"]; ok && mountPath.(string) != "" {
+					configMapMountDescMap["mountPath"] = mountPath
+				}
+
+				if key, ok := configMapMountDescArg["key"]; ok && key.(string) != "" {
+					configMapMountDescMap["key"] = key
+				}
+
+				configMapMountDescMaps = append(configMapMountDescMaps, configMapMountDescMap)
+			}
+
+			configMapMountDescJson, err := convertListMapToJsonString(configMapMountDescMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["ConfigMapMountDesc"] = StringPointer(configMapMountDescJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("liveness_v2") {
+		update = true
+
+		if v, ok := d.GetOk("liveness_v2"); ok {
+			livenessMap := map[string]interface{}{}
+			for _, livenessList := range v.([]interface{}) {
+				livenessArg := livenessList.(map[string]interface{})
+
+				if initialDelaySeconds, ok := livenessArg["initial_delay_seconds"]; ok {
+					livenessMap["initialDelaySeconds"] = initialDelaySeconds
+				}
+
+				if periodSeconds, ok := livenessArg["period_seconds"]; ok {
+					livenessMap["periodSeconds"] = periodSeconds
+				}
+
+				if timeoutSeconds, ok := livenessArg["timeout_seconds"]; ok {
+					livenessMap["timeoutSeconds"] = timeoutSeconds
+				}
+
+				if exec, ok := livenessArg["exec"]; ok && len(exec.([]interface{})) > 0 {
+					execMap := map[string]interface{}{}
+					for _, execList := range exec.([]interface{}) {
+						execArg := execList.(map[string]interface{})
+
+						if command, ok := execArg["command"]; ok {
+							execMap["command"] = command
 						}
 					}
+
+					livenessMap["exec"] = execMap
 				}
 
-				livenessMap["httpGet"] = httpGetMap
-			}
-		}
+				if tcpSocket, ok := livenessArg["tcp_socket"]; ok && len(tcpSocket.([]interface{})) > 0 {
+					tcpSocketMap := map[string]interface{}{}
+					for _, tcpSocketList := range tcpSocket.([]interface{}) {
+						tcpSocketArg := tcpSocketList.(map[string]interface{})
 
-		livenessJson, err := convertMaptoJsonString(livenessMap)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["Liveness"] = StringPointer(livenessJson)
-	} else if v, ok := d.GetOk("liveness"); ok {
-		deployApplicationReq["Liveness"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("readiness_v2") || d.HasChange("readiness")) {
-		update = true
-	}
-	if v, ok := d.GetOk("readiness_v2"); ok {
-		readinessMap := map[string]interface{}{}
-		for _, readinessList := range v.([]interface{}) {
-			readinessArg := readinessList.(map[string]interface{})
-
-			if initialDelaySeconds, ok := readinessArg["initial_delay_seconds"]; ok {
-				readinessMap["initialDelaySeconds"] = initialDelaySeconds
-			}
-
-			if periodSeconds, ok := readinessArg["period_seconds"]; ok {
-				readinessMap["periodSeconds"] = periodSeconds
-			}
-
-			if timeoutSeconds, ok := readinessArg["timeout_seconds"]; ok {
-				readinessMap["timeoutSeconds"] = timeoutSeconds
-			}
-
-			if exec, ok := readinessArg["exec"]; ok && len(exec.([]interface{})) > 0 {
-				execMap := map[string]interface{}{}
-				for _, execList := range exec.([]interface{}) {
-					execArg := execList.(map[string]interface{})
-
-					if command, ok := execArg["command"]; ok {
-						execMap["command"] = command
-					}
-				}
-
-				readinessMap["exec"] = execMap
-			}
-
-			if tcpSocket, ok := readinessArg["tcp_socket"]; ok && len(tcpSocket.([]interface{})) > 0 {
-				tcpSocketMap := map[string]interface{}{}
-				for _, tcpSocketList := range tcpSocket.([]interface{}) {
-					tcpSocketArg := tcpSocketList.(map[string]interface{})
-
-					if port, ok := tcpSocketArg["port"]; ok {
-						tcpSocketMap["port"] = port
-					}
-				}
-
-				readinessMap["tcpSocket"] = tcpSocketMap
-			}
-
-			if httpGet, ok := readinessArg["http_get"]; ok && len(httpGet.([]interface{})) > 0 {
-				httpGetMap := map[string]interface{}{}
-				for _, httpGetList := range httpGet.([]interface{}) {
-					httpGetArg := httpGetList.(map[string]interface{})
-
-					if path, ok := httpGetArg["path"]; ok && path.(string) != "" {
-						httpGetMap["path"] = path
-					}
-
-					if port, ok := httpGetArg["port"]; ok {
-						httpGetMap["port"] = port
-					}
-
-					if scheme, ok := httpGetArg["scheme"]; ok && scheme.(string) != "" {
-						httpGetMap["scheme"] = scheme
-					}
-
-					if keyWord, ok := httpGetArg["key_word"]; ok && keyWord.(string) != "" {
-						httpGetMap["keyWord"] = keyWord
-
-						if isContainKeyWord, ok := d.GetOkExists("readiness_v2.0.http_get.0.is_contain_key_word"); ok {
-							httpGetMap["isContainKeyWord"] = isContainKeyWord
+						if port, ok := tcpSocketArg["port"]; ok {
+							tcpSocketMap["port"] = port
 						}
 					}
+
+					livenessMap["tcpSocket"] = tcpSocketMap
 				}
 
-				readinessMap["httpGet"] = httpGetMap
-			}
-		}
+				if httpGet, ok := livenessArg["http_get"]; ok && len(httpGet.([]interface{})) > 0 {
+					httpGetMap := map[string]interface{}{}
+					for _, httpGetList := range httpGet.([]interface{}) {
+						httpGetArg := httpGetList.(map[string]interface{})
 
-		readinessJson, err := convertMaptoJsonString(readinessMap)
-		if err != nil {
-			return WrapError(err)
-		}
+						if path, ok := httpGetArg["path"]; ok && path.(string) != "" {
+							httpGetMap["path"] = path
+						}
 
-		deployApplicationReq["Readiness"] = StringPointer(readinessJson)
-	} else if v, ok := d.GetOk("readiness"); ok {
-		deployApplicationReq["Readiness"] = StringPointer(v.(string))
-	}
+						if port, ok := httpGetArg["port"]; ok {
+							httpGetMap["port"] = port
+						}
 
-	if !d.IsNewResource() && (d.HasChange("post_start_v2") || d.HasChange("post_start")) {
-		update = true
-	}
-	if v, ok := d.GetOk("post_start_v2"); ok {
-		postStartMap := map[string]interface{}{}
-		for _, postStartList := range v.([]interface{}) {
-			postStartArg := postStartList.(map[string]interface{})
+						if scheme, ok := httpGetArg["scheme"]; ok && scheme.(string) != "" {
+							httpGetMap["scheme"] = scheme
+						}
 
-			if exec, ok := postStartArg["exec"]; ok && len(exec.([]interface{})) > 0 {
-				execMap := map[string]interface{}{}
-				for _, execList := range exec.([]interface{}) {
-					execArg := execList.(map[string]interface{})
+						if keyWord, ok := httpGetArg["key_word"]; ok && keyWord.(string) != "" {
+							httpGetMap["keyWord"] = keyWord
 
-					if command, ok := execArg["command"]; ok {
-						execMap["command"] = command
+							if isContainKeyWord, ok := d.GetOkExists("liveness_v2.0.http_get.0.is_contain_key_word"); ok {
+								httpGetMap["isContainKeyWord"] = isContainKeyWord
+							}
+						}
 					}
+
+					livenessMap["httpGet"] = httpGetMap
+				}
+			}
+
+			livenessJson, err := convertMaptoJsonString(livenessMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["Liveness"] = StringPointer(livenessJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("readiness_v2") {
+		update = true
+
+		if v, ok := d.GetOk("readiness_v2"); ok {
+			readinessMap := map[string]interface{}{}
+			for _, readinessList := range v.([]interface{}) {
+				readinessArg := readinessList.(map[string]interface{})
+
+				if initialDelaySeconds, ok := readinessArg["initial_delay_seconds"]; ok {
+					readinessMap["initialDelaySeconds"] = initialDelaySeconds
 				}
 
-				postStartMap["exec"] = execMap
-			}
-		}
-
-		postStartJson, err := convertMaptoJsonString(postStartMap)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["PostStart"] = StringPointer(postStartJson)
-	} else if v, ok := d.GetOk("post_start"); ok {
-		deployApplicationReq["PostStart"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("pre_stop_v2") || d.HasChange("pre_stop")) {
-		update = true
-	}
-	if v, ok := d.GetOk("pre_stop_v2"); ok {
-		preStopMap := map[string]interface{}{}
-		for _, preStopList := range v.([]interface{}) {
-			preStopArg := preStopList.(map[string]interface{})
-
-			if exec, ok := preStopArg["exec"]; ok && len(exec.([]interface{})) > 0 {
-				execMap := map[string]interface{}{}
-				for _, execList := range exec.([]interface{}) {
-					execArg := execList.(map[string]interface{})
-
-					if command, ok := execArg["command"]; ok {
-						execMap["command"] = command
-					}
+				if periodSeconds, ok := readinessArg["period_seconds"]; ok {
+					readinessMap["periodSeconds"] = periodSeconds
 				}
 
-				preStopMap["exec"] = execMap
-			}
-		}
-
-		preStopJson, err := convertMaptoJsonString(preStopMap)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["PreStop"] = StringPointer(preStopJson)
-	} else if v, ok := d.GetOk("pre_stop"); ok {
-		deployApplicationReq["PreStop"] = StringPointer(v.(string))
-	}
-
-	if !d.IsNewResource() && (d.HasChange("tomcat_config_v2") || d.HasChange("tomcat_config")) {
-		update = true
-	}
-	if v, ok := d.GetOk("tomcat_config_v2"); ok {
-		tomcatConfigMap := map[string]interface{}{}
-		for _, tomcatConfigList := range v.([]interface{}) {
-			tomcatConfigArg := tomcatConfigList.(map[string]interface{})
-
-			if port, ok := tomcatConfigArg["port"]; ok {
-				tomcatConfigMap["port"] = port
-			}
-
-			if maxThreads, ok := tomcatConfigArg["max_threads"]; ok {
-				tomcatConfigMap["maxThreads"] = maxThreads
-			}
-
-			if contextPath, ok := tomcatConfigArg["context_path"]; ok && contextPath.(string) != "" {
-				tomcatConfigMap["contextPath"] = contextPath
-			}
-
-			if uriEncoding, ok := tomcatConfigArg["uri_encoding"]; ok && uriEncoding.(string) != "" {
-				tomcatConfigMap["uriEncoding"] = uriEncoding
-			}
-
-			if useBodyEncodingForUri, ok := tomcatConfigArg["use_body_encoding_for_uri"]; ok && useBodyEncodingForUri.(string) != "" {
-				tomcatConfigMap["useBodyEncodingForUri"] = useBodyEncodingForUri
-			}
-		}
-
-		tomcatConfigJson, err := convertMaptoJsonString(tomcatConfigMap)
-		if err != nil {
-			return WrapError(err)
-		}
-
-		deployApplicationReq["TomcatConfig"] = StringPointer(tomcatConfigJson)
-	} else if v, ok := d.GetOk("tomcat_config"); ok {
-		deployApplicationReq["TomcatConfig"] = StringPointer(v.(string))
-	}
-
-	if d.HasChange("update_strategy_v2") || d.HasChange("update_strategy") {
-		update = true
-	}
-	if v, ok := d.GetOk("update_strategy_v2"); ok {
-		updateStrategyMap := map[string]interface{}{}
-		for _, updateStrategyList := range v.([]interface{}) {
-			updateStrategyArg := updateStrategyList.(map[string]interface{})
-
-			if updateStrategyType, ok := updateStrategyArg["type"]; ok && updateStrategyType.(string) != "" {
-				updateStrategyMap["type"] = updateStrategyType
-			}
-
-			if batchUpdate, ok := updateStrategyArg["batch_update"]; ok && len(batchUpdate.([]interface{})) > 0 {
-				batchUpdateMap := map[string]interface{}{}
-				for _, batchUpdateList := range batchUpdate.([]interface{}) {
-					batchUpdateArg := batchUpdateList.(map[string]interface{})
-
-					if releaseType, ok := batchUpdateArg["release_type"]; ok && releaseType.(string) != "" {
-						batchUpdateMap["releaseType"] = releaseType
-					}
-
-					if batch, ok := batchUpdateArg["batch"]; ok {
-						batchUpdateMap["batch"] = batch
-					}
-
-					if batchWaitTime, ok := batchUpdateArg["batch_wait_time"]; ok {
-						batchUpdateMap["batchWaitTime"] = batchWaitTime
-					}
+				if timeoutSeconds, ok := readinessArg["timeout_seconds"]; ok {
+					readinessMap["timeoutSeconds"] = timeoutSeconds
 				}
 
-				updateStrategyMap["batchUpdate"] = batchUpdateMap
+				if exec, ok := readinessArg["exec"]; ok && len(exec.([]interface{})) > 0 {
+					execMap := map[string]interface{}{}
+					for _, execList := range exec.([]interface{}) {
+						execArg := execList.(map[string]interface{})
+
+						if command, ok := execArg["command"]; ok {
+							execMap["command"] = command
+						}
+					}
+
+					readinessMap["exec"] = execMap
+				}
+
+				if tcpSocket, ok := readinessArg["tcp_socket"]; ok && len(tcpSocket.([]interface{})) > 0 {
+					tcpSocketMap := map[string]interface{}{}
+					for _, tcpSocketList := range tcpSocket.([]interface{}) {
+						tcpSocketArg := tcpSocketList.(map[string]interface{})
+
+						if port, ok := tcpSocketArg["port"]; ok {
+							tcpSocketMap["port"] = port
+						}
+					}
+
+					readinessMap["tcpSocket"] = tcpSocketMap
+				}
+
+				if httpGet, ok := readinessArg["http_get"]; ok && len(httpGet.([]interface{})) > 0 {
+					httpGetMap := map[string]interface{}{}
+					for _, httpGetList := range httpGet.([]interface{}) {
+						httpGetArg := httpGetList.(map[string]interface{})
+
+						if path, ok := httpGetArg["path"]; ok && path.(string) != "" {
+							httpGetMap["path"] = path
+						}
+
+						if port, ok := httpGetArg["port"]; ok {
+							httpGetMap["port"] = port
+						}
+
+						if scheme, ok := httpGetArg["scheme"]; ok && scheme.(string) != "" {
+							httpGetMap["scheme"] = scheme
+						}
+
+						if keyWord, ok := httpGetArg["key_word"]; ok && keyWord.(string) != "" {
+							httpGetMap["keyWord"] = keyWord
+
+							if isContainKeyWord, ok := d.GetOkExists("readiness_v2.0.http_get.0.is_contain_key_word"); ok {
+								httpGetMap["isContainKeyWord"] = isContainKeyWord
+							}
+						}
+					}
+
+					readinessMap["httpGet"] = httpGetMap
+				}
 			}
-		}
 
-		updateStrategyJson, err := convertMaptoJsonString(updateStrategyMap)
-		if err != nil {
-			return WrapError(err)
-		}
+			readinessJson, err := convertMaptoJsonString(readinessMap)
+			if err != nil {
+				return WrapError(err)
+			}
 
-		deployApplicationReq["UpdateStrategy"] = StringPointer(updateStrategyJson)
-	} else if v, ok := d.GetOk("update_strategy"); ok {
-		deployApplicationReq["UpdateStrategy"] = StringPointer(v.(string))
+			deployApplicationReq["Readiness"] = StringPointer(readinessJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("post_start_v2") {
+		update = true
+
+		if v, ok := d.GetOk("post_start_v2"); ok {
+			postStartMap := map[string]interface{}{}
+			for _, postStartList := range v.([]interface{}) {
+				postStartArg := postStartList.(map[string]interface{})
+
+				if exec, ok := postStartArg["exec"]; ok && len(exec.([]interface{})) > 0 {
+					execMap := map[string]interface{}{}
+					for _, execList := range exec.([]interface{}) {
+						execArg := execList.(map[string]interface{})
+
+						if command, ok := execArg["command"]; ok {
+							execMap["command"] = command
+						}
+					}
+
+					postStartMap["exec"] = execMap
+				}
+			}
+
+			postStartJson, err := convertMaptoJsonString(postStartMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["PostStart"] = StringPointer(postStartJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("pre_stop_v2") {
+		update = true
+
+		if v, ok := d.GetOk("pre_stop_v2"); ok {
+			preStopMap := map[string]interface{}{}
+			for _, preStopList := range v.([]interface{}) {
+				preStopArg := preStopList.(map[string]interface{})
+
+				if exec, ok := preStopArg["exec"]; ok && len(exec.([]interface{})) > 0 {
+					execMap := map[string]interface{}{}
+					for _, execList := range exec.([]interface{}) {
+						execArg := execList.(map[string]interface{})
+
+						if command, ok := execArg["command"]; ok {
+							execMap["command"] = command
+						}
+					}
+
+					preStopMap["exec"] = execMap
+				}
+			}
+
+			preStopJson, err := convertMaptoJsonString(preStopMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["PreStop"] = StringPointer(preStopJson)
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("tomcat_config_v2") {
+		update = true
+
+		if v, ok := d.GetOk("tomcat_config_v2"); ok {
+			tomcatConfigMap := map[string]interface{}{}
+			for _, tomcatConfigList := range v.([]interface{}) {
+				tomcatConfigArg := tomcatConfigList.(map[string]interface{})
+
+				if port, ok := tomcatConfigArg["port"]; ok {
+					tomcatConfigMap["port"] = port
+				}
+
+				if maxThreads, ok := tomcatConfigArg["max_threads"]; ok {
+					tomcatConfigMap["maxThreads"] = maxThreads
+				}
+
+				if contextPath, ok := tomcatConfigArg["context_path"]; ok && contextPath.(string) != "" {
+					tomcatConfigMap["contextPath"] = contextPath
+				}
+
+				if uriEncoding, ok := tomcatConfigArg["uri_encoding"]; ok && uriEncoding.(string) != "" {
+					tomcatConfigMap["uriEncoding"] = uriEncoding
+				}
+
+				if useBodyEncodingForUri, ok := tomcatConfigArg["use_body_encoding_for_uri"]; ok && useBodyEncodingForUri.(string) != "" {
+					tomcatConfigMap["useBodyEncodingForUri"] = useBodyEncodingForUri
+				}
+			}
+
+			tomcatConfigJson, err := convertMaptoJsonString(tomcatConfigMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["TomcatConfig"] = StringPointer(tomcatConfigJson)
+		}
+	}
+
+	if d.HasChange("update_strategy_v2") {
+		update = true
+
+		if v, ok := d.GetOk("update_strategy_v2"); ok {
+			updateStrategyMap := map[string]interface{}{}
+			for _, updateStrategyList := range v.([]interface{}) {
+				updateStrategyArg := updateStrategyList.(map[string]interface{})
+
+				if updateStrategyType, ok := updateStrategyArg["type"]; ok && updateStrategyType.(string) != "" {
+					updateStrategyMap["type"] = updateStrategyType
+				}
+
+				if batchUpdate, ok := updateStrategyArg["batch_update"]; ok && len(batchUpdate.([]interface{})) > 0 {
+					batchUpdateMap := map[string]interface{}{}
+					for _, batchUpdateList := range batchUpdate.([]interface{}) {
+						batchUpdateArg := batchUpdateList.(map[string]interface{})
+
+						if releaseType, ok := batchUpdateArg["release_type"]; ok && releaseType.(string) != "" {
+							batchUpdateMap["releaseType"] = releaseType
+						}
+
+						if batch, ok := batchUpdateArg["batch"]; ok {
+							batchUpdateMap["batch"] = batch
+						}
+
+						if batchWaitTime, ok := batchUpdateArg["batch_wait_time"]; ok {
+							batchUpdateMap["batchWaitTime"] = batchWaitTime
+						}
+					}
+
+					updateStrategyMap["batchUpdate"] = batchUpdateMap
+				}
+			}
+
+			updateStrategyJson, err := convertMaptoJsonString(updateStrategyMap)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			deployApplicationReq["UpdateStrategy"] = StringPointer(updateStrategyJson)
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("nas_configs") {
@@ -3000,6 +2991,86 @@ func resourceAliCloudSaeApplicationUpdate(d *schema.ResourceData, meta interface
 		}
 
 		deployApplicationReq["PvtzDiscoverySvc"] = StringPointer(pvtzDiscoverySvcJson)
+	}
+
+	if !d.IsNewResource() && d.HasChange("command_args") {
+		update = true
+
+		if v, ok := d.GetOk("command_args"); ok {
+			deployApplicationReq["CommandArgs"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("custom_host_alias") {
+		update = true
+
+		if v, ok := d.GetOk("custom_host_alias"); ok {
+			deployApplicationReq["CustomHostAlias"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("oss_mount_descs") {
+		update = true
+
+		if v, ok := d.GetOk("oss_mount_descs"); ok {
+			deployApplicationReq["OssMountDescs"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("config_map_mount_desc") {
+		update = true
+
+		if v, ok := d.GetOk("config_map_mount_desc"); ok {
+			deployApplicationReq["ConfigMapMountDesc"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("liveness") {
+		update = true
+
+		if v, ok := d.GetOk("liveness"); ok {
+			deployApplicationReq["Liveness"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("readiness") {
+		update = true
+
+		if v, ok := d.GetOk("readiness"); ok {
+			deployApplicationReq["Readiness"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("post_start") {
+		update = true
+
+		if v, ok := d.GetOk("post_start"); ok {
+			deployApplicationReq["PostStart"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("pre_stop") {
+		update = true
+
+		if v, ok := d.GetOk("pre_stop"); ok {
+			deployApplicationReq["PreStop"] = StringPointer(v.(string))
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("tomcat_config") {
+		update = true
+
+		if v, ok := d.GetOk("tomcat_config"); ok {
+			deployApplicationReq["TomcatConfig"] = StringPointer(v.(string))
+		}
+	}
+
+	if d.HasChange("update_strategy") {
+		update = true
+
+		if v, ok := d.GetOk("update_strategy"); ok {
+			deployApplicationReq["UpdateStrategy"] = StringPointer(v.(string))
+		}
 	}
 
 	if update {
