@@ -22,7 +22,7 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetInstance"
-	conn, err := client.NewAmqpClient()
+	conn, err := client.NewOnsproxyClient()
 	if err != nil {
 		return object, WrapError(err)
 	}

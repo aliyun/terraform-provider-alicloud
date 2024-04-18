@@ -5375,7 +5375,7 @@ func (client *AliyunClient) NewDfsClient() (*rpc.Client, error) {
 	return conn, nil
 }
 func (client *AliyunClient) NewAmqpClient() (*rpc.Client, error) {
-	productCode := "amqp-open"
+	productCode := "onsproxy"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
