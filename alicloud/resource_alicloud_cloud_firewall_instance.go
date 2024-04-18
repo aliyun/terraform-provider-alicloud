@@ -30,7 +30,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 3, 6, 12, 24, 36}),
+				ValidateFunc: IntInSlice([]int{0, 1, 3, 6, 12, 24, 36}),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
 						return false
@@ -41,7 +41,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"renew_period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 12, 2, 3, 6}),
+				ValidateFunc: IntInSlice([]int{0, 1, 12, 2, 3, 6}),
 				Computed:     true,
 				Deprecated:   "Attribute 'renew_period' has been deprecated since 1.209.1. Using 'renewal_duration' instead.",
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
@@ -56,7 +56,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"renewal_duration": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 12, 2, 3, 6}),
+				ValidateFunc: IntInSlice([]int{0, 1, 12, 2, 3, 6}),
 				Computed:     true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
@@ -130,7 +130,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			},
 			"ip_number": {
 				Type:         schema.TypeInt,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: IntBetween(20, 4000),
 			},
 			"cfw_log_storage": {
@@ -146,11 +146,11 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			},
 			"cfw_log": {
 				Type:     schema.TypeBool,
-				Required: true,
+				Optional: true,
 			},
 			"band_width": {
 				Type:         schema.TypeInt,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: IntBetween(10, 15000),
 			},
 			"instance_count": {
@@ -160,7 +160,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			},
 			"spec": {
 				Type:         schema.TypeString,
-				Required:     true,
+				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"premium_version", "enterprise_version", "ultimate_version"}, false),
 			},
 			"create_time": {
