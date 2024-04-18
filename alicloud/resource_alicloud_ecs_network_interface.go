@@ -13,19 +13,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudEcsNetworkInterface() *schema.Resource {
+func resourceAliCloudEcsNetworkInterface() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEcsNetworkInterfaceCreate,
-		Read:   resourceAlicloudEcsNetworkInterfaceRead,
-		Update: resourceAlicloudEcsNetworkInterfaceUpdate,
-		Delete: resourceAlicloudEcsNetworkInterfaceDelete,
+		Create: resourceAliCloudEcsNetworkInterfaceCreate,
+		Read:   resourceAliCloudEcsNetworkInterfaceRead,
+		Update: resourceAliCloudEcsNetworkInterfaceUpdate,
+		Delete: resourceAliCloudEcsNetworkInterfaceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
 			Update: schema.DefaultTimeout(1 * time.Minute),
+			Delete: schema.DefaultTimeout(1 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"description": {
@@ -167,11 +167,23 @@ func resourceAlicloudEcsNetworkInterface() *schema.Resource {
 				Elem:          &schema.Schema{Type: schema.TypeString},
 				ConflictsWith: []string{"ipv4_prefix_count", "private_ip_addresses", "secondary_private_ip_address_count", "private_ip_addresses", "private_ips_count"},
 			},
+			"instance_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"network_interface_traffic_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
 
-func resourceAlicloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	var response map[string]interface{}
@@ -246,6 +258,15 @@ func resourceAlicloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 	if v, ok := d.GetOkExists("ipv4_prefix_count"); ok {
 		request["Ipv4PrefixCount"] = v
 	}
+
+	if v, ok := d.GetOk("instance_type"); ok {
+		request["InstanceType"] = v
+	}
+
+	if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
+		request["NetworkInterfaceTrafficMode"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -269,9 +290,10 @@ func resourceAlicloudEcsNetworkInterfaceCreate(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudEcsNetworkInterfaceRead(d, meta)
+	return resourceAliCloudEcsNetworkInterfaceRead(d, meta)
 }
-func resourceAlicloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	object, err := ecsService.DescribeEcsNetworkInterface(d.Id())
@@ -327,9 +349,13 @@ func resourceAlicloudEcsNetworkInterfaceRead(d *schema.ResourceData, meta interf
 	}
 
 	d.Set("vswitch_id", object["VSwitchId"])
+	d.Set("instance_type", object["Type"])
+	d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
+
 	return nil
 }
-func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewEcsClient()
 	if err != nil {
@@ -924,9 +950,10 @@ func resourceAlicloudEcsNetworkInterfaceUpdate(d *schema.ResourceData, meta inte
 		d.SetPartial("ipv4_prefix_count")
 		d.SetPartial("ipv4_prefixes")
 	}
-	return resourceAlicloudEcsNetworkInterfaceRead(d, meta)
+	return resourceAliCloudEcsNetworkInterfaceRead(d, meta)
 }
-func resourceAlicloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudEcsNetworkInterfaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	action := "DeleteNetworkInterface"

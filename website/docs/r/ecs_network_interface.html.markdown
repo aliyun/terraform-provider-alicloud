@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud ECS Network Interface resource.
 ---
 
-# alicloud\_ecs\_network\_interface
+# alicloud_ecs_network_interface
 
 Provides a ECS Network Interface resource.
 
@@ -63,7 +63,6 @@ resource "alicloud_ecs_network_interface" "default" {
   }
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
-
 ```
 
 ## Argument Reference
@@ -71,24 +70,26 @@ resource "alicloud_ecs_network_interface" "default" {
 The following arguments are supported:
 
 * `description` - (Optional) The description of the ENI. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
-* `name` - (Optional, Computed, Deprecated from v1.123.1+) Field `name` has been deprecated from provider version 1.123.1. New field `network_interface_name` instead
-* `network_interface_name` - (Optional, Computed) The name of the ENI. The name must be 2 to 128 characters in length, and can contain letters, digits, colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
-* `primary_ip_address` - (Optional, Computed, ForceNew) The primary private IP address of the ENI. The specified IP address must be available within the CIDR block of the VSwitch. If this parameter is not specified, an available IP address is assigned from the VSwitch CIDR block at random.
-* `private_ip` - (Optional, Computed, ForceNew, Deprecated from v1.123.1+) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
-* `private_ip_addresses` - (Optional, Computed) Specifies secondary private IP address N of the ENI. This IP address must be an available IP address within the CIDR block of the VSwitch to which the ENI belongs.
-* `private_ips` - (Optional, Computed, Deprecated from v1.123.1+) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead
-* `private_ips_count` - (Optional, Computed, Deprecated from v1.123.1+) Field `private_ips_count` has been deprecated from provider version 1.123.1. New field `secondary_private_ip_address_count` instead
-* `queue_number` - (Optional, Computed) The queue number of the ENI.
+* `network_interface_name` - (Optional) The name of the ENI. The name must be 2 to 128 characters in length, and can contain letters, digits, colons (:), underscores (_), and hyphens (-). It must start with a letter and cannot start with http:// or https://.
+* `primary_ip_address` - (Optional, ForceNew) The primary private IP address of the ENI. The specified IP address must be available within the CIDR block of the VSwitch. If this parameter is not specified, an available IP address is assigned from the VSwitch CIDR block at random.
+* `private_ip_addresses` - (Optional, List) Specifies secondary private IP address N of the ENI. This IP address must be an available IP address within the CIDR block of the VSwitch to which the ENI belongs.
+* `queue_number` - (Optional, Int) The queue number of the ENI.
 * `resource_group_id` - (Optional, ForceNew) The resource group id.
-* `secondary_private_ip_address_count` - (Optional, Computed) The number of private IP addresses that can be automatically created by ECS.
-* `security_group_ids` - (Optional, Computed) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
-* `security_groups` - (Optional, Computed, Deprecated from v1.123.1+) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
+* `secondary_private_ip_address_count` - (Optional, Int) The number of private IP addresses that can be automatically created by ECS.
+* `security_group_ids` - (Optional, List) The ID of security group N. The security groups and the ENI must belong to the same VPC. The valid values of N are based on the maximum number of security groups to which an ENI can be added.
 * `vswitch_id` - (Required, ForceNew) The ID of the VSwitch in the specified VPC. The private IP addresses assigned to the ENI must be available IP addresses within the CIDR block of the VSwitch.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `ipv6_address_count` - (Optional, Computed, Available in 1.193.0+) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
-* `ipv6_addresses` - (Optional, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
-* `ipv4_prefix_count` - (Optional, Computed, Available in 1.213.0+) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
-* `ipv4_prefixes` - (Optional, Computed, Available in 1.213.0+) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
+* `ipv6_address_count` - (Optional, Int, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
+* `ipv6_addresses` - (Optional, List, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
+* `ipv4_prefix_count` - (Optional, Int, Available since v1.213.0) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
+* `ipv4_prefixes` - (Optional, List, Available since v1.213.0) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
+* `instance_type` - (Optional, ForceNew, Available since v1.222.1) The type of the ENI. Default value: `Secondary`. Valid values: `Secondary`, `Trunk`.
+* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.222.1) The communication mode of the ENI. Default value: `Standard`. Valid values: `Standard`, `HighPerformance`.
+* `name` - (Optional, Deprecated since v1.123.1) Field `name` has been deprecated from provider version 1.123.1. New field `network_interface_name` instead
+* `private_ip` - (Optional, ForceNew, Deprecated since v1.123.1) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
+* `private_ips` - (Optional, List, Deprecated since v1.123.1) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead
+* `private_ips_count` - (Optional, Int, Deprecated since v1.123.1) Field `private_ips_count` has been deprecated from provider version 1.123.1. New field `secondary_private_ip_address_count` instead
+* `security_groups` - (Optional, List, Deprecated since v1.123.1) Field `security_groups` has been deprecated from provider version 1.123.1. New field `security_group_ids` instead
 
 ## Attributes Reference
 
@@ -103,8 +104,8 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 2 mins) Used when create the Network Interface.
-* `delete` - (Defaults to 1 mins) Used when delete the Network Interface.
 * `update` - (Defaults to 1 mins) Used when update the Network Interface.
+* `delete` - (Defaults to 1 mins) Used when delete the Network Interface.
 
 ## Import
 
