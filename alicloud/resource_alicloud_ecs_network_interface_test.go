@@ -145,7 +145,6 @@ func TestAccAliCloudECSNetworkInterface_basic(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -463,7 +462,6 @@ func TestAccAliCloudECSNetworkInterface_ipv4_prefix_address(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
@@ -540,24 +538,25 @@ func TestAccAliCloudECSNetworkInterface_ipv4_prefix_count(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"network_interface_name": name,
-					"vswitch_id":             "${alicloud_vswitch.default.id}",
-					"security_group_ids":     []string{"${alicloud_security_group.default.id}"},
-					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"network_interface_name":         name,
+					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"security_group_ids":             []string{"${alicloud_security_group.default.id}"},
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"network_interface_traffic_mode": "HighPerformance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"network_interface_name": CHECKSET,
-						"vswitch_id":             CHECKSET,
-						"security_group_ids.#":   "1",
-						"resource_group_id":      CHECKSET,
+						"network_interface_name":         CHECKSET,
+						"vswitch_id":                     CHECKSET,
+						"security_group_ids.#":           "1",
+						"resource_group_id":              CHECKSET,
+						"network_interface_traffic_mode": "HighPerformance",
 					}),
 				),
 			},
@@ -755,6 +754,7 @@ func TestAccAliCloudECSNetworkInterface_basic3(t *testing.T) {
 					"security_groups":      []string{"${alicloud_security_group.default.id}"},
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"description":          name,
+					"instance_type":        "Trunk",
 					"private_ip_addresses": []string{fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand), fmt.Sprintf("${cidrhost(alicloud_vswitch.default.cidr_block, %d)}", rand+1)},
 					"tags": map[string]string{
 						"Created": "TF-update",
@@ -768,6 +768,7 @@ func TestAccAliCloudECSNetworkInterface_basic3(t *testing.T) {
 						"security_groups.#":      "1",
 						"resource_group_id":      CHECKSET,
 						"description":            name,
+						"instance_type":          "Trunk",
 						"private_ip_addresses.#": "2",
 						"tags.%":                 "2",
 						"tags.Created":           "TF-update",
@@ -800,7 +801,6 @@ func TestAccAliCloudECSNetworkInterface_basic4(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
