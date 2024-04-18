@@ -179,7 +179,7 @@ func resourceAliCloudAmqpInstanceCreate(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewAmqpClient()
+	conn, err := client.NewOnsproxyClient()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -395,7 +395,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	update = false
 	action = "UpdateInstanceName"
-	conn, err = client.NewAmqpClient()
+	conn, err = client.NewOnsproxyClient()
 	if err != nil {
 		return WrapError(err)
 	}
@@ -431,7 +431,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	}
 	update = false
 	action = "UpdateInstance"
-	conn, err = client.NewAmqpClient()
+	conn, err = client.NewOnsproxyClient()
 	if err != nil {
 		return WrapError(err)
 	}
