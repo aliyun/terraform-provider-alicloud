@@ -22,13 +22,13 @@ import (
 func TestAccAliCloudECSNetworkInterfaceAttachmentBasic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceAttachmentMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsNetworkInterfaceAttachmentMap)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccAlicloudEcsNetworkInterfaceAttachment%d", rand)
+	name := fmt.Sprintf("tf-testAccAliCloudEcsNetworkInterfaceAttachment%d", rand)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -56,13 +56,13 @@ func TestAccAliCloudECSNetworkInterfaceAttachmentBasic(t *testing.T) {
 func TestAccAliCloudECSNetworkInterfaceAttachmentMulti(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_network_interface_attachment.default.1"
-	ra := resourceAttrInit(resourceId, AlicloudEcsNetworkInterfaceAttachmentMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsNetworkInterfaceAttachmentMap)
 	rc := resourceCheckInit(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	})
 	rac := resourceAttrCheckInit(rc, ra)
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testAccAlicloudEcsNetworkInterfaceAttachment%d", rand)
+	name := fmt.Sprintf("tf-testAccAliCloudEcsNetworkInterfaceAttachment%d", rand)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -82,7 +82,7 @@ func TestAccAliCloudECSNetworkInterfaceAttachmentMulti(t *testing.T) {
 	})
 }
 
-var AlicloudEcsNetworkInterfaceAttachmentMap = map[string]string{
+var AliCloudEcsNetworkInterfaceAttachmentMap = map[string]string{
 	"network_interface_id": CHECKSET,
 	"instance_id":          CHECKSET,
 }
@@ -230,7 +230,7 @@ func AliCloudEcsNetworkInterfaceAttachmentBasicDependenceMulti(name string) stri
 `, name)
 }
 
-func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
+func TestUnitAliCloudECSNetworkInterfaceAttachment(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_network_interface_attachment"].Schema).Data(nil, nil)
@@ -328,7 +328,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentCreate(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -345,7 +345,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentCreate(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -363,7 +363,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -382,7 +382,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentUpdate(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -397,7 +397,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -414,7 +414,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -435,7 +435,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 		patcheDescribeVpcIpv6EgressRule := gomonkey.ApplyMethod(reflect.TypeOf(&EcsService{}), "DescribeEcsNetworkInterface", func(*EcsService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeVpcIpv6EgressRule.Reset()
 		assert.NotNil(t, err)
@@ -454,7 +454,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -471,7 +471,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentRead(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -487,7 +487,7 @@ func TestUnitAlicloudECSNetworkInterfaceAttachment(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsNetworkInterfaceAttachmentRead(d, rawClient)
+		err := resourceAliCloudEcsNetworkInterfaceAttachmentRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

@@ -1305,7 +1305,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddoscoo_port":                                          resourceAlicloudDdoscooPort(),
 			"alicloud_slb_load_balancer":                                     resourceAlicloudSlbLoadBalancer(),
 			"alicloud_ecs_network_interface":                                 resourceAlicloudEcsNetworkInterface(),
-			"alicloud_ecs_network_interface_attachment":                      resourceAlicloudEcsNetworkInterfaceAttachment(),
+			"alicloud_ecs_network_interface_attachment":                      resourceAliCloudEcsNetworkInterfaceAttachment(),
 			"alicloud_config_aggregator":                                     resourceAlicloudConfigAggregator(),
 			"alicloud_config_aggregate_config_rule":                          resourceAlicloudConfigAggregateConfigRule(),
 			"alicloud_config_aggregate_compliance_pack":                      resourceAliCloudConfigAggregateCompliancePack(),
