@@ -422,7 +422,7 @@ func TestAccAliCloudECSSecurityGroup_basic1_twin(t *testing.T) {
 
 func TestAccAliCloudECSSecurityGroupMulti(t *testing.T) {
 	var v ecs.DescribeSecurityGroupAttributeResponse
-	resourceId := "alicloud_security_group.default.9"
+	resourceId := "alicloud_security_group.default"
 	ra := resourceAttrInit(resourceId, testAccCheckSecurityBasicMap)
 	serviceFunc := func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -432,6 +432,7 @@ func TestAccAliCloudECSSecurityGroupMulti(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sSecurityGroupName%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudECSSecurityGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -440,7 +441,18 @@ func TestAccAliCloudECSSecurityGroupMulti(t *testing.T) {
 		CheckDestroy: testAccCheckSecurityGroupDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccCheckSecurityGroupConfigMulti(name),
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":              "${alicloud_vpc.vpc.id}",
+					"security_group_type": "normal",
+					"name":                name,
+					"description":         name + "_describe",
+					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"inner_access":        "false",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "SecurityGroup",
+					},
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
 				),
@@ -496,5 +508,18 @@ func AliCloudECSSecurityGroupBasicDependence0(name string) string {
 	data "alicloud_vpcs" "default" {
   		name_regex = "default-NODELETING"
 	}
+	
+	resource "alicloud_vpc" "vpc" {
+  		vpc_name   = "${var.name}_vpc"
+  		cidr_block = "10.1.0.0/21"
+	}
+
+	resource "alicloud_security_group" "group" {
+        count = 10
+  		name   = var.name
+  		vpc_id = alicloud_vpc.vpc.id
+	}
+	
+	
 `, name)
 }
