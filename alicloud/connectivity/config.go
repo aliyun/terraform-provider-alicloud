@@ -3,10 +3,8 @@ package connectivity
 import (
 	"fmt"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	openapiutil "github.com/alibabacloud-go/openapi-util/service"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
-
 	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"regexp"
@@ -17,6 +15,7 @@ import (
 	"net/http"
 	"strings"
 
+	sts20150401 "github.com/alibabacloud-go/sts-20150401/v2/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
@@ -253,6 +252,75 @@ func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
 	return credentials.NewAccessKeyCredential(c.AccessKey, c.SecretKey)
 }
 
+func (c *Config) setAuthByAssumeRole() (err error) {
+	if c.AccessKey == "" || c.RamRoleArn == "" {
+		return
+	}
+	config := &openapi.Config{
+		RegionId:        tea.String(c.RegionId),
+		AccessKeyId:     tea.String(c.AccessKey),
+		AccessKeySecret: tea.String(c.SecretKey),
+		Endpoint:        tea.String(c.StsEndpoint),
+		UserAgent:       tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+		Protocol:        tea.String(c.Protocol),
+		ReadTimeout:     tea.Int(c.ClientReadTimeout),
+		ConnectTimeout:  tea.Int(c.ClientConnectTimeout),
+		MaxIdleConns:    tea.Int(500),
+	}
+	if c.SecurityToken != "" {
+		config.SecurityToken = tea.String(c.SecurityToken)
+	}
+
+	query := map[string]*string{
+		"AcceptLanguage": tea.String("en-US"),
+	}
+	if c.SourceIp != "" {
+		query["SourceIp"] = tea.String(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		query["SecureTransport"] = tea.String(c.SecureTransport)
+	}
+
+	param := &openapi.GlobalParameters{Queries: query}
+	config.GlobalParameters = param
+	stsClient, err := sts20150401.NewClient(config)
+	if err != nil {
+		return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
+	}
+
+	request := &sts20150401.AssumeRoleRequest{
+		RoleArn:         tea.String(c.RamRoleArn),
+		RoleSessionName: tea.String(c.RamRoleSessionName),
+	}
+	if c.RamRolePolicy != "" {
+		request.Policy = tea.String(c.RamRolePolicy)
+	}
+	if c.RamRoleSessionExpiration != 0 {
+		request.DurationSeconds = tea.Int64(int64(c.RamRoleSessionExpiration))
+	}
+	if c.RamRoleExternalId != "" {
+		request.ExternalId = tea.String(c.RamRoleExternalId)
+	}
+
+	runtime := &util.RuntimeOptions{}
+	var response *sts20150401.AssumeRoleResponse
+	maxRetries := 5
+	for i := 0; i <= maxRetries; i++ {
+		response, err = stsClient.AssumeRoleWithOptions(request, runtime)
+		if err != nil {
+			if needRetry(err) && i < maxRetries {
+				time.Sleep(time.Duration(i))
+				continue
+			}
+			return fmt.Errorf("refreshing credential failed by AssumeRole. Error: %v", err)
+		}
+		break
+	}
+
+	c.AccessKey, c.SecretKey, c.SecurityToken = *response.Body.Credentials.AccessKeyId, *response.Body.Credentials.AccessKeySecret, *response.Body.Credentials.SecurityToken
+	return nil
+}
+
 // setAuthCredentialByEcsRoleName aims to access meta to get sts credential
 // Actually, the job should be done by sdk, but currently not all resources and products support alibaba-cloud-sdk-go,
 // and their go sdk does support ecs role name.
@@ -325,81 +393,64 @@ func (c *Config) setAuthCredentialByEcsRoleName() (err error) {
 // Actually, the job should be done by sdk, but currently not sdk support it, like alibaba-cloud-sdk-go.
 // TODO：the provider can consider implementing all of credential type as an alternative to the SDK.
 func (c *Config) setAuthCredentialByOidc() (err error) {
-	if c.AccessKey == "" || c.SecurityToken != "" || c.AssumeRoleWithOidc == nil {
+	if c.AccessKey != "" || c.AssumeRoleWithOidc == nil {
 		return
 	}
 	config := &openapi.Config{
-		AccessKeyId:     tea.String(c.AccessKey),
-		AccessKeySecret: tea.String(c.SecretKey),
-		UserAgent:       tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+		RegionId:       tea.String(c.RegionId),
+		Endpoint:       tea.String(c.StsEndpoint),
+		UserAgent:      tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+		Protocol:       tea.String(c.Protocol),
+		ReadTimeout:    tea.Int(c.ClientReadTimeout),
+		ConnectTimeout: tea.Int(c.ClientConnectTimeout),
+		MaxIdleConns:   tea.Int(500),
 	}
-	config.Endpoint = tea.String(fmt.Sprintf("sts.%s.aliyuncs.com", c.RegionId))
-	stsClient, err := openapi.NewClient(config)
+	query := map[string]*string{
+		"AcceptLanguage": tea.String("en-US"),
+	}
+	if c.SourceIp != "" {
+		query["SourceIp"] = tea.String(c.SourceIp)
+	}
+	if c.SecureTransport != "" {
+		query["SecureTransport"] = tea.String(c.SecureTransport)
+	}
+
+	param := &openapi.GlobalParameters{Queries: query}
+	config.GlobalParameters = param
+	stsClient, err := sts20150401.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
 	}
-	params := &openapi.Params{
-		Action:      tea.String("AssumeRoleWithOIDC"),
-		Version:     tea.String("2015-04-01"),
-		Protocol:    tea.String("HTTPS"),
-		Method:      tea.String("POST"),
-		AuthType:    tea.String("AK"),
-		Style:       tea.String("RPC"),
-		Pathname:    tea.String("/"),
-		ReqBodyType: tea.String("json"),
-		BodyType:    tea.String("json"),
-	}
 
-	queries := map[string]interface{}{}
-	queries["OIDCProviderArn"] = tea.String(c.AssumeRoleWithOidc.OIDCProviderArn)
-	queries["RoleArn"] = tea.String(c.AssumeRoleWithOidc.RoleARN)
-	queries["OIDCToken"] = tea.String(c.AssumeRoleWithOidc.OIDCToken)
-	queries["RoleSessionName"] = tea.String(c.AssumeRoleWithOidc.RoleSessionName)
+	request := &sts20150401.AssumeRoleWithOIDCRequest{
+		OIDCProviderArn: tea.String(c.AssumeRoleWithOidc.OIDCProviderArn),
+		RoleArn:         tea.String(c.AssumeRoleWithOidc.RoleARN),
+		OIDCToken:       tea.String(c.AssumeRoleWithOidc.OIDCToken),
+		RoleSessionName: tea.String(c.AssumeRoleWithOidc.RoleSessionName),
+	}
 	if c.AssumeRoleWithOidc.Policy != "" {
-		queries["Policy"] = tea.String(c.AssumeRoleWithOidc.Policy)
+		request.Policy = tea.String(c.AssumeRoleWithOidc.Policy)
 	}
 	if c.AssumeRoleWithOidc.DurationSeconds != 0 {
-		queries["DurationSeconds"] = tea.Int(c.AssumeRoleWithOidc.DurationSeconds)
-	}
-	// runtime options
-	runtime := &util.RuntimeOptions{}
-	request := &openapi.OpenApiRequest{
-		Query: openapiutil.Query(queries),
+		request.DurationSeconds = tea.Int64(int64(c.AssumeRoleWithOidc.DurationSeconds))
 	}
 
-	var response map[string]interface{}
+	runtime := &util.RuntimeOptions{}
+	var response *sts20150401.AssumeRoleWithOIDCResponse
 	maxRetries := 5
 	for i := 0; i <= maxRetries; i++ {
-		response, err = stsClient.CallApi(params, request, runtime)
+		response, err = stsClient.AssumeRoleWithOIDCWithOptions(request, runtime)
 		if err != nil {
 			if needRetry(err) && i < maxRetries {
 				time.Sleep(time.Duration(i))
 				continue
 			}
-			return fmt.Errorf("refreshing credential failed by AssumeRoleWithOidc. Error: %v", err)
+			return fmt.Errorf("refreshing credential failed by AssumeRole. Error: %v", err)
 		}
 		break
 	}
-	if response == nil || response["body"] == nil || response["body"].(map[string]interface{})["Credentials"] == nil {
-		return fmt.Errorf("refreshing credential failed by AssumeRoleWithOidc. Response: %v", response)
-	}
 
-	creds := response["body"].(map[string]interface{})["Credentials"].(map[string]interface{})
-	accessKeyId := creds["AccessKeyId"]
-	if accessKeyId == nil {
-		return fmt.Errorf("refreshing access key id by oidc failed. Access key id is empty")
-	}
-	accessKeySecret := creds["AccessKeySecret"]
-	if accessKeySecret == nil {
-		return fmt.Errorf("refreshing access key secret by oidc failed. Access key secret is empty")
-	}
-	securityToken := creds["SecurityToken"]
-	if securityToken == nil {
-		return fmt.Errorf("refreshing security token by oidc failed. Security token is empty")
-	}
-
-	c.AccessKey, c.SecretKey, c.SecurityToken = accessKeyId.(string), accessKeySecret.(string), securityToken.(string)
-
+	c.AccessKey, c.SecretKey, c.SecurityToken = *response.Body.Credentials.AccessKeyId, *response.Body.Credentials.AccessKeySecret, *response.Body.Credentials.SecurityToken
 	return nil
 }
 func needRetry(err error) bool {
@@ -425,7 +476,10 @@ func (c *Config) RefreshAuthCredential() error {
 	if err := c.setAuthCredentialByEcsRoleName(); err != nil {
 		return err
 	}
-	return c.setAuthCredentialByOidc()
+	if err := c.setAuthCredentialByOidc(); err != nil {
+		return err
+	}
+	return c.setAuthByAssumeRole()
 }
 
 func (c *Config) getTeaDslSdkConfig(stsSupported bool) (config rpc.Config, err error) {

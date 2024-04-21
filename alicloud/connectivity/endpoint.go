@@ -122,6 +122,13 @@ func hasLocalEndpoint() bool {
 	return len(data) > 0
 }
 
+func LoadRegionalEndpoint(region string, serviceCode string) string {
+	if region == "" || serviceCode == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s.%s.aliyuncs.com", serviceCode, region)
+}
+
 func loadEndpoint(region string, serviceCode ServiceCode) string {
 	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", string(serviceCode))))
 	if endpoint != "" {

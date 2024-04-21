@@ -42,6 +42,7 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.0.6
 	github.com/alibabacloud-go/fc-open-20210406/v2 v2.0.7
 	github.com/alibabacloud-go/openapi-util v0.1.0
+	github.com/alibabacloud-go/sts-20150401/v2 v2.0.2
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.5
 	github.com/blues/jsonata-go v1.5.4
 	github.com/tidwall/sjson v1.2.5
