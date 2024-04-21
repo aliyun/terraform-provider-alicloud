@@ -198,12 +198,12 @@ provider "alicloud" {
 If provided with a role ARN and a token from a service account OpenID Connect (OIDC),
 the Alibaba CLoud Provider will attempt to assume this role using the supplied credentials.
 
+**NOTE:** Assuming-Role-With-OIDC is a no-AK auth type, and there is no need setting access_key and secret_key while using it.
+
 Usage:
 
 ```terraform
 provider "alicloud" {
-  access_key = "<One-AccessKeyId-With-Accessing-AssumeRoleWithOIDC-Policy>"
-  secret_key = "<One-AccessKeySecret-With-Accessing-AssumeRoleWithOIDC-Policy>"
   assume_role_with_oidc {
     oidc_provider_arn = "acs:ram::ACCOUNT_ID:oidc-provider/ROLE_NAME"
     role_arn          = "acs:ram::ACCOUNT_ID:role/ROLE_NAME"

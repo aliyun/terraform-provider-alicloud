@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,11 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/google/uuid"
@@ -1812,10 +1808,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 			config.AssumeRoleWithOidc.RoleARN, config.AssumeRoleWithOidc.RoleSessionName, config.AssumeRoleWithOidc.DurationSeconds, config.AssumeRoleWithOidc.OIDCProviderArn)
 	}
 
-	if err := config.RefreshAuthCredential(); err != nil {
-		return nil, err
-	}
-
 	endpointsSet := d.Get("endpoints").(*schema.Set)
 	var endpointInit sync.Map
 	config.Endpoints = &endpointInit
@@ -1961,26 +1953,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.CassandraEndpoint = strings.TrimSpace(endpoints["cassandra"].(string))
 	}
 
-	var signVersion sync.Map
-	config.SignVersion = &signVersion
-	for _, version := range d.Get("sign_version").(*schema.Set).List() {
-		for key, val := range version.(map[string]interface{}) {
-			signVersion.Store(key, val)
-		}
-	}
-
-	if config.RamRoleArn != "" {
-		config.AccessKey, config.SecretKey, config.SecurityToken, err = getAssumeRoleAK(config)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if (config.AccessKey == "" || config.SecretKey == "") && config.EcsRoleName == "" {
-		return nil, fmt.Errorf("configuring Terraform Alibaba Cloud Provider: no valid credential sources for Terraform Alibaba Cloud Provider found.\n\n%s",
-			"Please see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication\n"+
-				"for more information about providing credentials.")
-	}
-
 	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
 		config.OtsInstanceName = strings.TrimSpace(ots_instance_name.(string))
 	}
@@ -1998,6 +1970,9 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 
 	if fcEndpoint, ok := d.GetOk("fc"); ok && fcEndpoint.(string) != "" {
 		config.FcEndpoint = strings.TrimSpace(fcEndpoint.(string))
+	}
+	if config.StsEndpoint == "" {
+		config.StsEndpoint = connectivity.LoadRegionalEndpoint(config.RegionId, "sts")
 	}
 
 	configurationSources := []string{
@@ -2026,6 +2001,24 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		}
 	}
 	config.ConfigurationSource = strings.Join(configurationSources, " ") + getModuleAddr()
+
+	var signVersion sync.Map
+	config.SignVersion = &signVersion
+	for _, version := range d.Get("sign_version").(*schema.Set).List() {
+		for key, val := range version.(map[string]interface{}) {
+			signVersion.Store(key, val)
+		}
+	}
+
+	if err := config.RefreshAuthCredential(); err != nil {
+		return nil, err
+	}
+
+	if config.AccessKey == "" || config.SecretKey == "" {
+		return nil, fmt.Errorf("configuring Terraform Alibaba Cloud Provider: no valid credential sources for Terraform Alibaba Cloud Provider found.\n\n%s",
+			"Please see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#authentication\n"+
+				"for more information about providing credentials.")
+	}
 
 	client, err := config.Client()
 	if err != nil {
@@ -3511,41 +3504,6 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 	}
 
 	return providerConfig[ProfileKey], nil
-}
-
-func getAssumeRoleAK(config *connectivity.Config) (string, string, string, error) {
-
-	request := sts.CreateAssumeRoleRequest()
-	request.RoleArn = config.RamRoleArn
-	request.RoleSessionName = config.RamRoleSessionName
-	request.DurationSeconds = requests.NewInteger(config.RamRoleSessionExpiration)
-	request.Policy = config.RamRolePolicy
-	if config.RamRoleExternalId != "" {
-		request.ExternalId = config.RamRoleExternalId
-	}
-	request.Scheme = "https"
-	request.Domain = config.StsEndpoint
-
-	var client *sts.Client
-	var err error
-	if config.SecurityToken == "" {
-		client, err = sts.NewClientWithAccessKey(config.RegionId, config.AccessKey, config.SecretKey)
-	} else {
-		client, err = sts.NewClientWithStsToken(config.RegionId, config.AccessKey, config.SecretKey, config.SecurityToken)
-	}
-
-	if err != nil {
-		return "", "", "", err
-	}
-
-	client.SourceIp = config.SourceIp
-	client.SecureTransport = config.SecureTransport
-	response, err := client.AssumeRole(request)
-	if err != nil {
-		return "", "", "", err
-	}
-
-	return response.Credentials.AccessKeyId, response.Credentials.AccessKeySecret, response.Credentials.SecurityToken, nil
 }
 
 func getAssumeRoleWithOIDCConfig(tfMap map[string]interface{}) (*connectivity.AssumeRoleWithOidc, error) {
