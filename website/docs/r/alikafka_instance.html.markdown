@@ -100,7 +100,7 @@ The following arguments are supported:
 * `kms_key_id` - (Optional, ForceNew, Available since v1.180.0) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance.
 * `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
-* `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
+* `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format. **NOTE**: When the available zone is insufficient, another availability zone may be deployed.
 * `selected_zones` - (Optional, Available since v1.195.0) The zones among which you want to deploy the instance.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
