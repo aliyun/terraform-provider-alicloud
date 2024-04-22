@@ -256,12 +256,13 @@ func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 	} else if v, ok := d.GetOk("availability_zone"); ok {
 		request["ZoneId"] = v
 	}
+	request["ClientToken"] = buildClientToken(action)
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"UnknownError"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"UnknownError", "LastTokenProcessing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
