@@ -1,31 +1,33 @@
-## 1.222.0 (Unreleased)
+## 1.223.0 (Unreleased)
+## 1.222.0 (April 23, 2024)
 
-- **New Resource:** `alicloud_oss_bucket_versioning` [GH-7174]
-- **New Resource:** `alicloud_oss_bucket_request_payment` [GH-7174]
-- **New Resource:** `alicloud_oss_bucket_server_side_encryption` [GH-7174]
-- **New Resource:** `alicloud_oss_bucket_logging` [GH-7174]
+- **New Resource:** `alicloud_oss_bucket_versioning` ([#7174](https://github.com/aliyun/terraform-provider-alicloud/issues/7174))
+- **New Resource:** `alicloud_oss_bucket_request_payment` ([#7174](https://github.com/aliyun/terraform-provider-alicloud/issues/7174))
+- **New Resource:** `alicloud_oss_bucket_server_side_encryption` ([#7174](https://github.com/aliyun/terraform-provider-alicloud/issues/7174))
+- **New Resource:** `alicloud_oss_bucket_logging` ([#7174](https://github.com/aliyun/terraform-provider-alicloud/issues/7174))
 
 ENHANCEMENTS:
 
-- provider: improves the assume role with oidc by removing checking access key. [GH-7172]
-- resource/alicloud_db_instance: add new attribute db_param_group_id. [GH-7091]
-- resource/alicloud_cs_kubernetes_permissions: modify sdk. [GH-7100]
-- resource/alicloud_cs_*: add retry for general error scenario; data-source/alicloud_cs_*: add retry for general error scenario and fix testcases. [GH-7123]
-- resource/alicloud_ecs_disk_attachment: add retry for DisksDetachingOnEcsExceeded in DetachDisk. [GH-7152]
-- resource/alicloud_api_gateway_group: update description as optional. [GH-7158]
-- resource/alicloud_sddp_rule: Improved alicloud_sddp_rule testcase. [GH-7159]
-- resource/alicloud_alb_server_group: check StickySessionConfig before set. [GH-7163]
-- resource/alicloud_ess_scaling_rule: support PredictiveScalingRule and add attributes of predictive_scaling_mode, initial_max_size, predictive_value_behavior, predictive_value_buffer, predictive_task_buffer_time. [GH-7164]
-- resource/alicloud_cloud_firewall_instance: update ip_number, cfw_log, band_width, spec as Optional. [GH-7166]
-- resource/alicloud_ecs_disk: Add idempotent parameters and retry code for CreateDisk. [GH-7173]
-- data-source/alicloud_instance_types: Support filter instance_type. [GH-7160]
-- docs: optimize description for alicloud_oss_bucket_referer. [GH-7161]
-- docs: optimize description for alicloud_alikafka_instance. [GH-7175]
+- provider: improves the assume role with oidc by removing checking access key. ([#7172](https://github.com/aliyun/terraform-provider-alicloud/issues/7172))
+- resource/alicloud_db_instance: add new attribute db_param_group_id. ([#7091](https://github.com/aliyun/terraform-provider-alicloud/issues/7091))
+- resource/alicloud_cs_kubernetes_permissions: modify sdk. ([#7100](https://github.com/aliyun/terraform-provider-alicloud/issues/7100))
+- resource/alicloud_cs_*: add retry for general error scenario; data-source/alicloud_cs_*: add retry for general error scenario and fix testcases. ([#7123](https://github.com/aliyun/terraform-provider-alicloud/issues/7123))
+- resource/alicloud_ecs_disk_attachment: add retry for DisksDetachingOnEcsExceeded in DetachDisk. ([#7152](https://github.com/aliyun/terraform-provider-alicloud/issues/7152))
+- resource/alicloud_api_gateway_group: update description as optional. ([#7158](https://github.com/aliyun/terraform-provider-alicloud/issues/7158))
+- resource/alicloud_sddp_rule: Improved alicloud_sddp_rule testcase. ([#7159](https://github.com/aliyun/terraform-provider-alicloud/issues/7159))
+- resource/alicloud_alb_server_group: check StickySessionConfig before set. ([#7163](https://github.com/aliyun/terraform-provider-alicloud/issues/7163))
+- resource/alicloud_ess_scaling_rule: support PredictiveScalingRule and add attributes of predictive_scaling_mode, initial_max_size, predictive_value_behavior, predictive_value_buffer, predictive_task_buffer_time. ([#7164](https://github.com/aliyun/terraform-provider-alicloud/issues/7164))
+- resource/alicloud_cloud_firewall_instance: update ip_number, cfw_log, band_width, spec as Optional. ([#7166](https://github.com/aliyun/terraform-provider-alicloud/issues/7166))
+- resource/alicloud_ecs_disk: Add idempotent parameters and retry code for CreateDisk. ([#7173](https://github.com/aliyun/terraform-provider-alicloud/issues/7173))
+- data-source/alicloud_instance_types: Support filter instance_type. ([#7160](https://github.com/aliyun/terraform-provider-alicloud/issues/7160))
+- docs: optimize description for alicloud_oss_bucket_referer. ([#7161](https://github.com/aliyun/terraform-provider-alicloud/issues/7161))
+- docs: optimize description for alicloud_alikafka_instance. ([#7175](https://github.com/aliyun/terraform-provider-alicloud/issues/7175))
+- docs: resource/alicloud_brain_industrial_pid_organization: deprecated from version 1.222.0; resource/alicloud_brain_industrial_pid_project: deprecated from version 1.222.0. ([#7177](https://github.com/aliyun/terraform-provider-alicloud/issues/7177))
 
 BUG FIXES:
 
-- resource/alicloud_resource_manager_resource_directory: fix the paging queries of ListTagResources. [GH-7151]
-- resource/alicloud_amqp_instance: Fixed the product code for endpoint. [GH-7167]
+- resource/alicloud_resource_manager_resource_directory: fix the paging queries of ListTagResources. ([#7151](https://github.com/aliyun/terraform-provider-alicloud/issues/7151))
+- resource/alicloud_amqp_instance: Fixed the product code for endpoint. ([#7167](https://github.com/aliyun/terraform-provider-alicloud/issues/7167))
 
 ## 1.221.0 (April 15, 2024)
 
