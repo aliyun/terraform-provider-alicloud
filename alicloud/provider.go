@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/google/uuid"
@@ -861,6 +862,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_server_side_encryption":                    resourceAliCloudOssBucketServerSideEncryption(),
+			"alicloud_oss_bucket_logging":                                   resourceAliCloudOssBucketLogging(),
+			"alicloud_oss_bucket_request_payment":                           resourceAliCloudOssBucketRequestPayment(),
+			"alicloud_oss_bucket_versioning":                                resourceAliCloudOssBucketVersioning(),
 			"alicloud_oss_bucket_policy":                                    resourceAliCloudOssBucketPolicy(),
 			"alicloud_oss_bucket_https_config":                              resourceAliCloudOssBucketHttpsConfig(),
 			"alicloud_oss_bucket_referer":                                   resourceAliCloudOssBucketReferer(),
