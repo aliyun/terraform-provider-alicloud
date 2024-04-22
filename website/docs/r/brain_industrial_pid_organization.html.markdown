@@ -13,6 +13,8 @@ Provides a Brain Industrial Pid Organization resource.
 
 -> **NOTE:** Available in v1.113.0+.
 
+-> **DEPRECATED:**  This resource has been from version `1.222.0`.
+
 ## Example Usage
 
 Basic Usage
