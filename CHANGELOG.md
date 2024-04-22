@@ -1,4 +1,32 @@
 ## 1.222.0 (Unreleased)
+
+- **New Resource:** `alicloud_oss_bucket_versioning` [GH-7174]
+- **New Resource:** `alicloud_oss_bucket_request_payment` [GH-7174]
+- **New Resource:** `alicloud_oss_bucket_server_side_encryption` [GH-7174]
+- **New Resource:** `alicloud_oss_bucket_logging` [GH-7174]
+
+ENHANCEMENTS:
+
+- provider: improves the assume role with oidc by removing checking access key. [GH-7172]
+- resource/alicloud_db_instance: add new attribute db_param_group_id. [GH-7091]
+- resource/alicloud_cs_kubernetes_permissions: modify sdk. [GH-7100]
+- resource/alicloud_cs_*: add retry for general error scenario; data-source/alicloud_cs_*: add retry for general error scenario and fix testcases. [GH-7123]
+- resource/alicloud_ecs_disk_attachment: add retry for DisksDetachingOnEcsExceeded in DetachDisk. [GH-7152]
+- resource/alicloud_api_gateway_group: update description as optional. [GH-7158]
+- resource/alicloud_sddp_rule: Improved alicloud_sddp_rule testcase. [GH-7159]
+- resource/alicloud_alb_server_group: check StickySessionConfig before set. [GH-7163]
+- resource/alicloud_ess_scaling_rule: support PredictiveScalingRule and add attributes of predictive_scaling_mode, initial_max_size, predictive_value_behavior, predictive_value_buffer, predictive_task_buffer_time. [GH-7164]
+- resource/alicloud_cloud_firewall_instance: update ip_number, cfw_log, band_width, spec as Optional. [GH-7166]
+- resource/alicloud_ecs_disk: Add idempotent parameters and retry code for CreateDisk. [GH-7173]
+- data-source/alicloud_instance_types: Support filter instance_type. [GH-7160]
+- docs: optimize description for alicloud_oss_bucket_referer. [GH-7161]
+- docs: optimize description for alicloud_alikafka_instance. [GH-7175]
+
+BUG FIXES:
+
+- resource/alicloud_resource_manager_resource_directory: fix the paging queries of ListTagResources. [GH-7151]
+- resource/alicloud_amqp_instance: Fixed the product code for endpoint. [GH-7167]
+
 ## 1.221.0 (April 15, 2024)
 
 - **New Resource:** `alicloud_hbr_policy` ([#7142](https://github.com/aliyun/terraform-provider-alicloud/issues/7142))
