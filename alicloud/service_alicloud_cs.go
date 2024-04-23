@@ -50,6 +50,7 @@ const (
 	SCALING_CONFIGURATION_NAME = "kubernetes_autoscaler_autogen"
 	DefaultECSTag              = "k8s.aliyun.com"
 	DefaultClusterTag          = "ack.aliyun.com"
+	CsPlayerAccountIdTag       = "ack.playeraccount"
 	RECYCLE_MODE_LABEL         = "k8s.io/cluster-autoscaler/node-template/label/policy"
 	DefaultAutoscalerTag       = "k8s.io/cluster-autoscaler"
 	SCALING_GROUP_NAME         = "sg-%s-%s"
@@ -201,6 +202,23 @@ func (s *CsService) DescribeCsKubernetes(id string) (cluster *cs.KubernetesClust
 		return cluster, WrapErrorf(Error(GetNotFoundMessage("CsKubernetes", id)), NotFoundMsg, ProviderERROR)
 	}
 	return
+}
+
+func (s *CsClient) DescribeClusterDetail(id string) (*client.DescribeClusterDetailResponseBody, error) {
+	if id == "" {
+		return nil, WrapError(fmt.Errorf("cluster id is empty"))
+	}
+	response, err := s.client.DescribeClusterDetail(tea.String(id))
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if debugOn() {
+		requestMap := make(map[string]interface{})
+		requestMap["ClusterId"] = id
+		addDebug("DescribeClusterDetail", response, id, requestMap)
+	}
+	return response.Body, nil
 }
 
 // DescribeClusterKubeConfig return cluster kube_config credential.
