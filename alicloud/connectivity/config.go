@@ -262,10 +262,11 @@ func (c *Config) setAuthByAssumeRole() (err error) {
 		AccessKeySecret: tea.String(c.SecretKey),
 		Endpoint:        tea.String(c.StsEndpoint),
 		UserAgent:       tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
-		Protocol:        tea.String(c.Protocol),
-		ReadTimeout:     tea.Int(c.ClientReadTimeout),
-		ConnectTimeout:  tea.Int(c.ClientConnectTimeout),
-		MaxIdleConns:    tea.Int(500),
+		// currently, sts endpoint only supports https
+		Protocol:       tea.String("HTTPS"),
+		ReadTimeout:    tea.Int(c.ClientReadTimeout),
+		ConnectTimeout: tea.Int(c.ClientConnectTimeout),
+		MaxIdleConns:   tea.Int(500),
 	}
 	if c.SecurityToken != "" {
 		config.SecurityToken = tea.String(c.SecurityToken)
@@ -397,10 +398,11 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 		return
 	}
 	config := &openapi.Config{
-		RegionId:       tea.String(c.RegionId),
-		Endpoint:       tea.String(c.StsEndpoint),
-		UserAgent:      tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
-		Protocol:       tea.String(c.Protocol),
+		RegionId:  tea.String(c.RegionId),
+		Endpoint:  tea.String(c.StsEndpoint),
+		UserAgent: tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+		// currently, sts endpoint only supports https
+		Protocol:       tea.String("HTTPS"),
 		ReadTimeout:    tea.Int(c.ClientReadTimeout),
 		ConnectTimeout: tea.Int(c.ClientConnectTimeout),
 		MaxIdleConns:   tea.Int(500),
