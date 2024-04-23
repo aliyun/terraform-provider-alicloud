@@ -16,10 +16,11 @@ import (
 const ResourceName = "resource_alicloud_cs_kubernetes_permissions"
 
 const (
-//	ModeApply = "apply"
-	ModePatch     = "patch"
-	ModeDelete    = "delete"
-	ConflictError = "ErrAuthorizationConflict"
+//	ModeApply       = "apply"
+	ModePatch       = "patch"
+	ModeDelete      = "delete"
+	ConflictError   = "ErrAuthorizationConflict"
+	ThrottlingError = "Throttling.User"
 )
 
 func resourceAlicloudCSKubernetesPermissions() *schema.Resource {
@@ -108,11 +109,14 @@ func resourceAlicloudCSKubernetesPermissionsRead(d *schema.ResourceData, meta in
 	var perms []*cs.DescribeUserPermissionResponseBody
 	err = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		perms, err = describeUserPermissions(client, uid)	
-		if err == nil {
+		if isRetryforThrottling(err) {
+			time.Sleep(1 * time.Minute)
+		}else if tea.BoolValue(tea.Retryable(err)){
+			time.Sleep(5 * time.Second)
+		}else {
 			return resource.NonRetryableError(err)
 		}
 
-		time.Sleep(5 * time.Second) 
 		return resource.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
 	})
 	if err != nil {
@@ -193,11 +197,14 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 	// call sdk update cluster permissions for user
 	err = resource.Retry(60*time.Minute, func() *resource.RetryError {
 		_, err := client.UpdateUserPermissions(&uid, updateUserPermissionsRequest)
-		if !isRetryablePermissions(err) && !tea.BoolValue(tea.Retryable(err)){
+		if isRetryforThrottling(err) {
+			time.Sleep(1 * time.Minute)
+		}else if isRetryforConflict(err) || tea.BoolValue(tea.Retryable(err)){
+			time.Sleep(5 * time.Second)
+		}else {
 			return resource.NonRetryableError(err)
 		}
 
-		time.Sleep(5 * time.Second)
 		return resource.RetryableError(Error("[ERROR] Update user permission failed %s error %v",uid, err.Error()))
 	})
 	if err != nil {
@@ -206,10 +213,14 @@ func manageUserPermissions(mode, uid string, meta interface{}, permissions []int
 
 	_ = resource.Retry(2*time.Minute, func() *resource.RetryError {
 		_, err := client.DescribeUserPermission(&uid)
-		if err == nil {
+		if isRetryforThrottling(err) {
+			time.Sleep(1 * time.Minute)
+		}else if tea.BoolValue(tea.Retryable(err)){
+			time.Sleep(5 * time.Second)
+		}else {
 			return resource.NonRetryableError(err)
 		}
-		time.Sleep(5 * time.Second) 
+
 		return resource.RetryableError(Error("[ERROR] Describe user permission failed %s error %v", uid, err.Error()))
 	})
 
@@ -254,11 +265,22 @@ func diffPermissions(oldPermissionList, newPermissionList []interface{}) ([]inte
 	return oldPermissionList, newPermissionList
 }
 
-func isRetryablePermissions(err error) bool {
+func isRetryforConflict(err error) bool {
 	if err == nil {
 		return false
 	}
 	if e, ok := err.(*tea.SDKError); ok && tea.StringValue(e.Code) == ConflictError {
+		return true
+	}
+
+	return false
+}
+
+func isRetryforThrottling(err error) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*tea.SDKError); ok && tea.StringValue(e.Code) == ThrottlingError {
 		return true
 	}
 
