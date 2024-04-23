@@ -35,7 +35,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.120.0, Support for cluster migration from Standard cluster to professional.
 
--> **NOTE:** From version 1.177.0+, `runtime`,`enable_ssh`,`rds_instances`,`exclude_autoscaler_nodes`,`worker_number`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`image_id`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id`,`install_cloud_monitor` are deprecated.
+-> **NOTE:** From version 1.177.0, `runtime`,`enable_ssh`,`rds_instances`,`exclude_autoscaler_nodes`,`worker_number`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`image_id`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id`,`install_cloud_monitor` are deprecated.
 We Suggest you using resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluster worker nodes.
 
 -> **NOTE:** From version 1.212.0, `runtime`,`enable_ssh`,`rds_instances`,`exclude_autoscaler_nodes`,`worker_number`,`worker_instance_types`,`password`,`key_name`,`kms_encrypted_password`,`kms_encryption_context`,`worker_instance_charge_type`,`worker_period`,`worker_period_unit`,`worker_auto_renew`,`worker_auto_renew_period`,`worker_disk_category`,`worker_disk_size`,`worker_data_disks`,`node_name_mode`,`node_port_range`,`os_type`,`platform`,`image_id`,`cpu_policy`,`user_data`,`taints`,`worker_disk_performance_level`,`worker_disk_snapshot_policy_id`,`install_cloud_monitor`,`kube_config`,`availability_zone` are removed.
@@ -183,39 +183,40 @@ resource "alicloud_cs_managed_kubernetes" "k8s" {
 
 The following arguments are supported:
 
-### Global params
+*Global params*
 
 * `name` - (Optional) The kubernetes cluster's name. It is unique in one Alicloud account.
 * `worker_vswitch_ids` - (**Required**, ForceNew) The vswitches used by control plane.  See [`worker_vswitch_ids`](#worker_vswitch_ids) below.
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `timezone` - (Optional, ForceNew, Available in 1.103.2+) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
-* `resource_group_id` - (Optional, ForceNew, Available in 1.101.0+) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
+* `timezone` - (Optional, ForceNew, Available since v1.103.2) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
+* `resource_group_id` - (Optional, ForceNew, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `security_group_id` - (Optional, ForceNew, Available in 1.91.0+) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
-* `is_enterprise_security_group` - (Optional, ForceNew, Available in 1.91.0+) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
+* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
 * `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
-* `cluster_domain` - (Optional, ForceNew, Available in 1.103.2+) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
-* `custom_san` - (Optional, ForceNew, Available in 1.103.2+) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
+* `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
+* `custom_san` - (Optional, Available since v1.103.2) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
+-> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
 * `user_ca` - (Optional) The path of customized CA cert, you can use this CA to sign client certs to connect your cluster.
-* `deletion_protection` - (Optional, Available in 1.103.2+)  Whether to enable cluster deletion protection.
-* `enable_rrsa` - (Optional, Available in 1.171.0+) Whether to enable cluster to support RRSA for version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
-* `service_account_issuer` - (Optional, ForceNew, Available in 1.92.0+) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
-* `api_audiences` - (Optional, ForceNew, Available in 1.92.0+) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["https://kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well. From cluster version 1.22+, Service Account Token Volume Projection will be enabled by default.
-* `tags` - (Optional, Available in 1.97.0+) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. See [`tags`](#tags) below.
-* `cluster_spec` - (Optional, Available in 1.101.0+) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
+* `deletion_protection` - (Optional, Available since v1.103.2)  Whether to enable cluster deletion protection.
+* `enable_rrsa` - (Optional, Available since v1.171.0) Whether to enable cluster to support RRSA for kubernetes version 1.22.3+. Default to `false`. Once the RRSA function is turned on, it is not allowed to turn off. If your cluster has enabled this function, please manually modify your tf file and add the rrsa configuration to the file, learn more [RAM Roles for Service Accounts](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/use-rrsa-to-enforce-access-control).
+* `service_account_issuer` - (Optional, ForceNew, Available since v1.92.0) The issuer of the Service Account token for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm), corresponds to the `iss` field in the token payload. Set this to `"https://kubernetes.default.svc"` to enable the Token Volume Projection feature (requires specifying `api_audiences` as well). From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
+* `api_audiences` - (Optional, ForceNew, Available since v1.92.0) A list of API audiences for [Service Account Token Volume Projection](https://www.alibabacloud.com/help/doc-detail/160384.htm). Set this to `["https://kubernetes.default.svc"]` if you want to enable the Token Volume Projection feature (requires specifying `service_account_issuer` as well. From cluster version 1.22, Service Account Token Volume Projection will be enabled by default.
+* `tags` - (Optional, Available since v1.97.0) Default nil, A map of tags assigned to the kubernetes cluster and work nodes. See [`tags`](#tags) below.
+* `cluster_spec` - (Optional, Available since v1.101.0) The cluster specifications of kubernetes cluster,which can be empty. Valid values:
   * ack.standard : Standard managed clusters.
   * ack.pro.small : Professional managed clusters.
-* `encryption_provider_key` - (Optional, ForceNew, Available in 1.103.2+) The disk encryption key.
-* `maintenance_window` - (Optional, Available in 1.109.1+) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
-* `load_balancer_spec` - (Optional, ForceNew, Available in 1.117.0+) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
-* `control_plane_log_ttl` - (Optional, Available in 1.141.0+) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
-* `control_plane_log_components` - (Optional, Available in 1.141.0+) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
-* `control_plane_log_project` - (Optional, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
-* `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The disk encryption key.
+* `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
+* `load_balancer_spec` - (Optional, ForceNew, Available since v1.117.0) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
+* `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
+* `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
+* `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
-* `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster. See [`addons`](#addons) below.
+* `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 
-### Network params
+*Network params*
 
 * `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
 * `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` but must be in same availability zones.
@@ -227,13 +228,13 @@ The following arguments are supported:
 -> **NOTE:** If you want to use `Terway` as CNI network plugin, You need to specify the `pod_vswitch_ids` field and addons with `terway-eniip`.
 If you want to use `Flannel` as CNI network plugin, You need to specify the `pod_cidr` field and addons with `flannel`.
 
-### Computed params
+*Computed params*
 
 * `client_cert` - (Optional) The path of client certificate, like `~/.kube/client-cert.pem`.
 * `client_key` - (Optional) The path of client key, like `~/.kube/client-key.pem`.
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 
-### Removed params
+*Removed params*
 
 * `worker_instance_type` - (Removed from version 1.16.0) The instance type of worker node.
 * `vswitch_ids` - (Removed) The vswitch where new kubernetes cluster will be located. Specify one or more vswitch's id. It must be in the zone which `availability_zone` specified.
@@ -248,7 +249,7 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 * `rds_instances` - (Removed since v1.212.0) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `install_cloud_monitor` - (Removed since v1.212.0) Install cloud monitor agent on ECS. Default is `true` in previous version. From provider version 1.208.0, the default value is `false`.
 * `exclude_autoscaler_nodes` - (Removed since v1.212.0) Exclude autoscaler nodes from `worker_nodes`. Default to `false`.
-* `kube_config` - (Removed since v1.212.0) The path of kube config, like `~/.kube/config`. You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0+, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
+* `kube_config` - (Removed since v1.212.0) The path of kube config, like `~/.kube/config`. You can set some file paths to save kube_config information, but this way is cumbersome. Since version 1.105.0, we've written it to tf state file. About its use，see export attribute certificate_authority. From version 1.187.0, new DataSource `alicloud_cs_cluster_credential` is recommended to manage cluster's kube_config.
 * `availability_zone` - (Removed since v1.212.0) The Zone where new kubernetes cluster will be located. If it is not be specified, the `vswitch_ids` should be set, its value will be vswitch's zone.
 * `worker_number` - (Removed since v1.212.0) The worker node number of the kubernetes cluster. Default to 3. It is limited up to 50 and if you want to enlarge it, please apply white list or contact with us. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
 * `worker_instance_types` - (Removed since v1.212.0) The instance type of worker node. Specify one type for single AZ Cluster, three types for MultiAZ Cluster. From version 1.109.1, It is not necessary in the professional managed cluster, but it is necessary in other types of clusters.
@@ -492,8 +493,8 @@ The following arguments are supported in the `worker_data_disks` configuration b
 * `category` - (Optional) The type of the data disks. Valid values: `cloud`, `cloud_efficiency`, `cloud_ssd` and `cloud_essd`. Default to `cloud_efficiency`.
 * `size` - (Optional) The size of a data disk, at least 40. Unit: GiB.
 * `encrypted` - (Optional) Specifies whether to encrypt data disks. Valid values: true and false. Default to `false`.
-* `performance_level` - (Optional, Available in 1.120.0+) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
-* `auto_snapshot_policy_id` - (Optional, Available in 1.120.0+) Worker node data disk auto snapshot policy.
+* `performance_level` - (Optional, Available since v1.120.0) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity. For more information, see [Enhanced SSDs](https://www.alibabacloud.com/help/doc-detail/122389.htm). Default is `PL1`.
+* `auto_snapshot_policy_id` - (Optional, Available since v1.120.0) Worker node data disk auto snapshot policy.
 * `kms_key_id` - (Optional) The ID of the Key Management Service (KMS) key to use for data disk N.
 * `device` - (Optional) The mount point of data disk N.
 * `name` - (Optional) The name of data disk N. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (.), underscores (_), and hyphens (-).
@@ -579,7 +580,7 @@ The following arguments are supported in the `delete_options` configuration bloc
   - `delete`: delete resources created by the cluster.
   - `retain`: retain resources created by the cluster.
 * `resource_type` - (Optional) The type of resources that are created by cluster. Valid values:
-  - `SLB`: SLB resources created through the service, default behavior is to delete, option to retain is available. 
+  - `SLB`: SLB resources created by the Nginx Ingress Service, default behavior is to delete, option to retain is available.  
   - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available. 
   - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
@@ -587,7 +588,7 @@ The following arguments are supported in the `delete_options` configuration bloc
 ```
   ...
   // Specify delete_options as below when deleting cluster
-  // delete SLB resources created by the cluster
+  // delete SLB resources created by the Nginx Ingress Service
   delete_options {
     delete_mode = "delete"
     resource_type = "SLB"
@@ -628,11 +629,11 @@ The following attributes are exported:
   * `master_public_ip` - Master node SSH IP address.
   * `service_domain` - Service Access Domain.
 * `worker_ram_role_name` - The RamRole Name attached to worker node.
-* `certificate_authority` - (Available in 1.105.0+) Nested attribute containing certificate authority data for your cluster.
+* `certificate_authority` - (Available since v1.105.0) Nested attribute containing certificate authority data for your cluster.
   * `cluster_cert` - The base64 encoded cluster certificate data required to communicate with your cluster. Add this to the certificate-authority-data section of the kubeconfig file for your cluster.
   * `client_cert` - The base64 encoded client certificate data required to communicate with your cluster. Add this to the client-certificate-data section of the kubeconfig file for your cluster.
   * `client_key` - The base64 encoded client key data required to communicate with your cluster. Add this to the client-key-data section of the kubeconfig file for your cluster.
-* `rrsa_metadata` - (Optional, Available in v1.185.0+) Nested attribute containing RRSA related data for your cluster.
+* `rrsa_metadata` - (Optional, Available since v1.185.0) Nested attribute containing RRSA related data for your cluster.
   * `enabled` - Whether the RRSA feature has been enabled.
   * `rrsa_oidc_issuer_url` - The issuer URL of RRSA OIDC Token.
   * `ram_oidc_provider_name` - The name of OIDC Provider that was registered in RAM.
@@ -640,7 +641,7 @@ The following attributes are exported:
 
 ## Timeouts
 
--> **NOTE:** Available in 1.58.0+.
+-> **NOTE:** Available since v1.58.0.
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 90 mins) Used when creating the kubernetes cluster (until it reaches the initial `running` status).

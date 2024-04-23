@@ -62,14 +62,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  validation.StringLenBetween(1, 63),
+				ValidateFunc:  StringLenBetween(1, 63),
 				ConflictsWith: []string{"name_prefix"},
 			},
 			"name_prefix": {
 				Type:          schema.TypeString,
 				Optional:      true,
 				Default:       "Terraform-Creation",
-				ValidateFunc:  validation.StringLenBetween(0, 37),
+				ValidateFunc:  StringLenBetween(0, 37),
 				ConflictsWith: []string{"name"},
 				Deprecated:    "Field 'name_prefix' has been deprecated from provider version 1.75.0.",
 			},
@@ -80,7 +80,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				ForceNew: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				MinItems: 3,
 				MaxItems: 5,
@@ -100,7 +100,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      40,
-				ValidateFunc: validation.IntBetween(40, 500),
+				ValidateFunc: IntBetween(40, 500),
 			},
 			"master_disk_category": {
 				Type:     schema.TypeString,
@@ -112,7 +112,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc:     StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: masterDiskPerformanceLevelDiffSuppressFunc,
 			},
 			"master_disk_snapshot_policy_id": {
@@ -124,7 +124,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
+				ValidateFunc: StringInSlice([]string{string(common.PrePaid), string(common.PostPaid)}, false),
 				Default:      PostPaid,
 			},
 			"master_period_unit": {
@@ -132,7 +132,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          Month,
-				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
+				ValidateFunc:     StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"master_period": {
@@ -142,8 +142,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Default:  1,
 				// must be a valid period, expected [1-9], 12, 24, 36, 48 or 60,
 				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
+					IntBetween(1, 9),
+					IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			"master_auto_renew": {
@@ -158,7 +158,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:         true,
 				ForceNew:         true,
 				Default:          1,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesMasterPostPaidDiffSuppressFunc,
 			},
 			// worker configurations
@@ -167,7 +167,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				Removed:  "Field 'worker_vswitch_ids' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'vswitch_ids' to replace it",
 				MinItems: 1,
@@ -191,7 +191,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(20, 32768),
+				ValidateFunc: IntBetween(20, 32768),
 				Removed:      "Field 'worker_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_size' to replace it",
 			},
 			"worker_disk_category": {
@@ -202,7 +202,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_disk_performance_level": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
+				ValidateFunc:     StringInSlice([]string{"PL0", "PL1", "PL2", "PL3"}, false),
 				DiffSuppressFunc: workerDiskPerformanceLevelDiffSuppressFunc,
 				Removed:          "Field 'worker_disk_performance_level' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'system_disk_performance_level' to replace it",
 			},
@@ -214,7 +214,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"worker_data_disk_size": {
 				Type:             schema.TypeInt,
 				Optional:         true,
-				ValidateFunc:     validation.IntBetween(20, 32768),
+				ValidateFunc:     IntBetween(20, 32768),
 				DiffSuppressFunc: workerDataDiskSizeSuppressFunc,
 				Removed:          "Field 'worker_data_disk_size' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'data_disks.size' to replace it",
 			},
@@ -235,7 +235,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
+							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk"}, false),
 						},
 						"snapshot_id": {
 							Type:     schema.TypeString,
@@ -279,7 +279,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"Week", "Month"}, false),
+				ValidateFunc:     StringInSlice([]string{"Week", "Month"}, false),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Removed:          "Field 'worker_period_unit' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period_unit' to replace it",
 			},
@@ -288,8 +288,8 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ValidateFunc: validation.Any(
-					validation.IntBetween(1, 9),
-					validation.IntInSlice([]int{12, 24, 36, 48, 60})),
+					IntBetween(1, 9),
+					IntInSlice([]int{12, 24, 36, 48, 60})),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Removed:          "Field 'worker_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'period' to replace it",
 			},
@@ -303,7 +303,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:             schema.TypeInt,
 				Optional:         true,
 				Computed:         true,
-				ValidateFunc:     validation.IntInSlice([]int{1, 2, 3, 6, 12}),
+				ValidateFunc:     IntInSlice([]int{1, 2, 3, 6, 12}),
 				DiffSuppressFunc: csKubernetesWorkerPostPaidDiffSuppressFunc,
 				Removed:          "Field 'worker_auto_renew_period' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'auto_renew_period' to replace it",
 			},
@@ -319,7 +319,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 			},
 			// Flannel network
@@ -338,7 +338,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Default:      KubernetesClusterNodeCIDRMasksByDefault,
-				ValidateFunc: validation.IntBetween(24, 28),
+				ValidateFunc: IntBetween(24, 28),
 			},
 			"new_nat_gateway": {
 				Type:     schema.TypeBool,
@@ -383,7 +383,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
+				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
 				Default:      "slb.s1.small",
 			},
 			"image_id": {
@@ -407,14 +407,14 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"cpu_policy": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"none", "static"}, false),
+				ValidateFunc: StringInSlice([]string{"none", "static"}, false),
 				Removed:      "Field 'cpu_policy' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster worker nodes, by using field 'cpu_policy' to replace it",
 			},
 			"proxy_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"iptables", "ipvs"}, false),
+				ValidateFunc: StringInSlice([]string{"iptables", "ipvs"}, false),
 			},
 			"addons": {
 				Type:     schema.TypeList,
@@ -465,7 +465,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional:     true,
 				Default:      "Linux",
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Windows", "Linux"}, false),
+				ValidateFunc: StringInSlice([]string{"Windows", "Linux"}, false),
 			},
 			"platform": {
 				Type:     schema.TypeString,
@@ -521,7 +521,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						"effect": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
+							ValidateFunc: StringInSlice([]string{"NoSchedule", "NoExecute", "PreferNoSchedule"}, false),
 						},
 					},
 				},
@@ -687,7 +687,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Schema{
 					Type:         schema.TypeString,
-					ValidateFunc: validation.StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
+					ValidateFunc: StringMatch(regexp.MustCompile(`^vsw-[a-z0-9]*$`), "should start with 'vsw-'."),
 				},
 				MinItems: 3,
 				MaxItems: 5,
@@ -745,7 +745,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"type": {
 							Type:         schema.TypeString,
-							ValidateFunc: validation.StringInSlice([]string{KubernetesClusterLoggingTypeSLS}, false),
+							ValidateFunc: StringInSlice([]string{KubernetesClusterLoggingTypeSLS}, false),
 							Required:     true,
 						},
 						"project": {
@@ -759,7 +759,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"cluster_network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
+				ValidateFunc: StringInSlice([]string{KubernetesClusterNetworkTypeFlannel, KubernetesClusterNetworkTypeTerway}, false),
 				Removed:      "Field 'cluster_network_type' has been removed from provider version 1.75.0. New field 'addons' replaces it.",
 			},
 			"user_data": {
@@ -771,7 +771,7 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^customized,[a-z0-9]([-a-z0-9\.])*,([5-9]|[1][0-2]),([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`), "Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^customized,[a-z0-9]([-a-z0-9\.])*,([5-9]|[1][0-2]),([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`), "Each node name consists of a prefix, an IP substring, and a suffix. For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test."),
 				ForceNew:     true,
 			},
 			"worker_ram_role_name": {
@@ -811,12 +811,12 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 						"resource_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"SLB", "ALB", "SLS_Data", "SLS_ControlPlane", "PrivateZone"}, false),
+							ValidateFunc: StringInSlice([]string{"SLB", "ALB", "SLS_Data", "SLS_ControlPlane", "PrivateZone"}, false),
 						},
 						"delete_mode": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: validation.StringInSlice([]string{"delete", "retain"}, false),
+							ValidateFunc: StringInSlice([]string{"delete", "retain"}, false),
 						},
 					},
 				},
@@ -863,6 +863,15 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 	}
 
 	d.SetId(cluster.ClusterID)
+	taskId := cluster.TaskId
+	roaCsClient, err := client.NewRoaCsClient()
+	if err == nil {
+		csClient := CsClient{client: roaCsClient}
+		stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+		if jobDetail, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "createCluster", jobDetail)
+		}
+	}
 
 	// reset interval to 10s
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
@@ -874,55 +883,10 @@ func resourceAlicloudCSKubernetesCreate(d *schema.ResourceData, meta interface{}
 }
 
 func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	csService := CsService{client}
 	d.Partial(true)
 	invoker := NewInvoker()
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
-		var requestInfo cs.ModifyClusterArgs
-		requestInfo.ResourceGroupId = d.Get("resource_group_id").(string)
-
-		response, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.ModifyCluster(d.Id(), &requestInfo)
-		})
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", DenverdinoAliyungo)
-		}
-		addDebug("ModifyCluster", response, requestInfo)
-		d.SetPartial("resource_group_id")
-	}
-
-	// modify cluster name
-	if !d.IsNewResource() && (d.HasChange("name") || d.HasChange("name_prefix")) {
-		var clusterName string
-		if v, ok := d.GetOk("name"); ok {
-			clusterName = v.(string)
-		} else {
-			clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
-		}
-		var requestInfo *cs.Client
-		var response interface{}
-		if err := invoker.Run(func() error {
-			raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-				requestInfo = csClient
-				return nil, csClient.ModifyClusterName(d.Id(), clusterName)
-			})
-			response = raw
-			return err
-		}); err != nil && !IsExpectedErrors(err, []string{"ErrorClusterNameAlreadyExist"}) {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyClusterName", DenverdinoAliyungo)
-		}
-		if debugOn() {
-			requestMap := make(map[string]interface{})
-			requestMap["ClusterId"] = d.Id()
-			requestMap["ClusterName"] = clusterName
-			addDebug("ModifyClusterName", response, requestInfo, requestMap)
-		}
-		d.SetPartial("name")
-		d.SetPartial("name_prefix")
-	}
-
-	if !d.IsNewResource() && d.HasChanges("deletion_protection", "maintenance_window", "enable_rrsa") {
+	// modifyCluster
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "enable_rrsa") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}
@@ -943,37 +907,13 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 		}
 	}
 
-	// migrate cluster to pro form standard
+	// migrate cluster to pro from standard
 	if d.HasChange("cluster_spec") {
-		oldValue, newValue := d.GetChange("cluster_spec")
-		o, ok := oldValue.(string)
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("cluster_spec old value can not be parsed"), "parseError %d", oldValue)
-		}
-		n, ok := newValue.(string)
-		if ok != true {
-			return WrapErrorf(fmt.Errorf("cluster_pec new value can not be parsed"), "parseError %d", newValue)
-		}
-
-		// The field `cluster_spec` of some ack.standard managed cluster is "" since some historical reasons.
-		// The logic here is to confirm whether the cluster is the above.
-		// The interface error should not block the main process and errors will be output to the log.
-		clusterInfo, err := csService.DescribeCsManagedKubernetes(d.Id())
-		if err != nil || clusterInfo == nil {
-			log.Printf("[DEBUG] Failed to DescribeCsManagedKubernetes cluster %s when migrate", d.Id())
-		} else {
-			o = clusterInfo.ClusterSpec
-		}
-
-		if (o == "ack.standard" || o == "") && strings.Contains(n, "pro") {
-			err := migrateAlicloudManagedKubernetesCluster(d, meta)
-			if err != nil {
-				return WrapErrorf(err, ResponseCodeMsg, d.Id(), "MigrateCluster", AlibabaCloudSdkGoERROR)
-			}
+		err := migrateCluster(d, meta)
+		if err != nil {
+			return WrapError(err)
 		}
 	}
-
-	d.SetPartial("tags")
 
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
@@ -984,21 +924,72 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }
 
+func migrateCluster(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	csService := CsService{client}
+	oldValue, newValue := d.GetChange("cluster_spec")
+	o, ok := oldValue.(string)
+	if ok != true {
+		return WrapErrorf(fmt.Errorf("cluster_spec old value can not be parsed"), "parseError %d", oldValue)
+	}
+	n, ok := newValue.(string)
+	if ok != true {
+		return WrapErrorf(fmt.Errorf("cluster_pec new value can not be parsed"), "parseError %d", newValue)
+	}
+
+	// The field `cluster_spec` of some ack.standard managed cluster is "" since some historical reasons.
+	// The logic here is to confirm whether the cluster is the above.
+	// The interface error should not block the main process and errors will be output to the log.
+	clusterInfo, err := csService.DescribeCsManagedKubernetes(d.Id())
+	if err != nil || clusterInfo == nil {
+		log.Printf("[DEBUG] Failed to DescribeCsManagedKubernetes cluster %s when migrate", d.Id())
+	} else {
+		o = clusterInfo.ClusterSpec
+	}
+
+	if (o == "ack.standard" || o == "") && strings.Contains(n, "pro") {
+		err := migrateAlicloudManagedKubernetesCluster(d, meta)
+		if err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "MigrateCluster", AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	return nil
+}
+
 func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) error {
+	updated := false
 	request := &roacs.ModifyClusterRequest{}
 	client := meta.(*connectivity.AliyunClient)
 	csClient, err := client.NewRoaCsClient()
 	csService := CsService{client}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		request.SetResourceGroupId(d.Get("resource_group_id").(string))
+		updated = true
+	}
+
+	if !d.IsNewResource() && d.HasChange("name") {
+		var clusterName string
+		if v, ok := d.GetOk("name"); ok {
+			clusterName = v.(string)
+			request.SetClusterName(clusterName)
+			updated = true
+		}
+	}
+
 	// modify cluster deletion protection
 	if !d.IsNewResource() && d.HasChange("deletion_protection") {
 		v := d.Get("deletion_protection")
 		request.SetDeletionProtection(v.(bool))
+		updated = true
 	}
 
 	// modify cluster maintenance window
 	if !d.IsNewResource() && d.HasChange("maintenance_window") {
 		if v := d.Get("maintenance_window").([]interface{}); len(v) > 0 {
 			request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v)
+			updated = true
 		}
 		d.SetPartial("maintenance_window")
 	}
@@ -1021,7 +1012,23 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 			return fmt.Errorf("RRSA is not supported in current version: %s", clusterVersion)
 		}
 		request.SetEnableRrsa(enableRRSA)
+		updated = true
 		d.SetPartial("enable_rrsa")
+	}
+
+	if d.HasChange("custom_san") {
+		custom_san := d.Get("custom_san").(string)
+		request.SetApiServerCustomCertSans(
+			&roacs.ModifyClusterRequestApiServerCustomCertSans{
+				SubjectAlternativeNames: tea.StringSlice(strings.Split(custom_san, ",")),
+				Action:                  tea.String("overwrite"),
+			},
+		)
+		updated = true
+	}
+
+	if updated == false {
+		return nil
 	}
 
 	if err := invoker.Run(func() error {
@@ -1257,7 +1264,7 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 
 	// get cluster conn certs
 	// If the cluster is failed, there is no need to get cluster certs
-	if object.State == "failed" {
+	if object.State == "failed" || object.State == "deleted_failed" || object.State == "deleting" {
 		return nil
 	}
 	var requestInfo *cs.Client
@@ -1363,8 +1370,9 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
+	var resp *roacs.DeleteClusterResponse
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		_, err = client.DeleteCluster(tea.String(d.Id()), args)
+		resp, err = client.DeleteCluster(tea.String(d.Id()), args)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -1381,7 +1389,14 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteCluster", AliyunTablestoreGoSdk)
 	}
 
-	stateConf := BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
+	taskId := tea.StringValue(resp.Body.TaskId)
+	csClient := CsClient{client: client}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), "deleteCluster", jobDetail)
+	}
+
+	stateConf = BuildStateConf([]string{"running", "deleting"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -2037,4 +2052,33 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	}
 
 	return workerNodes
+}
+
+func flattenTags(config []*roacs.Tag) map[string]string {
+	m := make(map[string]string, len(config))
+	if len(config) < 0 {
+		return m
+	}
+
+	for _, tag := range config {
+		key := tea.StringValue(tag.Key)
+		value := tea.StringValue(tag.Value)
+		if key != DefaultClusterTag && key != CsPlayerAccountIdTag {
+			m[key] = value
+		}
+	}
+
+	return m
+}
+
+func fetchClusterMetaDataMap(meta string) map[string]interface{} {
+	metadata := make(map[string]interface{}, 0)
+	if meta != "" {
+		err := json.Unmarshal([]byte(meta), &metadata)
+		if err != nil {
+			log.Printf("[DEBUG] Failed to unmarshal metadata due to %++v", err)
+		}
+	}
+
+	return metadata
 }

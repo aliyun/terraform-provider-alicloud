@@ -53,55 +53,151 @@ Please use resource **`alicloud_cs_kubernetes_node_pool`** to manage your cluste
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "tf-kubernetes-example"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+
+# leave it to empty would create a new one
+variable "vpc_id" {
+  description = "Existing vpc id used to create several vswitches and other resources."
+  default     = ""
 }
+
+variable "vpc_cidr" {
+  description = "The cidr block used to launch a new vpc when 'vpc_id' is not specified."
+  default     = "10.0.0.0/8"
+}
+
+# leave it to empty then terraform will create several vswitches
+variable "vswitch_ids" {
+  description = "List of existing vswitch id."
+  type        = list(string)
+  default     = []
+}
+
+variable "vswitch_cidrs" {
+  description = "List of cidr blocks used to create several new vswitches when 'vswitch_ids' is not specified."
+  type        = list(string)
+  default     = ["10.1.0.0/16", "10.2.0.0/16", "10.3.0.0/16"]
+}
+
+variable "terway_vswitch_ids" {
+  description = "List of existing vswitch ids for terway."
+  type        = list(string)
+  default     = []
+}
+
+variable "terway_vswitch_cidrs" {
+  description = "List of cidr blocks used to create several new vswitches when 'terway_vswitch_cidrs' is not specified."
+  type        = list(string)
+  default     = ["10.4.0.0/16", "10.5.0.0/16", "10.6.0.0/16"]
+}
+
+variable "cluster_addons" {
+  type = list(object({
+    name   = string
+    config = map(string)
+  }))
+
+  default = [
+    # If use terway network, must specify addons with `terway-eniip` and param `pod_vswitch_ids`
+    {
+      "name"   = "terway-eniip",
+      "config" = {},
+    },
+    {
+      "name"   = "csi-plugin",
+      "config" = {},
+    },
+    {
+      "name"   = "csi-provisioner",
+      "config" = {},
+    },
+    {
+      "name" = "logtail-ds",
+      "config" = {
+        "IngressDashboardEnabled" = "true",
+      }
+    },
+    {
+      "name" = "nginx-ingress-controller",
+      "config" = {
+        "IngressSlbNetworkType" = "internet"
+      }
+    },
+    {
+      "name"   = "arms-prometheus",
+      "config" = {},
+    },
+    {
+      "name" = "ack-node-problem-detector",
+      "config" = {
+        "sls_project_name" = ""
+      },
+    }
+  ]
+}
+
+data "alicloud_enhanced_nat_available_zones" "enhanced" {}
+
+# If there is not specifying vpc_id, the module will launch a new vpc
+resource "alicloud_vpc" "vpc" {
+  count      = var.vpc_id == "" ? 1 : 0
+  cidr_block = var.vpc_cidr
+}
+
+# According to the vswitch cidr blocks to launch several vswitches
+resource "alicloud_vswitch" "vswitches" {
+  count      = length(var.vswitch_ids) > 0 ? 0 : length(var.vswitch_cidrs)
+  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block = element(var.vswitch_cidrs, count.index)
+  zone_id    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
+}
+
+# According to the vswitch cidr blocks to launch several vswitches
+resource "alicloud_vswitch" "terway_vswitches" {
+  count      = length(var.terway_vswitch_ids) > 0 ? 0 : length(var.terway_vswitch_cidrs)
+  vpc_id     = var.vpc_id == "" ? join("", alicloud_vpc.vpc.*.id) : var.vpc_id
+  cidr_block = element(var.terway_vswitch_cidrs, count.index)
+  zone_id    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
+}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
 
-data "alicloud_instance_types" "default" {
+data "alicloud_instance_types" "cloud_essd" {
   count                = 3
-  availability_zone    = data.alicloud_zones.default.zones[count.index].id
+  availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones[count.index < length(data.alicloud_enhanced_nat_available_zones.enhanced.zones) ? count.index : 0].zone_id
   cpu_core_count       = 4
   memory_size          = 8
-  kubernetes_node_role = "Master"
   system_disk_category = "cloud_essd"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
-}
-resource "alicloud_vswitch" "default" {
-  count        = 3
-  vswitch_name = format("${var.name}_%d", count.index + 1)
-  cidr_block   = format("10.4.%d.0/24", count.index + 1)
-  zone_id      = data.alicloud_zones.default.zones[count.index].id
-  vpc_id       = alicloud_vpc.default.id
-}
-
 resource "alicloud_cs_kubernetes" "default" {
-  master_vswitch_ids    = alicloud_vswitch.default.*.id
-  master_instance_types = [data.alicloud_instance_types.default.0.instance_types.0.id, data.alicloud_instance_types.default.1.instance_types.0.id, data.alicloud_instance_types.default.2.instance_types.0.id]
+  master_vswitch_ids    = length(var.vswitch_ids) > 0 ? split(",", join(",", var.vswitch_ids)) : length(var.vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.vswitches.*.id))
+  pod_vswitch_ids       = length(var.terway_vswitch_ids) > 0 ? split(",", join(",", var.terway_vswitch_ids)) : length(var.terway_vswitch_cidrs) < 1 ? [] : split(",", join(",", alicloud_vswitch.terway_vswitches.*.id))
+  master_instance_types = [data.alicloud_instance_types.cloud_essd.0.instance_types.0.id, data.alicloud_instance_types.cloud_essd.1.instance_types.0.id, data.alicloud_instance_types.cloud_essd.2.instance_types.0.id]
   master_disk_category  = "cloud_essd"
-  version               = "1.24.6-aliyun.1"
   password              = "Yourpassword1234"
-  pod_cidr              = "10.72.0.0/16"
   service_cidr          = "172.18.0.0/16"
-  load_balancer_spec    = "slb.s2.small"
+  load_balancer_spec    = "slb.s1.small"
   install_cloud_monitor = "true"
   resource_group_id     = data.alicloud_resource_manager_resource_groups.default.groups.0.id
   deletion_protection   = "false"
   timezone              = "Asia/Shanghai"
   os_type               = "Linux"
-  platform              = "CentOS"
+  platform              = "AliyunLinux3"
   cluster_domain        = "cluster.local"
   proxy_mode            = "ipvs"
   custom_san            = "www.terraform.io"
   new_nat_gateway       = "true"
+  dynamic "addons" {
+    for_each = var.cluster_addons
+    content {
+      name   = lookup(addons.value, "name", var.cluster_addons)
+      config = jsonencode(lookup(addons.value, "config", var.cluster_addons))
+    }
+  }
 }
 ```
 
@@ -139,7 +235,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `os_type` - (Optional, ForceNew, Available since v1.103.2) The operating system of the nodes that run pods, its valid value is either `Linux` or `Windows`. Default to `Linux`.
 * `platform` - (Optional, ForceNew, Available since v1.103.2) The architecture of the nodes that run pods, its valid value is either `CentOS` or `AliyunLinux`. Default to `CentOS`.
 * `node_name_mode` - (Optional, ForceNew, Available since v1.88.0) Each node name consists of a prefix, an IP substring, and a suffix, the input format is `customized,<prefix>,IPSubStringLen,<suffix>`. For example "customized,aliyun.com-,5,-test", if the node IP address is 192.168.59.176, the prefix is aliyun.com-, IP substring length is 5, and the suffix is -test, the node name will be aliyun.com-59176-test.
-* `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below.
+* `addons` - (Optional, Available since v1.88.0) The addon you want to install in cluster. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 
 *Network params*
 
@@ -279,7 +375,7 @@ The following arguments are supported in the `delete_options` configuration bloc
   - `delete`: delete resources created by the cluster.
   - `retain`: retain resources created by the cluster.
 * `resource_type` - (Optional) The type of resources that are created by cluster. Valid values:
-  - `SLB`: SLB resources created through the service, default behavior is to delete, option to retain is available. 
+  - `SLB`: SLB resources created by the Nginx Ingress Service, default behavior is to delete, option to retain is available. 
   - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available. 
   - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
   - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
@@ -287,7 +383,7 @@ The following arguments are supported in the `delete_options` configuration bloc
 ```
   ...
   // Specify delete_options as below when deleting cluster
-  // delete SLB resources created by the cluster
+  // delete SLB resources created by the Nginx Ingress Service
   delete_options {
     delete_mode = "delete"
     resource_type = "SLB"
