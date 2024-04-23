@@ -331,7 +331,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${alicloud_resource_manager_resource_group.default.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -346,6 +346,16 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "1.28.9-aliyun.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": "1.28.9-aliyun.1",
 					}),
 				),
 			},
@@ -474,16 +484,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"version": "1.28.9-aliyun.1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"version": "1.28.9-aliyun.1",
-					}),
-				),
-			},
-			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -529,11 +529,15 @@ data "alicloud_instance_types" "default" {
   system_disk_category = "cloud_essd"
 }
 
-data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
+}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_zones.default.zones.0.id
@@ -564,6 +568,9 @@ resource "alicloud_db_instance" "default" {
 
 resource "alicloud_key_pair" "default" {
   key_pair_name = var.name
+  timeouts {
+    delete = "15m"
+  }
 }
 
 resource "alicloud_security_group" "default" {
@@ -571,16 +578,23 @@ resource "alicloud_security_group" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
-resource "alicloud_resource_manager_resource_group" "default" {
-  resource_group_name = "tfTest"
-  display_name        = var.name
-}
-
 resource "alicloud_ecs_auto_snapshot_policy" "default" {
   name            = var.name
   repeat_weekdays = ["1", "2", "3"]
   retention_days  = -1
   time_points     = ["1", "22", "23"]
+}
+
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  cluster_id                    = alicloud_cs_kubernetes.default.id
+  name                          = var.name
+  vswitch_ids                   = [local.vswitch_id]
+  instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
+  password                      = "Test12345"
+  system_disk_size              = 50
+  system_disk_category          = "cloud_essd"
+  system_disk_performance_level = "PL0"
+  desired_size                  = 2
 }
 `, name)
 }
@@ -605,7 +619,9 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
+
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_zones.default.zones.0.id

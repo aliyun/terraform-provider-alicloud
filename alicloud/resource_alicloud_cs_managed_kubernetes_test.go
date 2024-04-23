@@ -112,11 +112,13 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                name + "_update",
+					"custom_san":          "www.terraform.io,terraform.test",
 					"deletion_protection": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                name + "_update",
+						"custom_san":          "www.terraform.io,terraform.test",
 						"deletion_protection": "true",
 					}),
 				),
@@ -416,6 +418,7 @@ data "alicloud_zones" "default" {
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
 
 data "alicloud_vswitches" "default" {
@@ -467,6 +470,7 @@ data "alicloud_kms_keys" "default" {
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
 
 data "alicloud_vswitches" "default" {
@@ -515,6 +519,7 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
 
 data "alicloud_vswitches" "default" {
