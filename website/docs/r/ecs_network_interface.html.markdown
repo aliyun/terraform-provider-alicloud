@@ -89,6 +89,7 @@ The following arguments are supported:
 * `ipv6_addresses` - (Optional, Computed, Available in 1.193.0+) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 * `ipv4_prefix_count` - (Optional, Computed, Available in 1.213.0+) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
 * `ipv4_prefixes` - (Optional, Computed, Available in 1.213.0+) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
+* `network_interface_traffic_mode` - (Optional, ForceNew, Computed, Available since 1.221.0) Communication mode of an ENI. Valid values: `Standard`: Use the tcp communication mode. `HighPerformance`: Enable ERI (Elastic RDMA Interface), use RDMA communication mode. The high performance parameter value supports only RDMA enhanced instance specification family `c7re`. Currently, this parameter value can be set only in availability zone k of cn-beijing.
 
 ## Attributes Reference
 

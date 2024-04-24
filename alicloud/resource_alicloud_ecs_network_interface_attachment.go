@@ -39,6 +39,10 @@ func resourceAlicloudEcsNetworkInterfaceAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"network_card_index": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"wait_for_network_configuration_ready": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -62,6 +66,10 @@ func resourceAlicloudEcsNetworkInterfaceAttachmentCreate(d *schema.ResourceData,
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("trunk_network_instance_id"); ok {
 		request["TrunkNetworkInstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("network_card_index"); ok {
+		request["NetworkCardIndex"] = v
 	}
 
 	if v, ok := d.GetOkExists("wait_for_network_configuration_ready"); ok {
