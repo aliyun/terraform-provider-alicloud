@@ -8,6 +8,7 @@
 
 ENHANCEMENTS:
 
+- provider: improves the assume role requests by setting protocol to HTTPS. ([#7172](https://github.com/aliyun/terraform-provider-alicloud/issues/7180))
 - provider: improves the assume role with oidc by removing checking access key. ([#7172](https://github.com/aliyun/terraform-provider-alicloud/issues/7172))
 - resource/alicloud_db_instance: add new attribute db_param_group_id. ([#7091](https://github.com/aliyun/terraform-provider-alicloud/issues/7091))
 - resource/alicloud_cs_kubernetes_permissions: modify sdk. ([#7100](https://github.com/aliyun/terraform-provider-alicloud/issues/7100))
