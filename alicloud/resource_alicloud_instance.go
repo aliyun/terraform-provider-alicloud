@@ -610,6 +610,12 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"network_interface_traffic_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -933,6 +939,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DedicatedHostId"] = v
 	}
 
+	if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
+		request["NetworkInterfaceTrafficMode"] = v
+	}
+
 	wait := incrementalWait(1*time.Second, 1*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -1177,6 +1187,7 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		d.Set("ipv6_addresses", ipv6SetList)
 		d.Set("ipv6_address_count", len(ipv6SetList))
 		d.Set("secondary_private_ips", secondaryPrivateIpsSli)
+		d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
 		d.Set("secondary_private_ip_address_count", len(secondaryPrivateIpsSli))
 	}
 

@@ -1354,6 +1354,7 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 
@@ -2423,24 +2424,26 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"image_id":                      "${data.alicloud_images.default.images.0.id}",
-					"security_groups":               []string{"${alicloud_security_group.default.id}"},
-					"instance_type":                 "${data.alicloud_instance_types.default.instance_types.0.id}",
-					"availability_zone":             "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
-					"system_disk_category":          "cloud_efficiency",
-					"instance_name":                 "${var.name}",
-					"spot_strategy":                 "NoSpot",
-					"spot_price_limit":              "0",
-					"security_enhancement_strategy": "Active",
-					"user_data":                     "I_am_user_data",
-					"vswitch_id":                    "${alicloud_vswitch.vswitch.id}",
-					"ipv6_addresses":                []string{"${cidrhost(alicloud_vswitch.vswitch.ipv6_cidr_block, 64)}"},
+					"image_id":                       "${data.alicloud_images.default.images.0.id}",
+					"security_groups":                []string{"${alicloud_security_group.default.id}"},
+					"instance_type":                  "${data.alicloud_instance_types.default.instance_types.0.id}",
+					"availability_zone":              "${data.alicloud_instance_types.default.instance_types.0.availability_zones.0}",
+					"system_disk_category":           "cloud_efficiency",
+					"instance_name":                  "${var.name}",
+					"spot_strategy":                  "NoSpot",
+					"spot_price_limit":               "0",
+					"security_enhancement_strategy":  "Active",
+					"user_data":                      "I_am_user_data",
+					"vswitch_id":                     "${alicloud_vswitch.vswitch.id}",
+					"ipv6_addresses":                 []string{"${cidrhost(alicloud_vswitch.vswitch.ipv6_cidr_block, 64)}"},
+					"network_interface_traffic_mode": "HighPerformance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":        name,
-						"ipv6_addresses.#":     "1",
-						"system_disk_category": "cloud_efficiency",
+						"instance_name":                  name,
+						"ipv6_addresses.#":               "1",
+						"system_disk_category":           "cloud_efficiency",
+						"network_interface_traffic_mode": "HighPerformance",
 					}),
 				),
 			},
