@@ -69,7 +69,7 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 			"health_check_protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"http", "https", "tcp"}, false),
+				ValidateFunc: StringInSlice([]string{"TCP", "HTTP", "HTTPS", "tcp", "http", "https"}, false),
 			},
 			"health_check_interval_seconds": {
 				Type:     schema.TypeInt,
@@ -166,6 +166,7 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 	}
 
 	request["RegionId"] = client.RegionId
+	request["ClientToken"] = buildClientToken("CreateEndpointGroup")
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	request["ListenerId"] = d.Get("listener_id")
 	request["EndpointGroupRegion"] = d.Get("endpoint_group_region")
@@ -261,7 +262,6 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		request["ClientToken"] = buildClientToken("CreateEndpointGroup")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"GA_NOT_STEADY", "StateError.Accelerator", "StateError.EndPointGroup", "NotActive.Listener"}) || NeedRetry(err) {

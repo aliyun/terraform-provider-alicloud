@@ -15,13 +15,14 @@ For information about Global Accelerator (GA) Endpoint Group and how to use it, 
 
 -> **NOTE:** Available since v1.113.0.
 
--> **NOTE:** Listeners that use different protocols support different types of endpoint groups:
+-> **NOTE:** Listeners that use different protocols support different types of Endpoint Groups:
 
-* For a TCP or UDP listener, you can create only one default endpoint group. 
-* For an HTTP or HTTPS listener, you can create one default endpoint group and one virtual endpoint group. By default, you can create only one virtual endpoint group. 
-  * A default endpoint group refers to the endpoint group that you configure when you create an HTTP or HTTPS listener. 
-  * A virtual endpoint group refers to the endpoint group that you can create on the Endpoint Group page after you create a listener.
-* After you create a virtual endpoint group for an HTTP or HTTPS listener, you can create a forwarding rule and associate the forwarding rule with the virtual endpoint group. Then, the HTTP or HTTPS listener forwards requests with different destination domain names or paths to the default or virtual endpoint group based on the forwarding rule. This way, you can use one Global Accelerator (GA) instance to accelerate access to multiple domain names or paths. For more information about how to create a forwarding rule, see [Manage forwarding rules](https://www.alibabacloud.com/help/en/doc-detail/204224.htm).
+* For a `TCP` listener, if you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
+* For a `UDP` listener, you can create only one `default` Endpoint Group.
+* For an `HTTP` or `HTTPS` listener, you can create one `default` Endpoint Group and one `virtual` Endpoint Group. By default, you can create only one `virtual` Endpoint Group.
+  * A `default` Endpoint Group refers to the Endpoint Group that you configure when you create an `HTTP` or `HTTPS` listener.
+  * A `virtual` Endpoint Group refers to the Endpoint Group that you can create on the Endpoint Group page after you create a listener.
+* After you create a `virtual` endpoint group for an `HTTP` or `HTTPS` listener, you can create a forwarding rule and associate the forwarding rule with the `virtual` endpoint group. Then, the `HTTP` or `HTTPS` listener forwards requests with different destination domain names or paths to the `default` or `virtual` Endpoint Group based on the forwarding rule. This way, you can use one Global Accelerator (GA) instance to accelerate access to multiple domain names or paths. For more information about how to create a forwarding rule, see [Manage forwarding rules](https://www.alibabacloud.com/help/en/doc-detail/204224.htm).
 
 -> **WARN:** There is a serious bug in the `traffic_percentage` of the `alicloud_ga_endpoint_group` before version 1.211.1, while the value of `traffic_percentage` has not been explicitly specified in the Terraform code, Terraform will set `traffic_percentage` to `0`. This behavior will cause your instance traffic to drop to zero. So, please use provider greater than or equal to version `1.211.1`.
 
@@ -102,7 +103,7 @@ The following arguments are supported:
 * `listener_id` - (Required, ForceNew) The ID of the listener that is associated with the endpoint group.
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
 * `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
--> **NOTE:** Only the listening instance of HTTP or HTTPS protocol supports the creation of virtual terminal node group.
+-> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
 * `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid values: `HTTP`, `HTTPS`.
 -> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
 * `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
@@ -110,7 +111,11 @@ The following arguments are supported:
   - `false`: Disables the health check feature.
 * `health_check_path` - (Optional) The path specified as the destination of the targets for health checks.
 * `health_check_port` - (Optional, Int) The port that is used for health checks.
-* `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values: `http`, `https`, `tcp`.
+* `health_check_protocol` - (Optional) The protocol that is used to connect to the targets for health checks. Valid values:
+  - `TCP` or `tcp`: TCP protocol.
+  - `HTTP` or `http`: HTTP protocol.
+  - `HTTPS` or `https`: HTTPS protocol.
+-> **NOTE:** From version 1.222.1, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
 * `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
 * `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
