@@ -60,14 +60,14 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 							"name":     name,
 						},
 					},
-					"tags":               map[string]interface{}{"Created": "TF", "Foo": "Bar"},
-					"management":         []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "surge_percentage": "10", "max_unavailable": "0"}},
-					"security_group_ids": []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
-					"image_type":         "AliyunLinux",
-					"cis_enabled":        "true",
-					"cpu_policy":         "none",
-					"spot_strategy":      "NoSpot",
-					"rds_instances":      []string{"${alicloud_db_instance.default.0.id}"},
+					"tags":                  map[string]interface{}{"Created": "TF", "Foo": "Bar"},
+					"management":            []map[string]string{{"auto_repair": "true", "auto_upgrade": "true", "surge": "0", "surge_percentage": "10", "max_unavailable": "0"}},
+					"security_group_ids":    []string{"${alicloud_security_group.group.id}", "${alicloud_security_group.group1.id}"},
+					"image_type":            "AliyunLinux",
+					"security_hardening_os": "true",
+					"cpu_policy":            "none",
+					"spot_strategy":         "NoSpot",
+					"rds_instances":         []string{"${alicloud_db_instance.default.0.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -95,7 +95,7 @@ func TestAccAliCloudCSKubernetesNodePool_basic(t *testing.T) {
 						"management.0.max_unavailable":  "0",
 						"security_group_ids.#":          "2",
 						"image_type":                    "AliyunLinux",
-						"cis_enabled":                   "true",
+						"security_hardening_os":         "true",
 						"cpu_policy":                    "none",
 						"spot_strategy":                 "NoSpot",
 						"rds_instances.#":               "1",
@@ -1446,7 +1446,7 @@ resource "alicloud_vswitch" "vswitch" {
 }
 
 resource "alicloud_key_pair" "default" {
-	key_pair_name = "tf-testacc-1"
+  key_pair_name = var.name
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
@@ -2232,7 +2232,7 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -2840,7 +2840,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -3126,28 +3126,6 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"node_pool_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"node_pool_name": name + "_update",
-					}),
-				),
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"auto_renew": "false",
 				}),
@@ -3329,7 +3307,7 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -3980,7 +3958,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -4053,15 +4031,13 @@ resource "alicloud_ecs_auto_snapshot_policy" "defaultrt8z7K" {
   time_points               = ["1", "22", "23"]
   repeat_weekdays           = ["1", "2", "3"]
   auto_snapshot_policy_name = var.name
-
-  retention_days = "-1"
+  retention_days            = "-1"
 }
 
 resource "alicloud_ecs_deployment_set" "default" {
   group_count         = "3"
   strategy            = "Availability"
   deployment_set_name = var.name
-
 }
 
 
@@ -4263,7 +4239,7 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -4503,7 +4479,7 @@ func TestAccAliCloudAckNodepool_basic5628(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -4681,7 +4657,7 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -4840,7 +4816,7 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -4964,7 +4940,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -5135,7 +5111,7 @@ func TestAccAliCloudAckNodepool_basic5172_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -5211,7 +5187,7 @@ func TestAccAliCloudAckNodepool_basic5401_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
@@ -5284,7 +5260,7 @@ func TestAccAliCloudAckNodepool_basic5628_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password", "rolling_policy"},
+				ImportStateVerifyIgnore: []string{"password", "rolling_policy", "update_nodes"},
 			},
 		},
 	})
