@@ -303,7 +303,7 @@ The following arguments are supported:
   - `true`: Automatic renewal. 
   - `false`: Do not renew automatically.
 * `auto_renew_period` - (Optional) The automatic renewal period of nodes in the node pool takes effect only when you select Prepaid and Automatic Renewal, and is a required value. When `PeriodUnit = Month`, the value range is {1, 2, 3, 6, 12}. Default value: 1.
-* `cis_enabled` - (Optional, ForceNew) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [CIS Reinforcement](https://help.aliyun.com/document_detail/223744.html).
+* `cis_enabled` - (Optional, ForceNew, Deprecated since v1.224.0) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.
 * `cluster_id` - (Required, ForceNew) The id of kubernetes cluster.
 * `compensate_with_on_demand` - (Optional) Specifies whether to automatically create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as cost or insufficient inventory. This parameter takes effect when you set `multi_az_policy` to `COST_OPTIMIZED`. Valid values: `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created. `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
 * `cpu_policy` - (Optional, Computed) Node CPU management policies. Default value: `none`. When the cluster version is 1.12.6 or later, the following two policies are supported:
@@ -359,8 +359,11 @@ The following arguments are supported:
   - `recycle`: in the speed mode, scaling is performed through creation, shutdown, and startup to increase the speed of scaling again (computing resources are not charged during shutdown, only storage fees are charged, except for local disk models).
 * `security_group_id` - (Optional, ForceNew, Computed, Deprecated since v1.145.0) The security group ID of the node pool. This field has been replaced by `security_group_ids`, please use the `security_group_ids` field instead.
 * `security_group_ids` - (Optional, ForceNew, Computed) Multiple security groups can be configured for a node pool. If both `security_group_ids` and `security_group_id` are configured, `security_group_ids` takes effect. This field cannot be modified.
+* `security_hardening_os` - (Optional, ForceNew) Alibaba Cloud OS security reinforcement. Default value: `false`. Value:
+  -`true`: enable Alibaba Cloud OS security reinforcement.
+  -`false`: does not enable Alibaba Cloud OS security reinforcement.
 * `soc_enabled` - (Optional, ForceNew) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).
--> **NOTE:**  It is forbidden to set both `cis_enabled` and `soc_enabled` to `true`at the same time.
+-> **NOTE:**  It is forbidden to set both `security_hardening_os` and `soc_enabled` to `true` at the same time.
 * `spot_instance_pools` - (Optional) The number of instance types that are available. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
 * `spot_instance_remedy` - (Optional) Specifies whether to supplement preemptible instances when the number of preemptible instances drops below the specified minimum number. If you set the value to true, Auto Scaling attempts to create a new preemptible instance when the system notifies that an existing preemptible instance is about to be reclaimed. Valid values: `true`: enables the supplementation of preemptible instances. `false`: disables the supplementation of preemptible instances.
 * `spot_price_limit` - (Optional) The current single preemptible instance type market price range configuration. See [`spot_price_limit`](#spot_price_limit) below.
@@ -386,6 +389,7 @@ The following arguments are supported:
 * `taints` - (Optional) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
 * `tee_config` - (Optional, ForceNew, Computed) The configuration about confidential computing for the cluster. See [`tee_config`](#tee_config) below.
 * `unschedulable` - (Optional) Whether the node after expansion can be scheduled.
+* `update_nodes` - (Optional) Synchronously update node labels and taints.
 * `user_data` - (Optional) Node custom data.
 * `vswitch_ids` - (Required) The vswitches used by node pool workers.
 
@@ -489,7 +493,7 @@ The rolling_policy supports the following:
 
 The scaling_config supports the following:
 * `eip_bandwidth` - (Optional) Peak EIP bandwidth. Its valid value range [1~500] in Mbps. It works if `is_bond_eip=true`. Default to `5`.
-* `eip_internet_charge_type` - (Optional) EIP billing type. It works if `is_bond_eip=true`. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. Conflict with `internet_charge_type`, EIP and public network IP can only choose one.
+* `eip_internet_charge_type` - (Optional) EIP billing type. `PayByBandwidth`: Charged at fixed bandwidth. `PayByTraffic`: Billed as used traffic. Default: `PayByBandwidth`. It works if `is_bond_eip=true`, conflict with `internet_charge_type`. EIP and public network IP can only choose one.
 * `enable` - (Optional) Whether to enable automatic scaling. Value:
   - `true`: enables the node pool auto-scaling function.
   - `false`: Auto scaling is not enabled. When the value is false, other `auto_scaling` configuration parameters do not take effect.

@@ -36,8 +36,6 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	request["ClusterId"] = parts[0]
-	request["NodepoolId"] = parts[1]
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -55,7 +53,6 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ErrorNodePoolNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Nodepool", id)), NotFoundMsg, response)
@@ -124,7 +121,6 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -148,6 +144,9 @@ func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.Resour
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
+				if _err, ok := object["error"]; ok {
+					return _err, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+				}
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
