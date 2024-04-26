@@ -109,11 +109,11 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"connection_prefix": "tf-privatetestacc",
+					"connection_prefix": "tf-privatetestacc-3",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"connection_prefix": "tf-privatetestacc",
+						"connection_prefix": "tf-privatetestacc-3",
 					}),
 				),
 			},
@@ -136,6 +136,110 @@ func TestAccAliCloudPolarDBEndpointConfigUpdate(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"endpoint_config.ConsistLevel": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"ssl_enabled", "net_type", "endpoint_config"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudPolarDBEndpointConfigUpdate_SslConnectionStringAndConnectionPrefix(t *testing.T) {
+	var v *polardb.DBEndpoint
+	rand := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	name := fmt.Sprintf("tf-testAccPolarDBendpoint-%s", rand)
+	var basicMap = map[string]string{
+		"db_cluster_id": CHECKSET,
+	}
+	resourceId := "alicloud_polardb_endpoint.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &PolarDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribePolarDBClusterEndpoint")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourcePolarDBEndpointConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id": "${alicloud_polardb_cluster.cluster.id}",
+					"endpoint_type": "Custom",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_type": "Custom",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_add_new_nodes": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_add_new_nodes": "Enable",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"read_write_mode": "ReadWrite",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"read_write_mode": "ReadWrite",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"nodes": []string{"${data.alicloud_polardb_clusters.default.clusters.0.db_nodes.0.db_node_id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"nodes.#": "1",
+					}),
+				),
+			},
+			//todo: After resource polardb_node is supported, it is necessary to add a modification check on the “nodes” parameter
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"connection_prefix": "tf-privatetestacc-4",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"connection_prefix": "tf-privatetestacc-4",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enabled":     "Enable",
+					"net_type":        "Private",
+					"ssl_auto_rotate": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enabled":           "Enable",
+						"net_type":              "Private",
+						"ssl_connection_string": REGEXMATCH + privateConnectionStringRegexp,
+						"ssl_auto_rotate":       "Enable",
 					}),
 				),
 			},

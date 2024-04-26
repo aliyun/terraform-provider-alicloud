@@ -339,38 +339,6 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	if d.HasChanges("ssl_enabled", "net_type", "ssl_auto_rotate") {
-		if d.Get("ssl_enabled") == "" && d.Get("net_type") != "" {
-			return WrapErrorf(Error("Need to specify ssl_enabled as Enable or Disable, if you want to modify the net_type."), DefaultErrorMsg, d.Id(), "ModifyDBClusterSSL", ProviderERROR)
-		}
-		modifySSLRequest := polardb.CreateModifyDBClusterSSLRequest()
-		modifySSLRequest.SSLEnabled = d.Get("ssl_enabled").(string)
-		modifySSLRequest.NetType = d.Get("net_type").(string)
-		modifySSLRequest.DBClusterId = dbClusterId
-		modifySSLRequest.DBEndpointId = dbEndpointId
-		modifySSLRequest.SSLAutoRotate = d.Get("ssl_auto_rotate").(string)
-		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
-			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
-			})
-			if err != nil {
-				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			addDebug(modifySSLRequest.GetActionName(), raw, modifySSLRequest.RpcRequest, modifySSLRequest)
-			return nil
-		}); err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySSLRequest.GetActionName(), AlibabaCloudSdkGoERROR)
-		}
-		// wait cluster status change from SSL_MODIFYING to Running
-		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(dbClusterId, []string{"Deleting"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapErrorf(err, IdMsg, dbClusterId)
-		}
-	}
-
 	if d.HasChanges("connection_prefix", "port") {
 		request := polardb.CreateModifyDBEndpointAddressRequest()
 		request.RegionId = client.RegionId
@@ -406,6 +374,38 @@ func resourceAlicloudPolarDBEndpointUpdate(d *schema.ResourceData, meta interfac
 			if err := polarDBService.WaitForPolarDBConnectionPrefix(d.Id(), request.ConnectionStringPrefix, request.Port, "Private", DefaultTimeoutMedium); err != nil {
 				return WrapError(err)
 			}
+		}
+	}
+
+	if d.HasChanges("ssl_enabled", "net_type", "ssl_auto_rotate") {
+		if d.Get("ssl_enabled") == "" && d.Get("net_type") != "" {
+			return WrapErrorf(Error("Need to specify ssl_enabled as Enable or Disable, if you want to modify the net_type."), DefaultErrorMsg, d.Id(), "ModifyDBClusterSSL", ProviderERROR)
+		}
+		modifySSLRequest := polardb.CreateModifyDBClusterSSLRequest()
+		modifySSLRequest.SSLEnabled = d.Get("ssl_enabled").(string)
+		modifySSLRequest.NetType = d.Get("net_type").(string)
+		modifySSLRequest.DBClusterId = dbClusterId
+		modifySSLRequest.DBEndpointId = dbEndpointId
+		modifySSLRequest.SSLAutoRotate = d.Get("ssl_auto_rotate").(string)
+		if err := resource.Retry(8*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+				return polarDBClient.ModifyDBClusterSSL(modifySSLRequest)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"EndpointStatus.NotSupport", "OperationDenied.DBClusterStatus", "MaxscaleCheckResult.Code"}) {
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(modifySSLRequest.GetActionName(), raw, modifySSLRequest.RpcRequest, modifySSLRequest)
+			return nil
+		}); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), modifySSLRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		// wait cluster status change from SSL_MODIFYING to Running
+		stateConf := BuildStateConf([]string{"SSLModifying"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(dbClusterId, []string{"Deleting"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, dbClusterId)
 		}
 	}
 	return resourceAlicloudPolarDBEndpointRead(d, meta)
