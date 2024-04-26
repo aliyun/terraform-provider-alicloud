@@ -43,7 +43,11 @@ func resourceAliCloudVpcIpv6EgressRule() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Ipv6Address"}, false),
+				ValidateFunc: StringInSlice([]string{"Ipv6Address"}, true),
+			},
+			"ipv6_egress_rule_id": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"ipv6_egress_rule_name": {
 				Type:         schema.TypeString,
@@ -65,17 +69,19 @@ func resourceAliCloudVpcIpv6EgressRule() *schema.Resource {
 }
 
 func resourceAliCloudVpcIpv6EgressRuleCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreateIpv6EgressOnlyRule"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["Ipv6GatewayId"] = d.Get("ipv6_gateway_id")
+	query["Ipv6GatewayId"] = d.Get("ipv6_gateway_id")
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
@@ -89,13 +95,15 @@ func resourceAliCloudVpcIpv6EgressRuleCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("ipv6_egress_rule_name"); ok {
 		request["Name"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"OperationConflict"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -109,10 +117,10 @@ func resourceAliCloudVpcIpv6EgressRuleCreate(d *schema.ResourceData, meta interf
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_ipv6_egress_rule", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprintf("%v:%v", request["Ipv6GatewayId"], response["Ipv6EgressRuleId"]))
+	d.SetId(fmt.Sprintf("%v:%v", query["Ipv6GatewayId"], response["Ipv6EgressRuleId"]))
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcIpv6EgressRuleStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, vpcServiceV2.VpcIpv6EgressRuleStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -139,38 +147,38 @@ func resourceAliCloudVpcIpv6EgressRuleRead(d *schema.ResourceData, meta interfac
 	d.Set("instance_type", objectRaw["InstanceType"])
 	d.Set("ipv6_egress_rule_name", objectRaw["Name"])
 	d.Set("status", objectRaw["Status"])
+	d.Set("ipv6_egress_rule_id", objectRaw["Ipv6EgressOnlyRuleId"])
 
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	parts := strings.Split(d.Id(), ":")
 	d.Set("ipv6_gateway_id", parts[0])
+	d.Set("ipv6_egress_rule_id", parts[1])
+
 	return nil
 }
 
 func resourceAliCloudVpcIpv6EgressRuleDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
+	parts := strings.Split(d.Id(), ":")
 	action := "DeleteIpv6EgressOnlyRule"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	parts := strings.Split(d.Id(), ":")
-
-	request["Ipv6EgressOnlyRuleId"] = parts[1]
+	query["Ipv6EgressOnlyRuleId"] = parts[1]
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -189,7 +197,7 @@ func resourceAliCloudVpcIpv6EgressRuleDelete(d *schema.ResourceData, meta interf
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcIpv6EgressRuleStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcIpv6EgressRuleStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
