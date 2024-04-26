@@ -59,7 +59,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.91.0. New field 'vswitch_ids' replace it.",
+				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.191.0. New field 'vswitch_ids' replace it.",
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
