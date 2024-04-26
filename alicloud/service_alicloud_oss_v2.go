@@ -229,6 +229,7 @@ func (s *OssServiceV2) OssBucketHttpsConfigStateRefreshFunc(id string, field str
 }
 
 // DescribeOssBucketHttpsConfig >>> Encapsulated.
+
 // DescribeOssBucketCors <<< Encapsulated get interface for Oss BucketCors.
 
 func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]interface{}, err error) {
@@ -262,11 +263,14 @@ func (s *OssServiceV2) DescribeOssBucketCors(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return nil
 	})
-	response = response["body"].(map[string]interface{})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketCors", id)), NotFoundMsg, response)
+		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.CORSConfiguration", response)
 	if err != nil {
