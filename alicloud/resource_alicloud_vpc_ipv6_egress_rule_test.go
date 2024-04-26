@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudVPCIpv6EgressRule_basic0(t *testing.T) {
+func TestAccAliCloudVPCIpv6EgressRule_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_egress_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCIpv6EgressRuleMap0)
@@ -66,7 +66,7 @@ func TestAccAlicloudVPCIpv6EgressRule_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudVPCIpv6EgressRule_basic1(t *testing.T) {
+func TestAccAliCloudVPCIpv6EgressRule_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_ipv6_egress_rule.default"
 	ra := resourceAttrInit(resourceId, AlicloudVPCIpv6EgressRuleMap0)

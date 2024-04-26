@@ -1258,11 +1258,14 @@ func (s *VpcServiceV2) VpcNetworkAclStateRefreshFunc(id string, field string, fa
 // DescribeVpcIpv6EgressRule <<< Encapsulated get interface for Vpc Ipv6EgressRule.
 
 func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
 	action := "DescribeIpv6EgressOnlyRules"
 	conn, err := client.NewVpcClient()
 	if err != nil {
@@ -1270,18 +1273,15 @@ func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	query["Ipv6EgressOnlyRuleId"] = parts[1]
+	query["Ipv6GatewayId"] = parts[0]
+	query["RegionId"] = client.RegionId
 
-	parts := strings.Split(id, ":")
-	if len(parts) != 2 {
-		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
-	}
-
-	request["Ipv6GatewayId"] = parts[0]
-	request["RegionId"] = client.RegionId
-
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -1294,9 +1294,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]i
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6EgressRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -1306,13 +1304,7 @@ func (s *VpcServiceV2) DescribeVpcIpv6EgressRule(id string) (object map[string]i
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6EgressRule", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-	}
-
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		return item, nil
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ipv6EgressRule", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -1328,7 +1320,9 @@ func (s *VpcServiceV2) VpcIpv6EgressRuleStateRefreshFunc(id string, field string
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
