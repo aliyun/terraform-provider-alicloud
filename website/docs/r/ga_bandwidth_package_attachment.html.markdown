@@ -20,24 +20,24 @@ For information about Global Accelerator (GA) Bandwidth Package Attachment and h
 Basic Usage
 
 ```terraform
-resource "alicloud_ga_accelerator" "example" {
+resource "alicloud_ga_accelerator" "default" {
   duration        = 1
   auto_use_coupon = true
   spec            = "1"
 }
 
-resource "alicloud_ga_bandwidth_package" "example" {
-  bandwidth      = 20
+resource "alicloud_ga_bandwidth_package" "default" {
+  bandwidth      = 100
   type           = "Basic"
   bandwidth_type = "Basic"
-  duration       = 1
-  auto_pay       = true
+  payment_type   = "PayAsYouGo"
+  billing_type   = "PayBy95"
   ratio          = 30
 }
 
-resource "alicloud_ga_bandwidth_package_attachment" "example" {
-  accelerator_id       = alicloud_ga_accelerator.example.id
-  bandwidth_package_id = alicloud_ga_bandwidth_package.example.id
+resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  accelerator_id       = alicloud_ga_accelerator.default.id
+  bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 ```
 
@@ -45,14 +45,15 @@ resource "alicloud_ga_bandwidth_package_attachment" "example" {
 
 The following arguments are supported:
 
-* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance from which you want to disassociate the bandwidth plan.
-* `bandwidth_package_id` - (Required) The ID of the bandwidth plan to disassociate. **NOTE:** From version 1.192.0, `bandwidth_package_id` can be modified.
+* `accelerator_id` - (Required, ForceNew) The ID of the Global Accelerator instance.
+* `bandwidth_package_id` - (Required) The ID of the Bandwidth Package. **NOTE:** From version 1.192.0, `bandwidth_package_id` can be modified.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Bandwidth Package Attachment. Value as `<accelerator_id>:<bandwidth_package_id>`. Before version 1.120.0, the value is `<bandwidth_package_id>`.
+* `id` - The resource ID in terraform of Bandwidth Package Attachment. It formats as `<accelerator_id>:<bandwidth_package_id>`.
+-> **NOTE:** Before provider version 1.120.0, it formats as `<bandwidth_package_id>`.
 * `accelerators` - Accelerators bound with current Bandwidth Package.
 * `status` - State of Bandwidth Package.
 
@@ -66,8 +67,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Ga Bandwidth Package Attachment can be imported using the id. Format to `<accelerator_id>:<bandwidth_package_id>`, e.g.
+Ga Bandwidth Package Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ga_bandwidth_package_attachment.example your_accelerator_id:your_bandwidth_package_id
+$ terraform import alicloud_ga_bandwidth_package_attachment.example <accelerator_id>:<bandwidth_package_id>
 ```
