@@ -569,6 +569,26 @@ func TestAccAliCloudEssEciScalingConfigurationBasic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.1.id}", "${data.alicloud_instance_types.default.instance_types.2.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_types.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_types": []string{"${data.alicloud_instance_types.default.instance_types.1.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.2.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_types.#": "3",
+					}),
+				),
+			},
 		},
 	})
 }
@@ -585,12 +605,7 @@ func resourceEssEciScalingConfiguration(name string) string {
 	data "alicloud_security_groups" "default" {
 	  name_regex     = "^tf_test_acc_alicloud_eci_container_group$"
 	}
-	
-	resource "alicloud_security_group" "default1" {
-		count = length(data.alicloud_security_groups.default.ids) > 1 ? 0 : 1
-		vpc_id = "${alicloud_vpc.default.id}"
-		name = "tf_test_acc_alicloud_eci_container_group"
-	}
+
 
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 0
