@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -43,6 +44,7 @@ func resourceAliCloudSlsProject() *schema.Resource {
 				Computed:     true,
 				ExactlyOneOf: []string{"project_name", "name"},
 				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -59,11 +61,12 @@ func resourceAliCloudSlsProject() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"name": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Field 'name' has been deprecated since provider version 1.212.0. New field 'project_name' instead.",
-				ForceNew:   true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				Deprecated:   "Field 'name' has been deprecated since provider version 1.223.0. New field 'project_name' instead.",
+				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "The name of the log project. It is the only in one Alicloud account. The project name is globally unique in Alibaba Cloud and cannot be modified after it is created. The naming rules are as follows:- The project name must be globally unique. - The name can contain only lowercase letters, digits, and hyphens (-). - It must start and end with a lowercase letter or number. - The value contains 3 to 63 characters."),
 			},
 		},
 	}
@@ -152,6 +155,8 @@ func resourceAliCloudSlsProjectRead(d *schema.ResourceData, meta interface{}) er
 	tagsMaps := objectRaw["tagResources"]
 	d.Set("tags", tagsToMap(tagsMaps))
 
+	d.Set("project_name", d.Id())
+
 	logService := LogService{client}
 	policy, err := logService.DescribeLogProjectPolicy(d.Id())
 	if err != nil {
@@ -185,9 +190,8 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	hostMap["project"] = StringPointer(d.Id())
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		request["description"] = d.Get("description")
 	}
-
+	request["description"] = d.Get("description")
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -209,7 +213,6 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
 	}
 	update = false
 	action = fmt.Sprintf("/resourcegroup")
@@ -224,9 +227,8 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 	request["resourceId"] = d.Id()
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["resourceGroupId"] = d.Get("resource_group_id")
 	}
-
+	request["resourceGroupId"] = d.Get("resource_group_id")
 	request["resourceType"] = "PROJECT"
 	body = request
 	if update {
@@ -249,7 +251,6 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("tags") {
@@ -257,7 +258,6 @@ func resourceAliCloudSlsProjectUpdate(d *schema.ResourceData, meta interface{}) 
 		if err := slsServiceV2.SetResourceTags(d, "PROJECT"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	if d.HasChange("policy") {
 		var requestInfo *sls.Client
