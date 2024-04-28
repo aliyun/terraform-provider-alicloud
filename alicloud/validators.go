@@ -704,3 +704,63 @@ func validateRedisConfig(v interface{}, k string) (ws []string, errors []error) 
 
 	return
 }
+
+func validatePolicyDocument(isRamPolicyDocument bool) schema.SchemaValidateFunc {
+	return func(i interface{}, k string) (s []string, es []error) {
+		s, es = validation.StringIsJSON(i, k)
+		if es != nil {
+			return
+		}
+
+		var policyDocument PolicyDocument
+		err := json.Unmarshal([]byte(i.(string)), &policyDocument)
+		if err != nil {
+			es = append(es, err)
+			return
+		}
+
+		statement := policyDocument.Statement
+
+		if skipResourceSchemaValidation() {
+			if len(statement) > 0 {
+				for _, v := range statement {
+					if IsNil(v.Effect) || IsNil(v.Action) {
+						s = append(s, fmt.Sprintf("%s %s and %s are required", "Element", "\"Effect\"", "\"Action\""))
+					}
+
+					if isRamPolicyDocument {
+						if IsNil(v.Resource) {
+							s = append(s, fmt.Sprintf("%s %s is required", "Element", "\"Resource\""))
+						}
+					} else {
+						//RAM role policy document
+						if len(v.Principal) <= 0 {
+							s = append(s, fmt.Sprintf("%s %s is required", "Element", "\"Principal\""))
+						}
+					}
+				}
+			}
+		} else {
+			if len(statement) > 0 {
+				for _, v := range statement {
+					if IsNil(v.Effect) || IsNil(v.Action) {
+						es = append(es, fmt.Errorf("%s %s and %s are required", "Element", "\"Effect\"", "\"Action\""))
+					}
+
+					if isRamPolicyDocument {
+						if IsNil(v.Resource) {
+							es = append(es, fmt.Errorf("%s %s is required", "Element", "\"Resource\""))
+						}
+					} else {
+						//RAM role policy document
+						if len(v.Principal) <= 0 {
+							es = append(es, fmt.Errorf("%s %s is required", "Element", "\"Principal\""))
+						}
+					}
+				}
+			}
+		}
+
+		return
+	}
+}
