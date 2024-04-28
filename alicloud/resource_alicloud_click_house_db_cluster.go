@@ -101,7 +101,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"period": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
 			},
 			"storage_type": {
@@ -113,7 +112,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"used_time": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
@@ -261,6 +259,9 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 		}
 		return WrapError(err)
 	}
+	d.Set("db_cluster_version", object["EngineVersion"])
+	d.Set("db_cluster_class", object["DBNodeClass"])
+	d.Set("db_node_group_count", object["DBNodeCount"])
 	d.Set("category", object["Category"])
 	d.Set("db_cluster_description", object["DBClusterDescription"])
 	d.Set("db_cluster_network_type", object["DBClusterNetworkType"])
