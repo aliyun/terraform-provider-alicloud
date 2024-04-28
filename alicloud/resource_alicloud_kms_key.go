@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -5,185 +6,157 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudKmsKey() *schema.Resource {
+func resourceAliCloudKmsKey() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudKmsKeyCreate,
-		Read:   resourceAlicloudKmsKeyRead,
-		Update: resourceAlicloudKmsKeyUpdate,
-		Delete: resourceAlicloudKmsKeyDelete,
+		Create: resourceAliCloudKmsKeyCreate,
+		Read:   resourceAliCloudKmsKeyRead,
+		Update: resourceAliCloudKmsKeyUpdate,
+		Delete: resourceAliCloudKmsKeyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"arn": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"automatic_rotation": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Disabled", "Enabled"}, false),
-			},
-			"creation_date": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
-			"creator": {
+			"certificate_id": {
 				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"delete_date": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
-			},
-			"key_spec": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Aliyun_AES_256", "Aliyun_SM4", "RSA_2048", "EC_P256", "EC_P256K", "EC_SM2"}, false),
-			},
-			"is_enabled": {
-				Type:       schema.TypeBool,
-				Optional:   true,
-				Deprecated: "Field 'is_enabled' has been deprecated from provider version 1.85.0. New field 'key_state' instead.",
-			},
-			"key_usage": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ENCRYPT/DECRYPT", "SIGN/VERIFY"}, false),
-			},
-			"last_rotation_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"material_expire_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"next_rotation_date": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"origin": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Aliyun_KMS", "EXTERNAL"}, false),
-			},
-			"pending_window_in_days": {
-				Type:          schema.TypeInt,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  IntBetween(7, 366),
-				ConflictsWith: []string{"deletion_window_in_days"},
-			},
-			"deletion_window_in_days": {
-				Type:          schema.TypeInt,
-				Optional:      true,
-				Computed:      true,
-				Deprecated:    "Field 'deletion_window_in_days' has been deprecated from provider version 1.85.0. New field 'pending_window_in_days' instead.",
-				ConflictsWith: []string{"pending_window_in_days"},
-				ValidateFunc:  IntBetween(7, 366),
-			},
-			"primary_key_version": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"protection_level": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"SOFTWARE", "HSM"}, false),
-				Default:      "SOFTWARE",
-			},
-			"rotation_interval": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"status": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"Disabled", "Enabled", "PendingDeletion"}, false),
-				ConflictsWith: []string{"key_state"},
-			},
-			"key_state": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"Disabled", "Enabled", "PendingDeletion"}, false),
-				ConflictsWith: []string{"status"},
-				Deprecated:    "Field 'key_state' has been deprecated from provider version 1.123.1. New field 'status' instead.",
 			},
 			"dkms_instance_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
+			"enable_automatic_rotation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"enable_deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"key_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"key_usage": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"origin": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"pending_window_in_days": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(7, 366),
+			},
+			"policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"policy_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"protection_level": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"rotation_interval": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"secret_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateKey"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("automatic_rotation"); ok {
-		request["EnableAutomaticRotation"] = convertKmsKeyAutomaticRotationRequest(v.(string))
-	}
+	request = make(map[string]interface{})
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
-	if v, ok := d.GetOk("key_spec"); ok {
-		request["KeySpec"] = v
-	}
-
 	if v, ok := d.GetOk("key_usage"); ok {
 		request["KeyUsage"] = v
 	}
-
 	if v, ok := d.GetOk("origin"); ok {
 		request["Origin"] = v
 	}
-
 	if v, ok := d.GetOk("protection_level"); ok {
 		request["ProtectionLevel"] = v
 	}
-
 	if v, ok := d.GetOk("rotation_interval"); ok {
 		request["RotationInterval"] = v
 	}
-
+	if v, ok := d.GetOk("key_spec"); ok {
+		request["KeySpec"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		jsonPathResult6, err := jsonpath.Get("$", v)
+		if err == nil && jsonPathResult6 != "" {
+			request["Tags"] = jsonPathResult6
+		}
+	}
+	if v, ok := d.GetOk("policy"); ok {
+		request["Policy"] = v
+	}
+	if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
+		request["EnableAutomaticRotation"] = v
+	}
 	if v, ok := d.GetOk("dkms_instance_id"); ok {
 		request["DKMSInstanceId"] = v
 	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -191,88 +164,89 @@ func resourceAlicloudKmsKeyCreate(d *schema.ResourceData, meta interface{}) erro
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_key", action, AlibabaCloudSdkGoERROR)
 	}
 
-	responseKeyMetadata := response["KeyMetadata"].(map[string]interface{})
-	d.SetId(fmt.Sprint(responseKeyMetadata["KeyId"]))
+	id, _ := jsonpath.Get("$.KeyMetadata.KeyId", response)
+	d.SetId(fmt.Sprint(id))
 
-	return resourceAlicloudKmsKeyUpdate(d, meta)
+	return resourceAliCloudKmsKeyUpdate(d, meta)
 }
 
-func resourceAlicloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kmsService := KmsService{client}
-	object, err := kmsService.DescribeKmsKey(d.Id())
+	kmsServiceV2 := KmsServiceV2{client}
+
+	objectRaw, err := kmsServiceV2.DescribeKmsKey(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_kms_key kmsService.DescribeKmsKey Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_kms_key DescribeKmsKey Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("arn", object["Arn"])
-	d.Set("automatic_rotation", object["AutomaticRotation"])
-	d.Set("creator", object["Creator"])
-	d.Set("creation_date", object["CreationDate"])
-	d.Set("delete_date", object["DeleteDate"])
-	d.Set("description", object["Description"])
-	d.Set("key_spec", object["KeySpec"])
-	d.Set("key_usage", object["KeyUsage"])
-	d.Set("last_rotation_date", object["LastRotationDate"])
-	d.Set("material_expire_time", object["MaterialExpireTime"])
-	d.Set("next_rotation_date", object["NextRotationDate"])
-	d.Set("origin", object["Origin"])
-	d.Set("primary_key_version", object["PrimaryKeyVersion"])
-	d.Set("protection_level", object["ProtectionLevel"])
-	d.Set("rotation_interval", object["RotationInterval"])
-	d.Set("status", object["KeyState"])
-	d.Set("key_state", object["KeyState"])
-	d.Set("dkms_instance_id", object["DKMSInstanceId"])
+	d.Set("automatic_rotation", objectRaw["AutomaticRotation"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("dkms_instance_id", objectRaw["DKMSInstanceId"])
+	d.Set("key_spec", objectRaw["KeySpec"])
+	d.Set("key_usage", objectRaw["KeyUsage"])
+	d.Set("origin", objectRaw["Origin"])
+	d.Set("protection_level", objectRaw["ProtectionLevel"])
+	d.Set("rotation_interval", objectRaw["RotationInterval"])
+	d.Set("status", objectRaw["KeyState"])
 
-	listTagResourcesObject, err := kmsService.ListTagResources(d.Id())
+	objectRaw, err = kmsServiceV2.DescribeListResourceTags(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 
-	d.Set("tags", tagsToMap(listTagResourcesObject))
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = kmsServiceV2.DescribeGetKeyPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("policy", objectRaw["Policy"])
 
 	return nil
 }
 
-func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kmsService := KmsService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "UpdateKeyDescription"
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	d.Partial(true)
-
-	if d.HasChange("tags") {
-		if err := kmsService.SetResourceTags(d, "key"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["KeyId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
 	}
 
-	if !d.IsNewResource() && d.HasChange("description") {
-		request := map[string]interface{}{
-			"KeyId": d.Id(),
-		}
-		request["Description"] = d.Get("description")
-		action := "UpdateKeyDescription"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -280,31 +254,39 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
 	}
-	update := false
-	request := map[string]interface{}{
-		"KeyId": d.Id(),
+	update = false
+	action = "UpdateRotationPolicy"
+	conn, err = client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
 	}
-	if !d.IsNewResource() && d.HasChange("automatic_rotation") {
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["KeyId"] = d.Id()
+	if d.HasChange("automatic_rotation") {
 		update = true
+		request["EnableAutomaticRotation"] = convertKmsKeyEnableAutomaticRotationRequest(d.Get("automatic_rotation").(string))
 	}
-	request["EnableAutomaticRotation"] = convertKmsKeyAutomaticRotationRequest(d.Get("automatic_rotation").(string))
+
 	if !d.IsNewResource() && d.HasChange("rotation_interval") {
 		update = true
 		request["RotationInterval"] = d.Get("rotation_interval")
 	}
+
 	if update {
-		action := "UpdateRotationPolicy"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -312,132 +294,173 @@ func resourceAlicloudKmsKeyUpdate(d *schema.ResourceData, meta interface{}) erro
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("automatic_rotation")
-		d.SetPartial("rotation_interval")
 	}
-	if d.HasChange("status") || d.HasChange("key_state") || d.HasChange("is_enabled") {
-		object, err := kmsService.DescribeKmsKey(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		var target = ""
-		if k, ok := d.GetOk("status"); ok {
-			target = k.(string)
-		} else if k, ok := d.GetOk("key_state"); ok {
-			target = k.(string)
-		} else {
-			if k, ok := d.GetOk("is_enabled"); ok {
-				if k.(bool) {
-					target = "Enable"
-				} else {
-					target = "Disabled"
-				}
-			}
-		}
-		if object["KeyState"].(string) != target {
-			if target == "Disabled" {
-				request := map[string]interface{}{
-					"KeyId": d.Id(),
-				}
-				action := "DisableKey"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-			}
-			if target == "Enabled" {
-				request := map[string]interface{}{
-					"KeyId": d.Id(),
-				}
-				action := "EnableKey"
-				wait := incrementalWait(3*time.Second, 3*time.Second)
-				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-					if err != nil {
-						if NeedRetry(err) {
-							wait()
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
-					}
-					return nil
-				})
-				addDebug(action, response, request)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-				}
-			}
-			d.SetPartial("status")
-			d.SetPartial("key_state")
-			d.SetPartial("is_enabled")
-		}
-	}
-	d.Partial(false)
-	return resourceAlicloudKmsKeyRead(d, meta)
-}
-
-func resourceAlicloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	action := "ScheduleKeyDeletion"
-	var response map[string]interface{}
-	conn, err := client.NewKmsClient()
+	update = false
+	action = "SetKeyPolicy"
+	conn, err = client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"KeyId": d.Id(),
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["KeyId"] = d.Id()
+	if v, ok := d.GetOk("policy_name"); ok {
+		request["PolicyName"] = v
+	}
+	if !d.IsNewResource() && d.HasChange("policy") {
+		update = true
+		request["Policy"] = d.Get("policy")
 	}
 
-	if v, ok := d.GetOk("pending_window_in_days"); ok {
-		request["PendingWindowInDays"] = v
-	} else if v, ok := d.GetOk("deletion_window_in_days"); ok {
-		request["PendingWindowInDays"] = v
-	} else {
-		return WrapError(Error(`[ERROR] Argument "pending_window_in_days" or "deletion_window_in_days" must be set one!`))
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
+	if d.HasChange("status") {
+		client := meta.(*connectivity.AliyunClient)
+		kmsServiceV2 := KmsServiceV2{client}
+		object, err := kmsServiceV2.DescribeKmsKey(d.Id())
+		if err != nil {
+			return WrapError(err)
+		}
+
+		target := d.Get("status").(string)
+		if object["KeyState"].(string) != target {
+			if target == "Disabled" {
+				action = "DisableKey"
+				conn, err = client.NewKmsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["KeyId"] = d.Id()
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+			if target == "Enabled" {
+				action = "CancelKeyDeletion"
+				conn, err = client.NewKmsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["KeyId"] = d.Id()
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+			if target == "PendingDeletion" {
+				action = "ScheduleKeyDeletion"
+				conn, err = client.NewKmsClient()
+				if err != nil {
+					return WrapError(err)
+				}
+				request = make(map[string]interface{})
+				query = make(map[string]interface{})
+				query["KeyId"] = d.Id()
+				if v, ok := d.GetOk("pending_window_in_days"); ok {
+					request["PendingWindowInDays"] = v
+				}
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+
+			}
+		}
+	}
+
+	d.Partial(false)
+	return resourceAliCloudKmsKeyRead(d, meta)
+}
+
+func resourceAliCloudKmsKeyDelete(d *schema.ResourceData, meta interface{}) error {
+	log.Printf("[WARN] Cannot destroy resource AliCloud Resource Key. Terraform will remove this resource from the state file, however resources may remain.")
 	return nil
 }
 
-func convertKmsKeyAutomaticRotationRequest(source interface{}) interface{} {
+func convertKmsKeyEnableAutomaticRotationRequest(source interface{}) interface{} {
 	switch source {
-	case "Disabled":
-		return false
 	case "Enabled":
-		return true
+		return "true"
+	case "Disabled":
+		return "false"
 	}
-	return false
+	return source
 }

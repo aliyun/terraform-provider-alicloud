@@ -2,97 +2,134 @@
 subcategory: "KMS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_kms_key"
-sidebar_current: "docs-alicloud-resource-kms-key"
 description: |-
-  Provides a Alikms key resource.
+  Provides a Alicloud KMS Key resource.
 ---
 
 # alicloud_kms_key
 
-A kms key can help user to protect data security in the transmission process. For information about Alikms Key and how to use it, see [What is Resource Alikms Key](https://www.alibabacloud.com/help/doc-detail/28947.htm).
+Provides a KMS Key resource. 
 
--> **NOTE:** Available since v1.85.0.
+For information about KMS Key and how to use it, see [What is Key](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.223.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
-resource "alicloud_kms_key" "key" {
-  description            = "Hello KMS"
-  pending_window_in_days = "7"
-  status                 = "Enabled"
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "create-vpc" {
+  vpc_name = var.name
+}
+
+resource "alicloud_vswitch" "vswitch-k" {
+  vpc_id     = alicloud_vpc.create-vpc.id
+  cidr_block = "172.16.1.0/24"
+  zone_id    = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "vswitch-j" {
+  vpc_id     = alicloud_vpc.create-vpc.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.2.0/24"
+}
+
+resource "alicloud_kms_instance" "create-instance" {
+  vpc_num         = "1"
+  key_num         = "1000"
+  product_type    = "kms_ddi_public_cn"
+  secret_num      = "100"
+  product_version = "3"
+  renew_status    = "AutoRenewal"
+  vpc_id          = alicloud_vpc.create-vpc.id
+  vswitch_ids     = ["${alicloud_vswitch.vswitch-j.id}"]
+  zone_ids        = ["${alicloud_vswitch.vswitch-j.zone_id}", "${alicloud_vswitch.vswitch-k.zone_id}"]
+  spec            = "1000"
+  renew_period    = "1"
+}
+
+
+resource "alicloud_kms_key" "default" {
+  protection_level          = "SOFTWARE"
+  description               = "key description example"
+  key_spec                  = "Aliyun_AES_256"
+  key_usage                 = "ENCRYPT/DECRYPT"
+  rotation_interval         = "604800s"
+  dkms_instance_id          = alicloud_kms_instance.create-instance.id
+  origin                    = "Aliyun_KMS"
+  policy                    = "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1192853035118460:*\"]},\"Sid\":\"kms default key policy\"}]}"
+  enable_automatic_rotation = true
+  automatic_rotation        = "Enabled"
+  status                    = "Enabled"
 }
 ```
+
+### Deleting `alicloud_kms_key` or removing it from your configuration
+
+Terraform cannot destroy resource `alicloud_kms_key`. Terraform will remove this resource from the state file, however resources may remain.
 
 ## Argument Reference
 
 The following arguments are supported:
+* `automatic_rotation` - (Optional, Available since v1.85.0) Whether automatic key rotation is enabled. Valid values:
+  - Enabled: Auto rotation is on.
+  - Disabled: Auto rotation is not turned on.
+  - Suspended: Automatic rotation is Suspended.
+* `certificate_id` - (Optional) The ID of the certificate.
+-> **NOTE:**  Only one of the KeyId, SecretName, and CertificateId parameters must be specified.
+* `description` - (Optional, Available since v1.85.0) The description of the key.
+* `dkms_instance_id` - (Optional, ForceNew, Available since v1.85.0) The ID of the KMS instance.
+* `enable_automatic_rotation` - (Optional) Whether to enable automatic key rotation. Value:
+  - true: On
+  - false (default): Not enabled
 
-* `description` - (Optional) The description of the CMK. The description can be 0 to 8,192 characters in length.
-* `key_usage` - (Optional, ForceNew, Computed) The usage of the CMK. Default value: `ENCRYPT/DECRYPT`. Valid values:
-  - `ENCRYPT/DECRYPT`: encrypts or decrypts data.
-  - `SIGN/VERIFY`: generates or verifies a digital signature.
-* `deletion_window_in_days` - (Deprecated since v1.85.0) Field `deletion_window_in_days` has been deprecated from provider version 1.85.0. New field `pending_window_in_days` instead.
-* `is_enabled` - (Deprecated since v1.85.0) Field `is_enabled` has been deprecated from provider version 1.85.0. New field `status` instead.
-* `automatic_rotation` - (Optional, Computed) Specifies whether to enable automatic key rotation. Default value: `Disabled`. Valid values: 
-  - `Enabled`
-  - `Disabled`
-  **NOTE**: If you set the origin parameter to EXTERNAL or the key_spec parameter to an asymmetric CMK type, automatic key rotation is unavailable.
-    
-* `key_spec`   - (Optional, ForceNew, Computed) The type of the CMK. Default value: `Aliyun_AES_256`. Valid values: 
-  `Aliyun_AES_256`, `Aliyun_AES_128`, `Aliyun_AES_192`, `Aliyun_SM4`, `RSA_2048`, `RSA_3072`, `EC_P256`, `EC_P256K`, `EC_SM2`.
-  Note: The default type of the CMK is `Aliyun_AES_256`. Only Dedicated KMS supports `Aliyun_AES_128` and `Aliyun_AES_192`.
-* `key_state` - (Deprecated since v1.123.1) Field `key_state` has been deprecated from provider version 1.123.1. New field `status` instead.
-* `status` - (Optional, Computed, Available since v1.123.1) The status of CMK. Default value: `Enabled`. Valid Values: 
-  - `Disabled`
-  - `Enabled`
-  - `PendingDeletion`
-  
-* `origin` - (Optional, ForceNew, Computed) The source of key material. Default value: `Aliyun_KMS`. Valid values: 
-  - `Aliyun_KMS`
-  - `EXTERNAL`
-  **NOTE**: The value of this parameter is case-sensitive. If you set the `key_spec` to an asymmetric CMK type, 
-    you are not allowed to set the `origin` to EXTERNAL. If you set the `origin` to EXTERNAL, you must import key material. 
-    For more information, see [import key material](https://www.alibabacloud.com/help/en/doc-detail/68523.htm).
-    
-* `pending_window_in_days` - (Optional, Computed, Int) The number of days before the CMK is deleted. 
-  During this period, the CMK is in the PendingDeletion state. 
-  After this period ends, you cannot cancel the deletion. Valid values: 7 to 366. Unit: days.
-  **NOTE:** From version 1.184.0, `pending_window_in_days` can be set to `366`.
-* `protection_level` - (Optional, ForceNew) The protection level of the CMK. Default value: `SOFTWARE`. Valid values:
-  - `SOFTWARE`
-  - `HSM`
-  **NOTE**: The value of this parameter is case-sensitive. Assume that you set this parameter to HSM. 
-    If you set the origin parameter to Aliyun_KMS, the CMK is created in a managed hardware security module (HSM). 
-    If you set the origin parameter to EXTERNA, you can import an external key to the managed HSM.
-    
-* `rotation_interval` - (Optional) The interval for automatic key rotation. Specify the value in the integer[unit] format.
-  The following units are supported: d (day), h (hour), m (minute), and s (second). 
-  For example, you can use either 7d or 604800s to specify a seven-day interval. 
-  The interval can range from 7 days to 730 days. 
-  **NOTE**: It is Required when `automatic_rotation = "Enabled"`
-                                           
--> **NOTE:** When the pre-deletion days elapses, the key is permanently deleted and cannot be recovered.
+This parameter value is valid only when the key management type to which the key belongs supports automatic rotation. For details, see [Key Rotation](~~ 2358146 ~~).
+.
+* `enable_deletion_protection` - (Optional) Whether to enable deletion protection, value:
+  - true: Enable deletion protection.
+  - false (default): Delete protection is turned off.
+* `key_spec` - (Optional, ForceNew, Available since v1.85.0) The specifications of the key.
+* `key_usage` - (Optional, ForceNew, Available since v1.85.0) The purpose of the key.
+* `origin` - (Optional, ForceNew, Available since v1.85.0) Key material source. .
+* `pending_window_in_days` - (Optional, Available since v1.85.0) Key pre-deletion cycle. During this period of time, you can revoke and delete the key that is in the pending state. After the pre-delete time, you cannot revoke the deletion. Value range: 7~366. Unit: Days.
+* `policy` - (Optional) Policy.
+* `policy_name` - (Optional) Policy Name.
+* `protection_level` - (Optional, ForceNew, Available since v1.85.0) The protection level of the key.
+* `rotation_interval` - (Optional, Available since v1.85.0) The period of automatic key rotation. The unit is seconds, and the format is an integer value followed by the character s. For example, a 7-day cycle is 604800s.  This value is returned only if the AutomaticRotation parameter value is Enabled or Suspended.
+* `secret_name` - (Optional) Credential name.
+-> **NOTE:**  KeyId, SecretName, and cerificateid must and can only specify one of the parameters.
 
-* `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The instance ID of the exclusive KMS instance.
-* `tags` - (Optional, Available since v1.207.0) A mapping of tags to assign to the resource.
+.
+* `status` - (Optional, Computed, Available since v1.85.0) The state of the key. For more information, see [the impact of the status of the user's master key on API calls](~~ 44211 ~~).
+* `tags` - (Optional, ForceNew, Map, Available since v1.85.0) Label.
 
 ## Attributes Reference
 
-* `id` - The ID of the key.
-* `arn` - The Alicloud Resource Name (ARN) of the key.
-* `creation_date` -The date and time when the CMK was created. The time is displayed in UTC.
-* `creator` -The creator of the CMK.
-* `delete_date` -The scheduled date to delete CMK. The time is displayed in UTC. This value is returned only when the KeyState value is PendingDeletion.
-* `last_rotation_date` - The date and time the last rotation was performed. The time is displayed in UTC. 
-* `material_expire_time` - The time and date the key material for the CMK expires. The time is displayed in UTC. If the value is empty, the key material for the CMK does not expire.
-* `next_rotation_date` - The time the next rotation is scheduled for execution. 
-* `primary_key_version` - The ID of the current primary key version of the symmetric CMK. 
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Key.
+* `update` - (Defaults to 5 mins) Used when update the Key.
 
 ## Import
 
-Alikms key can be imported using the id, e.g.
+KMS Key can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_kms_key.example <id>

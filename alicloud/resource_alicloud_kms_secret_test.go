@@ -910,7 +910,7 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudKmsSecretCreate(dInit, rawClient)
+	err = resourceAliCloudKmsSecretCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -936,7 +936,7 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudKmsSecretCreate(dInit, rawClient)
+		err := resourceAliCloudKmsSecretCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1093,7 +1093,7 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudKmsSecretRead(dExisted, rawClient)
+		err := resourceAliCloudKmsSecretRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1112,7 +1112,7 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudKmsSecretDelete(dExisted, rawClient)
+	err = resourceAliCloudKmsSecretDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "Forbidden.ResourceNotFound"}
@@ -1134,7 +1134,7 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudKmsSecretDelete(dExisted, rawClient)
+		err := resourceAliCloudKmsSecretDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1144,3 +1144,1118 @@ func TestUnitAlicloudKMSSecret(t *testing.T) {
 		}
 	}
 }
+
+// Test Kms Secret. >>> Resource test cases, automatically generated.
+// Case SecretPolicy 6480
+func TestAccAliCloudKmsSecret_basic6480(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap6480)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence6480)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":  "v1",
+					"secret_name": name,
+					"secret_data": "{\\\"UserName\\\":\\\"ecs-user1423\\\",\\\"Password\\\":\\\"ecs-user1423\\\"}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":  "v1",
+						"secret_name": name,
+						"secret_data": "{\"UserName\":\"ecs-user1423\",\"Password\":\"ecs-user1423\"}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "afdsafdsafsd",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "afdsafdsafsd",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms policy\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms policy\"}]}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name + "_update",
+					"description":               "test",
+					"secret_type":               "ECS",
+					"enable_automatic_rotation": "true",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"UserName\\\":\\\"ecs-user1423\\\",\\\"Password\\\":\\\"ecs-user1423\\\"}",
+					"policy":                    "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+					"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+					"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+					"rotation_interval":         "604800s",
+					"extended_config":           "{\\\"SecretSubType\\\":\\\"Password\\\",\\\"InstanceId\\\":\\\"i-bp1fr0a100hd0yf6ksq3\\\",\\\"CustomData\\\":{\\\"Key1\\\":\\\"v1\\\",\\\"fds\\\":\\\"fdsf\\\"},\\\"CommandId\\\":\\\"cmd-ACS-KMS-RotateECSSecret-For-Linux.sh\\\",\\\"RegionId\\\":\\\"cn-hangzhou\\\"}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name + "_update",
+						"description":               "test",
+						"secret_type":               "ECS",
+						"enable_automatic_rotation": "true",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"UserName\":\"ecs-user1423\",\"Password\":\"ecs-user1423\"}",
+						"policy":                    "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+						"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+						"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+						"rotation_interval":         "604800s",
+						"extended_config":           "{\"SecretSubType\":\"Password\",\"InstanceId\":\"i-bp1fr0a100hd0yf6ksq3\",\"CustomData\":{\"Key1\":\"v1\",\"fds\":\"fdsf\"},\"CommandId\":\"cmd-ACS-KMS-RotateECSSecret-For-Linux.sh\",\"RegionId\":\"cn-hangzhou\"}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap6480 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence6480(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case GenericSecretPolicy 6511
+func TestAccAliCloudKmsSecret_basic6511(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap6511)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence6511)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":  "v1",
+					"secret_name": name,
+					"secret_data": "{\\\"UserName\\\":\\\"123\\\",\\\"Password\\\":\\\"123\\\"}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":  "v1",
+						"secret_name": name,
+						"secret_data": "{\"UserName\":\"123\",\"Password\":\"123\"}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name + "_update",
+					"description":               "test",
+					"secret_type":               "Generic",
+					"enable_automatic_rotation": "false",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"UserName\\\":\\\"123\\\",\\\"Password\\\":\\\"123\\\"}",
+					"policy":                    "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+					"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+					"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+					"version_stages": []string{
+						"ACSCurrent"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name + "_update",
+						"description":               "test",
+						"secret_type":               "Generic",
+						"enable_automatic_rotation": "false",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"UserName\":\"123\",\"Password\":\"123\"}",
+						"policy":                    "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+						"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+						"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+						"version_stages.#":          "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap6511 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence6511(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 全生命周期 2001
+func TestAccAliCloudKmsSecret_basic2001(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap2001)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence2001)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":  "v1",
+					"secret_name": name,
+					"secret_data": "{\\\"user\\\":\\\"root\\\",\\\"passwd\\\":\\\"123\\\"}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":  "v1",
+						"secret_name": name,
+						"secret_data": "{\"user\":\"root\",\"passwd\":\"123\"}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "test-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name + "_update",
+					"description":               "test",
+					"rotation_interval":         "7d",
+					"secret_type":               "Generic",
+					"enable_automatic_rotation": "true",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"user\\\":\\\"root\\\",\\\"passwd\\\":\\\"123\\\"}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name + "_update",
+						"description":               "test",
+						"rotation_interval":         "7d",
+						"secret_type":               "Generic",
+						"enable_automatic_rotation": "true",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"user\":\"root\",\"passwd\":\"123\"}",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap2001 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence2001(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 完备度RDK接入 1321
+func TestAccAliCloudKmsSecret_basic1321(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap1321)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence1321)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap1321 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence1321(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case KMS下Secret测试用例 53
+func TestAccAliCloudKmsSecret_basic53(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap53)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence53)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap53 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence53(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case KMS下Secret测试用例 393
+func TestAccAliCloudKmsSecret_basic393(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap393)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence393)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+var AlicloudKmsSecretMap393 = map[string]string{
+	"create_time":      CHECKSET,
+	"secret_data_type": "text",
+}
+
+func AlicloudKmsSecretBasicDependence393(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case SecretPolicy 6480  twin
+func TestAccAliCloudKmsSecret_basic6480_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap6480)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence6480)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name,
+					"description":               "test",
+					"secret_type":               "ECS",
+					"enable_automatic_rotation": "true",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"UserName\\\":\\\"ecs-user1423\\\",\\\"Password\\\":\\\"ecs-user1423\\\"}",
+					"policy":                    "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+					"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+					"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+					"rotation_interval":         "604800s",
+					"extended_config":           "{\\\"SecretSubType\\\":\\\"Password\\\",\\\"InstanceId\\\":\\\"i-bp1fr0a100hd0yf6ksq3\\\",\\\"CustomData\\\":{\\\"Key1\\\":\\\"v1\\\",\\\"fds\\\":\\\"fdsf\\\"},\\\"CommandId\\\":\\\"cmd-ACS-KMS-RotateECSSecret-For-Linux.sh\\\",\\\"RegionId\\\":\\\"cn-hangzhou\\\"}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name,
+						"description":               "test",
+						"secret_type":               "ECS",
+						"enable_automatic_rotation": "true",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"UserName\":\"ecs-user1423\",\"Password\":\"ecs-user1423\"}",
+						"policy":                    "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+						"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+						"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+						"rotation_interval":         "604800s",
+						"extended_config":           "{\"SecretSubType\":\"Password\",\"InstanceId\":\"i-bp1fr0a100hd0yf6ksq3\",\"CustomData\":{\"Key1\":\"v1\",\"fds\":\"fdsf\"},\"CommandId\":\"cmd-ACS-KMS-RotateECSSecret-For-Linux.sh\",\"RegionId\":\"cn-hangzhou\"}",
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Case GenericSecretPolicy 6511  twin
+func TestAccAliCloudKmsSecret_basic6511_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap6511)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence6511)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name,
+					"description":               "test",
+					"secret_type":               "Generic",
+					"enable_automatic_rotation": "false",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"UserName\\\":\\\"123\\\",\\\"Password\\\":\\\"123\\\"}",
+					"policy":                    "{\\\"Version\\\":\\\"1\\\",\\\"Statement\\\":[{\\\"Action\\\":[\\\"kms:*\\\"],\\\"Resource\\\":[\\\"*\\\"],\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"RAM\\\":[\\\"acs:ram::1117600963847258:*\\\"]},\\\"Sid\\\":\\\"kms default secret policy\\\"}]}",
+					"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+					"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+					"version_stages": []string{
+						"ACSCurrent"},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name,
+						"description":               "test",
+						"secret_type":               "Generic",
+						"enable_automatic_rotation": "false",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"UserName\":\"123\",\"Password\":\"123\"}",
+						"policy":                    "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"kms:*\"],\"Resource\":[\"*\"],\"Effect\":\"Allow\",\"Principal\":{\"RAM\":[\"acs:ram::1117600963847258:*\"]},\"Sid\":\"kms default secret policy\"}]}",
+						"encryption_key_id":         "key-phzz661646aeygbqrfqg5j",
+						"dkms_instance_id":          "kst-phzz61dbabacquz826y29f",
+						"version_stages.#":          "1",
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Case 全生命周期 2001  twin
+func TestAccAliCloudKmsSecret_basic2001_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap2001)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence2001)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version_id":                "v1",
+					"secret_name":               name,
+					"description":               "test",
+					"rotation_interval":         "7d",
+					"secret_type":               "Generic",
+					"enable_automatic_rotation": "true",
+					"secret_data_type":          "text",
+					"secret_data":               "{\\\"user\\\":\\\"root\\\",\\\"passwd\\\":\\\"123\\\"}",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version_id":                "v1",
+						"secret_name":               name,
+						"description":               "test",
+						"rotation_interval":         "7d",
+						"secret_type":               "Generic",
+						"enable_automatic_rotation": "true",
+						"secret_data_type":          "text",
+						"secret_data":               "{\"user\":\"root\",\"passwd\":\"123\"}",
+						"tags.%":                    "2",
+						"tags.Created":              "TF",
+						"tags.For":                  "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Case 完备度RDK接入 1321  twin
+func TestAccAliCloudKmsSecret_basic1321_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap1321)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence1321)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Case KMS下Secret测试用例 53  twin
+func TestAccAliCloudKmsSecret_basic53_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap53)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence53)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Case KMS下Secret测试用例 393  twin
+func TestAccAliCloudKmsSecret_basic393_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_secret.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsSecretMap393)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsSecret")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmssecret%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsSecretBasicDependence393)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"certificate_id", "enable_automatic_rotation", "extended_config_custom_data", "key_id", "policy_name"},
+			},
+		},
+	})
+}
+
+// Test Kms Secret. <<< Resource test cases, automatically generated.
