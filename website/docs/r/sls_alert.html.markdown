@@ -1,5 +1,5 @@
 ---
-subcategory: "SLS"
+subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sls_alert"
 description: |-
@@ -10,7 +10,7 @@ description: |-
 
 Provides a SLS Alert resource. 
 
-For information about SLS Alert and how to use it, see [What is Alert](https://www.alibabacloud.com/help/en/).
+For information about SLS Alert and how to use it, see [What is Alert](https://www.alibabacloud.com/help/en/doc-detail/209202.html).
 
 -> **NOTE:** Available since v1.223.0.
 
