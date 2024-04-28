@@ -323,6 +323,86 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"shard_count": "2",
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "default",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "${alicloud_kms_key.key.id}",
+									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
+									"region_id":  os.Getenv("ALICLOUD_REGION"),
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"shard_count":    "2",
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable":       "true",
+							"encrypt_type": "m4",
+							"user_cmk_info": []map[string]string{
+								{
+									"cmk_key_id": "${alicloud_kms_key.key.id}",
+									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
+									"region_id":  os.Getenv("ALICLOUD_REGION"),
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"encrypt_conf": []map[string]interface{}{
+						{
+							"enable": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"encrypt_conf.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"retention_period": "30",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"retention_period": "30",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_ttl": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_ttl": "10",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
