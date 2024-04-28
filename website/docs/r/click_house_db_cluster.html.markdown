@@ -77,6 +77,7 @@ The following arguments are supported:
 * `db_cluster_access_white_list` - (Optional, Available since v1.145.0) The db cluster access white list. See [`db_cluster_access_white_list`](#db_cluster_access_white_list) below.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
+* `auto_renew` - (Optional) Specifies whether to enable auto-renewal for the subscription. Default value: `false`.
 
 ### `db_cluster_access_white_list`
 
