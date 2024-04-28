@@ -132,6 +132,7 @@ The following arguments are supported:
 * `active_deadline_seconds` - (Optional) The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
 * `ephemeral_storage` - (Optional) The size of ephemeral storage.
 * `load_balancer_weight` - (Optional) The weight of an ECI instance attached to the Server Group.
+* `instance_types` - (Optional, Available since v1.223.0) The specified ECS instance types. You can specify up to five ECS instance types.
 
 ### `volumes`
 

@@ -411,6 +411,14 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"instance_types": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type:     schema.TypeString,
+					MaxItems: 5,
+				},
+			},
 			"init_containers": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -800,7 +808,13 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["Command"] = ContainersMap["commands"]
 	}
 	request["Container"] = Containers
-
+	// instance_types
+	types := make([]string, 0, int(5))
+	instanceTypes := d.Get("instance_types").([]interface{})
+	if instanceTypes != nil && len(instanceTypes) > 0 {
+		types = expandStringList(instanceTypes)
+		request["InstanceType"] = types
+	}
 	if _, ok := d.GetOk("init_containers"); ok {
 		InitContainers := make([]map[string]interface{}, len(d.Get("init_containers").([]interface{})))
 		for i, v := range d.Get("init_containers").([]interface{}) {
@@ -940,6 +954,7 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("ephemeral_storage", o["EphemeralStorage"])
 	d.Set("load_balancer_weight", o["LoadBalancerWeight"])
 	d.Set("tags", o["Tags"])
+	d.Set("instance_types", o["InstanceTypes"])
 	d.Set("spot_strategy", o["SpotStrategy"])
 	if o["spot_price_limit"] != nil {
 		d.Set("spot_price_limit", strconv.FormatFloat(o["SpotPriceLimit"].(float64), 'f', 2, 64))
@@ -1579,6 +1594,15 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["HostAliase"] = aliases
 	}
 
+	if d.HasChange("instance_types") {
+		update = true
+		instanceTypes := d.Get("instance_types").([]interface{})
+		types := make([]string, 0, int(5))
+		if instanceTypes != nil && len(instanceTypes) > 0 {
+			types = expandStringList(instanceTypes)
+		}
+		request["InstanceType"] = types
+	}
 	if update {
 		conn, err := client.NewEssClient()
 		if err != nil {
