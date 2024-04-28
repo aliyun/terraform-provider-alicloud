@@ -862,6 +862,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_alert":                                            resourceAliCloudSlsAlert(),
 			"alicloud_oss_bucket_cors":                                      resourceAliCloudOssBucketCors(),
 			"alicloud_oss_bucket_server_side_encryption":                    resourceAliCloudOssBucketServerSideEncryption(),
 			"alicloud_oss_bucket_logging":                                   resourceAliCloudOssBucketLogging(),
