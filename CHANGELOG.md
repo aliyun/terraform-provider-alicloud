@@ -1,26 +1,28 @@
-## 1.223.0 (Unreleased)
+## 1.223.1 (Unreleased)
+## 1.223.0 (April 29, 2024)
 
-- **New Resource:** `alicloud_oss_bucket_cors` [GH-7188]
-- **New Resource:** `alicloud_sls_alert` [GH-7193]
+- **New Resource:** `alicloud_oss_bucket_cors` ([#7188](https://github.com/aliyun/terraform-provider-alicloud/issues/7188))
+- **New Resource:** `alicloud_sls_alert` ([#7193](https://github.com/aliyun/terraform-provider-alicloud/issues/7193))
 
 ENHANCEMENTS:
 
-- resource/alicloud_mongodb_sharding_instance: Added the field config_server_list. [GH-7136]
-- resource/alicloud_ess_eci_scaling_configuration: add instance_types. [GH-7171]
-- resource/alicloud_polardb_cluster_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). resource/alicloud_polardb_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). [GH-7179]
-- resource/alicloud_ecs_network_interface: Added the field instance_type, network_interface_traffic_mode. [GH-7181]
-- resource/alicloud_ga_endpoint_group: Supported health_check_protocol set to TCP, HTTP, HTTPS. [GH-7187]
-- resource/alicloud_vpc_ipv6_egress_rule: add retry code for create. [GH-7189]
-- resource/alicloud_security_group: prolong delete timeout. [GH-7190]
-- resource/alicloud_ecs_disk: Add idempotent parameters for Update operation. [GH-7198]
-- resource/alicloud_log_store: optimize Metrics telemetry type code implementation while create and update; resource/alicloud_log_project: Add constraint for project_name. [GH-7201]
-- resource/alicloud_vpn_route_entry: add retry code for delete operation; resource/alicloud_vpn_connection: Optimized code implementation. [GH-7204]
-- docs: import example for oss. [GH-7191]
-- docs: modify subcategory for sls alert. [GH-7202]
+- resource/alicloud_mongodb_sharding_instance: Added the field config_server_list. ([#7136](https://github.com/aliyun/terraform-provider-alicloud/issues/7136))
+- resource/alicloud_ess_eci_scaling_configuration: add instance_types. ([#7171](https://github.com/aliyun/terraform-provider-alicloud/issues/7171))
+- resource/alicloud_polardb_cluster_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). resource/alicloud_polardb_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). ([#7179](https://github.com/aliyun/terraform-provider-alicloud/issues/7179))
+- resource/alicloud_ecs_network_interface: Added the field instance_type, network_interface_traffic_mode. ([#7181](https://github.com/aliyun/terraform-provider-alicloud/issues/7181))
+- resource/alicloud_ga_endpoint_group: Supported health_check_protocol set to TCP, HTTP, HTTPS. ([#7187](https://github.com/aliyun/terraform-provider-alicloud/issues/7187))
+- resource/alicloud_vpc_ipv6_egress_rule: add retry code for create. ([#7189](https://github.com/aliyun/terraform-provider-alicloud/issues/7189))
+- resource/alicloud_security_group: prolong delete timeout. ([#7190](https://github.com/aliyun/terraform-provider-alicloud/issues/7190))
+- resource/alicloud_ecs_disk: Add idempotent parameters for Update operation. ([#7198](https://github.com/aliyun/terraform-provider-alicloud/issues/7198))
+- resource/alicloud_log_store: optimize Metrics telemetry type code implementation while create and update; resource/alicloud_log_project: Add constraint for project_name. ([#7201](https://github.com/aliyun/terraform-provider-alicloud/issues/7201))
+- resource/alicloud_vpn_route_entry: add retry code for delete operation; resource/alicloud_vpn_connection: Optimized code implementation. ([#7204](https://github.com/aliyun/terraform-provider-alicloud/issues/7204))
+- resource/alicloud_vpn_route_entry: add resource not found code for describe operation. ([#7206](https://github.com/aliyun/terraform-provider-alicloud/issues/7206))
+- docs: import example for oss. ([#7191](https://github.com/aliyun/terraform-provider-alicloud/issues/7191))
+- docs: modify subcategory for sls alert. ([#7202](https://github.com/aliyun/terraform-provider-alicloud/issues/7202))
 
 BUG FIXES:
 
-- resource/alicloud_sae_application: Fixed the update bug in field command_args, custom_host_alias, oss_mount_descs, config_map_mount_desc, liveness, readiness, post_start, pre_stop, tomcat_config, update_strategy. [GH-7168]
+- resource/alicloud_sae_application: Fixed the update bug in field command_args, custom_host_alias, oss_mount_descs, config_map_mount_desc, liveness, readiness, post_start, pre_stop, tomcat_config, update_strategy. ([#7168](https://github.com/aliyun/terraform-provider-alicloud/issues/7168))
 
 ## 1.222.0 (April 23, 2024)
 
