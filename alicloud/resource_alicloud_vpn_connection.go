@@ -488,6 +488,7 @@ func resourceAliCloudVPNGatewayVpnConnectionCreate(d *schema.ResourceData, meta 
 		if nodeNative8 != nil && nodeNative8 != "" {
 			objectDataLocalMap["RemoteId"] = nodeNative8
 		}
+
 		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 		if err != nil {
 			return WrapError(err)
@@ -513,6 +514,7 @@ func resourceAliCloudVPNGatewayVpnConnectionCreate(d *schema.ResourceData, meta 
 		if nodeNative12 != nil && nodeNative12 != "" {
 			objectDataLocalMap1["IpsecLifetime"] = nodeNative12
 		}
+
 		objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
 		if err != nil {
 			return WrapError(err)
@@ -538,6 +540,7 @@ func resourceAliCloudVPNGatewayVpnConnectionCreate(d *schema.ResourceData, meta 
 		if nodeNative16 != nil && nodeNative16 != "" {
 			objectDataLocalMap2["EnableBgp"] = nodeNative16
 		}
+
 		objectDataLocalMap2Json, err := json.Marshal(objectDataLocalMap2)
 		if err != nil {
 			return WrapError(err)
@@ -679,6 +682,7 @@ func resourceAliCloudVPNGatewayVpnConnectionCreate(d *schema.ResourceData, meta 
 		if nodeNative43 != nil && nodeNative43 != "" {
 			objectDataLocalMap3["retry"] = nodeNative43
 		}
+
 		objectDataLocalMap3Json, err := json.Marshal(objectDataLocalMap3)
 		if err != nil {
 			return WrapError(err)
@@ -1001,6 +1005,7 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 			if nodeNative8 != nil && nodeNative8 != "" {
 				objectDataLocalMap["RemoteId"] = nodeNative8
 			}
+
 			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
 			if err != nil {
 				return WrapError(err)
@@ -1029,6 +1034,7 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 			if nodeNative12 != nil && nodeNative12 != "" {
 				objectDataLocalMap1["IpsecPfs"] = nodeNative12
 			}
+
 			objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
 			if err != nil {
 				return WrapError(err)
@@ -1057,6 +1063,7 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 			if nodeNative16 != nil && nodeNative16 != "" {
 				objectDataLocalMap2["LocalAsn"] = nodeNative16
 			}
+
 			objectDataLocalMap2Json, err := json.Marshal(objectDataLocalMap2)
 			if err != nil {
 				return WrapError(err)
@@ -1181,6 +1188,7 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 			if nodeNative40 != nil && nodeNative40 != "" {
 				objectDataLocalMap3["Retry"] = nodeNative40
 			}
+
 			objectDataLocalMap3Json, err := json.Marshal(objectDataLocalMap3)
 			if err != nil {
 				return WrapError(err)
@@ -1222,7 +1230,6 @@ func resourceAliCloudVPNGatewayVpnConnectionUpdate(d *schema.ResourceData, meta 
 		if err := vPNGatewayServiceV2.SetResourceTags(d, "VPNCONNECTION"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	return resourceAliCloudVPNGatewayVpnConnectionRead(d, meta)
 }
