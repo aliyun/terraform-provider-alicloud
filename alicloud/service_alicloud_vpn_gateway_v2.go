@@ -184,7 +184,6 @@ func (s *VPNGatewayServiceV2) SetResourceTags(d *schema.ResourceData, resourceTy
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -290,7 +289,6 @@ func (s *VPNGatewayServiceV2) DescribeVPNGatewayVpnConnection(id string) (object
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidVpnConnectionInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpnConnection", id)), NotFoundMsg, response)
