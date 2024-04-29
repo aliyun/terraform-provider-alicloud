@@ -104,7 +104,7 @@ The following arguments are supported:
 * `tde_status` - (Optional, Available since v1.76.0) The TDE(Transparent Data Encryption) status. It can be updated from version 1.160.0.
 * `mongo_list` - (Required, Set) The Mongo nodes of the instance. The mongo-node count can be purchased is in range of [2, 32]. See [`mongo_list`](#mongo_list) below.
 * `shard_list` - (Required, Set) The Shard nodes of the instance. The shard-node count can be purchased is in range of [2, 32]. See [`shard_list`](#shard_list) below.
-* `config_server_list` - (Optional, ForceNew, Set, Available since v1.222.1) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
+* `config_server_list` - (Optional, ForceNew, Set, Available since v1.223.0) The ConfigServer nodes of the instance. See [`config_server_list`](#config_server_list) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `order_type` - (Optional, Available since v1.134.0) The type of configuration changes performed. Default value: `DOWNGRADE`. Valid values:
   - `UPGRADE`: The specifications are upgraded.

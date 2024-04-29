@@ -115,7 +115,7 @@ The following arguments are supported:
   - `TCP` or `tcp`: TCP protocol.
   - `HTTP` or `http`: HTTP protocol.
   - `HTTPS` or `https`: HTTPS protocol.
--> **NOTE:** From version 1.222.1, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
+-> **NOTE:** From version 1.223.0, `health_check_protocol` can be set to `TCP`, `HTTP`, `HTTPS`.
 * `health_check_interval_seconds` - (Optional, Int) The interval between two consecutive health checks. Unit: seconds.
 * `threshold_count` - (Optional, Int) The number of consecutive failed heath checks that must occur before the endpoint is deemed unhealthy. Default value: `3`.
 * `traffic_percentage` - (Optional, Int) The weight of the endpoint group when the corresponding listener is associated with multiple endpoint groups.
