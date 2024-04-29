@@ -297,6 +297,9 @@ func resourceAliyunVpnRouteEntryDelete(d *schema.ResourceData, meta interface{})
 		return nil
 	})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidRouteEntry.NotFound"}) || NeedRetry(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpn_route_entry", action, AlibabaCloudSdkGoERROR)
 	}
 
