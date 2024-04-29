@@ -141,7 +141,7 @@ func (s *VpnGatewayService) DescribeVpnRouteEntry(id string) (v vpc.VpnRouteEntr
 		return vpcClient.DescribeVpnRouteEntries(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden", "InvalidVpnGatewayInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"Forbidden", "InvalidVpnGatewayInstanceId.NotFound", "InvalidVpnInstanceId.NotFound"}) {
 			return v, WrapErrorf(Error(GetNotFoundMessage("VpnRouterEntry", id)), NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
