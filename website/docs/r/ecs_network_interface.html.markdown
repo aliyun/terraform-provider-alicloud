@@ -83,8 +83,8 @@ The following arguments are supported:
 * `ipv6_addresses` - (Optional, List, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 * `ipv4_prefix_count` - (Optional, Int, Available since v1.213.0) The number of IPv4 prefixes that can be automatically created by ECS. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv4_prefixes` and `ipv4_prefix_count` parameters.
 * `ipv4_prefixes` - (Optional, List, Available since v1.213.0) A list of IPv4 prefixes to be assigned to the ENI. Support up to 10.
-* `instance_type` - (Optional, ForceNew, Available since v1.222.1) The type of the ENI. Default value: `Secondary`. Valid values: `Secondary`, `Trunk`.
-* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.222.1) The communication mode of the ENI. Default value: `Standard`. Valid values: `Standard`, `HighPerformance`.
+* `instance_type` - (Optional, ForceNew, Available since v1.223.0) The type of the ENI. Default value: `Secondary`. Valid values: `Secondary`, `Trunk`.
+* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.0) The communication mode of the ENI. Default value: `Standard`. Valid values: `Standard`, `HighPerformance`.
 * `name` - (Optional, Deprecated since v1.123.1) Field `name` has been deprecated from provider version 1.123.1. New field `network_interface_name` instead
 * `private_ip` - (Optional, ForceNew, Deprecated since v1.123.1) Field `private_ip` has been deprecated from provider version 1.123.1. New field `primary_ip_address` instead
 * `private_ips` - (Optional, List, Deprecated since v1.123.1) Field `private_ips` has been deprecated from provider version 1.123.1. New field `private_ip_addresses` instead

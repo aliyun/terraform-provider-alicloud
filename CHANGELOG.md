@@ -1,4 +1,27 @@
 ## 1.223.0 (Unreleased)
+
+- **New Resource:** `alicloud_oss_bucket_cors` [GH-7188]
+- **New Resource:** `alicloud_sls_alert` [GH-7193]
+
+ENHANCEMENTS:
+
+- resource/alicloud_mongodb_sharding_instance: Added the field config_server_list. [GH-7136]
+- resource/alicloud_ess_eci_scaling_configuration: add instance_types. [GH-7171]
+- resource/alicloud_polardb_cluster_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). resource/alicloud_polardb_endpoint: Change parameter modification sequence("connection_prefix", "ssl_enabled"). [GH-7179]
+- resource/alicloud_ecs_network_interface: Added the field instance_type, network_interface_traffic_mode. [GH-7181]
+- resource/alicloud_ga_endpoint_group: Supported health_check_protocol set to TCP, HTTP, HTTPS. [GH-7187]
+- resource/alicloud_vpc_ipv6_egress_rule: add retry code for create. [GH-7189]
+- resource/alicloud_security_group: prolong delete timeout. [GH-7190]
+- resource/alicloud_ecs_disk: Add idempotent parameters for Update operation. [GH-7198]
+- resource/alicloud_log_store: optimize Metrics telemetry type code implementation while create and update; resource/alicloud_log_project: Add constraint for project_name. [GH-7201]
+- resource/alicloud_vpn_route_entry: add retry code for delete operation; resource/alicloud_vpn_connection: Optimized code implementation. [GH-7204]
+- docs: import example for oss. [GH-7191]
+- docs: modify subcategory for sls alert. [GH-7202]
+
+BUG FIXES:
+
+- resource/alicloud_sae_application: Fixed the update bug in field command_args, custom_host_alias, oss_mount_descs, config_map_mount_desc, liveness, readiness, post_start, pre_stop, tomcat_config, update_strategy. [GH-7168]
+
 ## 1.222.0 (April 23, 2024)
 
 - **New Resource:** `alicloud_oss_bucket_versioning` ([#7174](https://github.com/aliyun/terraform-provider-alicloud/issues/7174))
@@ -8,8 +31,8 @@
 
 ENHANCEMENTS:
 
-- provider: improves the assume role requests by setting protocol to HTTPS. ([#7172](https://github.com/aliyun/terraform-provider-alicloud/issues/7180))
 - provider: improves the assume role with oidc by removing checking access key. ([#7172](https://github.com/aliyun/terraform-provider-alicloud/issues/7172))
+- provider: improves the assume role requests by setting protocol to HTTPS. ([#7180](https://github.com/aliyun/terraform-provider-alicloud/issues/7180))
 - resource/alicloud_db_instance: add new attribute db_param_group_id. ([#7091](https://github.com/aliyun/terraform-provider-alicloud/issues/7091))
 - resource/alicloud_cs_kubernetes_permissions: modify sdk. ([#7100](https://github.com/aliyun/terraform-provider-alicloud/issues/7100))
 - resource/alicloud_cs_*: add retry for general error scenario; data-source/alicloud_cs_*: add retry for general error scenario and fix testcases. ([#7123](https://github.com/aliyun/terraform-provider-alicloud/issues/7123))
