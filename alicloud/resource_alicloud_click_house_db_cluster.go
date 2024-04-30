@@ -73,7 +73,7 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			"db_node_storage": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
+				// ForceNew: true,
 			},
 			"db_node_group_count": {
 				Type:         schema.TypeInt,
@@ -303,6 +303,7 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	return nil
 }
 func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta interface{}) error {
+	fmt.Printf("test-inUpdate, d=%+v\n",d)
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	d.Partial(true)
@@ -498,6 +499,49 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	fmt.Printf("test-inUpdate d.id=%v,db_node_group_count=%v,db_node_storage=%v,db_cluster_class=%v,storage_type=%v\n",d.Id(),d.Get("db_node_group_count"),d.Get("db_node_storage"),d.Get("db_cluster_class"),d.Get("storage_type"))
+	fmt.Printf("test-inUpdate db_node_group_count-HasChange=%v,db_node_storage-HasChange=%v,db_cluster_class-HasChange=%v,storage_type-HasChange=%v\n",d.HasChange("db_node_group_count"),d.HasChange("db_node_storage"),d.HasChange("db_cluster_class"),d.HasChange("storage_type"))
+	if !d.IsNewResource() && d.HasChange("db_node_storage") {
+		request := map[string]interface{}{
+			"DBClusterId":      d.Id(),
+			"DBNodeGroupCount": fmt.Sprintf("%v",d.Get("db_node_group_count")),
+			"DBNodeStorage":    fmt.Sprintf("%v",d.Get("db_node_storage")),
+			"DBClusterClass":   fmt.Sprintf("%v",d.Get("db_cluster_class")),
+			"DbNodeStorageType": convertClickHouseDbClusterStorageTypeRequest(d.Get("storage_type").(string)),
+			"RegionId":         client.RegionId,
+		}
+		fmt.Printf("test-inUpdate request=%+v\n",request)
+		action := "ModifyDBCluster"
+		var response map[string]interface{}
+		conn, err := client.NewClickhouseClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			fmt.Printf("ModifyDBCluster-response:%+v\n",response)
+			fmt.Printf("ModifyDBCluster-error:%+v\n",err)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		// wait = incrementalWait(3*time.Minute, 3*time.Minute)
+		// wait()
+		//make sure db cluster's attributes are updated.
+		time.Sleep(1 * time.Minute)
+		d.SetPartial("db_node_storage")
+	}
+
 	d.Partial(false)
 	return resourceAlicloudClickHouseDbClusterRead(d, meta)
 }
@@ -565,6 +609,21 @@ func convertClickHouseDbClusterStorageTypeResponse(source string) string {
 		return "cloud_essd_pl2"
 	case "CloudESSD_PL3":
 		return "cloud_essd_pl3"
+
+	}
+	return source
+}
+
+func convertClickHouseDbClusterStorageTypeRequest(source string) string {
+	switch source {
+	case "cloud_essd":
+		return "CloudESSD"
+	case "cloud_efficiency":
+		return "CloudEfficiency"
+	case "cloud_essd_pl2":
+		return "CloudESSD_PL2"
+	case "cloud_essd_pl3":
+		return "CloudESSD_PL3"
 
 	}
 	return source
