@@ -159,6 +159,7 @@ func (s *OssServiceV2) OssBucketRefererStateRefreshFunc(id string, field string,
 }
 
 // DescribeOssBucketReferer >>> Encapsulated.
+
 // DescribeOssBucketHttpsConfig <<< Encapsulated get interface for Oss BucketHttpsConfig.
 
 func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[string]interface{}, err error) {
@@ -192,11 +193,14 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 		addDebug(action, response, request)
 		return nil
 	})
-	response = response["body"].(map[string]interface{})
 	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchHttpsConfig", "NoSuchBucket"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketHttpsConfig", id)), NotFoundMsg, response)
+		}
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
 	v, err := jsonpath.Get("$.HttpsConfiguration.TLS", response)
 	if err != nil {
