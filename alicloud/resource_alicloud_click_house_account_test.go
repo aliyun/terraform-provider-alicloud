@@ -35,12 +35,14 @@ func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
 					"db_cluster_id":    "${alicloud_click_house_db_cluster.default.id}",
 					"account_name":     name,
 					"account_password": pwd,
+					"type":             "Normal",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_cluster_id":    CHECKSET,
 						"account_name":     name,
 						"account_password": pwd,
+						"type":             "Normal",
 					}),
 				),
 			},
@@ -109,10 +111,9 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_id":    "${alicloud_click_house_db_cluster.default.id}",
-					"account_name":     name,
-					"account_password": pwd,
-
+					"db_cluster_id":      "${alicloud_click_house_db_cluster.default.id}",
+					"account_name":       name,
+					"account_password":   pwd,
 					"ddl_authority":      "true",
 					"dml_authority":      "all",
 					"allow_databases":    "db1",
@@ -123,6 +124,7 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 						"db_cluster_id":      CHECKSET,
 						"account_name":       name,
 						"account_password":   pwd,
+						"type":               "Normal",
 						"allow_databases":    "db1",
 						"dml_authority":      "all",
 						"allow_dictionaries": "dt1",
@@ -196,6 +198,47 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudClickHouseAccount_CreateSuperAccount(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_account.default"
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseAccount")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(100, 999)
+	name := fmt.Sprintf("tf_testacc%d", rand)
+	pwd := fmt.Sprintf("Tf-test%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseAccountBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_id":    "${alicloud_click_house_db_cluster.default.id}",
+					"account_name":     name,
+					"account_password": pwd,
+					"type":             "Super",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_id":    CHECKSET,
+						"account_name":     name,
+						"account_password": pwd,
+						"type":             "Super",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var AliCloudClickHouseAccountMap0 = map[string]string{
 	"status":             CHECKSET,
 	"type":               CHECKSET,
@@ -229,7 +272,7 @@ func AliCloudClickHouseAccountBasicDependence0(name string) string {
 	}
 
 	resource "alicloud_click_house_db_cluster" "default" {
-  		db_cluster_version      = "20.3.10.75"
+  		db_cluster_version      = "22.8.5.29"
   		category                = "Basic"
   		db_cluster_class        = "S8"
   		db_cluster_network_type = "vpc"

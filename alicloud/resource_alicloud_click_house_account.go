@@ -49,11 +49,13 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
 			"type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "Normal",
+				ValidateFunc: validation.StringInSlice([]string{"Normal", "Super"}, false),
+			},
+			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -107,6 +109,10 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 	request["AccountName"] = d.Get("account_name")
 	request["AccountPassword"] = d.Get("account_password")
 	request["DBClusterId"] = d.Get("db_cluster_id")
+	if d.Get("type") == "Super" {
+		action = "CreateSQLAccount"
+		request["AccountType"] = d.Get("type")
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})

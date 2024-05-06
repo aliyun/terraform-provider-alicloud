@@ -67,6 +67,7 @@ The following arguments are supported:
 * `account_name` - (Required, ForceNew) Account name: lowercase letters, numbers, underscores, lowercase letter; length no more than 16 characters.
 * `account_password` - (Required) The account password: uppercase letters, lowercase letters, lowercase letters, numbers, and special characters (special character! #$%^& author (s):_+-=) in a length of 8-32 bit.
 * `db_cluster_id` - (Required, ForceNew) The db cluster id.
+* `type` - (Optional) The type of the database account. Valid values: `Normal` or `Super`. Default to `Normal`.
 * `dml_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readOnly,modify`.
 * `ddl_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DDL permissions to the database account. Valid values: `true` and `false`.
   -`true`: grants DDL permissions to the database account.
@@ -83,7 +84,7 @@ The following attributes are exported:
 
 * `id` - The resource ID of Account. The value formats as `<db_cluster_id>:<account_name>`.
 * `status` - The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
-* `type` - The type of the database account. Valid values: `Normal` or `Super`.
+
 
 ## Timeouts
 

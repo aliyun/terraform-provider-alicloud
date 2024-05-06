@@ -24,6 +24,9 @@ variable "name" {
 variable "pwd" {
   default = "Tf-testpwd"
 }
+variable "type" {
+  default = "Normal"
+}
 resource "alicloud_click_house_db_cluster" "default" {
   db_cluster_version      = "20.3.10.75"
   category                = "Basic"
@@ -42,6 +45,7 @@ resource "alicloud_click_house_account" "default" {
   account_description = "your_description"
   account_name        = var.name
   account_password    = var.pwd
+  type                = var.type
 }
 
 data "alicloud_click_house_accounts" "default" {
