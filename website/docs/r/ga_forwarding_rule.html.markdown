@@ -191,17 +191,17 @@ The host_config supports the following:
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Forwarding Rule. The value is formate as `<accelerator_id>:<listener_id>:<forwarding_rule_id>`.
-* `forwarding_rule_id` - Forwarding Policy ID.
-* `forwarding_rule_status` - Forwarding Policy Status.
+* `id` - The resource ID in terraform of Forwarding Rule. It formats as `<accelerator_id>:<listener_id>:<forwarding_rule_id>`.
+* `forwarding_rule_id` - The ID of the Forwarding Rule.
+* `forwarding_rule_status` - The status of the Forwarding Rule.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when create the Endpoint Forwarding Rule.
-* `update` - (Defaults to 3 mins) Used when update the Endpoint Forwarding Rule.
-* `delete` - (Defaults to 10 mins) Used when delete the Endpoint Forwarding Rule.
+* `create` - (Defaults to 10 mins) Used when create the Forwarding Rule.
+* `update` - (Defaults to 3 mins) Used when update the Forwarding Rule.
+* `delete` - (Defaults to 10 mins) Used when delete the Forwarding Rule.
 
 ## Import
 
