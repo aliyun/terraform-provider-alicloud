@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"time"
 
@@ -314,31 +315,35 @@ func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 	d.Set("accelerator_id", parts[0])
 	d.Set("listener_id", object["ListenerId"])
 	d.Set("priority", object["Priority"])
-	d.Set("forwarding_rule_id", object["ForwardingRuleId"])
 	d.Set("forwarding_rule_name", object["ForwardingRuleName"])
+	d.Set("forwarding_rule_id", object["ForwardingRuleId"])
 	d.Set("forwarding_rule_status", object["ForwardingRuleStatus"])
 
 	ruleConditionsMap := make([]map[string]interface{}, 0)
 	for _, ruleCondition := range object["RuleConditions"].([]interface{}) {
-		ruleCondition := ruleCondition.(map[string]interface{})
+		ruleConditionArg := ruleCondition.(map[string]interface{})
 		ruleConditionMap := map[string]interface{}{}
-		ruleConditionMap["rule_condition_type"] = ruleCondition["RuleConditionType"]
-		if ruleCondition["PathConfig"].(map[string]interface{})["Values"] != nil {
+		ruleConditionMap["rule_condition_type"] = ruleConditionArg["RuleConditionType"]
+
+		if ruleConditionArg["PathConfig"].(map[string]interface{})["Values"] != nil {
 			ruleConditionMap["path_config"] = []map[string]interface{}{
 				{
-					"values": ruleCondition["PathConfig"].(map[string]interface{})["Values"],
+					"values": ruleConditionArg["PathConfig"].(map[string]interface{})["Values"],
 				},
 			}
 		}
-		if ruleCondition["HostConfig"].(map[string]interface{})["Values"] != nil {
+
+		if ruleConditionArg["HostConfig"].(map[string]interface{})["Values"] != nil {
 			ruleConditionMap["host_config"] = []map[string]interface{}{
 				{
-					"values": ruleCondition["HostConfig"].(map[string]interface{})["Values"],
+					"values": ruleConditionArg["HostConfig"].(map[string]interface{})["Values"],
 				},
 			}
 		}
+
 		ruleConditionsMap = append(ruleConditionsMap, ruleConditionMap)
 	}
+
 	d.Set("rule_conditions", ruleConditionsMap)
 
 	if ruleActionsList, ok := object["RuleActions"]; ok {
@@ -367,6 +372,7 @@ func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 							serverGroupTuplesMaps = append(serverGroupTuplesMaps, serverGroupTuplesMap)
 						}
 					}
+
 					if len(serverGroupTuplesMaps) > 0 {
 						forwardGroupConfigMaps := make([]map[string]interface{}, 0)
 						forwardGroupConfigMap := map[string]interface{}{}
@@ -380,6 +386,7 @@ func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 					}
 				}
 			}
+
 			ruleActionsMap = append(ruleActionsMap, ruleActionMap)
 		}
 
@@ -422,6 +429,8 @@ func resourceAliCloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 	}
 	if v, ok := d.GetOk("forwarding_rule_name"); ok {
 		forwardingRulesMap["ForwardingRuleName"] = v
+	} else {
+		forwardingRulesMap["ForwardingRuleName"] = tea.String("")
 	}
 
 	if d.HasChange("rule_conditions") {

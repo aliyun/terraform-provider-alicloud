@@ -248,48 +248,77 @@ func (s *GaService) DescribeGaEndpointGroup(id string) (object map[string]interf
 
 func (s *GaService) DescribeGaForwardingRule(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListForwardingRules"
+
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
+
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		err = WrapError(err)
 		return
 	}
-	action := "ListForwardingRules"
+
 	request := map[string]interface{}{
 		"RegionId":         s.client.RegionId,
-		"ListenerId":       parts[1],
+		"ClientToken":      buildClientToken("ListForwardingRules"),
 		"AcceleratorId":    parts[0],
+		"ListenerId":       parts[1],
 		"ForwardingRuleId": parts[2],
 		"MaxResults":       PageSizeLarge,
 	}
-	request["ClientToken"] = buildClientToken(action)
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	err = resource.Retry(5*time.Second, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) {
-				return resource.RetryableError(WrapErrorf(Error(GetNotFoundMessage("ForwardingRule", id)), NotFoundMsg, ProviderERROR))
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR))
-		}
+			return nil
+		})
 		addDebug(action, response, request)
-		return nil
-	})
-	if err != nil {
-		return
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.ForwardingRules", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ForwardingRules", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:ForwardingRule", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["ListenerId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["ForwardingRuleId"]) == parts[2] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
+		}
 	}
-	v, err := jsonpath.Get("$.ForwardingRules", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ForwardingRules", response)
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:ForwardingRule", id)), NotFoundWithResponse, response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ForwardingRule", id)), NotFoundWithResponse, response)
-	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
 	return object, nil
 }
 
@@ -419,6 +448,7 @@ func (s *GaService) GaForwardingRuleStateRefreshFunc(id string, failStates []str
 				return object, object["ForwardingRuleStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["ForwardingRuleStatus"].(string)))
 			}
 		}
+
 		return object, object["ForwardingRuleStatus"].(string), nil
 	}
 }
