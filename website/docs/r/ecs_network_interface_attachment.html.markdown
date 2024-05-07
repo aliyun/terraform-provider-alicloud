@@ -13,7 +13,7 @@ Provides a ECS Network Interface Attachment resource.
 
 For information about ECS Network Interface Attachment and how to use it, see [What is Network Interface Attachment](https://www.alibabacloud.com/help/en/doc-detail/58515.htm).
 
--> **NOTE:** Available since v1.123.1+.
+-> **NOTE:** Available since v1.123.1.
 
 ## Example Usage
 
@@ -94,21 +94,31 @@ resource "alicloud_ecs_network_interface_attachment" "default" {
 
 The following arguments are supported:
 
-* `instance_id` - (Required, ForceNew) The instance id.
-* `network_interface_id` - (Required, ForceNew) The network interface id.
-* `trunk_network_instance_id` - (Optional) The trunk network instance id.
-* `wait_for_network_configuration_ready` - (Optional) The wait for network configuration ready.
+* `network_interface_id` - (Required, ForceNew)  The ID of the network interface.
+* `instance_id` - (Required, ForceNew) The ID of the ECS instance.
+* `trunk_network_instance_id` - (Optional, ForceNew) The ID of the trunk network instance.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.223.1) The index of the network card.
+* `wait_for_network_configuration_ready` - (Optional, Bool) The wait for network configuration ready.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Network Interface Attachment. The value is formatted `<network_interface_id>:<instance_id>`.
+* `id` - The resource ID in terraform of Network Interface Attachment. It formats as `<network_interface_id>:<instance_id>`.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.223.1.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 2 mins) Used when create the Network Interface Attachment.
+* `delete` - (Defaults to 1 mins) Used when delete the Network Interface Attachment.
 
 ## Import
 
 ECS Network Interface Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ecs_network_interface_attachment.example eni-abcd1234:i-abcd1234
+$ terraform import alicloud_ecs_network_interface_attachment.example <network_interface_id>:<instance_id>
 ```
