@@ -120,7 +120,7 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "cloud_essd_entry"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "cloud_essd_entry", "cloud_auto"}, false),
 			},
 			"output_file": {
 				Type:     schema.TypeString,
@@ -137,6 +137,11 @@ func dataSourceAlicloudInstanceTypes() *schema.Resource {
 				ForceNew: true,
 			},
 			"minimum_eni_ipv6_address_quantity": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"minimum_eni_private_ip_address_quantity": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				ForceNew: true,
@@ -276,6 +281,10 @@ func dataSourceAlicloudInstanceTypesRead(d *schema.ResourceData, meta interface{
 
 	if v, ok := d.GetOkExists("minimum_eni_ipv6_address_quantity"); ok {
 		request["MinimumEniIpv6AddressQuantity"] = v
+	}
+
+	if v, ok := d.GetOkExists("minimum_eni_private_ip_address_quantity"); ok {
+		request["MinimumEniPrivateIpAddressQuantity"] = v
 	}
 
 	if v, ok := d.GetOk("instance_type_family"); ok {
