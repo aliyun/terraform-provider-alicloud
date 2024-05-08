@@ -7,11 +7,11 @@ description: |-
   Provides a list of Click House Accounts to the user.
 ---
 
-# alicloud\_click\_house\_accounts
+# alicloud_click_house_accounts
 
 This data source provides the Click House Accounts of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.134.0+.
+-> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
 
@@ -19,13 +19,33 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "testaccountname"
+  default = "oneaccountname"
 }
 variable "pwd" {
-  default = "Tf-testpwd"
+  default = "Tf-onepwd"
 }
+variable "type" {
+  default = "Normal"
+}
+
+data "alicloud_click_house_regions" "default" {
+  current = true
+}
+
+resource "alicloud_vpc" "default" {
+  vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
+}
+
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+}
+
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "20.3.10.75"
+  db_cluster_version      = "22.8.5.29"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"
@@ -34,7 +54,8 @@ resource "alicloud_click_house_db_cluster" "default" {
   payment_type            = "PayAsYouGo"
   db_node_storage         = "500"
   storage_type            = "cloud_essd"
-  vswitch_id              = "your_vswitch_id"
+  vswitch_id              = alicloud_vswitch.default.id
+  vpc_id                  = alicloud_vpc.default.id
 }
 
 resource "alicloud_click_house_account" "default" {
@@ -42,12 +63,14 @@ resource "alicloud_click_house_account" "default" {
   account_description = "your_description"
   account_name        = var.name
   account_password    = var.pwd
+  type                = var.type
 }
 
 data "alicloud_click_house_accounts" "default" {
   ids           = [alicloud_click_house_account.default.id]
   db_cluster_id = alicloud_click_house_db_cluster.default.id
 }
+
 output "account_id" {
   value = data.alicloud_click_house_accounts.default.ids.0
 }
@@ -65,7 +88,7 @@ The following arguments are supported:
 * `status` - (Optional, ForceNew) The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
 
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
