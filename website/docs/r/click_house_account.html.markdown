@@ -23,6 +23,10 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+variable "type" {
+  default = "Normal"
+}
+
 data "alicloud_click_house_regions" "default" {
   current = true
 }
@@ -56,6 +60,7 @@ resource "alicloud_click_house_account" "default" {
   account_description = "tf-example-description"
   account_name        = "examplename"
   account_password    = "Example1234"
+  type                = var.type
 }
 ```
 
@@ -67,14 +72,15 @@ The following arguments are supported:
 * `account_name` - (Required, ForceNew) Account name: lowercase letters, numbers, underscores, lowercase letter; length no more than 16 characters.
 * `account_password` - (Required) The account password: uppercase letters, lowercase letters, lowercase letters, numbers, and special characters (special character! #$%^& author (s):_+-=) in a length of 8-32 bit.
 * `db_cluster_id` - (Required, ForceNew) The db cluster id.
+* `type` - (Optional, ForceNew) The type of the database account. Valid values: `Normal` or `Super`.
 * `dml_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DML permissions to the database account. Valid values: `all` and `readOnly,modify`.
 * `ddl_authority` - (Optional, Available since v1.163.0) Specifies whether to grant DDL permissions to the database account. Valid values: `true` and `false`.
   -`true`: grants DDL permissions to the database account.
   -`false`: does not grant DDL permissions to the database account.
 * `allow_databases` - (Optional, Available since v1.163.0) The list of databases to which you want to grant permissions. Separate databases with commas (,).
-* `total_databases` - (Optional, Available since v1.163.0) The list of all databases. Separate databases with commas (,).
+* `total_databases` - (Optional, Deprecated since v1.223.1) The list of all databases. Separate databases with commas (,). Field 'total_databases' has been deprecated from provider version 1.223.1.
 * `allow_dictionaries` - (Optional, Available since v1.163.0) The list of dictionaries to which you want to grant permissions. Separate dictionaries with commas (,).
-* `total_dictionaries` - (Optional, Available since v1.163.0) The list of all dictionaries. Separate dictionaries with commas (,).
+* `total_dictionaries` - (Optional, Deprecated since v1.223.1) The list of all dictionaries. Separate dictionaries with commas (,). Field 'total_dictionaries' has been deprecated from provider version 1.223.1.
 
 
 ## Attributes Reference
@@ -83,7 +89,6 @@ The following attributes are exported:
 
 * `id` - The resource ID of Account. The value formats as `<db_cluster_id>:<account_name>`.
 * `status` - The status of the resource. Valid Status: `Creating`,`Available`,`Deleting`.
-* `type` - The type of the database account. Valid values: `Normal` or `Super`.
 
 ## Timeouts
 

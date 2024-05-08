@@ -6,8 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -37,12 +35,12 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{1,15}`), "The account_name most consist of lowercase letters, numbers, and underscores, starting with a lowercase letter"),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{1,15}`), "The account_name most consist of lowercase letters, numbers, and underscores, starting with a lowercase letter"),
 			},
 			"account_password": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`[a-zA-Z!#$%^&*()_+-=]{8,32}`), "account_password must consist of uppercase letters, lowercase letters, numbers, and special characters"),
+				ValidateFunc: StringMatch(regexp.MustCompile(`[a-zA-Z!#$%^&*()_+-=]{8,32}`), "account_password must consist of uppercase letters, lowercase letters, numbers, and special characters"),
 			},
 			"db_cluster_id": {
 				Type:     schema.TypeString,
@@ -54,14 +52,16 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Computed: true,
 			},
 			"type": {
-				Type:     schema.TypeString,
-				Computed: true,
+				Type:         schema.TypeString,
+				Optional:	  true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Normal", "Super"}, false),
 			},
 			"dml_authority": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"all", "readOnly,modify"}, false),
+				ValidateFunc: StringInSlice([]string{"all", "readOnly,modify"}, false),
 			},
 			"ddl_authority": {
 				Type:     schema.TypeBool,
@@ -77,6 +77,7 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				Deprecated: "Field 'total_databases' has been deprecated from version 1.223.1 and it will be removed in the future version.",
 			},
 			"allow_dictionaries": {
 				Type:     schema.TypeString,
@@ -87,6 +88,7 @@ func resourceAlicloudClickHouseAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				Deprecated: "Field 'total_dictionaries' has been deprecated from version 1.223.1 and it will be removed in the future version.",
 			},
 		},
 	}
@@ -107,6 +109,10 @@ func resourceAlicloudClickHouseAccountCreate(d *schema.ResourceData, meta interf
 	request["AccountName"] = d.Get("account_name")
 	request["AccountPassword"] = d.Get("account_password")
 	request["DBClusterId"] = d.Get("db_cluster_id")
+	if d.Get("type") == "Super" {
+		action = "CreateSQLAccount"
+		request["AccountType"] = d.Get("type")
+	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -158,6 +164,9 @@ func resourceAlicloudClickHouseAccountRead(d *schema.ResourceData, meta interfac
 	d.Set("allow_dictionaries", convertArrayToString(authority["AllowDictionaries"], ","))
 	d.Set("total_databases", convertArrayToString(authority["TotalDatabases"], ","))
 	d.Set("total_dictionaries", convertArrayToString(authority["TotalDictionaries"], ","))
+	if err != nil {
+		return WrapError(err)
+	}
 
 	return nil
 }
