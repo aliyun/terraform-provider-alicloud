@@ -19,66 +19,52 @@ For information about DFS Mount Point and how to use it, see [What is Mount Poin
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
-}
-
 provider "alicloud" {
   region = "cn-hangzhou"
 }
 
+variable "name" {
+  default = "tf-example"
+}
+
 data "alicloud_dfs_zones" "default" {}
 
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
-}
-
-resource "alicloud_vpc" "DefaultVPC" {
-  cidr_block = "172.16.0.0/12"
+resource "alicloud_vpc" "default" {
   vpc_name   = var.name
+  cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "DefaultVSwitch" {
-  description  = "example"
-  vpc_id       = alicloud_vpc.DefaultVPC.id
-  cidr_block   = "172.16.0.0/24"
+resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
-
-  zone_id = data.alicloud_dfs_zones.default.zones.0.zone_id
+  cidr_block   = "10.4.0.0/24"
+  vpc_id       = alicloud_vpc.default.id
+  zone_id      = data.alicloud_dfs_zones.default.zones.0.zone_id
 }
 
-resource "alicloud_dfs_access_group" "DefaultAccessGroup" {
-  description       = "AccessGroup resource manager center example"
+resource "alicloud_dfs_file_system" "default" {
+  storage_type                     = data.alicloud_dfs_zones.default.zones.0.options.0.storage_type
+  zone_id                          = data.alicloud_dfs_zones.default.zones.0.zone_id
+  protocol_type                    = "HDFS"
+  description                      = var.name
+  file_system_name                 = var.name
+  throughput_mode                  = "Provisioned"
+  space_capacity                   = "1024"
+  provisioned_throughput_in_mi_bps = "512"
+}
+
+resource "alicloud_dfs_access_group" "default" {
+  access_group_name = var.name
+  description       = var.name
   network_type      = "VPC"
-  access_group_name = "${var.name}-${random_integer.default.result}"
 }
-
-resource "alicloud_dfs_access_group" "UpdateAccessGroup" {
-  description       = "Second AccessGroup resource manager center example"
-  network_type      = "VPC"
-  access_group_name = "${var.name}-update-${random_integer.default.result}"
-}
-
-resource "alicloud_dfs_file_system" "DefaultFs" {
-  space_capacity       = "1024"
-  description          = "for mountpoint  example"
-  storage_type         = "STANDARD"
-  zone_id              = data.alicloud_dfs_zones.default.zones.0.zone_id
-  protocol_type        = "HDFS"
-  data_redundancy_type = "LRS"
-  file_system_name     = "${var.name}-${random_integer.default.result}"
-}
-
 
 resource "alicloud_dfs_mount_point" "default" {
-  vpc_id          = alicloud_vpc.DefaultVPC.id
-  description     = "mountpoint example"
+  description     = var.name
+  vpc_id          = alicloud_vpc.default.id
+  file_system_id  = alicloud_dfs_file_system.default.id
+  access_group_id = alicloud_dfs_access_group.default.id
   network_type    = "VPC"
-  vswitch_id      = alicloud_vswitch.DefaultVSwitch.id
-  file_system_id  = alicloud_dfs_file_system.DefaultFs.id
-  access_group_id = alicloud_dfs_access_group.DefaultAccessGroup.id
-  status          = "Active"
+  vswitch_id      = alicloud_vswitch.default.id
 }
 ```
 

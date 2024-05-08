@@ -21,12 +21,12 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "tfexample"
 }
 
 resource "alicloud_resource_manager_resource_group" "example" {
-  display_name        = var.name
   resource_group_name = var.name
+  display_name        = var.name
 }
 ```
 

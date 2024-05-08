@@ -195,7 +195,7 @@ resource "alicloud_arms_synthetic_task" "default" {
     is_open_trace     = "true"
     trace_client_type = "1"
   }
-  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.1
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 ```
 

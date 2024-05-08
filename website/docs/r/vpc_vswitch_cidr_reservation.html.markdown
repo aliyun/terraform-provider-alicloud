@@ -24,7 +24,7 @@ variable "name" {
   default = "tf-example"
 }
 provider "alicloud" {
-  region = "ap-southeast-1"
+  region = "ap-southeast-2"
 }
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"

@@ -31,12 +31,12 @@ resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
 }
 
 resource "alicloud_log_project" "default" {
-  name        = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
-  description = "terraform-example"
+  project_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+  description  = "terraform-example"
 }
 resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
+  project_name          = alicloud_log_project.default.project_name
+  logstore_name         = var.name
   shard_count           = 3
   auto_split            = true
   max_split_shard_count = 60

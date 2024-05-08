@@ -34,7 +34,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example-basic-edge"
+  default = "tf-example"
 }
 data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
@@ -58,9 +58,10 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_cs_edge_kubernetes" "default" {
-  name                         = var.name
+  name_prefix                  = var.name
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
+  version                      = "1.26.3-aliyun.1"
   worker_number                = "1"
   password                     = "Test12345"
   pod_cidr                     = "10.99.0.0/16"
@@ -107,7 +108,7 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_cs_edge_kubernetes" "default" {
-  name                         = var.name
+  name_prefix                  = var.name
   worker_vswitch_ids           = [alicloud_vswitch.default.id]
   worker_instance_types        = [data.alicloud_instance_types.default.instance_types.0.id]
   cluster_spec                 = "ack.pro.small"

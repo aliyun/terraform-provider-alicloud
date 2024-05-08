@@ -70,15 +70,6 @@ resource "alicloud_cen_instance_grant" "child_account" {
   child_instance_id = alicloud_vpc.child_account.id
   cen_owner_id      = data.alicloud_account.your_account.id
 }
-
-resource "alicloud_cen_instance_attachment" "example" {
-  provider                 = alicloud.your_account
-  instance_id              = alicloud_cen_instance.example.id
-  child_instance_id        = alicloud_cen_instance_grant.child_account.child_instance_id
-  child_instance_type      = "VPC"
-  child_instance_region_id = data.alicloud_regions.default.regions.0.id
-  child_instance_owner_id  = data.alicloud_account.child_account.id
-}
 ```
 ## Argument Reference
 

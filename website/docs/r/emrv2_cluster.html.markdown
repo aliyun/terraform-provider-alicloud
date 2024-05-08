@@ -117,9 +117,8 @@ resource "alicloud_emrv2_cluster" "default" {
     node_group_type = "MASTER"
   }
   node_groups {
-    spot_instance_remedy    = "false"
-    deployment_set_strategy = "CLUSTER"
-    node_group_type         = "CORE"
+    spot_instance_remedy = "false"
+    node_group_type      = "CORE"
     vswitch_ids = [
       "${alicloud_vswitch.default.id}"
     ]
@@ -167,8 +166,6 @@ resource "alicloud_emrv2_cluster" "default" {
     ram_role             = alicloud_ram_role.default.name
     security_group_id    = alicloud_security_group.default.id
   }
-
-  log_collect_strategy = jsonencode({ "open" : ["all"], "close" : [""] })
 
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   cluster_name      = var.name

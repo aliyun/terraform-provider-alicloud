@@ -43,12 +43,10 @@ resource "alicloud_quotas_template_applications" "default" {
   desire_value      = "1"
   reason            = "example"
   quota_action_code = "quotas.label_multi/A"
-  effective_time    = "2023-12-03T16:00:00Z"
   aliyun_uids = [
     "${alicloud_resource_manager_account.account.id}"
   ]
   product_code = "quotas"
-  expire_time  = "2023-12-26T16:00:00Z"
 }
 ```
 

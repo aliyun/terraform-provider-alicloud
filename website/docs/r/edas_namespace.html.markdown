@@ -20,17 +20,21 @@ For information about EDAS Namespace and how to use it, see [What is Namespace](
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "tf-example"
+provider "alicloud" {
+  region = var.region
 }
-data "alicloud_regions" "default" {
-  current = true
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+variable "name" {
+  default = "tfexample"
 }
 
 resource "alicloud_edas_namespace" "default" {
   debug_enable         = false
   description          = var.name
-  namespace_logical_id = "${data.alicloud_regions.default.regions.0.id}:example"
+  namespace_logical_id = "${var.region}:${var.name}"
   namespace_name       = var.name
 }
 ```

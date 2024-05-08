@@ -24,6 +24,15 @@ variable "name" {
   default = "terraform-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
+locals {
+  name = "${var.name}-${random_integer.default.result}"
+}
+
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
@@ -41,21 +50,19 @@ data "alicloud_images" "default" {
   owners      = "system"
 }
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+data "alicloud_vpcs" "default" {
+  name_regex = "^default-NODELETING$"
+  cidr_block = "10.4.0.0/16"
 }
 
-resource "alicloud_vswitch" "default" {
-  vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/24"
-  zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+data "alicloud_vswitches" "default" {
+  cidr_block = "10.4.0.0/24"
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  zone_id    = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_security_group_rule" "default" {
@@ -72,9 +79,9 @@ resource "alicloud_security_group_rule" "default" {
 resource "alicloud_ess_scaling_group" "default" {
   min_size           = 0
   max_size           = 2
-  scaling_group_name = var.name
+  scaling_group_name = local.name
   removal_policies   = ["OldestInstance", "NewestInstance"]
-  vswitch_ids        = [alicloud_vswitch.default.id]
+  vswitch_ids        = [data.alicloud_vswitches.default.ids[0]]
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
@@ -96,7 +103,7 @@ resource "alicloud_instance" "default" {
   internet_max_bandwidth_out = "10"
   instance_charge_type       = "PostPaid"
   system_disk_category       = "cloud_efficiency"
-  vswitch_id                 = alicloud_vswitch.default.id
+  vswitch_id                 = data.alicloud_vswitches.default.ids[0]
   instance_name              = var.name
 }
 

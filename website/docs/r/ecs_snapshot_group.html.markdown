@@ -29,7 +29,9 @@ data "alicloud_instance_types" "default" {
   system_disk_category = "cloud_essd"
 }
 data "alicloud_images" "default" {
-  owners = "system"
+  owners      = "system"
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
 }
 
 resource "alicloud_vpc" "default" {
@@ -74,7 +76,7 @@ resource "alicloud_disk_attachment" "default" {
 
 resource "alicloud_ecs_snapshot_group" "default" {
   description                   = "terraform-example"
-  disk_id                       = [alicloud_ecs_disk.default.id]
+  disk_id                       = [alicloud_disk_attachment.default.disk_id]
   snapshot_group_name           = "terraform-example"
   instance_id                   = alicloud_instance.default.id
   instant_access                = true

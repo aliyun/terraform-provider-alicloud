@@ -40,7 +40,7 @@ data "alicloud_db_zones" "default" {
 }
 
 data "alicloud_db_instance_classes" "default" {
-  zone_id                  = data.alicloud_db_zones.default.zones.0.id
+  zone_id                  = data.alicloud_db_zones.default.zones.1.id
   engine                   = "MySQL"
   engine_version           = "8.0"
   category                 = "HighAvailability"
@@ -54,12 +54,12 @@ data "alicloud_vpcs" "default" {
 
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.0.id
+  zone_id = data.alicloud_db_zones.default.zones.1.id
 }
 
 locals {
   vswitch_id = data.alicloud_vswitches.default.ids.0
-  zone_id    = data.alicloud_db_zones.default.ids.0
+  zone_id    = data.alicloud_db_zones.default.ids.1
 }
 
 resource "alicloud_security_group" "default" {
