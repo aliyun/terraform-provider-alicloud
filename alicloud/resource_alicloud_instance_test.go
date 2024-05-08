@@ -1354,6 +1354,7 @@ func TestAccAliCloudECSInstancePrepaidAll(t *testing.T) {
 		},
 	})
 }
+
 func TestAccAliCloudECSInstanceDataDisks(t *testing.T) {
 	var v ecs.Instance
 
@@ -2399,7 +2400,6 @@ func TestAccAliCloudECSInstanceIpv6AddressesCount(t *testing.T) {
 
 func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 	var v ecs.Instance
-
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
 	serviceFunc := func() interface{} {
@@ -2407,12 +2407,10 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstance%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceIpv6Dependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -2435,11 +2433,19 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 					"user_data":                     "I_am_user_data",
 					"vswitch_id":                    "${alicloud_vswitch.vswitch.id}",
 					"ipv6_addresses":                []string{"${cidrhost(alicloud_vswitch.vswitch.ipv6_cidr_block, 64)}"},
+					"network_interfaces": []map[string]interface{}{
+						{
+							"vswitch_id":                     "${alicloud_vswitch.networkInterface.id}",
+							"network_interface_traffic_mode": "Standard",
+							"security_group_ids":             []string{"${alicloud_security_group.networkInterface.id}"},
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name":        name,
 						"ipv6_addresses.#":     "1",
+						"network_interfaces.#": "1",
 						"system_disk_category": "cloud_efficiency",
 					}),
 				),
@@ -2480,16 +2486,24 @@ data "alicloud_instance_types" "default" {
 
 resource "alicloud_vpc" "vpc" {
   vpc_name   = var.name
-  cidr_block = "172.16.0.0/16"
+  cidr_block = "172.16.0.0/12"
   enable_ipv6 = "true"
 }
 
 resource "alicloud_vswitch" "vswitch" {
   vswitch_name = var.name
-  cidr_block   = "172.16.0.0/24"
+  cidr_block   = "172.16.0.0/21"
   zone_id      = data.alicloud_zones.default.zones.0.id
   vpc_id       = alicloud_vpc.vpc.id
   ipv6_cidr_block_mask = "22"
+}
+
+resource "alicloud_vswitch" "networkInterface" {
+  vswitch_name = var.name
+  cidr_block   = "172.18.0.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id       = alicloud_vpc.vpc.id
+  ipv6_cidr_block_mask = "25"
 }
 
 data "alicloud_images" "default" {
@@ -2498,6 +2512,11 @@ data "alicloud_images" "default" {
 }
 
 resource "alicloud_security_group" "default" {
+  name   = "${var.name}"
+  vpc_id = alicloud_vpc.vpc.id
+}
+
+resource "alicloud_security_group" "networkInterface" {
   name   = "${var.name}"
   vpc_id = alicloud_vpc.vpc.id
 }
@@ -3106,7 +3125,7 @@ func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"operator_type": "downgrade",
-					"instance_type": "${data.alicloud_instance_types.default.instance_types.1.id}",
+					"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
 				},
 				),
 				Check: resource.ComposeTestCheckFunc(
@@ -3348,6 +3367,7 @@ func TestAccAliCloudECSInstanceSystemDisk(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -3432,6 +3452,7 @@ func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -3461,6 +3482,7 @@ func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 					},
 					"maintenance_action": "Stop",
 					"maintenance_notify": "true",
+					"enable_jumbo_frame": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -3470,6 +3492,7 @@ func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 						"maintenance_time.#":   "1",
 						"maintenance_action":   "Stop",
 						"maintenance_notify":   "true",
+						"enable_jumbo_frame":   "false",
 						"cpu":                  CHECKSET,
 						"memory":               CHECKSET,
 						"os_name":              CHECKSET,
@@ -3520,6 +3543,16 @@ func TestAccAliCloudECSInstanceMaintenance(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"user_data": "SSBhbSB0aGUgdXNlciBkYXRh",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_jumbo_frame": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_jumbo_frame": "true",
 					}),
 				),
 			},
@@ -3683,7 +3716,7 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 func resourceInstanceDedicatedHostIdConfigDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
-	instance_type_family = "ecs.g6"
+	instance_type_family = "ecs.i2"
 	availability_zone    = alicloud_vswitch.default.zone_id
 }
 
@@ -3704,7 +3737,7 @@ resource "alicloud_vpc" "default" {
 resource "alicloud_vswitch" "default" {
   vpc_id            = alicloud_vpc.default.id
   cidr_block        = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 2)
-  zone_id           = data.alicloud_zones.default.zones.1.id
+  zone_id           = data.alicloud_zones.default.zones.0.id
   vswitch_name      = var.name
 }
 
@@ -3753,7 +3786,7 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_ecs_dedicated_host" "default" {
-  dedicated_host_type = "ddh.g6"
+  dedicated_host_type = "ddh.i2"
   description = "From_Terraform"
   dedicated_host_name = var.name
   action_on_maintenance = "Migrate"
@@ -3766,7 +3799,7 @@ resource "alicloud_ecs_dedicated_host" "default" {
 func resourceInstanceSystemDiskDependence(name string) string {
 	return fmt.Sprintf(`
 data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.g6"
+  instance_type_family = "ecs.g8i"
   system_disk_category = "cloud_essd"
   availability_zone    = alicloud_vswitch.default.zone_id
 }
