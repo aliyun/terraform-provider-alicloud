@@ -292,6 +292,25 @@ func resourceAliCloudInstance() *schema.Resource {
 							ForceNew: true,
 							Computed: true,
 						},
+						"vswitch_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"network_interface_traffic_mode": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"security_group_ids": {
+							Type:     schema.TypeList,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -610,6 +629,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"enable_jumbo_frame": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -884,14 +908,40 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOk("network_interfaces"); ok {
 		networkInterfacesMaps := make([]map[string]interface{}, 0)
-		interfaces := v.([]interface{})
-		for _, rew := range interfaces {
+		for _, networkInterfaces := range v.([]interface{}) {
 			networkInterfacesMap := make(map[string]interface{})
-			item := rew.(map[string]interface{})
-			networkInterfacesMap["NetworkInterfaceId"] = item["network_interface_id"].(string)
+			networkInterfacesArg := networkInterfaces.(map[string]interface{})
+
+			if networkInterfaceId, ok := networkInterfacesArg["network_interface_id"]; ok && fmt.Sprint(networkInterfaceId) != "" {
+				networkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
+			}
+
+			if vSwitchId, ok := networkInterfacesArg["vswitch_id"]; ok {
+				networkInterfacesMap["VSwitchId"] = vSwitchId
+			}
+
+			if networkInterfaceTrafficMode, ok := networkInterfacesArg["network_interface_traffic_mode"]; ok {
+				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
+			}
+
+			if securityGroupIds, ok := networkInterfacesArg["security_group_ids"]; ok {
+				networkInterfacesMap["SecurityGroupIds"] = securityGroupIds
+			}
+
 			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
 		}
+
 		request["NetworkInterface"] = networkInterfacesMaps
+	}
+
+	networkOptionsMap := make(map[string]interface{})
+
+	if v, ok := d.GetOkExists("enable_jumbo_frame"); ok {
+		networkOptionsMap["EnableJumboFrame"] = v
+	}
+
+	if len(networkOptionsMap) > 0 {
+		request["NetworkOptions"] = networkOptionsMap
 	}
 
 	if v, ok := d.GetOk("hpc_cluster_id"); ok {
@@ -1151,6 +1201,15 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		} else {
 			networkInterfaceMap := make(map[string]interface{})
 			networkInterfaceMap["network_interface_id"] = obj.NetworkInterfaceId
+
+			object, err := ecsService.DescribeEcsNetworkInterface(obj.NetworkInterfaceId)
+			if err != nil {
+				return WrapError(err)
+			}
+
+			networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
+			networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
+			networkInterfaceMap["security_group_ids"] = object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"]
 			networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 		}
 	}
@@ -1203,6 +1262,13 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	}
 
 	d.Set("maintenance_notify", maintenanceAttribute["NotifyOnMaintenance"])
+
+	instanceAttribute, err := ecsService.DescribeInstanceAttribute(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("enable_jumbo_frame", instanceAttribute.EnableJumboFrame)
 
 	return nil
 }
@@ -2088,6 +2154,16 @@ func modifyInstanceAttribute(d *schema.ResourceData, meta interface{}) (bool, er
 	if d.HasChange("credit_specification") {
 		d.SetPartial("credit_specification")
 		request["CreditSpecification"] = d.Get("credit_specification").(string)
+		update = true
+	}
+
+	if d.HasChange("enable_jumbo_frame") {
+		d.SetPartial("enable_jumbo_frame")
+
+		if v, ok := d.GetOkExists("enable_jumbo_frame"); ok {
+			request["EnableJumboFrame"] = v
+		}
+
 		update = true
 	}
 
