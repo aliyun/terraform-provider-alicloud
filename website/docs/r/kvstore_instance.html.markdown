@@ -21,10 +21,7 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
-
-data "alicloud_kvstore_zones" "default" {
-}
-
+data "alicloud_kvstore_zones" "default" {}
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
 }
@@ -33,7 +30,6 @@ resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
 }
-
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"

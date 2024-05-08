@@ -33,15 +33,15 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-hangzhou-k"
+  zone_id = "cn-hangzhou-h"
 }
 
 resource "alicloud_kms_instance" "default" {
   product_version = "3"
   vpc_id          = data.alicloud_vpcs.default.ids.0
   zone_ids = [
-    "cn-hangzhou-k",
-    "cn-hangzhou-j"
+    "cn-hangzhou-h",
+    "cn-hangzhou-g"
   ]
   vswitch_ids = [
     data.alicloud_vswitches.default.ids.0

@@ -38,12 +38,12 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_hbase_zones.default.zones[0].id
+  zone_id = data.alicloud_hbase_zones.default.zones[1].id
 }
 
 resource "alicloud_hbase_instance" "default" {
   name                   = var.name
-  zone_id                = data.alicloud_hbase_zones.default.zones[0].id
+  zone_id                = data.alicloud_hbase_zones.default.zones[1].id
   vswitch_id             = data.alicloud_vswitches.default.ids.0
   vpc_id                 = data.alicloud_vpcs.default.ids.0
   engine                 = "hbaseue"

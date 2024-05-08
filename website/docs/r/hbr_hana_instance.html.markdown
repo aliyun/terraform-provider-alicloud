@@ -26,13 +26,18 @@ data "alicloud_resource_manager_resource_groups" "example" {
   status = "OK"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_hbr_vault" "example" {
-  vault_name = "terraform-example"
+  vault_name = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_hbr_hana_instance" "example" {
   alert_setting        = "INHERITED"
-  hana_name            = "terraform-example"
+  hana_name            = "terraform-example-${random_integer.default.result}"
   host                 = "1.1.1.1"
   instance_number      = 1
   password             = "YouPassword123"

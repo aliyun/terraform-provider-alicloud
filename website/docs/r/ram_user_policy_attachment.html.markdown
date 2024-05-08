@@ -24,10 +24,14 @@ resource "alicloud_ram_user" "user" {
   email        = "hello.uuu@aaa.com"
   comments     = "yoyoyo"
 }
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
 
 resource "alicloud_ram_policy" "policy" {
-  name        = "policyName"
-  document    = <<EOF
+  policy_name     = "tf-example-${random_integer.default.result}"
+  policy_document = <<EOF
   {
     "Statement": [
       {
@@ -45,11 +49,11 @@ resource "alicloud_ram_policy" "policy" {
       "Version": "1"
   }
   EOF
-  description = "this is a policy test"
+  description     = "this is a policy test"
 }
 
 resource "alicloud_ram_user_policy_attachment" "attach" {
-  policy_name = alicloud_ram_policy.policy.name
+  policy_name = alicloud_ram_policy.policy.policy_name
   policy_type = alicloud_ram_policy.policy.type
   user_name   = alicloud_ram_user.user.name
 }

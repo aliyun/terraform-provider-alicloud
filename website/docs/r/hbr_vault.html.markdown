@@ -20,8 +20,12 @@ For information about HBR Backup vault and how to use it, see [What is Backup va
 Basic Usage
 
 ```terraform
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
 resource "alicloud_hbr_vault" "example" {
-  vault_name = "example_value"
+  vault_name = "example_value_${random_integer.default.result}"
 }
 ```
 

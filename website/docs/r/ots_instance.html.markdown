@@ -27,9 +27,9 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_ots_instance" "default" {
-  name             = "${var.name}-${random_integer.default.result}"
-  description      = var.name
-  network_type_acl = ["VPC"]
+  name        = "${var.name}-${random_integer.default.result}"
+  description = var.name
+  accessed_by = "Vpc"
   tags = {
     Created = "TF"
     For     = "Building table"

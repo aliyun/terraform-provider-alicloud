@@ -19,20 +19,14 @@ For information about DFS Access Group and how to use it, see [What is Access Gr
 Basic Usage
 
 ```terraform
-variable "name" {
-  default = "terraform-example"
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
-
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
 
 resource "alicloud_dfs_access_group" "default" {
-  description       = var.name
+  access_group_name = "tf-example-${random_integer.default.result}"
   network_type      = "VPC"
-  access_group_name = var.name
-
 }
 ```
 

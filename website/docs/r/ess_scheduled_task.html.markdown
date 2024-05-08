@@ -99,6 +99,11 @@ resource "alicloud_ess_scheduled_task" "default" {
   scheduled_action    = alicloud_ess_scaling_rule.default.ari
   launch_time         = formatdate("YYYY-MM-DD'T'hh:mm'Z'", timeadd(timestamp(), "24h"))
   scheduled_task_name = "${var.name}-${random_integer.default.result}"
+
+  # for test
+  lifecycle {
+    ignore_changes = [launch_time]
+  }
 }
 ```
 

@@ -50,6 +50,9 @@ resource "alicloud_ens_instance" "default" {
   schedule_area_level        = "Region"
   period_unit                = "Month"
   period                     = "1"
+  timeouts {
+    delete = "50m"
+  }
 }
 
 

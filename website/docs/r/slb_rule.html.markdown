@@ -36,7 +36,20 @@ variable "slb_rule_name" {
 }
 
 data "alicloud_zones" "rule" {
+  available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
+}
+
+data "alicloud_instance_types" "rule" {
+  availability_zone = data.alicloud_zones.rule.zones[0].id
+  cpu_core_count    = 1
+  memory_size       = 2
+}
+
+data "alicloud_images" "rule" {
+  name_regex  = "^ubuntu_18.*64"
+  most_recent = true
+  owners      = "system"
 }
 
 resource "alicloud_vpc" "rule" {
@@ -49,6 +62,24 @@ resource "alicloud_vswitch" "rule" {
   cidr_block   = "172.16.0.0/16"
   zone_id      = data.alicloud_zones.rule.zones[0].id
   vswitch_name = var.slb_rule_name
+}
+
+resource "alicloud_security_group" "rule" {
+  name   = var.slb_rule_name
+  vpc_id = alicloud_vpc.rule.id
+}
+
+resource "alicloud_instance" "rule" {
+  image_id                   = data.alicloud_images.rule.images[0].id
+  instance_type              = data.alicloud_instance_types.rule.instance_types[0].id
+  security_groups            = alicloud_security_group.rule.*.id
+  internet_charge_type       = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone          = data.alicloud_zones.rule.zones[0].id
+  instance_charge_type       = "PostPaid"
+  system_disk_category       = "cloud_efficiency"
+  vswitch_id                 = alicloud_vswitch.rule.id
+  instance_name              = var.slb_rule_name
 }
 
 resource "alicloud_slb_load_balancer" "rule" {

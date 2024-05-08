@@ -24,13 +24,11 @@ variable "name" {
   default = "terraform-example"
 }
 
-data "alicloud_adb_zones" "default" {
-}
+data "alicloud_adb_zones" "default" {}
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }
-
 data "alicloud_vswitches" "default" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_adb_zones.default.ids.0

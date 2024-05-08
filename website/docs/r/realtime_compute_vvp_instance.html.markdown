@@ -60,7 +60,7 @@ resource "alicloud_realtime_compute_vvp_instance" "default" {
     }
   }
 
-  vvp_instance_name = var.name
+  vvp_instance_name = "${var.name}-${random_integer.default.result}"
   vpc_id            = data.alicloud_vpcs.default.ids.0
   zone_id           = "cn-hangzhou-h"
   vswitch_ids = [

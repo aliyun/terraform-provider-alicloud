@@ -62,8 +62,13 @@ resource "alicloud_instance" "example" {
   vswitch_id           = alicloud_vswitch.example.id
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_hbr_vault" "example" {
-  vault_name = "terraform-example"
+  vault_name = "terraform-example-${random_integer.default.result}"
 }
 
 resource "alicloud_hbr_ecs_backup_plan" "example" {

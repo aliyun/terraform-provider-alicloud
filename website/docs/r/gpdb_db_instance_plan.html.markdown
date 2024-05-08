@@ -28,6 +28,9 @@ variable "name" {
   default = "tf-example"
 }
 
+data "alicloud_resource_manager_resource_groups" "default" {
+}
+
 data "alicloud_gpdb_zones" "default" {
 }
 
@@ -67,6 +70,8 @@ resource "alicloud_gpdb_db_instance_plan" "default" {
   plan_desc             = var.name
   plan_type             = "PauseResume"
   plan_schedule_type    = "Regular"
+  plan_start_date       = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "1h"))
+  plan_end_date         = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "24h"))
   plan_config {
     resume {
       plan_cron_time = "0 0 0 1/1 * ? "
@@ -76,6 +81,11 @@ resource "alicloud_gpdb_db_instance_plan" "default" {
     }
   }
   db_instance_id = alicloud_gpdb_instance.default.id
+
+  # for test
+  lifecycle {
+    ignore_changes = [plan_start_date, plan_end_date]
+  }
 }
 ```
 

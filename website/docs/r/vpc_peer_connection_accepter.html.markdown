@@ -26,7 +26,7 @@ variable "name" {
 variable "accepting_region" {
   default = "cn-beijing"
 }
-variable "accept_uid" {
+variable "another_uid" {
   default = "xxxx"
 }
 # Method 1: Use assume_role to operate resources in the target account, detail see https://registry.terraform.io/providers/aliyun/alicloud/latest/docs#assume-role
@@ -34,7 +34,7 @@ provider "alicloud" {
   region = var.accepting_region
   alias  = "accepting"
   assume_role {
-    role_arn = "acs:ram::${var.accept_uid}:role/terraform-example-assume-role"
+    role_arn = "acs:ram::${var.another_uid}:role/terraform-example-assume-role"
   }
 }
 

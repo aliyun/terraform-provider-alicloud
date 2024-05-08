@@ -32,7 +32,7 @@ data "alicloud_instance_types" "default" {
 resource "alicloud_ecs_elasticity_assurance" "default" {
   instance_amount                     = 1
   description                         = "before"
-  zone_ids                            = [data.alicloud_zones.default.zones[0].id]
+  zone_ids                            = [data.alicloud_zones.default.zones[2].id]
   private_pool_options_name           = "test_before"
   period                              = 1
   private_pool_options_match_criteria = "Open"

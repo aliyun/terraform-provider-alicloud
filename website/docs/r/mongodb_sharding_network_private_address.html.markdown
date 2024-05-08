@@ -64,7 +64,7 @@ resource "alicloud_mongodb_sharding_instance" "default" {
 
 resource "alicloud_mongodb_sharding_network_private_address" "default" {
   db_instance_id   = alicloud_mongodb_sharding_instance.default.id
-  node_id          = alicloud_mongodb_sharding_instance.default.shard_list.0.node_id
+  node_id          = tolist(alicloud_mongodb_sharding_instance.default.shard_list).0.node_id
   zone_id          = alicloud_mongodb_sharding_instance.default.zone_id
   account_name     = "example"
   account_password = "Example_123"

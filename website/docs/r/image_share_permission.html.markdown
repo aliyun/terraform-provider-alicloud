@@ -62,17 +62,22 @@ resource "alicloud_instance" "default" {
   internet_max_bandwidth_out = 10
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_image" "default" {
   instance_id = alicloud_instance.default.id
-  image_name  = "terraform-example"
+  image_name  = "terraform-example-${random_integer.default.result}"
   description = "terraform-example"
 }
-variable "account_id" {
+variable "another_uid" {
   default = "123456789"
 }
 resource "alicloud_image_share_permission" "default" {
   image_id   = alicloud_image.default.id
-  account_id = var.account_id
+  account_id = var.another_uid
 }
 ```
 

@@ -19,8 +19,7 @@ For information about VPC Peer Connection and how to use it, see [What is Peer C
 Basic Usage
 
 ```terraform
-data "alicloud_account" "default" {
-}
+data "alicloud_account" "default" {}
 
 variable "accepting_region" {
   default = "cn-beijing"
@@ -30,7 +29,6 @@ provider "alicloud" {
   alias  = "local"
   region = "cn-hangzhou"
 }
-
 provider "alicloud" {
   alias  = "accepting"
   region = var.accepting_region

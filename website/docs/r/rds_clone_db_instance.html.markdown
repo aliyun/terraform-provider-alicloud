@@ -46,6 +46,9 @@ resource "alicloud_vswitch" "example" {
   cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_db_zones.example.zones.0.id
   vswitch_name = "terraform-example"
+  timeouts {
+    delete = "15m"
+  }
 }
 
 resource "alicloud_db_instance" "example" {
