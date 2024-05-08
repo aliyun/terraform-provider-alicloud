@@ -1446,7 +1446,7 @@ resource "alicloud_vswitch" "vswitch" {
 }
 
 resource "alicloud_key_pair" "default" {
-	key_pair_name = "tf-testacc-1"
+	key_pair_name = var.name
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
