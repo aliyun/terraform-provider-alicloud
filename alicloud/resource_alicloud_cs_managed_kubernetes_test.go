@@ -384,6 +384,22 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "timezone", "name_prefix", "addons",
 					"is_enterprise_security_group"},
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]interface{}{
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "ALB",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{})),
+			},
 		},
 	})
 }

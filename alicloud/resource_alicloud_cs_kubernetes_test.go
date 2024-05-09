@@ -349,6 +349,30 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delete_options": []map[string]interface{}{
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLB",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_Data",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "SLS_ControlPlane",
+						},
+						{
+							"delete_mode":   "delete",
+							"resource_type": "ALB",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{})),
+			},
 		},
 	})
 }

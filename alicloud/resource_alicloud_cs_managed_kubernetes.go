@@ -718,6 +718,24 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"delete_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"SLB", "ALB", "SLS_Data", "SLS_ControlPlane", "PrivateZone"}, false),
+						},
+						"delete_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"delete", "retain"}, false),
+						},
+					},
+				},
+			},
 			"rrsa_metadata": {
 				Type:     schema.TypeList,
 				Computed: true,

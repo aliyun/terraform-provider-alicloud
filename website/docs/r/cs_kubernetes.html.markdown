@@ -125,6 +125,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `tags` - (Optional, Available since v1.97.0) Default nil, A map of tags assigned to the kubernetes cluster and work nodes.
 * `load_balancer_spec` - (Optional, ForceNew, Available since v1.117.0) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `delete_options` - (Optional) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `password` - (Optional, Sensitive) The password of ssh login cluster node. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `key_name` - (Optional, ForceNew) The keypair of ssh login cluster node, you have to create it first. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
@@ -262,6 +263,43 @@ The following example is the definition of runtime block:
   runtime = {
     name = "containerd"
     version = "1.6.28"
+  }
+```
+
+### `delete_options`
+
+The following arguments are supported in the `delete_options` configuration block:
+* `delete_mode` - (Optional) The deletion mode of the cluster. Different resources may have different default behavior, see `resource_type` for details. Valid values:
+  - `delete`: delete resources created by the cluster.
+  - `retain`: retain resources created by the cluster.
+* `resource_type` - (Optional) The type of resources that are created by cluster. Valid values:
+  - `SLB`: SLB resources created through the service, default behavior is to delete, option to retain is available. 
+  - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available. 
+  - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
+  - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
+
+```
+  ...
+  // Specify delete_options as below when deleting cluster
+  // delete SLB resources created by the cluster
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLB"
+  }
+  // delete ALB resources created by the ALB Ingress Controller
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "ALB"
+  }
+  // delete SLS Project used by the cluster logging feature
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLS_Data"
+  }
+  // delete SLS Project used for the managed cluster control plane logs
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLS_ControlPlane"
   }
 ```
 

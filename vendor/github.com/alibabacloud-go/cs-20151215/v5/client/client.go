@@ -1,7 +1,4 @@
 // This file is auto-generated, don't edit it. Thanks.
-/**
- *
- */
 package client
 
 import (
@@ -13,10 +10,22 @@ import (
 )
 
 type Addon struct {
-	Config   *string `json:"config,omitempty" xml:"config,omitempty"`
-	Disabled *bool   `json:"disabled,omitempty" xml:"disabled,omitempty"`
-	Name     *string `json:"name,omitempty" xml:"name,omitempty"`
-	Version  *string `json:"version,omitempty" xml:"version,omitempty"`
+	// example:
+	//
+	// {\"IngressSlbNetworkType\":\"internet\"}
+	Config *string `json:"config,omitempty" xml:"config,omitempty"`
+	// example:
+	//
+	// false
+	Disabled *bool `json:"disabled,omitempty" xml:"disabled,omitempty"`
+	// example:
+	//
+	// nginx-ingress-controller
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// example:
+	//
+	// v1.9.3-aliyun.1
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s Addon) String() string {
@@ -48,20 +57,62 @@ func (s *Addon) SetVersion(v string) *Addon {
 }
 
 type DataDisk struct {
-	AutoFormat           *bool   `json:"auto_format,omitempty" xml:"auto_format,omitempty"`
+	// example:
+	//
+	// true
+	AutoFormat *bool `json:"auto_format,omitempty" xml:"auto_format,omitempty"`
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
 	AutoSnapshotPolicyId *string `json:"auto_snapshot_policy_id,omitempty" xml:"auto_snapshot_policy_id,omitempty"`
-	BurstingEnabled      *bool   `json:"bursting_enabled,omitempty" xml:"bursting_enabled,omitempty"`
-	Category             *string `json:"category,omitempty" xml:"category,omitempty"`
-	Device               *string `json:"device,omitempty" xml:"device,omitempty"`
-	DiskName             *string `json:"disk_name,omitempty" xml:"disk_name,omitempty"`
-	Encrypted            *string `json:"encrypted,omitempty" xml:"encrypted,omitempty"`
-	FileSystem           *string `json:"file_system,omitempty" xml:"file_system,omitempty"`
-	KmsKeyId             *string `json:"kms_key_id,omitempty" xml:"kms_key_id,omitempty"`
-	MountTarget          *string `json:"mount_target,omitempty" xml:"mount_target,omitempty"`
-	PerformanceLevel     *string `json:"performance_level,omitempty" xml:"performance_level,omitempty"`
-	ProvisionedIops      *int64  `json:"provisioned_iops,omitempty" xml:"provisioned_iops,omitempty"`
-	Size                 *int64  `json:"size,omitempty" xml:"size,omitempty"`
-	SnapshotId           *string `json:"snapshot_id,omitempty" xml:"snapshot_id,omitempty"`
+	// example:
+	//
+	// true
+	BurstingEnabled *bool `json:"bursting_enabled,omitempty" xml:"bursting_enabled,omitempty"`
+	// example:
+	//
+	// cloud_ssd
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
+	// example:
+	//
+	// /dev/xvdb
+	Device *string `json:"device,omitempty" xml:"device,omitempty"`
+	// example:
+	//
+	// DataDiskName
+	DiskName *string `json:"disk_name,omitempty" xml:"disk_name,omitempty"`
+	// example:
+	//
+	// true
+	Encrypted *string `json:"encrypted,omitempty" xml:"encrypted,omitempty"`
+	// example:
+	//
+	// ext4
+	FileSystem *string `json:"file_system,omitempty" xml:"file_system,omitempty"`
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
+	KmsKeyId *string `json:"kms_key_id,omitempty" xml:"kms_key_id,omitempty"`
+	// example:
+	//
+	// /mnt/path1
+	MountTarget *string `json:"mount_target,omitempty" xml:"mount_target,omitempty"`
+	// example:
+	//
+	// PL1
+	PerformanceLevel *string `json:"performance_level,omitempty" xml:"performance_level,omitempty"`
+	// example:
+	//
+	// 1000
+	ProvisionedIops *int64 `json:"provisioned_iops,omitempty" xml:"provisioned_iops,omitempty"`
+	// example:
+	//
+	// 40
+	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
+	// example:
+	//
+	// s-280s7****
+	SnapshotId *string `json:"snapshot_id,omitempty" xml:"snapshot_id,omitempty"`
 }
 
 func (s DataDisk) String() string {
@@ -143,25 +194,61 @@ func (s *DataDisk) SetSnapshotId(v string) *DataDisk {
 }
 
 type KubeletConfig struct {
-	AllowedUnsafeSysctls    []*string              `json:"allowedUnsafeSysctls,omitempty" xml:"allowedUnsafeSysctls,omitempty" type:"Repeated"`
-	ContainerLogMaxFiles    *int64                 `json:"containerLogMaxFiles,omitempty" xml:"containerLogMaxFiles,omitempty"`
-	ContainerLogMaxSize     *string                `json:"containerLogMaxSize,omitempty" xml:"containerLogMaxSize,omitempty"`
-	CpuManagerPolicy        *string                `json:"cpuManagerPolicy,omitempty" xml:"cpuManagerPolicy,omitempty"`
-	EventBurst              *int64                 `json:"eventBurst,omitempty" xml:"eventBurst,omitempty"`
+	AllowedUnsafeSysctls []*string `json:"allowedUnsafeSysctls,omitempty" xml:"allowedUnsafeSysctls,omitempty" type:"Repeated"`
+	// example:
+	//
+	// 5
+	ContainerLogMaxFiles *int64 `json:"containerLogMaxFiles,omitempty" xml:"containerLogMaxFiles,omitempty"`
+	// example:
+	//
+	// 10Mi
+	ContainerLogMaxSize *string `json:"containerLogMaxSize,omitempty" xml:"containerLogMaxSize,omitempty"`
+	// example:
+	//
+	// none
+	CpuManagerPolicy *string `json:"cpuManagerPolicy,omitempty" xml:"cpuManagerPolicy,omitempty"`
+	// example:
+	//
+	// 10
+	EventBurst *int64 `json:"eventBurst,omitempty" xml:"eventBurst,omitempty"`
+	// example:
+	//
+	// 5
 	EventRecordQPS          *int64                 `json:"eventRecordQPS,omitempty" xml:"eventRecordQPS,omitempty"`
 	EvictionHard            map[string]interface{} `json:"evictionHard,omitempty" xml:"evictionHard,omitempty"`
 	EvictionSoft            map[string]interface{} `json:"evictionSoft,omitempty" xml:"evictionSoft,omitempty"`
 	EvictionSoftGracePeriod map[string]interface{} `json:"evictionSoftGracePeriod,omitempty" xml:"evictionSoftGracePeriod,omitempty"`
 	FeatureGates            map[string]interface{} `json:"featureGates,omitempty" xml:"featureGates,omitempty"`
-	KubeAPIBurst            *int64                 `json:"kubeAPIBurst,omitempty" xml:"kubeAPIBurst,omitempty"`
-	KubeAPIQPS              *int64                 `json:"kubeAPIQPS,omitempty" xml:"kubeAPIQPS,omitempty"`
-	KubeReserved            map[string]interface{} `json:"kubeReserved,omitempty" xml:"kubeReserved,omitempty"`
-	MaxPods                 *int64                 `json:"maxPods,omitempty" xml:"maxPods,omitempty"`
-	ReadOnlyPort            *int64                 `json:"readOnlyPort,omitempty" xml:"readOnlyPort,omitempty"`
-	RegistryBurst           *int64                 `json:"registryBurst,omitempty" xml:"registryBurst,omitempty"`
-	RegistryPullQPS         *int64                 `json:"registryPullQPS,omitempty" xml:"registryPullQPS,omitempty"`
-	SerializeImagePulls     *bool                  `json:"serializeImagePulls,omitempty" xml:"serializeImagePulls,omitempty"`
-	SystemReserved          map[string]interface{} `json:"systemReserved,omitempty" xml:"systemReserved,omitempty"`
+	// example:
+	//
+	// 10
+	KubeAPIBurst *int64 `json:"kubeAPIBurst,omitempty" xml:"kubeAPIBurst,omitempty"`
+	// example:
+	//
+	// 5
+	KubeAPIQPS   *int64                 `json:"kubeAPIQPS,omitempty" xml:"kubeAPIQPS,omitempty"`
+	KubeReserved map[string]interface{} `json:"kubeReserved,omitempty" xml:"kubeReserved,omitempty"`
+	// example:
+	//
+	// 110
+	MaxPods *int64 `json:"maxPods,omitempty" xml:"maxPods,omitempty"`
+	// example:
+	//
+	// 0
+	ReadOnlyPort *int64 `json:"readOnlyPort,omitempty" xml:"readOnlyPort,omitempty"`
+	// example:
+	//
+	// 10
+	RegistryBurst *int64 `json:"registryBurst,omitempty" xml:"registryBurst,omitempty"`
+	// example:
+	//
+	// 5
+	RegistryPullQPS *int64 `json:"registryPullQPS,omitempty" xml:"registryPullQPS,omitempty"`
+	// example:
+	//
+	// true
+	SerializeImagePulls *bool                  `json:"serializeImagePulls,omitempty" xml:"serializeImagePulls,omitempty"`
+	SystemReserved      map[string]interface{} `json:"systemReserved,omitempty" xml:"systemReserved,omitempty"`
 }
 
 func (s KubeletConfig) String() string {
@@ -268,10 +355,22 @@ func (s *KubeletConfig) SetSystemReserved(v map[string]interface{}) *KubeletConf
 }
 
 type MaintenanceWindow struct {
-	Duration        *string `json:"duration,omitempty" xml:"duration,omitempty"`
-	Enable          *bool   `json:"enable,omitempty" xml:"enable,omitempty"`
+	// example:
+	//
+	// 3h
+	Duration *string `json:"duration,omitempty" xml:"duration,omitempty"`
+	// example:
+	//
+	// false
+	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
+	// example:
+	//
+	// 03:00:00Z
 	MaintenanceTime *string `json:"maintenance_time,omitempty" xml:"maintenance_time,omitempty"`
-	WeeklyPeriod    *string `json:"weekly_period,omitempty" xml:"weekly_period,omitempty"`
+	// example:
+	//
+	// Monday,Thursday
+	WeeklyPeriod *string `json:"weekly_period,omitempty" xml:"weekly_period,omitempty"`
 }
 
 func (s MaintenanceWindow) String() string {
@@ -305,17 +404,27 @@ func (s *MaintenanceWindow) SetWeeklyPeriod(v string) *MaintenanceWindow {
 type Nodepool struct {
 	AutoScaling *NodepoolAutoScaling `json:"auto_scaling,omitempty" xml:"auto_scaling,omitempty" type:"Struct"`
 	// Deprecated
+	//
+	// example:
+	//
+	// 1
 	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
 	// Deprecated
 	InterconnectConfig *NodepoolInterconnectConfig `json:"interconnect_config,omitempty" xml:"interconnect_config,omitempty" type:"Struct"`
-	InterconnectMode   *string                     `json:"interconnect_mode,omitempty" xml:"interconnect_mode,omitempty"`
-	KubernetesConfig   *NodepoolKubernetesConfig   `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
-	Management         *NodepoolManagement         `json:"management,omitempty" xml:"management,omitempty" type:"Struct"`
-	MaxNodes           *int64                      `json:"max_nodes,omitempty" xml:"max_nodes,omitempty"`
-	NodeConfig         *NodepoolNodeConfig         `json:"node_config,omitempty" xml:"node_config,omitempty" type:"Struct"`
-	NodepoolInfo       *NodepoolNodepoolInfo       `json:"nodepool_info,omitempty" xml:"nodepool_info,omitempty" type:"Struct"`
-	ScalingGroup       *NodepoolScalingGroup       `json:"scaling_group,omitempty" xml:"scaling_group,omitempty" type:"Struct"`
-	TeeConfig          *NodepoolTeeConfig          `json:"tee_config,omitempty" xml:"tee_config,omitempty" type:"Struct"`
+	// example:
+	//
+	// basic
+	InterconnectMode *string                   `json:"interconnect_mode,omitempty" xml:"interconnect_mode,omitempty"`
+	KubernetesConfig *NodepoolKubernetesConfig `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
+	Management       *NodepoolManagement       `json:"management,omitempty" xml:"management,omitempty" type:"Struct"`
+	// example:
+	//
+	// 10
+	MaxNodes     *int64                `json:"max_nodes,omitempty" xml:"max_nodes,omitempty"`
+	NodeConfig   *NodepoolNodeConfig   `json:"node_config,omitempty" xml:"node_config,omitempty" type:"Struct"`
+	NodepoolInfo *NodepoolNodepoolInfo `json:"nodepool_info,omitempty" xml:"nodepool_info,omitempty" type:"Struct"`
+	ScalingGroup *NodepoolScalingGroup `json:"scaling_group,omitempty" xml:"scaling_group,omitempty" type:"Struct"`
+	TeeConfig    *NodepoolTeeConfig    `json:"tee_config,omitempty" xml:"tee_config,omitempty" type:"Struct"`
 }
 
 func (s Nodepool) String() string {
@@ -383,15 +492,45 @@ func (s *Nodepool) SetTeeConfig(v *NodepoolTeeConfig) *Nodepool {
 
 type NodepoolAutoScaling struct {
 	// Deprecated
+	//
+	// example:
+	//
+	// 5
 	EipBandwidth *int64 `json:"eip_bandwidth,omitempty" xml:"eip_bandwidth,omitempty"`
 	// Deprecated
+	//
+	// example:
+	//
+	// PayByBandwidth
 	EipInternetChargeType *string `json:"eip_internet_charge_type,omitempty" xml:"eip_internet_charge_type,omitempty"`
-	Enable                *bool   `json:"enable,omitempty" xml:"enable,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// true
+	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
-	IsBondEip    *bool   `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
-	MaxInstances *int64  `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
-	MinInstances *int64  `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
-	Type         *string `json:"type,omitempty" xml:"type,omitempty"`
+	//
+	// example:
+	//
+	// true
+	IsBondEip *bool `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 10
+	MaxInstances *int64 `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 0
+	MinInstances *int64 `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
+	// example:
+	//
+	// cpu
+	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
 func (s NodepoolAutoScaling) String() string {
@@ -439,14 +578,34 @@ func (s *NodepoolAutoScaling) SetType(v string) *NodepoolAutoScaling {
 
 type NodepoolInterconnectConfig struct {
 	// Deprecated
+	//
+	// example:
+	//
+	// 10
 	Bandwidth *int64 `json:"bandwidth,omitempty" xml:"bandwidth,omitempty"`
 	// Deprecated
+	//
+	// example:
+	//
+	// ccn-qm5i0i0q9yi*******
 	CcnId *string `json:"ccn_id,omitempty" xml:"ccn_id,omitempty"`
 	// Deprecated
+	//
+	// example:
+	//
+	// cn-shanghai
 	CcnRegionId *string `json:"ccn_region_id,omitempty" xml:"ccn_region_id,omitempty"`
 	// Deprecated
+	//
+	// example:
+	//
+	// cen-ey9k9nfhz0f*******
 	CenId *string `json:"cen_id,omitempty" xml:"cen_id,omitempty"`
 	// Deprecated
+	//
+	// example:
+	//
+	// 1
 	ImprovedPeriod *string `json:"improved_period,omitempty" xml:"improved_period,omitempty"`
 }
 
@@ -484,14 +643,36 @@ func (s *NodepoolInterconnectConfig) SetImprovedPeriod(v string) *NodepoolInterc
 }
 
 type NodepoolKubernetesConfig struct {
-	CmsEnabled     *bool    `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
-	CpuPolicy      *string  `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	Labels         []*Tag   `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
-	NodeNameMode   *string  `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
-	Runtime        *string  `json:"runtime,omitempty" xml:"runtime,omitempty"`
+	// example:
+	//
+	// true
+	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
+	// example:
+	//
+	// none
+	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
+	Labels    []*Tag  `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
+	// example:
+	//
+	// customized,test.,5,.com
+	NodeNameMode *string `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// docker
+	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 19.03.5
 	RuntimeVersion *string  `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	Taints         []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
-	UserData       *string  `json:"user_data,omitempty" xml:"user_data,omitempty"`
+	// example:
+	//
+	// MXM=
+	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
 func (s NodepoolKubernetesConfig) String() string {
@@ -543,13 +724,25 @@ func (s *NodepoolKubernetesConfig) SetUserData(v string) *NodepoolKubernetesConf
 }
 
 type NodepoolManagement struct {
-	AutoRepair        *bool                                `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
-	AutoRepairPolicy  *NodepoolManagementAutoRepairPolicy  `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
+	// example:
+	//
+	// true
+	AutoRepair       *bool                               `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
+	AutoRepairPolicy *NodepoolManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
+	// example:
+	//
+	// true
 	AutoUpgrade       *bool                                `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	AutoUpgradePolicy *NodepoolManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
-	AutoVulFix        *bool                                `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
-	AutoVulFixPolicy  *NodepoolManagementAutoVulFixPolicy  `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
-	Enable            *bool                                `json:"enable,omitempty" xml:"enable,omitempty"`
+	// example:
+	//
+	// true
+	AutoVulFix       *bool                               `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
+	AutoVulFixPolicy *NodepoolManagementAutoVulFixPolicy `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
+	// example:
+	//
+	// true
+	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
 	UpgradeConfig *NodepoolManagementUpgradeConfig `json:"upgrade_config,omitempty" xml:"upgrade_config,omitempty" type:"Struct"`
 }
@@ -603,6 +796,9 @@ func (s *NodepoolManagement) SetUpgradeConfig(v *NodepoolManagementUpgradeConfig
 }
 
 type NodepoolManagementAutoRepairPolicy struct {
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 }
 
@@ -620,6 +816,9 @@ func (s *NodepoolManagementAutoRepairPolicy) SetRestartNode(v bool) *NodepoolMan
 }
 
 type NodepoolManagementAutoUpgradePolicy struct {
+	// example:
+	//
+	// true
 	AutoUpgradeKubelet *bool `json:"auto_upgrade_kubelet,omitempty" xml:"auto_upgrade_kubelet,omitempty"`
 }
 
@@ -637,8 +836,14 @@ func (s *NodepoolManagementAutoUpgradePolicy) SetAutoUpgradeKubelet(v bool) *Nod
 }
 
 type NodepoolManagementAutoVulFixPolicy struct {
-	RestartNode *bool   `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
-	VulLevel    *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
+	// example:
+	//
+	// true
+	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
+	// example:
+	//
+	// asap,nntf
+	VulLevel *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
 }
 
 func (s NodepoolManagementAutoVulFixPolicy) String() string {
@@ -660,9 +865,21 @@ func (s *NodepoolManagementAutoVulFixPolicy) SetVulLevel(v string) *NodepoolMana
 }
 
 type NodepoolManagementUpgradeConfig struct {
-	AutoUpgrade     *bool  `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
-	MaxUnavailable  *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
-	Surge           *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
+	// example:
+	//
+	// true
+	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
+	// example:
+	//
+	// 1
+	MaxUnavailable *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
+	// example:
+	//
+	// 5
+	Surge *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
+	// example:
+	//
+	// 50
 	SurgePercentage *int64 `json:"surge_percentage,omitempty" xml:"surge_percentage,omitempty"`
 }
 
@@ -712,9 +929,20 @@ func (s *NodepoolNodeConfig) SetKubeletConfiguration(v *KubeletConfig) *Nodepool
 }
 
 type NodepoolNodepoolInfo struct {
-	Name            *string `json:"name,omitempty" xml:"name,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// np-test
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
-	Type            *string `json:"type,omitempty" xml:"type,omitempty"`
+	// example:
+	//
+	// ess
+	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
 func (s NodepoolNodepoolInfo) String() string {
@@ -741,48 +969,143 @@ func (s *NodepoolNodepoolInfo) SetType(v string) *NodepoolNodepoolInfo {
 }
 
 type NodepoolScalingGroup struct {
-	AutoRenew                           *bool       `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
-	AutoRenewPeriod                     *int64      `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	CompensateWithOnDemand              *bool       `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
-	DataDisks                           []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
-	DeploymentsetId                     *string     `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
-	DesiredSize                         *int64      `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
-	ImageId                             *string     `json:"image_id,omitempty" xml:"image_id,omitempty"`
-	ImageType                           *string     `json:"image_type,omitempty" xml:"image_type,omitempty"`
-	InstanceChargeType                  *string     `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
-	InstanceTypes                       []*string   `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
-	InternetChargeType                  *string     `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
-	InternetMaxBandwidthOut             *int64      `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
-	KeyPair                             *string     `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	LoginAsNonRoot                      *bool       `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
-	LoginPassword                       *string     `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	MultiAzPolicy                       *string     `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
-	OnDemandBaseCapacity                *int64      `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
-	OnDemandPercentageAboveBaseCapacity *int64      `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
-	Period                              *int64      `json:"period,omitempty" xml:"period,omitempty"`
-	PeriodUnit                          *string     `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
+	// example:
+	//
+	// false
+	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
+	// example:
+	//
+	// 0
+	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
+	// example:
+	//
+	// true
+	CompensateWithOnDemand *bool       `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
+	DataDisks              []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
+	// example:
+	//
+	// ds-bp1d19mmbsv3jf6xxxxx
+	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
+	// example:
+	//
+	// 2
+	DesiredSize *int64 `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200904.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// example:
+	//
+	// AliyunLinux
+	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
+	// This parameter is required.
+	//
+	// example:
+	//
+	// PostPaid
+	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
+	// This parameter is required.
+	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
+	// example:
+	//
+	// PayByBandwidth
+	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
+	// example:
+	//
+	// 10
+	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
+	// example:
+	//
+	// np-key
+	KeyPair        *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	LoginAsNonRoot *bool   `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
+	// example:
+	//
+	// Hello1234,,
+	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
+	// example:
+	//
+	// COST_OPTIMIZED
+	MultiAzPolicy *string `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
+	// example:
+	//
+	// 0
+	OnDemandBaseCapacity *int64 `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
+	// example:
+	//
+	// 20
+	OnDemandPercentageAboveBaseCapacity *int64 `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
+	// example:
+	//
+	// 0
+	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
+	// example:
+	//
+	// Month
+	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// Deprecated
-	Platform                   *string                                 `json:"platform,omitempty" xml:"platform,omitempty"`
-	PrivatePoolOptions         *NodepoolScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
-	RdsInstances               []*string                               `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
-	ScalingPolicy              *string                                 `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
-	SecurityGroupId            *string                                 `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
-	SecurityGroupIds           []*string                               `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
-	SpotInstancePools          *int64                                  `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
-	SpotInstanceRemedy         *bool                                   `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
-	SpotPriceLimit             []*NodepoolScalingGroupSpotPriceLimit   `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
-	SpotStrategy               *string                                 `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
-	SystemDiskBurstingEnabled  *bool                                   `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	SystemDiskCategories       []*string                               `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
-	SystemDiskCategory         *string                                 `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
-	SystemDiskEncryptAlgorithm *string                                 `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	SystemDiskEncrypted        *bool                                   `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
-	SystemDiskKmsKeyId         *string                                 `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
-	SystemDiskPerformanceLevel *string                                 `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64                                  `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
-	SystemDiskSize             *int64                                  `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
-	Tags                       []*NodepoolScalingGroupTags             `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	VswitchIds                 []*string                               `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
+	//
+	// example:
+	//
+	// AliyunLinux
+	Platform           *string                                 `json:"platform,omitempty" xml:"platform,omitempty"`
+	PrivatePoolOptions *NodepoolScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
+	RdsInstances       []*string                               `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
+	// example:
+	//
+	// release
+	ScalingPolicy *string `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
+	// example:
+	//
+	// sg-2zeihch86ooz9io4****
+	SecurityGroupId  *string   `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
+	SecurityGroupIds []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
+	// example:
+	//
+	// 5
+	SpotInstancePools *int64 `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
+	// example:
+	//
+	// false
+	SpotInstanceRemedy *bool                                 `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
+	SpotPriceLimit     []*NodepoolScalingGroupSpotPriceLimit `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
+	// example:
+	//
+	// NoSpot
+	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
+	// example:
+	//
+	// true
+	SystemDiskBurstingEnabled *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
+	SystemDiskCategories      []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
+	// example:
+	//
+	// cloud_efficiency
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// example:
+	//
+	// aes-256
+	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
+	SystemDiskEncrypted        *bool   `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
+	SystemDiskKmsKeyId *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
+	// example:
+	//
+	// PL1
+	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// example:
+	//
+	// 120
+	SystemDiskSize *int64                      `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
+	Tags           []*NodepoolScalingGroupTags `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
+	// This parameter is required.
+	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
 }
 
 func (s NodepoolScalingGroup) String() string {
@@ -1022,8 +1345,14 @@ func (s *NodepoolScalingGroupPrivatePoolOptions) SetMatchCriteria(v string) *Nod
 }
 
 type NodepoolScalingGroupSpotPriceLimit struct {
+	// example:
+	//
+	// ecs.c6.large
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
-	PriceLimit   *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
+	// example:
+	//
+	// 0.39
+	PriceLimit *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
 }
 
 func (s NodepoolScalingGroupSpotPriceLimit) String() string {
@@ -1045,7 +1374,13 @@ func (s *NodepoolScalingGroupSpotPriceLimit) SetPriceLimit(v string) *NodepoolSc
 }
 
 type NodepoolScalingGroupTags struct {
-	Key   *string `json:"key,omitempty" xml:"key,omitempty"`
+	// example:
+	//
+	// key
+	Key *string `json:"key,omitempty" xml:"key,omitempty"`
+	// example:
+	//
+	// value
 	Value *string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
@@ -1068,6 +1403,11 @@ func (s *NodepoolScalingGroupTags) SetValue(v string) *NodepoolScalingGroupTags 
 }
 
 type NodepoolTeeConfig struct {
+	// This parameter is required.
+	//
+	// example:
+	//
+	// false
 	TeeEnable *bool `json:"tee_enable,omitempty" xml:"tee_enable,omitempty"`
 }
 
@@ -1085,7 +1425,13 @@ func (s *NodepoolTeeConfig) SetTeeEnable(v bool) *NodepoolTeeConfig {
 }
 
 type Runtime struct {
-	Name    *string `json:"name,omitempty" xml:"name,omitempty"`
+	// example:
+	//
+	// docker
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// example:
+	//
+	// 19.03.5
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -1108,7 +1454,13 @@ func (s *Runtime) SetVersion(v string) *Runtime {
 }
 
 type Tag struct {
-	Key   *string `json:"key,omitempty" xml:"key,omitempty"`
+	// example:
+	//
+	// env
+	Key *string `json:"key,omitempty" xml:"key,omitempty"`
+	// example:
+	//
+	// prod
 	Value *string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
@@ -1131,9 +1483,18 @@ func (s *Tag) SetValue(v string) *Tag {
 }
 
 type Taint struct {
+	// example:
+	//
+	// NoSchedule
 	Effect *string `json:"effect,omitempty" xml:"effect,omitempty"`
-	Key    *string `json:"key,omitempty" xml:"key,omitempty"`
-	Value  *string `json:"value,omitempty" xml:"value,omitempty"`
+	// example:
+	//
+	// key
+	Key *string `json:"key,omitempty" xml:"key,omitempty"`
+	// example:
+	//
+	// value
+	Value *string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
 func (s Taint) String() string {
@@ -1161,20 +1522,42 @@ func (s *Taint) SetValue(v string) *Taint {
 
 type StandardComponentsValue struct {
 	// The name of the component.
+	//
+	// example:
+	//
+	// ack-arena
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The version of the component.
+	//
+	// example:
+	//
+	// 0.5.0
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 	// The description of the component.
+	//
+	// example:
+	//
+	// ***
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// Indicates whether the component is a required component. Valid values:
 	//
-	// *   `true`: The component is required and must be installed when a cluster is created.
-	// *   `false`: The component is optional. After a cluster is created, you can go to the `Add-ons` page to install the component.
+	// 	- `true`: The component is required and must be installed when a cluster is created.
+	//
+	// 	- `false`: The component is optional. After a cluster is created, you can go to the `Add-ons` page to install the component.
+	//
+	// example:
+	//
+	// false
 	Required *string `json:"required,omitempty" xml:"required,omitempty"`
 	// Indicates whether the automatic installation of the component is disabled. By default, some optional components, such as components for logging and Ingresses, are installed when a cluster is created. You can set this parameter to disable automatic component installation. Valid values:
 	//
-	// *   `true`: disables automatic component installation.
-	// *   `false`: enables automatic component installation.
+	// 	- `true`: disables automatic component installation.
+	//
+	// 	- `false`: enables automatic component installation.
+	//
+	// example:
+	//
+	// false
 	Disabled *bool `json:"disabled,omitempty" xml:"disabled,omitempty"`
 }
 
@@ -1213,12 +1596,28 @@ func (s *StandardComponentsValue) SetDisabled(v bool) *StandardComponentsValue {
 
 type QuotasValue struct {
 	// The value of the quota. If the quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 1
 	Quota *string `json:"quota,omitempty" xml:"quota,omitempty"`
 	// The quota code.
+	//
+	// example:
+	//
+	// q_Kubernetes_Cluster
 	OperationCode *string `json:"operation_code,omitempty" xml:"operation_code,omitempty"`
 	// Indicates whether the quota is adjustable.
+	//
+	// example:
+	//
+	// true
 	Adjustable *bool `json:"adjustable,omitempty" xml:"adjustable,omitempty"`
 	// The unit.
+	//
+	// example:
+	//
+	// Cluster
 	Unit *string `json:"unit,omitempty" xml:"unit,omitempty"`
 }
 
@@ -1253,62 +1652,101 @@ func (s *QuotasValue) SetUnit(v string) *QuotasValue {
 type AttachInstancesRequest struct {
 	// The CPU management policy. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: This policy allows pods with specific resource characteristics on the node to be configured with enhanced CPU affinity and exclusivity.
-	// *   `none`: The default CPU affinity is used.
+	// 	- `static`: This policy allows pods with specific resource characteristics on the node to be configured with enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: The default CPU affinity is used.
 	//
 	// Default value: `none`.
 	//
 	// >  This parameter is not supported if you specify the `nodepool_id` parameter.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
 	// Specifies whether to store container data and images on data disks. Valid values:
 	//
-	// *   `true`: stores container data and images on data disks.
-	// *   `false`: does not store container data or images on data disks.
+	// 	- `true`: stores container data and images on data disks.
+	//
+	// 	- `false`: does not store container data or images on data disks.
 	//
 	// Default value: `false`.
 	//
 	// How a data disk is mounted:
 	//
-	// *   If the ECS instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
-	// *   If no data disk is attached to the ECS instances, the system does not purchase a new data disk.
+	// 	- If the ECS instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
+	//
+	// 	- If no data disk is attached to the ECS instances, the system does not purchase a new data disk.
 	//
 	// >  If you choose to store container data and images on data disks and a data disk is already mounted to the ECS instance, the original data on this data disk will be cleared. You can back up the disk to avoid data loss.
+	//
+	// example:
+	//
+	// false
 	FormatDisk *bool `json:"format_disk,omitempty" xml:"format_disk,omitempty"`
 	// The ID of the custom image. If you do not set this parameter, the default system image is used.
 	//
 	// >
 	//
-	// *   If you specify a custom image, the custom image is used to deploy the operating systems on the system disks of the nodes.
+	// 	- If you specify a custom image, the custom image is used to deploy the operating systems on the system disks of the nodes.
 	//
-	// *   This parameter is not supported after you specify `nodepool_id`.
+	// 	- This parameter is not supported after you specify `nodepool_id`.
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The ECS instances to be added.
+	//
+	// This parameter is required.
 	Instances []*string `json:"instances,omitempty" xml:"instances,omitempty" type:"Repeated"`
 	// Specifies whether the nodes that you want to add are Edge Node Service (ENS) nodes. Valid values:
 	//
-	// *   `true`: The nodes that you want to add are ENS nodes.
-	// *   `false`: The nodes that you want to add are not ENS nodes.
+	// 	- `true`: The nodes that you want to add are ENS nodes.
+	//
+	// 	- `false`: The nodes that you want to add are not ENS nodes.
 	//
 	// Default value: `false`.
 	//
 	// >  If the nodes that you want to add are ENS nodes, you must set this parameter to `true`. This allows you to identify these nodes.
+	//
+	// example:
+	//
+	// false
 	IsEdgeWorker *bool `json:"is_edge_worker,omitempty" xml:"is_edge_worker,omitempty"`
 	// Specifies whether to retain the instance name. Valid values:
 	//
-	// *   `true`: retains the instance name.
-	// *   `false`: does not retain the instance name.
+	// 	- `true`: retains the instance name.
+	//
+	// 	- `false`: does not retain the instance name.
 	//
 	// Default value: `true`
+	//
+	// example:
+	//
+	// true
 	KeepInstanceName *bool `json:"keep_instance_name,omitempty" xml:"keep_instance_name,omitempty"`
 	// The name of the key pair that is used to log on to the ECS instances. You must set key_pair or `login_password`.
 	//
 	// >  This parameter is not supported if you specify the `nodepool_id` parameter.
+	//
+	// example:
+	//
+	// secrity-key
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
 	// The node pool ID. If you do not set this parameter, the nodes are added to the default node pool.
+	//
+	// example:
+	//
+	// np615c0e0966124216a0412e10afe0****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
-	// The SSH logon password that is used to log on to the ECS instances. You must set login_password or `key_pair`. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It cannot contain backslashes (\\) or double quotation marks (").
+	// The SSH logon password that is used to log on to the ECS instances. You must set login_password or `key_pair`. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. It cannot contain backslashes (\\\\) or double quotation marks (").
 	//
 	// For security considerations, the password is encrypted during data transfer.
+	//
+	// example:
+	//
+	// Hello1234
 	Password *string `json:"password,omitempty" xml:"password,omitempty"`
 	// A list of ApsaraDB RDS instances.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
@@ -1318,14 +1756,19 @@ type AttachInstancesRequest struct {
 	Runtime *Runtime `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The labels that you want to add to nodes. You must add labels based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add up to 20 labels.
-	// *   A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// 	- Each label is a case-sensitive key-value pair. You can add up to 20 labels.
+	//
+	// 	- A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	//
 	// >  This parameter is not supported if you specify the `nodepool_id` parameter.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// User-defined data. For more information, see [Generate user data](~~49121~~).
+	// User-defined data. For more information, see [Generate user data](https://help.aliyun.com/document_detail/49121.html).
 	//
 	// >  This parameter is not supported if you specify the `nodepool_id` parameter.
+	//
+	// example:
+	//
+	// IyEvdXNyL2Jpbi9iYXNoCmVjaG8gIkhlbGxvIEFDSyEi
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
@@ -1406,6 +1849,10 @@ type AttachInstancesResponseBody struct {
 	// The details of the added nodes.
 	List []*AttachInstancesResponseBodyList `json:"list,omitempty" xml:"list,omitempty" type:"Repeated"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5a544aff80282e39ea000039
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -1429,10 +1876,22 @@ func (s *AttachInstancesResponseBody) SetTaskId(v string) *AttachInstancesRespon
 
 type AttachInstancesResponseBodyList struct {
 	// The code that indicates the task result.
+	//
+	// example:
+	//
+	// 200
 	Code *string `json:"code,omitempty" xml:"code,omitempty"`
 	// The ID of the ECS instance.
+	//
+	// example:
+	//
+	// i-2ze0lgm3y6iylcbt****
 	InstanceId *string `json:"instanceId,omitempty" xml:"instanceId,omitempty"`
 	// Indicates whether the ECS instance is successfully added to the ACK cluster.
+	//
+	// example:
+	//
+	// successful
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 }
 
@@ -1491,28 +1950,43 @@ func (s *AttachInstancesResponse) SetBody(v *AttachInstancesResponseBody) *Attac
 type AttachInstancesToNodePoolRequest struct {
 	// Specifies whether to store container data and images on data disks. Valid values:
 	//
-	// *   `true`: stores container data and images on data disks.
-	// *   `false`: does not store container data or images on data disks.
+	// 	- `true`: stores container data and images on data disks.
+	//
+	// 	- `false`: does not store container data or images on data disks.
 	//
 	// Default value: `false`.
 	//
 	// How to mount a data disk:
 	//
-	// *   If the ECS instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
-	// *   If no data disk is attached to the ECS instances, the system does not purchase a new data disk.
+	// 	- If the ECS instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
+	//
+	// 	- If no data disk is attached to the ECS instances, the system does not purchase a new data disk.
 	//
 	// > If you choose to store container data and images on a data disk and the data disk is already mounted to the ECS instance, the existing data on the data disk will be cleared. You can back up the disk to avoid data loss.
+	//
+	// example:
+	//
+	// false
 	FormatDisk *bool `json:"format_disk,omitempty" xml:"format_disk,omitempty"`
 	// The IDs of the instances to be added.
 	Instances []*string `json:"instances,omitempty" xml:"instances,omitempty" type:"Repeated"`
 	// Specifies whether to retain the instance name. Valid values:
 	//
-	// *   `true`: retains the instance name.
-	// *   `false`: does not retain the instance name.
+	// 	- `true`: retains the instance name.
+	//
+	// 	- `false`: does not retain the instance name.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	KeepInstanceName *bool `json:"keep_instance_name,omitempty" xml:"keep_instance_name,omitempty"`
 	// The SSH password that is used to log on to the instance.
+	//
+	// example:
+	//
+	// Hello1234
 	Password *string `json:"password,omitempty" xml:"password,omitempty"`
 }
 
@@ -1546,8 +2020,16 @@ func (s *AttachInstancesToNodePoolRequest) SetPassword(v string) *AttachInstance
 
 type AttachInstancesToNodePoolResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// D7631D83-6E98-1949-B665-766A62xxxxxx
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00002f
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -1645,6 +2127,11 @@ func (s *CancelComponentUpgradeResponse) SetStatusCode(v int32) *CancelComponent
 }
 
 type CancelOperationPlanResponseBody struct {
+	// The request ID.
+	//
+	// example:
+	//
+	// 873DC52C-28AA-5A5C-938C-684D3D4B****
 	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
 }
 
@@ -1715,6 +2202,12 @@ func (s *CancelTaskResponse) SetStatusCode(v int32) *CancelTaskResponse {
 
 type CancelWorkflowRequest struct {
 	// The operation that you want to perform. Set the value to cancel.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cancel
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 }
 
@@ -1756,16 +2249,30 @@ func (s *CancelWorkflowResponse) SetStatusCode(v int32) *CancelWorkflowResponse 
 
 type CheckControlPlaneLogEnableResponseBody struct {
 	// The ID of the Alibaba Cloud account to which the resource belongs.
+	//
+	// example:
+	//
+	// 162981*****
 	Aliuid *string `json:"aliuid,omitempty" xml:"aliuid,omitempty"`
 	// The control plane components for which log collection is enabled.
+	//
+	// This parameter is required.
 	Components []*string `json:"components,omitempty" xml:"components,omitempty" type:"Repeated"`
 	// The name of the Simple Log Service project that you want to use to store the logs of control plane components.
 	//
 	// Default value: k8s-log-$Cluster ID.
+	//
+	// example:
+	//
+	// k8s-log-c5b5e80b0b64a4bf6939d2d8fbbc5****
 	LogProject *string `json:"log_project,omitempty" xml:"log_project,omitempty"`
 	// The retention period of the log data stored in the Logstore. Valid values: 1 to 3000. Unit: days.
 	//
 	// Default value: 30.
+	//
+	// example:
+	//
+	// 30
 	LogTtl *string `json:"log_ttl,omitempty" xml:"log_ttl,omitempty"`
 }
 
@@ -1828,48 +2335,110 @@ func (s *CheckControlPlaneLogEnableResponse) SetBody(v *CheckControlPlaneLogEnab
 
 type CreateAutoscalingConfigRequest struct {
 	// The waiting time before the auto scaling feature performs a scale-in activity. Only if the resource usage on a node remains below the scale-in threshold within the waiting time, the node is removed after the waiting time ends. Unit: minutes.
+	//
+	// example:
+	//
+	// 10 m
 	CoolDownDuration *string `json:"cool_down_duration,omitempty" xml:"cool_down_duration,omitempty"`
 	// Specifies whether to evict DaemonSet pods during scale-in activities. Valid values:
 	//
-	// *   `true`: evicts DaemonSet pods.
-	// *   `false`: does not evict DaemonSet pods.
+	// 	- `true`: evicts DaemonSet pods.
+	//
+	// 	- `false`: does not evict DaemonSet pods.
+	//
+	// example:
+	//
+	// false
 	DaemonsetEvictionForNodes *bool `json:"daemonset_eviction_for_nodes,omitempty" xml:"daemonset_eviction_for_nodes,omitempty"`
 	// The node pool scale-out policy. Valid values:
 	//
-	// *   `least-waste`: the default policy. If multiple node pools meet the requirement, this policy selects the node pool that will have the least idle resources after the scale-out activity is completed.
-	// *   `random`: the random policy. If multiple node pools meet the requirement, this policy selects a random node pool for the scale-out activity.
-	// *   `priority`: the priority-based policy If multiple node pools meet the requirement, this policy selects the node pool with the highest priority for the scale-out activity. The priority setting is stored in the ConfigMap named `cluster-autoscaler-priority-expander` in the kube-system namespace. When a scale-out activity is triggered, the policy obtains the node pool priorities from the ConfigMap based on the node pool IDs and then selects the node pool with the highest priority for the scale-out activity.
+	// 	- `least-waste`: the default policy. If multiple node pools meet the requirement, this policy selects the node pool that will have the least idle resources after the scale-out activity is completed.
+	//
+	// 	- `random`: the random policy. If multiple node pools meet the requirement, this policy selects a random node pool for the scale-out activity.
+	//
+	// 	- `priority`: the priority-based policy If multiple node pools meet the requirement, this policy selects the node pool with the highest priority for the scale-out activity. The priority setting is stored in the ConfigMap named `cluster-autoscaler-priority-expander` in the kube-system namespace. When a scale-out activity is triggered, the policy obtains the node pool priorities from the ConfigMap based on the node pool IDs and then selects the node pool with the highest priority for the scale-out activity.
+	//
+	// example:
+	//
+	// least-waste
 	Expander *string `json:"expander,omitempty" xml:"expander,omitempty"`
 	// The scale-in threshold of GPU utilization. This threshold specifies the ratio of the GPU resources that are requested by pods to the total GPU resources on the node.
+	//
+	// example:
+	//
+	// 0.5
 	GpuUtilizationThreshold *string `json:"gpu_utilization_threshold,omitempty" xml:"gpu_utilization_threshold,omitempty"`
 	// The maximum amount of time that the cluster autoscaler waits for pods on the nodes to terminate during scale-in activities. Unit: seconds.
+	//
+	// example:
+	//
+	// 14400s
 	MaxGracefulTerminationSec *int32 `json:"max_graceful_termination_sec,omitempty" xml:"max_graceful_termination_sec,omitempty"`
 	// The minimum number of pods that must be guaranteed during scale-in activities.
+	//
+	// example:
+	//
+	// 0
 	MinReplicaCount *int32 `json:"min_replica_count,omitempty" xml:"min_replica_count,omitempty"`
 	// Specifies whether to delete the corresponding Kubernetes node objects after nodes are removed in swift mode.
+	//
+	// example:
+	//
+	// false
 	RecycleNodeDeletionEnabled *bool `json:"recycle_node_deletion_enabled,omitempty" xml:"recycle_node_deletion_enabled,omitempty"`
 	// Specifies whether to allow node scale-in activities. Valid values:
 	//
-	// *   `true`: allows node scale-in activities.
-	// *   `false`: does not allow node scale-in activities.
+	// 	- `true`: allows node scale-in activities.
+	//
+	// 	- `false`: does not allow node scale-in activities.
+	//
+	// example:
+	//
+	// true
 	ScaleDownEnabled *bool `json:"scale_down_enabled,omitempty" xml:"scale_down_enabled,omitempty"`
 	// Specifies whether the cluster autoscaler performs scale-out activities when the number of ready nodes in the cluster is zero.
+	//
+	// example:
+	//
+	// true
 	ScaleUpFromZero *bool `json:"scale_up_from_zero,omitempty" xml:"scale_up_from_zero,omitempty"`
 	// The interval at which the cluster is scanned and evaluated for scaling. Unit: seconds.
+	//
+	// example:
+	//
+	// 30s
 	ScanInterval *string `json:"scan_interval,omitempty" xml:"scan_interval,omitempty"`
 	// Specifies whether to allow the cluster autoscaler to scale in nodes that host pods mounted with local storage, such as EmptyDir volumes or HostPath volumes. Valid values:
 	//
-	// *   `true`: does not allow the cluster autoscaler to scale in these nodes.
-	// *   `false`: allows the cluster autoscaler to scale in these nodes.
+	// 	- `true`: does not allow the cluster autoscaler to scale in these nodes.
+	//
+	// 	- `false`: allows the cluster autoscaler to scale in these nodes.
+	//
+	// example:
+	//
+	// false
 	SkipNodesWithLocalStorage *bool `json:"skip_nodes_with_local_storage,omitempty" xml:"skip_nodes_with_local_storage,omitempty"`
 	// Specifies whether to allow the cluster autoscaler to scale in nodes that host pods in the kube-system namespace, excluding DaemonSet pods and mirror pods. Valid values:
 	//
-	// *   `true`: does not allow the cluster autoscaler to scale in these nodes.
-	// *   `false`: allows the cluster autoscaler to scale in these nodes.
+	// 	- `true`: does not allow the cluster autoscaler to scale in these nodes.
+	//
+	// 	- `false`: allows the cluster autoscaler to scale in these nodes.
+	//
+	// example:
+	//
+	// true
 	SkipNodesWithSystemPods *bool `json:"skip_nodes_with_system_pods,omitempty" xml:"skip_nodes_with_system_pods,omitempty"`
 	// The cooldown period. Newly added nodes can be removed in scale-in activities only after the cooldown period ends. Unit: minutes.
+	//
+	// example:
+	//
+	// 10 m
 	UnneededDuration *string `json:"unneeded_duration,omitempty" xml:"unneeded_duration,omitempty"`
 	// The scale-in threshold. This threshold specifies the ratio of the resources that are requested by pods to the total resources on the node.
+	//
+	// example:
+	//
+	// 0.5
 	UtilizationThreshold *string `json:"utilization_threshold,omitempty" xml:"utilization_threshold,omitempty"`
 }
 
@@ -1975,474 +2544,877 @@ func (s *CreateAutoscalingConfigResponse) SetStatusCode(v int32) *CreateAutoscal
 }
 
 type CreateClusterRequest struct {
-	// The network access control list (ACL) of the SLB instance associated with the API server if the cluster is a registered cluster.
+	// The access control list (ACL) rule of the SLB instance associated with the API server if the cluster is a registered cluster.
 	AccessControlList []*string `json:"access_control_list,omitempty" xml:"access_control_list,omitempty" type:"Repeated"`
-	// The components that you want to install in the cluster. When you create a cluster, you can set the `addons` parameter to install specific components.
+	// The components that you want to install in the cluster. When you create a cluster, you can configure the `addons` parameter to install specific components.
 	//
 	// **Network plug-in**: required. The Flannel and Terway plug-ins are supported. Select one of the plug-ins for the cluster.
 	//
-	// *   Specify the Flannel plug-in in the following format: \[{"name":"flannel","config":""}].
-	// *   Specify the Terway plug-in in the following format: \[{"name": "terway-eniip","config": ""}].
+	// 	- Specify the Flannel plug-in in the following format: [{"name":"flannel","config":""}].
 	//
-	// **Volume plug-in**: required. The `CSI` and `FlexVolume` volume plug-ins are supported.
+	// 	- Specify the Flannel plug-in in the following format: [{"name": "terway-eniip","config": ""}].
 	//
-	// *   Specify the `CSI` plug-in in the following format: \[{"name":"csi-plugin","config": ""},{"name": "csi-provisioner","config": ""}].
-	// *   Specify the `FlexVolume` plug-in in the following format: \[{"name": "flexvolume","config": ""}].
+	// **Volume plug-in**: optional. Only the `CSI` plug-in is supported.
+	//
+	// Specify the `CSI` plug-in in the following format: [{"name":"csi-plugin","config": ""},{"name": "csi-provisioner","config": ""}].
 	//
 	// **Simple Log Service component**: optional. We recommend that you enable Simple Log Service. If Simple Log Service is disabled, you cannot use the cluster auditing feature.
 	//
-	// *   Use an existing `Simple Log Service project`: \[{"name": "logtail-ds","config": "{"IngressDashboardEnabled":"true","sls_project_name":"your_sls_project_name"}"}].
-	// *   To create a `Simple Log Service project`, specify the component in the following format: \[{"name": "logtail-ds","config": "{"IngressDashboardEnabled":"true"}"}].
+	// 	- To use an existing `Simple Log Service project`, specify the value in the following format: [{"name": "logtail-ds","config": "{"IngressDashboardEnabled":"true","sls_project_name":"your_sls_project_name"}"}].
+	//
+	// 	- To create a `Simple Log Service project`, specify the value in the following format: [{"name": "logtail-ds","config": "{"IngressDashboardEnabled":"true"}"}].
 	//
 	// **Ingress controller**: optional. By default, the `nginx-ingress-controller` component is installed in ACK dedicated clusters.
 	//
-	// *   To install nginx-ingress-controller and enable Internet access, specify the Ingress controller in the following format: \[{"name":"nginx-ingress-controller","config":"{"IngressSlbNetworkType":"internet"}"}].
-	// *   If you do not want to install nginx-ingress-controller, specify the component in the following format: \[{"name": "nginx-ingress-controller","config": "","disabled": true}].
+	// 	- To install nginx-ingress-controller and enable Internet access, specify the value in the following format: [{"name":"nginx-ingress-controller","config":"{"IngressSlbNetworkType":"internet"}"}].
+	//
+	// 	- To disable the system to automatically install nginx-ingress-controller, specify the value in the following format: [{"name": "nginx-ingress-controller","config": "","disabled": true}].
 	//
 	// **Event center**: optional. By default, the event center feature is enabled.
 	//
-	// You can use Kubernetes event centers to store and query events, and configure alert rules. You can use the Logstores that are associated with Kubernetes event centers for free within 90 days. For more information, see [Create and use an event center](~~150476~~).
+	// You can use Kubernetes event centers to store and query events and configure alerts. You can use the Logstores that are associated with Kubernetes event centers free of charge within 90 days. For more information, see [Create and use a Kubernetes event center](https://help.aliyun.com/document_detail/150476.html).
 	//
-	// Enable the ack-node-problem-detector component in the following format: \[{"name":"ack-node-problem-detector","config":"{"sls_project_name":"your_sls_project_name"}"}].
+	// To enable the ack-node-problem-detector component, specify the value in the following format: [{"name":"ack-node-problem-detector","config":"{"sls_project_name":"your_sls_project_name"}"}].
 	Addons []*Addon `json:"addons,omitempty" xml:"addons,omitempty" type:"Repeated"`
 	// Service accounts provide identities for pods when pods communicate with the `API server` of the cluster. `api-audiences` are used by the `API server` to check whether the `tokens` of requests are legitimate.`` Separate multiple `audiences` with commas (,).
 	//
-	// For more information about `ServiceAccount`, see [Enable service account token volume projection](~~160384~~).
+	// For more information about `ServiceAccount`, see [Enable service account token volume projection](https://help.aliyun.com/document_detail/160384.html).
+	//
+	// example:
+	//
+	// kubernetes.default.svc
 	ApiAudiences *string `json:"api_audiences,omitempty" xml:"api_audiences,omitempty"`
-	// The billing method of the cluster.
-	ChargeType *string `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
-	// Specifies whether to enable Center for Internet Security (CIS) reinforcement. For more information, see [CIS reinforcement](~~223744~~).
+	// The billing method of the cluster. The following resources are billed on a subscription basis:
+	//
+	// ECS instances in node pools.
+	//
+	// The internal-facing SLB instance used by the API server.
 	//
 	// Valid values:
 	//
-	// *   `true`: enables CIS reinforcement.
-	// *   `false`: disables CIS reinforcement.
+	// PrePaid: subscription.
 	//
-	// Default value: `false`.
+	// PostPaid: pay-as-you-go.
+	//
+	// Default value: PostPaid.
+	//
+	// example:
+	//
+	// 1
+	ChargeType *string `json:"charge_type,omitempty" xml:"charge_type,omitempty"`
+	// Deprecated
+	//
+	// [This parameter is deprecated]
+	//
+	// Please replace this parameter with security_hardening_os.
+	//
+	// example:
+	//
+	// false
 	CisEnabled *bool `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
 	// Specifies whether to install the CloudMonitor agent. Valid values:
 	//
-	// *   `true`: installs the CloudMonitor agent.
-	// *   `false`: does not install the CloudMonitor agent.
+	// 	- `true`: installs the CloudMonitor agent.
+	//
+	// 	- `false`: does not install the CloudMonitor agent.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
 	// The domain name of the cluster.
 	//
 	// The domain name can contain one or more parts that are separated by periods (.). Each part cannot exceed 63 characters in length, and can contain lowercase letters, digits, and hyphens (-). Each part must start and end with a lowercase letter or digit.
+	//
+	// example:
+	//
+	// cluster.local
 	ClusterDomain *string `json:"cluster_domain,omitempty" xml:"cluster_domain,omitempty"`
-	// The type of ACK managed cluster. Valid values:
+	// After you set `cluster_type` to `ManagedKubernetes` and configure the `profile` parameter, you can further specify the edition of the cluster. Valid values:
 	//
-	// *   `ack.pro.small`: ACK Pro cluster.
-	// *   `ack.standard`: ACK Basic cluster.
+	// 	- `ack.pro.small`: Pro.
 	//
-	// Default value: `ack.standard`. If you leave this property empty, an ACK Basic cluster.is created.
+	// 	- `ack.standard`: Basic. If you leave the parameter empty, the Basic edition is selected.
 	//
-	// For more information, see [Overview of ACK Pro clusters](~~173290~~).
+	// example:
+	//
+	// ack.pro.small
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
-	// The cluster type. Valid value: ManagedKubernetes.
-	// You can create ACK managed clusters, ACK Serverless clusters, and ACK Edge clusters.
+	// 	- `Kubernetes`: ACK dedicated cluster.
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Basic clusters, ACK Pro clusters, ACK Serverless clusters (Basic and Pro), ACK Edge clusters (Basic and Pro), and ACK Lingjun clusters (Pro).
+	//
+	// 	- `ExternalKubernetes`: registered cluster.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
-	// The CIDR block of pods. You can specify 10.0.0.0/8, 172.16-31.0.0/12-16, 192.168.0.0/16, or their subnets as the CIDR block of pods. The CIDR block of pods cannot overlap with the CIDR block of the VPC in which the cluster is deployed and the CIDR blocks of existing clusters in the VPC. You cannot modify the pod CIDR block after the cluster is created.
+	// The CIDR block of pods. You can specify 10.0.0.0/8, 172.16-31.0.0/12-16, 192.168.0.0/16, or their subnets as the CIDR block of pods. The pod CIDR block cannot overlap with the CIDR block of the VPC in which the cluster is deployed and the CIDR blocks of existing clusters in the VPC. You cannot modify the pod CIDR block after you create the cluster.
 	//
-	// For more information about subnetting for ACK clusters, see [Plan CIDR blocks for an ACK cluster that is deployed in a VPC](~~86500~~).
+	// For more information about subnetting for ACK clusters, see [Plan CIDR blocks for an ACK cluster that is deployed in a VPC](https://help.aliyun.com/document_detail/86500.html).
 	//
-	// >  This parameter is required if the cluster uses the Flannel plug-in.
+	// >  This parameter is required if the cluster uses Flannel as the network plug-in.
+	//
+	// example:
+	//
+	// 172.20.0.0/16
 	ContainerCidr *string `json:"container_cidr,omitempty" xml:"container_cidr,omitempty"`
 	// The list of control plane components for which you want to enable log collection.
 	//
-	// By default, the logs of kube-apiserver, kube-controller-manager, and kube-scheduler are collected.
+	// By default, the log of kube-apiserver, kube-controller-manager, and kube-scheduler is collected.
 	ControlplaneLogComponents []*string `json:"controlplane_log_components,omitempty" xml:"controlplane_log_components,omitempty" type:"Repeated"`
 	// The Simple Log Service project that is used to store the logs of control plane components. You can use an existing project or create one. If you choose to create a Simple Log Service project, the created project is named in the `k8s-log-{ClusterID}` format.
+	//
+	// example:
+	//
+	// k8s-log-xxx
 	ControlplaneLogProject *string `json:"controlplane_log_project,omitempty" xml:"controlplane_log_project,omitempty"`
 	// The retention period of control plane logs in days.
-	ControlplaneLogTtl *string `json:"controlplane_log_ttl,omitempty" xml:"controlplane_log_ttl,omitempty"`
-	// The CPU management policy of the nodes in a node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
-	// *   `none`: specifies that the default CPU affinity is used.
+	// example:
+	//
+	// 30
+	ControlplaneLogTtl *string `json:"controlplane_log_ttl,omitempty" xml:"controlplane_log_ttl,omitempty"`
+	// The CPU management policy of the nodes in the node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later:
+	//
+	// 	- `static`: allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: specifies that the default CPU affinity is used.
 	//
 	// Default value: `none`.
-	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	// Specifies custom subject alternative names (SANs) for the API server certificate to accept requests from specified IP addresses or domain names. Multiple IP addresses and domain names are separated by commas (,).
-	CustomSan *string `json:"custom_san,omitempty" xml:"custom_san,omitempty"`
-	// Specifies whether to enable deletion protection for the cluster. If deletion protection is enabled, the cluster cannot be deleted in the ACK console or by calling API operations. Valid values:
 	//
-	// *   `true`: enables deletion protection for the cluster. This way, the cluster cannot be deleted in the ACK console or by calling API operations.
-	// *   `false`: disables deletion protection for the cluster. This way, the cluster can be deleted in the ACK console or by calling API operations.
+	// example:
+	//
+	// none
+	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
+	// Specifies custom subject alternative names (SANs) for the API server certificate to accept requests from specified IP addresses or domain names. Separate multiple IP addresses or domain names with commas (,).
+	//
+	// example:
+	//
+	// cs.aliyun.com
+	CustomSan *string `json:"custom_san,omitempty" xml:"custom_san,omitempty"`
+	// Specifies whether to enable cluster deletion protection. If this option is enabled, the cluster cannot be deleted in the console or by calling API operations. Valid values:
+	//
+	// 	- `true`: enables deletion protection for the cluster. This way, the cluster cannot be deleted in the Container Service console or by calling API operations.
+	//
+	// 	- `false`: disables deletion protection for the cluster. This way, the cluster can be deleted in the Container Service console or by calling API operations.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	DeletionProtection *bool `json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
+	// Deprecated
+	//
 	// Specifies whether to perform a rollback if the cluster fails to be created. Valid values:
 	//
-	// *   `true`: performs a rollback if the system fails to create the cluster.
-	// *   `false`: does not perform a rollback if the system fails to create the cluster.
+	// 	- `true`: performs a rollback if the system fails to create the cluster.
+	//
+	// 	- `false`: does not perform a rollback if the system fails to create the cluster.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	DisableRollback *bool `json:"disable_rollback,omitempty" xml:"disable_rollback,omitempty"`
 	// Specifies whether to enable the RAM Roles for Service Accounts (RRSA) feature.
+	//
+	// example:
+	//
+	// true
 	EnableRrsa *bool `json:"enable_rrsa,omitempty" xml:"enable_rrsa,omitempty"`
-	// The ID of a key that is managed by Key Management Service (KMS). The key is used to encrypt data disks. For more information, see [KMS](~~28935~~).
+	// The ID of a key that is managed by Key Management Service (KMS). The key is used to encrypt data disks. For more information, see [KMS](https://help.aliyun.com/document_detail/28935.html).
 	//
-	// >  This feature supports only ACK Pro clusters.
+	// >  The key can be used only in ACK Pro clusters.
+	//
+	// example:
+	//
+	// 0fe64791-55eb-4fc7-84c5-c6c7cdca****
 	EncryptionProviderKey *string `json:"encryption_provider_key,omitempty" xml:"encryption_provider_key,omitempty"`
-	// Specifies whether to enable Internet access for the cluster. You can use an elastic IP address (EIP) to expose the API server. This way, you can access the cluster over the Internet.
+	// Specifies whether to enable Internet access for the cluster. You can use an elastic IP address (EIP) to expose the API server. This way, you can access the cluster over the Internet. Valid values:
 	//
-	// *   `true`: enables Internet access.
-	// *   `false`: disables Internet access. If you set this parameter to false, the API server cannot be accessed over the Internet.
+	// 	- `true`: enables Internet access.
+	//
+	// 	- `false`: disables Internet access. If you set this parameter to false, the API server cannot be accessed over the Internet.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	EndpointPublicAccess *bool `json:"endpoint_public_access,omitempty" xml:"endpoint_public_access,omitempty"`
 	// Specifies whether to mount a data disk to a node that is created based on an existing ECS instance. Valid values:
 	//
-	// *   `true`: stores the data of containers and images on a data disk. Back up the existing data on the data disk first.
-	// *   `false`: does not store the data of containers and images on a data disk.
+	// 	- `true`: stores the data of containers and images on a data disk. Back up the existing data on the data disk first.
+	//
+	// 	- `false`: does not store the data of containers and images on a data disk.
 	//
 	// Default value: `false`.
 	//
-	// How to mount a data disk:
+	// How data disks are mounted:
 	//
-	// *   If an ECS instance has data disks mounted and the file system of the last data disk is not initialized, the system automatically formats the data disk to ext4. Then, the system mounts the data disk to /var/lib/docker and /var/lib/kubelet.
-	// *   If no data disk is attached to the ECS instances, the system does not purchase a new data disk.
+	// 	- If an ECS instance has data disks mounted and the file system of the last data disk is not initialized, the system automatically formats the data disk to ext4. Then, the system mounts the data disk to /var/lib/docker and /var/lib/kubelet.
+	//
+	// 	- If no data disk is mounted to the ECS instance, the system does not purchase a new data disk.
+	//
+	// example:
+	//
+	// false
 	FormatDisk *bool `json:"format_disk,omitempty" xml:"format_disk,omitempty"`
-	// Specifies a custom image for nodes. By default, the image provided by ACK is used. You can select a custom image to replace the default image. For more information, see [Custom images](~~146647~~).
+	// Specifies a custom image for nodes. By default, the image provided by ACK is used. You can select a custom image to replace the default image. For more information, see [Custom images](https://help.aliyun.com/document_detail/146647.html).
+	//
+	// example:
+	//
+	// m-bp16z7xko3vvv8gt****
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The type of OS distribution that you want to use. To specify the node OS, we recommend that you use this parameter. Valid values:
 	//
-	// *   CentOS
-	// *   AliyunLinux
-	// *   AliyunLinux Qboot
-	// *   AliyunLinuxUEFI
-	// *   AliyunLinux3
-	// *   Windows
-	// *   WindowsCore
-	// *   AliyunLinux3Arm64
-	// *   ContainerOS
+	// 	- CentOS
+	//
+	// 	- AliyunLinux
+	//
+	// 	- AliyunLinux Qboot
+	//
+	// 	- AliyunLinuxUEFI
+	//
+	// 	- AliyunLinux3
+	//
+	// 	- Windows
+	//
+	// 	- WindowsCore
+	//
+	// 	- AliyunLinux3Arm64
+	//
+	// 	- ContainerOS
 	//
 	// Default value: `CentOS`.
-	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
-	// The list of existing ECS instances that are specified as worker nodes for the cluster.
 	//
-	// >  This parameter is required when you create worker nodes on existing ECS instances.
+	// example:
+	//
+	// AliyunLinux
+	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
+	// The list of existing Elastic Compute Service (ECS) instances that are specified as worker nodes for the cluster.
+	//
+	// >  This parameter is required when you create worker nodes based on existing ECS instances.
 	Instances []*string `json:"instances,omitempty" xml:"instances,omitempty" type:"Repeated"`
-	// The cluster IP stack.
+	// The IP stack of the cluster.
+	//
+	// example:
+	//
+	// Optional value: ipv4 (Single stack) or ipv6 (Dual Stack)
+	//
+	// Default value: IPV4
 	IpStack *string `json:"ip_stack,omitempty" xml:"ip_stack,omitempty"`
 	// Specifies whether to create an advanced security group. This parameter takes effect only if `security_group_id` is left empty.
 	//
-	// >  To use a basic security group, make sure that the sum of the number of nodes in the cluster and the number of pods that use Terway does not exceed 2,000. Therefore, if the cluster uses Terway, we recommend that you use an advanced security group.
+	// >  To use a basic security group, make sure that the sum of the number of nodes in the cluster and the number of pods that use Terway does not exceed 2,000. Therefore, we recommend that you specify an advanced security group for a cluster that has Terway installed.
 	//
-	// *   `true`: creates an advanced security group.
-	// *   `false`: does not create an advanced security group.
+	// 	- `true`: creates an advanced security group.
+	//
+	// 	- `false`: does not create an advanced security group.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	IsEnterpriseSecurityGroup *bool `json:"is_enterprise_security_group,omitempty" xml:"is_enterprise_security_group,omitempty"`
 	// Specifies whether to retain the names of existing ECS instances that are used in the cluster. Valid values:
 	//
-	// *   `true`: retains the names.
-	// *   `false`: does not retain the names. The new names are assigned by the system.
+	// 	- `true`: retains the names.
+	//
+	// 	- `false`: does not retain the names. The system assigns new names.
 	//
 	// Default value: `true`.
-	KeepInstanceName *bool `json:"keep_instance_name,omitempty" xml:"keep_instance_name,omitempty"`
-	// The name of the key pair. You must set this parameter or the `login_password` parameter.
-	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	// The Kubernetes version of the cluster. The Kubernetes versions supported by ACK are the same as the Kubernetes versions supported by open source Kubernetes. We recommend that you specify the latest Kubernetes version. If you do not set this parameter, the latest Kubernetes version is used.
 	//
-	// You can create clusters of the latest two Kubernetes versions in the ACK console. You can create clusters of earlier Kubernetes versions by calling API operations. For more information about the Kubernetes versions supported by ACK, see [Release notes on Kubernetes versions](~~185269~~).
+	// example:
+	//
+	// true
+	KeepInstanceName *bool `json:"keep_instance_name,omitempty" xml:"keep_instance_name,omitempty"`
+	// The name of the key pair. You must configure this parameter or the `login_password` parameter.
+	//
+	// example:
+	//
+	// secrity-key
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// The Kubernetes version of the cluster. The Kubernetes versions supported by ACK are the same as the Kubernetes versions supported by open source Kubernetes. We recommend that you specify the latest Kubernetes version. If you do not configure this parameter, the latest Kubernetes version is used.
+	//
+	// You can create clusters of the latest two Kubernetes versions in the ACK console. If you want to create clusters that run earlier Kubernetes versions, use the API. For more information about the Kubernetes versions supported by ACK, see [Release notes on Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	KubernetesVersion *string `json:"kubernetes_version,omitempty" xml:"kubernetes_version,omitempty"`
 	// The specification of the Server Load Balancer (SLB) instance. Valid values:
 	//
-	// *   slb.s1.small
-	// *   slb.s2.small
-	// *   slb.s2.medium
-	// *   slb.s3.small
-	// *   slb.s3.medium
-	// *   slb.s3.large
+	// 	- slb.s1.small
+	//
+	// 	- slb.s2.small
+	//
+	// 	- slb.s2.medium
+	//
+	// 	- slb.s3.small
+	//
+	// 	- slb.s3.medium
+	//
+	// 	- slb.s3.large
 	//
 	// Default value: `slb.s2.small`.
+	//
+	// example:
+	//
+	// slb.s2.small
 	LoadBalancerSpec *string `json:"load_balancer_spec,omitempty" xml:"load_balancer_spec,omitempty"`
-	// Specifies whether to enable Simple Log Service for the cluster. Set the value to `SLS`. This parameter takes effect only for ACK Serverless clusters.
+	// Enables Simple Log Service for the cluster. This parameter takes effect only on ACK Serverless clusters. Set the value to `SLS`.
+	//
+	// example:
+	//
+	// SLS
 	LoggingType *string `json:"logging_type,omitempty" xml:"logging_type,omitempty"`
-	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+	// The password for SSH logon. You must configure this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+	//
+	// example:
+	//
+	// Hello@1234
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// Specifies whether to enable auto-renewal for master nodes. This parameter takes effect only if `master_instance_charge_type` is set to `PrePaid`. Valid values:
 	//
-	// *   `true`: enables auto-renewal.
-	// *   `false`: disables auto-renewal.
+	// 	- `true`: enables auto-renewal.
+	//
+	// 	- `false`: disables auto-renewal.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	MasterAutoRenew *bool `json:"master_auto_renew,omitempty" xml:"master_auto_renew,omitempty"`
-	// The auto-renewal period for master nodes after the subscriptions of master nodes expire. This parameter takes effect and is required only if the subscription billing method is selected for master nodes.
+	// The cycle of auto-renewal. This parameter takes effect and is required only if the subscription billing method is selected for master nodes.
 	//
 	// Valid values: 1, 2, 3, 6, and 12.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MasterAutoRenewPeriod *int64 `json:"master_auto_renew_period,omitempty" xml:"master_auto_renew_period,omitempty"`
 	// The number of master nodes. Valid values: `3` and `5`.
 	//
 	// Default value: `3`.
+	//
+	// example:
+	//
+	// 3
 	MasterCount *int64 `json:"master_count,omitempty" xml:"master_count,omitempty"`
 	// The billing method of master nodes. Valid values:
 	//
-	// *   `PrePaid`: subscription.
-	// *   `PostPaid`: pay-as-you-go.
+	// 	- `PrePaid`: subscription.
+	//
+	// 	- `PostPaid`: pay-as-you-go.
 	//
 	// Default value: `PostPaid`.
+	//
+	// example:
+	//
+	// PrePaid
 	MasterInstanceChargeType *string `json:"master_instance_charge_type,omitempty" xml:"master_instance_charge_type,omitempty"`
-	// The Elastic Compute Service (ECS) instance types of master nodes. For more information, see [Overview of instance families](~~25378~~).
+	// The instance types of master nodes. For more information, see [Overview of instance families](https://help.aliyun.com/document_detail/25378.html).
 	MasterInstanceTypes []*string `json:"master_instance_types,omitempty" xml:"master_instance_types,omitempty" type:"Repeated"`
 	// The subscription duration of master nodes. This parameter takes effect and is required only if `master_instance_charge_type` is set to `PrePaid`.
 	//
 	// Valid values: 1, 2, 3, 6, 12, 24, 36, 48, and 60.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MasterPeriod *int64 `json:"master_period,omitempty" xml:"master_period,omitempty"`
 	// The billing cycle of master nodes. This parameter is required if master_instance_charge_type is set to `PrePaid`.
 	//
 	// Set the value to `Month`. Master nodes are billed only on a monthly basis.
-	MasterPeriodUnit *string `json:"master_period_unit,omitempty" xml:"master_period_unit,omitempty"`
-	// The type of system disk that you want to use for master nodes. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
-	// *   `cloud_essd`: ESSD.
+	// example:
+	//
+	// Month
+	MasterPeriodUnit *string `json:"master_period_unit,omitempty" xml:"master_period_unit,omitempty"`
+	// The type of system disk that you want to use for the master nodes. Valid values:
+	//
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// 	- `cloud_essd`: enhanced SSD (ESSD).
 	//
 	// Default value: `cloud_ssd`. The default value may vary in different zones.
+	//
+	// example:
+	//
+	// cloud_ssd
 	MasterSystemDiskCategory *string `json:"master_system_disk_category,omitempty" xml:"master_system_disk_category,omitempty"`
-	// The performance level (PL) of the system disk that you want to use for master nodes. This parameter takes effect only for enhanced SSDs. For more information about the relationship between disk PLs and disk sizes, see [ESSDs](~~122389~~).
+	// The performance level (PL) of the system disk that you want to use for master nodes. This parameter takes effect only for ESSDs. For more information about the relationship between disk PLs and disk sizes, see [ESSDs](https://help.aliyun.com/document_detail/122389.html).
+	//
+	// example:
+	//
+	// PL1
 	MasterSystemDiskPerformanceLevel *string `json:"master_system_disk_performance_level,omitempty" xml:"master_system_disk_performance_level,omitempty"`
-	// The size of the system disk that you want to use for master nodes. Valid values: 40 to 500. Unit: GiB.
+	// The size of the system disk that is specified for master nodes. Valid values: 40 to 500. Unit: GiB.
 	//
 	// Default value: `120`.
+	//
+	// example:
+	//
+	// 120
 	MasterSystemDiskSize *int64 `json:"master_system_disk_size,omitempty" xml:"master_system_disk_size,omitempty"`
-	// The ID of the automatic snapshot policy that you want to use for the system disks of master nodes.
+	// The ID of the automatic snapshot policy that is used by the system disk specified for master nodes.
+	//
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
 	MasterSystemDiskSnapshotPolicyId *string `json:"master_system_disk_snapshot_policy_id,omitempty" xml:"master_system_disk_snapshot_policy_id,omitempty"`
 	// The IDs of the vSwitches that are specified for master nodes. You can specify up to three vSwitches. We recommend that you specify three vSwitches in different zones to ensure high availability.
 	//
 	// The number of vSwitches must be the same as that specified in `master_count` and the same as those specified in `master_vswitch_ids`.
 	MasterVswitchIds []*string `json:"master_vswitch_ids,omitempty" xml:"master_vswitch_ids,omitempty" type:"Repeated"`
-	// The cluster name.
+	// The name of the cluster.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
-	Name *string `json:"name,omitempty" xml:"name,omitempty"`
-	// Specifies whether to create a NAT gateway and configure Source Network Address Translation (SNAT) rules when the system creates the ACK Serverless cluster. Valid values:
 	//
-	// *   `true`: automatically creates a NAT gateway and configures SNAT rules. This enables Internet access for the VPC in which the cluster is deployed.
-	// *   `false`: does not create a NAT gateway or configure SNAT rules. In this case, the cluster in the VPC cannot access the Internet.
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cluster-demo
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// Specifies whether to create a NAT gateway and configure SNAT rules when the system creates the ACK Serverless cluster. Valid values:
+	//
+	// 	- `true`: automatically creates a NAT gateway and configures SNAT rules. This enables Internet access for the VPC in which the cluster is deployed.
+	//
+	// 	- `false`: does not create a NAT gateway or configure SNAT rules. In this case, the cluster in the VPC cannot access the Internet.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	NatGateway *bool `json:"nat_gateway,omitempty" xml:"nat_gateway,omitempty"`
 	// The maximum number of IP addresses that can be assigned to nodes. This number is determined by the node CIDR block. This parameter takes effect only if the cluster uses Flannel as the network plug-in.
 	//
 	// Default value: `26`.
+	//
+	// example:
+	//
+	// 25
 	NodeCidrMask *string `json:"node_cidr_mask,omitempty" xml:"node_cidr_mask,omitempty"`
 	// The name of the custom node.
 	//
-	// A custom node name consists of a prefix, an IP substring, and a suffix.
+	// A node name consists of a prefix, an IP substring, and a suffix.
 	//
-	// *   The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-), and must start and end with a lowercase letter or digit.
-	// *   The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
+	// 	- The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-), and must start and end with a lowercase letter or digit.
 	//
-	// For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, the length of the IP address substring is 5, and the suffix is test, the node name will be aliyun.com00055test.
+	// 	- The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
+	//
+	// For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, the IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
+	//
+	// example:
+	//
+	// aliyun.com00055test
 	NodeNameMode *string `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
 	// The node port range. Valid values: 30000 to 65535.
 	//
 	// Default value: `30000-32767`.
+	//
+	// example:
+	//
+	// 30000~32767
 	NodePortRange *string `json:"node_port_range,omitempty" xml:"node_port_range,omitempty"`
 	// The list of node pools.
 	Nodepools []*Nodepool `json:"nodepools,omitempty" xml:"nodepools,omitempty" type:"Repeated"`
 	// Deprecated
+	//
 	// The number of worker nodes. Valid values: 0 to 100.
+	//
+	// example:
+	//
+	// 3
 	NumOfNodes *int64 `json:"num_of_nodes,omitempty" xml:"num_of_nodes,omitempty"`
 	// The type of OS. Valid values:
 	//
-	// *   Windows
-	// *   Linux
+	// 	- Windows
+	//
+	// 	- Linux
 	//
 	// Default value: `Linux`.
-	OsType *string `json:"os_type,omitempty" xml:"os_type,omitempty"`
-	// The subscription duration.
-	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
-	// The unit of the subscription duration.
-	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
-	// The release version of the operating system. Valid values:
 	//
-	// *   CentOS
-	// *   AliyunLinux
-	// *   QbootAliyunLinux
-	// *   Qboot
-	// *   Windows
-	// *   WindowsCore
+	// example:
+	//
+	// Linux
+	OsType *string `json:"os_type,omitempty" xml:"os_type,omitempty"`
+	// The subscription duration. This parameter takes effect and is required only if you set charge_type to PrePaid.
+	//
+	// Valid values: 1, 2, 3, 6, 12, 24, 36, 48, and 60.
+	//
+	// Default value: 1.
+	//
+	// example:
+	//
+	// FY2023
+	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
+	// The billing cycle. This parameter is required if charge_type is set to PrePaid.
+	//
+	// Set the value to Month. Master nodes are billed only on a monthly basis.
+	//
+	// example:
+	//
+	// Month
+	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
+	// The OS distribution. Valid values:
+	//
+	// 	- CentOS
+	//
+	// 	- AliyunLinux
+	//
+	// 	- QbootAliyunLinux
+	//
+	// 	- Qboot
+	//
+	// 	- Windows
+	//
+	// 	- WindowsCore
 	//
 	// Default value: `CentOS`.
+	//
+	// example:
+	//
+	// CentOS
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
-	// The list of pod vSwitches. You need to specify at least one pod vSwitch for each node vSwitch and the pod vSwitches must not be the same as the node vSwitches (`vswitch`). We recommend that you specify pod vSwitches whose mask lengths are no greater than 19.
+	// The list of pod vSwitches. You need to specify at least one pod vSwitch for each node vSwitch, and the pod vSwitches must be different from the node vSwitches (`vswitch`). We recommend that you specify pod vSwitches whose mask lengths are no longer than 19.
 	//
 	// >  The `pod_vswitch_ids` parameter is required if the cluster uses Terway as the network plug-in.
 	PodVswitchIds []*string `json:"pod_vswitch_ids,omitempty" xml:"pod_vswitch_ids,omitempty" type:"Repeated"`
-	// The identifier that indicates whether the cluster is an ACK Edge cluster. To create an ACK Edge cluster, you must set this parameter to `Edge`.
+	// If you set `cluster_type` to `ManagedKubernetes`, an ACK managed cluster is created. In this case, you can further specify the cluster edition. Valid values:
 	//
-	// *   `Default`: The cluster is not an ACK Edge cluster.
-	// *   `Edge`: The cluster is an ACK Edge cluster.
+	// 	- `Default`: ACK managed cluster. ACK managed clusters include ACK Basic clusters and ACK Pro clusters.
+	//
+	// 	- `Edge`: ACK Edge cluster. ACK Edge clusters include ACK Edge Basic clusters and ACK Edge Pro clusters.
+	//
+	// 	- `Serverless`: ACK Serverless cluster. ACK Serverless clusters include ACK Serverless Basic clusters and ACK Serverless Pro clusters.
+	//
+	// 	- `Lingjun`: ACK Lingjun Pro cluster.
+	//
+	// example:
+	//
+	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
 	// The kube-proxy mode. Valid values:
 	//
-	// *   `iptables`: iptables is a mature and stable kube-proxy mode. It uses iptables rules to conduct service discovery and load balancing. The performance of this mode is restricted by the size of the Kubernetes cluster. This mode is suitable for Kubernetes clusters that manage a small number of Services.
-	// *   `ipvs`: IPVS is a high-performance kube-proxy mode. It uses Linux Virtual Server (LVS) to conduct service discovery and load balancing. This mode is suitable for clusters that manage a large number of Services. We recommend that you use this mode in scenarios where high-performance load balancing is required.
+	// 	- `iptables`: iptables is a kube-proxy mode. It uses iptables rules to conduct Service discovery and load balancing. The performance of this mode is limited by the size of the cluster. This mode is suitable for clusters that run a small number of Services.
+	//
+	// 	- `ipvs`: provides high performance and uses IP Virtual Server (IPVS). This allows you to configure service discovery and load balancing. This mode is suitable for clusters that are required to run a large number of services. We recommend that you use this mode in scenarios when high load balancing performance is required.
 	//
 	// Default value: `ipvs`.
+	//
+	// example:
+	//
+	// ipvs
 	ProxyMode *string `json:"proxy_mode,omitempty" xml:"proxy_mode,omitempty"`
 	// The list of ApsaraDB RDS instances. Select the ApsaraDB RDS instances that you want to add to the whitelist. We recommend that you add the CIDR block of pods and CIDR block of nodes to the ApsaraDB RDS instances in the ApsaraDB RDS console. When you set the ApsaraDB RDS instances, you cannot scale out the number of nodes because the instances are not in the Running state.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The ID of the region in which you want to deploy the cluster.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The ID of the resource group to which the cluster belongs. You can use resource groups to isolate clusters.
+	//
+	// example:
+	//
+	// rg-acfm3mkrure****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The container runtime. The default container runtime is Docker. containerd and Sandboxed-Container are also supported.
 	//
-	// For more information about how to select a proper container runtime, see [Comparison of Docker, containerd, and Sandboxed-Container](~~160313~~).
+	// For more information about how to select a proper container runtime, see [How to select between Docker and Sandboxed-Container](https://help.aliyun.com/document_detail/160313.html).
 	Runtime *Runtime `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The ID of an existing security group. You need to choose between this parameter and the `is_enterprise_security_group` parameter. Cluster nodes are automatically added to the security group.
+	//
+	// example:
+	//
+	// sg-bp1bdue0qc1g7k****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
+	// Specifies whether to enable Alibaba Cloud Linux Security Hardening.
+	//
+	// Valid values:
+	//
+	// - true: enables Alibaba Cloud Linux Security Hardening.
+	//
+	// - false: disables Alibaba Cloud Linux Security Hardening.
+	//
+	// Default value: false
+	//
+	// example:
+	//
+	// false
+	SecurityHardeningOs *bool `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
 	// Service accounts provide identities for pods when pods communicate with the `API server` of the cluster. `service-account-issuer` is the issuer of the `serviceaccount token`, which corresponds to the `iss` field in the `token payload`.
 	//
-	// For more information about `ServiceAccount`, see [Enable service account token volume projection](~~160384~~).
+	// For more information about `ServiceAccount`, see [Enable service account token volume projection](https://help.aliyun.com/document_detail/160384.html).
+	//
+	// example:
+	//
+	// kubernetes.default.svc
 	ServiceAccountIssuer *string `json:"service_account_issuer,omitempty" xml:"service_account_issuer,omitempty"`
 	// The CIDR block of Services. Valid values: 10.0.0.0/16-24, 172.16-31.0.0/16-24, and 192.168.0.0/16-24. The CIDR block of Services cannot overlap with the CIDR block of the VPC (10.1.0.0/21) or the CIDR blocks of existing clusters in the VPC. You cannot modify the CIDR block of Services after the cluster is created.
 	//
 	// By default, the CIDR block of Services is set to 172.19.0.0/20.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 172.21.0.0/20
 	ServiceCidr *string `json:"service_cidr,omitempty" xml:"service_cidr,omitempty"`
 	// The type of service discovery that is implemented in the `ACK Serverless` cluster.
 	//
-	// *   `CoreDNS`: a standard service discovery plug-in provided by open source Kubernetes. To use the Domain Name System (DNS) resolution, you must provision pods. By default, two elastic container instances are used. The specification of each instance is 0.25 CPU cores and 512 MiB of memory.
-	// *   `PrivateZone`: a DNS resolution service provided by Alibaba Cloud. You must activate Alibaba Cloud DNS PrivateZone before you can use it for service discovery.
+	// 	- `CoreDNS`: CoreDNS is a standard service discovery plug-in that is provided by open source Kubernetes. To use DNS resolution, you must provision pods. By default, two elastic container instances are used. The specification of each instance is 0.25 vCores and 512 MiB of memory.
+	//
+	// 	- `PrivateZone`: a DNS resolution service provided by Alibaba Cloud. You must activate Alibaba Cloud DNS PrivateZone before you can use it for service discovery.
 	//
 	// By default, this parameter is not specified.
 	ServiceDiscoveryTypes []*string `json:"service_discovery_types,omitempty" xml:"service_discovery_types,omitempty" type:"Repeated"`
-	// Specifies whether to configure SNAT rules for the VPC where your cluster is deployed. Valid values:
+	// Specifies whether to configure Source Network Address Translation (SNAT) rules for the VPC in which the cluster is deployed. Valid values:
 	//
-	// *   `true`: automatically creates a NAT gateway and configures SNAT rules. Set this parameter to `true` if nodes and applications in the cluster need to access the Internet.
-	// *   `false`: does not create a NAT gateway or configure SNAT rules. In this case, nodes and applications in the cluster cannot access the Internet.
+	// 	- `true`: automatically creates a NAT gateway and configures SNAT rules. Set this parameter to `true` if nodes and applications in the cluster need to access the Internet.
 	//
-	// >  If this feature is disabled when you create the cluster, you can also manually enable this feature after you create the cluster. For more information, see [Manually create a NAT gateway and configure SNAT rules](~~178480~~).
+	// 	- `false`: does not create a NAT gateway or configure SNAT rules. In this case, nodes and applications in the cluster cannot access the Internet.
+	//
+	// >  If this feature is disabled when you create the cluster, you can manually enable this feature after you create the cluster. For more information, see [Manually create a NAT gateway and configure SNAT rules](https://help.aliyun.com/document_detail/178480.html).
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	SnatEntry *bool `json:"snat_entry,omitempty" xml:"snat_entry,omitempty"`
-	// Reinforcement based on classified protection. For more information, see [ACK reinforcement based on classified protection](~~196148~~).
+	// Specifies whether to enable reinforcement based on Multi-Level Protection Scheme (MLPS). For more information, see [ACK reinforcement based on classified protection](https://help.aliyun.com/document_detail/196148.html).
 	//
 	// Valid values:
 	//
-	// *   `true`: enables reinforcement based on classified protection.
-	// *   `false`: disables reinforcement based on classified protection.
+	// 	- `true`: enables reinforcement based on MLPS.
+	//
+	// 	- `false`: disables reinforcement based on MLPS.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
-	// Specifies whether to enable SSH logon over the Internet. If this parameter is set to true, you can log on to master nodes in an ACK dedicated cluster over the Internet. This parameter does not take effect in ACK managed clusters.
+	// Specifies whether to enable SSH logon. If this parameter is set to true, you can log on to master nodes in an ACK dedicated cluster over the Internet. This parameter does not take effect for ACK managed clusters. Valid values:
 	//
-	// *   `true`: enables SSH logon over the Internet.
-	// *   `false`: disables SSH logon over the Internet.
+	// 	- `true`: enables SSH logon.
+	//
+	// 	- `false`: disables SSH logon.
 	//
 	// Default value: `false`.
-	SshFlags *bool `json:"ssh_flags,omitempty" xml:"ssh_flags,omitempty"`
-	// The labels that you want to add to nodes. You must add tags based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add up to 20 labels.
-	// *   A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with aliyun, acs:, https://, or http://. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// example:
+	//
+	// true
+	SshFlags *bool `json:"ssh_flags,omitempty" xml:"ssh_flags,omitempty"`
+	// The labels that you want to add to nodes. You must add labels based on the following rules:
+	//
+	// 	- A label is a case-sensitive key-value pair. You can add up to 20 labels.
+	//
+	// 	- When you add a label, you must specify a unique key but you can leave the value empty. A key cannot exceed 64 characters in length and a value cannot exceed 128 characters in length. Keys and values cannot start with aliyun, acs:, https://, or http://. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The taints of the nodes in the node pool. Taints are added to nodes to prevent pods from being scheduled to inappropriate nodes. However, tolerations allow pods to be scheduled to nodes with matching taints. For more information, see [Taints and Tolerations](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
+	// The taints of the nodes in the node pool. Taints can be used together with tolerations to avoid scheduling pods to specified nodes. For more information, see [taint-and-toleration](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
 	Taints []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
 	// Specifies the timeout period of cluster creation. Unit: minutes.
 	//
 	// Default value: `60`.
+	//
+	// example:
+	//
+	// 60
 	TimeoutMins *int64 `json:"timeout_mins,omitempty" xml:"timeout_mins,omitempty"`
 	// The time zone of the cluster.
+	//
+	// example:
+	//
+	// Asia/Shanghai
 	Timezone *string `json:"timezone,omitempty" xml:"timezone,omitempty"`
-	// The custom certificate authority (CA) certificate used by the cluster.
+	// The custom Certificate Authority (CA) certificate used by the cluster.
+	//
+	// example:
+	//
+	// -----BEGIN CERTIFICATE-----****
 	UserCa *string `json:"user_ca,omitempty" xml:"user_ca,omitempty"`
 	// The user data of nodes.
+	//
+	// example:
+	//
+	// IyEvdXNyL2Jpbi9iYXNoCmVjaG8gIkhlbGxvIEFD****
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
-	// The virtual private cloud (VPC) in which you want to deploy the cluster. This parameter is required.
+	// The ID of the virtual private cloud (VPC) in which you want to deploy the cluster. This parameter is required.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// vpc-2zeik9h3ahvv2zz95****
 	Vpcid *string `json:"vpcid,omitempty" xml:"vpcid,omitempty"`
-	// The vSwitches that are specified for nodes in the cluster. This parameter is required when you create a managed Kubernetes cluster that does not contain nodes.
+	// The vSwitches that are specified for nodes in the cluster. This parameter is required when you create an ACK managed cluster that does not contain nodes.
+	//
+	// This parameter is required.
 	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
 	// Deprecated
-	// Specifies whether to enable auto-renewal for worker nodes. This parameter takes effect only if `worker_instance_charge_type` is set to `PrePaid`. Valid values:
 	//
-	// *   `true`: enables auto-renewal.
-	// *   `false`: disables auto-renewal.
+	// Specifies whether to enable auto-renewal for worker nodes. This parameter takes effect and is required only if `worker_instance_charge_type` is set to `PrePaid`. Valid values:
+	//
+	// 	- `true`: enables auto-renewal.
+	//
+	// 	- `false`: disables auto-renewal.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	WorkerAutoRenew *bool `json:"worker_auto_renew,omitempty" xml:"worker_auto_renew,omitempty"`
 	// Deprecated
-	// The auto-renewal period for worker nodes after the subscriptions of worker nodes expire. This parameter takes effect and is required only if the subscription billing method is selected for worker nodes.
+	//
+	// The cycle of auto-renewal. This parameter takes effect and is required only if the subscription billing method is selected for worker nodes.
 	//
 	// Valid values: 1, 2, 3, 6, and 12.
+	//
+	// example:
+	//
+	// 1
 	WorkerAutoRenewPeriod *int64 `json:"worker_auto_renew_period,omitempty" xml:"worker_auto_renew_period,omitempty"`
 	// Deprecated
-	// The configuration of the data disk that is mounted to worker nodes. The configuration includes disk type and disk size.
+	//
+	// The configurations of the data disks that you want to mount to worker nodes. The configurations include the disk type and disk size.
 	WorkerDataDisks []*CreateClusterRequestWorkerDataDisks `json:"worker_data_disks,omitempty" xml:"worker_data_disks,omitempty" type:"Repeated"`
 	// Deprecated
+	//
 	// The billing method of worker nodes. Valid values:
 	//
-	// *   `PrePaid`: subscription.
-	// *   `PostPaid`: pay-as-you-go.
+	// 	- `PrePaid`: subscription.
+	//
+	// 	- `PostPaid`: pay-as-you-go.
 	//
 	// Default value: PostPaid.
+	//
+	// example:
+	//
+	// PrePaid
 	WorkerInstanceChargeType *string `json:"worker_instance_charge_type,omitempty" xml:"worker_instance_charge_type,omitempty"`
 	// Deprecated
+	//
 	// The instance configurations of worker nodes.
 	WorkerInstanceTypes []*string `json:"worker_instance_types,omitempty" xml:"worker_instance_types,omitempty" type:"Repeated"`
 	// Deprecated
+	//
 	// The subscription duration of worker nodes. This parameter takes effect and is required only if `worker_instance_charge_type` is set to `PrePaid`.
 	//
 	// Valid values: 1, 2, 3, 6, 12, 24, 36, 48, and 60.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	WorkerPeriod *int64 `json:"worker_period,omitempty" xml:"worker_period,omitempty"`
 	// Deprecated
+	//
 	// The billing cycle of worker nodes. This parameter is required if worker_instance_charge_type is set to `PrePaid`.
 	//
 	// Set the value to `Month`. Worker nodes are billed only on a monthly basis.
+	//
+	// example:
+	//
+	// Month
 	WorkerPeriodUnit *string `json:"worker_period_unit,omitempty" xml:"worker_period_unit,omitempty"`
 	// Deprecated
-	// The category of the system disk that you attach to the worker node. For more information, see [Elastic Block Storage devices](~~63136~~).
+	//
+	// The category of the system disks for worker nodes. For more information, see [Elastic Block Storage devices](https://help.aliyun.com/document_detail/63136.html).
 	//
 	// Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
 	//
 	// Default value: `cloud_ssd`.
+	//
+	// example:
+	//
+	// cloud_efficiency
 	WorkerSystemDiskCategory *string `json:"worker_system_disk_category,omitempty" xml:"worker_system_disk_category,omitempty"`
 	// Deprecated
-	// If the system disk is an ESSD, you can set the PL of the ESSD. For more information, see [ESSDs](~~122389~~).
+	//
+	// If the system disk is an ESSD, you can set the PL of the ESSD. For more information, see [ESSDs](https://help.aliyun.com/document_detail/122389.html).
 	//
 	// Valid values:
 	//
-	// *   PL0
-	// *   PL1
-	// *   PL2
-	// *   PL3
+	// 	- PL0
+	//
+	// 	- PL1
+	//
+	// 	- PL2
+	//
+	// 	- PL3
+	//
+	// example:
+	//
+	// PL1
 	WorkerSystemDiskPerformanceLevel *string `json:"worker_system_disk_performance_level,omitempty" xml:"worker_system_disk_performance_level,omitempty"`
 	// Deprecated
-	// The size of the system disk that you want to use for worker nodes. Unit: GiB.
+	//
+	// The system disk size of worker nodes. Unit: GiB.
 	//
 	// Valid values: 40 to 500.
 	//
 	// The value of this parameter must be at least 40 and no less than the image size.
 	//
 	// Default value: `120`.
+	//
+	// example:
+	//
+	// 120
 	WorkerSystemDiskSize *int64 `json:"worker_system_disk_size,omitempty" xml:"worker_system_disk_size,omitempty"`
 	// Deprecated
-	// The ID of the automatic snapshot policy that you want to use for the system disks of worker nodes.
+	//
+	// The ID of the automatic snapshot policy that is used by the system disk specified for worker nodes.
+	//
+	// example:
+	//
+	// sp-2zej1nogjvovnz4z****
 	WorkerSystemDiskSnapshotPolicyId *string `json:"worker_system_disk_snapshot_policy_id,omitempty" xml:"worker_system_disk_snapshot_policy_id,omitempty"`
 	// Deprecated
+	//
 	// The list of vSwitches that are specified for nodes. Each node is allocated a vSwitch.
 	//
 	// The `worker_vswitch_ids` parameter is optional but the `vswitch_ids` parameter is required when you create an ACK managed cluster that does not contain nodes.
 	WorkerVswitchIds []*string `json:"worker_vswitch_ids,omitempty" xml:"worker_vswitch_ids,omitempty" type:"Repeated"`
-	// The ID of the zone in which the cluster is deployed. This parameter takes effect in only ACK Serverless clusters.
+	// The ID of the zone to which the cluster belongs. This parameter takes effect for only ACK Serverless clusters.
 	//
 	// When you create an ACK Serverless cluster, you must configure `zone_id` if `vpc_id` and `vswitch_ids` are not configured. This way, the system automatically creates a VPC in the specified zone.
+	//
+	// example:
+	//
+	// cn-beiji****
 	ZoneId *string `json:"zone_id,omitempty" xml:"zone_id,omitempty"`
 }
 
@@ -2769,6 +3741,11 @@ func (s *CreateClusterRequest) SetSecurityGroupId(v string) *CreateClusterReques
 	return s
 }
 
+func (s *CreateClusterRequest) SetSecurityHardeningOs(v bool) *CreateClusterRequest {
+	s.SecurityHardeningOs = &v
+	return s
+}
+
 func (s *CreateClusterRequest) SetServiceAccountIssuer(v string) *CreateClusterRequest {
 	s.ServiceAccountIssuer = &v
 	return s
@@ -2905,18 +3882,39 @@ func (s *CreateClusterRequest) SetZoneId(v string) *CreateClusterRequest {
 }
 
 type CreateClusterRequestWorkerDataDisks struct {
-	// The data disk type.
-	Category *string `json:"category,omitempty" xml:"category,omitempty"`
-	// Specifies whether to encrypt a data disk. Valid values:
+	// The type of a data disk.
 	//
-	// *   `true`: encrypts a data disk.
-	// *   `false`: does not encrypt a data disk.
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cloud_essd
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
+	// Specifies whether to encrypt the data disk. Valid values:
+	//
+	// 	- `true`: encrypts the data disk.
+	//
+	// 	- `false`: does not encrypt the data disk.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	Encrypted *string `json:"encrypted,omitempty" xml:"encrypted,omitempty"`
-	// The performance level (PL) of a data disk. This parameter takes effect only on ESSDs. You can specify a higher PL if you increase the size of a data disk. For more information, see [ESSDs](~~122389~~).
+	// The PL of the data disk. This parameter takes effect only for ESSDs. You can specify a higher PL if you increase the size of a data disk. For more information, see [ESSDs](https://help.aliyun.com/document_detail/122389.html).
+	//
+	// example:
+	//
+	// PL1
 	PerformanceLevel *string `json:"performance_level,omitempty" xml:"performance_level,omitempty"`
-	// The size of the data disk. Valid values: 40 to 32767.
+	// The size of the data disk. Valid values: 40 to 32767. Unit: GiB.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 120
 	Size *string `json:"size,omitempty" xml:"size,omitempty"`
 }
 
@@ -2950,10 +3948,22 @@ func (s *CreateClusterRequestWorkerDataDisks) SetSize(v string) *CreateClusterRe
 
 type CreateClusterResponseBody struct {
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// cb95aa626a47740afbf6aa099b650****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314A1E1
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00002f
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -3013,27 +4023,44 @@ type CreateClusterNodePoolRequest struct {
 	// The configuration of auto scaling.
 	AutoScaling *CreateClusterNodePoolRequestAutoScaling `json:"auto_scaling,omitempty" xml:"auto_scaling,omitempty" type:"Struct"`
 	// Deprecated
+	//
 	// This parameter is deprecated. Use the desired_size parameter instead.
 	//
 	// The number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 1
 	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
 	// Deprecated
+	//
 	// This parameter is deprecated.
 	//
 	// The configuration of the edge node pool.
 	InterconnectConfig *CreateClusterNodePoolRequestInterconnectConfig `json:"interconnect_config,omitempty" xml:"interconnect_config,omitempty" type:"Struct"`
 	// The network type of the edge node pool. This parameter takes effect only when you set the `type` parameter of the node pool to `edge`. Valid values:
 	//
-	// *   `basic`: basic
-	// *   `improved`: enhanced
-	// *   `private`: dedicated Only Kubernetes 1.22 and later support this parameter.
+	// 	- `basic`: basic
+	//
+	// 	- `improved`: enhanced
+	//
+	// 	- `private`: dedicated Only Kubernetes 1.22 and later support this parameter.
+	//
+	// example:
+	//
+	// basic
 	InterconnectMode *string `json:"interconnect_mode,omitempty" xml:"interconnect_mode,omitempty"`
 	// The configuration of the cluster.
 	KubernetesConfig *CreateClusterNodePoolRequestKubernetesConfig `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
 	// The configuration of the managed node pool feature.
 	Management *CreateClusterNodePoolRequestManagement `json:"management,omitempty" xml:"management,omitempty" type:"Struct"`
 	// Deprecated
+	//
 	// The maximum number of nodes that can be created in the edge node pool. You must specify a value that is equal to or larger than 0. A value of 0 indicates that the number of nodes in the node pool is limited only by the quota of nodes in the cluster. In most cases, this parameter is set to a value larger than 0 for edge node pools. This parameter is set to 0 for node pools of the ess type or default edge node pools.
+	//
+	// example:
+	//
+	// 10
 	MaxNodes   *int64                                  `json:"max_nodes,omitempty" xml:"max_nodes,omitempty"`
 	NodeConfig *CreateClusterNodePoolRequestNodeConfig `json:"node_config,omitempty" xml:"node_config,omitempty" type:"Struct"`
 	// The configuration of the node pool.
@@ -3109,49 +4136,86 @@ func (s *CreateClusterNodePoolRequest) SetTeeConfig(v *CreateClusterNodePoolRequ
 
 type CreateClusterNodePoolRequestAutoScaling struct {
 	// Deprecated
+	//
 	// This parameter is deprecated.
 	//
 	// The maximum bandwidth of the EIP. Unit: Mbit/s.
+	//
+	// example:
+	//
+	// 5
 	EipBandwidth *int64 `json:"eip_bandwidth,omitempty" xml:"eip_bandwidth,omitempty"`
 	// Deprecated
+	//
 	// This parameter is deprecated.
 	//
 	// The metering method of the EIP. Valid values:
 	//
-	// *   `PayByBandwidth`: pay-by-bandwidth.
-	// *   `PayByTraffic`: pay-by-data-transfer.
+	// 	- `PayByBandwidth`: pay-by-bandwidth.
+	//
+	// 	- `PayByTraffic`: pay-by-data-transfer.
 	//
 	// Default value: `PayByBandwidth`.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	EipInternetChargeType *string `json:"eip_internet_charge_type,omitempty" xml:"eip_internet_charge_type,omitempty"`
 	// Specifies whether to enable auto scaling. Valid values:
 	//
-	// *   `true`: enables auto scaling.
-	// *   `false`: disables auto scaling. If you set this parameter to false, other parameters in the `auto_scaling` section do not take effect.
+	// 	- `true`: enables auto scaling.
+	//
+	// 	- `false`: disables auto scaling. If you set this parameter to false, other parameters in the `auto_scaling` section do not take effect.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
+	//
 	// This parameter is deprecated.
 	//
 	// Specifies whether to associate an elastic IP address (EIP) with the node pool. Valid values:
 	//
-	// *   `true`: associates an EIP with the node pool
-	// *   `false`: does not associate an EIP with the node pool.
+	// 	- `true`: associates an EIP with the node pool
+	//
+	// 	- `false`: does not associate an EIP with the node pool.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	IsBondEip *bool `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
 	// The maximum number of Elastic Compute Service (ECS) instances that can be created in a node pool.
+	//
+	// example:
+	//
+	// 10
 	MaxInstances *int64 `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
 	// The minimum number of ECS instances that must be kept in a node pool.
+	//
+	// example:
+	//
+	// 1
 	MinInstances *int64 `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
 	// The instance types that can be used for the auto scaling of the node pool. Valid values:
 	//
-	// *   `cpu`: regular instance.
-	// *   `gpu`: GPU-accelerated instance.
-	// *   `gpushare`: shared GPU-accelerated instance.
-	// *   `spot`: preemptible instance
+	// 	- `cpu`: regular instance.
+	//
+	// 	- `gpu`: GPU-accelerated instance.
+	//
+	// 	- `gpushare`: shared GPU-accelerated instance.
+	//
+	// 	- `spot`: preemptible instance
 	//
 	// Default value: `cpu`.
+	//
+	// example:
+	//
+	// cpu
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -3202,22 +4266,42 @@ type CreateClusterNodePoolRequestInterconnectConfig struct {
 	// This parameter is deprecated.
 	//
 	// The bandwidth of the enhanced edge node pool. Unit: Mbit/s.
+	//
+	// example:
+	//
+	// 10
 	Bandwidth *int64 `json:"bandwidth,omitempty" xml:"bandwidth,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The ID of the Cloud Connect Network (CCN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// ccn-qm5i0i0q9yi*******
 	CcnId *string `json:"ccn_id,omitempty" xml:"ccn_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The region to which the CCN instance that is associated with the enhanced edge node pool belongs.
+	//
+	// example:
+	//
+	// cn-shanghai
 	CcnRegionId *string `json:"ccn_region_id,omitempty" xml:"ccn_region_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The ID of the Cloud Enterprise Network (CEN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// cen-ey9k9nfhz0f*******
 	CenId *string `json:"cen_id,omitempty" xml:"cen_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The subscription duration of the enhanced edge node pool. The duration is measured in months.
+	//
+	// example:
+	//
+	// 1
 	ImprovedPeriod *string `json:"improved_period,omitempty" xml:"improved_period,omitempty"`
 }
 
@@ -3257,35 +4341,65 @@ func (s *CreateClusterNodePoolRequestInterconnectConfig) SetImprovedPeriod(v str
 type CreateClusterNodePoolRequestKubernetesConfig struct {
 	// Specifies whether to install the CloudMonitor agent on ECS nodes. After the CloudMonitor agent is installed on ECS nodes, you can view monitoring information about the instances in the CloudMonitor console. We recommend that you install the CloudMonitor agent. Valid values:
 	//
-	// *   `true`: installs the CloudMonitor agent on ECS nodes.
-	// *   `false`: does not install the CloudMonitor agent on ECS nodes.
+	// 	- `true`: installs the CloudMonitor agent on ECS nodes.
+	//
+	// 	- `false`: does not install the CloudMonitor agent on ECS nodes.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
 	// The CPU management policy of the nodes in a node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
-	// *   `none`: specifies that the default CPU affinity is used.
+	// 	- `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: specifies that the default CPU affinity is used.
 	//
 	// Default value: `none`.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
 	// The labels that you want to add to the nodes in the cluster.
 	Labels []*Tag `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
 	// A custom node name consists of a prefix, a node IP address, and a suffix.
 	//
-	// *   The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
-	// *   The node IP address in a custom node name is the private IP address of the node.
+	// 	- The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
+	//
+	// 	- The node IP address in a custom node name is the private IP address of the node.
 	//
 	// Set the value in the customized,aliyun,ip,com format. The value consists of four parts that are separated by commas (,). customized and ip are fixed content. aliyun is the prefix and com is the suffix. Example: aliyun.192.168.xxx.xxx.com.
+	//
+	// example:
+	//
+	// customized,aliyun,ip,com
 	NodeNameMode *string `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
 	// The container runtime.
+	//
+	// example:
+	//
+	// docker
 	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The version of the container runtime.
+	//
+	// example:
+	//
+	// 19.03.5
 	RuntimeVersion *string `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	// The configuration of taints.
-	Taints        []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
-	Unschedulable *bool    `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
+	Taints []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
+	// example:
+	//
+	// true
+	Unschedulable *bool `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
 	// The user-defined data on nodes.
+	//
+	// example:
+	//
+	// dGhpcyBpcyBhIGV4YW1wbGU=
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
@@ -3345,20 +4459,37 @@ func (s *CreateClusterNodePoolRequestKubernetesConfig) SetUserData(v string) *Cr
 type CreateClusterNodePoolRequestManagement struct {
 	// Specifies whether to enable auto repair. This parameter takes effect only when you specify `enable=true`. Valid values:
 	//
-	// *   `true`: enables auto repair.
-	// *   `false`: disables auto repair.
-	AutoRepair        *bool                                                    `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
-	AutoRepairPolicy  *CreateClusterNodePoolRequestManagementAutoRepairPolicy  `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
+	// 	- `true`: enables auto repair.
+	//
+	// 	- `false`: disables auto repair.
+	//
+	// example:
+	//
+	// false
+	AutoRepair       *bool                                                   `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
+	AutoRepairPolicy *CreateClusterNodePoolRequestManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
+	// example:
+	//
+	// true
 	AutoUpgrade       *bool                                                    `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	AutoUpgradePolicy *CreateClusterNodePoolRequestManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
-	AutoVulFix        *bool                                                    `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
-	AutoVulFixPolicy  *CreateClusterNodePoolRequestManagementAutoVulFixPolicy  `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
+	// example:
+	//
+	// true
+	AutoVulFix       *bool                                                   `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
+	AutoVulFixPolicy *CreateClusterNodePoolRequestManagementAutoVulFixPolicy `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
 	// Specifies whether to enable the managed node pool feature. Valid values:
 	//
-	// *   `true`: enables the managed node pool feature.
-	// *   `false`: disables the managed node pool feature. Other parameters in this section take effect only when you specify enable=true.
+	// 	- `true`: enables the managed node pool feature.
+	//
+	// 	- `false`: disables the managed node pool feature. Other parameters in this section take effect only when you specify enable=true.
+	//
+	// example:
+	//
+	// false
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
+	//
 	// The configuration of auto update. The configuration takes effect only when you specify `enable=true`.
 	UpgradeConfig *CreateClusterNodePoolRequestManagementUpgradeConfig `json:"upgrade_config,omitempty" xml:"upgrade_config,omitempty" type:"Struct"`
 }
@@ -3412,6 +4543,9 @@ func (s *CreateClusterNodePoolRequestManagement) SetUpgradeConfig(v *CreateClust
 }
 
 type CreateClusterNodePoolRequestManagementAutoRepairPolicy struct {
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 }
 
@@ -3429,7 +4563,12 @@ func (s *CreateClusterNodePoolRequestManagementAutoRepairPolicy) SetRestartNode(
 }
 
 type CreateClusterNodePoolRequestManagementAutoUpgradePolicy struct {
+	// example:
+	//
+	// true
 	AutoUpgradeKubelet *bool `json:"auto_upgrade_kubelet,omitempty" xml:"auto_upgrade_kubelet,omitempty"`
+	AutoUpgradeOs      *bool `json:"auto_upgrade_os,omitempty" xml:"auto_upgrade_os,omitempty"`
+	AutoUpgradeRuntime *bool `json:"auto_upgrade_runtime,omitempty" xml:"auto_upgrade_runtime,omitempty"`
 }
 
 func (s CreateClusterNodePoolRequestManagementAutoUpgradePolicy) String() string {
@@ -3445,9 +4584,25 @@ func (s *CreateClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgrade
 	return s
 }
 
+func (s *CreateClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgradeOs(v bool) *CreateClusterNodePoolRequestManagementAutoUpgradePolicy {
+	s.AutoUpgradeOs = &v
+	return s
+}
+
+func (s *CreateClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgradeRuntime(v bool) *CreateClusterNodePoolRequestManagementAutoUpgradePolicy {
+	s.AutoUpgradeRuntime = &v
+	return s
+}
+
 type CreateClusterNodePoolRequestManagementAutoVulFixPolicy struct {
-	RestartNode *bool   `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
-	VulLevel    *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
+	// example:
+	//
+	// true
+	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
+	// example:
+	//
+	// asap,nntf
+	VulLevel *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
 }
 
 func (s CreateClusterNodePoolRequestManagementAutoVulFixPolicy) String() string {
@@ -3470,18 +4625,36 @@ func (s *CreateClusterNodePoolRequestManagementAutoVulFixPolicy) SetVulLevel(v s
 
 type CreateClusterNodePoolRequestManagementUpgradeConfig struct {
 	// Deprecated
+	//
 	// Indicates whether auto update is enabled. Valid values:
 	//
-	// *   `true`: enables auto upgrade.
-	// *   `false`: disables auto update.
+	// 	- `true`: enables auto upgrade.
+	//
+	// 	- `false`: disables auto update.
+	//
+	// example:
+	//
+	// false
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// The maximum number of nodes that can be in the Unschedulable state. Valid values: 1 to 1000.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MaxUnavailable *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
 	// The number of nodes that are temporarily added to the node pool during an auto update.
+	//
+	// example:
+	//
+	// 0
 	Surge *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
 	// The percentage of additional nodes to the nodes in the node pool. You must set this parameter or `surge`.
+	//
+	// example:
+	//
+	// 0
 	SurgePercentage *int64 `json:"surge_percentage,omitempty" xml:"surge_percentage,omitempty"`
 }
 
@@ -3532,13 +4705,28 @@ func (s *CreateClusterNodePoolRequestNodeConfig) SetKubeletConfiguration(v *Kube
 
 type CreateClusterNodePoolRequestNodepoolInfo struct {
 	// The name of the node pool.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cluster-demo
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The ID of the resource group to which the node pool belongs.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjmb****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The type of node pool. Valid values:
 	//
-	// *   `ess`: node pool
-	// *   `edge`: edge node pool
+	// 	- `ess`: node pool
+	//
+	// 	- `edge`: edge node pool
+	//
+	// example:
+	//
+	// ess
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -3568,96 +4756,195 @@ func (s *CreateClusterNodePoolRequestNodepoolInfo) SetType(v string) *CreateClus
 type CreateClusterNodePoolRequestScalingGroup struct {
 	// Specifies whether to enable auto-renewal for nodes in the node pool. This parameter takes effect only when you set `instance_charge_type` to `PrePaid`. Valid values:
 	//
-	// *   `true`: enables auto-renewal
-	// *   `false`: disables auto-renewal.
+	// 	- `true`: enables auto-renewal
+	//
+	// 	- `false`: disables auto-renewal.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
 	// The duration of the auto-renewal. This parameter takes effect and is required only when you set instance_charge_type to PrePaid and auto_renew to true. If `PeriodUnit=Month` is configured, the valid values are 1, 2, 3, 6, and 12.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	CisEnabled      *bool  `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
+	// Deprecated
+	//
+	// example:
+	//
+	// false
+	CisEnabled *bool `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
 	// Specifies whether to automatically create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as the cost or insufficient inventory. This parameter takes effect when you set `multi_az_policy` to `COST_OPTIMIZED`. Valid values:
 	//
-	// *   `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
-	// *   `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	// 	- `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// 	- `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// example:
+	//
+	// true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
 	// The configuration of the data disks that are mounted to the nodes in the node pool.
 	DataDisks []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
 	// The ID of the deployment set to which the ECS instances in the node pool belong.
+	//
+	// example:
+	//
+	// ds-bp1d19mmbsv3jf6xxxxx
 	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
 	// The expected number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 0
 	DesiredSize *int64 `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
 	// The ID of a custom image. By default, the image provided by ACK is used.
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The type of OS image. You must set this parameter or `platform`. Valid values:
 	//
-	// *   `AliyunLinux`: Alinux2
-	// *   `AliyunLinux3`: Alinux3
-	// *   `AliyunLinux3Arm64`: Alinux3 ARM
-	// *   `AliyunLinuxUEFI`: Alinux2 UEFI
-	// *   `CentOS`: CentOS
-	// *   `Windows`: Windows
-	// *   `WindowsCore`: Windows Core
-	// *   `ContainerOS`: ContainerOS
+	// 	- `AliyunLinux`: Alinux2
+	//
+	// 	- `AliyunLinux3`: Alinux3
+	//
+	// 	- `AliyunLinux3Arm64`: Alinux3 ARM
+	//
+	// 	- `AliyunLinuxUEFI`: Alinux2 UEFI
+	//
+	// 	- `CentOS`: CentOS
+	//
+	// 	- `Windows`: Windows
+	//
+	// 	- `WindowsCore`: Windows Core
+	//
+	// 	- `ContainerOS`: ContainerOS
+	//
+	// example:
+	//
+	// AliyunLinux
 	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
 	// The billing method of the nodes in the node pool. Valid values:
 	//
-	// *   `PrePaid`: the subscription billing method.
-	// *   `PostPaid`: the pay-as-you-go billing method.
+	// 	- `PrePaid`: the subscription billing method.
+	//
+	// 	- `PostPaid`: the pay-as-you-go billing method.
 	//
 	// Default value: `PostPaid`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// PrePaid
 	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
 	// The instance type of the nodes in the node pool.
+	//
+	// This parameter is required.
 	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
 	// The metering method of the public IP address. Valid values:
 	//
-	// *   PayByBandwidth: pay-by-bandwidth.
-	// *   PayByTraffic: pay-by-data-transfer.
+	// 	- PayByBandwidth: pay-by-bandwidth.
+	//
+	// 	- PayByTraffic: pay-by-data-transfer.
+	//
+	// example:
+	//
+	// PayByTraffic
 	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
 	// The maximum outbound bandwidth of the public IP address of the node. Unit: Mbit/s. Valid values: 1 to 100.
+	//
+	// example:
+	//
+	// 5
 	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 	// The name of the key pair. You must set this parameter or the `login_password` parameter.
 	//
 	// >  If you want to create a managed node pool, you must set `key_pair`.
-	KeyPair        *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	LoginAsNonRoot *bool   `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
+	//
+	// example:
+	//
+	// np-key-name
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// example:
+	//
+	// true
+	LoginAsNonRoot *bool `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
 	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+	//
+	// example:
+	//
+	// Hello1234
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// The ECS instance scaling policy for a multi-zone scaling group. Valid values:
 	//
-	// *   `PRIORITY`: ECS instances are created based on the VSwitchIds.N parameter. If Auto Scaling fails to create ECS instances in the zone of the vSwitch with the highest priority, Auto Scaling attempts to create ECS instances in the zone of the vSwitch with a lower priority.
+	// 	- `PRIORITY`: ECS instances are created based on the VSwitchIds.N parameter. If Auto Scaling fails to create ECS instances in the zone of the vSwitch with the highest priority, Auto Scaling attempts to create ECS instances in the zone of the vSwitch with a lower priority.
 	//
-	// *   `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
+	// 	- `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
 	//
 	//     **
 	//
-	//     **Note** `COST_OPTIMIZED` is valid only when multiple instance types are specified or at least one preemptible instance type is specified.
+	//     **Note*	- `COST_OPTIMIZED` is valid only when multiple instance types are specified or at least one preemptible instance type is specified.
 	//
-	// *   `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call [RebalanceInstances](~~71516~~) of Auto Scaling to balance the instance distribution among zones.
+	// 	- `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call [RebalanceInstances](https://help.aliyun.com/document_detail/71516.html) of Auto Scaling to balance the instance distribution among zones.
 	//
 	// Default value: `PRIORITY`.
+	//
+	// example:
+	//
+	// COST_OPTIMIZED
 	MultiAzPolicy *string `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
 	// The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
+	//
+	// example:
+	//
+	// 0
 	OnDemandBaseCapacity *int64 `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
 	// The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
+	//
+	// example:
+	//
+	// 20
 	OnDemandPercentageAboveBaseCapacity *int64 `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
 	// The subscription duration of the nodes in the node pool. This parameter takes effect and is required only when you set `instance_charge_type` to `PrePaid`. If you set `period_unit` to Month, the valid values of `period` are 1, 2, 3, 6, and 12.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
 	// The billing cycle of the nodes in the node pool. This parameter is required if you set instance_charge_type to `PrePaid`. A value of Month indicates that the billing cycle is measured in months.
+	//
+	// example:
+	//
+	// Month
 	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// Deprecated
+	//
 	// The release version of the operating system. Valid values:
 	//
-	// *   `CentOS`
-	// *   `AliyunLinux`
-	// *   `Windows`
-	// *   `WindowsCore`
+	// 	- `CentOS`
+	//
+	// 	- `AliyunLinux`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
 	//
 	// Default value: `AliyunLinux`.
+	//
+	// example:
+	//
+	// AliyunLinux
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
 	// The configuration of the private node pool.
 	PrivatePoolOptions *CreateClusterNodePoolRequestScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
@@ -3665,67 +4952,131 @@ type CreateClusterNodePoolRequestScalingGroup struct {
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The scaling mode of the scaling group. Valid values:
 	//
-	// *   `release`: the standard mode. ECS instances are created and released based on resource usage.
-	// *   `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances attached with local disks.
+	// 	- `release`: the standard mode. ECS instances are created and released based on resource usage.
+	//
+	// 	- `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances attached with local disks.
 	//
 	// Default value: `release`.
+	//
+	// example:
+	//
+	// release
 	ScalingPolicy *string `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
 	// Deprecated
+	//
 	// Specifies the ID of the security group to which you want to add the node pool. You must set this parameter or `security_group_ids`. We recommend that you set `security_group_ids`.
+	//
+	// example:
+	//
+	// sg-wz9a8g2mt6x5llu0****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The IDs of security groups to which you want to add the node pool. You must set this parameter or `security_group_id`. We recommend that you set `security_group_ids`. If you set both `security_group_id` and `security_group_ids`, `security_group_ids` is used.
-	SecurityGroupIds []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
-	SocEnabled       *bool     `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
+	SecurityGroupIds    []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
+	SecurityHardeningOs *bool     `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// example:
+	//
+	// false
+	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
 	// The number of instance types that are available. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
+	//
+	// example:
+	//
+	// 5
 	SpotInstancePools *int64 `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
 	// Specifies whether to supplement preemptible instances when the number of preemptible instances drops below the specified minimum number. If this parameter is set to true, when the scaling group receives a system message that a preemptible instance is to be reclaimed, the scaling group attempts to create a new instance to replace this instance. Valid values:
 	//
-	// *   `true`: enables the supplementation of preemptible instances.
-	// *   `false`: disables the supplementation of preemptible instances.
+	// 	- `true`: enables the supplementation of preemptible instances.
+	//
+	// 	- `false`: disables the supplementation of preemptible instances.
+	//
+	// example:
+	//
+	// false
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// The instance type of preemptible instance and the maximum bid price.
 	SpotPriceLimit []*CreateClusterNodePoolRequestScalingGroupSpotPriceLimit `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
 	// The bidding policy of preemptible instances. Valid values:
 	//
-	// *   `NoSpot`: non-preemptible instance.
-	// *   `SpotWithPriceLimit`: specifies the highest bid.
-	// *   `SpotAsPriceGo`: automatically submits bids based on the up-to-date market price.
+	// 	- `NoSpot`: non-preemptible instance.
 	//
-	// For more information, see [Preemptible instances](~~165053~~).
+	// 	- `SpotWithPriceLimit`: specifies the highest bid.
+	//
+	// 	- `SpotAsPriceGo`: automatically submits bids based on the up-to-date market price.
+	//
+	// For more information, see [Preemptible instances](https://help.aliyun.com/document_detail/165053.html).
+	//
+	// example:
+	//
+	// NoSpot
 	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
 	// Specifies whether to enable the burst feature for system disks. Valid values:
 	//
-	// *   true: enables the burst feature.
-	// *   false: disables the burst feature.
+	// 	- true: enables the burst feature.
 	//
-	// This parameter is supported only when `SystemDiskCategory` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](~~368372~~).
+	// 	- false: disables the burst feature.
+	//
+	// This parameter is supported only when `SystemDiskCategory` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](https://help.aliyun.com/document_detail/368372.html).
+	//
+	// example:
+	//
+	// true
 	SystemDiskBurstingEnabled *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
 	SystemDiskCategories      []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
 	// The type of system disk. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
-	// *   `cloud_essd`: enhanced SSD.
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// 	- `cloud_essd`: enhanced SSD.
 	//
 	// Default value: `cloud_efficiency`.
-	SystemDiskCategory         *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	//
+	// example:
+	//
+	// cloud_efficiency
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// example:
+	//
+	// aes-256
 	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	SystemDiskEncrypted        *bool   `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
-	SystemDiskKmsKeyId         *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
+	// example:
+	//
+	// false
+	SystemDiskEncrypted *bool `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
+	SystemDiskKmsKeyId *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
 	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for ESSDs.
 	//
-	// *   PL0: moderate maximum concurrent I/O performance and low I/O latency
-	// *   PL1: moderate maximum concurrent I/O performance and low I/O latency
-	// *   PL2: high maximum concurrent I/O performance and low I/O latency
-	// *   PL3: ultra-high maximum concurrent I/O performance and ultra-low I/O latency
+	// 	- PL0: moderate maximum concurrent I/O performance and low I/O latency
+	//
+	// 	- PL1: moderate maximum concurrent I/O performance and low I/O latency
+	//
+	// 	- PL2: high maximum concurrent I/O performance and low I/O latency
+	//
+	// 	- PL3: ultra-high maximum concurrent I/O performance and ultra-low I/O latency
+	//
+	// example:
+	//
+	// PL1
 	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
 	// The predefined IOPS of a system disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}.
 	//
-	// This parameter is supported only when `SystemDiskCategory` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](~~368372~~).
+	// This parameter is supported only when `SystemDiskCategory` is set to `cloud_auto`. For more information, see [ESSD AutoPL disks](https://help.aliyun.com/document_detail/368372.html).
+	//
+	// example:
+	//
+	// 1000
 	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
 	// The system disk size of a node. Unit: GiB.
 	//
 	// Valid values: 40 to 500.
+	//
+	// example:
+	//
+	// 120
 	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
 	// The labels that you want to add to the ECS instances.
 	//
@@ -3734,6 +5085,8 @@ type CreateClusterNodePoolRequestScalingGroup struct {
 	// The vSwitch IDs. Valid values: 1 to 8.
 	//
 	// >  To ensure high availability, we recommend that you select vSwitches that reside in different zones.
+	//
+	// This parameter is required.
 	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
 }
 
@@ -3880,6 +5233,11 @@ func (s *CreateClusterNodePoolRequestScalingGroup) SetSecurityGroupIds(v []*stri
 	return s
 }
 
+func (s *CreateClusterNodePoolRequestScalingGroup) SetSecurityHardeningOs(v bool) *CreateClusterNodePoolRequestScalingGroup {
+	s.SecurityHardeningOs = &v
+	return s
+}
+
 func (s *CreateClusterNodePoolRequestScalingGroup) SetSocEnabled(v bool) *CreateClusterNodePoolRequestScalingGroup {
 	s.SocEnabled = &v
 	return s
@@ -3962,12 +5320,22 @@ func (s *CreateClusterNodePoolRequestScalingGroup) SetVswitchIds(v []*string) *C
 
 type CreateClusterNodePoolRequestScalingGroupPrivatePoolOptions struct {
 	// The ID of the private node pool.
+	//
+	// example:
+	//
+	// eap-bp67acfmxazb4****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of private node pool. This parameter specifies the type of private pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values:
 	//
-	// *   `Open`: open private pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
-	// *   `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
-	// *   `None`: no private pool is used. The resources of private node pools are not used to launch the instances.
+	// 	- `Open`: open private pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
+	//
+	// 	- `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
+	//
+	// 	- `None`: no private pool is used. The resources of private node pools are not used to launch the instances.
+	//
+	// example:
+	//
+	// Open
 	MatchCriteria *string `json:"match_criteria,omitempty" xml:"match_criteria,omitempty"`
 }
 
@@ -3991,8 +5359,16 @@ func (s *CreateClusterNodePoolRequestScalingGroupPrivatePoolOptions) SetMatchCri
 
 type CreateClusterNodePoolRequestScalingGroupSpotPriceLimit struct {
 	// The instance type of preemptible instance.
+	//
+	// example:
+	//
+	// ecs.c6.large
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
 	// The maximum bid price of a preemptible instance.
+	//
+	// example:
+	//
+	// 0.39
 	PriceLimit *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
 }
 
@@ -4016,8 +5392,16 @@ func (s *CreateClusterNodePoolRequestScalingGroupSpotPriceLimit) SetPriceLimit(v
 
 type CreateClusterNodePoolRequestScalingGroupTags struct {
 	// The key of a label.
+	//
+	// example:
+	//
+	// node-k-1
 	Key *string `json:"key,omitempty" xml:"key,omitempty"`
 	// The value of a label.
+	//
+	// example:
+	//
+	// node-v-1
 	Value *string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
@@ -4041,6 +5425,10 @@ func (s *CreateClusterNodePoolRequestScalingGroupTags) SetValue(v string) *Creat
 
 type CreateClusterNodePoolRequestTeeConfig struct {
 	// Specifies whether to enable confidential computing for the cluster.
+	//
+	// example:
+	//
+	// true
 	TeeEnable *bool `json:"tee_enable,omitempty" xml:"tee_enable,omitempty"`
 }
 
@@ -4059,9 +5447,17 @@ func (s *CreateClusterNodePoolRequestTeeConfig) SetTeeEnable(v bool) *CreateClus
 
 type CreateClusterNodePoolResponseBody struct {
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np31da1b38983f4511b490fc62108a****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	RequestId  *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The ID of the task.
+	//
+	// example:
+	//
+	// T-613b19bbd160ad492800****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -4121,10 +5517,28 @@ type CreateEdgeMachineRequest struct {
 	// The `hostname` of the cloud-native box.
 	//
 	// >  After the cloud-native box is activated, the `hostname` is automatically modified. The `hostname` is prefixed with the model and the prefix is followed by a random string.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ACK-B-B010-****
 	Hostname *string `json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The model of the cloud-native box.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ACK-V-B010
 	Model *string `json:"model,omitempty" xml:"model,omitempty"`
 	// The serial number of the cloud-native box.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// Q2CB5XZAFBFG****
 	Sn *string `json:"sn,omitempty" xml:"sn,omitempty"`
 }
 
@@ -4153,8 +5567,16 @@ func (s *CreateEdgeMachineRequest) SetSn(v string) *CreateEdgeMachineRequest {
 
 type CreateEdgeMachineResponseBody struct {
 	// The ID of the cloud-native box.
+	//
+	// example:
+	//
+	// cc0725ddf688744979cd98445f67e****
 	EdgeMachineId *string `json:"edge_machine_id,omitempty" xml:"edge_machine_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// "request_id": "6e7b377a-c5ed-4388-8026-689e1b34****",
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 }
 
@@ -4209,21 +5631,44 @@ type CreateKubernetesTriggerRequest struct {
 	// The action that the trigger performs. Set the value to redeploy.
 	//
 	// `redeploy`: redeploys the resources specified by `project_id`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The cluster ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// c5cdf7e3938bc4f8eb0e44b21a80f****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The name of the trigger project.
 	//
 	// The name consists of the namespace where the application is deployed and the name of the application. The format is `${namespace}/${name}`.
 	//
 	// Example: `default/test-app`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger. Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -4257,19 +5702,40 @@ func (s *CreateKubernetesTriggerRequest) SetType(v string) *CreateKubernetesTrig
 
 type CreateKubernetesTriggerResponseBody struct {
 	// The action that the trigger performs. For example, a value of `redeploy` indicates that the trigger redeploys the application.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c5cdf7e3938bc4f8eb0e44b21a80f****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The ID of the trigger.
+	//
+	// example:
+	//
+	// 111
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The name of the trigger project.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger.
 	//
 	// Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -4337,23 +5803,48 @@ func (s *CreateKubernetesTriggerResponse) SetBody(v *CreateKubernetesTriggerResp
 
 type CreateTemplateRequest struct {
 	// The description of the template.
+	//
+	// example:
+	//
+	// this is test
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// The name of the orchestration template.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). It cannot start with a hyphen (-).
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// service-account-template
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The label of the template.
+	//
+	// example:
+	//
+	// test
 	Tags *string `json:"tags,omitempty" xml:"tags,omitempty"`
 	// The template content in the YAML format.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// apiVersion: v1\\nkind: ServiceAccount\\nmetadata:\\n  name: test-sa
 	Template *string `json:"template,omitempty" xml:"template,omitempty"`
 	// The type of template. You can set the parameter to a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If you set the parameter to `compose`, the template is not displayed in the console.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If you set the parameter to `compose`, the template is not displayed in the console.
 	//
 	// We recommend that you set the parameter to `kubernetes`.
 	//
 	// Default value: `compose`.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 }
 
@@ -4392,6 +5883,10 @@ func (s *CreateTemplateRequest) SetTemplateType(v string) *CreateTemplateRequest
 
 type CreateTemplateResponseBody struct {
 	// The ID of the orchestration template.
+	//
+	// example:
+	//
+	// ba1fe77b-b01e-4640-b77e-8f1b80e3e3cf
 	TemplateId *string `json:"template_id,omitempty" xml:"template_id,omitempty"`
 }
 
@@ -4441,21 +5936,44 @@ type CreateTriggerRequest struct {
 	// The action that the trigger performs. Set the value to redeploy.
 	//
 	// `redeploy`: redeploys the resources specified by `project_id`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The cluster ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// c5cdf7e3938bc4f8eb0e44b21a80f****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The name of the trigger project.
 	//
 	// The name consists of the namespace where the application is deployed and the name of the application. The format is `${namespace}/${name}`.
 	//
 	// Example: `default/test-app`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger. Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -4489,14 +6007,34 @@ func (s *CreateTriggerRequest) SetType(v string) *CreateTriggerRequest {
 
 type CreateTriggerResponseBody struct {
 	// The action that the trigger performs. For example, a value of `redeploy` indicates that the trigger redeploys the application.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c93095129fc41463aa455d89444fd****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The ID of the trigger.
+	//
+	// example:
+	//
+	// 102536
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The name of the trigger project.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger. Default value: deployment.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -4764,20 +6302,32 @@ func (s *DeleteAlertContactGroupResponseBody) SetContactGroupId(v string) *Delet
 }
 
 type DeleteClusterRequest struct {
+	DeleteOptions []*DeleteClusterRequestDeleteOptions `json:"delete_options,omitempty" xml:"delete_options,omitempty" type:"Repeated"`
 	// Deprecated
+	//
 	// Specifies whether to retain the Server Load Balancer (SLB) resources that are created by the cluster.
 	//
-	// *   `true`: retains the SLB resources that are created by the cluster.
-	// *   `false`: does not retain the SLB resources that are created by the cluster.
+	// 	- `true`: retains the SLB resources that are created by the cluster.
+	//
+	// 	- `false`: does not retain the SLB resources that are created by the cluster.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	KeepSlb *bool `json:"keep_slb,omitempty" xml:"keep_slb,omitempty"`
 	// Specifies whether to retain all resources. If you set the parameter to `true`, the `retain_resources` parameter is ignored.
 	//
-	// *   `true`: retains all resources.
-	// *   `false`: does not retain all resources.
+	// 	- `true`: retains all resources.
+	//
+	// 	- `false`: does not retain all resources.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	RetainAllResources *bool `json:"retain_all_resources,omitempty" xml:"retain_all_resources,omitempty"`
 	// The list of resources. To retain resources when you delete a cluster, you need to specify the IDs of the resources to be retained.
 	RetainResources []*string `json:"retain_resources,omitempty" xml:"retain_resources,omitempty" type:"Repeated"`
@@ -4789,6 +6339,11 @@ func (s DeleteClusterRequest) String() string {
 
 func (s DeleteClusterRequest) GoString() string {
 	return s.String()
+}
+
+func (s *DeleteClusterRequest) SetDeleteOptions(v []*DeleteClusterRequestDeleteOptions) *DeleteClusterRequest {
+	s.DeleteOptions = v
+	return s
 }
 
 func (s *DeleteClusterRequest) SetKeepSlb(v bool) *DeleteClusterRequest {
@@ -4806,21 +6361,56 @@ func (s *DeleteClusterRequest) SetRetainResources(v []*string) *DeleteClusterReq
 	return s
 }
 
+type DeleteClusterRequestDeleteOptions struct {
+	DeleteMode   *string `json:"delete_mode,omitempty" xml:"delete_mode,omitempty"`
+	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
+}
+
+func (s DeleteClusterRequestDeleteOptions) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteClusterRequestDeleteOptions) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteClusterRequestDeleteOptions) SetDeleteMode(v string) *DeleteClusterRequestDeleteOptions {
+	s.DeleteMode = &v
+	return s
+}
+
+func (s *DeleteClusterRequestDeleteOptions) SetResourceType(v string) *DeleteClusterRequestDeleteOptions {
+	s.ResourceType = &v
+	return s
+}
+
 type DeleteClusterShrinkRequest struct {
+	DeleteOptionsShrink *string `json:"delete_options,omitempty" xml:"delete_options,omitempty"`
 	// Deprecated
+	//
 	// Specifies whether to retain the Server Load Balancer (SLB) resources that are created by the cluster.
 	//
-	// *   `true`: retains the SLB resources that are created by the cluster.
-	// *   `false`: does not retain the SLB resources that are created by the cluster.
+	// 	- `true`: retains the SLB resources that are created by the cluster.
+	//
+	// 	- `false`: does not retain the SLB resources that are created by the cluster.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	KeepSlb *bool `json:"keep_slb,omitempty" xml:"keep_slb,omitempty"`
 	// Specifies whether to retain all resources. If you set the parameter to `true`, the `retain_resources` parameter is ignored.
 	//
-	// *   `true`: retains all resources.
-	// *   `false`: does not retain all resources.
+	// 	- `true`: retains all resources.
+	//
+	// 	- `false`: does not retain all resources.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	RetainAllResources *bool `json:"retain_all_resources,omitempty" xml:"retain_all_resources,omitempty"`
 	// The list of resources. To retain resources when you delete a cluster, you need to specify the IDs of the resources to be retained.
 	RetainResourcesShrink *string `json:"retain_resources,omitempty" xml:"retain_resources,omitempty"`
@@ -4832,6 +6422,11 @@ func (s DeleteClusterShrinkRequest) String() string {
 
 func (s DeleteClusterShrinkRequest) GoString() string {
 	return s.String()
+}
+
+func (s *DeleteClusterShrinkRequest) SetDeleteOptionsShrink(v string) *DeleteClusterShrinkRequest {
+	s.DeleteOptionsShrink = &v
+	return s
 }
 
 func (s *DeleteClusterShrinkRequest) SetKeepSlb(v bool) *DeleteClusterShrinkRequest {
@@ -4850,9 +6445,23 @@ func (s *DeleteClusterShrinkRequest) SetRetainResourcesShrink(v string) *DeleteC
 }
 
 type DeleteClusterResponseBody struct {
+	// The ID of the cluster.
+	//
+	// example:
+	//
+	// cb95aa626a47740afbf6aa099b650****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The request ID.
+	//
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314****
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
-	// The task ID.
+	// The ID of the task.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -4910,6 +6519,10 @@ func (s *DeleteClusterResponse) SetBody(v *DeleteClusterResponseBody) *DeleteClu
 
 type DeleteClusterNodepoolRequest struct {
 	// Specifies whether to forcefully delete the node pool.
+	//
+	// example:
+	//
+	// false
 	Force *bool `json:"force,omitempty" xml:"force,omitempty"`
 }
 
@@ -4928,8 +6541,15 @@ func (s *DeleteClusterNodepoolRequest) SetForce(v bool) *DeleteClusterNodepoolRe
 
 type DeleteClusterNodepoolResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// 7263C978-3DBD-4E06-B319-793B38A2F388
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
-	TaskId    *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// example:
+	//
+	// T-655ace947e0e6603af000004
+	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
 func (s DeleteClusterNodepoolResponseBody) String() string {
@@ -4982,21 +6602,33 @@ func (s *DeleteClusterNodepoolResponse) SetBody(v *DeleteClusterNodepoolResponse
 type DeleteClusterNodesRequest struct {
 	// Specifies whether to remove all pods from the nodes that you want to remove. Valid values:
 	//
-	// *   `true`: removes all pods from the nodes that you want to remove.
-	// *   `false`: does not remove pods from the nodes that you want to remove.
+	// 	- `true`: removes all pods from the nodes that you want to remove.
+	//
+	// 	- `false`: does not remove pods from the nodes that you want to remove.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	DrainNode *bool `json:"drain_node,omitempty" xml:"drain_node,omitempty"`
 	// The list of nodes to be removed. You need to specify the name of the nodes used in the cluster, for example, `cn-hangzhou.192.168.0.70`.
+	//
+	// This parameter is required.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
 	// Specifies whether to release the Elastic Compute Service (ECS) instances. Valid values:
 	//
-	// *   `true`: releases the ECS instances.
-	// *   `false`: does not release the ECS instances.
+	// 	- `true`: releases the ECS instances.
+	//
+	// 	- `false`: does not release the ECS instances.
 	//
 	// Default value: `false`.
 	//
 	// >  You cannot release subscription ECS instances.
+	//
+	// example:
+	//
+	// true
 	ReleaseNode *bool `json:"release_node,omitempty" xml:"release_node,omitempty"`
 }
 
@@ -5025,10 +6657,22 @@ func (s *DeleteClusterNodesRequest) SetReleaseNode(v bool) *DeleteClusterNodesRe
 
 type DeleteClusterNodesResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c104d5d5f301c4e2a8ee578c37bc****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// A9891419-D125-4D89-AFCA-68846675E2F7
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-60fea8ad2e277f0879000ae9
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -5087,10 +6731,15 @@ func (s *DeleteClusterNodesResponse) SetBody(v *DeleteClusterNodesResponseBody) 
 type DeleteEdgeMachineRequest struct {
 	// Specifies whether to forcefully delete the cloud-native box. Valid values:
 	//
-	// *   `true`: forcefully deletes the cloud-native box.
-	// *   `false`: does not forcefully delete the cloud-native box.
+	// 	- `true`: forcefully deletes the cloud-native box.
+	//
+	// 	- `false`: does not forcefully delete the cloud-native box.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true/false
 	Force *string `json:"force,omitempty" xml:"force,omitempty"`
 }
 
@@ -5155,6 +6804,10 @@ func (s *DeleteKubernetesTriggerResponse) SetStatusCode(v int32) *DeleteKubernet
 
 type DeletePolicyInstanceRequest struct {
 	// The ID of the policy instance.
+	//
+	// example:
+	//
+	// allowed-repos-mqdsf
 	InstanceName *string `json:"instance_name,omitempty" xml:"instance_name,omitempty"`
 }
 
@@ -5267,12 +6920,21 @@ func (s *DeleteTriggerResponse) SetStatusCode(v int32) *DeleteTriggerResponse {
 type DeployPolicyInstanceRequest struct {
 	// The action of the policy. Valid values:
 	//
-	// *   `deny`: Deployments that match the policy are denied.
-	// *   `warn`: Alerts are generated for Deployments that match the policy.
+	// 	- `deny`: Deployments that match the policy are denied.
+	//
+	// 	- `warn`: Alerts are generated for Deployments that match the policy.
+	//
+	// example:
+	//
+	// deny
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The applicable scope of the policy instance. If you leave this parameter empty, the policy instance is applicable to all namespaces.
 	Namespaces []*string `json:"namespaces,omitempty" xml:"namespaces,omitempty" type:"Repeated"`
 	// The parameters of the policy instance.
+	//
+	// example:
+	//
+	// {"restrictedNamespaces": [ "test" ]}
 	Parameters map[string]interface{} `json:"parameters,omitempty" xml:"parameters,omitempty"`
 }
 
@@ -5348,26 +7010,70 @@ func (s *DeployPolicyInstanceResponse) SetBody(v *DeployPolicyInstanceResponseBo
 
 type DescirbeWorkflowResponseBody struct {
 	// The time when the workflow was created.
+	//
+	// example:
+	//
+	// 2020-01-15 16:30:25 +0800 CST
 	CreateTime *string `json:"create_time,omitempty" xml:"create_time,omitempty"`
 	// The duration of the workflow.
+	//
+	// example:
+	//
+	// 1h15m33.529968361s
 	Duration *string `json:"duration,omitempty" xml:"duration,omitempty"`
 	// The end time of the task.
+	//
+	// example:
+	//
+	// 0001-01-01 00:00:00 +0000 UTC
 	FinishTime *string `json:"finish_time,omitempty" xml:"finish_time,omitempty"`
 	// The size of the input data.
+	//
+	// example:
+	//
+	// 0
 	InputDataSize *string `json:"input_data_size,omitempty" xml:"input_data_size,omitempty"`
 	// The name of the workflow.
+	//
+	// example:
+	//
+	// wgs-gpu-97xfn
 	JobName *string `json:"job_name,omitempty" xml:"job_name,omitempty"`
 	// The namespace to which the workflow belongs.
+	//
+	// example:
+	//
+	// 1171330362041663
 	JobNamespace *string `json:"job_namespace,omitempty" xml:"job_namespace,omitempty"`
 	// The size of the output data.
+	//
+	// example:
+	//
+	// 0
 	OutputDataSize *string `json:"output_data_size,omitempty" xml:"output_data_size,omitempty"`
 	// The current state of the workflow.
+	//
+	// example:
+	//
+	// Running
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 	// The number of base pairs.
+	//
+	// example:
+	//
+	// 0
 	TotalBases *string `json:"total_bases,omitempty" xml:"total_bases,omitempty"`
 	// The number of reads.
+	//
+	// example:
+	//
+	// 0
 	TotalReads *string `json:"total_reads,omitempty" xml:"total_reads,omitempty"`
 	// The user input parameters.
+	//
+	// example:
+	//
+	// {\\"wgs_oss_region\\":\\"cn-shenzhen\\",\\"wgs_fastq_first_name\\":\\"fastq/huada/MGISEQ-200019SZ0002402\\",\\"wgs_fastq_second_name\\":\\"fastq/huada/MGISEQ-200019SZ0002402\\",\\"wgs_bucket_name\\":\\"gene-shenzhen\\",\\"wgs_vcf_file_name\\":\\"output/vcf/huada.vcf\\",\\"wgs_bam_file_name\\":\\"output/bam/huada.bam\\",\\"wgs_reference_file\\":\\"hg19\\",\\"wgs_service\\":\\"g\\"}
 	UserInputData *string `json:"user_input_data,omitempty" xml:"user_input_data,omitempty"`
 }
 
@@ -5464,13 +7170,48 @@ func (s *DescirbeWorkflowResponse) SetBody(v *DescirbeWorkflowResponseBody) *Des
 }
 
 type DescribeAddonRequest struct {
-	ClusterId      *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
-	ClusterSpec    *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
-	ClusterType    *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
+	// The ID of the cluster. If you specify a cluster ID, only components used in the cluster are queried. Other parameters are ignored.
+	//
+	// example:
+	//
+	// c02b3e03be10643e8a644a843ffcb****
+	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The specifications of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// ack.pro.small
+	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
+	// The type of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// ManagedKubernetes
+	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
+	// The version of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// 1.26.3-aliyun.1
 	ClusterVersion *string `json:"cluster_version,omitempty" xml:"cluster_version,omitempty"`
-	Profile        *string `json:"profile,omitempty" xml:"profile,omitempty"`
-	RegionId       *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
-	Version        *string `json:"version,omitempty" xml:"version,omitempty"`
+	// The subtype of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// Default
+	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
+	// The region ID. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// cn-hangzhou
+	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
+	// The version of the component. If you do not specify this parameter, the latest version of the component is queried.
+	//
+	// example:
+	//
+	// v1.9.3.10-7dfca203-aliyun
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s DescribeAddonRequest) String() string {
@@ -5517,15 +7258,60 @@ func (s *DescribeAddonRequest) SetVersion(v string) *DescribeAddonRequest {
 }
 
 type DescribeAddonResponseBody struct {
-	Architecture     []*string                                 `json:"architecture,omitempty" xml:"architecture,omitempty" type:"Repeated"`
-	Category         *string                                   `json:"category,omitempty" xml:"category,omitempty"`
-	ConfigSchema     *string                                   `json:"config_schema,omitempty" xml:"config_schema,omitempty"`
-	InstallByDefault *bool                                     `json:"install_by_default,omitempty" xml:"install_by_default,omitempty"`
-	Managed          *bool                                     `json:"managed,omitempty" xml:"managed,omitempty"`
-	Name             *string                                   `json:"name,omitempty" xml:"name,omitempty"`
-	NewerVersions    []*DescribeAddonResponseBodyNewerVersions `json:"newer_versions,omitempty" xml:"newer_versions,omitempty" type:"Repeated"`
-	SupportedActions []*string                                 `json:"supported_actions,omitempty" xml:"supported_actions,omitempty" type:"Repeated"`
-	Version          *string                                   `json:"version,omitempty" xml:"version,omitempty"`
+	// Architectures supported by the component. Valid values:
+	//
+	// 	- amd64
+	//
+	// 	- arm64
+	Architecture []*string `json:"architecture,omitempty" xml:"architecture,omitempty" type:"Repeated"`
+	// The category of the component.
+	//
+	// example:
+	//
+	// network
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
+	// The custom parameter schema of the component.
+	//
+	// example:
+	//
+	// {}
+	ConfigSchema *string `json:"config_schema,omitempty" xml:"config_schema,omitempty"`
+	// Indicates whether the component is automatically installed by default.
+	//
+	// example:
+	//
+	// true
+	InstallByDefault *bool `json:"install_by_default,omitempty" xml:"install_by_default,omitempty"`
+	// Indicates whether the component is fully managed.
+	//
+	// example:
+	//
+	// false
+	Managed *bool `json:"managed,omitempty" xml:"managed,omitempty"`
+	// The name of the component.
+	//
+	// example:
+	//
+	// coredns
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// The latest version of the component.
+	NewerVersions []*DescribeAddonResponseBodyNewerVersions `json:"newer_versions,omitempty" xml:"newer_versions,omitempty" type:"Repeated"`
+	// Operations supported by the component. Valid values:
+	//
+	// 	- Install
+	//
+	// 	- Upgrade
+	//
+	// 	- Modify
+	//
+	// 	- Uninstall
+	SupportedActions []*string `json:"supported_actions,omitempty" xml:"supported_actions,omitempty" type:"Repeated"`
+	// The version of the component.
+	//
+	// example:
+	//
+	// v1.9.3.6-32932850-aliyun
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s DescribeAddonResponseBody) String() string {
@@ -5582,9 +7368,24 @@ func (s *DescribeAddonResponseBody) SetVersion(v string) *DescribeAddonResponseB
 }
 
 type DescribeAddonResponseBodyNewerVersions struct {
+	// The minimum cluster version required by the component version.
+	//
+	// example:
+	//
+	// 1.20.4
 	MinimumClusterVersion *string `json:"minimum_cluster_version,omitempty" xml:"minimum_cluster_version,omitempty"`
-	Upgradable            *bool   `json:"upgradable,omitempty" xml:"upgradable,omitempty"`
-	Version               *string `json:"version,omitempty" xml:"version,omitempty"`
+	// Indicates whether the component can be updated to the version.
+	//
+	// example:
+	//
+	// true
+	Upgradable *bool `json:"upgradable,omitempty" xml:"upgradable,omitempty"`
+	// The version number.
+	//
+	// example:
+	//
+	// v1.9.3.10-7dfca203-aliyun
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s DescribeAddonResponseBodyNewerVersions) String() string {
@@ -5640,28 +7441,55 @@ func (s *DescribeAddonResponse) SetBody(v *DescribeAddonResponseBody) *DescribeA
 }
 
 type DescribeAddonsRequest struct {
-	// The type of cluster. Valid values:
+	// The cluster type. Valid values:
 	//
-	// *   `Default`: ACK managed cluster
-	// *   `Serverless`: ACK Serverless cluster
-	// *   `Edge`: ACK Edge cluster
+	// 	- `Default`: ACK managed cluster
+	//
+	// 	- `Serverless`: ACK Serverless cluster
+	//
+	// 	- `Edge`: ACK Edge cluster
+	//
+	// example:
+	//
+	// Default
 	ClusterProfile *string `json:"cluster_profile,omitempty" xml:"cluster_profile,omitempty"`
 	// The edition of the cluster. If you set the cluster type to `ManagedKubernetes`, the following editions are supported:
 	//
-	// *   `ack.pro.small`: ACK Pro cluster
-	// *   `ack.standard`: ACK Basic cluster
+	// 	- `ack.pro.small`: ACK Pro cluster
+	//
+	// 	- `ack.standard`: ACK Basic cluster
 	//
 	// By default, this parameter is left empty. If you leave this parameter empty, clusters are not filtered by edition.
+	//
+	// example:
+	//
+	// ack.pro.small
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
 	// The type of cluster. Valid values:
 	//
-	// *   `Kubernetes`: ACK dedicated cluster.
-	// *   `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Pro clusters, ACK Basic clusters, ACK Serverless Pro clusters, ACK Serverless Basic clusters, ACK Edge Pro clusters, and ACK Edge Basic clusters.
-	// *   `ExternalKubernetes`: registered cluster.
+	// 	- `Kubernetes`: ACK dedicated cluster.
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Pro clusters, ACK Basic clusters, ACK Serverless Pro clusters, ACK Serverless Basic clusters, ACK Edge Pro clusters, and ACK Edge Basic clusters.
+	//
+	// 	- `ExternalKubernetes`: registered cluster.
+	//
+	// example:
+	//
+	// kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
 	// The cluster version.
+	//
+	// example:
+	//
+	// 1.24.6-aliyun.1
 	ClusterVersion *string `json:"cluster_version,omitempty" xml:"cluster_version,omitempty"`
 	// The region ID of the cluster.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-beijing
 	Region *string `json:"region,omitempty" xml:"region,omitempty"`
 }
 
@@ -5725,6 +7553,10 @@ func (s *DescribeAddonsResponseBody) SetStandardComponents(v map[string]*Standar
 
 type DescribeAddonsResponseBodyComponentGroups struct {
 	// The name of the component group.
+	//
+	// example:
+	//
+	// storage
 	GroupName *string `json:"group_name,omitempty" xml:"group_name,omitempty"`
 	// The names of the components in the component group.
 	Items []*DescribeAddonsResponseBodyComponentGroupsItems `json:"items,omitempty" xml:"items,omitempty" type:"Repeated"`
@@ -5750,6 +7582,10 @@ func (s *DescribeAddonsResponseBodyComponentGroups) SetItems(v []*DescribeAddons
 
 type DescribeAddonsResponseBodyComponentGroupsItems struct {
 	// The name of the component.
+	//
+	// example:
+	//
+	// flexvolume
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
@@ -5797,20 +7633,42 @@ func (s *DescribeAddonsResponse) SetBody(v *DescribeAddonsResponseBody) *Describ
 
 type DescribeClusterAddonInstanceResponseBody struct {
 	// The configuration of the component.
+	//
+	// example:
+	//
+	// {"NetworkPolicy":"true"}
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 	// The name of the component.
+	//
+	// example:
+	//
+	// terway-eniip
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The status of the component. Valid values:
 	//
-	// *   initial: The component is being installed.
-	// *   active: The component is installed.
-	// *   unhealthy: The component is in an abnormal state.
-	// *   upgrading: The component is being updated.
-	// *   updating: The component is being modified.
-	// *   deleting: The component is being uninstalled.
-	// *   deleted: The component is deleted.
+	// 	- initial: The component is being installed.
+	//
+	// 	- active: The component is installed.
+	//
+	// 	- unhealthy: The component is in an abnormal state.
+	//
+	// 	- upgrading: The component is being updated.
+	//
+	// 	- updating: The component is being modified.
+	//
+	// 	- deleting: The component is being uninstalled.
+	//
+	// 	- deleted: The component is deleted.
+	//
+	// example:
+	//
+	// active
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The version of the component.
+	//
+	// example:
+	//
+	// v1.4.3
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -5871,12 +7729,41 @@ func (s *DescribeClusterAddonInstanceResponse) SetBody(v *DescribeClusterAddonIn
 	return s
 }
 
+type DescribeClusterAddonMetadataRequest struct {
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
+}
+
+func (s DescribeClusterAddonMetadataRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DescribeClusterAddonMetadataRequest) GoString() string {
+	return s.String()
+}
+
+func (s *DescribeClusterAddonMetadataRequest) SetVersion(v string) *DescribeClusterAddonMetadataRequest {
+	s.Version = &v
+	return s
+}
+
 type DescribeClusterAddonMetadataResponseBody struct {
 	// The component schema parameters.
+	//
+	// example:
+	//
+	// {\\n  \\"$schema\\": \\"https://json-schema.org/draft-07/schema#\\",\\n  \\"properties\\": {\\n    \\"controller\\": {\\n      \\"description\\": \\"\\",\\n      \\"properties\\": {\\n        \\"resources\\": {\\n          \\"properties\\": {\\n            \\"armsPrometheusOperator\\": {\\n              \\"properties\\": {\\n                \\"resources\\": {\\n                  \\"properties\\": {\\n                    \\"limits\\": {\\n                      \\"properties\\": {\\n                        \\"memory\\": {\\n                          \\"description\\": \\"memory limit of arms prometheus operator\\",\\n                          \\"type\\": \\"string\\",\\n                          \\"pattern\\": \\"^[1-9][0-9]*(\\\\\\\\.\\\\\\\\d+)?(K|Ki|M|Mi|G|Gi|T|Ti)?$\\",\\n                          \\"default\\": \\"500m\\",\\n                          \\"x-ui-description\\": \\"<mds-key>\\",\\n                          \\"x-ui-prompt-message\\": \\"<mds-key>\\",\\n                          \\"x-ui-validation-message\\": \\"<mds-key>\\",\\n                          \\"x-ui-additional-tips\\": \\"<mds-key>\\"\\n                        },\\n                        \\"cpu\\": {\\n                          \\"description\\": \\"cpu limit of arms prometheus operator\\",\\n                          \\"type\\": \\"string\\",\\n                          \\"pattern\\": \\"^[1-9][0-9]*(m|\\\\\\\\.\\\\\\\\d+)?$\\",\\n                          \\"default\\": \\"1.0\\",\\n                          \\"x-ui-description\\": \\"<mds-key>\\",\\n                          \\"x-ui-validation-message\\": \\"<mds-key>\\"\\n                        }\\n                      },\\n                      \\"type\\": \\"object\\",\\n                      \\"additionalProperties\\": false\\n                    },\\n                    \\"requests\\": {\\n                      \\"properties\\": {\\n                        \\"memory\\": {\\n                          \\"description\\": \\"memory request of arms prometheus operator\\",\\n                          \\"type\\": \\"string\\",\\n                          \\"pattern\\": \\"^[1-9][0-9]*(\\\\\\\\.\\\\\\\\d+)?(K|Ki|M|Mi|G|Gi|T|Ti)?$\\",\\n                          \\"default\\": \\"500m\\",\\n                          \\"x-ui-description\\": \\"<mds-key>\\",\\n                          \\"x-ui-validation-message\\": \\"<mds-key>\\"\\n                        },\\n                        \\"cpu\\": {\\n                          \\"description\\": \\"cpu request of arms prometheus operator\\",\\n                          \\"type\\": \\"string\\",\\n                          \\"pattern\\": \\"^[1-9][0-9]*(m|\\\\\\\\.\\\\\\\\d+)?$\\",\\n                          \\"default\\": \\"1.0\\",\\n                          \\"x-ui-description\\": \\"<mds-key>\\",\\n                          \\"x-ui-validation-message\\": \\"<mds-key>\\"\\n                        }\\n                      },\\n                      \\"type\\": \\"object\\",\\n                      \\"additionalProperties\\": false\\n                    }\\n                  },\\n                  \\"type\\": \\"object\\",\\n                  \\"additionalProperties\\": false\\n                }\\n              },\\n              \\"type\\": \\"object\\",\\n              \\"additionalProperties\\": false\\n            }\\n          },\\n          \\"type\\": \\"object\\",\\n          \\"additionalProperties\\": false\\n        }\\n      },\\n      \\"type\\": \\"object\\",\\n      \\"additionalProperties\\": false\\n    }\\n  },\\n  \\"title\\": \\"Values\\",\\n  \\"type\\": \\"object\\",\\n  \\"additionalProperties\\": false\\n}
 	ConfigSchema *string `json:"config_schema,omitempty" xml:"config_schema,omitempty"`
 	// The component name.
+	//
+	// example:
+	//
+	// coredns
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The component version.
+	//
+	// example:
+	//
+	// 1.8.4.1
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -5963,6 +7850,8 @@ func (s *DescribeClusterAddonUpgradeStatusResponse) SetBody(v map[string]interfa
 
 type DescribeClusterAddonsUpgradeStatusRequest struct {
 	// The list of component names.
+	//
+	// This parameter is required.
 	ComponentIds []*string `json:"componentIds,omitempty" xml:"componentIds,omitempty" type:"Repeated"`
 }
 
@@ -5981,6 +7870,8 @@ func (s *DescribeClusterAddonsUpgradeStatusRequest) SetComponentIds(v []*string)
 
 type DescribeClusterAddonsUpgradeStatusShrinkRequest struct {
 	// The list of component names.
+	//
+	// This parameter is required.
 	ComponentIdsShrink *string `json:"componentIds,omitempty" xml:"componentIds,omitempty"`
 }
 
@@ -6061,33 +7952,56 @@ type DescribeClusterAttachScriptsRequest struct {
 	// Default value: `amd64`.
 	//
 	// >  This parameter is required if you want to add the existing node to a Container Service for Kubernetes (ACK) Edge cluster.
+	//
+	// example:
+	//
+	// amd64
 	Arch *string `json:"arch,omitempty" xml:"arch,omitempty"`
 	// Specifies whether to mount data disks to an existing instance when you add the instance to the cluster. You can add data disks to store container data and images. Valid values:
 	//
-	// *   `true`: mounts data disks to the existing instance that you want to add. After a data disk is mounted, the original data on the disk is erased. Back up data before you mount a data disk.
-	// *   `false`: does not mount data disks to the existing instance.
+	// 	- `true`: mounts data disks to the existing instance that you want to add. After a data disk is mounted, the original data on the disk is erased. Back up data before you mount a data disk.
+	//
+	// 	- `false`: does not mount data disks to the existing instance.
 	//
 	// Default value: `false`.
 	//
 	// How a data disk is mounted:
 	//
-	// *   If the Elastic Compute Service (ECS) instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
-	// *   If no data disk is mounted to the ECS instance, the system does not purchase a new data disk.
+	// 	- If the Elastic Compute Service (ECS) instances are already mounted with data disks and the file system of the last data disk is not initialized, the system automatically formats this data disk to ext4 and mounts it to /var/lib/docker and /var/lib/kubelet.
+	//
+	// 	- If no data disk is mounted to the ECS instance, the system does not purchase a new data disk.
+	//
+	// example:
+	//
+	// false
 	FormatDisk *bool `json:"format_disk,omitempty" xml:"format_disk,omitempty"`
 	// Specifies whether to retain the name of the existing instance when it is added to the cluster. If you do not retain the instance name, the instance is named in the `worker-k8s-for-cs-<clusterid>` format. Valid values:
 	//
-	// *   `true`: retains the instance name.
-	// *   `false`: does not retain the instance name.
+	// 	- `true`: retains the instance name.
+	//
+	// 	- `false`: does not retain the instance name.
 	//
 	// Default value: `true`
+	//
+	// example:
+	//
+	// true
 	KeepInstanceName *bool `json:"keep_instance_name,omitempty" xml:"keep_instance_name,omitempty"`
 	// The ID of the node pool to which you want to add an existing node. This parameter allows you to add an existing node to a specified node pool.
 	//
 	// >  If you do not specify a node pool ID, the node is added to the default node pool.
+	//
+	// example:
+	//
+	// np1c9229d9be2d432c93f77a88fca0****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The node configurations for the existing instance that you want to add as a node.
 	//
 	// >  This parameter is required if you want to add the existing node to an ACK Edge cluster.
+	//
+	// example:
+	//
+	// {\\"enableIptables\\": true,\\"manageRuntime\\": true,\\"quiet\\": true,\\"allowedClusterAddons\\": [\\"kube-proxy\\",\\"flannel\\",\\"coredns\\"]}
 	Options *string `json:"options,omitempty" xml:"options,omitempty"`
 	// After you specify the list of RDS instances, the ECS instances in the cluster are automatically added to the whitelist of the RDS instances.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
@@ -6162,97 +8076,219 @@ func (s *DescribeClusterAttachScriptsResponse) SetBody(v string) *DescribeCluste
 
 type DescribeClusterDetailResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c82e6987e2961451182edacd74faf****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The edition of the cluster if the cluster is an ACK managed cluster. Valid values:
 	//
-	// *   `ack.pro.small`: ACK Pro
-	// *   `ack.standard`: ACK Basic
+	// 	- `ack.pro.small`: ACK Pro
+	//
+	// 	- `ack.standard`: ACK Basic
+	//
+	// example:
+	//
+	// ack.pro.small
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
 	// The type of cluster. Valid values:
 	//
-	// *   `Kubernetes`: ACK dedicated cluster
-	// *   `ManagedKubernetes`: ACK managed cluster
-	// *   `Ask`: ACK Serverless cluster
-	// *   `ExternalKubernetes`: registered cluster
+	// 	- `Kubernetes`: ACK dedicated cluster
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster
+	//
+	// 	- `Ask`: ACK Serverless cluster
+	//
+	// 	- `ExternalKubernetes`: registered cluster
+	//
+	// example:
+	//
+	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
 	// The time when the cluster was created.
+	//
+	// example:
+	//
+	// 2019-11-25T15:50:20+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
-	// The current Kubernetes version of the cluster. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](~~185269~~).
+	// The current Kubernetes version of the cluster. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.16.6-aliyun.1
 	CurrentVersion *string `json:"current_version,omitempty" xml:"current_version,omitempty"`
 	// Indicates whether deletion protection is enabled for the cluster. If deletion protection is enabled, the cluster cannot be deleted in the Container Service console or by calling API operations. Valid values:
 	//
-	// *   `true`: deletion protection is enabled for the cluster. This way, the cluster cannot be deleted in the Container Service console or by calling API operations.
-	// *   `false`: deletion protection is disabled for the cluster. This way, the cluster can be deleted in the Container Service console or by calling API operations.
+	// 	- `true`: deletion protection is enabled for the cluster. This way, the cluster cannot be deleted in the Container Service console or by calling API operations.
+	//
+	// 	- `false`: deletion protection is disabled for the cluster. This way, the cluster can be deleted in the Container Service console or by calling API operations.
+	//
+	// example:
+	//
+	// true
 	DeletionProtection *bool `json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
 	// The Docker version that is used by the cluster.
-	DockerVersion          *string `json:"docker_version,omitempty" xml:"docker_version,omitempty"`
+	//
+	// example:
+	//
+	// 19.03.5
+	DockerVersion *string `json:"docker_version,omitempty" xml:"docker_version,omitempty"`
+	// example:
+	//
+	// lb-2zehc05z3b8dwiifh****
 	ExternalLoadbalancerId *string `json:"external_loadbalancer_id,omitempty" xml:"external_loadbalancer_id,omitempty"`
 	// The initial Kubernetes version of the cluster.
+	//
+	// example:
+	//
+	// 1.16.6-aliyun.1
 	InitVersion *string `json:"init_version,omitempty" xml:"init_version,omitempty"`
 	// The maintenance window of the cluster. This feature is available only in ACK Pro clusters.
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty" xml:"maintenance_window,omitempty"`
 	// The endpoints of the cluster, including an internal endpoint and a public endpoint.
+	//
+	// example:
+	//
+	// {\\"intranet_api_server_endpoint\\":\\"https://192.168.0.251:6443\\"***}
 	MasterUrl *string `json:"master_url,omitempty" xml:"master_url,omitempty"`
 	// The metadata of the cluster.
+	//
+	// example:
+	//
+	// \\"Addons\\":***
 	MetaData *string `json:"meta_data,omitempty" xml:"meta_data,omitempty"`
 	// The name of the cluster.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
-	Name        *string `json:"name,omitempty" xml:"name,omitempty"`
+	//
+	// example:
+	//
+	// cluster-demo
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// example:
+	//
+	// vpc
 	NetworkMode *string `json:"network_mode,omitempty" xml:"network_mode,omitempty"`
+	// example:
+	//
+	// 1.18.8-aliyun.1
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
 	// The ROS parameters of the cluster.
-	Parameters  map[string]*string `json:"parameters,omitempty" xml:"parameters,omitempty"`
-	PrivateZone *bool              `json:"private_zone,omitempty" xml:"private_zone,omitempty"`
+	Parameters map[string]*string `json:"parameters,omitempty" xml:"parameters,omitempty"`
+	// example:
+	//
+	// false
+	PrivateZone *bool `json:"private_zone,omitempty" xml:"private_zone,omitempty"`
 	// Indicates the scenario in which the cluster is used. Valid values:
 	//
-	// *   `Default`: non-edge computing scenarios
-	// *   `Edge`: edge computing scenarios
+	// 	- `Default`: non-edge computing scenarios
+	//
+	// 	- `Edge`: edge computing scenarios
+	//
+	// example:
+	//
+	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
 	// The region ID of the cluster.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The ID of the resource group to which the cluster belongs.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The ID of the security group to which the cluster belongs.
+	//
+	// example:
+	//
+	// sg-25yq****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The number of nodes in the cluster. Master nodes and worker nodes are included.
+	//
+	// example:
+	//
+	// 5
 	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
 	// The status of the cluster. Valid values:
 	//
-	// *   `initial`: The cluster is being created.
-	// *   `failed`: The cluster failed to be created.
-	// *   `running`: The cluster is running.
-	// *   `updating`: The cluster is being updated.
-	// *   `updating_failed`: The cluster failed to be updated.
-	// *   `scaling`: The cluster is being scaled.
-	// *   `waiting`: The cluster is waiting for connection requests.
-	// *   `disconnected`: The cluster is disconnected.
-	// *   `stopped`: The cluster is stopped.
-	// *   `deleting`: The cluster is being deleted.
-	// *   `deleted`: The cluster is deleted.
-	// *   `delete_failed`: The cluster failed to be deleted.
+	// 	- `initial`: The cluster is being created.
+	//
+	// 	- `failed`: The cluster failed to be created.
+	//
+	// 	- `running`: The cluster is running.
+	//
+	// 	- `updating`: The cluster is being updated.
+	//
+	// 	- `updating_failed`: The cluster failed to be updated.
+	//
+	// 	- `scaling`: The cluster is being scaled.
+	//
+	// 	- `waiting`: The cluster is waiting for connection requests.
+	//
+	// 	- `disconnected`: The cluster is disconnected.
+	//
+	// 	- `stopped`: The cluster is stopped.
+	//
+	// 	- `deleting`: The cluster is being deleted.
+	//
+	// 	- `deleted`: The cluster is deleted.
+	//
+	// 	- `delete_failed`: The cluster failed to be deleted.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The pod CIDR block. It must be a valid and private CIDR block, and must be one of the following CIDR blocks or their subnets:
 	//
-	// *   10.0.0.0/8
-	// *   172.16-31.0.0/12-16
-	// *   192.168.0.0/16
+	// 	- 10.0.0.0/8
+	//
+	// 	- 172.16-31.0.0/12-16
+	//
+	// 	- 192.168.0.0/16
 	//
 	// The pod CIDR block cannot overlap with the CIDR block of the VPC or the CIDR blocks of the clusters in the VPC.
 	//
-	// For more information, see [Plan CIDR blocks for an ACK cluster](~~186964~~).
+	// For more information, see [Plan CIDR blocks for an ACK cluster](https://help.aliyun.com/document_detail/186964.html).
+	//
+	// example:
+	//
+	// 172.20.0.0/16
 	SubnetCidr *string `json:"subnet_cidr,omitempty" xml:"subnet_cidr,omitempty"`
 	// The resource labels of the cluster.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
 	// The time when the cluster was updated.
+	//
+	// example:
+	//
+	// 2020-01-13T23:01:03+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 	// The ID of the VPC where the cluster is deployed. This parameter is required when you create a cluster.
+	//
+	// example:
+	//
+	// vpc-2zecuu62b9zw7a7qn****
 	VpcId *string `json:"vpc_id,omitempty" xml:"vpc_id,omitempty"`
 	// The IDs of the vSwitches. You can select one to three vSwitches when you create a cluster. We recommend that you select vSwitches in different zones to ensure high availability.
+	//
+	// example:
+	//
+	// vsw-2zete8s4qocqg0mf6****,vsw-2zete8s4qocqg0mf6****
 	VswitchId *string `json:"vswitch_id,omitempty" xml:"vswitch_id,omitempty"`
 	// The name of the worker Resource Access Management (RAM) role. The RAM role is assigned to the worker nodes of the cluster to allow the worker nodes to manage Elastic Compute Service (ECS) instances.
+	//
+	// example:
+	//
+	// KubernetesWorkerRole-ec87d15b-edca-4302-933f-c8a16bf0****
 	WorkerRamRoleName *string `json:"worker_ram_role_name,omitempty" xml:"worker_ram_role_name,omitempty"`
-	ZoneId            *string `json:"zone_id,omitempty" xml:"zone_id,omitempty"`
+	// example:
+	//
+	// cn-beijing-a
+	ZoneId *string `json:"zone_id,omitempty" xml:"zone_id,omitempty"`
 }
 
 func (s DescribeClusterDetailResponseBody) String() string {
@@ -6444,10 +8480,22 @@ func (s *DescribeClusterDetailResponse) SetBody(v *DescribeClusterDetailResponse
 
 type DescribeClusterEventsRequest struct {
 	// The number of the page to return.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page. Valid values: 1 to 50. Default value: 50.
+	//
+	// example:
+	//
+	// 50
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The ID of the query task.
+	//
+	// example:
+	//
+	// T-xascadasd*****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -6501,18 +8549,42 @@ func (s *DescribeClusterEventsResponseBody) SetPageInfo(v *DescribeClusterEvents
 
 type DescribeClusterEventsResponseBodyEvents struct {
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c82e6987e2961451182edacd74faf****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The description of the event.
 	Data *DescribeClusterEventsResponseBodyEventsData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
 	// The event ID.
+	//
+	// example:
+	//
+	// e-9ad04f72-8ee7-46bf-a02c-e4a06b39****
 	EventId *string `json:"event_id,omitempty" xml:"event_id,omitempty"`
 	// The event source.
+	//
+	// example:
+	//
+	// cluster
 	Source *string `json:"source,omitempty" xml:"source,omitempty"`
 	// The subject related to the event.
+	//
+	// example:
+	//
+	// npdd89dc2b76c04f14b06774883b******
 	Subject *string `json:"subject,omitempty" xml:"subject,omitempty"`
 	// The time when the event started.
+	//
+	// example:
+	//
+	// 2020-12-01T17:31:00Z
 	Time *string `json:"time,omitempty" xml:"time,omitempty"`
 	// The type of event. Valid values:
+	//
+	// example:
+	//
+	// nodepool_update
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -6564,7 +8636,7 @@ type DescribeClusterEventsResponseBodyEventsData struct {
 	//
 	// Valid values:
 	//
-	// *   warning
+	// 	- warning
 	//
 	//     <!-- -->
 	//
@@ -6572,7 +8644,7 @@ type DescribeClusterEventsResponseBodyEventsData struct {
 	//
 	//     <!-- -->
 	//
-	// *   error
+	// 	- error
 	//
 	//     <!-- -->
 	//
@@ -6580,17 +8652,29 @@ type DescribeClusterEventsResponseBodyEventsData struct {
 	//
 	//     <!-- -->
 	//
-	// *   info
+	// 	- info
 	//
 	//     <!-- -->
 	//
 	//     <!-- -->
 	//
 	//     <!-- -->
+	//
+	// example:
+	//
+	// info
 	Level *string `json:"level,omitempty" xml:"level,omitempty"`
 	// The details of the event.
+	//
+	// example:
+	//
+	// Start to upgrade NodePool nodePool/npdd89dc2b76c04f14b06774883b******
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The status of the event.
+	//
+	// example:
+	//
+	// Started
 	Reason *string `json:"reason,omitempty" xml:"reason,omitempty"`
 }
 
@@ -6619,10 +8703,22 @@ func (s *DescribeClusterEventsResponseBodyEventsData) SetReason(v string) *Descr
 
 type DescribeClusterEventsResponseBodyPageInfo struct {
 	// The number of the page to return.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page. Valid values: 1 to 50. Default value: 50.
+	//
+	// example:
+	//
+	// 50
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 3
 	TotalCount *int64 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -6709,14 +8805,34 @@ func (s *DescribeClusterLogsResponse) SetBody(v []*DescribeClusterLogsResponseBo
 
 type DescribeClusterLogsResponseBody struct {
 	// The ID of the log entry.
+	//
+	// example:
+	//
+	// 590749245
 	ID *int64 `json:"ID,omitempty" xml:"ID,omitempty"`
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c23421cfa74454bc8b37163fd19af***
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The log content.
+	//
+	// example:
+	//
+	// start to update cluster status to CREATE_COMPLETE
 	ClusterLog *string `json:"cluster_log,omitempty" xml:"cluster_log,omitempty"`
 	// The time when the log entry was generated.
+	//
+	// example:
+	//
+	// 2020-09-11T10:11:51+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The time when the log entry was updated.
+	//
+	// example:
+	//
+	// 2020-09-11T10:11:51+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -6759,12 +8875,20 @@ type DescribeClusterNodePoolDetailResponseBody struct {
 	// The network configuration of the edge node pool. This parameter takes effect only for edge node pools.
 	InterconnectConfig *DescribeClusterNodePoolDetailResponseBodyInterconnectConfig `json:"interconnect_config,omitempty" xml:"interconnect_config,omitempty" type:"Struct"`
 	// The network type of the edge node pool. Valid values: basic and enhanced. This parameter takes effect only for edge node pools.
+	//
+	// example:
+	//
+	// improved
 	InterconnectMode *string `json:"interconnect_mode,omitempty" xml:"interconnect_mode,omitempty"`
 	// The configuration of the cluster where the node pool is deployed.
 	KubernetesConfig *DescribeClusterNodePoolDetailResponseBodyKubernetesConfig `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
 	// The configuration of the managed node pool feature.
 	Management *DescribeClusterNodePoolDetailResponseBodyManagement `json:"management,omitempty" xml:"management,omitempty" type:"Struct"`
 	// The maximum number of nodes that are supported by the edge node pool. The value of this parameter must be equal to or greater than 0. A value of 0 indicates that the number of nodes in the node pool is limited only by the quota of nodes in the cluster. In most cases, this parameter is set to a value larger than 0 for edge node pools. This parameter is set to 0 for node pools whose types are ess or default edge node pools.
+	//
+	// example:
+	//
+	// 10
 	MaxNodes *int64 `json:"max_nodes,omitempty" xml:"max_nodes,omitempty"`
 	// 节点配置
 	NodeConfig *DescribeClusterNodePoolDetailResponseBodyNodeConfig `json:"node_config,omitempty" xml:"node_config,omitempty" type:"Struct"`
@@ -6843,32 +8967,66 @@ func (s *DescribeClusterNodePoolDetailResponseBody) SetTeeConfig(v *DescribeClus
 
 type DescribeClusterNodePoolDetailResponseBodyAutoScaling struct {
 	// The maximum bandwidth of the elastic IP address (EIP).
+	//
+	// example:
+	//
+	// 5
 	EipBandwidth *int64 `json:"eip_bandwidth,omitempty" xml:"eip_bandwidth,omitempty"`
 	// The metering method of the EIP. Valid values:
 	//
-	// *   `PayByBandwidth`: pay-by-bandwidth.
-	// *   `PayByTraffic`: pay-by-data-transfer.
+	// 	- `PayByBandwidth`: pay-by-bandwidth.
+	//
+	// 	- `PayByTraffic`: pay-by-data-transfer.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	EipInternetChargeType *string `json:"eip_internet_charge_type,omitempty" xml:"eip_internet_charge_type,omitempty"`
 	// Indicates whether auto scaling is enabled. Valid values:
 	//
-	// *   `true`: auto scaling is enabled.
-	// *   `false`: auto scaling is disabled. If this parameter is set to false, other parameters in the `auto_scaling` section do not take effect.
+	// 	- `true`: auto scaling is enabled.
+	//
+	// 	- `false`: auto scaling is disabled. If this parameter is set to false, other parameters in the `auto_scaling` section do not take effect.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Indicates whether an EIP is associated with the node pool. Valid values:
 	//
-	// *   `true`: An EIP is associated with the node pool.
-	// *   `false`: No EIP is associated with the node pool.
+	// 	- `true`: An EIP is associated with the node pool.
+	//
+	// 	- `false`: No EIP is associated with the node pool.
+	//
+	// example:
+	//
+	// true
 	IsBondEip *bool `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
 	// The maximum number of Elastic Compute Service (ECS) instances that can be created in the node pool.
+	//
+	// example:
+	//
+	// 10
 	MaxInstances *int64 `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
 	// The minimum number of ECS instances that must be kept in the node pool.
+	//
+	// example:
+	//
+	// 1
 	MinInstances *int64 `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
 	// The instance types that can be used for the auto scaling of the node pool. Valid values:
 	//
-	// *   `cpu`: regular instance.
-	// *   `gpu`: GPU-accelerated instance.
-	// *   `gpushare`: shared GPU-accelerated instance.
-	// *   `spot`: preemptible instance.
+	// 	- `cpu`: regular instance.
+	//
+	// 	- `gpu`: GPU-accelerated instance.
+	//
+	// 	- `gpushare`: shared GPU-accelerated instance.
+	//
+	// 	- `spot`: preemptible instance.
+	//
+	// example:
+	//
+	// cpu
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -6917,14 +9075,34 @@ func (s *DescribeClusterNodePoolDetailResponseBodyAutoScaling) SetType(v string)
 
 type DescribeClusterNodePoolDetailResponseBodyInterconnectConfig struct {
 	// The bandwidth of the enhanced edge node pool. Unit: Mbit/s.
+	//
+	// example:
+	//
+	// 10
 	Bandwidth *int64 `json:"bandwidth,omitempty" xml:"bandwidth,omitempty"`
 	// The ID of the Cloud Connect Network (CCN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// ccn-qm5i0i0q9yi*******
 	CcnId *string `json:"ccn_id,omitempty" xml:"ccn_id,omitempty"`
 	// The region to which the CCN instance that is associated with the enhanced edge node pool belongs.
+	//
+	// example:
+	//
+	// cn-shanghai
 	CcnRegionId *string `json:"ccn_region_id,omitempty" xml:"ccn_region_id,omitempty"`
 	// The ID of the Cloud Enterprise Network (CEN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// cen-ey9k9nfhz0f*******
 	CenId *string `json:"cen_id,omitempty" xml:"cen_id,omitempty"`
 	// The subscription duration of the enhanced edge node pool. The duration is measured in months.
+	//
+	// example:
+	//
+	// 1
 	ImprovedPeriod *string `json:"improved_period,omitempty" xml:"improved_period,omitempty"`
 }
 
@@ -6964,34 +9142,65 @@ func (s *DescribeClusterNodePoolDetailResponseBodyInterconnectConfig) SetImprove
 type DescribeClusterNodePoolDetailResponseBodyKubernetesConfig struct {
 	// Indicates whether the CloudMonitor agent is installed on ECS nodes in the cluster. After the CloudMonitor agent is installed, you can view monitoring information about the ECS instances in the CloudMonitor console. Installation is recommended. Valid values:
 	//
-	// *   `true`: The CloudMonitor agent is installed on ECS nodes.
-	// *   `false`: The CloudMonitor agent is not installed on ECS nodes.
+	// 	- `true`: The CloudMonitor agent is installed on ECS nodes.
+	//
+	// 	- `false`: The CloudMonitor agent is not installed on ECS nodes.
+	//
+	// example:
+	//
+	// true
 	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
 	// The CPU management policy of the nodes in the node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
-	// *   `none`: indicates that the default CPU affinity is used.
+	// 	- `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: indicates that the default CPU affinity is used.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
 	// The labels of the nodes in the node pool. You can add labels to the nodes in the cluster. You must add labels based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add up to 20 labels.
-	// *   A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// 	- Each label is a case-sensitive key-value pair. You can add up to 20 labels.
+	//
+	// 	- A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Labels []*Tag `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
 	// A custom node name consists of a prefix, an IP substring, and a suffix.
 	//
-	// *   The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
-	// *   The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
+	// 	- The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
+	//
+	// 	- The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
 	//
 	// For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, the IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
+	//
+	// example:
+	//
+	// customized,test.,5,.com
 	NodeNameMode *string `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
 	// The name of the container runtime.
+	//
+	// example:
+	//
+	// docker
 	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The version of the container runtime.
+	//
+	// example:
+	//
+	// 19.03.5
 	RuntimeVersion *string `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	// The taints of the nodes in the node pool. Taints are added to nodes to prevent pods from being scheduled to inappropriate nodes. However, tolerations allow pods to be scheduled to nodes with matching taints. For more information, see [taint-and-toleration](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
-	Taints        []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
-	Unschedulable *bool    `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
-	// The user data of the node pool. For more information, see [Generate user data](~~49121~~).
+	Taints []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
+	// example:
+	//
+	// true
+	Unschedulable *bool `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
+	// The user data of the node pool. For more information, see [Generate user data](https://help.aliyun.com/document_detail/49121.html).
+	//
+	// example:
+	//
+	// IyEvYmluL3NoCmVjaG8gIkhlbGxvIEFDSyEi
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
@@ -7051,23 +9260,41 @@ func (s *DescribeClusterNodePoolDetailResponseBodyKubernetesConfig) SetUserData(
 type DescribeClusterNodePoolDetailResponseBodyManagement struct {
 	// Indicates whether auto repair is enabled. This parameter takes effect only when `enable=true` is specified. Valid values:
 	//
-	// *   `true`: Auto repair is enabled.
-	// *   `false`: Auto repair is disabled.
+	// 	- `true`: Auto repair is enabled.
+	//
+	// 	- `false`: Auto repair is disabled.
+	//
+	// example:
+	//
+	// true
 	AutoRepair *bool `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
 	// 自动修复节点策略。
 	AutoRepairPolicy *DescribeClusterNodePoolDetailResponseBodyManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
 	// 是否自动升级。
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// 自动升级策略。
 	AutoUpgradePolicy *DescribeClusterNodePoolDetailResponseBodyManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
 	// 是否自动修复CVE。
+	//
+	// example:
+	//
+	// true
 	AutoVulFix *bool `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
 	// 自动修复CVE策略。
 	AutoVulFixPolicy *DescribeClusterNodePoolDetailResponseBodyManagementAutoVulFixPolicy `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
 	// Indicates whether the managed node pool feature is enabled. Valid values:
 	//
-	// *   `true`: The managed node pool feature is enabled.
-	// *   `false`: The managed node pool feature is disabled. Other parameters in this section take effect only when `enable=true` is specified.
+	// 	- `true`: The managed node pool feature is enabled.
+	//
+	// 	- `false`: The managed node pool feature is disabled. Other parameters in this section take effect only when `enable=true` is specified.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// The configuration of auto update. The configuration takes effect only when `enable=true` is specified.
 	UpgradeConfig *DescribeClusterNodePoolDetailResponseBodyManagementUpgradeConfig `json:"upgrade_config,omitempty" xml:"upgrade_config,omitempty" type:"Struct"`
@@ -7123,6 +9350,10 @@ func (s *DescribeClusterNodePoolDetailResponseBodyManagement) SetUpgradeConfig(v
 
 type DescribeClusterNodePoolDetailResponseBodyManagementAutoRepairPolicy struct {
 	// 是否允许重启节点。
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 }
 
@@ -7141,6 +9372,10 @@ func (s *DescribeClusterNodePoolDetailResponseBodyManagementAutoRepairPolicy) Se
 
 type DescribeClusterNodePoolDetailResponseBodyManagementAutoUpgradePolicy struct {
 	// 是否允许自动升级kubelet。
+	//
+	// example:
+	//
+	// true
 	AutoUpgradeKubelet *bool `json:"auto_upgrade_kubelet,omitempty" xml:"auto_upgrade_kubelet,omitempty"`
 }
 
@@ -7159,8 +9394,16 @@ func (s *DescribeClusterNodePoolDetailResponseBodyManagementAutoUpgradePolicy) S
 
 type DescribeClusterNodePoolDetailResponseBodyManagementAutoVulFixPolicy struct {
 	// 是否允许重启节点。
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 	// 允许自动修复的漏洞级别，以逗号分隔。
+	//
+	// example:
+	//
+	// asap,nntf
 	VulLevel *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
 }
 
@@ -7185,16 +9428,33 @@ func (s *DescribeClusterNodePoolDetailResponseBodyManagementAutoVulFixPolicy) Se
 type DescribeClusterNodePoolDetailResponseBodyManagementUpgradeConfig struct {
 	// Indicates whether auto update is enabled. Valid values:
 	//
-	// *   `true`: Auto update is enabled.
-	// *   `false`: Auto update is disabled.
+	// 	- `true`: Auto update is enabled.
+	//
+	// 	- `false`: Auto update is disabled.
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// The maximum number of nodes that can be in the Unavailable state. Valid values: 1 to 1000.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MaxUnavailable *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
 	// The number of additional nodes.
+	//
+	// example:
+	//
+	// 5
 	Surge *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
 	// The percentage of additional nodes to the nodes in the node pool. You must set this parameter or `surge`.
+	//
+	// example:
+	//
+	// 50
 	SurgePercentage *int64 `json:"surge_percentage,omitempty" xml:"surge_percentage,omitempty"`
 }
 
@@ -7246,22 +9506,54 @@ func (s *DescribeClusterNodePoolDetailResponseBodyNodeConfig) SetKubeletConfigur
 
 type DescribeClusterNodePoolDetailResponseBodyNodepoolInfo struct {
 	// The time when the node pool was created.
+	//
+	// example:
+	//
+	// 2020-09-27T19:14:09.156823496+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// Indicates whether the node pool is a default node pool. A Container Service for Kubernetes (ACK) cluster usually has only one default node pool. Valid values: `true`: The node pool is a default node pool. `false`: The node pool is not a default node pool.
+	//
+	// example:
+	//
+	// true
 	IsDefault *bool `json:"is_default,omitempty" xml:"is_default,omitempty"`
 	// The name of the node pool.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). It cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// default-nodepool
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np615c0e0966124216a0412e10afe0****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The region ID.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The ID of the resource group.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjmb****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The type of node pool.
+	//
+	// example:
+	//
+	// ess
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 	// The time when the node pool was last updated.
+	//
+	// example:
+	//
+	// 2020-09-27T20:37:46+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -7316,130 +9608,279 @@ func (s *DescribeClusterNodePoolDetailResponseBodyNodepoolInfo) SetUpdated(v str
 type DescribeClusterNodePoolDetailResponseBodyScalingGroup struct {
 	// Indicates whether auto-renewal is enabled for the nodes in the node pool. This parameter takes effect only when `instance_charge_type` is set to `PrePaid`. Valid values:
 	//
-	// *   `true`: Auto-renewal is enabled.
-	// *   `false`: Auto-renewal is disabled.
+	// 	- `true`: Auto-renewal is enabled.
+	//
+	// 	- `false`: Auto-renewal is disabled.
+	//
+	// example:
+	//
+	// false
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
 	// The duration of the auto-renewal. This parameter takes effect and is required only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// If you specify `PeriodUnit=Month`, the valid values are 1, 2, 3, 6, and 12.
+	//
+	// example:
+	//
+	// 1
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	CisEnabled      *bool  `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
+	// Deprecated
+	//
+	// example:
+	//
+	// false
+	CisEnabled *bool `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
 	// Indicates whether pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as cost or insufficient inventory. This parameter takes effect when `multi_az_policy` is set to `COST_OPTIMIZED`. Valid values:
 	//
-	// *   `true`: Pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
-	// *   `false`: Pay-as-you-go instances are not automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	// 	- `true`: Pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// 	- `false`: Pay-as-you-go instances are not automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// example:
+	//
+	// true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
 	// The configurations of the data disks that are attached to the nodes in the node pool. The configurations include the disk type and disk size.
 	DataDisks []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
 	// The ID of the deployment set to which the ECS instances in the node pool belong.
+	//
+	// example:
+	//
+	// ds-bp1d19mmbsv3jf6xxxxx
 	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
 	// The expected number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 2
 	DesiredSize *int64 `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
 	// The ID of the custom image. You can call the `DescribeKubernetesVersionMetadata` operation to query the images supported by ACK.
-	ImageId   *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// example:
+	//
+	// AliyunLinux
 	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
 	// The billing method of the nodes in the node pool. Valid values:
 	//
-	// *   `PrePaid`: the subscription billing method.
-	// *   `PostPaid`: the pay-as-you-go billing method.
+	// 	- `PrePaid`: the subscription billing method.
+	//
+	// 	- `PostPaid`: the pay-as-you-go billing method.
+	//
+	// example:
+	//
+	// PostPaid
 	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
 	// A list of instance types. You can select multiple instance types. When the system needs to create a node, it starts from the first instance type until the node is created. The instance type that is used to create the node varies based on the actual instance stock.
 	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
 	// The billing method of the public IP address of the node.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
 	// The maximum outbound bandwidth of the public IP address of the node. Unit: Mbit/s. Valid values: 1 to 100.
+	//
+	// example:
+	//
+	// 10
 	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 	// The name of the key pair. You must set this parameter or the `login_password` parameter. You must set `key_pair` if the node pool is a managed node pool.
-	KeyPair        *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	LoginAsNonRoot *bool   `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
+	//
+	// example:
+	//
+	// pro-nodepool
+	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
+	// example:
+	//
+	// true
+	LoginAsNonRoot *bool `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
 	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
 	//
 	// For security purposes, the returned password is encrypted.
+	//
+	// example:
+	//
+	// ********
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// The ECS instance scaling policy for a multi-zone scaling group. Valid values:
 	//
-	// *   `PRIORITY`: the scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
+	// 	- `PRIORITY`: the scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
 	//
-	// *   `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
+	// 	- `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
 	//
 	//     **
 	//
 	//     **Note**The `COST_OPTIMIZED` setting takes effect only when multiple instance types are specified or at least one instance type is specified for preemptible instances.
 	//
-	// *   `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call the RebalanceInstances operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](~~71516~~).
+	// 	- `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call the RebalanceInstances operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](https://help.aliyun.com/document_detail/71516.html).
 	//
 	// Default value: `PRIORITY`.
+	//
+	// example:
+	//
+	// BALANCE
 	MultiAzPolicy *string `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
 	// The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
+	//
+	// example:
+	//
+	// 0
 	OnDemandBaseCapacity *int64 `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
 	// The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
+	//
+	// example:
+	//
+	// 20
 	OnDemandPercentageAboveBaseCapacity *int64 `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
 	// The subscription duration of worker nodes. This parameter takes effect and is required only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// If `PeriodUnit=Month` is specified, the valid values are 1, 2, 3, 6, 12, 24, 36, 48, and 60.
+	//
+	// example:
+	//
+	// 0
 	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
 	// The billing cycle of the nodes. This parameter is required if `instance_charge_type` is set to `PrePaid`.
 	//
 	// Valid value: `Month`.
+	//
+	// example:
+	//
+	// Month
 	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// The release version of the operating system. Valid values:
 	//
-	// *   `CentOS`
-	// *   `AliyunLinux`
-	// *   `Windows`
-	// *   `WindowsCore`
+	// 	- `CentOS`
+	//
+	// 	- `AliyunLinux`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
+	//
+	// example:
+	//
+	// AliyunLinux
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
 	// The configuration of the private node pool.
 	PrivatePoolOptions *DescribeClusterNodePoolDetailResponseBodyScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
 	// The name of the worker Resource Access Management (RAM) role. The RAM role is assigned to the worker nodes of the cluster to allow the worker nodes to manage ECS instances.
+	//
+	// example:
+	//
+	// KubernetesWorkerRole-021dc54f-929b-437a-8ae0-34c24d3e****
 	RamPolicy *string `json:"ram_policy,omitempty" xml:"ram_policy,omitempty"`
 	// After you specify the list of RDS instances, the ECS instances in the cluster are automatically added to the whitelist of the RDS instances.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The ID of the scaling group.
+	//
+	// example:
+	//
+	// asg-2zeieod8giqmov7z****
 	ScalingGroupId *string `json:"scaling_group_id,omitempty" xml:"scaling_group_id,omitempty"`
 	// The scaling mode of the scaling group. Valid values:
 	//
-	// *   `release`: the standard mode. ECS instances are created and released based on resource usage.
-	// *   `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances that are attached with local disks.
+	// 	- `release`: the standard mode. ECS instances are created and released based on resource usage.
+	//
+	// 	- `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances that are attached with local disks.
+	//
+	// example:
+	//
+	// release
 	ScalingPolicy *string `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
 	// The ID of the security group to which the node pool is added. If the node pool is added to multiple security groups, the first ID in the value of `security_group_ids` is returned.
+	//
+	// example:
+	//
+	// sg-2ze60ockeekspl3d****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The IDs of the security groups to which the node pool is added.
-	SecurityGroupIds []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
-	SocEnabled       *bool     `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
+	SecurityGroupIds    []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
+	SecurityHardeningOs *bool     `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// example:
+	//
+	// false
+	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
 	// The number of instance types that are available for creating preemptible instances. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
+	//
+	// example:
+	//
+	// 5
 	SpotInstancePools *int64 `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
 	// Indicates whether preemptible instances are supplemented when the number of preemptible instances drops below the specified minimum number. If this parameter is set to true, when the scaling group receives a system message that a preemptible instance is to be reclaimed, the scaling group attempts to create a new instance to replace this instance. Valid values: Valid values:
 	//
-	// *   `true`: Supplementation of preemptible instances is enabled.
-	// *   `false`: Supplementation of preemptible instances is disabled.
+	// 	- `true`: Supplementation of preemptible instances is enabled.
+	//
+	// 	- `false`: Supplementation of preemptible instances is disabled.
+	//
+	// example:
+	//
+	// false
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// The bid configurations of preemptible instances.
 	SpotPriceLimit []*DescribeClusterNodePoolDetailResponseBodyScalingGroupSpotPriceLimit `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
 	// The type of preemptible instance. Valid values:
 	//
-	// *   NoSpot: a non-preemptible instance.
-	// *   SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
-	// *   SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	// 	- NoSpot: a non-preemptible instance.
 	//
-	// For more information, see [Preemptible instances](~~157759~~).
-	SpotStrategy              *string   `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
+	// 	- SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
+	//
+	// 	- SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	//
+	// For more information, see [Preemptible instances](https://help.aliyun.com/document_detail/157759.html).
+	//
+	// example:
+	//
+	// NoSpot
+	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
+	// example:
+	//
+	// true
 	SystemDiskBurstingEnabled *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
 	SystemDiskCategories      []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
 	// The type of system disk. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
-	SystemDiskCategory         *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// example:
+	//
+	// cloud_efficiency
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// example:
+	//
+	// aes-256
 	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	SystemDiskEncrypted        *bool   `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
-	SystemDiskKmsKeyId         *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
+	// example:
+	//
+	// false
+	SystemDiskEncrypted *bool `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
+	SystemDiskKmsKeyId *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
 	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for enhanced SSDs (ESSDs).
+	//
+	// example:
+	//
+	// PL1
 	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64  `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
 	// The system disk size of a node. Unit: GiB.
 	//
 	// Valid values: 20 to 500.
+	//
+	// example:
+	//
+	// 120
 	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
 	// The labels that you want to add to the ECS instances.
 	//
@@ -7604,6 +10045,11 @@ func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetSecurityGroup
 	return s
 }
 
+func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetSecurityHardeningOs(v bool) *DescribeClusterNodePoolDetailResponseBodyScalingGroup {
+	s.SecurityHardeningOs = &v
+	return s
+}
+
 func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetSocEnabled(v bool) *DescribeClusterNodePoolDetailResponseBodyScalingGroup {
 	s.SocEnabled = &v
 	return s
@@ -7686,12 +10132,22 @@ func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroup) SetVswitchIds(v 
 
 type DescribeClusterNodePoolDetailResponseBodyScalingGroupPrivatePoolOptions struct {
 	// The ID of the private node pool.
+	//
+	// example:
+	//
+	// eap-bp67acfmxazb4****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of private node pool. This parameter specifies the type of private node pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values:
 	//
-	// *   `Open`: open private pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
-	// *   `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
-	// *   `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
+	// 	- `Open`: open private pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
+	//
+	// 	- `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
+	//
+	// 	- `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
+	//
+	// example:
+	//
+	// Open
 	MatchCriteria *string `json:"match_criteria,omitempty" xml:"match_criteria,omitempty"`
 }
 
@@ -7715,10 +10171,18 @@ func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroupPrivatePoolOptions
 
 type DescribeClusterNodePoolDetailResponseBodyScalingGroupSpotPriceLimit struct {
 	// The instance type of preemptible instances.
+	//
+	// example:
+	//
+	// ecs.c6.large
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
 	// The price limit of a preemptible instance.
 	//
 	// Unit: USD/hour.
+	//
+	// example:
+	//
+	// 0.39
 	PriceLimit *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
 }
 
@@ -7742,26 +10206,62 @@ func (s *DescribeClusterNodePoolDetailResponseBodyScalingGroupSpotPriceLimit) Se
 
 type DescribeClusterNodePoolDetailResponseBodyStatus struct {
 	// The number of failed nodes.
+	//
+	// example:
+	//
+	// 0
 	FailedNodes *int64 `json:"failed_nodes,omitempty" xml:"failed_nodes,omitempty"`
 	// The number of healthy nodes.
+	//
+	// example:
+	//
+	// 3
 	HealthyNodes *int64 `json:"healthy_nodes,omitempty" xml:"healthy_nodes,omitempty"`
 	// The number of nodes that are being created.
+	//
+	// example:
+	//
+	// 0
 	InitialNodes *int64 `json:"initial_nodes,omitempty" xml:"initial_nodes,omitempty"`
 	// The number of offline nodes.
+	//
+	// example:
+	//
+	// 0
 	OfflineNodes *int64 `json:"offline_nodes,omitempty" xml:"offline_nodes,omitempty"`
 	// The number of nodes that are being removed.
+	//
+	// example:
+	//
+	// 0
 	RemovingNodes *int64 `json:"removing_nodes,omitempty" xml:"removing_nodes,omitempty"`
 	// The number of running nodes.
+	//
+	// example:
+	//
+	// 3
 	ServingNodes *int64 `json:"serving_nodes,omitempty" xml:"serving_nodes,omitempty"`
 	// The status of the node pool. Valid values:
 	//
-	// *   `active`: The node pool is active.
-	// *   `scaling`: The node pool is being scaled.
-	// *   `removing`: Nodes are being removed from the node pool.
-	// *   `deleting`: The node pool is being deleted.
-	// *   `updating`: The node pool is being updated.
+	// 	- `active`: The node pool is active.
+	//
+	// 	- `scaling`: The node pool is being scaled.
+	//
+	// 	- `removing`: Nodes are being removed from the node pool.
+	//
+	// 	- `deleting`: The node pool is being deleted.
+	//
+	// 	- `updating`: The node pool is being updated.
+	//
+	// example:
+	//
+	// active
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The total number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 3
 	TotalNodes *int64 `json:"total_nodes,omitempty" xml:"total_nodes,omitempty"`
 }
 
@@ -7816,8 +10316,13 @@ func (s *DescribeClusterNodePoolDetailResponseBodyStatus) SetTotalNodes(v int64)
 type DescribeClusterNodePoolDetailResponseBodyTeeConfig struct {
 	// Indicates whether confidential computing is enabled. Valid values:
 	//
-	// *   `true`: Confidential computing is enabled.
-	// *   `false`: Confidential computing is disabled.
+	// 	- `true`: Confidential computing is enabled.
+	//
+	// 	- `false`: Confidential computing is disabled.
+	//
+	// example:
+	//
+	// false
 	TeeEnable *bool `json:"tee_enable,omitempty" xml:"tee_enable,omitempty"`
 }
 
@@ -7863,6 +10368,23 @@ func (s *DescribeClusterNodePoolDetailResponse) SetBody(v *DescribeClusterNodePo
 	return s
 }
 
+type DescribeClusterNodePoolsRequest struct {
+	NodepoolName *string `json:"NodepoolName,omitempty" xml:"NodepoolName,omitempty"`
+}
+
+func (s DescribeClusterNodePoolsRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DescribeClusterNodePoolsRequest) GoString() string {
+	return s.String()
+}
+
+func (s *DescribeClusterNodePoolsRequest) SetNodepoolName(v string) *DescribeClusterNodePoolsRequest {
+	s.NodepoolName = &v
+	return s
+}
+
 type DescribeClusterNodePoolsResponseBody struct {
 	// A list of node pools.
 	Nodepools []*DescribeClusterNodePoolsResponseBodyNodepools `json:"nodepools,omitempty" xml:"nodepools,omitempty" type:"Repeated"`
@@ -7889,12 +10411,20 @@ type DescribeClusterNodePoolsResponseBodyNodepools struct {
 	// The network configuration of the edge node pool. This parameter takes effect only for edge node pools.
 	InterconnectConfig *DescribeClusterNodePoolsResponseBodyNodepoolsInterconnectConfig `json:"interconnect_config,omitempty" xml:"interconnect_config,omitempty" type:"Struct"`
 	// The network type of the edge node pool. basic: basic edge node pools. dedicated: dedicated edge node pools. This parameter takes effect only for edge node pools.
+	//
+	// example:
+	//
+	// improved
 	InterconnectMode *string `json:"interconnect_mode,omitempty" xml:"interconnect_mode,omitempty"`
 	// The configurations of the cluster where the node pool is deployed.
 	KubernetesConfig *DescribeClusterNodePoolsResponseBodyNodepoolsKubernetesConfig `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
 	// The configurations of managed node pools. Managed node pools are available only in professional managed Kubernetes clusters.
 	Management *DescribeClusterNodePoolsResponseBodyNodepoolsManagement `json:"management,omitempty" xml:"management,omitempty" type:"Struct"`
 	// The maximum number of nodes that are supported by the edge node pool. The value of this parameter must be equal to or greater than 0. A value of 0 indicates that the number of nodes in the node pool is limited only by the quota of nodes in the cluster. In most cases, this parameter is set to a value larger than 0 for edge node pools. This parameter is set to 0 for node pools whose types are ess or default edge node pools.
+	//
+	// example:
+	//
+	// 10
 	MaxNodes *int64 `json:"max_nodes,omitempty" xml:"max_nodes,omitempty"`
 	// The configurations of nodes.
 	NodeConfig *DescribeClusterNodePoolsResponseBodyNodepoolsNodeConfig `json:"node_config,omitempty" xml:"node_config,omitempty" type:"Struct"`
@@ -7973,32 +10503,66 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepools) SetTeeConfig(v *Describe
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsAutoScaling struct {
 	// The maximum bandwidth of the EIP.
+	//
+	// example:
+	//
+	// 5
 	EipBandwidth *int64 `json:"eip_bandwidth,omitempty" xml:"eip_bandwidth,omitempty"`
 	// The metering method of the EIP. Valid values:
 	//
-	// *   `PayByBandwidth`: pay-by-bandwidth.
-	// *   `PayByTraffic`: pay-by-traffic.
+	// 	- `PayByBandwidth`: pay-by-bandwidth.
+	//
+	// 	- `PayByTraffic`: pay-by-traffic.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	EipInternetChargeType *string `json:"eip_internet_charge_type,omitempty" xml:"eip_internet_charge_type,omitempty"`
 	// Indicates whether auto scaling is enabled.
 	//
-	// *   `true`: Auto scaling is enabled for the node pool.
-	// *   `false`: Auto scaling is disabled for the node pool. If you set this parameter to `false`, other parameters in the `auto_scaling` section does not take effect.
+	// 	- `true`: Auto scaling is enabled for the node pool.
+	//
+	// 	- `false`: Auto scaling is disabled for the node pool. If you set this parameter to `false`, other parameters in the `auto_scaling` section does not take effect.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Indicates whether an EIP is associated with the node pool. Valid values:
 	//
-	// *   `true`: An EIP is associated with the node pool.
-	// *   `false`: No EIP is associated with the node pool.
+	// 	- `true`: An EIP is associated with the node pool.
+	//
+	// 	- `false`: No EIP is associated with the node pool.
+	//
+	// example:
+	//
+	// true
 	IsBondEip *bool `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
 	// The maximum number of Elastic Compute Service (ECS) instances that can be created in the node pool.
+	//
+	// example:
+	//
+	// 10
 	MaxInstances *int64 `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
 	// The minimum number of ECS instances that must be retained in the node pool.
+	//
+	// example:
+	//
+	// 2
 	MinInstances *int64 `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
 	// The instance types that can be used for the auto scaling of a node pool. Valid values:
 	//
-	// *   `cpu`: regular instance.
-	// *   `gpu`: GPU-accelerated instance.
-	// *   `gpushare`: shared GPU-accelerated instance.
-	// *   `spot`: preemptible instance.
+	// 	- `cpu`: regular instance.
+	//
+	// 	- `gpu`: GPU-accelerated instance.
+	//
+	// 	- `gpushare`: shared GPU-accelerated instance.
+	//
+	// 	- `spot`: preemptible instance.
+	//
+	// example:
+	//
+	// cpu
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -8049,22 +10613,42 @@ type DescribeClusterNodePoolsResponseBodyNodepoolsInterconnectConfig struct {
 	// This parameter is deprecated.
 	//
 	// The bandwidth of the enhanced edge node pool. Unit: Mbit/s.
+	//
+	// example:
+	//
+	// 10
 	Bandwidth *int64 `json:"bandwidth,omitempty" xml:"bandwidth,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The ID of the Cloud Connect Network (CCN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// ccn-qm5i0i0q9yi*******
 	CcnId *string `json:"ccn_id,omitempty" xml:"ccn_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The region to which the CCN instance that is with the enhanced edge node pool belongs.
+	//
+	// example:
+	//
+	// cn-shanghai
 	CcnRegionId *string `json:"ccn_region_id,omitempty" xml:"ccn_region_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The ID of the Cloud Enterprise Network (CEN) instance that is associated with the enhanced edge node pool.
+	//
+	// example:
+	//
+	// cen-ey9k9nfhz0f*******
 	CenId *string `json:"cen_id,omitempty" xml:"cen_id,omitempty"`
 	// This parameter is deprecated.
 	//
 	// The subscription duration of the enhanced edge node pool. The duration is measured in months.
+	//
+	// example:
+	//
+	// 1
 	ImprovedPeriod *string `json:"improved_period,omitempty" xml:"improved_period,omitempty"`
 }
 
@@ -8104,35 +10688,67 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsInterconnectConfig) SetImp
 type DescribeClusterNodePoolsResponseBodyNodepoolsKubernetesConfig struct {
 	// Indicates whether the CloudMonitor agent is installed on ECS nodes in the cluster. After the CloudMonitor agent is installed, you can view monitoring information about the ECS instances in the CloudMonitor console. Installation is recommended. Valid values:
 	//
-	// *   `true`: The CloudMonitor agent is installed on ECS nodes.
-	// *   `false`: The CloudMonitor agent is not installed on ECS nodes.
+	// 	- `true`: The CloudMonitor agent is installed on ECS nodes.
+	//
+	// 	- `false`: The CloudMonitor agent is not installed on ECS nodes.
+	//
+	// example:
+	//
+	// true
 	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
 	// The CPU management policy. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: This policy allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
-	// *   `none`: indicates that the default CPU affinity is used.
+	// 	- `static`: This policy allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: indicates that the default CPU affinity is used.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
 	// The labels of the nodes in the node pool. You can add labels to the nodes in the cluster. You must add labels based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add at most 20 labels.
-	// *   The key must be unique and cannot exceed 64 characters in length. The value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// 	- Each label is a case-sensitive key-value pair. You can add at most 20 labels.
+	//
+	// 	- The key must be unique and cannot exceed 64 characters in length. The value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Labels []*Tag `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
 	// A custom node name consists of a prefix, an IP substring, and a suffix.
 	//
-	// *   The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
-	// *   The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
+	// 	- The prefix and suffix can contain multiple parts that are separated by periods (.). Each part can contain lowercase letters, digits, and hyphens (-). A custom node name must start and end with a digit or lowercase letter.
+	//
+	// 	- The IP substring length specifies the number of digits to be truncated from the end of the node IP address. The IP substring length ranges from 5 to 12.
 	//
 	// For example, if the node IP address is 192.168.0.55, the prefix is aliyun.com, the IP substring length is 5, and the suffix is test, the node name will be aliyun.com00055test.
+	//
+	// example:
+	//
+	// customized,test.,5,.com
 	NodeNameMode *string `json:"node_name_mode,omitempty" xml:"node_name_mode,omitempty"`
 	// The name of the container runtime.
+	//
+	// example:
+	//
+	// docker
 	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The version of the container runtime.
+	//
+	// example:
+	//
+	// 19.03.5
 	RuntimeVersion *string `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	// The taints that you want to add to nodes. Taints are added to nodes to prevent pods from being scheduled to inappropriate nodes. However, tolerations allow pods to be scheduled to nodes with matching taints. For more information, see [taint-and-toleration](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
 	Taints []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
-	// 扩容后的节点是否可调度。
+	// Specifies whether the nodes are schedulable after a scale-out activity is performed.
+	//
+	// example:
+	//
+	// true
 	Unschedulable *bool `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
-	// The user data of the node pool. For more information, see [Generate user-defined data](~~49121~~).
+	// The user data of the node pool. For more information, see [Generate user-defined data](https://help.aliyun.com/document_detail/49121.html).
+	//
+	// example:
+	//
+	// IyEvYmluL3NoCmVjaG8gIkhlbGxvIEFD****
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
@@ -8192,23 +10808,49 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsKubernetesConfig) SetUserD
 type DescribeClusterNodePoolsResponseBodyNodepoolsManagement struct {
 	// Indicates whether auto repair is enabled. This parameter takes effect only when `enable=true` is specified. Valid values:
 	//
-	// *   `true`: Auto repair is enabled.
-	// *   `false`: Auto repair is disabled.
+	// 	- `true`: Auto repair is enabled.
+	//
+	// 	- `false`: Auto repair is disabled.
+	//
+	// example:
+	//
+	// true
 	AutoRepair *bool `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
-	// 自动修复节点策略。
+	// The auto node repair policy.
 	AutoRepairPolicy *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
-	// 是否自动升级。
+	// Specifies whether to enable auto update. Valid values:
+	//
+	// - `true`: enables auto update.
+	//
+	// - `false`: disables auto update.
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
-	// 自动升级策略。
+	// The auto update policy.
 	AutoUpgradePolicy *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
-	// 是否自动修复CVE。
+	// Specifies whether ACK is allowed to automatically patch CVE vulnerabilities. Valid values:
+	//
+	// - `true`: yes
+	//
+	// - `false`: no
+	//
+	// example:
+	//
+	// true
 	AutoVulFix *bool `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
-	// 自动修复CVE策略。
+	// The auto CVE patching policy.
 	AutoVulFixPolicy *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoVulFixPolicy `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
 	// Indicates whether the managed node pool feature is enabled. Valid values:
 	//
-	// *   `true`: The managed node pool feature is enabled.
-	// *   `false`: The managed node pool feature is disabled. Other parameters in this section take effect only when `enable=true` is specified.
+	// 	- `true`: The managed node pool feature is enabled.
+	//
+	// 	- `false`: The managed node pool feature is disabled. Other parameters in this section take effect only when `enable=true` is specified.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// The configuration of auto update. The configuration take effects only when `enable=true` is specified.
 	UpgradeConfig *DescribeClusterNodePoolsResponseBodyNodepoolsManagementUpgradeConfig `json:"upgrade_config,omitempty" xml:"upgrade_config,omitempty" type:"Struct"`
@@ -8263,7 +10905,15 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsManagement) SetUpgradeConf
 }
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoRepairPolicy struct {
-	// 是否允许重启节点。
+	// Specifies whether ACK is allowed to automatically restart nodes after repairing the nodes. Valid values:
+	//
+	// - `true`: yes
+	//
+	// - `false`: no
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 }
 
@@ -8281,7 +10931,15 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoRepairPolicy
 }
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoUpgradePolicy struct {
-	// 是否允许自动升级kubelet。
+	// Specifies whether ACK is allowed to automatically update the kubelet. Valid values:
+	//
+	// - `true`: yes
+	//
+	// - `false`: no
+	//
+	// example:
+	//
+	// true
 	AutoUpgradeKubelet *bool `json:"auto_upgrade_kubelet,omitempty" xml:"auto_upgrade_kubelet,omitempty"`
 }
 
@@ -8299,9 +10957,21 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoUpgradePolic
 }
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoVulFixPolicy struct {
-	// 是否允许重启节点。
+	// Specifies whether ACK is allowed to automatically restart nodes after patching CVE vulnerabilities. Valid values:
+	//
+	// - `true`: yes
+	//
+	// - `false`: no
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
-	// 允许自动修复的漏洞级别，以逗号分隔。
+	// The severity levels of vulnerabilities that ACK is allowed to automatically patch. Multiple severity levels are separated by commas (,).
+	//
+	// example:
+	//
+	// asap,nntf
 	VulLevel *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
 }
 
@@ -8326,18 +10996,35 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsManagementAutoVulFixPolicy
 type DescribeClusterNodePoolsResponseBodyNodepoolsManagementUpgradeConfig struct {
 	// Indicates whether auto update is enabled. Valid values:
 	//
-	// *   `true`: Auto update is enabled.
-	// *   `false`: Auto update is disabled.
+	// 	- `true`: Auto update is enabled.
+	//
+	// 	- `false`: Auto update is disabled.
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// The maximum number of nodes that can be in the unschedulable state. Valid values: 1 to 1000.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MaxUnavailable *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
 	// The number of additional nodes.
+	//
+	// example:
+	//
+	// 5
 	Surge *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
 	// The percentage of temporary nodes to the nodes in the node pool. You must set this parameter or `surge`.
 	//
 	// The number of extra nodes = The percentage of extra nodes × The number of nodes in the node pool. For example, the percentage of extra nodes is set to 50% and the number of nodes in the node pool is six. The number of extra nodes will be three.
+	//
+	// example:
+	//
+	// 50
 	SurgePercentage *int64 `json:"surge_percentage,omitempty" xml:"surge_percentage,omitempty"`
 }
 
@@ -8389,28 +11076,62 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsNodeConfig) SetKubeletConf
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsNodepoolInfo struct {
 	// The time when the node pool was created.
+	//
+	// example:
+	//
+	// 2020-09-27T19:14:09.156823496+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// Indicates whether the node pool is a default node pool. A Container Service for Kubernetes (ACK) cluster usually has only one default node pool. Valid values:
 	//
-	// *   `true`: The node pool is a default node pool.
-	// *   `false`: The node pool is not a default node pool.
+	// 	- `true`: The node pool is a default node pool.
+	//
+	// 	- `false`: The node pool is not a default node pool.
+	//
+	// example:
+	//
+	// true
 	IsDefault *bool `json:"is_default,omitempty" xml:"is_default,omitempty"`
 	// The name of the node pool.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// default-nodepool
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np615c0e0966124216a0412e10afe0****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The region ID.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The ID of the resource group to which the node pool belongs.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The type of node pool. Valid values:
 	//
-	// *   `edge`: edge node pool
-	// *   `ess`: node pool in the cloud.
+	// 	- `edge`: edge node pool
+	//
+	// 	- `ess`: node pool in the cloud.
+	//
+	// example:
+	//
+	// ess
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 	// The time when the node pool was last updated.
+	//
+	// example:
+	//
+	// 2020-09-27T20:37:46+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -8465,140 +11186,361 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsNodepoolInfo) SetUpdated(v
 type DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup struct {
 	// Indicates whether auto-renewal is enabled for the nodes in the node pool. This parameter takes effect only when `instance_charge_type` is set to `PrePaid`. Valid values:
 	//
-	// *   `true`: Auto-renewal is enabled.
-	// *   `false`: Auto-renewal is disabled.
+	// 	- `true`: Auto-renewal is enabled.
+	//
+	// 	- `false`: Auto-renewal is disabled.
+	//
+	// example:
+	//
+	// false
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
 	// The duration of the auto-renewal. This parameter takes effect and is required only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// If you specify `PeriodUnit=Month`, the valid values are 1, 2, 3, 6, and 12.
+	//
+	// example:
+	//
+	// 0
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
-	// 是否开启CIS加固，仅当系统镜像选择Alibaba Cloud Linux 2或Alibaba Cloud Linux 3时，可为节点开启CIS加固。
+	// Deprecated
+	//
+	// [This parameter is deprecated]
+	//
+	// Please replace this parameter with security_hardening_os.
+	//
+	// example:
+	//
+	// false
 	CisEnabled *bool `json:"cis_enabled,omitempty" xml:"cis_enabled,omitempty"`
 	// Indicates whether pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as cost or insufficient inventory. This parameter takes effect when `multi_az_policy` is set to `COST_OPTIMIZED`. Valid values:
 	//
-	// *   `true`: Pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
-	// *   `false`: Pay-as-you-go instances are not automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	// 	- `true`: Pay-as-you-go instances are automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// 	- `false`: Pay-as-you-go instances are not automatically created to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// example:
+	//
+	// true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
 	// The configurations of the data disks that are attached to the nodes in the node pool. The configurations include the disk type and disk size.
 	DataDisks []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
 	// The ID of the deployment set to which the ECS instances in the node pool belong.
+	//
+	// example:
+	//
+	// ds-bp1d19mmbsv3jf6xxxxx
 	DeploymentsetId *string `json:"deploymentset_id,omitempty" xml:"deploymentset_id,omitempty"`
 	// You can now specify the desired number of nodes for a node pool.
+	//
+	// example:
+	//
+	// 2
 	DesiredSize *int64 `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
 	// The ID of the custom image. You can call the `DescribeKubernetesVersionMetadata` operation to query the images supported by ACK.
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
-	// 操作系统镜像类型。
+	// The type of OS image. You must set this parameter or platform. Valid values:
+	//
+	// - AliyunLinux: Alinux2
+	//
+	// - AliyunLinux3: Alinux3
+	//
+	// - AliyunLinux3Arm64: Alinux3 ARM
+	//
+	// - AliyunLinuxUEFI: Alinux2 UEFI
+	//
+	// - CentOS: CentOS
+	//
+	// - Windows: Windows
+	//
+	// - WindowsCore: Windows Core
+	//
+	// - ContainerOS: ContainerOS
+	//
+	// example:
+	//
+	// AliyunLinux
 	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
 	// The billing method of the nodes in a node pool. Valid values:
 	//
-	// *   `PrePaid`: the subscription billing method.
-	// *   `PostPaid`: the pay-as-you-go billing method.
+	// 	- `PrePaid`: the subscription billing method.
+	//
+	// 	- `PostPaid`: the pay-as-you-go billing method.
+	//
+	// example:
+	//
+	// PostPaid
 	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
 	// A list of instance types. You can select multiple instance types. When the system needs to create a node, it starts from the first instance type until the node is created. The actual instance types used to create nodes are subject to inventory availability.
+	//
+	// example:
+	//
+	// ecs.n4.large
 	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
 	// The billing method of the public IP address of the node.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
 	// The maximum outbound bandwidth of the public IP address of the node. Unit: Mbit/s. Valid values: 1 to 100.
+	//
+	// example:
+	//
+	// 10
 	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 	// The name of the key pair. You must set this parameter or the `login_password` parameter.
 	//
 	// You must set `key_pair` if the node pool is a managed node pool.
+	//
+	// example:
+	//
+	// pro-nodepool
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
-	// 弹出的ECS实例是否使用以非root用户登陆。
+	// Specifies whether a non-root user can log on to the ECS instance added to the node pool.
+	//
+	// example:
+	//
+	// true
 	LoginAsNonRoot *bool `json:"login_as_non_root,omitempty" xml:"login_as_non_root,omitempty"`
 	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
 	//
 	// For security purposes, the returned password is encrypted.
+	//
+	// example:
+	//
+	// ******
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
 	// The ECS instance scaling policy for a multi-zone scaling group. Valid values:
 	//
-	// *   `PRIORITY`: the scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
+	// 	- `PRIORITY`: the scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
 	//
-	// *   `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
+	// 	- `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
 	//
 	//     **
 	//
-	//     **Note** `COST_OPTIMIZED` takes effect only when multiple instance types or preemptible instances are specified in the auto scaling conflagrations.
+	//     **Note*	- `COST_OPTIMIZED` takes effect only when multiple instance types or preemptible instances are specified in the auto scaling conflagrations.
 	//
-	// *   `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call the `RebalanceInstances` operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](~~71516~~).
+	// 	- `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call the `RebalanceInstances` operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](https://help.aliyun.com/document_detail/71516.html).
+	//
+	// example:
+	//
+	// COST_OPTIMIZED
 	MultiAzPolicy *string `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
 	// The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
+	//
+	// example:
+	//
+	// 0
 	OnDemandBaseCapacity *int64 `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
 	// The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
+	//
+	// example:
+	//
+	// 20
 	OnDemandPercentageAboveBaseCapacity *int64 `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
 	// The subscription duration of worker nodes. This parameter takes effect and is required only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// If `PeriodUnit=Month` is specified, the valid values are 1, 2, 3, 6, 12, 24, 36, 48, and 60.
+	//
+	// example:
+	//
+	// 1
 	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
 	// The billing cycle of the nodes. This parameter takes effect only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// Valid value: `Month`
+	//
+	// example:
+	//
+	// Month
 	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// The release version of the operating system. Valid values:
 	//
-	// *   `CentOS`
-	// *   `AliyunLinux`
-	// *   `Windows`
-	// *   `WindowsCore`
+	// 	- `CentOS`
+	//
+	// 	- `AliyunLinux`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
+	//
+	// example:
+	//
+	// AliyunLinux
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
 	// The private node pool options.
 	PrivatePoolOptions *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
 	// The name of the worker Resource Access Management (RAM) role. The RAM role is assigned to the worker nodes that are created on Elastic Compute Service (ECS) instances.
+	//
+	// example:
+	//
+	// KubernetesWorkerRole-021dc54f-929b-437a-8ae0-34c24d3e****
 	RamPolicy *string `json:"ram_policy,omitempty" xml:"ram_policy,omitempty"`
 	// After you specify a list of ApsaraDB RDS instances, the ECS instances in the cluster are automatically added to the whitelists of the ApsaraDB RDS instances.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The ID of the scaling group.
+	//
+	// example:
+	//
+	// asg-2ze8n5qw4atggut8****
 	ScalingGroupId *string `json:"scaling_group_id,omitempty" xml:"scaling_group_id,omitempty"`
 	// The scaling mode of the scaling group. Valid values:
 	//
-	// *   `release`: the standard mode. ECS instances are created and released based on resource usage.
-	// *   `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances attached with local disks.
+	// 	- `release`: the standard mode. ECS instances are created and released based on resource usage.
+	//
+	// 	- `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances attached with local disks.
+	//
+	// example:
+	//
+	// release
 	ScalingPolicy *string `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
 	// The ID of the security group to which the node pool is added. If the node pool is added to multiple security groups, the first ID in the value of `security_group_ids` is returned.
+	//
+	// example:
+	//
+	// sg-2ze1iuk12m2sb4c4****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The IDs of the security groups to which the node pool is added.
 	SecurityGroupIds []*string `json:"security_group_ids,omitempty" xml:"security_group_ids,omitempty" type:"Repeated"`
-	// 是否开启等保加固，仅当系统镜像选择Alibaba Cloud Linux 2或Alibaba Cloud Linux 3时，可为节点开启等保加固。阿里云为Alibaba Cloud Linux 2和Alibaba Cloud Linux 3等保2.0三级版镜像提供等保合规的基线检查标准和扫描程序。
+	// Specifies whether to enable Alibaba Cloud Linux Security Hardening.
+	//
+	// Valid values:
+	//
+	// - `true`: enables Alibaba Cloud Linux Security Hardening.
+	//
+	// - `false`: disables Alibaba Cloud Linux Security Hardening.
+	//
+	// Default value: false
+	//
+	// example:
+	//
+	// false
+	SecurityHardeningOs *bool `json:"security_hardening_os,omitempty" xml:"security_hardening_os,omitempty"`
+	// Specifies whether to enable reinforcement based on Multi-Level Protection Scheme (MLPS). For more information, see ACK reinforcement based on classified protection.
+	//
+	// Valid values:
+	//
+	// - `true`: enables reinforcement based on MLPS.
+	//
+	// - `false`: disables reinforcement based on MLPS.
+	//
+	// Default value: false.
+	//
+	// example:
+	//
+	// false
 	SocEnabled *bool `json:"soc_enabled,omitempty" xml:"soc_enabled,omitempty"`
 	// The number of instance types that are available for creating preemptible instances. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
+	//
+	// example:
+	//
+	// 5
 	SpotInstancePools *int64 `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
 	// Indicates whether preemptible instances are supplemented when the number of preemptible instances drops below the specified minimum number. If this parameter is set to true, when the scaling group receives a system message that a preemptible instance is to be reclaimed, the scaling group attempts to create a new instance to replace this instance. Valid values:
 	//
-	// *   `true`: Supplementation of preemptible instances is enabled.
-	// *   `false`: Supplementation of preemptible instances is disabled.
+	// 	- `true`: Supplementation of preemptible instances is enabled.
+	//
+	// 	- `false`: Supplementation of preemptible instances is disabled.
+	//
+	// example:
+	//
+	// false
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// The bid configurations of preemptible instances.
 	SpotPriceLimit []*DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupSpotPriceLimit `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
 	// The type of preemptible instance. Valid values:
 	//
-	// *   NoSpot: a non-preemptible instance.
-	// *   SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
-	// *   SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	// 	- NoSpot: a non-preemptible instance.
 	//
-	// For more information, see [Preemptible instances](~~157759~~).
+	// 	- SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
+	//
+	// 	- SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	//
+	// For more information, see [Preemptible instances](https://help.aliyun.com/document_detail/157759.html).
+	//
+	// example:
+	//
+	// NoSpot
 	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
-	// 节点系统盘是否开启Burst（性能突发），磁盘类型为cloud_auto时配置。
+	// Specifies whether to enable the burst feature for system disks. Valid values:
+	//
+	// - `true`: enables the burst feature.
+	//
+	// - `false`: disables the burst feature.
+	//
+	// This parameter is supported only when SystemDiskCategory is set to cloud_auto. For more information, see [ESSD AutoPL disks. ](https://help.aliyun.com/document_detail/368372.html)
+	//
+	// example:
+	//
+	// true
 	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	// 系统盘的多磁盘类型。当无法使用高优先级的磁盘类型时，自动尝试下一优先级的磁盘类型创建系统盘。取值范围：cloud：普通云盘。cloud_efficiency：高效云盘。cloud_ssd：SSD云盘。cloud_essd：ESSD云盘。
+	// The type of system disk. When a high -priority disk type cannot be used, automatically try the next priority disk type creation system disk. Valid values:
+	//
+	// - cloud: basic disk
+	//
+	// - cloud_efficiency: ultra disk
+	//
+	// - cloud_ssd: standard SSD
+	//
+	// - cloud_essd: ESSD
 	SystemDiskCategories []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
 	// The type of system disk. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// example:
+	//
+	// cloud_efficiency
 	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
-	// 系统盘采用的加密算法。取值范围：aes-256。
+	// The algorithm that you want to use to encrypt the system disk. Set the value to aes-256.
+	//
+	// example:
+	//
+	// aes-256
 	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	// 是否加密系统盘。取值范围：true：加密。false：不加密。
+	// Specifies whether to encrypt the system disk. Valid values:
+	//
+	// - `true`: encrypts the system disk.
+	//
+	// - `false`: does not encrypt the system disk.
+	//
+	// example:
+	//
+	// false
 	SystemDiskEncrypted *bool `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
-	// 系统盘使用的KMS密钥ID。
+	// The ID of the KMS key that you want to use to encrypt the system disk.
+	//
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
 	SystemDiskKmsKeyId *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
 	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for enhanced SSDs (ESSDs).
+	//
+	// example:
+	//
+	// PL1
 	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	// 节点系统盘预配置的读写IOPS，磁盘类型为cloud_auto时配置。
+	// The predefined IOPS of a system disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS} Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}
+	//
+	// This parameter is supported only when SystemDiskCategory is set to cloud_auto. For more information, see [ESSD AutoPL disks](https://help.aliyun.com/document_detail/368372.html).
+	//
+	// example:
+	//
+	// 1000
 	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
 	// The system disk size of a node. Unit: GiB.
 	//
 	// Valid values: 20 to 500
+	//
+	// example:
+	//
+	// 120
 	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
 	// The labels that you want to add to the ECS instances.
 	//
@@ -8763,6 +11705,11 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetSecurityG
 	return s
 }
 
+func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetSecurityHardeningOs(v bool) *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup {
+	s.SecurityHardeningOs = &v
+	return s
+}
+
 func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetSocEnabled(v bool) *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup {
 	s.SocEnabled = &v
 	return s
@@ -8845,12 +11792,22 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroup) SetVswitchId
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupPrivatePoolOptions struct {
 	// The private pool ID. The ID of a private pool is the same as the ID of the elasticity assurance or capacity reservation for which the private pool is generated.
+	//
+	// example:
+	//
+	// eap-bp67acfmxazb4****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of private node pool. This parameter specifies the type of private node pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values:
 	//
-	// *   `Open`: open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
-	// *   `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be started.
-	// *   `None`: no private node pool is used. The resources of private node pools are not used to lancuh instances.
+	// 	- `Open`: open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
+	//
+	// 	- `Target`: specific private pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be started.
+	//
+	// 	- `None`: no private node pool is used. The resources of private node pools are not used to lancuh instances.
+	//
+	// example:
+	//
+	// Open
 	MatchCriteria *string `json:"match_criteria,omitempty" xml:"match_criteria,omitempty"`
 }
 
@@ -8874,10 +11831,18 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupPrivatePoolOpt
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupSpotPriceLimit struct {
 	// The instance type of preemptible instances.
+	//
+	// example:
+	//
+	// ecs.c6.large
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
 	// The price limit of a single preemptible instance.
 	//
 	// Unit: USD/hour.
+	//
+	// example:
+	//
+	// 0.39
 	PriceLimit *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
 }
 
@@ -8901,26 +11866,62 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsScalingGroupSpotPriceLimit
 
 type DescribeClusterNodePoolsResponseBodyNodepoolsStatus struct {
 	// The number of failed nodes.
+	//
+	// example:
+	//
+	// 0
 	FailedNodes *int64 `json:"failed_nodes,omitempty" xml:"failed_nodes,omitempty"`
 	// The number of healthy nodes.
+	//
+	// example:
+	//
+	// 3
 	HealthyNodes *int64 `json:"healthy_nodes,omitempty" xml:"healthy_nodes,omitempty"`
 	// The number of nodes that are being created.
+	//
+	// example:
+	//
+	// 0
 	InitialNodes *int64 `json:"initial_nodes,omitempty" xml:"initial_nodes,omitempty"`
 	// The number of offline nodes.
+	//
+	// example:
+	//
+	// 0
 	OfflineNodes *int64 `json:"offline_nodes,omitempty" xml:"offline_nodes,omitempty"`
 	// The number of nodes that are being removed.
+	//
+	// example:
+	//
+	// 0
 	RemovingNodes *int64 `json:"removing_nodes,omitempty" xml:"removing_nodes,omitempty"`
 	// The number of running nodes.
+	//
+	// example:
+	//
+	// 3
 	ServingNodes *int64 `json:"serving_nodes,omitempty" xml:"serving_nodes,omitempty"`
 	// The status of the node pool. Valid values:
 	//
-	// *   `active`: The node pool is active.
-	// *   `scaling`: The node pool is being scaled.
-	// *   `removing`: Nodes are being removed from the node pool.
-	// *   `deleting`: The node pool is being deleted.
-	// *   `updating`: The node pool is being updated.
+	// 	- `active`: The node pool is active.
+	//
+	// 	- `scaling`: The node pool is being scaled.
+	//
+	// 	- `removing`: Nodes are being removed from the node pool.
+	//
+	// 	- `deleting`: The node pool is being deleted.
+	//
+	// 	- `updating`: The node pool is being updated.
+	//
+	// example:
+	//
+	// active
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The total number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 3
 	TotalNodes *int64 `json:"total_nodes,omitempty" xml:"total_nodes,omitempty"`
 }
 
@@ -8975,8 +11976,13 @@ func (s *DescribeClusterNodePoolsResponseBodyNodepoolsStatus) SetTotalNodes(v in
 type DescribeClusterNodePoolsResponseBodyNodepoolsTeeConfig struct {
 	// Indicates whether confidential computing is enabled. Valid values:
 	//
-	// *   `true`: Confidential computing is enabled.
-	// *   `false`: Confidential computing is disabled.
+	// 	- `true`: Confidential computing is enabled.
+	//
+	// 	- `false`: Confidential computing is disabled.
+	//
+	// example:
+	//
+	// false
 	TeeEnable *bool `json:"tee_enable,omitempty" xml:"tee_enable,omitempty"`
 }
 
@@ -9024,26 +12030,50 @@ func (s *DescribeClusterNodePoolsResponse) SetBody(v *DescribeClusterNodePoolsRe
 
 type DescribeClusterNodesRequest struct {
 	// The IDs of the nodes that you want to query. Separate multiple node IDs with commas (,).
+	//
+	// example:
+	//
+	// "i-bp11xjhwkj8k966u****,i-bp1dmhc2bu5igkyq****"
 	InstanceIds *string `json:"instanceIds,omitempty" xml:"instanceIds,omitempty"`
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The page number.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *string `json:"pageNumber,omitempty" xml:"pageNumber,omitempty"`
 	// The number of entries per page. Valid values: 1 to 100.
 	//
 	// Default value: 10.
+	//
+	// example:
+	//
+	// 10
 	PageSize *string `json:"pageSize,omitempty" xml:"pageSize,omitempty"`
 	// The node state that you want to use to filter nodes. Valid values:
 	//
-	// *   `all`: query nodes in the following four states.
-	// *   `running`: query nodes in the running state.
-	// *   `removing`: query nodes that are being removed.
-	// *   `initial`: query nodes that are being initialized.
-	// *   `failed`: query nodes that fail to be created.
+	// 	- `all`: query nodes in the following four states.
+	//
+	// 	- `running`: query nodes in the running state.
+	//
+	// 	- `removing`: query nodes that are being removed.
+	//
+	// 	- `initial`: query nodes that are being initialized.
+	//
+	// 	- `failed`: query nodes that fail to be created.
 	//
 	// Default value: `all`.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 }
 
@@ -9107,68 +12137,156 @@ func (s *DescribeClusterNodesResponseBody) SetPage(v *DescribeClusterNodesRespon
 
 type DescribeClusterNodesResponseBodyNodes struct {
 	// The time when the node was created.
+	//
+	// example:
+	//
+	// 2020-08-25T11:25:35+08:00
 	CreationTime *string `json:"creation_time,omitempty" xml:"creation_time,omitempty"`
 	// The error message generated when the node was created.
+	//
+	// example:
+	//
+	// error***
 	ErrorMessage *string `json:"error_message,omitempty" xml:"error_message,omitempty"`
 	// The expiration date of the node.
+	//
+	// example:
+	//
+	// 2099-12-31T23:59:00+08:00
 	ExpiredTime *string `json:"expired_time,omitempty" xml:"expired_time,omitempty"`
 	// The name of the host.
+	//
+	// example:
+	//
+	// iZ2vcckdmxp7u0urj2k****
 	HostName *string `json:"host_name,omitempty" xml:"host_name,omitempty"`
 	// The ID of the system image that is used by the node.
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The billing method of the node. Valid values:
 	//
-	// *   `PrePaid`: the subscription billing method. If the value is PrePaid, make sure that you have a sufficient balance or credit in your account. Otherwise, an `InvalidPayMethod` error is returned.
-	// *   `PostPaid`: the pay-as-you-go billing method.
+	// 	- `PrePaid`: the subscription billing method. If the value is PrePaid, make sure that you have a sufficient balance or credit in your account. Otherwise, an `InvalidPayMethod` error is returned.
+	//
+	// 	- `PostPaid`: the pay-as-you-go billing method.
+	//
+	// example:
+	//
+	// PostPaid
 	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
 	// The ID of the instance.
+	//
+	// example:
+	//
+	// i-2vcckdmxp7u0urj2****
 	InstanceId *string `json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The name of the instance on which the node is deployed.
+	//
+	// example:
+	//
+	// worker-k8s-for-cs-c5cdf7e3938bc4f8eb0e44b21a80f****
 	InstanceName *string `json:"instance_name,omitempty" xml:"instance_name,omitempty"`
 	// The role of the node. Valid values:
 	//
-	// *   Master: master node
-	// *   Worker: worker node
+	// 	- Master: master node
+	//
+	// 	- Worker: worker node
+	//
+	// example:
+	//
+	// Worker
 	InstanceRole *string `json:"instance_role,omitempty" xml:"instance_role,omitempty"`
 	// The status of the node.
+	//
+	// example:
+	//
+	// Running
 	InstanceStatus *string `json:"instance_status,omitempty" xml:"instance_status,omitempty"`
 	// The type of the node.
+	//
+	// example:
+	//
+	// ecs.c5.xlarge
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
 	// The ECS instance family of the node.
+	//
+	// example:
+	//
+	// ecs.c5
 	InstanceTypeFamily *string `json:"instance_type_family,omitempty" xml:"instance_type_family,omitempty"`
 	// The IP address of the node.
 	IpAddress []*string `json:"ip_address,omitempty" xml:"ip_address,omitempty" type:"Repeated"`
 	// Indicates whether the instance on which the node is deployed is provided by Alibaba Cloud. Valid values:
 	//
-	// *   `true`: The instance is provided by Alibaba Cloud.
-	// *   `false`: The instance is not provided by Alibaba Cloud.
+	// 	- `true`: The instance is provided by Alibaba Cloud.
+	//
+	// 	- `false`: The instance is not provided by Alibaba Cloud.
+	//
+	// example:
+	//
+	// true
 	IsAliyunNode *bool `json:"is_aliyun_node,omitempty" xml:"is_aliyun_node,omitempty"`
 	// The name of the node. This name is the identifier of the node in the cluster.
+	//
+	// example:
+	//
+	// cn-chengdu.192.168.0.36
 	NodeName *string `json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// Indicates whether the node is ready. Valid values:
 	//
-	// *   `Ready`: The node is ready.
-	// *   `NotReady`: The node is not ready.
-	// *   `Unknown`: The status of the node is unknown.
-	// *   `Offline`: The node is offline.
+	// 	- `Ready`: The node is ready.
+	//
+	// 	- `NotReady`: The node is not ready.
+	//
+	// 	- `Unknown`: The status of the node is unknown.
+	//
+	// 	- `Offline`: The node is offline.
+	//
+	// example:
+	//
+	// Ready
 	NodeStatus *string `json:"node_status,omitempty" xml:"node_status,omitempty"`
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np0794239424a84eb7a95327369d56****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// Indicates how the node is initialized. A node can be manually created or created by using Resource Orchestration Service (ROS).
+	//
+	// example:
+	//
+	// ess_attach
 	Source *string `json:"source,omitempty" xml:"source,omitempty"`
 	// The type of preemptible instance. Valid values:
 	//
-	// *   NoSpot: a non-preemptible instance.
-	// *   SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
-	// *   SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	// 	- NoSpot: a non-preemptible instance.
+	//
+	// 	- SpotWithPriceLimit: a preemptible instance that is configured with the highest bid price.
+	//
+	// 	- SpotAsPriceGo: a preemptible instance for which the system automatically bids based on the current market price.
+	//
+	// example:
+	//
+	// NoSpot
 	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
 	// The status of the node. Valid values:
 	//
-	// *   `pending`: The node is being created.
-	// *   `running`: The node is running.
-	// *   `starting`: The node is being started.
-	// *   `stopping`: The node is being stopped.
-	// *   `stopped`: The node is stopped.
+	// 	- `pending`: The node is being created.
+	//
+	// 	- `running`: The node is running.
+	//
+	// 	- `starting`: The node is being started.
+	//
+	// 	- `stopping`: The node is being stopped.
+	//
+	// 	- `stopped`: The node is stopped.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 }
 
@@ -9282,10 +12400,22 @@ func (s *DescribeClusterNodesResponseBodyNodes) SetState(v string) *DescribeClus
 
 type DescribeClusterNodesResponseBodyPage struct {
 	// The page number.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int32 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int32 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 5
 	TotalCount *int32 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -9389,30 +12519,66 @@ func (s *DescribeClusterResourcesResponse) SetBody(v []*DescribeClusterResources
 
 type DescribeClusterResourcesResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// cb95aa626a47740afbf6aa099b65****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The time when the resource was created.
+	//
+	// example:
+	//
+	// 2020-09-11T10:11:54+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The resource ID.
+	//
+	// example:
+	//
+	// lb-wz9poz4r0ymh8u0uf****
 	InstanceId *string `json:"instance_id,omitempty" xml:"instance_id,omitempty"`
-	// The information about the resource. For more information about how to query the source information about a resource, see [ListStackResources](~~133836~~).
+	// The information about the resource. For more information about how to query the source information about a resource, see [ListStackResources](https://help.aliyun.com/document_detail/133836.html).
+	//
+	// example:
+	//
+	// {\\"Id\\":\\"k8s_master_slb\\",\\"Name\\":\\"k8s_master_slb\\",\\"Type\\":\\"ALIYUN::SLB::LoadBalancer\\",\\"Status\\":\\"CREATE_COMPLETE\\",\\"StatusReason\\":\\"state changed\\",\\"Updated\\":\\"2020-05-21T13:25:02\\",\\"PhysicalId\\":\\"lb-wz9poz4r0ymh8u0uf****\\"}
 	ResourceInfo *string `json:"resource_info,omitempty" xml:"resource_info,omitempty"`
 	// The resource type.
+	//
+	// example:
+	//
+	// ALIYUN::SLB::LoadBalancer
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The resource status. Valid values:
 	//
-	// *   `CREATE_COMPLETE`: The resource is created.
-	// *   `CREATE_FAILED`: The resource failed to be created.
-	// *   `CREATE_IN_PROGRESS`: The resource is being created.
-	// *   `DELETE_FAILED`: The resource failed to be deleted.
-	// *   `DELETE_IN_PROGRESS`: The resource is being deleted.
-	// *   `ROLLBACK_COMPLETE`: The resource is rolled back.
-	// *   `ROLLBACK_FAILED`: The resource failed to be rolled back.
-	// *   `ROLLBACK_IN_PROGRESS`: The resource is being rolled back.
+	// 	- `CREATE_COMPLETE`: The resource is created.
+	//
+	// 	- `CREATE_FAILED`: The resource failed to be created.
+	//
+	// 	- `CREATE_IN_PROGRESS`: The resource is being created.
+	//
+	// 	- `DELETE_FAILED`: The resource failed to be deleted.
+	//
+	// 	- `DELETE_IN_PROGRESS`: The resource is being deleted.
+	//
+	// 	- `ROLLBACK_COMPLETE`: The resource is rolled back.
+	//
+	// 	- `ROLLBACK_FAILED`: The resource failed to be rolled back.
+	//
+	// 	- `ROLLBACK_IN_PROGRESS`: The resource is being rolled back.
+	//
+	// example:
+	//
+	// CREATE_COMPLETE
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// Indicates whether the resource is created by Container Service for Kubernetes (ACK). Valid values:
 	//
-	// *   1: The resource is created by ACK.
-	// *   0: The resource is an existing resource.
+	// 	- 1: The resource is created by ACK.
+	//
+	// 	- 0: The resource is an existing resource.
+	//
+	// example:
+	//
+	// 1
 	AutoCreate       *int64                                                `json:"auto_create,omitempty" xml:"auto_create,omitempty"`
 	Dependencies     []*DescribeClusterResourcesResponseBodyDependencies   `json:"dependencies,omitempty" xml:"dependencies,omitempty" type:"Repeated"`
 	AssociatedObject *DescribeClusterResourcesResponseBodyAssociatedObject `json:"associated_object,omitempty" xml:"associated_object,omitempty" type:"Struct"`
@@ -9571,8 +12737,18 @@ func (s *DescribeClusterResourcesResponseBodyDeleteBehavior) SetChangeable(v boo
 }
 
 type DescribeClusterTasksRequest struct {
+	// The page number.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int32 `json:"page_number,omitempty" xml:"page_number,omitempty"`
-	PageSize   *int32 `json:"page_size,omitempty" xml:"page_size,omitempty"`
+	// The number of entries per page.
+	//
+	// example:
+	//
+	// 20
+	PageSize *int32 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 }
 
 func (s DescribeClusterTasksRequest) String() string {
@@ -9597,6 +12773,10 @@ type DescribeClusterTasksResponseBody struct {
 	// The pagination information.
 	PageInfo *DescribeClusterTasksResponseBodyPageInfo `json:"page_info,omitempty" xml:"page_info,omitempty" type:"Struct"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 0527ac9a-c899-4341-a21a-xxxxxxxxx
 	RequestId *string `json:"requestId,omitempty" xml:"requestId,omitempty"`
 	// The information about the tasks.
 	Tasks []*DescribeClusterTasksResponseBodyTasks `json:"tasks,omitempty" xml:"tasks,omitempty" type:"Repeated"`
@@ -9627,10 +12807,22 @@ func (s *DescribeClusterTasksResponseBody) SetTasks(v []*DescribeClusterTasksRes
 
 type DescribeClusterTasksResponseBodyPageInfo struct {
 	// The number of the page returned.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 10
 	TotalCount *int64 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -9659,16 +12851,36 @@ func (s *DescribeClusterTasksResponseBodyPageInfo) SetTotalCount(v int64) *Descr
 
 type DescribeClusterTasksResponseBodyTasks struct {
 	// The time when the task was created.
+	//
+	// example:
+	//
+	// 2022-08-03T10:11:33+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The error returned for the task.
 	Error *DescribeClusterTasksResponseBodyTasksError `json:"error,omitempty" xml:"error,omitempty" type:"Struct"`
 	// The status of the task.
+	//
+	// example:
+	//
+	// success
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// install-addons-c3xxxxxx
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The type of task.
+	//
+	// example:
+	//
+	// cluster_addon_install
 	TaskType *string `json:"task_type,omitempty" xml:"task_type,omitempty"`
 	// The time when the task was updated.
+	//
+	// example:
+	//
+	// 2022-08-03T10:12:03.482+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -9712,8 +12924,16 @@ func (s *DescribeClusterTasksResponseBodyTasks) SetUpdated(v string) *DescribeCl
 
 type DescribeClusterTasksResponseBodyTasksError struct {
 	// The error code returned.
+	//
+	// example:
+	//
+	// BadRequest
 	Code *string `json:"code,omitempty" xml:"code,omitempty"`
 	// The error message returned.
+	//
+	// example:
+	//
+	// Addon status not match
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 }
 
@@ -9767,14 +12987,23 @@ func (s *DescribeClusterTasksResponse) SetBody(v *DescribeClusterTasksResponseBo
 type DescribeClusterUserKubeconfigRequest struct {
 	// Specifies whether to obtain the kubeconfig file that is used to connect to the cluster over the internal network. Valid values:
 	//
-	// *   `true`: obtains the kubeconfig file that is used to connect to the master instance over the internal network.
-	// *   `false`: obtains the kubeconfig file that is used to connect to the master instance over the Internet.
+	// 	- `true`: obtains the kubeconfig file that is used to connect to the master instance over the internal network.
+	//
+	// 	- `false`: obtains the kubeconfig file that is used to connect to the master instance over the Internet.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	PrivateIpAddress *bool `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
 	// The validity period of a temporary kubeconfig file. Unit: minutes. Valid values: 15 to 4320 (3 days).
 	//
 	// >  If you do not specify this parameter, the system specifies a longer validity period. The validity period is returned in the `expiration` parameter.
+	//
+	// example:
+	//
+	// 15
 	TemporaryDurationMinutes *int64 `json:"TemporaryDurationMinutes,omitempty" xml:"TemporaryDurationMinutes,omitempty"`
 }
 
@@ -9797,9 +13026,17 @@ func (s *DescribeClusterUserKubeconfigRequest) SetTemporaryDurationMinutes(v int
 }
 
 type DescribeClusterUserKubeconfigResponseBody struct {
-	// The kubeconfig file of the cluster. For more information about the content of the kubeconfig file, see [Configure cluster credentials](~~86494~~).
+	// The kubeconfig file of the cluster. For more information about the content of the kubeconfig file, see [Configure cluster credentials](https://help.aliyun.com/document_detail/86494.html).
+	//
+	// example:
+	//
+	// apiVersion: v1****
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 	// The validity period of the kubeconfig file. The value is the UTC time displayed in RFC3339 format.
+	//
+	// example:
+	//
+	// 2024-03-10T09:56:17Z
 	Expiration *string `json:"expiration,omitempty" xml:"expiration,omitempty"`
 }
 
@@ -9938,127 +13175,65 @@ type DescribeClusterVulsResponseBodyVulRecords struct {
 	//
 	// Valid values:
 	//
-	// *   nntf
+	// 	- nntf: low
 	//
-	//     <!-- -->
+	// 	- later: medium
 	//
-	//     :
+	// 	- asap: high
 	//
-	//     <!-- -->
+	// example:
 	//
-	//     low
-	//
-	//     <!-- -->
-	//
-	// *   later
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     medium
-	//
-	//     <!-- -->
-	//
-	// *   asap
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     high
-	//
-	//     <!-- -->
+	// asap
 	Necessity *string `json:"necessity,omitempty" xml:"necessity,omitempty"`
 	// The number of nodes that have the vulnerability.
+	//
+	// example:
+	//
+	// 1
 	NodeCount *int32 `json:"node_count,omitempty" xml:"node_count,omitempty"`
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np0156da1082b54fa987e32618dd45f5d3
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The name of the node pool.
+	//
+	// example:
+	//
+	// test
 	NodepoolName *string `json:"nodepool_name,omitempty" xml:"nodepool_name,omitempty"`
 	// The alias of the vulnerability.
+	//
+	// example:
+	//
+	// CVE-2022-xxxx:rsync Security vulnerabilities
 	VulAliasName *string `json:"vul_alias_name,omitempty" xml:"vul_alias_name,omitempty"`
 	// The name of the vulnerability.
+	//
+	// example:
+	//
+	// oval:com.redhat.rhsa:def:xxxxxxx
 	VulName *string `json:"vul_name,omitempty" xml:"vul_name,omitempty"`
 	// The type of vulnerability.
 	//
 	// Valid values:
 	//
-	// *   app
+	// 	- app: application vulnerabilities
 	//
-	//     <!-- -->
+	// 	- sca: application vulnerabilities (software component analysis)
 	//
-	//     :
+	// 	- cve: Linux vulnerabilities
 	//
-	//     <!-- -->
+	// 	- cms: Web-CMS vulnerabilities
 	//
-	//     application vulnerabilities
+	// 	- sys: Windows vulnerabilities
 	//
-	//     <!-- -->
+	// 	- emg:  emergency vulnerabilities
 	//
-	// *   sca
+	// example:
 	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     application vulnerabilities (software component analysis)
-	//
-	//     <!-- -->
-	//
-	// *   cve
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     Linux vulnerabilities
-	//
-	//     <!-- -->
-	//
-	// *   cms
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     Web-CMS vulnerabilities
-	//
-	//     <!-- -->
-	//
-	// *   sys
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     Windows vulnerabilities
-	//
-	//     <!-- -->
-	//
-	// *   emg
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     emergency vulnerabilities
-	//
-	//     <!-- -->
+	// cve
 	VulType *string `json:"vul_type,omitempty" xml:"vul_type,omitempty"`
 }
 
@@ -10141,8 +13316,16 @@ func (s *DescribeClusterVulsResponse) SetBody(v *DescribeClusterVulsResponseBody
 
 type DescribeClustersRequest struct {
 	// The cluster type.
+	//
+	// example:
+	//
+	// ManagedKubernetes
 	ClusterType *string `json:"clusterType,omitempty" xml:"clusterType,omitempty"`
 	// The cluster name based on which the system performs fuzzy searches among the clusters that belong to the current Alibaba Cloud account.
+	//
+	// example:
+	//
+	// test
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
@@ -10402,42 +13585,79 @@ func (s *DescribeClustersResponseBodyTags) SetValue(v string) *DescribeClustersR
 }
 
 type DescribeClustersV1Request struct {
-	// 集群ID。
+	// The cluster ID.
+	//
+	// example:
+	//
+	// ca418e5e6fa2849d78301341700axxxxx
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The cluster type, which is available only when the cluster type is set to `ManagedKubernetes`. Valid values:
 	//
-	// *   `ack.pro.small`: ACK Pro cluster
-	// *   `ack.standard`: ACK Basic cluster
+	// 	- `ack.pro.small`: ACK Pro cluster
+	//
+	// 	- `ack.standard`: ACK Basic cluster
 	//
 	// By default, this parameter is left empty, which means that ACK clusters are not filtered by this parameter.
+	//
+	// example:
+	//
+	// ack.pro.small
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
 	// The cluster type. Valid values:
 	//
-	// *   `Kubernetes`: ACK dedicated cluster.
-	// *   `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Pro clusters, ACK Basic clusters, ACK Serverless Pro clusters, ACK Serverless Basic clusters, ACK Edge Pro clusters, and ACK Edge Basic clusters.
-	// *   `ExternalKubernetes`: registered cluster.
+	// 	- `Kubernetes`: ACK dedicated cluster.
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Pro clusters, ACK Basic clusters, ACK Serverless Pro clusters, ACK Serverless Basic clusters, ACK Edge Pro clusters, and ACK Edge Basic clusters.
+	//
+	// 	- `ExternalKubernetes`: registered cluster.
+	//
+	// example:
+	//
+	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
 	// The cluster name.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// cluster-demo
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The page number.
+	//
+	// example:
+	//
+	// 3
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The identifier of the cluster. Valid values when the cluster_type parameter is set to `ManagedKubernetes`:
 	//
-	// *   `Default`: ACK managed cluster
-	// *   `Serverless`: ACK Serverless cluster
-	// *   `Edge`: ACK Edge cluster
+	// 	- `Default`: ACK managed cluster
+	//
+	// 	- `Serverless`: ACK Serverless cluster
+	//
+	// 	- `Edge`: ACK Edge cluster
 	//
 	// Valid values when the cluster_type parameter is set to `Ask`:
 	//
 	// `ask.v2`: ACK Serverless cluster
 	//
 	// By default, this parameter is left empty. If you leave this parameter empty, ACK clusters are not filtered by identifier.
+	//
+	// example:
+	//
+	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
 	// The region ID of the clusters. You can use this parameter to query all clusters in the specified region.
+	//
+	// example:
+	//
+	// cn-hangzhou
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 }
 
@@ -10516,109 +13736,238 @@ func (s *DescribeClustersV1ResponseBody) SetPageInfo(v *DescribeClustersV1Respon
 
 type DescribeClustersV1ResponseBodyClusters struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c3fb96524f9274b4495df0f12a6b5****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The type of ACK managed cluster. This parameter is available only for ACK managed clusters. Valid values:
 	//
-	// *   `ack.pro.small`: ACK Pro cluster
-	// *   `ack.standard`: ACK Basic cluster
+	// 	- `ack.pro.small`: ACK Pro cluster
+	//
+	// 	- `ack.standard`: ACK Basic cluster
+	//
+	// example:
+	//
+	// ack.standard
 	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
 	// The cluster type. Valid values:
 	//
-	// *   `Kubernetes`: ACK dedicated cluster
-	// *   `ManagedKubernetes`: ACK managed cluster
-	// *   `Ask`: ACK Serverless cluster
-	// *   `ExternalKubernetes`: registered cluster
+	// 	- `Kubernetes`: ACK dedicated cluster
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster
+	//
+	// 	- `Ask`: ACK Serverless cluster
+	//
+	// 	- `ExternalKubernetes`: registered cluster
+	//
+	// example:
+	//
+	// Kubernetes
 	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
 	// The time when the cluster was created.
+	//
+	// example:
+	//
+	// 2020-08-20T10:51:29+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The Kubernetes version of the cluster.
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	CurrentVersion *string `json:"current_version,omitempty" xml:"current_version,omitempty"`
 	// Indicates whether deletion protection is enabled for the cluster. If deletion protection is enabled, the cluster cannot be deleted in the ACK console or by calling API operations. Valid values:
 	//
-	// *   `true`: Deletion protection is enabled for the cluster. The cluster cannot be deleted in the ACK console or by calling API operations.
-	// *   `false`: Deletion protection is disabled for the cluster. The cluster can be deleted in the ACK console or by calling API operations.
+	// 	- `true`: Deletion protection is enabled for the cluster. The cluster cannot be deleted in the ACK console or by calling API operations.
+	//
+	// 	- `false`: Deletion protection is disabled for the cluster. The cluster can be deleted in the ACK console or by calling API operations.
+	//
+	// example:
+	//
+	// true
 	DeletionProtection *bool `json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
 	// The Docker version that is used by the cluster.
+	//
+	// example:
+	//
+	// 19.03.5
 	DockerVersion *string `json:"docker_version,omitempty" xml:"docker_version,omitempty"`
 	// The ID of the Server Load Balancer (SLB) instance that is used by the Ingress of the cluster.
 	//
 	// The default SLB specification is slb.s1.small, which belongs to the high-performance instance type.
+	//
+	// example:
+	//
+	// lb-2vcrbmlevo6kjpgch****
 	ExternalLoadbalancerId *string `json:"external_loadbalancer_id,omitempty" xml:"external_loadbalancer_id,omitempty"`
 	// The Kubernetes version of the cluster. The Kubernetes versions supported by ACK are the same as the versions of open source Kubernetes. We recommend that you specify the latest Kubernetes version. If you do not specify this parameter, the latest Kubernetes version is used.
 	//
-	// You can create clusters of the latest two Kubernetes versions in the ACK console. You can call the corresponding ACK API operation to create clusters of other Kubernetes versions. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](~~185269~~).
+	// You can create clusters of the latest two Kubernetes versions in the ACK console. You can call the corresponding ACK API operation to create clusters of other Kubernetes versions. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	InitVersion *string `json:"init_version,omitempty" xml:"init_version,omitempty"`
 	// The maintenance window of the cluster. This feature is available only for ACK Pro clusters.
 	MaintenanceWindow *MaintenanceWindow `json:"maintenance_window,omitempty" xml:"maintenance_window,omitempty"`
 	// The endpoint of the cluster API server, including an internal endpoint and a public endpoint.
+	//
+	// example:
+	//
+	// {\\"api_server_endpoint\\":\\"\\",\\"intranet_api_server_endpoint\\":\\"https://192.168.0.251:6443\\"}
 	MasterUrl *string `json:"master_url,omitempty" xml:"master_url,omitempty"`
 	// The metadata of the cluster.
+	//
+	// example:
+	//
+	// {\\"Addons\\":[{\\"config\\":***}
 	MetaData *string `json:"meta_data,omitempty" xml:"meta_data,omitempty"`
 	// The cluster name.
 	//
 	// The name must be 1 to 63 characters in length and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// cluster-demo
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The network mode of the cluster. Valid values:
 	//
-	// *   `classic`: classic network
-	// *   `vpc`: virtual private cloud (VPC)
-	// *   `overlay`: overlay network
-	// *   `calico`: network powered by Calico.
+	// 	- `classic`: classic network
+	//
+	// 	- `vpc`: virtual private cloud (VPC)
+	//
+	// 	- `overlay`: overlay network
+	//
+	// 	- `calico`: network powered by Calico.
+	//
+	// example:
+	//
+	// vpc
 	NetworkMode *string `json:"network_mode,omitempty" xml:"network_mode,omitempty"`
 	// The Kubernetes version to which the cluster can be updated.
+	//
+	// example:
+	//
+	// 1.18.8-aliyun.1
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
 	// Indicates whether Alibaba Cloud DNS PrivateZone is enabled. Valid values:
 	//
-	// *   `true`: Alibaba Cloud DNS PrivateZone is enabled.
-	// *   `false`: Alibaba Cloud DNS PrivateZone is disabled.
+	// 	- `true`: Alibaba Cloud DNS PrivateZone is enabled.
+	//
+	// 	- `false`: Alibaba Cloud DNS PrivateZone is disabled.
+	//
+	// example:
+	//
+	// false
 	PrivateZone *bool `json:"private_zone,omitempty" xml:"private_zone,omitempty"`
 	// The cluster identifier. Valid values:
 	//
-	// *   `Edge`: The cluster is an ACK Edge cluster.
-	// *   `Default`: The cluster is not an ACK Edge cluster.
+	// 	- `Edge`: The cluster is an ACK Edge cluster.
+	//
+	// 	- `Default`: The cluster is not an ACK Edge cluster.
+	//
+	// example:
+	//
+	// Default
 	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
 	// The region ID of the cluster.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The ID of the resource group to which the cluster belongs.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// The ID of the security group to which the instances of the cluster belong.
+	//
+	// example:
+	//
+	// sg-2vcgwsrwgt5mp0yi****
 	SecurityGroupId *string `json:"security_group_id,omitempty" xml:"security_group_id,omitempty"`
 	// The number of nodes in the cluster, including master nodes and worker nodes.
+	//
+	// example:
+	//
+	// 5
 	Size *int64 `json:"size,omitempty" xml:"size,omitempty"`
 	// The status of the cluster. Valid values:
 	//
-	// *   `initial`: The cluster is being created.
-	// *   `failed`: The cluster failed to be created.
-	// *   `running`: The cluster is running.
-	// *   `updating`: The cluster is being updated.
-	// *   `updating_failed`: The cluster failed to be updated.
-	// *   `scaling`: The cluster is being scaled.
-	// *   `stopped`: The cluster is stopped.
-	// *   `deleting`: The cluster is being deleted.
-	// *   `deleted`: The cluster is deleted.
-	// *   `delete_failed`: The cluster failed to be deleted.
+	// 	- `initial`: The cluster is being created.
+	//
+	// 	- `failed`: The cluster failed to be created.
+	//
+	// 	- `running`: The cluster is running.
+	//
+	// 	- `updating`: The cluster is being updated.
+	//
+	// 	- `updating_failed`: The cluster failed to be updated.
+	//
+	// 	- `scaling`: The cluster is being scaled.
+	//
+	// 	- `stopped`: The cluster is stopped.
+	//
+	// 	- `deleting`: The cluster is being deleted.
+	//
+	// 	- `deleted`: The cluster is deleted.
+	//
+	// 	- `delete_failed`: The cluster failed to be deleted.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The pod CIDR block. It must be a valid and private CIDR block, and must be one of the following CIDR blocks or their subnets:
 	//
-	// *   10.0.0.0/8
-	// *   172.16-31.0.0/12-16
-	// *   192.168.0.0/16
+	// 	- 10.0.0.0/8
+	//
+	// 	- 172.16-31.0.0/12-16
+	//
+	// 	- 192.168.0.0/16
 	//
 	// The CIDR block of pods cannot overlap with the CIDR block of the VPC in which the cluster is deployed and the CIDR blocks of existing clusters in the VPC. You cannot modify the pod CIDR block after the cluster is created.
 	//
-	// For more information, see [Plan CIDR blocks for an ACK cluster](~~86500~~).
+	// For more information, see [Plan CIDR blocks for an ACK cluster](https://help.aliyun.com/document_detail/86500.html).
+	//
+	// example:
+	//
+	// 172.21.0.0/16
 	SubnetCidr *string `json:"subnet_cidr,omitempty" xml:"subnet_cidr,omitempty"`
 	// The resource labels of the cluster.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
 	// The time when the cluster was updated.
+	//
+	// example:
+	//
+	// 2020-09-16T11:09:55+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 	// The ID of the VPC where the cluster is deployed. This parameter is required when you create a cluster.
+	//
+	// example:
+	//
+	// vpc-2vcg932hsxsxuqbgl****
 	VpcId *string `json:"vpc_id,omitempty" xml:"vpc_id,omitempty"`
 	// The IDs of the vSwitches. You can select one to three vSwitches when you create a cluster. We recommend that you select vSwitches in different zones to ensure high availability.
+	//
+	// example:
+	//
+	// vsw-2vc41xuumx5z2rdma****,vsw-2vc41xuumx5z2rdma****
 	VswitchId *string `json:"vswitch_id,omitempty" xml:"vswitch_id,omitempty"`
 	// The name of the worker Resource Access Management (RAM) role. The RAM role is assigned to the worker nodes of the cluster to allow the worker nodes to manage Elastic Compute Service (ECS) instances.
+	//
+	// example:
+	//
+	// KubernetesWorkerRole-ec87d15b-edca-4302-933f-c8a16bf0****
 	WorkerRamRoleName *string `json:"worker_ram_role_name,omitempty" xml:"worker_ram_role_name,omitempty"`
 	// The zone ID.
+	//
+	// example:
+	//
+	// cn-beijing-b
 	ZoneId *string `json:"zone_id,omitempty" xml:"zone_id,omitempty"`
 }
 
@@ -10777,10 +14126,22 @@ func (s *DescribeClustersV1ResponseBodyClusters) SetZoneId(v string) *DescribeCl
 
 type DescribeClustersV1ResponseBodyPageInfo struct {
 	// The page number.
+	//
+	// example:
+	//
+	// 3
 	PageNumber *int32 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 20
 	PageSize *int32 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 50
 	TotalCount *int32 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -10838,14 +14199,34 @@ func (s *DescribeClustersV1Response) SetBody(v *DescribeClustersV1ResponseBody) 
 
 type DescribeEdgeMachineActiveProcessResponseBody struct {
 	// The activation progress list.
+	//
+	// example:
+	//
+	// [{\"content\":\"步骤 \"颁发激活凭证\" 执行开始\",\"id\":0,\"level\":3,\"timestamp\":1625994913000},{\"content\":\"步骤 \"颁发激活凭证\" 执行成功\",\"id\":1,\"level\":3,\"timestamp\":1625994914000},{\"content\":\"步骤 \"初始化主机配置\" 执行开始\",\"id\":2,\"level\":3,\"timestamp\":1625994975000},{\"content\":\"步骤 \"初始化主机配置\" 执行成功\",\"id\":3,\"level\":3,\"timestamp\":1625994975000}]
 	Logs *string `json:"logs,omitempty" xml:"logs,omitempty"`
 	// The activation progress.
+	//
+	// example:
+	//
+	// 100
 	Progress *int64 `json:"progress,omitempty" xml:"progress,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// b62796a8-c5a6-4d3f-beb2-7650e4309cb1
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The activation status.
+	//
+	// example:
+	//
+	// ACTIVATED
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The activation step.
+	//
+	// example:
+	//
+	// 步骤 \"初始化主机配置\" 执行成功
 	Step *string `json:"step,omitempty" xml:"step,omitempty"`
 }
 
@@ -10931,20 +14312,52 @@ func (s *DescribeEdgeMachineModelsResponseBody) SetModels(v []*DescribeEdgeMachi
 
 type DescribeEdgeMachineModelsResponseBodyModels struct {
 	// The number of vCores.
+	//
+	// example:
+	//
+	// 6
 	Cpu *int32 `json:"cpu,omitempty" xml:"cpu,omitempty"`
 	// The CPU architecture.
+	//
+	// example:
+	//
+	// x86_64/arm64
 	CpuArch *string `json:"cpu_arch,omitempty" xml:"cpu_arch,omitempty"`
 	// The time when the cloud-native box was created.
+	//
+	// example:
+	//
+	// 2021-07-07T20:44:00+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The description of the cloud-native box.
+	//
+	// example:
+	//
+	// B010
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// Indicates whether the cloud-native box model manages the Docker runtime.
+	//
+	// example:
+	//
+	// 0/1
 	ManageRuntime *int32 `json:"manage_runtime,omitempty" xml:"manage_runtime,omitempty"`
 	// The memory. Unit: GB.
+	//
+	// example:
+	//
+	// 8
 	Memory *int32 `json:"memory,omitempty" xml:"memory,omitempty"`
 	// The model of the cloud-native box.
+	//
+	// example:
+	//
+	// ACK-V-B010
 	Model *string `json:"model,omitempty" xml:"model,omitempty"`
 	// The ID of the cloud-native box.
+	//
+	// example:
+	//
+	// c34cc753-8908-4739-bd10-ebd922a4****
 	ModelId *string `json:"model_id,omitempty" xml:"model_id,omitempty"`
 }
 
@@ -11027,18 +14440,46 @@ func (s *DescribeEdgeMachineModelsResponse) SetBody(v *DescribeEdgeMachineModels
 
 type DescribeEdgeMachineTunnelConfigDetailResponseBody struct {
 	// The device name.
+	//
+	// example:
+	//
+	// TEST0621N0FF****
 	DeviceName *string `json:"device_name,omitempty" xml:"device_name,omitempty"`
 	// The model of the cloud-native box.
+	//
+	// example:
+	//
+	// ACK-A-S001
 	Model *string `json:"model,omitempty" xml:"model,omitempty"`
 	// Product Key
+	//
+	// example:
+	//
+	// a11rXul****
 	ProductKey *string `json:"product_key,omitempty" xml:"product_key,omitempty"`
 	// Request ID
+	//
+	// example:
+	//
+	// bfd12953-31cb-42f1-8a36-7b80ec345094
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The serial number of the cloud-native box.
+	//
+	// example:
+	//
+	// Q2CB5XZAFBFG****
 	Sn *string `json:"sn,omitempty" xml:"sn,omitempty"`
 	// Token
+	//
+	// example:
+	//
+	// abcd****
 	Token *string `json:"token,omitempty" xml:"token,omitempty"`
 	// The tunnel endpoint.
+	//
+	// example:
+	//
+	// wss://frontend-iotx-r-debug.aliyun-inc.test
 	TunnelEndpoint *string `json:"tunnel_endpoint,omitempty" xml:"tunnel_endpoint,omitempty"`
 }
 
@@ -11116,19 +14557,44 @@ func (s *DescribeEdgeMachineTunnelConfigDetailResponse) SetBody(v *DescribeEdgeM
 
 type DescribeEdgeMachinesRequest struct {
 	// The `hostname` of the cloud-native box.
+	//
+	// example:
+	//
+	// ack-v-b010-ssdfw****
 	Hostname *string `json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The lifecycle status.
+	//
+	// example:
+	//
+	// activated/waitOnline/deleting
 	LifeState *string `json:"life_state,omitempty" xml:"life_state,omitempty"`
 	// The type of cloud-native box.
+	//
+	// example:
+	//
+	// ACK-V-B010
 	Model *string `json:"model,omitempty" xml:"model,omitempty"`
 	// The status of the cloud-native box. Valid values:
 	//
-	// *   `offline`
-	// *   `online`
+	// 	- `offline`
+	//
+	// 	- `online`
+	//
+	// example:
+	//
+	// offline/online
 	OnlineState *string `json:"online_state,omitempty" xml:"online_state,omitempty"`
 	// The page number.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 }
 
@@ -11197,24 +14663,64 @@ func (s *DescribeEdgeMachinesResponseBody) SetPageInfo(v *DescribeEdgeMachinesRe
 
 type DescribeEdgeMachinesResponseBodyEdgeMachines struct {
 	// The time when the cloud-native box was activated.
+	//
+	// example:
+	//
+	// 2021-07-19T16:07:48+08:00
 	ActiveTime *string `json:"active_time,omitempty" xml:"active_time,omitempty"`
 	// The time when the cloud-native box was created.
+	//
+	// example:
+	//
+	// 2021-07-07T20:44:00+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The device ID.
+	//
+	// example:
+	//
+	// c61083909b13f4a95b8554bda9577****
 	EdgeMachineId *string `json:"edge_machine_id,omitempty" xml:"edge_machine_id,omitempty"`
 	// The `hostname` of the cloud-native box.
+	//
+	// example:
+	//
+	// ack-v-b010-ssdfw****
 	Hostname *string `json:"hostname,omitempty" xml:"hostname,omitempty"`
 	// The lifecycle of the cloud-native box.
+	//
+	// example:
+	//
+	// activated
 	LifeState *string `json:"life_state,omitempty" xml:"life_state,omitempty"`
 	// The model of the cloud-native box.
+	//
+	// example:
+	//
+	// ACK-V-B010
 	Model *string `json:"model,omitempty" xml:"model,omitempty"`
 	// The machine name.
+	//
+	// example:
+	//
+	// ack-v-b010-ssdfw****
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The status of the cloud-native box.
+	//
+	// example:
+	//
+	// online
 	OnlineState *string `json:"online_state,omitempty" xml:"online_state,omitempty"`
 	// The serial number.
+	//
+	// example:
+	//
+	// ACK9GBL31SXX****
 	Sn *string `json:"sn,omitempty" xml:"sn,omitempty"`
 	// The time when the cloud-native box was last updated.
+	//
+	// example:
+	//
+	// 2021-07-07T20:44:00+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -11280,12 +14786,24 @@ type DescribeEdgeMachinesResponseBodyPageInfo struct {
 	// The page number.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int32 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
 	//
 	// Default value: 10.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int32 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of pages returned.
+	//
+	// example:
+	//
+	// 1
 	TotalCount *int32 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -11343,29 +14861,60 @@ func (s *DescribeEdgeMachinesResponse) SetBody(v *DescribeEdgeMachinesResponseBo
 
 type DescribeEventsRequest struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// cf62854ac2130470897be7a27ed1f****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The page number.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 50
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The event type. Valid values:
 	//
-	// *   `cluster_create`: cluster creation.
-	// *   `cluster_scaleout`: cluster scale-out.
-	// *   `cluster_attach`: node addition.
-	// *   `cluster_delete`: cluster deletion.
-	// *   `cluster_upgrade`: cluster upgrades.
-	// *   `cluster_migrate`: cluster migration.
-	// *   `cluster_node_delete`: node removal.
-	// *   `cluster_node_drain`: node draining.
-	// *   `cluster_modify`: cluster modifications.
-	// *   `cluster_configuration_modify`: modifications of control plane configurations.
-	// *   `cluster_addon_install`: component installation.
-	// *   `cluster_addon_upgrade`: component updates.
-	// *   `cluster_addon_uninstall`: component uninstallation.
-	// *   `runtime_upgrade`: runtime updates.
-	// *   `nodepool_upgrade`: node pool upgrades.
-	// *   `nodepool_update`: node pool updates.
+	// 	- `cluster_create`: cluster creation.
+	//
+	// 	- `cluster_scaleout`: cluster scale-out.
+	//
+	// 	- `cluster_attach`: node addition.
+	//
+	// 	- `cluster_delete`: cluster deletion.
+	//
+	// 	- `cluster_upgrade`: cluster upgrades.
+	//
+	// 	- `cluster_migrate`: cluster migration.
+	//
+	// 	- `cluster_node_delete`: node removal.
+	//
+	// 	- `cluster_node_drain`: node draining.
+	//
+	// 	- `cluster_modify`: cluster modifications.
+	//
+	// 	- `cluster_configuration_modify`: modifications of control plane configurations.
+	//
+	// 	- `cluster_addon_install`: component installation.
+	//
+	// 	- `cluster_addon_upgrade`: component updates.
+	//
+	// 	- `cluster_addon_uninstall`: component uninstallation.
+	//
+	// 	- `runtime_upgrade`: runtime updates.
+	//
+	// 	- `nodepool_upgrade`: node pool upgrades.
+	//
+	// 	- `nodepool_update`: node pool updates.
+	//
+	// example:
+	//
+	// nodepool_upgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -11424,35 +14973,74 @@ func (s *DescribeEventsResponseBody) SetPageInfo(v *DescribeEventsResponseBodyPa
 
 type DescribeEventsResponseBodyEvents struct {
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// cluster-id
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The description of the event.
 	Data *DescribeEventsResponseBodyEventsData `json:"data,omitempty" xml:"data,omitempty" type:"Struct"`
 	// The event ID.
+	//
+	// example:
+	//
+	// A234-1234-1234
 	EventId *string `json:"event_id,omitempty" xml:"event_id,omitempty"`
 	// The source of the event.
+	//
+	// example:
+	//
+	// /clusters/cf62854ac2130470897be7a27ed1f****/nodepools
 	Source *string `json:"source,omitempty" xml:"source,omitempty"`
 	// The subject of the event.
+	//
+	// example:
+	//
+	// nodePool-id
 	Subject *string `json:"subject,omitempty" xml:"subject,omitempty"`
 	// The time when the event started.
+	//
+	// example:
+	//
+	// 2022-11-23T20:48:01+08:00
 	Time *string `json:"time,omitempty" xml:"time,omitempty"`
 	// The event type. Valid values:
 	//
-	// *   `cluster_create`: cluster creation.
-	// *   `cluster_scaleout`: cluster scale-out.
-	// *   `cluster_attach`: node addition.
-	// *   `cluster_delete`: cluster deletion.
-	// *   `cluster_upgrade`: cluster upgrades.
-	// *   `cluster_migrate`: cluster migration.
-	// *   `cluster_node_delete`: node removal.
-	// *   `cluster_node_drain`: node draining.
-	// *   `cluster_modify`: cluster modifications.
-	// *   `cluster_configuration_modify`: modifications of control plane configurations.
-	// *   `cluster_addon_install`: component installation.
-	// *   `cluster_addon_upgrade`: component updates.
-	// *   `cluster_addon_uninstall`: component uninstallation.
-	// *   `runtime_upgrade`: runtime updates.
-	// *   `nodepool_upgrade`: node pool upgrades.
-	// *   `nodepool_update`: node pool updates.
+	// 	- `cluster_create`: cluster creation.
+	//
+	// 	- `cluster_scaleout`: cluster scale-out.
+	//
+	// 	- `cluster_attach`: node addition.
+	//
+	// 	- `cluster_delete`: cluster deletion.
+	//
+	// 	- `cluster_upgrade`: cluster upgrades.
+	//
+	// 	- `cluster_migrate`: cluster migration.
+	//
+	// 	- `cluster_node_delete`: node removal.
+	//
+	// 	- `cluster_node_drain`: node draining.
+	//
+	// 	- `cluster_modify`: cluster modifications.
+	//
+	// 	- `cluster_configuration_modify`: modifications of control plane configurations.
+	//
+	// 	- `cluster_addon_install`: component installation.
+	//
+	// 	- `cluster_addon_upgrade`: component updates.
+	//
+	// 	- `cluster_addon_uninstall`: component uninstallation.
+	//
+	// 	- `runtime_upgrade`: runtime updates.
+	//
+	// 	- `nodepool_upgrade`: node pool upgrades.
+	//
+	// 	- `nodepool_update`: node pool updates.
+	//
+	// example:
+	//
+	// nodepool_upgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -11501,10 +15089,22 @@ func (s *DescribeEventsResponseBodyEvents) SetType(v string) *DescribeEventsResp
 
 type DescribeEventsResponseBodyEventsData struct {
 	// The severity level of the event.
+	//
+	// example:
+	//
+	// info
 	Level *string `json:"level,omitempty" xml:"level,omitempty"`
 	// The details of the event.
+	//
+	// example:
+	//
+	// Start to upgrade NodePool nodePool/nodePool-A
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The status of the event.
+	//
+	// example:
+	//
+	// Started
 	Reason *string `json:"reason,omitempty" xml:"reason,omitempty"`
 }
 
@@ -11533,10 +15133,22 @@ func (s *DescribeEventsResponseBodyEventsData) SetReason(v string) *DescribeEven
 
 type DescribeEventsResponseBodyPageInfo struct {
 	// The page number.
+	//
+	// example:
+	//
+	// 1
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 50
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 3
 	TotalCount *int64 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -11596,13 +15208,22 @@ type DescribeExternalAgentRequest struct {
 	// The permission mode of the agent. Valid values:
 	//
 	// admin: the admin mode, which provides full permissions. restricted: the restricted mode, which provides partial permissions. Default value: admin.
+	//
+	// example:
+	//
+	// admin
 	AgentMode *string `json:"AgentMode,omitempty" xml:"AgentMode,omitempty"`
 	// Specifies whether to obtain the credentials that are used to access the cluster over the internal network.
 	//
-	// *   `true`: obtains the credentials that are used to access the cluster over the internal network.
-	// *   `false`: obtains the credentials that are used to access the cluster over the Internet.
+	// 	- `true`: obtains the credentials that are used to access the cluster over the internal network.
+	//
+	// 	- `false`: obtains the credentials that are used to access the cluster over the Internet.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	PrivateIpAddress *string `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
 }
 
@@ -11626,6 +15247,10 @@ func (s *DescribeExternalAgentRequest) SetPrivateIpAddress(v string) *DescribeEx
 
 type DescribeExternalAgentResponseBody struct {
 	// The agent configurations in the YAML format.
+	//
+	// example:
+	//
+	// apiVersion: v1****
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 }
 
@@ -11674,42 +15299,77 @@ func (s *DescribeExternalAgentResponse) SetBody(v *DescribeExternalAgentResponse
 type DescribeKubernetesVersionMetadataRequest struct {
 	// The cluster type that you want to use. Valid values:
 	//
-	// *   `Kubernetes`: ACK dedicated cluster
-	// *   `ManagedKubernetes`: ACK managed cluster
-	// *   `ExternalKubernetes`: registered cluster
+	// 	- `Kubernetes`: ACK dedicated cluster.
+	//
+	// 	- `ManagedKubernetes`: ACK managed cluster. ACK managed clusters include ACK Pro clusters, ACK Basic clusters, ACK Serverless Pro clusters, ACK Serverless Basic clusters, ACK Edge Pro clusters, and ACK Edge Basic clusters.
+	//
+	// 	- `ExternalKubernetes`: registered cluster.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// Kubernetes
 	ClusterType *string `json:"ClusterType,omitempty" xml:"ClusterType,omitempty"`
 	// The Kubernetes version of the cluster. The Kubernetes versions supported by ACK are the same as the Kubernetes versions supported by open source Kubernetes. We recommend that you specify the latest Kubernetes version. If you do not set this parameter, the latest Kubernetes version is used.
 	//
-	// You can create ACK clusters of the latest two Kubernetes versions in the ACK console. You can call the specific ACK API operation to create clusters of other Kubernetes versions. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](~~185269~~).
+	// You can create ACK clusters of the latest two Kubernetes versions in the ACK console. You can call the specific ACK API operation to create clusters of other Kubernetes versions. For more information about the Kubernetes versions supported by ACK, see [Release notes for Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	KubernetesVersion *string `json:"KubernetesVersion,omitempty" xml:"KubernetesVersion,omitempty"`
 	// The query mode. Valid values:
 	//
-	// *   `supported`: queries all supported versions.
-	// *   `creatable`: queries only versions that allow you to create clusters.
+	// 	- `supported`: queries all supported versions.
+	//
+	// 	- `creatable`: queries only versions that allow you to create clusters.
 	//
 	// If you specify `KubernetesVersion`, this parameter does not take effect.
 	//
 	// Default value: creatable.
+	//
+	// example:
+	//
+	// supported
 	Mode *string `json:"Mode,omitempty" xml:"Mode,omitempty"`
 	// The scenario where clusters are used. Valid values:
 	//
-	// *   `Default`: non-edge computing scenarios
-	// *   `Edge`: edge computing scenarios
-	// *   `Serverless`: serverless scenarios.
+	// 	- `Default`: non-edge computing scenarios
+	//
+	// 	- `Edge`: edge computing scenarios
+	//
+	// 	- `Serverless`: serverless scenarios.
 	//
 	// Default value: `Default`.
+	//
+	// example:
+	//
+	// Default
 	Profile *string `json:"Profile,omitempty" xml:"Profile,omitempty"`
 	// The region ID of the cluster.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-beijing
 	Region *string `json:"Region,omitempty" xml:"Region,omitempty"`
 	// The container runtime type that you want to use. You can specify a runtime type to query only OS images that support the runtime type. Valid values:
 	//
-	// *   `docker`: Docker
-	// *   `containerd`: containerd
-	// *   `Sandboxed-Container.runv`: Sandboxed-Container
+	// 	- `docker`: Docker
+	//
+	// 	- `containerd`: containerd
+	//
+	// 	- `Sandboxed-Container.runv`: Sandboxed-Container
 	//
 	// If you specify a runtime type, only the OS images that support the specified runtime type are returned.
 	//
 	// Otherwise, all OS images are returned.
+	//
+	// example:
+	//
+	// docker
 	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
 }
 
@@ -11789,13 +15449,29 @@ type DescribeKubernetesVersionMetadataResponseBody struct {
 	MetaData map[string]interface{} `json:"meta_data,omitempty" xml:"meta_data,omitempty"`
 	// Details of the supported container runtimes.
 	Runtimes []*Runtime `json:"runtimes,omitempty" xml:"runtimes,omitempty" type:"Repeated"`
-	// The Kubernetes version that is supported by ACK. For more information, see [Release notes for Kubernetes versions](~~185269~~).
+	// The Kubernetes version that is supported by ACK. For more information, see [Release notes for Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 	// The release date of the Kubernetes version.
+	//
+	// example:
+	//
+	// 2023-04-30T00:00:00Z
 	ReleaseDate *string `json:"release_date,omitempty" xml:"release_date,omitempty"`
 	// The expiration date of the Kubernetes version.
+	//
+	// example:
+	//
+	// 2025-04-30T00:00:00Z
 	ExpirationDate *string `json:"expiration_date,omitempty" xml:"expiration_date,omitempty"`
 	// Indicates whether you can create clusters that run the Kubernetes version.
+	//
+	// example:
+	//
+	// true
 	Creatable *bool `json:"creatable,omitempty" xml:"creatable,omitempty"`
 }
 
@@ -11849,43 +15525,90 @@ func (s *DescribeKubernetesVersionMetadataResponseBody) SetCreatable(v bool) *De
 
 type DescribeKubernetesVersionMetadataResponseBodyImages struct {
 	// The image ID.
+	//
+	// example:
+	//
+	// centos_7_7_x64_20G_alibase_20200426.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The image name.
+	//
+	// example:
+	//
+	// CentOS 7.7
 	ImageName *string `json:"image_name,omitempty" xml:"image_name,omitempty"`
 	// The OS platform. Valid values:
 	//
-	// *   `AliyunLinux`
-	// *   `CentOS`
-	// *   `Windows`
-	// *   `WindowsCore`
+	// 	- `AliyunLinux`
+	//
+	// 	- `CentOS`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
+	//
+	// example:
+	//
+	// CentOS
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
 	// The version of the image.
+	//
+	// example:
+	//
+	// 7.7
 	OsVersion *string `json:"os_version,omitempty" xml:"os_version,omitempty"`
 	// The type of OS distribution that you want to use. To specify the node OS, we recommend that you use this parameter. Valid values:
 	//
-	// *   `CentOS`
-	// *   `AliyunLinux`
-	// *   `AliyunLinux Qboot`
-	// *   `AliyunLinuxUEFI`
-	// *   `AliyunLinux3`
-	// *   `Windows`
-	// *   `WindowsCore`
-	// *   `AliyunLinux3Arm64`
-	// *   `ContainerOS`
+	// 	- `CentOS`
+	//
+	// 	- `AliyunLinux`
+	//
+	// 	- `AliyunLinux Qboot`
+	//
+	// 	- `AliyunLinuxUEFI`
+	//
+	// 	- `AliyunLinux3`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
+	//
+	// 	- `AliyunLinux3Arm64`
+	//
+	// 	- `ContainerOS`
+	//
+	// example:
+	//
+	// centos_7_7_20
 	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
 	// The type of operating system. Examples:
 	//
-	// *   `Windows`
-	// *   `Linux`
+	// 	- `Windows`
+	//
+	// 	- `Linux`
+	//
+	// example:
+	//
+	// Linux
 	OsType *string `json:"os_type,omitempty" xml:"os_type,omitempty"`
 	// The type of image. Valid values:
 	//
-	// *   `system`: public image
-	// *   `self`: custom image
-	// *   `others`: shared image from other Alibaba Cloud accounts
-	// *   `marketplace`: image from the marketplace
+	// 	- `system`: public image
+	//
+	// 	- `self`: custom image
+	//
+	// 	- `others`: shared image from other Alibaba Cloud accounts
+	//
+	// 	- `marketplace`: image from the marketplace
+	//
+	// example:
+	//
+	// system
 	ImageCategory *string `json:"image_category,omitempty" xml:"image_category,omitempty"`
 	// The architecture of the image.
+	//
+	// example:
+	//
+	// x86_64
 	Architecture *string `json:"architecture,omitempty" xml:"architecture,omitempty"`
 }
 
@@ -11940,9 +15663,15 @@ func (s *DescribeKubernetesVersionMetadataResponseBodyImages) SetArchitecture(v 
 type DescribeNodePoolVulsRequest struct {
 	// The priority to fix the vulnerability. Separate multiple priorities with commas (,). Valid values:
 	//
-	// *   `asap`: high
-	// *   `later`: medium
-	// *   `nntf`: low
+	// 	- `asap`: high
+	//
+	// 	- `later`: medium
+	//
+	// 	- `nntf`: low
+	//
+	// example:
+	//
+	// asap
 	Necessity *string `json:"necessity,omitempty" xml:"necessity,omitempty"`
 }
 
@@ -11961,8 +15690,11 @@ func (s *DescribeNodePoolVulsRequest) SetNecessity(v string) *DescribeNodePoolVu
 
 type DescribeNodePoolVulsResponseBody struct {
 	// The node pool vulnerabilities.
-	VulRecords              []*DescribeNodePoolVulsResponseBodyVulRecords `json:"vul_records,omitempty" xml:"vul_records,omitempty" type:"Repeated"`
-	VulsFixServicePurchased *bool                                         `json:"vuls_fix_service_purchased,omitempty" xml:"vuls_fix_service_purchased,omitempty"`
+	VulRecords []*DescribeNodePoolVulsResponseBodyVulRecords `json:"vul_records,omitempty" xml:"vul_records,omitempty" type:"Repeated"`
+	// example:
+	//
+	// false
+	VulsFixServicePurchased *bool `json:"vuls_fix_service_purchased,omitempty" xml:"vuls_fix_service_purchased,omitempty"`
 }
 
 func (s DescribeNodePoolVulsResponseBody) String() string {
@@ -11985,8 +15717,16 @@ func (s *DescribeNodePoolVulsResponseBody) SetVulsFixServicePurchased(v bool) *D
 
 type DescribeNodePoolVulsResponseBodyVulRecords struct {
 	// The node ID.
+	//
+	// example:
+	//
+	// i-t4n2qolb0wtzt0pz****
 	InstanceId *string `json:"instance_id,omitempty" xml:"instance_id,omitempty"`
 	// The node name. This name is the identifier of the node in the cluster.
+	//
+	// example:
+	//
+	// cn-hangzhou.192.168.x.x
 	NodeName *string `json:"node_name,omitempty" xml:"node_name,omitempty"`
 	// A list of vulnerabilities.
 	VulList []*DescribeNodePoolVulsResponseBodyVulRecordsVulList `json:"vul_list,omitempty" xml:"vul_list,omitempty" type:"Repeated"`
@@ -12017,56 +15757,32 @@ func (s *DescribeNodePoolVulsResponseBodyVulRecords) SetVulList(v []*DescribeNod
 
 type DescribeNodePoolVulsResponseBodyVulRecordsVulList struct {
 	// The alias of the vulnerability.
+	//
+	// example:
+	//
+	// RHSA-2019:3197-Important: sudo security update
 	AliasName *string `json:"alias_name,omitempty" xml:"alias_name,omitempty"`
 	// A list of CVE names corresponding to the vulnerabilities.
 	CveList []*string `json:"cve_list,omitempty" xml:"cve_list,omitempty" type:"Repeated"`
 	// The name of the vulnerability.
+	//
+	// example:
+	//
+	// oval:com.redhat.rhsa:def:20193197
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The severity level of the vulnerability.
 	//
 	// Valid values:
 	//
-	// *   nntf
+	// 	- nntf: You can ignore the vulnerability
 	//
-	//     <!-- -->
+	// 	- later: You can fix the vulnerability later
 	//
-	//     :
+	// 	- asap: You need to fix the vulnerability at the earliest opportunity
 	//
-	//     <!-- -->
+	// example:
 	//
-	//     You can ignore the vulnerability
-	//
-	//     <!-- -->
-	//
-	//     .
-	//
-	// *   later
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     You can fix the vulnerability later
-	//
-	//     <!-- -->
-	//
-	//     .
-	//
-	// *   asap
-	//
-	//     <!-- -->
-	//
-	//     :
-	//
-	//     <!-- -->
-	//
-	//     You need to fix the vulnerability at the earliest opportunity
-	//
-	//     <!-- -->
-	//
-	//     .
+	// asap
 	Necessity *string `json:"necessity,omitempty" xml:"necessity,omitempty"`
 }
 
@@ -12159,28 +15875,69 @@ func (s *DescribePoliciesResponse) SetBody(v map[string]interface{}) *DescribePo
 type DescribePolicyDetailsResponseBody struct {
 	// The action of the policy. Valid values:
 	//
-	// *   `enforce`: blocks deployments that match the policy.
-	// *   `inform`: generates alerts for deployments that match the policy.
+	// 	- `enforce`: blocks deployments that match the policy.
+	//
+	// 	- `inform`: generates alerts for deployments that match the policy.
+	//
+	// example:
+	//
+	// enforce
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The type of the policy.
+	//
+	// example:
+	//
+	// k8s-general
 	Category *string `json:"category,omitempty" xml:"category,omitempty"`
 	// The description of the policy.
+	//
+	// example:
+	//
+	// Requires container images to begin with a repo string from a specified list
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// Indicates whether the policy is deleted. Valid values:
 	//
-	// *   0: The policy is not deleted.
-	// *   1: The policy is deleted.
+	// 	- 0: The policy is not deleted.
+	//
+	// 	- 1: The policy is deleted.
+	//
+	// example:
+	//
+	// 0
 	IsDeleted *int32 `json:"is_deleted,omitempty" xml:"is_deleted,omitempty"`
 	// The name of the policy.
+	//
+	// example:
+	//
+	// ACKAllowedRepos
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// Indicates whether parameters are required. Valid values:
 	//
-	// *   0: Parameters are required.
-	// *   1: Parameters are optional.
+	// 	- 0: Parameters are required.
+	//
+	// 	- 1: Parameters are optional.
+	//
+	// example:
+	//
+	// 0
 	NoConfig *int32 `json:"no_config,omitempty" xml:"no_config,omitempty"`
-	// The severity level of the policy.
+	// The severity level of the policy. Valid values:
+	//
+	// 	- `high`
+	//
+	// 	- `medium`
+	//
+	// 	- `low`
+	//
+	// example:
+	//
+	// high
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The content of the policy.
+	//
+	// example:
+	//
+	// For more information, see sample requests.
 	Template *string `json:"template,omitempty" xml:"template,omitempty"`
 }
 
@@ -12302,13 +16059,22 @@ func (s *DescribePolicyGovernanceInClusterResponseBody) SetViolations(v *Describ
 
 type DescribePolicyGovernanceInClusterResponseBodyAdmitLog struct {
 	// The number of audit log entries.
+	//
+	// example:
+	//
+	// 100
 	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
 	// The audit log content.
 	Log *DescribePolicyGovernanceInClusterResponseBodyAdmitLogLog `json:"log,omitempty" xml:"log,omitempty" type:"Struct"`
 	// The status of the query. Valid values:
 	//
-	// *   `Complete`: The query succeeded and the complete query result is returned.
-	// *   `Incomplete`: The query succeeded but the query result is incomplete. To obtain the complete query result, you must repeat the request.
+	// 	- `Complete`: The query succeeded and the complete query result is returned.
+	//
+	// 	- `Incomplete`: The query succeeded but the query result is incomplete. To obtain the complete query result, you must repeat the request.
+	//
+	// example:
+	//
+	// Complete
 	Progress *string `json:"progress,omitempty" xml:"progress,omitempty"`
 }
 
@@ -12337,16 +16103,40 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyAdmitLog) SetProgress(v st
 
 type DescribePolicyGovernanceInClusterResponseBodyAdmitLogLog struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c8155823d057948c69a****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The policy type.
+	//
+	// example:
+	//
+	// ACKAllowedRepos
 	ConstraintKind *string `json:"constraint_kind,omitempty" xml:"constraint_kind,omitempty"`
 	// The message that appears when an event is generated by a policy.
+	//
+	// example:
+	//
+	// d4hdhs*****
 	Msg *string `json:"msg,omitempty" xml:"msg,omitempty"`
 	// The resource type.
+	//
+	// example:
+	//
+	// Pod
 	ResourceKind *string `json:"resource_kind,omitempty" xml:"resource_kind,omitempty"`
 	// The resource name.
+	//
+	// example:
+	//
+	// nginx-deployment-basic2-84ccb74bfc-df22p
 	ResourceName *string `json:"resource_name,omitempty" xml:"resource_name,omitempty"`
 	// The namespace to which the resource belongs.
+	//
+	// example:
+	//
+	// default
 	ResourceNamespace *string `json:"resource_namespace,omitempty" xml:"resource_namespace,omitempty"`
 }
 
@@ -12390,10 +16180,22 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyAdmitLogLog) SetResourceNa
 
 type DescribePolicyGovernanceInClusterResponseBodyOnState struct {
 	// The number of policies that are enabled.
+	//
+	// example:
+	//
+	// 3
 	EnabledCount *int32 `json:"enabled_count,omitempty" xml:"enabled_count,omitempty"`
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// high
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The total number of policies of the severity level.
+	//
+	// example:
+	//
+	// 8
 	Total *int32 `json:"total,omitempty" xml:"total,omitempty"`
 }
 
@@ -12447,8 +16249,16 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyTotalViolations) SetWarn(v
 
 type DescribePolicyGovernanceInClusterResponseBodyTotalViolationsDeny struct {
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// high
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The number of blocking events that are triggered.
+	//
+	// example:
+	//
+	// 0
 	Violations *int64 `json:"violations,omitempty" xml:"violations,omitempty"`
 }
 
@@ -12472,8 +16282,16 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyTotalViolationsDeny) SetVi
 
 type DescribePolicyGovernanceInClusterResponseBodyTotalViolationsWarn struct {
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// low
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The number of alerting events that are triggered.
+	//
+	// example:
+	//
+	// 5
 	Violations *int64 `json:"violations,omitempty" xml:"violations,omitempty"`
 }
 
@@ -12522,12 +16340,28 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyViolations) SetWarn(v *Des
 
 type DescribePolicyGovernanceInClusterResponseBodyViolationsDeny struct {
 	// The policy description.
+	//
+	// example:
+	//
+	// Requires container images to begin with a repo string from a specified list.
 	PolicyDescription *string `json:"policyDescription,omitempty" xml:"policyDescription,omitempty"`
 	// The policy name.
+	//
+	// example:
+	//
+	// policy-gatekeeper-ackallowedrepos
 	PolicyName *string `json:"policyName,omitempty" xml:"policyName,omitempty"`
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// high
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The total number of blocking events that are triggered by the policy.
+	//
+	// example:
+	//
+	// 11
 	Violations *int64 `json:"violations,omitempty" xml:"violations,omitempty"`
 }
 
@@ -12561,12 +16395,28 @@ func (s *DescribePolicyGovernanceInClusterResponseBodyViolationsDeny) SetViolati
 
 type DescribePolicyGovernanceInClusterResponseBodyViolationsWarn struct {
 	// The policy description.
+	//
+	// example:
+	//
+	// Controls Linux capabilities.
 	PolicyDescription *string `json:"policyDescription,omitempty" xml:"policyDescription,omitempty"`
 	// The policy name.
+	//
+	// example:
+	//
+	// policy-gatekeeper-ackpspcapabilities
 	PolicyName *string `json:"policyName,omitempty" xml:"policyName,omitempty"`
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// high
 	Severity *string `json:"severity,omitempty" xml:"severity,omitempty"`
 	// The total number of alerting events that are triggered by the policy.
+	//
+	// example:
+	//
+	// 81
 	Violations *int64 `json:"violations,omitempty" xml:"violations,omitempty"`
 }
 
@@ -12629,8 +16479,16 @@ func (s *DescribePolicyGovernanceInClusterResponse) SetBody(v *DescribePolicyGov
 
 type DescribePolicyInstancesRequest struct {
 	// The name of the policy instance that you want to query.
+	//
+	// example:
+	//
+	// allowed-repos-cz4s2
 	InstanceName *string `json:"instance_name,omitempty" xml:"instance_name,omitempty"`
 	// The name of the policy that you want to query.
+	//
+	// example:
+	//
+	// ACKPSPCapabilities
 	PolicyName *string `json:"policy_name,omitempty" xml:"policy_name,omitempty"`
 }
 
@@ -12683,31 +16541,72 @@ func (s *DescribePolicyInstancesResponse) SetBody(v []*DescribePolicyInstancesRe
 
 type DescribePolicyInstancesResponseBody struct {
 	// The UID of the Alibaba Cloud account that is used to deploy the policy instance.
+	//
+	// example:
+	//
+	// 16298168****
 	AliUid *string `json:"ali_uid,omitempty" xml:"ali_uid,omitempty"`
 	// The ID of the cluster.
+	//
+	// example:
+	//
+	// c8155823d057948c69a****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The name of the policy instance.
+	//
+	// example:
+	//
+	// no-env-var-secrets-****
 	InstanceName *string `json:"instance_name,omitempty" xml:"instance_name,omitempty"`
 	// The name of the policy.
+	//
+	// example:
+	//
+	// ACKPSPCapabilities
 	PolicyName *string `json:"policy_name,omitempty" xml:"policy_name,omitempty"`
 	// The type of policy.
+	//
+	// example:
+	//
+	// k8s-general
 	PolicyCategory *string `json:"policy_category,omitempty" xml:"policy_category,omitempty"`
 	// The description of the policy template.
+	//
+	// example:
+	//
+	// Restricts secrets used in pod envs
 	PolicyDescription *string `json:"policy_description,omitempty" xml:"policy_description,omitempty"`
 	// The parameters of the policy instance.
+	//
+	// example:
+	//
+	// "restrictedNamespaces": [ "test" ]
 	PolicyParameters *string `json:"policy_parameters,omitempty" xml:"policy_parameters,omitempty"`
 	// The severity level of the policy instance.
+	//
+	// example:
+	//
+	// low
 	PolicySeverity *string `json:"policy_severity,omitempty" xml:"policy_severity,omitempty"`
 	// The applicable scope of the policy instance.
 	//
-	// A value of \* indicates all namespaces in the cluster. This is the default value.
+	// A value of \\	- indicates all namespaces in the cluster. This is the default value.
 	//
 	// Multiple namespaces are separated by commas (,).
+	//
+	// example:
+	//
+	// *
 	PolicyScope *string `json:"policy_scope,omitempty" xml:"policy_scope,omitempty"`
 	// The action of the policy. Valid values:
 	//
-	// *   `deny`: Deployments that match the policy are denied.
-	// *   `warn`: Alerts are generated for deployments that match the policy.
+	// 	- `deny`: Deployments that match the policy are denied.
+	//
+	// 	- `warn`: Alerts are generated for deployments that match the policy.
+	//
+	// example:
+	//
+	// deny
 	PolicyAction *string `json:"policy_action,omitempty" xml:"policy_action,omitempty"`
 }
 
@@ -12771,6 +16670,10 @@ func (s *DescribePolicyInstancesResponseBody) SetPolicyAction(v string) *Describ
 
 type DescribePolicyInstancesStatusResponseBody struct {
 	// Information about the number of policy instances of each severity level.
+	//
+	// example:
+	//
+	// { "high": 11,     "medium": 1  }
 	InstancesSeverityCount map[string]interface{} `json:"instances_severity_count,omitempty" xml:"instances_severity_count,omitempty"`
 	// Details about policy instances of different types.
 	PolicyInstances []*DescribePolicyInstancesStatusResponseBodyPolicyInstances `json:"policy_instances,omitempty" xml:"policy_instances,omitempty" type:"Repeated"`
@@ -12795,15 +16698,35 @@ func (s *DescribePolicyInstancesStatusResponseBody) SetPolicyInstances(v []*Desc
 }
 
 type DescribePolicyInstancesStatusResponseBodyPolicyInstances struct {
-	// The policy type.
+	// The policy type. For more information about different types of policies and their descriptions, see [Predefined security policies of ACK](https://help.aliyun.com/document_detail/359819.html).
+	//
+	// example:
+	//
+	// compliance
 	PolicyCategory *string `json:"policy_category,omitempty" xml:"policy_category,omitempty"`
 	// The description of the policy.
+	//
+	// example:
+	//
+	// Restricts use of the cluster-admin role.
 	PolicyDescription *string `json:"policy_description,omitempty" xml:"policy_description,omitempty"`
 	// The number of policy instances that are deployed. If this parameter is empty, no policy instance is deployed.
+	//
+	// example:
+	//
+	// 1
 	PolicyInstancesCount *int64 `json:"policy_instances_count,omitempty" xml:"policy_instances_count,omitempty"`
 	// The name of the policy.
+	//
+	// example:
+	//
+	// ACKRestrictRoleBindings
 	PolicyName *string `json:"policy_name,omitempty" xml:"policy_name,omitempty"`
 	// The severity level of the policy.
+	//
+	// example:
+	//
+	// medium
 	PolicySeverity *string `json:"policy_severity,omitempty" xml:"policy_severity,omitempty"`
 }
 
@@ -12872,16 +16795,25 @@ func (s *DescribePolicyInstancesStatusResponse) SetBody(v *DescribePolicyInstanc
 type DescribeSubaccountK8sClusterUserConfigRequest struct {
 	// Specifies whether to obtain the kubeconfig file used to connect to the cluster over the internal network. Valid values:
 	//
-	// *   `true`: Obtain the kubeconfig file used to connect to the cluster over the internal network.
-	// *   `false`: Obtain the kubeconfig file used to connect to the cluster over the Internet.
+	// 	- `true`: Obtain the kubeconfig file used to connect to the cluster over the internal network.
+	//
+	// 	- `false`: Obtain the kubeconfig file used to connect to the cluster over the Internet.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	PrivateIpAddress *bool `json:"PrivateIpAddress,omitempty" xml:"PrivateIpAddress,omitempty"`
 	// The validity period of the temporary kubeconfig file. Unit: minutes.
 	//
 	// Valid values: 15 to 4320 (three days).
 	//
 	// > If you leave this parameter empty, the system sets a longer validity period and returns the value in the expiration parameter of the response.
+	//
+	// example:
+	//
+	// 15
 	TemporaryDurationMinutes *int64 `json:"TemporaryDurationMinutes,omitempty" xml:"TemporaryDurationMinutes,omitempty"`
 }
 
@@ -12904,9 +16836,19 @@ func (s *DescribeSubaccountK8sClusterUserConfigRequest) SetTemporaryDurationMinu
 }
 
 type DescribeSubaccountK8sClusterUserConfigResponseBody struct {
-	// The cluster kubeconfig file. For more information about the content of the kubeconfig file, see [Configure cluster credentials](~~86494~~).
+	// The cluster kubeconfig file. For more information about the content of the kubeconfig file, see [Configure cluster credentials](https://help.aliyun.com/document_detail/86494.html).
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// apiVersion: v1****
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 	// The expiration date of the kubeconfig file. The value is the UTC time displayed in RFC3339 format.
+	//
+	// example:
+	//
+	// 2024-03-10T09:56:17Z
 	Expiration *string `json:"expiration,omitempty" xml:"expiration,omitempty"`
 }
 
@@ -12959,10 +16901,22 @@ func (s *DescribeSubaccountK8sClusterUserConfigResponse) SetBody(v *DescribeSuba
 
 type DescribeTaskInfoResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c78592bfe92244365b3c3ad47f1de****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The time when the task was created.
+	//
+	// example:
+	//
+	// 2020-11-10T16:02:04+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The current stage of the task.
+	//
+	// example:
+	//
+	// DrainNodes
 	CurrentStage *string `json:"current_stage,omitempty" xml:"current_stage,omitempty"`
 	// The error returned for the task.
 	Error *DescribeTaskInfoResponseBodyError `json:"error,omitempty" xml:"error,omitempty" type:"Struct"`
@@ -12974,19 +16928,37 @@ type DescribeTaskInfoResponseBody struct {
 	Stages []*DescribeTaskInfoResponseBodyStages `json:"stages,omitempty" xml:"stages,omitempty" type:"Repeated"`
 	// The status of the task. Valid values:
 	//
-	// *   `running`: The task is running.
-	// *   `failed`: The task failed.
-	// *   `success`: The task is complete.
+	// 	- `running`: The task is running.
+	//
+	// 	- `failed`: The task failed.
+	//
+	// 	- `success`: The task is complete.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 	// The object of the task.
 	Target *DescribeTaskInfoResponseBodyTarget `json:"target,omitempty" xml:"target,omitempty" type:"Struct"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5faa48fb31b6b8078d000006
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 	// The execution details of the task.
 	TaskResult []*DescribeTaskInfoResponseBodyTaskResult `json:"task_result,omitempty" xml:"task_result,omitempty" type:"Repeated"`
 	// The task type. A value of `cluster_scaleout` indicates a scale-out task.
+	//
+	// example:
+	//
+	// cluster_scaleout
 	TaskType *string `json:"task_type,omitempty" xml:"task_type,omitempty"`
 	// The time when the task was updated.
+	//
+	// example:
+	//
+	// 2020-11-10T16:03:06+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -13065,8 +17037,16 @@ func (s *DescribeTaskInfoResponseBody) SetUpdated(v string) *DescribeTaskInfoRes
 
 type DescribeTaskInfoResponseBodyError struct {
 	// The error code returned.
+	//
+	// example:
+	//
+	// 400
 	Code *string `json:"code,omitempty" xml:"code,omitempty"`
 	// The error message returned.
+	//
+	// example:
+	//
+	// failed to xxx
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 }
 
@@ -13090,16 +17070,40 @@ func (s *DescribeTaskInfoResponseBodyError) SetMessage(v string) *DescribeTaskIn
 
 type DescribeTaskInfoResponseBodyEvents struct {
 	// The action of the event.
+	//
+	// example:
+	//
+	// start
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The severity level of the event.
+	//
+	// example:
+	//
+	// Normal
 	Level *string `json:"level,omitempty" xml:"level,omitempty"`
 	// The message about the event.
+	//
+	// example:
+	//
+	// start to xxx
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The cause of the event.
+	//
+	// example:
+	//
+	// NodePoolUpgradeStart
 	Reason *string `json:"reason,omitempty" xml:"reason,omitempty"`
 	// The source of the event.
+	//
+	// example:
+	//
+	// ACK
 	Source *string `json:"source,omitempty" xml:"source,omitempty"`
 	// The timestamp when the event was generated.
+	//
+	// example:
+	//
+	// 1669706229286
 	Timestamp *string `json:"timestamp,omitempty" xml:"timestamp,omitempty"`
 }
 
@@ -13143,14 +17147,30 @@ func (s *DescribeTaskInfoResponseBodyEvents) SetTimestamp(v string) *DescribeTas
 
 type DescribeTaskInfoResponseBodyStages struct {
 	// The end time of the stage.
+	//
+	// example:
+	//
+	// 2022-12-15 23:00:00
 	EndTime *string `json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// The message about the stage.
+	//
+	// example:
+	//
+	// success to xxxxx
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The output generated at the stage.
 	Outputs map[string]interface{} `json:"outputs,omitempty" xml:"outputs,omitempty"`
 	// The start time of the stage.
+	//
+	// example:
+	//
+	// 2022-12-15 23:00:00
 	StartTime *string `json:"start_time,omitempty" xml:"start_time,omitempty"`
 	// The status of the stage.
+	//
+	// example:
+	//
+	// running
 	State *string `json:"state,omitempty" xml:"state,omitempty"`
 }
 
@@ -13189,8 +17209,16 @@ func (s *DescribeTaskInfoResponseBodyStages) SetState(v string) *DescribeTaskInf
 
 type DescribeTaskInfoResponseBodyTarget struct {
 	// The ID of the object.
+	//
+	// example:
+	//
+	// c78592bfe92244365b3c3ad47f1de****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of the object.
+	//
+	// example:
+	//
+	// cluster
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -13214,12 +17242,22 @@ func (s *DescribeTaskInfoResponseBodyTarget) SetType(v string) *DescribeTaskInfo
 
 type DescribeTaskInfoResponseBodyTaskResult struct {
 	// The resources that are managed by the task. For a scale-out task, the value of this parameter is the ID of the instance that is added by the task.
+	//
+	// example:
+	//
+	// i-xxx
 	Data *string `json:"data,omitempty" xml:"data,omitempty"`
 	// The status of the scale-out task. Valid values:
 	//
-	// *   `success`: The scale-out task is successful.
-	// *   `success`: The scale-out task failed.
-	// *   `initial`: The scale-out task is being initialized.
+	// 	- `success`: The scale-out task is successful.
+	//
+	// 	- `success`: The scale-out task failed.
+	//
+	// 	- `initial`: The scale-out task is being initialized.
+	//
+	// example:
+	//
+	// success
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 }
 
@@ -13273,11 +17311,17 @@ func (s *DescribeTaskInfoResponse) SetBody(v *DescribeTaskInfoResponseBody) *Des
 type DescribeTemplateAttributeRequest struct {
 	// The type of template. The value can be a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
-	// *   If the value of the parameter is not `kubernetes`, the template is not displayed on the Templates page in the console. We recommend that you set the parameter to `kubernetes`.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
+	//
+	// 	- If the value of the parameter is not `kubernetes`, the template is not displayed on the Templates page in the console. We recommend that you set the parameter to `kubernetes`.
 	//
 	// Default value: `kubernetes`.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 }
 
@@ -13325,30 +17369,72 @@ func (s *DescribeTemplateAttributeResponse) SetBody(v []*DescribeTemplateAttribu
 
 type DescribeTemplateAttributeResponseBody struct {
 	// The ID of the template. When you update a template, a new template ID is generated.
+	//
+	// example:
+	//
+	// 72d20cf8-a533-4ea9-a10d-e7630d3d****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The access control policy of the template.
+	//
+	// example:
+	//
+	// private
 	Acl *string `json:"acl,omitempty" xml:"acl,omitempty"`
 	// The name of the template.
+	//
+	// example:
+	//
+	// web
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The template content in the YAML format.
+	//
+	// example:
+	//
+	// apiVersion: V1\\n***
 	Template *string `json:"template,omitempty" xml:"template,omitempty"`
 	// The type of template. The value can be a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
-	// *   If the value of the parameter is not `kubernetes`, the template is not displayed on the Templates page in the console. We recommend that you set the parameter to `kubernetes`.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
+	//
+	// 	- If the value of the parameter is not `kubernetes`, the template is not displayed on the Templates page in the console. We recommend that you set the parameter to `kubernetes`.
 	//
 	// Default value: `kubernetes`.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 	// The description of the template.
+	//
+	// example:
+	//
+	// test template
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// The label of the template.
+	//
+	// example:
+	//
+	// sa
 	Tags *string `json:"tags,omitempty" xml:"tags,omitempty"`
 	// The unique ID of the template. The value remains unchanged after the template is updated.
+	//
+	// example:
+	//
+	// 874ec485-e7e6-4373-8a3b-47bde8ae****
 	TemplateWithHistId *string `json:"template_with_hist_id,omitempty" xml:"template_with_hist_id,omitempty"`
 	// The time when the template was created.
+	//
+	// example:
+	//
+	// 2020-09-16T19:21:29+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The time when the template was updated.
+	//
+	// example:
+	//
+	// 2020-09-16T19:21:29+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -13414,17 +17500,30 @@ type DescribeTemplatesRequest struct {
 	// The page number.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	PageNum *int64 `json:"page_num,omitempty" xml:"page_num,omitempty"`
 	// The number of entries per page.
 	//
 	// Default value: 10.
+	//
+	// example:
+	//
+	// 10
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The type of template. This parameter can be set to a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If you set the parameter to `compose`, the template is not displayed on the Templates page in the console.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If you set the parameter to `compose`, the template is not displayed on the Templates page in the console.
 	//
 	// Default value: `kubernetes`.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 }
 
@@ -13478,10 +17577,22 @@ func (s *DescribeTemplatesResponseBody) SetTemplates(v []*DescribeTemplatesRespo
 
 type DescribeTemplatesResponseBodyPageInfo struct {
 	// The page number.
+	//
+	// example:
+	//
+	// 20
 	PageNumber *int64 `json:"page_number,omitempty" xml:"page_number,omitempty"`
 	// The number of entries per page.
+	//
+	// example:
+	//
+	// 3
 	PageSize *int64 `json:"page_size,omitempty" xml:"page_size,omitempty"`
 	// The total number of entries returned.
+	//
+	// example:
+	//
+	// 50
 	TotalCount *int64 `json:"total_count,omitempty" xml:"total_count,omitempty"`
 }
 
@@ -13511,32 +17622,75 @@ func (s *DescribeTemplatesResponseBodyPageInfo) SetTotalCount(v int64) *Describe
 type DescribeTemplatesResponseBodyTemplates struct {
 	// The access control policy of the template. Valid values:
 	//
-	// *   `private`: The template is private.
-	// *   `public`: The template is public.
-	// *   `shared`: The template can be shared.
+	// 	- `private`: The template is private.
+	//
+	// 	- `public`: The template is public.
+	//
+	// 	- `shared`: The template can be shared.
 	//
 	// Default value: `private`.
+	//
+	// example:
+	//
+	// private
 	Acl *string `json:"acl,omitempty" xml:"acl,omitempty"`
 	// The time when the template was created.
+	//
+	// example:
+	//
+	// 2020-06-10T16:30:16+08:00
 	Created *string `json:"created,omitempty" xml:"created,omitempty"`
 	// The description of the template.
+	//
+	// example:
+	//
+	// a web server
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// The ID of the template.
+	//
+	// example:
+	//
+	// 874ec485-e7e6-4373-8a3b-47bde8ae789f
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The name of the template.
+	//
+	// example:
+	//
+	// webserver
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The label of the template. By default, the value is the name of the template.
+	//
+	// example:
+	//
+	// kubernetes
 	Tags *string `json:"tags,omitempty" xml:"tags,omitempty"`
 	// The template content in the YAML format.
+	//
+	// example:
+	//
+	// apiVersion: apps/v1\\nkind: Deployment\\nmetadata:\\n  name: nginx-deployment-basic\\n  labels:\\n    app: nginx\\nspec:\\n  replicas: 2\\n  selector:\\n    matchLabels:\\n      app: nginx\\n  template:\\n    metadata:\\n      labels:\\n        app: nginx\\n    spec:\\n      containers:\\n      - name: nginx\\n        image: busybox:latest\\n        ports:\\n        - containerPort: 80
 	Template *string `json:"template,omitempty" xml:"template,omitempty"`
 	// The type of template. This parameter can be set to a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. However, Container Service for Swarm is deprecated.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. However, Container Service for Swarm is deprecated.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 	// The ID of the parent template. The value of `template_with_hist_id` is the same for each template version. This allows you to manage different template versions.
+	//
+	// example:
+	//
+	// ad81d115-7c8b-47e7-a222-9c28d7f6e588
 	TemplateWithHistId *string `json:"template_with_hist_id,omitempty" xml:"template_with_hist_id,omitempty"`
 	// The time when the template was updated.
+	//
+	// example:
+	//
+	// 2020-06-10T16:30:16+08:00
 	Updated *string `json:"updated,omitempty" xml:"updated,omitempty"`
 }
 
@@ -13629,23 +17783,44 @@ func (s *DescribeTemplatesResponse) SetBody(v *DescribeTemplatesResponseBody) *D
 
 type DescribeTriggerRequest struct {
 	// The application name.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// web-server
 	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
 	// The namespace to which the application belongs.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// default
 	Namespace *string `json:"Namespace,omitempty" xml:"Namespace,omitempty"`
 	// The type of trigger. Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
 	//
 	// If you do not set this parameter, triggers are not filtered by type.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"Type,omitempty" xml:"Type,omitempty"`
 	// The action that the trigger performs. Set the value to redeploy.
 	//
 	// `redeploy`: redeploys the resources specified by `project_id`.
 	//
 	// If you do not specify this parameter, triggers are not filtered by action.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 }
 
@@ -13708,29 +17883,58 @@ func (s *DescribeTriggerResponse) SetBody(v []*DescribeTriggerResponseBody) *Des
 
 type DescribeTriggerResponseBody struct {
 	// The ID of the trigger.
+	//
+	// example:
+	//
+	// 1234
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The name of the trigger.
+	//
+	// example:
+	//
+	// test
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The ID of the associated cluster.
+	//
+	// example:
+	//
+	// c259f563386444ebb8d7****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The name of the project.
 	//
 	// The name consists of the namespace where the application is deployed and the name of the application. The format is `${namespace}/${name}`. Example: default/test-app.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger.
 	//
 	// Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 	// The action that the trigger performs. The value is set to redeploy.
 	//
 	// `redeploy`: redeploys the resource specified by project_id.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The token information.
+	//
+	// example:
+	//
+	// eyJhbGci***
 	Token *string `json:"token,omitempty" xml:"token,omitempty"`
 }
 
@@ -13838,35 +18042,69 @@ func (s *DescribeUserPermissionResponse) SetBody(v []*DescribeUserPermissionResp
 type DescribeUserPermissionResponseBody struct {
 	// The authorization setting. Valid values:
 	//
-	// *   `{cluster_id}` is returned if the permissions are scoped to a cluster.
-	// *   `{cluster_id}/{namespace}` is returned if the permissions are scoped to a namespace of a cluster.
-	// *   `all-clusters` is returned if the permissions are scoped to all clusters.
+	// 	- `{cluster_id}` is returned if the permissions are scoped to a cluster.
+	//
+	// 	- `{cluster_id}/{namespace}` is returned if the permissions are scoped to a namespace of a cluster.
+	//
+	// 	- `all-clusters` is returned if the permissions are scoped to all clusters.
+	//
+	// example:
+	//
+	// c1b542****
 	ResourceId *string `json:"resource_id,omitempty" xml:"resource_id,omitempty"`
 	// The authorization type. Valid values:
 	//
-	// *   `cluster`: indicates that the permissions are scoped to a cluster.
-	// *   `namespace`: indicates that the permissions are scoped to a namespace of a cluster.
-	// *   `console`: indicates that the permissions are scoped to all clusters. This value was displayed only in the console.
+	// 	- `cluster`: indicates that the permissions are scoped to a cluster.
+	//
+	// 	- `namespace`: indicates that the permissions are scoped to a namespace of a cluster.
+	//
+	// 	- `console`: indicates that the permissions are scoped to all clusters. This value was displayed only in the console.
+	//
+	// example:
+	//
+	// cluster
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The name of the custom role. If a custom role is assigned, the value is the name of the assigned custom role.
+	//
+	// example:
+	//
+	// view
 	RoleName *string `json:"role_name,omitempty" xml:"role_name,omitempty"`
 	// The type of predefined role. Valid values:
 	//
-	// *   `admin`: administrator
-	// *   `ops`: O\&M engineer
-	// *   `dev`: developer
-	// *   `restricted`: restricted user
-	// *   `custom`: custom role
+	// 	- `admin`: administrator
+	//
+	// 	- `ops`: O\\&M engineer
+	//
+	// 	- `dev`: developer
+	//
+	// 	- `restricted`: restricted user
+	//
+	// 	- `custom`: custom role
+	//
+	// example:
+	//
+	// admin
 	RoleType *string `json:"role_type,omitempty" xml:"role_type,omitempty"`
 	// Indicates whether the permissions are granted to the cluster owner.
 	//
-	// *   `0`: indicates that the permissions are not granted to the cluster owner.
-	// *   `1`: indicates that the permissions are granted to the cluster owner. The cluster owner is the administrator.
+	// 	- `0`: indicates that the permissions are not granted to the cluster owner.
+	//
+	// 	- `1`: indicates that the permissions are granted to the cluster owner. The cluster owner is the administrator.
+	//
+	// example:
+	//
+	// 1
 	IsOwner *int64 `json:"is_owner,omitempty" xml:"is_owner,omitempty"`
 	// Indicates whether the permissions are granted to the RAM role. Valid values:
 	//
-	// *   `0`: indicates that the permissions are not granted to the RAM role.
-	// *   `1`: indicates that the permissions are granted to the RAM role.
+	// 	- `0`: indicates that the permissions are not granted to the RAM role.
+	//
+	// 	- `1`: indicates that the permissions are granted to the RAM role.
+	//
+	// example:
+	//
+	// 1
 	IsRamRole *int64 `json:"is_ram_role,omitempty" xml:"is_ram_role,omitempty"`
 }
 
@@ -13910,16 +18148,36 @@ func (s *DescribeUserPermissionResponseBody) SetIsRamRole(v int64) *DescribeUser
 
 type DescribeUserQuotaResponseBody struct {
 	// The quota of Container Service for Kubernetes (ACK) managed clusters. Default value: 20. If the default quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 20
 	AmkClusterQuota *int64 `json:"amk_cluster_quota,omitempty" xml:"amk_cluster_quota,omitempty"`
 	// The quota of ACK Serverless clusters. Default value: 20. If the default quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 3
 	AskClusterQuota *int64 `json:"ask_cluster_quota,omitempty" xml:"ask_cluster_quota,omitempty"`
 	// The quota of node pools in an ACK cluster. Default value: 20. If the default quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 10
 	ClusterNodepoolQuota *int64 `json:"cluster_nodepool_quota,omitempty" xml:"cluster_nodepool_quota,omitempty"`
 	// The quota of clusters that belong to an Alibaba Cloud account. Default value: 50. If the default quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 50
 	ClusterQuota *int64 `json:"cluster_quota,omitempty" xml:"cluster_quota,omitempty"`
 	// The quota of enhanced edge node pools.
 	EdgeImprovedNodepoolQuota *DescribeUserQuotaResponseBodyEdgeImprovedNodepoolQuota `json:"edge_improved_nodepool_quota,omitempty" xml:"edge_improved_nodepool_quota,omitempty" type:"Struct"`
 	// The quota of nodes in an ACK cluster. Default value: 100. If the default quota limit is reached, submit an application in the [Quota Center console](https://quotas.console.aliyun.com/products/csk/quotas) to increase the quota.
+	//
+	// example:
+	//
+	// 100
 	NodeQuota *int64 `json:"node_quota,omitempty" xml:"node_quota,omitempty"`
 	// Information about the new quota.
 	Quotas map[string]*QuotasValue `json:"quotas,omitempty" xml:"quotas,omitempty"`
@@ -13970,12 +18228,24 @@ func (s *DescribeUserQuotaResponseBody) SetQuotas(v map[string]*QuotasValue) *De
 
 type DescribeUserQuotaResponseBodyEdgeImprovedNodepoolQuota struct {
 	// The maximum bandwidth of each enhanced node pool. Unit: Mbit/s.
+	//
+	// example:
+	//
+	// 10
 	Bandwidth *int32 `json:"bandwidth,omitempty" xml:"bandwidth,omitempty"`
 	// The quota of enhanced edge node pools that belong to an Alibaba Cloud account.
+	//
+	// example:
+	//
+	// 3
 	Count *int32 `json:"count,omitempty" xml:"count,omitempty"`
 	// The maximum subscription duration of an enhanced edge node pool. Unit: months.
 	//
 	// > You can ignore this parameter because enhanced edge node pools are pay-as-you-go resources.
+	//
+	// example:
+	//
+	// 3
 	Period *int32 `json:"period,omitempty" xml:"period,omitempty"`
 }
 
@@ -14051,10 +18321,22 @@ func (s *DescribeWorkflowsResponseBody) SetJobs(v []*DescribeWorkflowsResponseBo
 
 type DescribeWorkflowsResponseBodyJobs struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// cb1a7214cfc0b41d9bb086affc2d8f51c
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The time when the workflow was created.
+	//
+	// example:
+	//
+	// 2020-01-15T13:18:52Z
 	CreateTime *string `json:"create_time,omitempty" xml:"create_time,omitempty"`
 	// The name of the workflow.
+	//
+	// example:
+	//
+	// wgs-gpu-qb4dk
 	JobName *string `json:"job_name,omitempty" xml:"job_name,omitempty"`
 }
 
@@ -14112,10 +18394,24 @@ func (s *DescribeWorkflowsResponse) SetBody(v *DescribeWorkflowsResponseBody) *D
 
 type EdgeClusterAddEdgeMachineRequest struct {
 	// The timeout period of sessions. Unit: seconds.
+	//
+	// example:
+	//
+	// 1024
 	Expired *int64 `json:"expired,omitempty" xml:"expired,omitempty"`
 	// The node pool ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// c26607f52179f4472a0d9723e7595****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The options that you want to configure.
+	//
+	// example:
+	//
+	// "{\\"enableIptables\\":true,\\"quiet\\":true,\\"manageRuntime\\":true,\\"allowedClusterAddons\\":[\\"kube-proxy\\",\\"flannel\\",\\"coredns\\"]}"
 	Options *string `json:"options,omitempty" xml:"options,omitempty"`
 }
 
@@ -14144,8 +18440,16 @@ func (s *EdgeClusterAddEdgeMachineRequest) SetOptions(v string) *EdgeClusterAddE
 
 type EdgeClusterAddEdgeMachineResponseBody struct {
 	// The ID of the cloud-native box.
+	//
+	// example:
+	//
+	// 0f4bf70a-caff-4b26-a679-fb0188a1****
 	EdgeMachineId *string `json:"edge_machine_id,omitempty" xml:"edge_machine_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 0adf3a23-6841-41e8-9f55-7b290216c980
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 }
 
@@ -14197,6 +18501,11 @@ func (s *EdgeClusterAddEdgeMachineResponse) SetBody(v *EdgeClusterAddEdgeMachine
 }
 
 type FixNodePoolVulsRequest struct {
+	// Specifies whether to allow the nodes to restart.
+	//
+	// example:
+	//
+	// true
 	AutoRestart *bool `json:"auto_restart,omitempty" xml:"auto_restart,omitempty"`
 	// The names of the nodes to be patched.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
@@ -14235,7 +18544,11 @@ func (s *FixNodePoolVulsRequest) SetVuls(v []*string) *FixNodePoolVulsRequest {
 }
 
 type FixNodePoolVulsRequestRolloutPolicy struct {
-	// The maximum number of nodes that can be patched in parallel. The minimum value is 1. The maximum value equals the number of nodes in the node pool.
+	// The maximum concurrency for batch patching. Minimum value: 1. The maximum value equals the number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 1
 	MaxParallelism *int64 `json:"max_parallelism,omitempty" xml:"max_parallelism,omitempty"`
 }
 
@@ -14254,6 +18567,10 @@ func (s *FixNodePoolVulsRequestRolloutPolicy) SetMaxParallelism(v int64) *FixNod
 
 type FixNodePoolVulsResponseBody struct {
 	// The ID of the CVE patching task.
+	//
+	// example:
+	//
+	// T-60fea8ad2e277f087900****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -14300,11 +18617,40 @@ func (s *FixNodePoolVulsResponse) SetBody(v *FixNodePoolVulsResponseBody) *FixNo
 }
 
 type GetClusterAddonInstanceResponseBody struct {
-	Config  *string                                     `json:"config,omitempty" xml:"config,omitempty"`
+	// The custom configurations of the component.
+	//
+	// example:
+	//
+	// {"sls_project_name":""}
+	Config *string `json:"config,omitempty" xml:"config,omitempty"`
+	// The status of Simple Log Service.
 	Logging *GetClusterAddonInstanceResponseBodyLogging `json:"logging,omitempty" xml:"logging,omitempty" type:"Struct"`
-	Name    *string                                     `json:"name,omitempty" xml:"name,omitempty"`
-	State   *string                                     `json:"state,omitempty" xml:"state,omitempty"`
-	Version *string                                     `json:"version,omitempty" xml:"version,omitempty"`
+	// The name of the component instance.
+	//
+	// example:
+	//
+	// ack-node-problem-detector
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// The status of the component. Valid values:
+	//
+	// 	- active: The component is installed.
+	//
+	// 	- updating: The component is being modified.
+	//
+	// 	- upgrading: The component is being updated.
+	//
+	// 	- deleting: The component is being uninstalled.
+	//
+	// example:
+	//
+	// active
+	State *string `json:"state,omitempty" xml:"state,omitempty"`
+	// The version of the component instance.
+	//
+	// example:
+	//
+	// 1.2.16
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s GetClusterAddonInstanceResponseBody) String() string {
@@ -14341,10 +18687,30 @@ func (s *GetClusterAddonInstanceResponseBody) SetVersion(v string) *GetClusterAd
 }
 
 type GetClusterAddonInstanceResponseBodyLogging struct {
-	Capable    *bool   `json:"capable,omitempty" xml:"capable,omitempty"`
-	Enabled    *bool   `json:"enabled,omitempty" xml:"enabled,omitempty"`
+	// Indicates whether Simple Log Service is supported by the component.
+	//
+	// example:
+	//
+	// false
+	Capable *bool `json:"capable,omitempty" xml:"capable,omitempty"`
+	// Indicates whether Simple Log Service is enabled for the component.
+	//
+	// example:
+	//
+	// false
+	Enabled *bool `json:"enabled,omitempty" xml:"enabled,omitempty"`
+	// The Simple Log Service project that is used to collect logs for the component.
+	//
+	// example:
+	//
+	// my-log-project
 	LogProject *string `json:"log_project,omitempty" xml:"log_project,omitempty"`
-	Logstore   *string `json:"logstore,omitempty" xml:"logstore,omitempty"`
+	// The Simple Log Service Logstore that is used to collect logs for the component.
+	//
+	// example:
+	//
+	// my-logstore
+	Logstore *string `json:"logstore,omitempty" xml:"logstore,omitempty"`
 }
 
 func (s GetClusterAddonInstanceResponseBodyLogging) String() string {
@@ -14406,18 +18772,42 @@ func (s *GetClusterAddonInstanceResponse) SetBody(v *GetClusterAddonInstanceResp
 
 type GetClusterCheckResponseBody struct {
 	// Id of the request
+	//
+	// example:
+	//
+	// 1697100584236600453-ce0da5a1d627e4e9e9f96cae8ad07****-clustercheck-lboto
 	CheckId *string `json:"check_id,omitempty" xml:"check_id,omitempty"`
 	// The list of check items.
 	CheckItems map[string][]map[string]interface{} `json:"check_items,omitempty" xml:"check_items,omitempty"`
 	// The time when the cluster check task was created.
+	//
+	// example:
+	//
+	// 2023-10-16T08:31:20.292030178Z
 	CreatedAt *string `json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time when the cluster check task was completed.
+	//
+	// example:
+	//
+	// 2023-10-16T08:35:20.292030178Z
 	FinishedAt *string `json:"finished_at,omitempty" xml:"finished_at,omitempty"`
 	// The message that indicates the status of the cluster check task.
+	//
+	// example:
+	//
+	// task succeed
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The status of the cluster check.
+	//
+	// example:
+	//
+	// Succeeded
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 	// The check method.
+	//
+	// example:
+	//
+	// ClusterUpgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -14495,23 +18885,44 @@ func (s *GetClusterCheckResponse) SetBody(v *GetClusterCheckResponseBody) *GetCl
 
 type GetKubernetesTriggerRequest struct {
 	// The application name.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// web-server
 	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
 	// The namespace name.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// default
 	Namespace *string `json:"Namespace,omitempty" xml:"Namespace,omitempty"`
 	// The type of trigger. Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
 	//
 	// If you do not set this parameter, triggers are not filtered by type.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"Type,omitempty" xml:"Type,omitempty"`
 	// The action that the trigger performs. Set the value to redeploy.
 	//
 	// `redeploy`: redeploys the resources specified by `project_id`.
 	//
 	// If you do not specify this parameter, triggers are not filtered by action.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 }
 
@@ -14574,29 +18985,58 @@ func (s *GetKubernetesTriggerResponse) SetBody(v []*GetKubernetesTriggerResponse
 
 type GetKubernetesTriggerResponseBody struct {
 	// The ID of the trigger.
+	//
+	// example:
+	//
+	// 1234
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The name of the trigger.
+	//
+	// example:
+	//
+	// test
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The ID of the associated cluster.
+	//
+	// example:
+	//
+	// c259f563386444ebb8d7**
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The name of the project.
 	//
 	// The name consists of the namespace where the application is deployed and the name of the application. The format is `${namespace}/${name}`. Example: default/test-app.
+	//
+	// example:
+	//
+	// default/test-app
 	ProjectId *string `json:"project_id,omitempty" xml:"project_id,omitempty"`
 	// The type of trigger.
 	//
 	// Valid values:
 	//
-	// *   `deployment`: performs actions on Deployments.
-	// *   `application`: performs actions on applications that are deployed in Application Center.
+	// 	- `deployment`: performs actions on Deployments.
+	//
+	// 	- `application`: performs actions on applications that are deployed in Application Center.
 	//
 	// Default value: `deployment`.
+	//
+	// example:
+	//
+	// deployment
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 	// The action that the trigger performs. The value is set to redeploy.
 	//
 	// `redeploy`: redeploys the resource specified by project_id.
+	//
+	// example:
+	//
+	// redeploy
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// Token
+	//
+	// example:
+	//
+	// eyJhbGci***
 	Token *string `json:"token,omitempty" xml:"token,omitempty"`
 }
 
@@ -14645,23 +19085,46 @@ func (s *GetKubernetesTriggerResponseBody) SetToken(v string) *GetKubernetesTrig
 
 type GetUpgradeStatusResponseBody struct {
 	// The error message returned during the update.
+	//
+	// example:
+	//
+	// subject to actual return
 	ErrorMessage *string `json:"error_message,omitempty" xml:"error_message,omitempty"`
 	// The ID of the precheck report.
+	//
+	// example:
+	//
+	// be4c8eb72de94d459ea7ace7c811d119
 	PrecheckReportId *string `json:"precheck_report_id,omitempty" xml:"precheck_report_id,omitempty"`
 	// The status of the update. Valid values:
 	//
-	// *   `success`: The update is successful.
-	// *   `fail`: The update failed.
-	// *   `pause`: The update is paused.
-	// *   `running`: The update is in progress.
+	// 	- `success`: The update is successful.
+	//
+	// 	- `fail`: The update failed.
+	//
+	// 	- `pause`: The update is paused.
+	//
+	// 	- `running`: The update is in progress.
+	//
+	// example:
+	//
+	// running
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 	// The current phase of the update. Valid values:
 	//
-	// *   `not_start`: The update is not started.
-	// *   `prechecking`: The precheck is in progress.
-	// *   `upgrading`: The cluster is being updated.
-	// *   `pause`: The update is paused.
-	// *   `success`: The update is successful.
+	// 	- `not_start`: The update is not started.
+	//
+	// 	- `prechecking`: The precheck is in progress.
+	//
+	// 	- `upgrading`: The cluster is being updated.
+	//
+	// 	- `pause`: The update is paused.
+	//
+	// 	- `success`: The update is successful.
+	//
+	// example:
+	//
+	// prechecking
 	UpgradeStep *string `json:"upgrade_step,omitempty" xml:"upgrade_step,omitempty"`
 	// The details of the update task.
 	UpgradeTask *GetUpgradeStatusResponseBodyUpgradeTask `json:"upgrade_task,omitempty" xml:"upgrade_task,omitempty" type:"Struct"`
@@ -14702,12 +19165,22 @@ func (s *GetUpgradeStatusResponseBody) SetUpgradeTask(v *GetUpgradeStatusRespons
 
 type GetUpgradeStatusResponseBodyUpgradeTask struct {
 	// The description of the update task.
+	//
+	// example:
+	//
+	// subject to actual return
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The status of the update task. Valid values:
 	//
-	// *   `running`: The update task is being executed.
-	// *   `Success`: The update task is successfully executed.
-	// *   `Failed`: The update task failed.
+	// 	- `running`: The update task is being executed.
+	//
+	// 	- `Success`: The update task is successfully executed.
+	//
+	// 	- `Failed`: The update task failed.
+	//
+	// example:
+	//
+	// running
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 }
 
@@ -14779,27 +19252,63 @@ func (s *GrantPermissionsRequest) SetBody(v []*GrantPermissionsRequestBody) *Gra
 type GrantPermissionsRequestBody struct {
 	// The ID of the cluster that you want to manage.
 	//
-	// *   When the `role_type` parameter is set to `all-clusters`, this parameter is set to an empty string.
+	// 	- When the `role_type` parameter is set to `all-clusters`, this parameter is set to an empty string.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// c796c60***
 	Cluster *string `json:"cluster,omitempty" xml:"cluster,omitempty"`
 	// Specifies whether to perform a custom authorization. To perform a custom authorization, set `role_name` to a custom cluster role.
+	//
+	// example:
+	//
+	// false
 	IsCustom *bool `json:"is_custom,omitempty" xml:"is_custom,omitempty"`
 	// Specifies whether the permissions are granted to a RAM role.
+	//
+	// example:
+	//
+	// false
 	IsRamRole *bool `json:"is_ram_role,omitempty" xml:"is_ram_role,omitempty"`
 	// The namespace to which the permissions are scoped. This parameter is required only if you set role_type to namespace.
+	//
+	// example:
+	//
+	// test
 	Namespace *string `json:"namespace,omitempty" xml:"namespace,omitempty"`
 	// The predefined role name. Valid values:
 	//
-	// *   `admin`: administrator
-	// *   `ops`: O\&M engineer
-	// *   `dev`: developer
-	// *   `restricted`: restricted user
-	// *   The custom cluster role.
+	// 	- `admin`: administrator
+	//
+	// 	- `ops`: O\\&M engineer
+	//
+	// 	- `dev`: developer
+	//
+	// 	- `restricted`: restricted user
+	//
+	// 	- The custom cluster role.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ops
 	RoleName *string `json:"role_name,omitempty" xml:"role_name,omitempty"`
 	// The authorization type. Valid values:
 	//
-	// *   `cluster`: indicates that the permissions are scoped to a cluster.
-	// *   `namespace`: specifies that the permissions are scoped to a namespace of a cluster.
-	// *   `all-clusters`: specifies that the permissions are scoped to all clusters.
+	// 	- `cluster`: indicates that the permissions are scoped to a cluster.
+	//
+	// 	- `namespace`: specifies that the permissions are scoped to a namespace of a cluster.
+	//
+	// 	- `all-clusters`: specifies that the permissions are scoped to all clusters.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cluster
 	RoleType *string `json:"role_type,omitempty" xml:"role_type,omitempty"`
 }
 
@@ -14866,6 +19375,10 @@ func (s *GrantPermissionsResponse) SetStatusCode(v int32) *GrantPermissionsRespo
 
 type InstallClusterAddonsRequest struct {
 	// The request body.
+	//
+	// example:
+	//
+	// ags-metrics-collector
 	Body []*InstallClusterAddonsRequestBody `json:"body,omitempty" xml:"body,omitempty" type:"Repeated"`
 }
 
@@ -14884,12 +19397,28 @@ func (s *InstallClusterAddonsRequest) SetBody(v []*InstallClusterAddonsRequestBo
 
 type InstallClusterAddonsRequestBody struct {
 	// The custom component settings that you want to use. The value is a JSON string.
+	//
+	// example:
+	//
+	// {\\"IngressDashboardEnabled\\":\\"true\\",\\"sls_project_name\\":\\"your_sls_project_name\\"}"}
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 	// The component name.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ags-metrics-collector
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The component version.
 	//
-	// >  You can call the [DescribeClusterAddonsVersion](~~197434~~) operation to query the version of a component.
+	// >  You can call the [DescribeClusterAddonsVersion](https://help.aliyun.com/document_detail/197434.html) operation to query the version of a component.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// v1.0.0.2-cc3b2d6-aliyun
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -14940,12 +19469,42 @@ func (s *InstallClusterAddonsResponse) SetStatusCode(v int32) *InstallClusterAdd
 }
 
 type ListAddonsRequest struct {
-	ClusterId      *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
-	ClusterSpec    *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
-	ClusterType    *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
+	// The cluster ID. If you specify a cluster ID, only components used in the specified cluster are queried. Other parameters are ignored.
+	//
+	// example:
+	//
+	// c02b3e03be10643e8a644a843ffcb****
+	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The specifications of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// ack.pro.small
+	ClusterSpec *string `json:"cluster_spec,omitempty" xml:"cluster_spec,omitempty"`
+	// The type of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// ManagedKubernetes
+	ClusterType *string `json:"cluster_type,omitempty" xml:"cluster_type,omitempty"`
+	// The version of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// 1.26.3-aliyun.1
 	ClusterVersion *string `json:"cluster_version,omitempty" xml:"cluster_version,omitempty"`
-	Profile        *string `json:"profile,omitempty" xml:"profile,omitempty"`
-	RegionId       *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
+	// The subtype of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// Default
+	Profile *string `json:"profile,omitempty" xml:"profile,omitempty"`
+	// The region of the cluster. If cluster_id is specified, this parameter is ignored. You must specify the region_id, cluster_type, profile, cluster_spec, and cluster_version parameters at the same time.
+	//
+	// example:
+	//
+	// cn-hangzhou
+	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 }
 
 func (s ListAddonsRequest) String() string {
@@ -14987,6 +19546,7 @@ func (s *ListAddonsRequest) SetRegionId(v string) *ListAddonsRequest {
 }
 
 type ListAddonsResponseBody struct {
+	// The list of available components.
 	Addons []*ListAddonsResponseBodyAddons `json:"addons,omitempty" xml:"addons,omitempty" type:"Repeated"`
 }
 
@@ -15004,14 +19564,58 @@ func (s *ListAddonsResponseBody) SetAddons(v []*ListAddonsResponseBodyAddons) *L
 }
 
 type ListAddonsResponseBodyAddons struct {
-	Architecture     []*string `json:"architecture,omitempty" xml:"architecture,omitempty" type:"Repeated"`
-	Category         *string   `json:"category,omitempty" xml:"category,omitempty"`
-	ConfigSchema     *string   `json:"config_schema,omitempty" xml:"config_schema,omitempty"`
-	InstallByDefault *bool     `json:"install_by_default,omitempty" xml:"install_by_default,omitempty"`
-	Managed          *bool     `json:"managed,omitempty" xml:"managed,omitempty"`
-	Name             *string   `json:"name,omitempty" xml:"name,omitempty"`
+	// Architectures supported by the component. Valid values:
+	//
+	// 	- amd64
+	//
+	// 	- arm64
+	Architecture []*string `json:"architecture,omitempty" xml:"architecture,omitempty" type:"Repeated"`
+	// The category of the component.
+	//
+	// example:
+	//
+	// monitor
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
+	// The schema of the custom parameters of the component.
+	//
+	// example:
+	//
+	// {}
+	ConfigSchema *string `json:"config_schema,omitempty" xml:"config_schema,omitempty"`
+	// Indicates whether the component is automatically installed by default.
+	//
+	// example:
+	//
+	// false
+	InstallByDefault *bool `json:"install_by_default,omitempty" xml:"install_by_default,omitempty"`
+	// Indicates whether the component is fully managed.
+	//
+	// example:
+	//
+	// false
+	Managed *bool `json:"managed,omitempty" xml:"managed,omitempty"`
+	// The component name.
+	//
+	// example:
+	//
+	// arms-prometheus
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// Operations supported by the component. Valid values:
+	//
+	// 	- Install
+	//
+	// 	- Upgrade
+	//
+	// 	- Modify
+	//
+	// 	- Uninstall
 	SupportedActions []*string `json:"supported_actions,omitempty" xml:"supported_actions,omitempty" type:"Repeated"`
-	Version          *string   `json:"version,omitempty" xml:"version,omitempty"`
+	// The version number.
+	//
+	// example:
+	//
+	// 1.1.9
+	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
 func (s ListAddonsResponseBodyAddons) String() string {
@@ -15092,6 +19696,7 @@ func (s *ListAddonsResponse) SetBody(v *ListAddonsResponseBody) *ListAddonsRespo
 }
 
 type ListClusterAddonInstancesResponseBody struct {
+	// A list of components that are installed in the cluster.
 	Addons []*ListClusterAddonInstancesResponseBodyAddons `json:"addons,omitempty" xml:"addons,omitempty" type:"Repeated"`
 }
 
@@ -15109,8 +19714,31 @@ func (s *ListClusterAddonInstancesResponseBody) SetAddons(v []*ListClusterAddonI
 }
 
 type ListClusterAddonInstancesResponseBodyAddons struct {
-	Name    *string `json:"name,omitempty" xml:"name,omitempty"`
-	State   *string `json:"state,omitempty" xml:"state,omitempty"`
+	// The component name.
+	//
+	// example:
+	//
+	// coredns
+	Name *string `json:"name,omitempty" xml:"name,omitempty"`
+	// The status of the component. Valid values:
+	//
+	// 	- active: The component is installed.
+	//
+	// 	- updating: The component is being modified.
+	//
+	// 	- upgrading: The component is being updated.
+	//
+	// 	- deleting: The component is being uninstalled.
+	//
+	// example:
+	//
+	// active
+	State *string `json:"state,omitempty" xml:"state,omitempty"`
+	// The version of the component.
+	//
+	// example:
+	//
+	// v1.9.3.10-7dfca203-aliyun
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -15167,8 +19795,13 @@ func (s *ListClusterAddonInstancesResponse) SetBody(v *ListClusterAddonInstances
 }
 
 type ListClusterChecksRequest struct {
+	// The targets to check.
 	Target *string `json:"target,omitempty" xml:"target,omitempty"`
 	// The check method.
+	//
+	// example:
+	//
+	// ClusterUpgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -15210,16 +19843,40 @@ func (s *ListClusterChecksResponseBody) SetChecks(v []*ListClusterChecksResponse
 
 type ListClusterChecksResponseBodyChecks struct {
 	// The ID of the cluster check task.
+	//
+	// example:
+	//
+	// 1697100584236600453-ce0da5a1d627e4e9e9f96cae8ad07****-clustercheck-lboto
 	CheckId *string `json:"check_id,omitempty" xml:"check_id,omitempty"`
 	// The time when the cluster check task was created.
+	//
+	// example:
+	//
+	// 2023-10-16T08:31:20.292030178Z
 	CreatedAt *string `json:"created_at,omitempty" xml:"created_at,omitempty"`
 	// The time when the cluster check task was completed.
+	//
+	// example:
+	//
+	// 2023-10-16T08:35:20.292030178Z
 	FinishedAt *string `json:"finished_at,omitempty" xml:"finished_at,omitempty"`
 	// The message that indicates the status of the cluster check task.
+	//
+	// example:
+	//
+	// task succeed
 	Message *string `json:"message,omitempty" xml:"message,omitempty"`
 	// The status of the cluster check.
+	//
+	// example:
+	//
+	// Succeeded
 	Status *string `json:"status,omitempty" xml:"status,omitempty"`
 	// The check method.
+	//
+	// example:
+	//
+	// ClusterUpgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -15291,8 +19948,18 @@ func (s *ListClusterChecksResponse) SetBody(v *ListClusterChecksResponseBody) *L
 }
 
 type ListOperationPlansRequest struct {
+	// The cluster ID.
+	//
+	// example:
+	//
+	// c29ced64b3dfe4f33b57ca0aa9f68****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
-	Type      *string `json:"type,omitempty" xml:"type,omitempty"`
+	// The operation plan type.
+	//
+	// example:
+	//
+	// cluster_upgrade
+	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
 func (s ListOperationPlansRequest) String() string {
@@ -15314,6 +19981,7 @@ func (s *ListOperationPlansRequest) SetType(v string) *ListOperationPlansRequest
 }
 
 type ListOperationPlansResponseBody struct {
+	// The operation plans.
 	Plans []*ListOperationPlansResponseBodyPlans `json:"plans,omitempty" xml:"plans,omitempty" type:"Repeated"`
 }
 
@@ -15331,15 +19999,66 @@ func (s *ListOperationPlansResponseBody) SetPlans(v []*ListOperationPlansRespons
 }
 
 type ListOperationPlansResponseBodyPlans struct {
-	ClusterId  *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
-	Created    *string `json:"created,omitempty" xml:"created,omitempty"`
-	EndTime    *string `json:"end_time,omitempty" xml:"end_time,omitempty"`
-	PlanId     *string `json:"plan_id,omitempty" xml:"plan_id,omitempty"`
-	StartTime  *string `json:"start_time,omitempty" xml:"start_time,omitempty"`
-	State      *string `json:"state,omitempty" xml:"state,omitempty"`
-	TargetId   *string `json:"target_id,omitempty" xml:"target_id,omitempty"`
+	// The cluster ID.
+	//
+	// example:
+	//
+	// c29ced64b3dfe4f33b57ca0aa9f68****
+	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The time when the operation plan was created.
+	//
+	// example:
+	//
+	// 2023-11-21T20:01:22+08:00
+	Created *string `json:"created,omitempty" xml:"created,omitempty"`
+	// The expected end time of the plan.
+	//
+	// example:
+	//
+	// 2023-11-22T18:00:00+08:00
+	EndTime *string `json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// The operation plan ID.
+	//
+	// example:
+	//
+	// P-655c9c127e0e6603ef00****
+	PlanId *string `json:"plan_id,omitempty" xml:"plan_id,omitempty"`
+	// The expected start time of the plan.
+	//
+	// example:
+	//
+	// 2023-11-22T15:18:00+08:00
+	StartTime *string `json:"start_time,omitempty" xml:"start_time,omitempty"`
+	// The plan status. Valid values:
+	//
+	// 	- scheduled
+	//
+	// 	- Canceled
+	//
+	// example:
+	//
+	// scheduled
+	State *string `json:"state,omitempty" xml:"state,omitempty"`
+	// The target ID.
+	//
+	// example:
+	//
+	// c29ced64b3dfe4f33b57ca0aa9f68****
+	TargetId *string `json:"target_id,omitempty" xml:"target_id,omitempty"`
+	// The target type.
+	//
+	// example:
+	//
+	// cluster
 	TargetType *string `json:"target_type,omitempty" xml:"target_type,omitempty"`
-	Type       *string `json:"type,omitempty" xml:"type,omitempty"`
+	// The plan type. Valid values:
+	//
+	// 	- cluster_upgrade
+	//
+	// example:
+	//
+	// cluster_upgrade
+	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
 func (s ListOperationPlansResponseBodyPlans) String() string {
@@ -15426,14 +20145,40 @@ func (s *ListOperationPlansResponse) SetBody(v *ListOperationPlansResponseBody) 
 
 type ListTagResourcesRequest struct {
 	// The pagination token that is used in the next request to retrieve a new page of results.
+	//
+	// example:
+	//
+	// ***
 	NextToken *string `json:"next_token,omitempty" xml:"next_token,omitempty"`
 	// The region ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The list of cluster IDs.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ["xxxxx","xxxxxx"]
 	ResourceIds []*string `json:"resource_ids,omitempty" xml:"resource_ids,omitempty" type:"Repeated"`
 	// The resource type. Set the value to `CLUSTER`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// CLUSTER
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The list of labels that you want to query. You can specify at most 20 labels.
+	//
+	// example:
+	//
+	// [{\\"key\\":\\"env\\",\\"value\\",\\"dev\\"},{\\"key\\":\\"dev\\", \\"value\\":\\"IT\\"}]
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
 }
 
@@ -15472,14 +20217,40 @@ func (s *ListTagResourcesRequest) SetTags(v []*Tag) *ListTagResourcesRequest {
 
 type ListTagResourcesShrinkRequest struct {
 	// The pagination token that is used in the next request to retrieve a new page of results.
+	//
+	// example:
+	//
+	// ***
 	NextToken *string `json:"next_token,omitempty" xml:"next_token,omitempty"`
 	// The region ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-beijing
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The list of cluster IDs.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ["xxxxx","xxxxxx"]
 	ResourceIdsShrink *string `json:"resource_ids,omitempty" xml:"resource_ids,omitempty"`
 	// The resource type. Set the value to `CLUSTER`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// CLUSTER
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The list of labels that you want to query. You can specify at most 20 labels.
+	//
+	// example:
+	//
+	// [{\\"key\\":\\"env\\",\\"value\\",\\"dev\\"},{\\"key\\":\\"dev\\", \\"value\\":\\"IT\\"}]
 	TagsShrink *string `json:"tags,omitempty" xml:"tags,omitempty"`
 }
 
@@ -15518,8 +20289,16 @@ func (s *ListTagResourcesShrinkRequest) SetTagsShrink(v string) *ListTagResource
 
 type ListTagResourcesResponseBody struct {
 	// The pagination token that is used in the next request to retrieve a new page of results.
+	//
+	// example:
+	//
+	// c374bf4864448****
 	NextToken *string `json:"next_token,omitempty" xml:"next_token,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// E368C761-F8F6-4A36-9B58-BD53D5CD0CEB
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The details of the queried labels and resources.
 	TagResources *ListTagResourcesResponseBodyTagResources `json:"tag_resources,omitempty" xml:"tag_resources,omitempty" type:"Struct"`
@@ -15568,12 +20347,28 @@ func (s *ListTagResourcesResponseBodyTagResources) SetTagResource(v []*ListTagRe
 
 type ListTagResourcesResponseBodyTagResourcesTagResource struct {
 	// The ID of the resource.
+	//
+	// example:
+	//
+	// i-xxx
 	ResourceId *string `json:"resource_id,omitempty" xml:"resource_id,omitempty"`
-	// The type of the resource. For more information, see [Labels](~~110425~~).
+	// The type of the resource. For more information, see [Labels](https://help.aliyun.com/document_detail/110425.html).
+	//
+	// example:
+	//
+	// CLUSTER
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The key of the label.
+	//
+	// example:
+	//
+	// ack.aliyun.com
 	TagKey *string `json:"tag_key,omitempty" xml:"tag_key,omitempty"`
 	// The value of the label.
+	//
+	// example:
+	//
+	// c71cf3d796c374bf48644482cb0c3****
 	TagValue *string `json:"tag_value,omitempty" xml:"tag_value,omitempty"`
 }
 
@@ -15636,8 +20431,16 @@ func (s *ListTagResourcesResponse) SetBody(v *ListTagResourcesResponseBody) *Lis
 
 type MigrateClusterRequest struct {
 	// The endpoint of the OSS bucket.
+	//
+	// example:
+	//
+	// *******.oss-cn-hangzhou.aliyuncs.com
 	OssBucketEndpoint *string `json:"oss_bucket_endpoint,omitempty" xml:"oss_bucket_endpoint,omitempty"`
 	// The name of the Object Storage Service (OSS) bucket.
+	//
+	// example:
+	//
+	// bucket-****
 	OssBucketName *string `json:"oss_bucket_name,omitempty" xml:"oss_bucket_name,omitempty"`
 }
 
@@ -15661,10 +20464,22 @@ func (s *MigrateClusterRequest) SetOssBucketName(v string) *MigrateClusterReques
 
 type MigrateClusterResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c8155823d057948c69a****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 20758A-585D-4A41-A9B2-28DA8F4F534F
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-62ccd14aacb8db06ca00****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -15722,50 +20537,92 @@ func (s *MigrateClusterResponse) SetBody(v *MigrateClusterResponseBody) *Migrate
 
 type ModifyClusterRequest struct {
 	// The network access control list (ACL) of the SLB instance associated with the API server if the cluster is a registered cluster.
-	AccessControlList []*string `json:"access_control_list,omitempty" xml:"access_control_list,omitempty" type:"Repeated"`
+	AccessControlList       []*string                                    `json:"access_control_list,omitempty" xml:"access_control_list,omitempty" type:"Repeated"`
+	ApiServerCustomCertSans *ModifyClusterRequestApiServerCustomCertSans `json:"api_server_custom_cert_sans,omitempty" xml:"api_server_custom_cert_sans,omitempty" type:"Struct"`
 	// Specifies whether to associate an elastic IP address (EIP) with the cluster API server. This enables Internet access for the cluster. Valid values:
 	//
-	// *   `true`: associates an EIP with the cluster API server.
-	// *   `false`: does not associate an EIP with the cluster API server.
+	// 	- `true`: associates an EIP with the cluster API server.
+	//
+	// 	- `false`: does not associate an EIP with the cluster API server.
+	//
+	// example:
+	//
+	// true
 	ApiServerEip *bool `json:"api_server_eip,omitempty" xml:"api_server_eip,omitempty"`
 	// The ID of the EIP that you want to associate with the cluster API server. The parameter takes effect only if `api_server_eip` is set to `true`.
+	//
+	// example:
+	//
+	// eip-wz9fnasl6dsfhmvci****
 	ApiServerEipId *string `json:"api_server_eip_id,omitempty" xml:"api_server_eip_id,omitempty"`
 	// The cluster name.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). The name cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// cluster-new-name
 	ClusterName *string `json:"cluster_name,omitempty" xml:"cluster_name,omitempty"`
 	// Specifies whether to enable deletion protection for the cluster. If deletion protection is enabled, the cluster cannot be deleted in the ACK console or by calling API operations. Valid values:
 	//
-	// *   `true`: enables deletion protection for the cluster. This way, the cluster cannot be deleted in the ACK console or by calling API operations.
-	// *   `false`: disables deletion protection for the cluster. This way, the cluster can be deleted in the ACK console or by calling API operations.
+	// 	- `true`: enables deletion protection for the cluster. This way, the cluster cannot be deleted in the ACK console or by calling API operations.
+	//
+	// 	- `false`: disables deletion protection for the cluster. This way, the cluster can be deleted in the ACK console or by calling API operations.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	DeletionProtection *bool `json:"deletion_protection,omitempty" xml:"deletion_protection,omitempty"`
 	// Specifies whether to enable the RAM Roles for Service Accounts (RRSA) feature. Valid values:
 	//
-	// *   `true`: enables the RRSA feature.
-	// *   `false`: disables the RRSA feature.
+	// 	- `true`: enables the RRSA feature.
+	//
+	// 	- `false`: disables the RRSA feature.
+	//
+	// example:
+	//
+	// true
 	EnableRrsa *bool `json:"enable_rrsa,omitempty" xml:"enable_rrsa,omitempty"`
 	// Specifies whether to remap the test domain name of the cluster. Valid values:
 	//
-	// *   `true`: remaps the test domain name of the cluster.
-	// *   `false`: does not remap the test domain name of the cluster.
+	// 	- `true`: remaps the test domain name of the cluster.
+	//
+	// 	- `false`: does not remap the test domain name of the cluster.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	IngressDomainRebinding *bool `json:"ingress_domain_rebinding,omitempty" xml:"ingress_domain_rebinding,omitempty"`
 	// The ID of the Server Load Balancer (SLB) instance that is associated with the cluster.
+	//
+	// example:
+	//
+	// lb-wz97kes8tnndkpodw****
 	IngressLoadbalancerId *string `json:"ingress_loadbalancer_id,omitempty" xml:"ingress_loadbalancer_id,omitempty"`
 	// Specifies whether to enable deletion protection for the instances in the cluster. If deletion protection is enabled, the instances in the cluster cannot be deleted in the console or by calling the API. Valid values:
 	//
-	// *   `true`: enables deletion protection for the instances in the cluster. You cannot delete the instances in the cluster in the console or by calling the API.
-	// *   `false`: disables deletion protection for the instances in the cluster. You can delete the instances in the cluster in the console or by calling the API.
+	// 	- `true`: enables deletion protection for the instances in the cluster. You cannot delete the instances in the cluster in the console or by calling the API.
+	//
+	// 	- `false`: disables deletion protection for the instances in the cluster. You can delete the instances in the cluster in the console or by calling the API.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	InstanceDeletionProtection *bool `json:"instance_deletion_protection,omitempty" xml:"instance_deletion_protection,omitempty"`
 	// The maintenance window of the cluster. This parameter takes effect only in ACK Pro clusters.
 	MaintenanceWindow *MaintenanceWindow                   `json:"maintenance_window,omitempty" xml:"maintenance_window,omitempty"`
 	OperationPolicy   *ModifyClusterRequestOperationPolicy `json:"operation_policy,omitempty" xml:"operation_policy,omitempty" type:"Struct"`
 	// The ID of the resource group to which the cluster belongs.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 	// 系统事件存储配置。
 	SystemEventsLogging *ModifyClusterRequestSystemEventsLogging `json:"system_events_logging,omitempty" xml:"system_events_logging,omitempty" type:"Struct"`
@@ -15781,6 +20638,11 @@ func (s ModifyClusterRequest) GoString() string {
 
 func (s *ModifyClusterRequest) SetAccessControlList(v []*string) *ModifyClusterRequest {
 	s.AccessControlList = v
+	return s
+}
+
+func (s *ModifyClusterRequest) SetApiServerCustomCertSans(v *ModifyClusterRequestApiServerCustomCertSans) *ModifyClusterRequest {
+	s.ApiServerCustomCertSans = v
 	return s
 }
 
@@ -15844,6 +20706,29 @@ func (s *ModifyClusterRequest) SetSystemEventsLogging(v *ModifyClusterRequestSys
 	return s
 }
 
+type ModifyClusterRequestApiServerCustomCertSans struct {
+	Action                  *string   `json:"action,omitempty" xml:"action,omitempty"`
+	SubjectAlternativeNames []*string `json:"subject_alternative_names,omitempty" xml:"subject_alternative_names,omitempty" type:"Repeated"`
+}
+
+func (s ModifyClusterRequestApiServerCustomCertSans) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ModifyClusterRequestApiServerCustomCertSans) GoString() string {
+	return s.String()
+}
+
+func (s *ModifyClusterRequestApiServerCustomCertSans) SetAction(v string) *ModifyClusterRequestApiServerCustomCertSans {
+	s.Action = &v
+	return s
+}
+
+func (s *ModifyClusterRequestApiServerCustomCertSans) SetSubjectAlternativeNames(v []*string) *ModifyClusterRequestApiServerCustomCertSans {
+	s.SubjectAlternativeNames = v
+	return s
+}
+
 type ModifyClusterRequestOperationPolicy struct {
 	ClusterAutoUpgrade *ModifyClusterRequestOperationPolicyClusterAutoUpgrade `json:"cluster_auto_upgrade,omitempty" xml:"cluster_auto_upgrade,omitempty" type:"Struct"`
 }
@@ -15886,8 +20771,16 @@ func (s *ModifyClusterRequestOperationPolicyClusterAutoUpgrade) SetEnabled(v boo
 
 type ModifyClusterRequestSystemEventsLogging struct {
 	// 是否开启系统事件存储。
+	//
+	// example:
+	//
+	// true
 	Enabled *bool `json:"enabled,omitempty" xml:"enabled,omitempty"`
 	// 系统事件存储的LogProject名称。
+	//
+	// example:
+	//
+	// k8s-log-cb95aa626a47740afbf6aa099b65****
 	LoggingProject *string `json:"logging_project,omitempty" xml:"logging_project,omitempty"`
 }
 
@@ -15911,10 +20804,22 @@ func (s *ModifyClusterRequestSystemEventsLogging) SetLoggingProject(v string) *M
 
 type ModifyClusterResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// cb95aa626a47740afbf6aa09****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314****
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -15972,6 +20877,10 @@ func (s *ModifyClusterResponse) SetBody(v *ModifyClusterResponseBody) *ModifyClu
 
 type ModifyClusterAddonRequest struct {
 	// The custom parameter settings that you want to use.
+	//
+	// example:
+	//
+	// {"CpuRequest":"800m"}
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 }
 
@@ -16033,6 +20942,10 @@ type ModifyClusterConfigurationRequestCustomizeConfig struct {
 	// The custom configuration.
 	Configs []*ModifyClusterConfigurationRequestCustomizeConfigConfigs `json:"configs,omitempty" xml:"configs,omitempty" type:"Repeated"`
 	// The name of the component.
+	//
+	// example:
+	//
+	// kube-apiserver
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
@@ -16056,8 +20969,16 @@ func (s *ModifyClusterConfigurationRequestCustomizeConfig) SetName(v string) *Mo
 
 type ModifyClusterConfigurationRequestCustomizeConfigConfigs struct {
 	// The name of the configuration item.
+	//
+	// example:
+	//
+	// MaxRequestsInflight
 	Key *string `json:"key,omitempty" xml:"key,omitempty"`
 	// The value of the configuration item.
+	//
+	// example:
+	//
+	// 100
 	Value *string `json:"value,omitempty" xml:"value,omitempty"`
 }
 
@@ -16105,7 +21026,12 @@ func (s *ModifyClusterConfigurationResponse) SetStatusCode(v int32) *ModifyClust
 type ModifyClusterNodePoolRequest struct {
 	// The configuration of auto scaling.
 	AutoScaling *ModifyClusterNodePoolRequestAutoScaling `json:"auto_scaling,omitempty" xml:"auto_scaling,omitempty" type:"Struct"`
-	Concurrency *bool                                    `json:"concurrency,omitempty" xml:"concurrency,omitempty"`
+	// Specifies whether concurrency is supported.
+	//
+	// example:
+	//
+	// true
+	Concurrency *bool `json:"concurrency,omitempty" xml:"concurrency,omitempty"`
 	// The configuration of the cluster where the node pool is deployed.
 	KubernetesConfig *ModifyClusterNodePoolRequestKubernetesConfig `json:"kubernetes_config,omitempty" xml:"kubernetes_config,omitempty" type:"Struct"`
 	// The configuration of the managed node pool feature.
@@ -16117,6 +21043,10 @@ type ModifyClusterNodePoolRequest struct {
 	// The configurations about confidential computing for the cluster.
 	TeeConfig *ModifyClusterNodePoolRequestTeeConfig `json:"tee_config,omitempty" xml:"tee_config,omitempty" type:"Struct"`
 	// Specifies whether to update node information, such as labels and taints.
+	//
+	// example:
+	//
+	// true
 	UpdateNodes *bool `json:"update_nodes,omitempty" xml:"update_nodes,omitempty"`
 }
 
@@ -16170,44 +21100,82 @@ func (s *ModifyClusterNodePoolRequest) SetUpdateNodes(v bool) *ModifyClusterNode
 
 type ModifyClusterNodePoolRequestAutoScaling struct {
 	// Deprecated
+	//
 	// The maximum bandwidth of the elastic IP address (EIP).
+	//
+	// example:
+	//
+	// 5
 	EipBandwidth *int64 `json:"eip_bandwidth,omitempty" xml:"eip_bandwidth,omitempty"`
 	// Deprecated
+	//
 	// The metering method of the EIP. Valid values:
 	//
-	// *   `PayByBandwidth`: pay-by-bandwidth.
-	// *   `PayByTraffic`: pay-by-data-transfer.
+	// 	- `PayByBandwidth`: pay-by-bandwidth.
+	//
+	// 	- `PayByTraffic`: pay-by-data-transfer.
 	//
 	// Default value: `PayByBandwidth`.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	EipInternetChargeType *string `json:"eip_internet_charge_type,omitempty" xml:"eip_internet_charge_type,omitempty"`
 	// Specifies whether to enable auto scaling. Valid values:
 	//
-	// *   `true`: enables auto scaling for the node pool.
-	// *   `false`: disables auto scaling for the node pool. If you set this parameter to false, other parameters in the `auto_scaling` section do not take effect.
+	// 	- `true`: enables auto scaling for the node pool.
+	//
+	// 	- `false`: disables auto scaling for the node pool. If you set this parameter to false, other parameters in the `auto_scaling` section do not take effect.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
+	//
 	// Specifies whether to associate an EIP with the node pool. Valid values:
 	//
-	// *   `true`: associates an EIP with the node pool.
-	// *   `false`: does not associate an EIP with the node pool.
+	// 	- `true`: associates an EIP with the node pool.
+	//
+	// 	- `false`: does not associate an EIP with the node pool.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	IsBondEip *bool `json:"is_bond_eip,omitempty" xml:"is_bond_eip,omitempty"`
 	// The maximum number of Elastic Compute Service (ECS) instances that can be created in the node pool.
+	//
+	// example:
+	//
+	// 10
 	MaxInstances *int64 `json:"max_instances,omitempty" xml:"max_instances,omitempty"`
 	// The minimum number of ECS instances that must be kept in the node pool.
+	//
+	// example:
+	//
+	// 2
 	MinInstances *int64 `json:"min_instances,omitempty" xml:"min_instances,omitempty"`
 	// Deprecated
+	//
 	// The instance types that can be used for the auto scaling of the node pool. Valid values:
 	//
-	// *   `cpu`: regular instance.
-	// *   `gpu`: GPU-accelerated instance.
-	// *   `gpushare`: shared GPU-accelerated instance.
-	// *   `spot`: preemptible instance
+	// 	- `cpu`: regular instance.
+	//
+	// 	- `gpu`: GPU-accelerated instance.
+	//
+	// 	- `gpushare`: shared GPU-accelerated instance
+	//
+	// 	- `spot`: preemptible instance
 	//
 	// Default value: `cpu`.
+	//
+	// example:
+	//
+	// cpu
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -16257,31 +21225,54 @@ func (s *ModifyClusterNodePoolRequestAutoScaling) SetType(v string) *ModifyClust
 type ModifyClusterNodePoolRequestKubernetesConfig struct {
 	// Specifies whether to install the CloudMonitor agent on ECS nodes. After the CloudMonitor agent is installed on ECS nodes, you can view monitoring information about the instances in the CloudMonitor console. We recommend that you install the CloudMonitor agent. Valid values:
 	//
-	// *   `true`: installs the CloudMonitor agent on ECS nodes.
-	// *   `false`: does not install the CloudMonitor agent on ECS nodes.
+	// 	- `true`: installs the CloudMonitor agent on ECS nodes.
+	//
+	// 	- `false`: does not install the CloudMonitor agent on ECS nodes.
 	//
 	// Default value: `false`.
-	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
-	// The CPU management policy of the nodes in the node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
-	// *   `none`: specifies that the default CPU affinity is used.
+	// example:
+	//
+	// true
+	CmsEnabled *bool `json:"cms_enabled,omitempty" xml:"cms_enabled,omitempty"`
+	// The CPU management policy of the nodes in the node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later:
+	//
+	// 	- `static`: allows pods with specific resource characteristics on the node to be granted enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: specifies that the default CPU affinity is used.
 	//
 	// Default value: `none`.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
 	// The labels of the nodes in the node pool. You can add labels to the nodes in the cluster. You must add labels based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add at most 20 labels.
-	// *   The key must be unique and cannot exceed 64 characters in length. The value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// 	- A tag is a case-sensitive key-value pair. You can add up to 20 tags.
+	//
+	// 	- The key must be unique and cannot exceed 64 characters in length. The value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with `aliyun`, `acs:`, `https://`, or `http://`. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Labels []*Tag `json:"labels,omitempty" xml:"labels,omitempty" type:"Repeated"`
 	// The name of the container runtime.
+	//
+	// example:
+	//
+	// docker
 	Runtime *string `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The version of the container runtime.
+	//
+	// example:
+	//
+	// 19.03.5
 	RuntimeVersion *string `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	// The configurations of node taints.
 	Taints        []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
 	Unschedulable *bool    `json:"unschedulable,omitempty" xml:"unschedulable,omitempty"`
-	// The user-defined data of the node pool. For more information, see [Prepare user data](~~49121~~).
+	// The user-defined data of the node pool. For more information, see [Prepare user data](https://help.aliyun.com/document_detail/49121.html).
+	//
+	// example:
+	//
+	// IyEvdXNyL2Jpbi9iYXNoCmVjaG8gIkhlbGxvIEFDSyEi
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 }
 
@@ -16336,35 +21327,56 @@ func (s *ModifyClusterNodePoolRequestKubernetesConfig) SetUserData(v string) *Mo
 type ModifyClusterNodePoolRequestManagement struct {
 	// Specifies whether to enable auto repair. This parameter takes effect only when you specify `enable=true`. Valid values:
 	//
-	// *   `true`: enables auto repair.
-	// *   `false`: disables auto repair.
+	// 	- `true`: enables auto repair.
+	//
+	// 	- `false`: disables auto repair.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	AutoRepair *bool `json:"auto_repair,omitempty" xml:"auto_repair,omitempty"`
 	// The auto node repair policy.
 	AutoRepairPolicy *ModifyClusterNodePoolRequestManagementAutoRepairPolicy `json:"auto_repair_policy,omitempty" xml:"auto_repair_policy,omitempty" type:"Struct"`
 	// Specifies whether to enable auto update. Valid values:
 	//
-	// *   `true`: enables auto update.
-	// *   `false`: disables auto update.
+	// 	- `true`: enables auto update.
+	//
+	// 	- `false`: disables auto update.
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// The auto update policy.
 	AutoUpgradePolicy *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy `json:"auto_upgrade_policy,omitempty" xml:"auto_upgrade_policy,omitempty" type:"Struct"`
 	// Specifies whether ACK is allowed to automatically patch CVE vulnerabilities. Valid values:
 	//
-	// *   `true`: yes
-	// *   `false`: no
+	// 	- `true`: yes
+	//
+	// 	- `true`: no
+	//
+	// example:
+	//
+	// true
 	AutoVulFix *bool `json:"auto_vul_fix,omitempty" xml:"auto_vul_fix,omitempty"`
 	// The auto CVE patching policy.
 	AutoVulFixPolicy *ModifyClusterNodePoolRequestManagementAutoVulFixPolicy `json:"auto_vul_fix_policy,omitempty" xml:"auto_vul_fix_policy,omitempty" type:"Struct"`
 	// Specifies whether to enable the managed node pool feature. Valid values:
 	//
-	// *   `true`: enables the managed node pool feature.
-	// *   `false`: disables the managed node pool feature. Other parameters in this section take effect only when `enable=true` is specified.
+	// 	- `true`: enables the managed node pool feature.
+	//
+	// 	- `false`: disables the managed node pool feature. Other parameters in this section take effect only when `enable=true` is specified.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	Enable *bool `json:"enable,omitempty" xml:"enable,omitempty"`
 	// Deprecated
+	//
 	// The configuration of auto update. The configuration takes effect only when `enable=true` is specified.
 	UpgradeConfig *ModifyClusterNodePoolRequestManagementUpgradeConfig `json:"upgrade_config,omitempty" xml:"upgrade_config,omitempty" type:"Struct"`
 }
@@ -16420,8 +21432,13 @@ func (s *ModifyClusterNodePoolRequestManagement) SetUpgradeConfig(v *ModifyClust
 type ModifyClusterNodePoolRequestManagementAutoRepairPolicy struct {
 	// Specifies whether ACK is allowed to automatically restart nodes after patching CVE vulnerabilities. Valid values:
 	//
-	// *   `true`: yes
-	// *   `false`: no
+	// 	- `true`: yes
+	//
+	// 	- `false`: no
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 }
 
@@ -16441,9 +21458,16 @@ func (s *ModifyClusterNodePoolRequestManagementAutoRepairPolicy) SetRestartNode(
 type ModifyClusterNodePoolRequestManagementAutoUpgradePolicy struct {
 	// Specifies whether ACK is allowed to automatically update the kubelet. Valid values:
 	//
-	// *   `true`: yes
-	// *   `false`: no
+	// 	- `true`: yes
+	//
+	// 	- `false`: no
+	//
+	// example:
+	//
+	// true
 	AutoUpgradeKubelet *bool `json:"auto_upgrade_kubelet,omitempty" xml:"auto_upgrade_kubelet,omitempty"`
+	AutoUpgradeOs      *bool `json:"auto_upgrade_os,omitempty" xml:"auto_upgrade_os,omitempty"`
+	AutoUpgradeRuntime *bool `json:"auto_upgrade_runtime,omitempty" xml:"auto_upgrade_runtime,omitempty"`
 }
 
 func (s ModifyClusterNodePoolRequestManagementAutoUpgradePolicy) String() string {
@@ -16459,13 +21483,32 @@ func (s *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgrade
 	return s
 }
 
+func (s *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgradeOs(v bool) *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy {
+	s.AutoUpgradeOs = &v
+	return s
+}
+
+func (s *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy) SetAutoUpgradeRuntime(v bool) *ModifyClusterNodePoolRequestManagementAutoUpgradePolicy {
+	s.AutoUpgradeRuntime = &v
+	return s
+}
+
 type ModifyClusterNodePoolRequestManagementAutoVulFixPolicy struct {
 	// Specifies whether ACK is allowed to automatically restart nodes after patching CVE vulnerabilities. Valid values:
 	//
-	// *   `true`: yes
-	// *   `false`: no
+	// 	- `true`: yes
+	//
+	// 	- `false`: no
+	//
+	// example:
+	//
+	// true
 	RestartNode *bool `json:"restart_node,omitempty" xml:"restart_node,omitempty"`
 	// The severity levels of vulnerabilities that ACK is allowed to automatically patch. Multiple severity levels are separated by commas (,).
+	//
+	// example:
+	//
+	// asap,nntf
 	VulLevel *string `json:"vul_level,omitempty" xml:"vul_level,omitempty"`
 }
 
@@ -16489,24 +21532,42 @@ func (s *ModifyClusterNodePoolRequestManagementAutoVulFixPolicy) SetVulLevel(v s
 
 type ModifyClusterNodePoolRequestManagementUpgradeConfig struct {
 	// Deprecated
+	//
 	// Specifies whether to enable auto update.
 	//
-	// *   true: enables auto update.
-	// *   false: disables auto update.
+	// 	- true: enables auto update.
+	//
+	// 	- false: disables auto update.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	AutoUpgrade *bool `json:"auto_upgrade,omitempty" xml:"auto_upgrade,omitempty"`
 	// The maximum number of nodes that can be in the Unavailable state.
 	//
 	// Valid values: 1 to 1000.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	MaxUnavailable *int64 `json:"max_unavailable,omitempty" xml:"max_unavailable,omitempty"`
 	// The number of nodes that are temporarily added to the node pool during an auto update. Additional nodes are used to host the workloads of nodes that are being updated.
 	//
 	// >  We recommend that you set the number of additional nodes to a value that does not exceed the current number of existing nodes.
+	//
+	// example:
+	//
+	// 5
 	Surge *int64 `json:"surge,omitempty" xml:"surge,omitempty"`
 	// The percentage of additional nodes to the nodes in the node pool. You must set this parameter or `surge`.
+	//
+	// example:
+	//
+	// 0
 	SurgePercentage *int64 `json:"surge_percentage,omitempty" xml:"surge_percentage,omitempty"`
 }
 
@@ -16542,8 +21603,16 @@ type ModifyClusterNodePoolRequestNodepoolInfo struct {
 	// The name of the node pool.
 	//
 	// The name must be 1 to 63 characters in length, and can contain digits, letters, and hyphens (-). It cannot start with a hyphen (-).
+	//
+	// example:
+	//
+	// default-nodepool
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
-	// The ID of the resource group to which the node pool belongs.
+	// The ID of the resource group.
+	//
+	// example:
+	//
+	// rg-acfmyvw3wjm****
 	ResourceGroupId *string `json:"resource_group_id,omitempty" xml:"resource_group_id,omitempty"`
 }
 
@@ -16568,82 +21637,159 @@ func (s *ModifyClusterNodePoolRequestNodepoolInfo) SetResourceGroupId(v string) 
 type ModifyClusterNodePoolRequestScalingGroup struct {
 	// Specifies whether to enable auto-renewal for the nodes in the node pool. This parameter takes effect only when you set `instance_charge_type` to `PrePaid`. Valid values:
 	//
-	// *   `true`: enables auto-renewal.
-	// *   `false`: disables auto-renewal.
+	// 	- `true`: enables auto-renewal.
+	//
+	// 	- `false`: disables auto-renewal.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	AutoRenew *bool `json:"auto_renew,omitempty" xml:"auto_renew,omitempty"`
 	// The duration of the auto-renewal. This parameter takes effect and is required only when you set `instance_charge_type` to `PrePaid`.
 	//
 	// If you specify `PeriodUnit=Month`, the valid values are 1, 2, 3, 6, and 12.
+	//
+	// example:
+	//
+	// 1
 	AutoRenewPeriod *int64 `json:"auto_renew_period,omitempty" xml:"auto_renew_period,omitempty"`
 	// Specifies whether to automatically create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as the cost or insufficient inventory. This parameter takes effect when you set `multi_az_policy` to `COST_OPTIMIZED`. Valid values:
 	//
-	// *   `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
-	// *   `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	// 	- `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created
+	//
+	// 	- `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
+	//
+	// example:
+	//
+	// true
 	CompensateWithOnDemand *bool `json:"compensate_with_on_demand,omitempty" xml:"compensate_with_on_demand,omitempty"`
 	// The configurations of the data disks that are mounted to the nodes in the node pool. You can mount 0 to 10 data disks. You can mount at most 10 data disks to the nodes in the node pool.
 	DataDisks []*DataDisk `json:"data_disks,omitempty" xml:"data_disks,omitempty" type:"Repeated"`
 	// The expected number of nodes in the node pool.
+	//
+	// example:
+	//
+	// 2
 	DesiredSize *int64 `json:"desired_size,omitempty" xml:"desired_size,omitempty"`
 	// The ID of the custom image. You can call the `DescribeKubernetesVersionMetadata` operation to query the supported images. By default, the latest image is used.
-	ImageId   *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200904.vhd
+	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
+	// The type of OS distribution that you want to use. To specify the node OS, we recommend that you use this parameter. Valid values: CentOS, AliyunLinux, AliyunLinux Qboot, AliyunLinuxUEFI, AliyunLinux3, Windows, WindowsCore, AliyunLinux3Arm64, and ContainerOS.
+	//
+	// example:
+	//
+	// AliyunLinux
 	ImageType *string `json:"image_type,omitempty" xml:"image_type,omitempty"`
 	// The billing method of the nodes in the node pool. Valid values:
 	//
-	// *   `PrePaid`: subscription.
-	// *   `PostPaid`: pay-as-you-go.
+	// 	- `PrePaid`: subscription.
+	//
+	// 	- `PostPaid`: pay-as-you-go.
 	//
 	// Default value: `PostPaid`.
+	//
+	// example:
+	//
+	// PostPaid
 	InstanceChargeType *string `json:"instance_charge_type,omitempty" xml:"instance_charge_type,omitempty"`
 	// A list of instance types. You can select multiple instance types. When the system needs to create a node, it starts from the first instance type until the node is created. The instance type that is used to create the node varies based on the actual instance stock.
 	InstanceTypes []*string `json:"instance_types,omitempty" xml:"instance_types,omitempty" type:"Repeated"`
 	// The metering method of the public IP address. Valid values:
 	//
-	// *   `PayByBandwidth`: pay-by-bandwidth.
-	// *   `PayByTraffic`: pay-by-data-transfer.
+	// 	- `PayByBandwidth`: pay-by-bandwidth.
+	//
+	// 	- `PayByTraffic`: pay-by-data-transfer.
+	//
+	// example:
+	//
+	// PayByBandwidth
 	InternetChargeType *string `json:"internet_charge_type,omitempty" xml:"internet_charge_type,omitempty"`
 	// The maximum outbound bandwidth of the public IP address of the node. Unit: Mbit/s. Valid values: 1 to 100.
+	//
+	// example:
+	//
+	// 5
 	InternetMaxBandwidthOut *int64 `json:"internet_max_bandwidth_out,omitempty" xml:"internet_max_bandwidth_out,omitempty"`
 	// The name of the key pair. You must set this parameter or the `login_password` parameter. You must set `key_pair` if the node pool is a managed node pool.
+	//
+	// example:
+	//
+	// pro-nodepool
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
 	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+	//
+	// example:
+	//
+	// Hello1234
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	// The ECS instance scaling policy for a multi-zone scaling group. Valid values:
+	// The ECS instance scaling policy for the multi-zone scaling group. Valid values:
 	//
-	// *   `PRIORITY`: The scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
+	// 	- `PRIORITY`: The scaling group is scaled based on the VSwitchIds.N parameter. If an ECS instance cannot be created in the zone where the vSwitch that has the highest priority resides, Auto Scaling creates the ECS instance in the zone where the vSwitch that has the next highest priority resides.
 	//
-	// *   `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
+	// 	- `COST_OPTIMIZED`: ECS instances are created based on the vCPU unit price in ascending order. Preemptible instances are preferably created when preemptible instance types are specified in the scaling configuration. You can set the `CompensateWithOnDemand` parameter to specify whether to automatically create pay-as-you-go instances when preemptible instances cannot be created due to insufficient resources.
 	//
 	//     **
 	//
-	//     **Note** `COST_OPTIMIZED` is valid only when multiple instance types are specified or at least one preemptible instance type is specified.
+	//     **Note*	- `COST_OPTIMIZED` is valid only when multiple instance types are specified or at least one preemptible instance type is specified.
 	//
-	// *   `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to insufficient inventory, you can call the `RebalanceInstances` operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](~~71516~~).
+	// 	- `BALANCE`: ECS instances are evenly distributed across multiple zones specified by the scaling group. If ECS instances become imbalanced among multiple zones due to the insufficient inventory, you can call the `RebalanceInstances` operation of Auto Scaling to balance the instance distribution among zones. For more information, see [RebalanceInstances](https://help.aliyun.com/document_detail/71516.html).
 	//
 	// Default value: `PRIORITY`.
+	//
+	// example:
+	//
+	// BALANCE
 	MultiAzPolicy *string `json:"multi_az_policy,omitempty" xml:"multi_az_policy,omitempty"`
 	// The minimum number of pay-as-you-go instances that must be kept in the scaling group. Valid values: 0 to 1000. If the number of pay-as-you-go instances is less than the value of this parameter, Auto Scaling preferably creates pay-as-you-go instances.
+	//
+	// example:
+	//
+	// 0
 	OnDemandBaseCapacity *int64 `json:"on_demand_base_capacity,omitempty" xml:"on_demand_base_capacity,omitempty"`
 	// The percentage of pay-as-you-go instances among the extra instances that exceed the number specified by `on_demand_base_capacity`. Valid values: 0 to 100.
+	//
+	// example:
+	//
+	// 20
 	OnDemandPercentageAboveBaseCapacity *int64 `json:"on_demand_percentage_above_base_capacity,omitempty" xml:"on_demand_percentage_above_base_capacity,omitempty"`
 	// The subscription duration of worker nodes. This parameter takes effect and is required only when `instance_charge_type` is set to `PrePaid`.
 	//
 	// If `PeriodUnit=Month` is specified, the valid values are 1, 2, 3, 6, 12, 24, 36, 48, and 60.
+	//
+	// example:
+	//
+	// 1
 	Period *int64 `json:"period,omitempty" xml:"period,omitempty"`
 	// The billing cycle of the nodes in the node pool. This parameter is required if you set `instance_charge_type` to `PrePaid`.
 	//
 	// The billing cycle is measured only in months.
 	//
 	// Default value: `Month`.
+	//
+	// example:
+	//
+	// Month
 	PeriodUnit *string `json:"period_unit,omitempty" xml:"period_unit,omitempty"`
 	// Deprecated
+	//
 	// The operating system. Valid values:
 	//
-	// *   `AliyunLinux`
-	// *   `CentOS`
-	// *   `Windows`
-	// *   `WindowsCore`
+	// 	- `AliyunLinux`
+	//
+	// 	- `CentOS`
+	//
+	// 	- `Windows`
+	//
+	// 	- `WindowsCore`
+	//
+	// example:
+	//
+	// AliyunLinux
 	Platform *string `json:"platform,omitempty" xml:"platform,omitempty"`
 	// The configuration of the private node pool.
 	PrivatePoolOptions *ModifyClusterNodePoolRequestScalingGroupPrivatePoolOptions `json:"private_pool_options,omitempty" xml:"private_pool_options,omitempty" type:"Struct"`
@@ -16651,54 +21797,113 @@ type ModifyClusterNodePoolRequestScalingGroup struct {
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The scaling mode of the scaling group. Valid values:
 	//
-	// *   `release`: the standard mode. ECS instances are created and released based on resource usage.
-	// *   `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances that are attached with local disks.
+	// 	- `release`: the standard mode. ECS instances are created and released based on the resource usage.
+	//
+	// 	- `recycle`: the swift mode. ECS instances are created, stopped, or started during scaling events. This reduces the time required for the next scale-out event. When the instance is stopped, you are charged only for the storage service. This does not apply to ECS instances that are attached with local disks.
+	//
+	// example:
+	//
+	// release
 	ScalingPolicy *string `json:"scaling_policy,omitempty" xml:"scaling_policy,omitempty"`
 	// The number of instance types that are available for creating preemptible instances. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
+	//
+	// example:
+	//
+	// 5
 	SpotInstancePools *int64 `json:"spot_instance_pools,omitempty" xml:"spot_instance_pools,omitempty"`
 	// Specifies whether to supplement preemptible instances. If this parameter is set to true, when the scaling group receives a system message that a preemptible instance is to be reclaimed, the scaling group attempts to create a new instance to replace this instance. Valid values:
 	//
-	// *   `true`: enables the supplementation of preemptible instances.
-	// *   `false`: disables the supplementation of preemptible instances.
+	// 	- `true`: enables the supplementation of preemptible instances.
+	//
+	// 	- `false`: disables the supplementation of preemptible instances.
+	//
+	// example:
+	//
+	// false
 	SpotInstanceRemedy *bool `json:"spot_instance_remedy,omitempty" xml:"spot_instance_remedy,omitempty"`
 	// The bid configurations of preemptible instances.
 	SpotPriceLimit []*ModifyClusterNodePoolRequestScalingGroupSpotPriceLimit `json:"spot_price_limit,omitempty" xml:"spot_price_limit,omitempty" type:"Repeated"`
 	// The bidding policy of preemptible instances. Valid values:
 	//
-	// *   `NoSpot`: non-preemptible instance.
-	// *   `SpotWithPriceLimit`: specifies the highest bid for the preemptible instance.
-	// *   `SpotAsPriceGo`: automatically submits bids based on the up-to-date market price.
+	// 	- `NoSpot`: non-preemptible instance.
 	//
-	// For more information, see [Preemptible instances](~~157759~~).
-	SpotStrategy              *string   `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
-	SystemDiskBurstingEnabled *bool     `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
-	SystemDiskCategories      []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
+	// 	- `SpotWithPriceLimit`: specifies the highest bid for the preemptible instance.
+	//
+	// 	- `SpotAsPriceGo`: automatically submits bids based on the up-to-date market price.
+	//
+	// For more information, see [Preemptible instances](https://help.aliyun.com/document_detail/157759.html).
+	//
+	// example:
+	//
+	// SpotWithPriceLimit
+	SpotStrategy *string `json:"spot_strategy,omitempty" xml:"spot_strategy,omitempty"`
+	// Indicates whether Burst is enabled for the system disk when the disk type is cloud_auto.
+	//
+	// example:
+	//
+	// true
+	SystemDiskBurstingEnabled *bool `json:"system_disk_bursting_enabled,omitempty" xml:"system_disk_bursting_enabled,omitempty"`
+	// The types of system disks. The system attempts to create system disks from a disk type with a lower priority when the disk type with a higher priority is unavailable. Valid values: cloud: disk cloud_efficiency: ultra disk cloud_ssd: standard SSD cloud_essd: indicates an enhanced SSD (ESSD).
+	SystemDiskCategories []*string `json:"system_disk_categories,omitempty" xml:"system_disk_categories,omitempty" type:"Repeated"`
 	// The type of system disk. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD
 	//
 	// Default value: `cloud_ssd`.
-	SystemDiskCategory         *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	//
+	// example:
+	//
+	// cloud_efficiency
+	SystemDiskCategory *string `json:"system_disk_category,omitempty" xml:"system_disk_category,omitempty"`
+	// The algorithm that you want to use to encrypt the system disk. The value is aes-256.
+	//
+	// example:
+	//
+	// aes-256
 	SystemDiskEncryptAlgorithm *string `json:"system_disk_encrypt_algorithm,omitempty" xml:"system_disk_encrypt_algorithm,omitempty"`
-	SystemDiskEncrypted        *bool   `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
-	SystemDiskKmsKeyId         *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
-	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for enhanced SSDs. You can specify a higher PL if you increase the size of the system disk. For more information, see [ESSDs](~~122389~~).
+	// Indicates whether the system disk is encrypted. Valid values: true: encrypts the system disk. false: does not encrypt the system disk.
+	//
+	// example:
+	//
+	// false
+	SystemDiskEncrypted *bool `json:"system_disk_encrypted,omitempty" xml:"system_disk_encrypted,omitempty"`
+	// The ID of the Key Management Service (KMS) key that is used to encrypt the system disk.
+	//
+	// example:
+	//
+	// 0e478b7a-4262-4802-b8cb-00d3fb40****
+	SystemDiskKmsKeyId *string `json:"system_disk_kms_key_id,omitempty" xml:"system_disk_kms_key_id,omitempty"`
+	// The performance level (PL) of the system disk that you want to use for the node. This parameter takes effect only for enhanced SSDs. You can specify a higher PL if you increase the size of the system disk. For more information, see [ESSDs](https://help.aliyun.com/document_detail/122389.html).
+	//
+	// example:
+	//
+	// PL1
 	SystemDiskPerformanceLevel *string `json:"system_disk_performance_level,omitempty" xml:"system_disk_performance_level,omitempty"`
-	SystemDiskProvisionedIops  *int64  `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
-	// The system disk size of a node. Unit: GiB.
+	// The predefined read and write IOPS of the system disk when the disk type is cloud_auto.
+	//
+	// example:
+	//
+	// 1000
+	SystemDiskProvisionedIops *int64 `json:"system_disk_provisioned_iops,omitempty" xml:"system_disk_provisioned_iops,omitempty"`
+	// The size of the system disk in GiB.
 	//
 	// Valid values: 20 to 500.
 	//
-	// The value of this parameter must be at least 20 and greater than or equal to the size of the specified image.
+	// The value of this parameter must be at least 20 and greater than or equal to the size of the image.
 	//
-	// The default value is the greater one between 40 and the image size.
+	// Default value: the greater value between 40 and the image size.
+	//
+	// example:
+	//
+	// 120
 	SystemDiskSize *int64 `json:"system_disk_size,omitempty" xml:"system_disk_size,omitempty"`
-	// The labels that you want to add to the ECS instances.
+	// The labels that you want to add only to ECS instances.
 	//
-	// The key must be unique and cannot exceed 128 characters in length. Neither keys nor values can start with aliyun or acs:. Neither keys nor values can contain https:// or http://.
+	// The tag key must be unique and cannot exceed 128 characters in length. The tag key and value must not start with aliyun or acs: or contain https:// or http://.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The vSwitch IDs. You can specify 1 to 20 vSwitches.
+	// The IDs of vSwitches. You can specify 1 to 20 vSwitches.
 	//
 	// >  To ensure high availability, we recommend that you select vSwitches in different zones.
 	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
@@ -16899,12 +22104,22 @@ func (s *ModifyClusterNodePoolRequestScalingGroup) SetVswitchIds(v []*string) *M
 
 type ModifyClusterNodePoolRequestScalingGroupPrivatePoolOptions struct {
 	// The ID of the private node pool.
+	//
+	// example:
+	//
+	// eap-bp67acfmxazb4****
 	Id *string `json:"id,omitempty" xml:"id,omitempty"`
 	// The type of private node pool. This parameter specifies the type of private node pool that you want to use to create instances. A private node pool is generated when an elasticity assurance or a capacity reservation service takes effect. The system selects a private node pool to launch instances. Valid values:
 	//
-	// *   `Open`: specifies an open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
-	// *   `Target`: specifies a private node pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
-	// *   `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
+	// 	- `Open`: specifies an open private node pool. The system selects an open private node pool to launch instances. If no matching open private node pool is available, the resources in the public node pool are used.
+	//
+	// 	- `Target`: specifies a private node pool. The system uses the resources of the specified private node pool to launch instances. If the specified private node pool is unavailable, instances cannot be launched.
+	//
+	// 	- `None`: no private node pool is used. The resources of private node pools are not used to launch the instances.
+	//
+	// example:
+	//
+	// Open
 	MatchCriteria *string `json:"match_criteria,omitempty" xml:"match_criteria,omitempty"`
 }
 
@@ -16928,10 +22143,18 @@ func (s *ModifyClusterNodePoolRequestScalingGroupPrivatePoolOptions) SetMatchCri
 
 type ModifyClusterNodePoolRequestScalingGroupSpotPriceLimit struct {
 	// The instance type of preemptible instances.
+	//
+	// example:
+	//
+	// ecs.c6.large
 	InstanceType *string `json:"instance_type,omitempty" xml:"instance_type,omitempty"`
 	// The maximum bid price of a preemptible instance.
 	//
 	// Unit: USD/hour.
+	//
+	// example:
+	//
+	// 0.39
 	PriceLimit *string `json:"price_limit,omitempty" xml:"price_limit,omitempty"`
 }
 
@@ -16956,10 +22179,15 @@ func (s *ModifyClusterNodePoolRequestScalingGroupSpotPriceLimit) SetPriceLimit(v
 type ModifyClusterNodePoolRequestTeeConfig struct {
 	// Specifies whether to enable confidential computing for the cluster. Valid values:
 	//
-	// *   `true`: enables confidential computing for the cluster.
-	// *   `false`: disables confidential computing for the cluster.
+	// 	- `true`: enables confidential computing for the cluster.
+	//
+	// 	- `false`: disables confidential computing for the cluster.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// false
 	TeeEnable *bool `json:"tee_enable,omitempty" xml:"tee_enable,omitempty"`
 }
 
@@ -16978,9 +22206,17 @@ func (s *ModifyClusterNodePoolRequestTeeConfig) SetTeeEnable(v bool) *ModifyClus
 
 type ModifyClusterNodePoolResponseBody struct {
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np737c3ac1ac684703b9e10673aa2c****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	RequestId  *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5fd211e924e1d00787000293
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -17079,7 +22315,8 @@ func (s *ModifyClusterTagsResponse) SetStatusCode(v int32) *ModifyClusterTagsRes
 
 type ModifyNodePoolNodeConfigRequest struct {
 	// The kubelet configuration.
-	KubeletConfig *KubeletConfig `json:"kubelet_config,omitempty" xml:"kubelet_config,omitempty"`
+	KubeletConfig *KubeletConfig                           `json:"kubelet_config,omitempty" xml:"kubelet_config,omitempty"`
+	OsConfig      *ModifyNodePoolNodeConfigRequestOsConfig `json:"os_config,omitempty" xml:"os_config,omitempty" type:"Struct"`
 	// The rotation configuration.
 	RollingPolicy *ModifyNodePoolNodeConfigRequestRollingPolicy `json:"rolling_policy,omitempty" xml:"rolling_policy,omitempty" type:"Struct"`
 }
@@ -17097,13 +22334,39 @@ func (s *ModifyNodePoolNodeConfigRequest) SetKubeletConfig(v *KubeletConfig) *Mo
 	return s
 }
 
+func (s *ModifyNodePoolNodeConfigRequest) SetOsConfig(v *ModifyNodePoolNodeConfigRequestOsConfig) *ModifyNodePoolNodeConfigRequest {
+	s.OsConfig = v
+	return s
+}
+
 func (s *ModifyNodePoolNodeConfigRequest) SetRollingPolicy(v *ModifyNodePoolNodeConfigRequestRollingPolicy) *ModifyNodePoolNodeConfigRequest {
 	s.RollingPolicy = v
 	return s
 }
 
+type ModifyNodePoolNodeConfigRequestOsConfig struct {
+	Sysctl map[string]interface{} `json:"sysctl,omitempty" xml:"sysctl,omitempty"`
+}
+
+func (s ModifyNodePoolNodeConfigRequestOsConfig) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ModifyNodePoolNodeConfigRequestOsConfig) GoString() string {
+	return s.String()
+}
+
+func (s *ModifyNodePoolNodeConfigRequestOsConfig) SetSysctl(v map[string]interface{}) *ModifyNodePoolNodeConfigRequestOsConfig {
+	s.Sysctl = v
+	return s
+}
+
 type ModifyNodePoolNodeConfigRequestRollingPolicy struct {
 	// The maximum number of nodes in the Unschedulable state.
+	//
+	// example:
+	//
+	// 3
 	MaxParallelism *int64 `json:"max_parallelism,omitempty" xml:"max_parallelism,omitempty"`
 }
 
@@ -17122,10 +22385,22 @@ func (s *ModifyNodePoolNodeConfigRequestRollingPolicy) SetMaxParallelism(v int64
 
 type ModifyNodePoolNodeConfigResponseBody struct {
 	// The node pool ID.
+	//
+	// example:
+	//
+	// np737c3ac1ac684703b9e10673aa2c****
 	NodepoolId *string `json:"nodepool_id,omitempty" xml:"nodepool_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// D7631D83-6E98-1949-B665-766A62xxxxxx
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5fd211e924e1d00787xxxxxx
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -17184,14 +22459,27 @@ func (s *ModifyNodePoolNodeConfigResponse) SetBody(v *ModifyNodePoolNodeConfigRe
 type ModifyPolicyInstanceRequest struct {
 	// The action of the policy. Valid values:
 	//
-	// *   `deny`: Deployments that match the policy are denied.
-	// *   `warn`: Alerts are generated for deployments that match the policy.
+	// 	- `deny`: Deployments that match the policy are denied.
+	//
+	// 	- `warn`: Alerts are generated for deployments that match the policy.
+	//
+	// example:
+	//
+	// deny
 	Action *string `json:"action,omitempty" xml:"action,omitempty"`
 	// The ID of the policy instance.
+	//
+	// example:
+	//
+	// allowed-repos-cbhhb
 	InstanceName *string `json:"instance_name,omitempty" xml:"instance_name,omitempty"`
 	// The namespaces to which the policy is applied. The policy is applied to all namespaces if this parameter is left empty.
 	Namespaces []*string `json:"namespaces,omitempty" xml:"namespaces,omitempty" type:"Repeated"`
-	// The parameters of the policy instance. For more information, see [Predefined security policies of ACK](~~359819~~).
+	// The parameters of the policy instance. For more information, see [Predefined security policies of ACK](https://help.aliyun.com/document_detail/359819.html).
+	//
+	// example:
+	//
+	// "restrictedNamespaces": [ "test" ]
 	Parameters map[string]interface{} `json:"parameters,omitempty" xml:"parameters,omitempty"`
 }
 
@@ -17273,8 +22561,13 @@ func (s *ModifyPolicyInstanceResponse) SetBody(v *ModifyPolicyInstanceResponseBo
 type OpenAckServiceRequest struct {
 	// The type of ACK service that you want to activate. Valid values:
 	//
-	// *   `propayasgo`: ACK Pro
-	// *   `edgepayasgo`: ACK Edge
+	// 	- `propayasgo`: ACK Pro
+	//
+	// 	- `edgepayasgo`: ACK Edge
+	//
+	// example:
+	//
+	// propayasgo
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -17293,8 +22586,16 @@ func (s *OpenAckServiceRequest) SetType(v string) *OpenAckServiceRequest {
 
 type OpenAckServiceResponseBody struct {
 	// The ID of the order.
+	//
+	// example:
+	//
+	// 2067*******0374
 	OrderId *string `json:"order_id,omitempty" xml:"order_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 20758A-585D-4A41-A9B2-28DA8F4F534F
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 }
 
@@ -17418,6 +22719,8 @@ type RemoveClusterNodesRequest struct {
 	// Specifies whether to evict all pods from the nodes that you want to remove.
 	DrainNode *bool `json:"drain_node,omitempty" xml:"drain_node,omitempty"`
 	// The list of nodes to be removed.
+	//
+	// This parameter is required.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
 	// Specifies whether to release the Elastic Compute Service (ECS) instances when they are removed from the cluster.
 	ReleaseNode *bool `json:"release_node,omitempty" xml:"release_node,omitempty"`
@@ -17471,21 +22774,36 @@ func (s *RemoveClusterNodesResponse) SetStatusCode(v int32) *RemoveClusterNodesR
 
 type RemoveNodePoolNodesRequest struct {
 	// 是否并发移除。
+	//
+	// example:
+	//
+	// false
 	Concurrency *bool `json:"concurrency,omitempty" xml:"concurrency,omitempty"`
 	// Specifies whether to drain the nodes that you want to remove. Valid values:
 	//
-	// *   true: drain the nodes that you want to remove.
-	// *   false: do not drain the nodes that you want to remove.
+	// 	- true: drain the nodes that you want to remove.
+	//
+	// 	- false: do not drain the nodes that you want to remove.
+	//
+	// example:
+	//
+	// true
 	DrainNode *bool `json:"drain_node,omitempty" xml:"drain_node,omitempty"`
 	// A list of instances that you want to remove.
 	InstanceIds []*string `json:"instance_ids,omitempty" xml:"instance_ids,omitempty" type:"Repeated"`
 	// Deprecated
+	//
 	// A list of nodes that you want to remove.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
 	// Specifies whether to release the nodes after they are removed. Valid values:
 	//
-	// *   true: release the nodes after they are removed.
-	// *   false: do not release the nodes after they are removed.
+	// 	- true: release the nodes after they are removed.
+	//
+	// 	- false: do not release the nodes after they are removed.
+	//
+	// example:
+	//
+	// true
 	ReleaseNode *bool `json:"release_node,omitempty" xml:"release_node,omitempty"`
 }
 
@@ -17524,21 +22842,36 @@ func (s *RemoveNodePoolNodesRequest) SetReleaseNode(v bool) *RemoveNodePoolNodes
 
 type RemoveNodePoolNodesShrinkRequest struct {
 	// 是否并发移除。
+	//
+	// example:
+	//
+	// false
 	Concurrency *bool `json:"concurrency,omitempty" xml:"concurrency,omitempty"`
 	// Specifies whether to drain the nodes that you want to remove. Valid values:
 	//
-	// *   true: drain the nodes that you want to remove.
-	// *   false: do not drain the nodes that you want to remove.
+	// 	- true: drain the nodes that you want to remove.
+	//
+	// 	- false: do not drain the nodes that you want to remove.
+	//
+	// example:
+	//
+	// true
 	DrainNode *bool `json:"drain_node,omitempty" xml:"drain_node,omitempty"`
 	// A list of instances that you want to remove.
 	InstanceIdsShrink *string `json:"instance_ids,omitempty" xml:"instance_ids,omitempty"`
 	// Deprecated
+	//
 	// A list of nodes that you want to remove.
 	NodesShrink *string `json:"nodes,omitempty" xml:"nodes,omitempty"`
 	// Specifies whether to release the nodes after they are removed. Valid values:
 	//
-	// *   true: release the nodes after they are removed.
-	// *   false: do not release the nodes after they are removed.
+	// 	- true: release the nodes after they are removed.
+	//
+	// 	- false: do not release the nodes after they are removed.
+	//
+	// example:
+	//
+	// true
 	ReleaseNode *bool `json:"release_node,omitempty" xml:"release_node,omitempty"`
 }
 
@@ -17577,8 +22910,16 @@ func (s *RemoveNodePoolNodesShrinkRequest) SetReleaseNode(v bool) *RemoveNodePoo
 
 type RemoveNodePoolNodesResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// A9891419-D125-4D89-AFCA-68846675E2F7
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-62a944794ee141074400****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -17653,6 +22994,9 @@ func (s *RemoveWorkflowResponse) SetStatusCode(v int32) *RemoveWorkflowResponse 
 }
 
 type RepairClusterNodePoolRequest struct {
+	// example:
+	//
+	// true
 	AutoRestart *bool `json:"auto_restart,omitempty" xml:"auto_restart,omitempty"`
 	// The list of nodes. If you do not specify nodes, all nodes in the node pool are selected.
 	Nodes []*string `json:"nodes,omitempty" xml:"nodes,omitempty" type:"Repeated"`
@@ -17678,8 +23022,16 @@ func (s *RepairClusterNodePoolRequest) SetNodes(v []*string) *RepairClusterNodeP
 
 type RepairClusterNodePoolResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// db82195b-75a8-40e5-9be4-16f1829dc624
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The ID of the task.
+	//
+	// example:
+	//
+	// T-613b19bbd160ad4928000001
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -17804,6 +23156,12 @@ type RunClusterCheckRequest struct {
 	Options map[string]*string `json:"options,omitempty" xml:"options,omitempty"`
 	Target  *string            `json:"target,omitempty" xml:"target,omitempty"`
 	// The check method.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// ClusterUpgrade
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 }
 
@@ -17832,8 +23190,16 @@ func (s *RunClusterCheckRequest) SetType(v string) *RunClusterCheckRequest {
 
 type RunClusterCheckResponseBody struct {
 	// The ID of the cluster check task.
+	//
+	// example:
+	//
+	// 1697100584236600453-ce0da5a1d627e4e9e9f96cae8ad07****-clustercheck-lboto
 	CheckId *string `json:"check_id,omitempty" xml:"check_id,omitempty"`
 	// Id of the request
+	//
+	// example:
+	//
+	// F04DF81D-5C12-1524-B36A-86E02526****
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 }
 
@@ -18144,6 +23510,10 @@ func (s *ScaleClusterResponse) SetBody(v *ScaleClusterResponseBody) *ScaleCluste
 
 type ScaleClusterNodePoolRequest struct {
 	// The number of worker nodes that you want to add. You can add at most 500 nodes in one API call. The maximum number of nodes that can be added is limited by the quota of nodes in the cluster.
+	//
+	// example:
+	//
+	// 1
 	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
 }
 
@@ -18162,6 +23532,10 @@ func (s *ScaleClusterNodePoolRequest) SetCount(v int64) *ScaleClusterNodePoolReq
 
 type ScaleClusterNodePoolResponseBody struct {
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5faa48fb31b6b8078d00****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -18210,88 +23584,165 @@ func (s *ScaleClusterNodePoolResponse) SetBody(v *ScaleClusterNodePoolResponseBo
 type ScaleOutClusterRequest struct {
 	// Specifies whether to install the CloudMonitor agent. Valid values:
 	//
-	// *   `true`: installs the CloudMonitor agent.
-	// *   `false`: does not install the CloudMonitor agent.
+	// 	- `true`: installs the CloudMonitor agent.
+	//
+	// 	- `false`: does not install the CloudMonitor agent.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	CloudMonitorFlags *bool `json:"cloud_monitor_flags,omitempty" xml:"cloud_monitor_flags,omitempty"`
 	// The number of worker nodes that you want to add.
-	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
-	// The CPU management policy. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
 	//
-	// *   `static`: This policy allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
-	// *   `none`: specifies that the default CPU affinity is used.
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 3
+	Count *int64 `json:"count,omitempty" xml:"count,omitempty"`
+	// The CPU management policy of the nodes in a node pool. The following policies are supported if the Kubernetes version of the cluster is 1.12.6 or later.
+	//
+	// 	- `static`: This policy allows pods with specific resource characteristics on the node to be granted with enhanced CPU affinity and exclusivity.
+	//
+	// 	- `none`: The default CPU affinity is used.
 	//
 	// Default value: `none`.
+	//
+	// example:
+	//
+	// none
 	CpuPolicy *string `json:"cpu_policy,omitempty" xml:"cpu_policy,omitempty"`
-	// Specifies a custom image for nodes. By default, the image provided by ACK is used. You can select a custom image to replace the default image. For more information, see [Custom images](~~146647~~).
+	// Specifies a custom image for nodes. By default, the image provided by Container Service for Kubernetes (ACK) is used. You can select a custom image to replace the default image. For more information, see [Custom images](https://help.aliyun.com/document_detail/146647.html).
+	//
+	// example:
+	//
+	// m-bp16z7xko3vvv8gt****
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The name of the key pair. You must set this parameter or the `login_password` parameter.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// secrity-key
 	KeyPair *string `json:"key_pair,omitempty" xml:"key_pair,omitempty"`
 	// The password for SSH logon. You must set this parameter or the `key_pair` parameter. The password must be 8 to 30 characters in length, and must contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// Hello@1234
 	LoginPassword *string `json:"login_password,omitempty" xml:"login_password,omitempty"`
-	// After you specify the list of RDS instances, the ECS instances in the cluster are automatically added to the whitelist of the RDS instances.
+	// After you specify the list of ApsaraDB RDS instances, the ECS instances in the cluster are automatically added to the whitelist of the ApsaraDB RDS instances.
 	RdsInstances []*string `json:"rds_instances,omitempty" xml:"rds_instances,omitempty" type:"Repeated"`
 	// The container runtime.
 	Runtime *Runtime `json:"runtime,omitempty" xml:"runtime,omitempty"`
 	// The labels that you want to add to nodes. You must add labels based on the following rules:
 	//
-	// *   Each label is a case-sensitive key-value pair. You can add up to 20 labels.
-	// *   A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with aliyun, acs:, https://, or http://. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+	// 	- Each label is a case-sensitive key-value pair. You can add up to 20 labels.
+	//
+	// 	- A key must be unique and cannot exceed 64 characters in length. A value can be empty and cannot exceed 128 characters in length. Keys and values cannot start with aliyun, acs:, https://, or http://. For more information, see [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
-	// The taints that you want to add to nodes. Taints are added to nodes to prevent pods from being scheduled to inappropriate nodes. However, tolerations allow pods to be scheduled to nodes with matching taints. For more information, see [taint-and-toleration](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
+	// The taints that you want to add to nodes. Taints are added to nodes to prevent pods from being scheduled to inappropriate nodes. However, tolerations allow pods to be scheduled to nodes with matching taints. For more information, see [Taints and Tolerations](https://kubernetes.io/zh/docs/concepts/scheduling-eviction/taint-and-toleration/).
 	Taints []*Taint `json:"taints,omitempty" xml:"taints,omitempty" type:"Repeated"`
-	// The user data of the node pool. For more information, see [Generate user-defined data](~~49121~~).
+	// The user data of the node pool. For more information, see [Generate user-defined data](https://help.aliyun.com/document_detail/49121.html).
+	//
+	// example:
+	//
+	// IyEvdXNyL2Jpbi9iYXNoCmVjaG8gIkhlbGxvIEFD****
 	UserData *string `json:"user_data,omitempty" xml:"user_data,omitempty"`
 	// The IDs of the vSwitches. You can select one to three vSwitches when you create a cluster. We recommend that you select vSwitches in different zones to ensure high availability.
+	//
+	// This parameter is required.
 	VswitchIds []*string `json:"vswitch_ids,omitempty" xml:"vswitch_ids,omitempty" type:"Repeated"`
 	// Specifies whether to enable auto-renewal for worker nodes. This parameter takes effect only if `worker_instance_charge_type` is set to `PrePaid`. Valid values:
 	//
-	// *   `true`: enables auto-renewal.
-	// *   `false`: disables auto-renewal.
+	// 	- `true`: enables auto-renewal.
+	//
+	// 	- `false`: disables auto-renewal.
 	//
 	// Default value: `true`.
+	//
+	// example:
+	//
+	// true
 	WorkerAutoRenew *bool `json:"worker_auto_renew,omitempty" xml:"worker_auto_renew,omitempty"`
 	// The auto-renewal period for worker nodes after the subscriptions of worker nodes expire. This parameter takes effect and is required only if the subscription billing method is selected for worker nodes.
 	//
 	// Valid values: 1, 2, 3, 6, and 12.
 	//
 	// Default value: `1`.
+	//
+	// example:
+	//
+	// 6
 	WorkerAutoRenewPeriod *int64 `json:"worker_auto_renew_period,omitempty" xml:"worker_auto_renew_period,omitempty"`
 	// The configuration of the data disk that is mounted to worker nodes. The configuration includes the disk type and disk size.
 	WorkerDataDisks []*ScaleOutClusterRequestWorkerDataDisks `json:"worker_data_disks,omitempty" xml:"worker_data_disks,omitempty" type:"Repeated"`
 	// The billing method of worker nodes. Valid values:
 	//
-	// *   `PrePaid`: subscription.
-	// *   `PostPaid`: pay-as-you-go
+	// 	- `PrePaid`: subscription.
 	//
-	// Default value: `PostPaid`
+	// 	- `PostPaid`: pay-as-you-go.
+	//
+	// Default value: `PostPaid`.
+	//
+	// example:
+	//
+	// PrePaid
 	WorkerInstanceChargeType *string `json:"worker_instance_charge_type,omitempty" xml:"worker_instance_charge_type,omitempty"`
 	// The instance configurations of worker nodes.
+	//
+	// This parameter is required.
 	WorkerInstanceTypes []*string `json:"worker_instance_types,omitempty" xml:"worker_instance_types,omitempty" type:"Repeated"`
 	// The subscription duration of worker nodes. This parameter takes effect and is required only if `worker_instance_charge_type` is set to `PrePaid`.
 	//
 	// Valid values: 1, 2, 3, 6, 12, 24, 36, 48, and 60.
 	//
 	// Default value: 1.
+	//
+	// example:
+	//
+	// 1
 	WorkerPeriod *int64 `json:"worker_period,omitempty" xml:"worker_period,omitempty"`
 	// The billing cycle of worker nodes. This parameter is required if worker_instance_charge_type is set to `PrePaid`.
 	//
 	// Set the value to `Month`. Worker nodes are billed only on a monthly basis.
+	//
+	// example:
+	//
+	// Month
 	WorkerPeriodUnit *string `json:"worker_period_unit,omitempty" xml:"worker_period_unit,omitempty"`
 	// The type of system disk that you want to use for worker nodes. Valid values:
 	//
-	// *   `cloud_efficiency`: ultra disk.
-	// *   `cloud_ssd`: standard SSD.
-	// *   `cloud_essd`: enhanced SSD (ESSD).
+	// 	- `cloud_efficiency`: ultra disk.
+	//
+	// 	- `cloud_ssd`: standard SSD.
+	//
+	// 	- `cloud_essd`: enhanced SSD (ESSD).
 	//
 	// Default value: `cloud_ssd`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cloud_efficiency
 	WorkerSystemDiskCategory *string `json:"worker_system_disk_category,omitempty" xml:"worker_system_disk_category,omitempty"`
 	// The size of the system disk that you want to use for worker nodes. Unit: GiB.
 	//
 	// Valid values: 40 to 500.
 	//
 	// Default value: `120`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 120
 	WorkerSystemDiskSize *int64 `json:"worker_system_disk_size,omitempty" xml:"worker_system_disk_size,omitempty"`
 }
 
@@ -18411,18 +23862,35 @@ func (s *ScaleOutClusterRequest) SetWorkerSystemDiskSize(v int64) *ScaleOutClust
 type ScaleOutClusterRequestWorkerDataDisks struct {
 	// The ID of an automatic snapshot policy. Automatic backup is performed for a disk based on the specified automatic snapshot policy.
 	//
-	// By default, this parameter is empty. This indicates that automatic backup is disabled.
+	// By default, this parameter is empty, which indicates that automatic backup is disabled.
+	//
+	// example:
+	//
+	// sp-bp14yziiuvu3s6jn****
 	AutoSnapshotPolicyId *string `json:"auto_snapshot_policy_id,omitempty" xml:"auto_snapshot_policy_id,omitempty"`
 	// The data disk type.
+	//
+	// example:
+	//
+	// cloud_essd
 	Category *string `json:"category,omitempty" xml:"category,omitempty"`
 	// Specifies whether to encrypt the data disks. Valid values:
 	//
-	// *   `true`: encrypts data disks.
-	// *   `false`: does not encrypt data disks.
+	// 	- `true`: encrypts data disks.
+	//
+	// 	- `false`: does not encrypt data disks.
 	//
 	// Default value: `false`.
+	//
+	// example:
+	//
+	// true
 	Encrypted *string `json:"encrypted,omitempty" xml:"encrypted,omitempty"`
 	// The size of the data disk. Valid values: 40 to 32767.
+	//
+	// example:
+	//
+	// 120
 	Size *string `json:"size,omitempty" xml:"size,omitempty"`
 }
 
@@ -18456,10 +23924,22 @@ func (s *ScaleOutClusterRequestWorkerDataDisks) SetSize(v string) *ScaleOutClust
 
 type ScaleOutClusterResponseBody struct {
 	// The cluster ID.
+	//
+	// example:
+	//
+	// c82e6987e2961451182edacd74faf****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
 	// The request ID.
+	//
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314A1E1
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00002f
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -18516,9 +23996,13 @@ func (s *ScaleOutClusterResponse) SetBody(v *ScaleOutClusterResponseBody) *Scale
 }
 
 type ScanClusterVulsResponseBody struct {
-	// The request ID.
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314A1E1
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
-	// The task ID.
+	// example:
+	//
+	// T-xascadasd*****
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -18570,8 +24054,10 @@ func (s *ScanClusterVulsResponse) SetBody(v *ScanClusterVulsResponseBody) *ScanC
 }
 
 type StartAlertRequest struct {
+	// The name of the alert rule set to be enabled.
 	AlertRuleGroupName *string `json:"alert_rule_group_name,omitempty" xml:"alert_rule_group_name,omitempty"`
-	AlertRuleName      *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
+	// The name of the alert rule to be enabled. If you do not specify an alert rule name, the alert rule set is enabled.
+	AlertRuleName *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
 }
 
 func (s StartAlertRequest) String() string {
@@ -18594,8 +24080,16 @@ func (s *StartAlertRequest) SetAlertRuleName(v string) *StartAlertRequest {
 
 type StartAlertResponseBody struct {
 	// The message returned.
+	//
+	// example:
+	//
+	// success
 	Msg *string `json:"msg,omitempty" xml:"msg,omitempty"`
 	// The status.
+	//
+	// example:
+	//
+	// true
 	Status *bool `json:"status,omitempty" xml:"status,omitempty"`
 }
 
@@ -18648,46 +24142,126 @@ func (s *StartAlertResponse) SetBody(v *StartAlertResponseBody) *StartAlertRespo
 
 type StartWorkflowRequest struct {
 	// The name of the output BAM file.
+	//
+	// example:
+	//
+	// abc.bam
 	MappingBamOutFilename *string `json:"mapping_bam_out_filename,omitempty" xml:"mapping_bam_out_filename,omitempty"`
 	// The output path of the Binary Alignment Map (BAM) file.
+	//
+	// example:
+	//
+	// output/bamDirName
 	MappingBamOutPath *string `json:"mapping_bam_out_path,omitempty" xml:"mapping_bam_out_path,omitempty"`
 	// The name of the OSS bucket that stores the data of the mapping workflow.
+	//
+	// example:
+	//
+	// gene-shenzhen
 	MappingBucketName *string `json:"mapping_bucket_name,omitempty" xml:"mapping_bucket_name,omitempty"`
 	// The name of the first FASTQ file of the mapping workflow.
+	//
+	// example:
+	//
+	// MGISEQ2000_PCR-free_NA12878_1_V100003043_L01_1.fq.gz
 	MappingFastqFirstFilename *string `json:"mapping_fastq_first_filename,omitempty" xml:"mapping_fastq_first_filename,omitempty"`
 	// The path of the FASTQ files of the mapping workflow.
+	//
+	// example:
+	//
+	// fastq/MGISEQ2000
 	MappingFastqPath *string `json:"mapping_fastq_path,omitempty" xml:"mapping_fastq_path,omitempty"`
 	// The name of the second FASTQ file of the mapping workflow.
+	//
+	// example:
+	//
+	// MGISEQ2000_PCR-free_NA12878_1_V100003043_L01_2.fq.gz
 	MappingFastqSecondFilename *string `json:"mapping_fastq_second_filename,omitempty" xml:"mapping_fastq_second_filename,omitempty"`
 	// Specifies whether to mark duplicate values.
+	//
+	// example:
+	//
+	// true
 	MappingIsMarkDup *string `json:"mapping_is_mark_dup,omitempty" xml:"mapping_is_mark_dup,omitempty"`
 	// The region where the Object Storage Service (OSS) bucket that stores the data of the mapping workflow is deployed.
+	//
+	// example:
+	//
+	// cn-hangzhou
 	MappingOssRegion *string `json:"mapping_oss_region,omitempty" xml:"mapping_oss_region,omitempty"`
 	// The path of the reference files of the mapping workflow.
+	//
+	// example:
+	//
+	// reference/hg19
 	MappingReferencePath *string `json:"mapping_reference_path,omitempty" xml:"mapping_reference_path,omitempty"`
 	// The type of service-level agreement (SLA). Valid values:
 	//
-	// *   s: the silver level (S-level). It requires 1 extra minute to process every 1.5 billion base pairs beyond the limit of 90 billion base pairs.
-	// *   g: the gold level (G-level). It requires 1 extra minute to process every 2 billion base pairs beyond the limit of 90 billion base pairs.
-	// *   p: the platinum level (P-level). It requires 1 extra minute to process every 3 billion base pairs beyond the limit of 90 billion base pairs.
+	// 	- s: the silver level (S-level). It requires 1 extra minute to process every 1.5 billion base pairs beyond the limit of 90 billion base pairs.
+	//
+	// 	- g: the gold level (G-level). It requires 1 extra minute to process every 2 billion base pairs beyond the limit of 90 billion base pairs.
+	//
+	// 	- p: the platinum level (P-level). It requires 1 extra minute to process every 3 billion base pairs beyond the limit of 90 billion base pairs.
+	//
+	// example:
+	//
+	// s
 	Service *string `json:"service,omitempty" xml:"service,omitempty"`
 	// The name of the OSS bucket that stores the data of the WGS workflow.
+	//
+	// example:
+	//
+	// gene-shenzhen
 	WgsBucketName *string `json:"wgs_bucket_name,omitempty" xml:"wgs_bucket_name,omitempty"`
 	// The name of the first FASTQ file of the WGS workflow.
+	//
+	// example:
+	//
+	// MGISEQ2000_PCR-free_NA12878_1_V100003043_L01_1.fq.gz
 	WgsFastqFirstFilename *string `json:"wgs_fastq_first_filename,omitempty" xml:"wgs_fastq_first_filename,omitempty"`
 	// The path of the FASTQ files of the WGS workflow.
+	//
+	// example:
+	//
+	// fastq/MGISEQ2000
 	WgsFastqPath *string `json:"wgs_fastq_path,omitempty" xml:"wgs_fastq_path,omitempty"`
 	// The name of the second FASTQ file of the WGS workflow.
+	//
+	// example:
+	//
+	// MGISEQ2000_PCR-free_NA12878_1_V100003043_L01_2.fq.gz
 	WgsFastqSecondFilename *string `json:"wgs_fastq_second_filename,omitempty" xml:"wgs_fastq_second_filename,omitempty"`
 	// The region where the OSS bucket that stores the data of the whole genome sequencing (WGS) workflow is deployed.
+	//
+	// example:
+	//
+	// cn-shenzhen
 	WgsOssRegion *string `json:"wgs_oss_region,omitempty" xml:"wgs_oss_region,omitempty"`
 	// The path of the reference files of the WGS workflow.
+	//
+	// example:
+	//
+	// reference/hg19
 	WgsReferencePath *string `json:"wgs_reference_path,omitempty" xml:"wgs_reference_path,omitempty"`
 	// The name of the output VCF file.
+	//
+	// example:
+	//
+	// abc.vcf
 	WgsVcfOutFilename *string `json:"wgs_vcf_out_filename,omitempty" xml:"wgs_vcf_out_filename,omitempty"`
 	// The output path of the Variant Call Format (VCF) file.
+	//
+	// example:
+	//
+	// output/vcf
 	WgsVcfOutPath *string `json:"wgs_vcf_out_path,omitempty" xml:"wgs_vcf_out_path,omitempty"`
 	// The type of workflow. Valid values: wgs and mapping.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// mapping
 	WorkflowType *string `json:"workflow_type,omitempty" xml:"workflow_type,omitempty"`
 }
 
@@ -18796,6 +24370,10 @@ func (s *StartWorkflowRequest) SetWorkflowType(v string) *StartWorkflowRequest {
 
 type StartWorkflowResponseBody struct {
 	// The name of the workflow.
+	//
+	// example:
+	//
+	// mapping-gpu-66xv7
 	JobName *string `json:"JobName,omitempty" xml:"JobName,omitempty"`
 }
 
@@ -18842,8 +24420,10 @@ func (s *StartWorkflowResponse) SetBody(v *StartWorkflowResponseBody) *StartWork
 }
 
 type StopAlertRequest struct {
+	// The name of the alert rule set to be disabled.
 	AlertRuleGroupName *string `json:"alert_rule_group_name,omitempty" xml:"alert_rule_group_name,omitempty"`
-	AlertRuleName      *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
+	// The name of the alert rule to be disabled. If you do not specify an alert rule name, the alert rule set is disabled.
+	AlertRuleName *string `json:"alert_rule_name,omitempty" xml:"alert_rule_name,omitempty"`
 }
 
 func (s StopAlertRequest) String() string {
@@ -18866,11 +24446,20 @@ func (s *StopAlertRequest) SetAlertRuleName(v string) *StopAlertRequest {
 
 type StopAlertResponseBody struct {
 	// The error message returned if the call fails.
+	//
+	// example:
+	//
+	// Success
 	Msg *string `json:"msg,omitempty" xml:"msg,omitempty"`
 	// The operation result. Valid values:
 	//
-	// *   True: The operation is successful.
-	// *   False: The operation failed.
+	// 	- True: The operation is successful.
+	//
+	// 	- False: The operation failed.
+	//
+	// example:
+	//
+	// True
 	Status *bool `json:"status,omitempty" xml:"status,omitempty"`
 }
 
@@ -18923,6 +24512,10 @@ func (s *StopAlertResponse) SetBody(v *StopAlertResponseBody) *StopAlertResponse
 
 type SyncClusterNodePoolResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// 2D69A58F-345C-4FDE-88E4-BF51894XXXXX
 	RequestId *string `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
 }
 
@@ -18970,16 +24563,34 @@ func (s *SyncClusterNodePoolResponse) SetBody(v *SyncClusterNodePoolResponseBody
 
 type TagResourcesRequest struct {
 	// The region ID of the resource.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-hangzhou
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
-	// The IDs of the resources that you want to label.
+	// The list of resource IDs.
+	//
+	// This parameter is required.
 	ResourceIds []*string `json:"resource_ids,omitempty" xml:"resource_ids,omitempty" type:"Repeated"`
 	// The type of resource that you want to label. Set the value to `CLUSTER`.
-	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
-	// The labels that you want to add to the resources in key-value pairs. You can add up to 20 labels. Note:
 	//
-	// *   A value cannot be empty and can contain up to 128 characters.
-	// *   A key or value must not start with `aliyun` or `acs:`.
-	// *   A key or value must not contain `http://` or `https://`.
+	// This parameter is required.
+	//
+	// example:
+	//
+	// CLUSTER
+	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
+	// The labels that you want to add to the resources in key-value pairs. You can add up to 20 labels. Usage notes:
+	//
+	// 	- Label values must not be empty strings. A label value must be 1 to 128 characters in length.
+	//
+	// 	- The label value must not start with `aliyun` or `acs:`.
+	//
+	// 	- The label value must not contain `http://` or `https://`.
+	//
+	// This parameter is required.
 	Tags []*Tag `json:"tags,omitempty" xml:"tags,omitempty" type:"Repeated"`
 }
 
@@ -19013,6 +24624,10 @@ func (s *TagResourcesRequest) SetTags(v []*Tag) *TagResourcesRequest {
 
 type TagResourcesResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// 2D69A58F-345C-4FDE-88E4-BF51894XXXXX
 	RequestId *string `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
 }
 
@@ -19078,8 +24693,16 @@ func (s *UnInstallClusterAddonsRequest) SetAddons(v []*UnInstallClusterAddonsReq
 
 type UnInstallClusterAddonsRequestAddons struct {
 	// Whether to clean up cloud resources.
+	//
+	// example:
+	//
+	// true
 	CleanupCloudResources *bool `json:"cleanup_cloud_resources,omitempty" xml:"cleanup_cloud_resources,omitempty"`
 	// The component name.
+	//
+	// example:
+	//
+	// ack-node-problem-detector
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 }
 
@@ -19127,16 +24750,37 @@ func (s *UnInstallClusterAddonsResponse) SetStatusCode(v int32) *UnInstallCluste
 type UntagResourcesRequest struct {
 	// Specifies whether to remove all custom labels. This parameter takes effect only when `tag_keys` is left empty. Valid values:
 	//
-	// *   `true`: Remove all custom labels.
-	// *   `false`: Do not remove all custom labels.
+	// 	- `true`: Remove all custom labels.
+	//
+	// 	- `false`: Do not remove all custom labels.
+	//
+	// example:
+	//
+	// true
 	All *bool `json:"all,omitempty" xml:"all,omitempty"`
 	// The region ID of the resources.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-hangzhou
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The list of resource IDs.
+	//
+	// This parameter is required.
 	ResourceIds []*string `json:"resource_ids,omitempty" xml:"resource_ids,omitempty" type:"Repeated"`
 	// The type of resource. Set the value to `CLUSTER`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// CLUSTER
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The list of keys of the labels that you want to remove.
+	//
+	// This parameter is required.
 	TagKeys []*string `json:"tag_keys,omitempty" xml:"tag_keys,omitempty" type:"Repeated"`
 }
 
@@ -19176,16 +24820,37 @@ func (s *UntagResourcesRequest) SetTagKeys(v []*string) *UntagResourcesRequest {
 type UntagResourcesShrinkRequest struct {
 	// Specifies whether to remove all custom labels. This parameter takes effect only when `tag_keys` is left empty. Valid values:
 	//
-	// *   `true`: Remove all custom labels.
-	// *   `false`: Do not remove all custom labels.
+	// 	- `true`: Remove all custom labels.
+	//
+	// 	- `false`: Do not remove all custom labels.
+	//
+	// example:
+	//
+	// true
 	All *bool `json:"all,omitempty" xml:"all,omitempty"`
 	// The region ID of the resources.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// cn-hangzhou
 	RegionId *string `json:"region_id,omitempty" xml:"region_id,omitempty"`
 	// The list of resource IDs.
+	//
+	// This parameter is required.
 	ResourceIdsShrink *string `json:"resource_ids,omitempty" xml:"resource_ids,omitempty"`
 	// The type of resource. Set the value to `CLUSTER`.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// CLUSTER
 	ResourceType *string `json:"resource_type,omitempty" xml:"resource_type,omitempty"`
 	// The list of keys of the labels that you want to remove.
+	//
+	// This parameter is required.
 	TagKeysShrink *string `json:"tag_keys,omitempty" xml:"tag_keys,omitempty"`
 }
 
@@ -19224,6 +24889,10 @@ func (s *UntagResourcesShrinkRequest) SetTagKeysShrink(v string) *UntagResources
 
 type UntagResourcesResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// 2D69A58F-345C-4FDE-88E4-BF51894XXXXX
 	RequestId *string `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
 }
 
@@ -19294,16 +24963,37 @@ func (s *UpdateContactGroupForAlertResponse) SetStatusCode(v int32) *UpdateConta
 
 type UpdateControlPlaneLogRequest struct {
 	// The ID of the Alibaba Cloud account.
+	//
+	// if can be null:
+	// true
+	//
+	// example:
+	//
+	// 162981*****
 	Aliuid *string `json:"aliuid,omitempty" xml:"aliuid,omitempty"`
 	// The control plane components for which you want to enable log collection.
 	Components []*string `json:"components,omitempty" xml:"components,omitempty" type:"Repeated"`
 	// The name of the Simple Log Service project that you want to use to store the logs of control plane components.
 	//
 	// Default value: k8s-log-$Cluster ID.
+	//
+	// if can be null:
+	// true
+	//
+	// example:
+	//
+	// k8s-log-c5b5e80b0b64a4bf6939d2d8fbbc5****
 	LogProject *string `json:"log_project,omitempty" xml:"log_project,omitempty"`
 	// The retention period of the log data stored in the Logstore. Valid values: 1 to 3000. Unit: days.
 	//
 	// Default value: 30.
+	//
+	// if can be null:
+	// true
+	//
+	// example:
+	//
+	// 30
 	LogTtl *string `json:"log_ttl,omitempty" xml:"log_ttl,omitempty"`
 }
 
@@ -19336,9 +25026,24 @@ func (s *UpdateControlPlaneLogRequest) SetLogTtl(v string) *UpdateControlPlaneLo
 }
 
 type UpdateControlPlaneLogResponseBody struct {
+	// The cluster ID.
+	//
+	// example:
+	//
+	// cb95aa626a47740afbf6aa099b650****
 	ClusterId *string `json:"cluster_id,omitempty" xml:"cluster_id,omitempty"`
+	// The request ID.
+	//
+	// example:
+	//
+	// 687C5BAA-D103-4993-884B-C35E4314****
 	RequestId *string `json:"request_id,omitempty" xml:"request_id,omitempty"`
-	TaskId    *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
+	// The task ID.
+	//
+	// example:
+	//
+	// T-5a54309c80282e39ea00****
+	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
 func (s UpdateControlPlaneLogResponseBody) String() string {
@@ -19397,8 +25102,20 @@ type UpdateK8sClusterUserConfigExpireRequest struct {
 	// The validity period of the kubeconfig file. Unit: hours.
 	//
 	// > The value of expire_hour must be greater than 0 and equal to or smaller than 876000 (100 years).
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 720
 	ExpireHour *int64 `json:"expire_hour,omitempty" xml:"expire_hour,omitempty"`
 	// The user ID.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// The ID of the Resource Access Management (RAM) user that you use.
 	User *string `json:"user,omitempty" xml:"user,omitempty"`
 }
 
@@ -19445,17 +25162,38 @@ func (s *UpdateK8sClusterUserConfigExpireResponse) SetStatusCode(v int32) *Updat
 
 type UpdateTemplateRequest struct {
 	// The description of the template.
+	//
+	// example:
+	//
+	// web server cluster
 	Description *string `json:"description,omitempty" xml:"description,omitempty"`
 	// The name of the template.
+	//
+	// example:
+	//
+	// webserver01
 	Name *string `json:"name,omitempty" xml:"name,omitempty"`
 	// The label of the template.
+	//
+	// example:
+	//
+	// web
 	Tags *string `json:"tags,omitempty" xml:"tags,omitempty"`
 	// The YAML content of the template.
+	//
+	// example:
+	//
+	// apiVersion: apps/v1\\\\nkind: Deployment\\\\nmetadata:\\\\n  name: nginx-deployment-basic\\\\n  labels:\\\\n    app: nginx\\\\nspec:\\\\n  replicas: 2\\\\n  selector:\\\\n    matchLabels:\\\\n      app: nginx\\\\n  template:\\\\n    metadata:\\\\n      labels:\\\\n        app: nginx\\\\n    spec:\\\\n      containers:\\\\n      - name: nginx\\\\n        image: busybox:latest\\\\n        ports:\\\\n        - containerPort: 8080
 	Template *string `json:"template,omitempty" xml:"template,omitempty"`
 	// The type of template. This parameter can be set to a custom value.
 	//
-	// *   If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
-	// *   If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
+	// 	- If the parameter is set to `kubernetes`, the template is displayed on the Templates page in the console.
+	//
+	// 	- If the parameter is set to `compose`, the template is displayed on the Container Service - Swarm page in the console. Container Service for Swarm is deprecated.
+	//
+	// example:
+	//
+	// kubernetes
 	TemplateType *string `json:"template_type,omitempty" xml:"template_type,omitempty"`
 }
 
@@ -19517,7 +25255,10 @@ func (s *UpdateTemplateResponse) SetStatusCode(v int32) *UpdateTemplateResponse 
 
 type UpdateUserPermissionsRequest struct {
 	Body []*UpdateUserPermissionsRequestBody `json:"body,omitempty" xml:"body,omitempty" type:"Repeated"`
-	Mode *string                             `json:"mode,omitempty" xml:"mode,omitempty"`
+	// example:
+	//
+	// apply
+	Mode *string `json:"mode,omitempty" xml:"mode,omitempty"`
 }
 
 func (s UpdateUserPermissionsRequest) String() string {
@@ -19539,12 +25280,30 @@ func (s *UpdateUserPermissionsRequest) SetMode(v string) *UpdateUserPermissionsR
 }
 
 type UpdateUserPermissionsRequestBody struct {
-	Cluster   *string `json:"cluster,omitempty" xml:"cluster,omitempty"`
-	IsCustom  *bool   `json:"is_custom,omitempty" xml:"is_custom,omitempty"`
-	IsRamRole *bool   `json:"is_ram_role,omitempty" xml:"is_ram_role,omitempty"`
+	// example:
+	//
+	// c796c60***
+	Cluster *string `json:"cluster,omitempty" xml:"cluster,omitempty"`
+	// example:
+	//
+	// false
+	IsCustom *bool `json:"is_custom,omitempty" xml:"is_custom,omitempty"`
+	// example:
+	//
+	// false
+	IsRamRole *bool `json:"is_ram_role,omitempty" xml:"is_ram_role,omitempty"`
+	// example:
+	//
+	// test
 	Namespace *string `json:"namespace,omitempty" xml:"namespace,omitempty"`
-	RoleName  *string `json:"role_name,omitempty" xml:"role_name,omitempty"`
-	RoleType  *string `json:"role_type,omitempty" xml:"role_type,omitempty"`
+	// example:
+	//
+	// ops
+	RoleName *string `json:"role_name,omitempty" xml:"role_name,omitempty"`
+	// example:
+	//
+	// cluster
+	RoleType *string `json:"role_type,omitempty" xml:"role_type,omitempty"`
 }
 
 func (s UpdateUserPermissionsRequestBody) String() string {
@@ -19610,17 +25369,36 @@ func (s *UpdateUserPermissionsResponse) SetStatusCode(v int32) *UpdateUserPermis
 
 type UpgradeClusterRequest struct {
 	// Deprecated
+	//
 	// The name of the component. Set the value to `k8s`.
+	//
+	// example:
+	//
+	// k8s
 	ComponentName *string `json:"component_name,omitempty" xml:"component_name,omitempty"`
 	// Specifies whether to update only master nodes. Valid values:
 	//
-	// *   true: update only master nodes.
-	// *   false: update master and worker nodes.
+	// 	- true: update only master nodes.
+	//
+	// 	- false: update master and worker nodes.
+	//
+	// example:
+	//
+	// true
 	MasterOnly *bool `json:"master_only,omitempty" xml:"master_only,omitempty"`
 	// The Kubernetes version to which the cluster can be updated.
+	//
+	// example:
+	//
+	// 1.16.9-aliyun.1
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
 	// Deprecated
-	// The current Kubernetes version of the cluster. For more information, see [Kubernetes versions](~~185269~~).
+	//
+	// The current Kubernetes version of the cluster. For more information, see [Kubernetes versions](https://help.aliyun.com/document_detail/185269.html).
+	//
+	// example:
+	//
+	// 1.14.8-aliyun.1
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -19730,17 +25508,42 @@ func (s *UpgradeClusterAddonsRequest) SetBody(v []*UpgradeClusterAddonsRequestBo
 
 type UpgradeClusterAddonsRequestBody struct {
 	// The name of the component.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// coredns
 	ComponentName *string `json:"component_name,omitempty" xml:"component_name,omitempty"`
 	// The custom component settings that you want to use. The value is a JSON string.
+	//
+	// example:
+	//
+	// {\\"CpuRequest\\":\\"800m\\"}
 	Config *string `json:"config,omitempty" xml:"config,omitempty"`
 	// The version to which the component can be updated. You can call the `DescribeClusterAddonsVersion` operation to query the version to which the component can be updated.
+	//
+	// This parameter is required.
+	//
+	// example:
+	//
+	// 1.6.7
 	NextVersion *string `json:"next_version,omitempty" xml:"next_version,omitempty"`
 	// The update policy. Valid values:
 	//
-	// *   overwrite
-	// *   canary
+	// 	- overwrite
+	//
+	// 	- canary
+	//
+	// example:
+	//
+	// canary
 	Policy *string `json:"policy,omitempty" xml:"policy,omitempty"`
 	// The current version of the component.
+	//
+	// example:
+	//
+	// v1.6.2
 	Version *string `json:"version,omitempty" xml:"version,omitempty"`
 }
 
@@ -19802,14 +25605,30 @@ func (s *UpgradeClusterAddonsResponse) SetStatusCode(v int32) *UpgradeClusterAdd
 
 type UpgradeClusterNodepoolRequest struct {
 	// The ID of the OS image that is used by the nodes.
+	//
+	// example:
+	//
+	// aliyun_2_1903_x64_20G_alibase_20200529.vhd
 	ImageId *string `json:"image_id,omitempty" xml:"image_id,omitempty"`
 	// The Kubernetes version that is used by the nodes.
+	//
+	// example:
+	//
+	// 1.22.15-aliyun.1
 	KubernetesVersion *string                                     `json:"kubernetes_version,omitempty" xml:"kubernetes_version,omitempty"`
 	NodeNames         []*string                                   `json:"node_names,omitempty" xml:"node_names,omitempty" type:"Repeated"`
 	RollingPolicy     *UpgradeClusterNodepoolRequestRollingPolicy `json:"rolling_policy,omitempty" xml:"rolling_policy,omitempty" type:"Struct"`
 	// The runtime type. Valid values: containerd and docker.
+	//
+	// example:
+	//
+	// containerd
 	RuntimeType *string `json:"runtime_type,omitempty" xml:"runtime_type,omitempty"`
 	// The version of the container runtime that is used by the nodes.
+	//
+	// example:
+	//
+	// 1.5.10
 	RuntimeVersion *string `json:"runtime_version,omitempty" xml:"runtime_version,omitempty"`
 	UseReplace     *bool   `json:"use_replace,omitempty" xml:"use_replace,omitempty"`
 }
@@ -19888,8 +25707,16 @@ func (s *UpgradeClusterNodepoolRequestRollingPolicy) SetPausePolicy(v string) *U
 
 type UpgradeClusterNodepoolResponseBody struct {
 	// The request ID.
+	//
+	// example:
+	//
+	// 2D69A58F-345C-4FDE-88E4-BF518944****
 	RequestId *string `json:"RequestId,omitempty" xml:"RequestId,omitempty"`
 	// The task ID.
+	//
+	// example:
+	//
+	// T-5fd211e924e1d0078700xxxx
 	TaskId *string `json:"task_id,omitempty" xml:"task_id,omitempty"`
 }
 
@@ -20020,6 +25847,17 @@ func (client *Client) GetEndpoint(productId *string, regionId *string, endpointR
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the AttachInstances operation to add existing Elastic Compute Service (ECS) instances to a cluster.
+//
+// @param request - AttachInstancesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return AttachInstancesResponse
 func (client *Client) AttachInstancesWithOptions(ClusterId *string, request *AttachInstancesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *AttachInstancesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -20102,6 +25940,13 @@ func (client *Client) AttachInstancesWithOptions(ClusterId *string, request *Att
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the AttachInstances operation to add existing Elastic Compute Service (ECS) instances to a cluster.
+//
+// @param request - AttachInstancesRequest
+//
+// @return AttachInstancesResponse
 func (client *Client) AttachInstances(ClusterId *string, request *AttachInstancesRequest) (_result *AttachInstancesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20114,6 +25959,17 @@ func (client *Client) AttachInstances(ClusterId *string, request *AttachInstance
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the AttachInstancesToNodePool operation to add existing nodes to a node pool.
+//
+// @param request - AttachInstancesToNodePoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return AttachInstancesToNodePoolResponse
 func (client *Client) AttachInstancesToNodePoolWithOptions(ClusterId *string, NodepoolId *string, request *AttachInstancesToNodePoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *AttachInstancesToNodePoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -20160,6 +26016,13 @@ func (client *Client) AttachInstancesToNodePoolWithOptions(ClusterId *string, No
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the AttachInstancesToNodePool operation to add existing nodes to a node pool.
+//
+// @param request - AttachInstancesToNodePoolRequest
+//
+// @return AttachInstancesToNodePoolResponse
 func (client *Client) AttachInstancesToNodePool(ClusterId *string, NodepoolId *string, request *AttachInstancesToNodePoolRequest) (_result *AttachInstancesToNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20172,13 +26035,17 @@ func (client *Client) AttachInstancesToNodePool(ClusterId *string, NodepoolId *s
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return CancelClusterUpgradeResponse
- */
+// Deprecated: OpenAPI CancelClusterUpgrade is deprecated
+//
+// Summary:
+//
+// You can call the CancelClusterUpgrade operation to cancel the update of a cluster.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CancelClusterUpgradeResponse
 // Deprecated
 func (client *Client) CancelClusterUpgradeWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CancelClusterUpgradeResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -20204,11 +26071,13 @@ func (client *Client) CancelClusterUpgradeWithOptions(ClusterId *string, headers
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return CancelClusterUpgradeResponse
- */
+// Deprecated: OpenAPI CancelClusterUpgrade is deprecated
+//
+// Summary:
+//
+// You can call the CancelClusterUpgrade operation to cancel the update of a cluster.
+//
+// @return CancelClusterUpgradeResponse
 // Deprecated
 func (client *Client) CancelClusterUpgrade(ClusterId *string) (_result *CancelClusterUpgradeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -20222,6 +26091,15 @@ func (client *Client) CancelClusterUpgrade(ClusterId *string) (_result *CancelCl
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelComponentUpgrade operation to cancel the update of a component.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CancelComponentUpgradeResponse
 func (client *Client) CancelComponentUpgradeWithOptions(clusterId *string, componentId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CancelComponentUpgradeResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -20246,6 +26124,11 @@ func (client *Client) CancelComponentUpgradeWithOptions(clusterId *string, compo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelComponentUpgrade operation to cancel the update of a component.
+//
+// @return CancelComponentUpgradeResponse
 func (client *Client) CancelComponentUpgrade(clusterId *string, componentId *string) (_result *CancelComponentUpgradeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20258,6 +26141,15 @@ func (client *Client) CancelComponentUpgrade(clusterId *string, componentId *str
 	return _result, _err
 }
 
+// Summary:
+//
+// 取消自动运维执行计划
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CancelOperationPlanResponse
 func (client *Client) CancelOperationPlanWithOptions(planId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CancelOperationPlanResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -20282,6 +26174,11 @@ func (client *Client) CancelOperationPlanWithOptions(planId *string, headers map
 	return _result, _err
 }
 
+// Summary:
+//
+// 取消自动运维执行计划
+//
+// @return CancelOperationPlanResponse
 func (client *Client) CancelOperationPlan(planId *string) (_result *CancelOperationPlanResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20294,6 +26191,15 @@ func (client *Client) CancelOperationPlan(planId *string) (_result *CancelOperat
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelTask operation to cancel a task.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CancelTaskResponse
 func (client *Client) CancelTaskWithOptions(taskId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CancelTaskResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -20318,6 +26224,11 @@ func (client *Client) CancelTaskWithOptions(taskId *string, headers map[string]*
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelTask operation to cancel a task.
+//
+// @return CancelTaskResponse
 func (client *Client) CancelTask(taskId *string) (_result *CancelTaskResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20330,6 +26241,17 @@ func (client *Client) CancelTask(taskId *string) (_result *CancelTaskResponse, _
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelWorkflow operation to cancel an ongoing workflow.
+//
+// @param request - CancelWorkflowRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CancelWorkflowResponse
 func (client *Client) CancelWorkflowWithOptions(workflowName *string, request *CancelWorkflowRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CancelWorkflowResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -20364,6 +26286,13 @@ func (client *Client) CancelWorkflowWithOptions(workflowName *string, request *C
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CancelWorkflow operation to cancel an ongoing workflow.
+//
+// @param request - CancelWorkflowRequest
+//
+// @return CancelWorkflowResponse
 func (client *Client) CancelWorkflow(workflowName *string, request *CancelWorkflowRequest) (_result *CancelWorkflowResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20376,6 +26305,15 @@ func (client *Client) CancelWorkflow(workflowName *string, request *CancelWorkfl
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the current log configuration of control plane components, including the log retention period and the log collection component. Container Service for Kubernetes (ACK) managed clusters can collect the logs of control plane components and deliver the logs to projects in Simple Log Service. These control plane components include Kube API Server, Kube Scheduler, Kube Controller Manager, and Cloud Controller Manager.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CheckControlPlaneLogEnableResponse
 func (client *Client) CheckControlPlaneLogEnableWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CheckControlPlaneLogEnableResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -20400,6 +26338,11 @@ func (client *Client) CheckControlPlaneLogEnableWithOptions(ClusterId *string, h
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the current log configuration of control plane components, including the log retention period and the log collection component. Container Service for Kubernetes (ACK) managed clusters can collect the logs of control plane components and deliver the logs to projects in Simple Log Service. These control plane components include Kube API Server, Kube Scheduler, Kube Controller Manager, and Cloud Controller Manager.
+//
+// @return CheckControlPlaneLogEnableResponse
 func (client *Client) CheckControlPlaneLogEnable(ClusterId *string) (_result *CheckControlPlaneLogEnableResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20412,6 +26355,17 @@ func (client *Client) CheckControlPlaneLogEnable(ClusterId *string) (_result *Ch
 	return _result, _err
 }
 
+// Summary:
+//
+// Creates a scaling configuration to allow the system to scale resources based on the given scaling rules. When you create a scaling configuration, you can specify the scaling metrics, thresholds, scaling order, and scaling interval.
+//
+// @param request - CreateAutoscalingConfigRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateAutoscalingConfigResponse
 func (client *Client) CreateAutoscalingConfigWithOptions(ClusterId *string, request *CreateAutoscalingConfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateAutoscalingConfigResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -20498,6 +26452,13 @@ func (client *Client) CreateAutoscalingConfigWithOptions(ClusterId *string, requ
 	return _result, _err
 }
 
+// Summary:
+//
+// Creates a scaling configuration to allow the system to scale resources based on the given scaling rules. When you create a scaling configuration, you can specify the scaling metrics, thresholds, scaling order, and scaling interval.
+//
+// @param request - CreateAutoscalingConfigRequest
+//
+// @return CreateAutoscalingConfigResponse
 func (client *Client) CreateAutoscalingConfig(ClusterId *string, request *CreateAutoscalingConfigRequest) (_result *CreateAutoscalingConfigResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20510,20 +26471,33 @@ func (client *Client) CreateAutoscalingConfig(ClusterId *string, request *Create
 	return _result, _err
 }
 
-/**
- * This topic describes all parameters for creating an ACK cluster. You can create the following types of ACK clusters.
- * *   [Create an ACK managed cluster](~~90776~~)
- * *   [Create an ACK dedicated cluster](~~197620~~)
- * *   [Create an ACK Serverless cluster](~~144246~~)
- * *   [Create an ACK Edge cluster](~~128204~~)
- * *   [Create an ACK Basic cluster that supports sandboxed containers](~~196321~~)
- * *   [Create an ACK Pro cluster that supports sandboxed containers](~~140623~~)
- *
- * @param request CreateClusterRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return CreateClusterResponse
- */
+// Summary:
+//
+// You can call the CreateCluster operation to create a Container Service for Kubernetes (ACK) cluster. ACK clusters include ACK managed clusters, ACK dedicated clusters, ACK Serverless clusters, ACK Edge clusters, ACK clusters that support sandboxed containers, and registered clusters. For more information about how to create different types of ACK clusters, see the following usage notes.
+//
+// Description:
+//
+// This topic describes all parameters for creating an ACK cluster. You can create the following types of ACK clusters.
+//
+// 	- [Create an ACK managed cluster](https://help.aliyun.com/document_detail/90776.html)
+//
+// 	- [Create an ACK dedicated cluster](https://help.aliyun.com/document_detail/197620.html)
+//
+// 	- [Create an ACK Serverless cluster](https://help.aliyun.com/document_detail/144246.html)
+//
+// 	- [Create an ACK Edge cluster](https://help.aliyun.com/document_detail/128204.html)
+//
+// 	- [Create an ACK Basic cluster that supports sandboxed containers](https://help.aliyun.com/document_detail/196321.html)
+//
+// 	- [Create an ACK Pro cluster that supports sandboxed containers](https://help.aliyun.com/document_detail/140623.html)
+//
+// @param request - CreateClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateClusterResponse
 func (client *Client) CreateClusterWithOptions(request *CreateClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -20782,6 +26756,10 @@ func (client *Client) CreateClusterWithOptions(request *CreateClusterRequest, he
 		body["security_group_id"] = request.SecurityGroupId
 	}
 
+	if !tea.BoolValue(util.IsUnset(request.SecurityHardeningOs)) {
+		body["security_hardening_os"] = request.SecurityHardeningOs
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.ServiceAccountIssuer)) {
 		body["service_account_issuer"] = request.ServiceAccountIssuer
 	}
@@ -20914,18 +26892,29 @@ func (client *Client) CreateClusterWithOptions(request *CreateClusterRequest, he
 	return _result, _err
 }
 
-/**
- * This topic describes all parameters for creating an ACK cluster. You can create the following types of ACK clusters.
- * *   [Create an ACK managed cluster](~~90776~~)
- * *   [Create an ACK dedicated cluster](~~197620~~)
- * *   [Create an ACK Serverless cluster](~~144246~~)
- * *   [Create an ACK Edge cluster](~~128204~~)
- * *   [Create an ACK Basic cluster that supports sandboxed containers](~~196321~~)
- * *   [Create an ACK Pro cluster that supports sandboxed containers](~~140623~~)
- *
- * @param request CreateClusterRequest
- * @return CreateClusterResponse
- */
+// Summary:
+//
+// You can call the CreateCluster operation to create a Container Service for Kubernetes (ACK) cluster. ACK clusters include ACK managed clusters, ACK dedicated clusters, ACK Serverless clusters, ACK Edge clusters, ACK clusters that support sandboxed containers, and registered clusters. For more information about how to create different types of ACK clusters, see the following usage notes.
+//
+// Description:
+//
+// This topic describes all parameters for creating an ACK cluster. You can create the following types of ACK clusters.
+//
+// 	- [Create an ACK managed cluster](https://help.aliyun.com/document_detail/90776.html)
+//
+// 	- [Create an ACK dedicated cluster](https://help.aliyun.com/document_detail/197620.html)
+//
+// 	- [Create an ACK Serverless cluster](https://help.aliyun.com/document_detail/144246.html)
+//
+// 	- [Create an ACK Edge cluster](https://help.aliyun.com/document_detail/128204.html)
+//
+// 	- [Create an ACK Basic cluster that supports sandboxed containers](https://help.aliyun.com/document_detail/196321.html)
+//
+// 	- [Create an ACK Pro cluster that supports sandboxed containers](https://help.aliyun.com/document_detail/140623.html)
+//
+// @param request - CreateClusterRequest
+//
+// @return CreateClusterResponse
 func (client *Client) CreateCluster(request *CreateClusterRequest) (_result *CreateClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -20938,6 +26927,17 @@ func (client *Client) CreateCluster(request *CreateClusterRequest) (_result *Cre
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateClusterNodePool operation to create a node pool for a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - CreateClusterNodePoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateClusterNodePoolResponse
 func (client *Client) CreateClusterNodePoolWithOptions(ClusterId *string, request *CreateClusterNodePoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateClusterNodePoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21012,6 +27012,13 @@ func (client *Client) CreateClusterNodePoolWithOptions(ClusterId *string, reques
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateClusterNodePool operation to create a node pool for a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - CreateClusterNodePoolRequest
+//
+// @return CreateClusterNodePoolResponse
 func (client *Client) CreateClusterNodePool(ClusterId *string, request *CreateClusterNodePoolRequest) (_result *CreateClusterNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21024,6 +27031,17 @@ func (client *Client) CreateClusterNodePool(ClusterId *string, request *CreateCl
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateEdgeMachine operation to activate a cloud-native box.
+//
+// @param request - CreateEdgeMachineRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateEdgeMachineResponse
 func (client *Client) CreateEdgeMachineWithOptions(request *CreateEdgeMachineRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateEdgeMachineResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21066,6 +27084,13 @@ func (client *Client) CreateEdgeMachineWithOptions(request *CreateEdgeMachineReq
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateEdgeMachine operation to activate a cloud-native box.
+//
+// @param request - CreateEdgeMachineRequest
+//
+// @return CreateEdgeMachineResponse
 func (client *Client) CreateEdgeMachine(request *CreateEdgeMachineRequest) (_result *CreateEdgeMachineResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21078,6 +27103,17 @@ func (client *Client) CreateEdgeMachine(request *CreateEdgeMachineRequest) (_res
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateKubernetesTrigger operation to create a trigger for an application.
+//
+// @param request - CreateKubernetesTriggerRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateKubernetesTriggerResponse
 func (client *Client) CreateKubernetesTriggerWithOptions(request *CreateKubernetesTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateKubernetesTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21124,6 +27160,13 @@ func (client *Client) CreateKubernetesTriggerWithOptions(request *CreateKubernet
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateKubernetesTrigger operation to create a trigger for an application.
+//
+// @param request - CreateKubernetesTriggerRequest
+//
+// @return CreateKubernetesTriggerResponse
 func (client *Client) CreateKubernetesTrigger(request *CreateKubernetesTriggerRequest) (_result *CreateKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21136,6 +27179,17 @@ func (client *Client) CreateKubernetesTrigger(request *CreateKubernetesTriggerRe
 	return _result, _err
 }
 
+// Summary:
+//
+// Creates an orchestration template. An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can use orchestration templates to manage resources in Kubernetes clusters and automate resource deployment, such as pods, Services, Deployments, ConfigMaps, and persistent volumes (PVs).
+//
+// @param request - CreateTemplateRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateTemplateResponse
 func (client *Client) CreateTemplateWithOptions(request *CreateTemplateRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateTemplateResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21186,6 +27240,13 @@ func (client *Client) CreateTemplateWithOptions(request *CreateTemplateRequest, 
 	return _result, _err
 }
 
+// Summary:
+//
+// Creates an orchestration template. An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can use orchestration templates to manage resources in Kubernetes clusters and automate resource deployment, such as pods, Services, Deployments, ConfigMaps, and persistent volumes (PVs).
+//
+// @param request - CreateTemplateRequest
+//
+// @return CreateTemplateResponse
 func (client *Client) CreateTemplate(request *CreateTemplateRequest) (_result *CreateTemplateResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21198,6 +27259,17 @@ func (client *Client) CreateTemplate(request *CreateTemplateRequest) (_result *C
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateTrigger operation to create a trigger for an application.
+//
+// @param request - CreateTriggerRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return CreateTriggerResponse
 func (client *Client) CreateTriggerWithOptions(clusterId *string, request *CreateTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *CreateTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21244,6 +27316,13 @@ func (client *Client) CreateTriggerWithOptions(clusterId *string, request *Creat
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the CreateTrigger operation to create a trigger for an application.
+//
+// @param request - CreateTriggerRequest
+//
+// @return CreateTriggerResponse
 func (client *Client) CreateTrigger(clusterId *string, request *CreateTriggerRequest) (_result *CreateTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21256,6 +27335,13 @@ func (client *Client) CreateTrigger(clusterId *string, request *CreateTriggerReq
 	return _result, _err
 }
 
+// @param tmpReq - DeleteAlertContactRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteAlertContactResponse
 func (client *Client) DeleteAlertContactWithOptions(tmpReq *DeleteAlertContactRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteAlertContactResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -21296,6 +27382,9 @@ func (client *Client) DeleteAlertContactWithOptions(tmpReq *DeleteAlertContactRe
 	return _result, _err
 }
 
+// @param request - DeleteAlertContactRequest
+//
+// @return DeleteAlertContactResponse
 func (client *Client) DeleteAlertContact(request *DeleteAlertContactRequest) (_result *DeleteAlertContactResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21308,6 +27397,13 @@ func (client *Client) DeleteAlertContact(request *DeleteAlertContactRequest) (_r
 	return _result, _err
 }
 
+// @param tmpReq - DeleteAlertContactGroupRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteAlertContactGroupResponse
 func (client *Client) DeleteAlertContactGroupWithOptions(tmpReq *DeleteAlertContactGroupRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteAlertContactGroupResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -21348,6 +27444,9 @@ func (client *Client) DeleteAlertContactGroupWithOptions(tmpReq *DeleteAlertCont
 	return _result, _err
 }
 
+// @param request - DeleteAlertContactGroupRequest
+//
+// @return DeleteAlertContactGroupResponse
 func (client *Client) DeleteAlertContactGroup(request *DeleteAlertContactGroupRequest) (_result *DeleteAlertContactGroupResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21360,6 +27459,17 @@ func (client *Client) DeleteAlertContactGroup(request *DeleteAlertContactGroupRe
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteCluster operation to delete a cluster by cluster ID and release all nodes in the cluster.
+//
+// @param tmpReq - DeleteClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteClusterResponse
 func (client *Client) DeleteClusterWithOptions(ClusterId *string, tmpReq *DeleteClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteClusterResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -21367,11 +27477,19 @@ func (client *Client) DeleteClusterWithOptions(ClusterId *string, tmpReq *Delete
 	}
 	request := &DeleteClusterShrinkRequest{}
 	openapiutil.Convert(tmpReq, request)
+	if !tea.BoolValue(util.IsUnset(tmpReq.DeleteOptions)) {
+		request.DeleteOptionsShrink = openapiutil.ArrayToStringWithSpecifiedStyle(tmpReq.DeleteOptions, tea.String("delete_options"), tea.String("json"))
+	}
+
 	if !tea.BoolValue(util.IsUnset(tmpReq.RetainResources)) {
 		request.RetainResourcesShrink = openapiutil.ArrayToStringWithSpecifiedStyle(tmpReq.RetainResources, tea.String("retain_resources"), tea.String("json"))
 	}
 
 	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.DeleteOptionsShrink)) {
+		query["delete_options"] = request.DeleteOptionsShrink
+	}
+
 	if !tea.BoolValue(util.IsUnset(request.KeepSlb)) {
 		query["keep_slb"] = request.KeepSlb
 	}
@@ -21408,6 +27526,13 @@ func (client *Client) DeleteClusterWithOptions(ClusterId *string, tmpReq *Delete
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteCluster operation to delete a cluster by cluster ID and release all nodes in the cluster.
+//
+// @param request - DeleteClusterRequest
+//
+// @return DeleteClusterResponse
 func (client *Client) DeleteCluster(ClusterId *string, request *DeleteClusterRequest) (_result *DeleteClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21420,6 +27545,17 @@ func (client *Client) DeleteCluster(ClusterId *string, request *DeleteClusterReq
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteClusterNodepool operation to delete a node pool by node pool ID.
+//
+// @param request - DeleteClusterNodepoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteClusterNodepoolResponse
 func (client *Client) DeleteClusterNodepoolWithOptions(ClusterId *string, NodepoolId *string, request *DeleteClusterNodepoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteClusterNodepoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21454,6 +27590,13 @@ func (client *Client) DeleteClusterNodepoolWithOptions(ClusterId *string, Nodepo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteClusterNodepool operation to delete a node pool by node pool ID.
+//
+// @param request - DeleteClusterNodepoolRequest
+//
+// @return DeleteClusterNodepoolResponse
 func (client *Client) DeleteClusterNodepool(ClusterId *string, NodepoolId *string, request *DeleteClusterNodepoolRequest) (_result *DeleteClusterNodepoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21466,15 +27609,23 @@ func (client *Client) DeleteClusterNodepool(ClusterId *string, NodepoolId *strin
 	return _result, _err
 }
 
-/**
- * >
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
- *
- * @param request DeleteClusterNodesRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DeleteClusterNodesResponse
- */
+// Summary:
+//
+// Removes nodes from a Container Service for Kubernetes (ACK) cluster. When you remove nodes, you can specify whether to release the Elastic Compute Service (ECS) instances and drain the nodes. When you remove nodes, pods on the nodes are migrated. This may adversely affect your businesses. We recommend that you back up data and perform this operation during off-peak hours.
+//
+// Description:
+//
+// >
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
+//
+// @param request - DeleteClusterNodesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteClusterNodesResponse
 func (client *Client) DeleteClusterNodesWithOptions(ClusterId *string, request *DeleteClusterNodesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteClusterNodesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21517,13 +27668,19 @@ func (client *Client) DeleteClusterNodesWithOptions(ClusterId *string, request *
 	return _result, _err
 }
 
-/**
- * >
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
- *
- * @param request DeleteClusterNodesRequest
- * @return DeleteClusterNodesResponse
- */
+// Summary:
+//
+// Removes nodes from a Container Service for Kubernetes (ACK) cluster. When you remove nodes, you can specify whether to release the Elastic Compute Service (ECS) instances and drain the nodes. When you remove nodes, pods on the nodes are migrated. This may adversely affect your businesses. We recommend that you back up data and perform this operation during off-peak hours.
+//
+// Description:
+//
+// >
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
+//
+// @param request - DeleteClusterNodesRequest
+//
+// @return DeleteClusterNodesResponse
 func (client *Client) DeleteClusterNodes(ClusterId *string, request *DeleteClusterNodesRequest) (_result *DeleteClusterNodesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21536,6 +27693,17 @@ func (client *Client) DeleteClusterNodes(ClusterId *string, request *DeleteClust
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteEdgeMachine operation to delete a cloud-native box.
+//
+// @param request - DeleteEdgeMachineRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteEdgeMachineResponse
 func (client *Client) DeleteEdgeMachineWithOptions(edgeMachineid *string, request *DeleteEdgeMachineRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteEdgeMachineResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21570,6 +27738,13 @@ func (client *Client) DeleteEdgeMachineWithOptions(edgeMachineid *string, reques
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteEdgeMachine operation to delete a cloud-native box.
+//
+// @param request - DeleteEdgeMachineRequest
+//
+// @return DeleteEdgeMachineResponse
 func (client *Client) DeleteEdgeMachine(edgeMachineid *string, request *DeleteEdgeMachineRequest) (_result *DeleteEdgeMachineResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21582,6 +27757,15 @@ func (client *Client) DeleteEdgeMachine(edgeMachineid *string, request *DeleteEd
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteKubernetesTrigger operation to delete an application trigger by trigger ID
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteKubernetesTriggerResponse
 func (client *Client) DeleteKubernetesTriggerWithOptions(Id *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteKubernetesTriggerResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -21606,6 +27790,11 @@ func (client *Client) DeleteKubernetesTriggerWithOptions(Id *string, headers map
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteKubernetesTrigger operation to delete an application trigger by trigger ID
+//
+// @return DeleteKubernetesTriggerResponse
 func (client *Client) DeleteKubernetesTrigger(Id *string) (_result *DeleteKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21618,6 +27807,17 @@ func (client *Client) DeleteKubernetesTrigger(Id *string) (_result *DeleteKubern
 	return _result, _err
 }
 
+// Summary:
+//
+// Deletes policy instances in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DeletePolicyInstanceRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeletePolicyInstanceResponse
 func (client *Client) DeletePolicyInstanceWithOptions(clusterId *string, policyName *string, request *DeletePolicyInstanceRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeletePolicyInstanceResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21652,6 +27852,13 @@ func (client *Client) DeletePolicyInstanceWithOptions(clusterId *string, policyN
 	return _result, _err
 }
 
+// Summary:
+//
+// Deletes policy instances in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DeletePolicyInstanceRequest
+//
+// @return DeletePolicyInstanceResponse
 func (client *Client) DeletePolicyInstance(clusterId *string, policyName *string, request *DeletePolicyInstanceRequest) (_result *DeletePolicyInstanceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21664,6 +27871,15 @@ func (client *Client) DeletePolicyInstance(clusterId *string, policyName *string
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteTemplate operation to delete an orchestration template by template ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteTemplateResponse
 func (client *Client) DeleteTemplateWithOptions(TemplateId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteTemplateResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -21688,6 +27904,11 @@ func (client *Client) DeleteTemplateWithOptions(TemplateId *string, headers map[
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteTemplate operation to delete an orchestration template by template ID.
+//
+// @return DeleteTemplateResponse
 func (client *Client) DeleteTemplate(TemplateId *string) (_result *DeleteTemplateResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21700,6 +27921,15 @@ func (client *Client) DeleteTemplate(TemplateId *string) (_result *DeleteTemplat
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteTrigger operation to delete an application trigger.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeleteTriggerResponse
 func (client *Client) DeleteTriggerWithOptions(clusterId *string, Id *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeleteTriggerResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -21724,6 +27954,11 @@ func (client *Client) DeleteTriggerWithOptions(clusterId *string, Id *string, he
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeleteTrigger operation to delete an application trigger.
+//
+// @return DeleteTriggerResponse
 func (client *Client) DeleteTrigger(clusterId *string, Id *string) (_result *DeleteTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21736,6 +27971,17 @@ func (client *Client) DeleteTrigger(clusterId *string, Id *string) (_result *Del
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeployPolicyInstance operation to deploy a policy instance in a cluster.
+//
+// @param request - DeployPolicyInstanceRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DeployPolicyInstanceResponse
 func (client *Client) DeployPolicyInstanceWithOptions(clusterId *string, policyName *string, request *DeployPolicyInstanceRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DeployPolicyInstanceResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21778,6 +28024,13 @@ func (client *Client) DeployPolicyInstanceWithOptions(clusterId *string, policyN
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DeployPolicyInstance operation to deploy a policy instance in a cluster.
+//
+// @param request - DeployPolicyInstanceRequest
+//
+// @return DeployPolicyInstanceResponse
 func (client *Client) DeployPolicyInstance(clusterId *string, policyName *string, request *DeployPolicyInstanceRequest) (_result *DeployPolicyInstanceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21790,6 +28043,15 @@ func (client *Client) DeployPolicyInstance(clusterId *string, policyName *string
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescirbeWorkflow operation to query detailed information about a workflow.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescirbeWorkflowResponse
 func (client *Client) DescirbeWorkflowWithOptions(workflowName *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescirbeWorkflowResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -21814,6 +28076,11 @@ func (client *Client) DescirbeWorkflowWithOptions(workflowName *string, headers 
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescirbeWorkflow operation to query detailed information about a workflow.
+//
+// @return DescirbeWorkflowResponse
 func (client *Client) DescirbeWorkflow(workflowName *string) (_result *DescirbeWorkflowResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21826,6 +28093,17 @@ func (client *Client) DescirbeWorkflow(workflowName *string) (_result *DescirbeW
 	return _result, _err
 }
 
+// Summary:
+//
+// 查询指定集群组件
+//
+// @param request - DescribeAddonRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeAddonResponse
 func (client *Client) DescribeAddonWithOptions(addonName *string, request *DescribeAddonRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeAddonResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -21884,6 +28162,13 @@ func (client *Client) DescribeAddonWithOptions(addonName *string, request *Descr
 	return _result, _err
 }
 
+// Summary:
+//
+// 查询指定集群组件
+//
+// @param request - DescribeAddonRequest
+//
+// @return DescribeAddonResponse
 func (client *Client) DescribeAddon(addonName *string, request *DescribeAddonRequest) (_result *DescribeAddonResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -21896,14 +28181,19 @@ func (client *Client) DescribeAddon(addonName *string, request *DescribeAddonReq
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeAddonsRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeAddonsResponse
- */
+// Deprecated: OpenAPI DescribeAddons is deprecated
+//
+// Summary:
+//
+// You can call the DescribeAddons operation to query the details about all components that are supported by Container Service for Kubernetes (ACK).
+//
+// @param request - DescribeAddonsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeAddonsResponse
 // Deprecated
 func (client *Client) DescribeAddonsWithOptions(request *DescribeAddonsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeAddonsResponse, _err error) {
 	_err = util.ValidateModel(request)
@@ -21955,12 +28245,15 @@ func (client *Client) DescribeAddonsWithOptions(request *DescribeAddonsRequest, 
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeAddonsRequest
- * @return DescribeAddonsResponse
- */
+// Deprecated: OpenAPI DescribeAddons is deprecated
+//
+// Summary:
+//
+// You can call the DescribeAddons operation to query the details about all components that are supported by Container Service for Kubernetes (ACK).
+//
+// @param request - DescribeAddonsRequest
+//
+// @return DescribeAddonsResponse
 // Deprecated
 func (client *Client) DescribeAddons(request *DescribeAddonsRequest) (_result *DescribeAddonsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -21974,13 +28267,17 @@ func (client *Client) DescribeAddons(request *DescribeAddonsRequest) (_result *D
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterAddonInstanceResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonInstance is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonInstance operation to query the information about a cluster component, including the version, status, and configuration of the component.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAddonInstanceResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonInstanceWithOptions(ClusterID *string, AddonName *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonInstanceResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -22006,11 +28303,13 @@ func (client *Client) DescribeClusterAddonInstanceWithOptions(ClusterID *string,
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return DescribeClusterAddonInstanceResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonInstance is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonInstance operation to query the information about a cluster component, including the version, status, and configuration of the component.
+//
+// @return DescribeClusterAddonInstanceResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonInstance(ClusterID *string, AddonName *string) (_result *DescribeClusterAddonInstanceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22024,17 +28323,33 @@ func (client *Client) DescribeClusterAddonInstance(ClusterID *string, AddonName 
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterAddonMetadataResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonMetadata is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonMetadata operation to query the metadata of a component version. The metadata includes the component version and available parameters.
+//
+// @param request - DescribeClusterAddonMetadataRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAddonMetadataResponse
 // Deprecated
-func (client *Client) DescribeClusterAddonMetadataWithOptions(clusterId *string, componentId *string, version *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonMetadataResponse, _err error) {
+func (client *Client) DescribeClusterAddonMetadataWithOptions(clusterId *string, componentId *string, request *DescribeClusterAddonMetadataRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonMetadataResponse, _err error) {
+	_err = util.ValidateModel(request)
+	if _err != nil {
+		return _result, _err
+	}
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.Version)) {
+		query["version"] = request.Version
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
+		Query:   openapiutil.Query(query),
 	}
 	params := &openapi.Params{
 		Action:      tea.String("DescribeClusterAddonMetadata"),
@@ -22056,17 +28371,21 @@ func (client *Client) DescribeClusterAddonMetadataWithOptions(clusterId *string,
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return DescribeClusterAddonMetadataResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonMetadata is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonMetadata operation to query the metadata of a component version. The metadata includes the component version and available parameters.
+//
+// @param request - DescribeClusterAddonMetadataRequest
+//
+// @return DescribeClusterAddonMetadataResponse
 // Deprecated
-func (client *Client) DescribeClusterAddonMetadata(clusterId *string, componentId *string, version *string) (_result *DescribeClusterAddonMetadataResponse, _err error) {
+func (client *Client) DescribeClusterAddonMetadata(clusterId *string, componentId *string, request *DescribeClusterAddonMetadataRequest) (_result *DescribeClusterAddonMetadataResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
 	_result = &DescribeClusterAddonMetadataResponse{}
-	_body, _err := client.DescribeClusterAddonMetadataWithOptions(clusterId, componentId, version, headers, runtime)
+	_body, _err := client.DescribeClusterAddonMetadataWithOptions(clusterId, componentId, request, headers, runtime)
 	if _err != nil {
 		return _result, _err
 	}
@@ -22074,13 +28393,17 @@ func (client *Client) DescribeClusterAddonMetadata(clusterId *string, componentI
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterAddonUpgradeStatusResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonUpgradeStatus is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonUpgradeStatus operation to query the update progress of a cluster component.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAddonUpgradeStatusResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonUpgradeStatusWithOptions(ClusterId *string, ComponentId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonUpgradeStatusResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -22106,11 +28429,13 @@ func (client *Client) DescribeClusterAddonUpgradeStatusWithOptions(ClusterId *st
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return DescribeClusterAddonUpgradeStatusResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonUpgradeStatus is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonUpgradeStatus operation to query the update progress of a cluster component.
+//
+// @return DescribeClusterAddonUpgradeStatusResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonUpgradeStatus(ClusterId *string, ComponentId *string) (_result *DescribeClusterAddonUpgradeStatusResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22124,14 +28449,19 @@ func (client *Client) DescribeClusterAddonUpgradeStatus(ClusterId *string, Compo
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param tmpReq DescribeClusterAddonsUpgradeStatusRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterAddonsUpgradeStatusResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonsUpgradeStatus is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonsUpgradeStatus operation to query the update progress of a component by component name.
+//
+// @param tmpReq - DescribeClusterAddonsUpgradeStatusRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAddonsUpgradeStatusResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonsUpgradeStatusWithOptions(ClusterId *string, tmpReq *DescribeClusterAddonsUpgradeStatusRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonsUpgradeStatusResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
@@ -22173,12 +28503,15 @@ func (client *Client) DescribeClusterAddonsUpgradeStatusWithOptions(ClusterId *s
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeClusterAddonsUpgradeStatusRequest
- * @return DescribeClusterAddonsUpgradeStatusResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonsUpgradeStatus is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonsUpgradeStatus operation to query the update progress of a component by component name.
+//
+// @param request - DescribeClusterAddonsUpgradeStatusRequest
+//
+// @return DescribeClusterAddonsUpgradeStatusResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonsUpgradeStatus(ClusterId *string, request *DescribeClusterAddonsUpgradeStatusRequest) (_result *DescribeClusterAddonsUpgradeStatusResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22192,13 +28525,17 @@ func (client *Client) DescribeClusterAddonsUpgradeStatus(ClusterId *string, requ
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterAddonsVersionResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonsVersion is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonsVersion operation to query the details about all components in a cluster by cluster ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAddonsVersionResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonsVersionWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAddonsVersionResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -22224,11 +28561,13 @@ func (client *Client) DescribeClusterAddonsVersionWithOptions(ClusterId *string,
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return DescribeClusterAddonsVersionResponse
- */
+// Deprecated: OpenAPI DescribeClusterAddonsVersion is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusterAddonsVersion operation to query the details about all components in a cluster by cluster ID.
+//
+// @return DescribeClusterAddonsVersionResponse
 // Deprecated
 func (client *Client) DescribeClusterAddonsVersion(ClusterId *string) (_result *DescribeClusterAddonsVersionResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22242,6 +28581,17 @@ func (client *Client) DescribeClusterAddonsVersion(ClusterId *string) (_result *
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the script that is used to add existing nodes to a Container Service for Kubernetes (ACK) cluster. You can manually add existing Elastic Compute Service (ECS) instances to an ACK cluster as worker nodes or re-add the worker nodes that you have removed to a node pool.
+//
+// @param request - DescribeClusterAttachScriptsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterAttachScriptsResponse
 func (client *Client) DescribeClusterAttachScriptsWithOptions(ClusterId *string, request *DescribeClusterAttachScriptsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterAttachScriptsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22296,6 +28646,13 @@ func (client *Client) DescribeClusterAttachScriptsWithOptions(ClusterId *string,
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the script that is used to add existing nodes to a Container Service for Kubernetes (ACK) cluster. You can manually add existing Elastic Compute Service (ECS) instances to an ACK cluster as worker nodes or re-add the worker nodes that you have removed to a node pool.
+//
+// @param request - DescribeClusterAttachScriptsRequest
+//
+// @return DescribeClusterAttachScriptsResponse
 func (client *Client) DescribeClusterAttachScripts(ClusterId *string, request *DescribeClusterAttachScriptsRequest) (_result *DescribeClusterAttachScriptsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22308,6 +28665,15 @@ func (client *Client) DescribeClusterAttachScripts(ClusterId *string, request *D
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterDetail operation to query the details of a Container Service for Kubernetes (ACK) cluster by cluster ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterDetailResponse
 func (client *Client) DescribeClusterDetailWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterDetailResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -22332,6 +28698,11 @@ func (client *Client) DescribeClusterDetailWithOptions(ClusterId *string, header
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterDetail operation to query the details of a Container Service for Kubernetes (ACK) cluster by cluster ID.
+//
+// @return DescribeClusterDetailResponse
 func (client *Client) DescribeClusterDetail(ClusterId *string) (_result *DescribeClusterDetailResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22344,6 +28715,17 @@ func (client *Client) DescribeClusterDetail(ClusterId *string) (_result *Describ
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries events and event details in a Container Service for Kubernetes (ACK) cluster, including the severity level, status, and start time of each event. Events are generated when clusters created, modified, and updated, node pools are created and scaled out, and components are installed.
+//
+// @param request - DescribeClusterEventsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterEventsResponse
 func (client *Client) DescribeClusterEventsWithOptions(ClusterId *string, request *DescribeClusterEventsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterEventsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22386,6 +28768,13 @@ func (client *Client) DescribeClusterEventsWithOptions(ClusterId *string, reques
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries events and event details in a Container Service for Kubernetes (ACK) cluster, including the severity level, status, and start time of each event. Events are generated when clusters created, modified, and updated, node pools are created and scaled out, and components are installed.
+//
+// @param request - DescribeClusterEventsRequest
+//
+// @return DescribeClusterEventsResponse
 func (client *Client) DescribeClusterEvents(ClusterId *string, request *DescribeClusterEventsRequest) (_result *DescribeClusterEventsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22398,6 +28787,15 @@ func (client *Client) DescribeClusterEvents(ClusterId *string, request *Describe
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the cluster log to help analyze cluster issues and locate the cause.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterLogsResponse
 func (client *Client) DescribeClusterLogsWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterLogsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -22422,6 +28820,11 @@ func (client *Client) DescribeClusterLogsWithOptions(ClusterId *string, headers 
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the cluster log to help analyze cluster issues and locate the cause.
+//
+// @return DescribeClusterLogsResponse
 func (client *Client) DescribeClusterLogs(ClusterId *string) (_result *DescribeClusterLogsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22434,6 +28837,15 @@ func (client *Client) DescribeClusterLogs(ClusterId *string) (_result *DescribeC
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterNodePoolDetail.html operation to query the details about a node pool in a cluster by node pool ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterNodePoolDetailResponse
 func (client *Client) DescribeClusterNodePoolDetailWithOptions(ClusterId *string, NodepoolId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterNodePoolDetailResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -22458,6 +28870,11 @@ func (client *Client) DescribeClusterNodePoolDetailWithOptions(ClusterId *string
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterNodePoolDetail.html operation to query the details about a node pool in a cluster by node pool ID.
+//
+// @return DescribeClusterNodePoolDetailResponse
 func (client *Client) DescribeClusterNodePoolDetail(ClusterId *string, NodepoolId *string) (_result *DescribeClusterNodePoolDetailResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22470,9 +28887,30 @@ func (client *Client) DescribeClusterNodePoolDetail(ClusterId *string, NodepoolI
 	return _result, _err
 }
 
-func (client *Client) DescribeClusterNodePoolsWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterNodePoolsResponse, _err error) {
+// Summary:
+//
+// You can call the DescribeClusterNodePools operation to query node pools in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DescribeClusterNodePoolsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterNodePoolsResponse
+func (client *Client) DescribeClusterNodePoolsWithOptions(ClusterId *string, request *DescribeClusterNodePoolsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterNodePoolsResponse, _err error) {
+	_err = util.ValidateModel(request)
+	if _err != nil {
+		return _result, _err
+	}
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.NodepoolName)) {
+		query["NodepoolName"] = request.NodepoolName
+	}
+
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
+		Query:   openapiutil.Query(query),
 	}
 	params := &openapi.Params{
 		Action:      tea.String("DescribeClusterNodePools"),
@@ -22494,11 +28932,18 @@ func (client *Client) DescribeClusterNodePoolsWithOptions(ClusterId *string, hea
 	return _result, _err
 }
 
-func (client *Client) DescribeClusterNodePools(ClusterId *string) (_result *DescribeClusterNodePoolsResponse, _err error) {
+// Summary:
+//
+// You can call the DescribeClusterNodePools operation to query node pools in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DescribeClusterNodePoolsRequest
+//
+// @return DescribeClusterNodePoolsResponse
+func (client *Client) DescribeClusterNodePools(ClusterId *string, request *DescribeClusterNodePoolsRequest) (_result *DescribeClusterNodePoolsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
 	_result = &DescribeClusterNodePoolsResponse{}
-	_body, _err := client.DescribeClusterNodePoolsWithOptions(ClusterId, headers, runtime)
+	_body, _err := client.DescribeClusterNodePoolsWithOptions(ClusterId, request, headers, runtime)
 	if _err != nil {
 		return _result, _err
 	}
@@ -22506,6 +28951,17 @@ func (client *Client) DescribeClusterNodePools(ClusterId *string) (_result *Desc
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterNodes operation to query the details about all nodes in a cluster by cluster ID.
+//
+// @param request - DescribeClusterNodesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterNodesResponse
 func (client *Client) DescribeClusterNodesWithOptions(ClusterId *string, request *DescribeClusterNodesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterNodesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22556,6 +29012,13 @@ func (client *Client) DescribeClusterNodesWithOptions(ClusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterNodes operation to query the details about all nodes in a cluster by cluster ID.
+//
+// @param request - DescribeClusterNodesRequest
+//
+// @return DescribeClusterNodesResponse
 func (client *Client) DescribeClusterNodes(ClusterId *string, request *DescribeClusterNodesRequest) (_result *DescribeClusterNodesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22568,6 +29031,17 @@ func (client *Client) DescribeClusterNodes(ClusterId *string, request *DescribeC
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterResources operation to query all resources in a cluster by cluster ID.
+//
+// @param request - DescribeClusterResourcesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterResourcesResponse
 func (client *Client) DescribeClusterResourcesWithOptions(ClusterId *string, request *DescribeClusterResourcesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterResourcesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22602,6 +29076,13 @@ func (client *Client) DescribeClusterResourcesWithOptions(ClusterId *string, req
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterResources operation to query all resources in a cluster by cluster ID.
+//
+// @param request - DescribeClusterResourcesRequest
+//
+// @return DescribeClusterResourcesResponse
 func (client *Client) DescribeClusterResources(ClusterId *string, request *DescribeClusterResourcesRequest) (_result *DescribeClusterResourcesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22614,6 +29095,17 @@ func (client *Client) DescribeClusterResources(ClusterId *string, request *Descr
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries tasks in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DescribeClusterTasksRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterTasksResponse
 func (client *Client) DescribeClusterTasksWithOptions(clusterId *string, request *DescribeClusterTasksRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterTasksResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22652,6 +29144,13 @@ func (client *Client) DescribeClusterTasksWithOptions(clusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries tasks in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - DescribeClusterTasksRequest
+//
+// @return DescribeClusterTasksResponse
 func (client *Client) DescribeClusterTasks(clusterId *string, request *DescribeClusterTasksRequest) (_result *DescribeClusterTasksResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22664,15 +29163,23 @@ func (client *Client) DescribeClusterTasks(clusterId *string, request *DescribeC
 	return _result, _err
 }
 
-/**
- * **
- * ****The default validity period of a kubeconfig file is 3 years. Two months before a kubeconfig file expires, you can renew it in the Container Service for Kubernetes (ACK) console or by calling API operations. After a kubeconfig file is renewed, the secret is valid for 3 years. The previous kubeconfig secret remains valid until expiration. We recommend that you renew your kubeconfig file at the earliest opportunity.
- *
- * @param request DescribeClusterUserKubeconfigRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterUserKubeconfigResponse
- */
+// Summary:
+//
+// Kubeconfig files store identity and authentication information that is used by clients to access Container Service for Kubernetes (ACK) clusters. To use a kubectl client to manage an ACK cluster, you need to use the corresponding kubeconfig file to connect to the ACK cluster. We recommend that you keep kubeconfig files confidential and revoke kubeconfig files that are not in use. This helps prevent data leaks caused by the disclosure of kubeconfig files.
+//
+// Description:
+//
+// *
+//
+// ****The default validity period of a kubeconfig file is 3 years. Two months before a kubeconfig file expires, you can renew it in the Container Service for Kubernetes (ACK) console or by calling API operations. After a kubeconfig file is renewed, the secret is valid for 3 years. The previous kubeconfig secret remains valid until expiration. We recommend that you renew your kubeconfig file at the earliest opportunity.
+//
+// @param request - DescribeClusterUserKubeconfigRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterUserKubeconfigResponse
 func (client *Client) DescribeClusterUserKubeconfigWithOptions(ClusterId *string, request *DescribeClusterUserKubeconfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterUserKubeconfigResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22711,13 +29218,19 @@ func (client *Client) DescribeClusterUserKubeconfigWithOptions(ClusterId *string
 	return _result, _err
 }
 
-/**
- * **
- * ****The default validity period of a kubeconfig file is 3 years. Two months before a kubeconfig file expires, you can renew it in the Container Service for Kubernetes (ACK) console or by calling API operations. After a kubeconfig file is renewed, the secret is valid for 3 years. The previous kubeconfig secret remains valid until expiration. We recommend that you renew your kubeconfig file at the earliest opportunity.
- *
- * @param request DescribeClusterUserKubeconfigRequest
- * @return DescribeClusterUserKubeconfigResponse
- */
+// Summary:
+//
+// Kubeconfig files store identity and authentication information that is used by clients to access Container Service for Kubernetes (ACK) clusters. To use a kubectl client to manage an ACK cluster, you need to use the corresponding kubeconfig file to connect to the ACK cluster. We recommend that you keep kubeconfig files confidential and revoke kubeconfig files that are not in use. This helps prevent data leaks caused by the disclosure of kubeconfig files.
+//
+// Description:
+//
+// *
+//
+// ****The default validity period of a kubeconfig file is 3 years. Two months before a kubeconfig file expires, you can renew it in the Container Service for Kubernetes (ACK) console or by calling API operations. After a kubeconfig file is renewed, the secret is valid for 3 years. The previous kubeconfig secret remains valid until expiration. We recommend that you renew your kubeconfig file at the earliest opportunity.
+//
+// @param request - DescribeClusterUserKubeconfigRequest
+//
+// @return DescribeClusterUserKubeconfigResponse
 func (client *Client) DescribeClusterUserKubeconfig(ClusterId *string, request *DescribeClusterUserKubeconfigRequest) (_result *DescribeClusterUserKubeconfigResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22730,14 +29243,19 @@ func (client *Client) DescribeClusterUserKubeconfig(ClusterId *string, request *
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeClusterV2UserKubeconfigRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClusterV2UserKubeconfigResponse
- */
+// Deprecated: OpenAPI DescribeClusterV2UserKubeconfig is deprecated
+//
+// Summary:
+//
+// 获取集群kubeconfig接口
+//
+// @param request - DescribeClusterV2UserKubeconfigRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterV2UserKubeconfigResponse
 // Deprecated
 func (client *Client) DescribeClusterV2UserKubeconfigWithOptions(ClusterId *string, request *DescribeClusterV2UserKubeconfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterV2UserKubeconfigResponse, _err error) {
 	_err = util.ValidateModel(request)
@@ -22773,12 +29291,15 @@ func (client *Client) DescribeClusterV2UserKubeconfigWithOptions(ClusterId *stri
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeClusterV2UserKubeconfigRequest
- * @return DescribeClusterV2UserKubeconfigResponse
- */
+// Deprecated: OpenAPI DescribeClusterV2UserKubeconfig is deprecated
+//
+// Summary:
+//
+// 获取集群kubeconfig接口
+//
+// @param request - DescribeClusterV2UserKubeconfigRequest
+//
+// @return DescribeClusterV2UserKubeconfigResponse
 // Deprecated
 func (client *Client) DescribeClusterV2UserKubeconfig(ClusterId *string, request *DescribeClusterV2UserKubeconfigRequest) (_result *DescribeClusterV2UserKubeconfigResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22792,6 +29313,15 @@ func (client *Client) DescribeClusterV2UserKubeconfig(ClusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterVuls operation to query the vulnerability information of a cluster.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClusterVulsResponse
 func (client *Client) DescribeClusterVulsWithOptions(clusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClusterVulsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -22816,6 +29346,11 @@ func (client *Client) DescribeClusterVulsWithOptions(clusterId *string, headers 
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClusterVuls operation to query the vulnerability information of a cluster.
+//
+// @return DescribeClusterVulsResponse
 func (client *Client) DescribeClusterVuls(clusterId *string) (_result *DescribeClusterVulsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22828,14 +29363,19 @@ func (client *Client) DescribeClusterVuls(clusterId *string) (_result *DescribeC
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeClustersRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeClustersResponse
- */
+// Deprecated: OpenAPI DescribeClusters is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusters operation to query all the clusters that belong to the current Alibaba Cloud account, including Kubernetes clusters and Swarm clusters.
+//
+// @param request - DescribeClustersRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClustersResponse
 // Deprecated
 func (client *Client) DescribeClustersWithOptions(request *DescribeClustersRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClustersResponse, _err error) {
 	_err = util.ValidateModel(request)
@@ -22875,12 +29415,15 @@ func (client *Client) DescribeClustersWithOptions(request *DescribeClustersReque
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request DescribeClustersRequest
- * @return DescribeClustersResponse
- */
+// Deprecated: OpenAPI DescribeClusters is deprecated
+//
+// Summary:
+//
+// You can call the DescribeClusters operation to query all the clusters that belong to the current Alibaba Cloud account, including Kubernetes clusters and Swarm clusters.
+//
+// @param request - DescribeClustersRequest
+//
+// @return DescribeClustersResponse
 // Deprecated
 func (client *Client) DescribeClusters(request *DescribeClustersRequest) (_result *DescribeClustersResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -22894,6 +29437,17 @@ func (client *Client) DescribeClusters(request *DescribeClustersRequest) (_resul
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClustersV1 operation to query the details about all Container Service for Kubernetes (ACK) clusters.
+//
+// @param request - DescribeClustersV1Request
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeClustersV1Response
 func (client *Client) DescribeClustersV1WithOptions(request *DescribeClustersV1Request, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeClustersV1Response, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -22956,6 +29510,13 @@ func (client *Client) DescribeClustersV1WithOptions(request *DescribeClustersV1R
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeClustersV1 operation to query the details about all Container Service for Kubernetes (ACK) clusters.
+//
+// @param request - DescribeClustersV1Request
+//
+// @return DescribeClustersV1Response
 func (client *Client) DescribeClustersV1(request *DescribeClustersV1Request) (_result *DescribeClustersV1Response, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -22968,6 +29529,15 @@ func (client *Client) DescribeClustersV1(request *DescribeClustersV1Request) (_r
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineActiveProcess operation to query the activation progress of a cloud-native box.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeEdgeMachineActiveProcessResponse
 func (client *Client) DescribeEdgeMachineActiveProcessWithOptions(edgeMachineid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEdgeMachineActiveProcessResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -22992,6 +29562,11 @@ func (client *Client) DescribeEdgeMachineActiveProcessWithOptions(edgeMachineid 
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineActiveProcess operation to query the activation progress of a cloud-native box.
+//
+// @return DescribeEdgeMachineActiveProcessResponse
 func (client *Client) DescribeEdgeMachineActiveProcess(edgeMachineid *string) (_result *DescribeEdgeMachineActiveProcessResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23004,6 +29579,15 @@ func (client *Client) DescribeEdgeMachineActiveProcess(edgeMachineid *string) (_
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineModels operation to query the cloud-native box models.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeEdgeMachineModelsResponse
 func (client *Client) DescribeEdgeMachineModelsWithOptions(headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEdgeMachineModelsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23028,6 +29612,11 @@ func (client *Client) DescribeEdgeMachineModelsWithOptions(headers map[string]*s
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineModels operation to query the cloud-native box models.
+//
+// @return DescribeEdgeMachineModelsResponse
 func (client *Client) DescribeEdgeMachineModels() (_result *DescribeEdgeMachineModelsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23040,6 +29629,15 @@ func (client *Client) DescribeEdgeMachineModels() (_result *DescribeEdgeMachineM
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineTunnelConfigDetail operation to obtain the SSH token of a cloud-native box.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeEdgeMachineTunnelConfigDetailResponse
 func (client *Client) DescribeEdgeMachineTunnelConfigDetailWithOptions(edgeMachineid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEdgeMachineTunnelConfigDetailResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23064,6 +29662,11 @@ func (client *Client) DescribeEdgeMachineTunnelConfigDetailWithOptions(edgeMachi
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachineTunnelConfigDetail operation to obtain the SSH token of a cloud-native box.
+//
+// @return DescribeEdgeMachineTunnelConfigDetailResponse
 func (client *Client) DescribeEdgeMachineTunnelConfigDetail(edgeMachineid *string) (_result *DescribeEdgeMachineTunnelConfigDetailResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23076,6 +29679,17 @@ func (client *Client) DescribeEdgeMachineTunnelConfigDetail(edgeMachineid *strin
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachines operation to query a list of cloud-native boxes.
+//
+// @param request - DescribeEdgeMachinesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeEdgeMachinesResponse
 func (client *Client) DescribeEdgeMachinesWithOptions(request *DescribeEdgeMachinesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEdgeMachinesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23130,6 +29744,13 @@ func (client *Client) DescribeEdgeMachinesWithOptions(request *DescribeEdgeMachi
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeEdgeMachines operation to query a list of cloud-native boxes.
+//
+// @param request - DescribeEdgeMachinesRequest
+//
+// @return DescribeEdgeMachinesResponse
 func (client *Client) DescribeEdgeMachines(request *DescribeEdgeMachinesRequest) (_result *DescribeEdgeMachinesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23142,6 +29763,17 @@ func (client *Client) DescribeEdgeMachines(request *DescribeEdgeMachinesRequest)
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries detailed information about a type of events, including the severity level, status, and start time of each event. Events are generated when clusters are created, modified, and updated, node pools are created and scaled out, and components are installed.
+//
+// @param request - DescribeEventsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeEventsResponse
 func (client *Client) DescribeEventsWithOptions(request *DescribeEventsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeEventsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23188,6 +29820,13 @@ func (client *Client) DescribeEventsWithOptions(request *DescribeEventsRequest, 
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries detailed information about a type of events, including the severity level, status, and start time of each event. Events are generated when clusters are created, modified, and updated, node pools are created and scaled out, and components are installed.
+//
+// @param request - DescribeEventsRequest
+//
+// @return DescribeEventsResponse
 func (client *Client) DescribeEvents(request *DescribeEventsRequest) (_result *DescribeEventsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23200,14 +29839,21 @@ func (client *Client) DescribeEvents(request *DescribeEventsRequest) (_result *D
 	return _result, _err
 }
 
-/**
- * For more information, see [Register an external Kubernetes cluster](~~121053~~).
- *
- * @param request DescribeExternalAgentRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeExternalAgentResponse
- */
+// Summary:
+//
+// You can call the DescribeExternalAgent operation to query the agent configurations of a registered cluster by cluster ID.
+//
+// Description:
+//
+// For more information, see [Register an external Kubernetes cluster](https://help.aliyun.com/document_detail/121053.html).
+//
+// @param request - DescribeExternalAgentRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeExternalAgentResponse
 func (client *Client) DescribeExternalAgentWithOptions(ClusterId *string, request *DescribeExternalAgentRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeExternalAgentResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23246,12 +29892,17 @@ func (client *Client) DescribeExternalAgentWithOptions(ClusterId *string, reques
 	return _result, _err
 }
 
-/**
- * For more information, see [Register an external Kubernetes cluster](~~121053~~).
- *
- * @param request DescribeExternalAgentRequest
- * @return DescribeExternalAgentResponse
- */
+// Summary:
+//
+// You can call the DescribeExternalAgent operation to query the agent configurations of a registered cluster by cluster ID.
+//
+// Description:
+//
+// For more information, see [Register an external Kubernetes cluster](https://help.aliyun.com/document_detail/121053.html).
+//
+// @param request - DescribeExternalAgentRequest
+//
+// @return DescribeExternalAgentResponse
 func (client *Client) DescribeExternalAgent(ClusterId *string, request *DescribeExternalAgentRequest) (_result *DescribeExternalAgentResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23264,6 +29915,17 @@ func (client *Client) DescribeExternalAgent(ClusterId *string, request *Describe
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the detailed information about Kubernetes versions, including the version number, release date, expiration date, compatible OSs, and runtime.
+//
+// @param request - DescribeKubernetesVersionMetadataRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeKubernetesVersionMetadataResponse
 func (client *Client) DescribeKubernetesVersionMetadataWithOptions(request *DescribeKubernetesVersionMetadataRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeKubernetesVersionMetadataResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23318,6 +29980,13 @@ func (client *Client) DescribeKubernetesVersionMetadataWithOptions(request *Desc
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the detailed information about Kubernetes versions, including the version number, release date, expiration date, compatible OSs, and runtime.
+//
+// @param request - DescribeKubernetesVersionMetadataRequest
+//
+// @return DescribeKubernetesVersionMetadataResponse
 func (client *Client) DescribeKubernetesVersionMetadata(request *DescribeKubernetesVersionMetadataRequest) (_result *DescribeKubernetesVersionMetadataResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23330,6 +29999,17 @@ func (client *Client) DescribeKubernetesVersionMetadata(request *DescribeKuberne
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the vulnerability information of a node pool, such as vulnerability names and severity levels, by specifying the ID of the node pool. We recommend that you periodically scan node pools for vulnerabilities to enhance cluster security.
+//
+// @param request - DescribeNodePoolVulsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeNodePoolVulsResponse
 func (client *Client) DescribeNodePoolVulsWithOptions(clusterId *string, nodepoolId *string, request *DescribeNodePoolVulsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeNodePoolVulsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23364,6 +30044,13 @@ func (client *Client) DescribeNodePoolVulsWithOptions(clusterId *string, nodepoo
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the vulnerability information of a node pool, such as vulnerability names and severity levels, by specifying the ID of the node pool. We recommend that you periodically scan node pools for vulnerabilities to enhance cluster security.
+//
+// @param request - DescribeNodePoolVulsRequest
+//
+// @return DescribeNodePoolVulsResponse
 func (client *Client) DescribeNodePoolVuls(clusterId *string, nodepoolId *string, request *DescribeNodePoolVulsRequest) (_result *DescribeNodePoolVulsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23376,6 +30063,15 @@ func (client *Client) DescribeNodePoolVuls(clusterId *string, nodepoolId *string
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribePolicies operation to query a list of policies.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribePoliciesResponse
 func (client *Client) DescribePoliciesWithOptions(headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribePoliciesResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23400,6 +30096,11 @@ func (client *Client) DescribePoliciesWithOptions(headers map[string]*string, ru
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribePolicies operation to query a list of policies.
+//
+// @return DescribePoliciesResponse
 func (client *Client) DescribePolicies() (_result *DescribePoliciesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23412,6 +30113,15 @@ func (client *Client) DescribePolicies() (_result *DescribePoliciesResponse, _er
 	return _result, _err
 }
 
+// Summary:
+//
+// Container security policies for Container Service for Kubernetes (ACK) clusters offer a variety of built-in policies, including cis-k8s, infra, k8s-general, and PodSecurityPolicy. You can use these policies to ensure the security of containers running in a production environment. You can call the DescribePolicyDetails operation to query information about a policy, such as the content, action, and severity level of the policy.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribePolicyDetailsResponse
 func (client *Client) DescribePolicyDetailsWithOptions(policyName *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribePolicyDetailsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23436,6 +30146,11 @@ func (client *Client) DescribePolicyDetailsWithOptions(policyName *string, heade
 	return _result, _err
 }
 
+// Summary:
+//
+// Container security policies for Container Service for Kubernetes (ACK) clusters offer a variety of built-in policies, including cis-k8s, infra, k8s-general, and PodSecurityPolicy. You can use these policies to ensure the security of containers running in a production environment. You can call the DescribePolicyDetails operation to query information about a policy, such as the content, action, and severity level of the policy.
+//
+// @return DescribePolicyDetailsResponse
 func (client *Client) DescribePolicyDetails(policyName *string) (_result *DescribePolicyDetailsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23448,6 +30163,15 @@ func (client *Client) DescribePolicyDetails(policyName *string) (_result *Descri
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribePolicyGovernanceInCluster operation to query information about policies in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribePolicyGovernanceInClusterResponse
 func (client *Client) DescribePolicyGovernanceInClusterWithOptions(clusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribePolicyGovernanceInClusterResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23472,6 +30196,11 @@ func (client *Client) DescribePolicyGovernanceInClusterWithOptions(clusterId *st
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribePolicyGovernanceInCluster operation to query information about policies in a Container Service for Kubernetes (ACK) cluster.
+//
+// @return DescribePolicyGovernanceInClusterResponse
 func (client *Client) DescribePolicyGovernanceInCluster(clusterId *string) (_result *DescribePolicyGovernanceInClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23484,6 +30213,17 @@ func (client *Client) DescribePolicyGovernanceInCluster(clusterId *string) (_res
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the detailed information about policy instances of the specified type in a Container Service for Kubernetes (ACK) cluster, such as the policy description and severity level. You can choose a type of security policy for an ACK cluster, specify the action and applicable scope of the policy, and then create and deploy a policy instance.
+//
+// @param request - DescribePolicyInstancesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribePolicyInstancesResponse
 func (client *Client) DescribePolicyInstancesWithOptions(clusterId *string, request *DescribePolicyInstancesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribePolicyInstancesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23522,6 +30262,13 @@ func (client *Client) DescribePolicyInstancesWithOptions(clusterId *string, requ
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the detailed information about policy instances of the specified type in a Container Service for Kubernetes (ACK) cluster, such as the policy description and severity level. You can choose a type of security policy for an ACK cluster, specify the action and applicable scope of the policy, and then create and deploy a policy instance.
+//
+// @param request - DescribePolicyInstancesRequest
+//
+// @return DescribePolicyInstancesResponse
 func (client *Client) DescribePolicyInstances(clusterId *string, request *DescribePolicyInstancesRequest) (_result *DescribePolicyInstancesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23534,6 +30281,15 @@ func (client *Client) DescribePolicyInstances(clusterId *string, request *Descri
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the deployment of policy instances in the current Container Service for Kubernetes (ACK) cluster, including the number of policy instances of each type and the number of policy types of each severity level.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribePolicyInstancesStatusResponse
 func (client *Client) DescribePolicyInstancesStatusWithOptions(clusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribePolicyInstancesStatusResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23558,6 +30314,11 @@ func (client *Client) DescribePolicyInstancesStatusWithOptions(clusterId *string
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the deployment of policy instances in the current Container Service for Kubernetes (ACK) cluster, including the number of policy instances of each type and the number of policy types of each severity level.
+//
+// @return DescribePolicyInstancesStatusResponse
 func (client *Client) DescribePolicyInstancesStatus(clusterId *string) (_result *DescribePolicyInstancesStatusResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23570,15 +30331,23 @@ func (client *Client) DescribePolicyInstancesStatus(clusterId *string) (_result 
 	return _result, _err
 }
 
-/**
- * **
- * ****Only Alibaba Cloud accounts can call this API operation.
- *
- * @param request DescribeSubaccountK8sClusterUserConfigRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return DescribeSubaccountK8sClusterUserConfigResponse
- */
+// Summary:
+//
+// You can use an Alibaba Cloud account to call the DescribeSubaccountK8sClusterUserConfig operation to obtain the cluster kubeconfig file of a RAM user or RAM role.
+//
+// Description:
+//
+// *
+//
+// ****Only Alibaba Cloud accounts can call this API operation.
+//
+// @param request - DescribeSubaccountK8sClusterUserConfigRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeSubaccountK8sClusterUserConfigResponse
 func (client *Client) DescribeSubaccountK8sClusterUserConfigWithOptions(ClusterId *string, Uid *string, request *DescribeSubaccountK8sClusterUserConfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeSubaccountK8sClusterUserConfigResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23617,13 +30386,19 @@ func (client *Client) DescribeSubaccountK8sClusterUserConfigWithOptions(ClusterI
 	return _result, _err
 }
 
-/**
- * **
- * ****Only Alibaba Cloud accounts can call this API operation.
- *
- * @param request DescribeSubaccountK8sClusterUserConfigRequest
- * @return DescribeSubaccountK8sClusterUserConfigResponse
- */
+// Summary:
+//
+// You can use an Alibaba Cloud account to call the DescribeSubaccountK8sClusterUserConfig operation to obtain the cluster kubeconfig file of a RAM user or RAM role.
+//
+// Description:
+//
+// *
+//
+// ****Only Alibaba Cloud accounts can call this API operation.
+//
+// @param request - DescribeSubaccountK8sClusterUserConfigRequest
+//
+// @return DescribeSubaccountK8sClusterUserConfigResponse
 func (client *Client) DescribeSubaccountK8sClusterUserConfig(ClusterId *string, Uid *string, request *DescribeSubaccountK8sClusterUserConfigRequest) (_result *DescribeSubaccountK8sClusterUserConfigResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23636,6 +30411,15 @@ func (client *Client) DescribeSubaccountK8sClusterUserConfig(ClusterId *string, 
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries detailed information about a task, such as the task type, status, and progress.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeTaskInfoResponse
 func (client *Client) DescribeTaskInfoWithOptions(taskId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeTaskInfoResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23660,6 +30444,11 @@ func (client *Client) DescribeTaskInfoWithOptions(taskId *string, headers map[st
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries detailed information about a task, such as the task type, status, and progress.
+//
+// @return DescribeTaskInfoResponse
 func (client *Client) DescribeTaskInfo(taskId *string) (_result *DescribeTaskInfoResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23672,6 +30461,17 @@ func (client *Client) DescribeTaskInfo(taskId *string) (_result *DescribeTaskInf
 	return _result, _err
 }
 
+// Summary:
+//
+// An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can call the DescribeTemplates API operation to query orchestration templates and their detailed information, including access permissions, YAML content, and labels.
+//
+// @param request - DescribeTemplateAttributeRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeTemplateAttributeResponse
 func (client *Client) DescribeTemplateAttributeWithOptions(TemplateId *string, request *DescribeTemplateAttributeRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeTemplateAttributeResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23706,6 +30506,13 @@ func (client *Client) DescribeTemplateAttributeWithOptions(TemplateId *string, r
 	return _result, _err
 }
 
+// Summary:
+//
+// An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can call the DescribeTemplates API operation to query orchestration templates and their detailed information, including access permissions, YAML content, and labels.
+//
+// @param request - DescribeTemplateAttributeRequest
+//
+// @return DescribeTemplateAttributeResponse
 func (client *Client) DescribeTemplateAttribute(TemplateId *string, request *DescribeTemplateAttributeRequest) (_result *DescribeTemplateAttributeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23718,6 +30525,17 @@ func (client *Client) DescribeTemplateAttribute(TemplateId *string, request *Des
 	return _result, _err
 }
 
+// Summary:
+//
+// An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can call the DescribeTemplates API operation to query orchestration templates and their detailed information, including access permissions, YAML content, and labels.
+//
+// @param request - DescribeTemplatesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeTemplatesResponse
 func (client *Client) DescribeTemplatesWithOptions(request *DescribeTemplatesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeTemplatesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23760,6 +30578,13 @@ func (client *Client) DescribeTemplatesWithOptions(request *DescribeTemplatesReq
 	return _result, _err
 }
 
+// Summary:
+//
+// An orchestration template defines and describes a group of Kubernetes resources. It declaratively describes the configuration of an application or how an application runs. You can call the DescribeTemplates API operation to query orchestration templates and their detailed information, including access permissions, YAML content, and labels.
+//
+// @param request - DescribeTemplatesRequest
+//
+// @return DescribeTemplatesResponse
 func (client *Client) DescribeTemplates(request *DescribeTemplatesRequest) (_result *DescribeTemplatesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23772,6 +30597,17 @@ func (client *Client) DescribeTemplates(request *DescribeTemplatesRequest) (_res
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeTrigger operation to query triggers.
+//
+// @param request - DescribeTriggerRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeTriggerResponse
 func (client *Client) DescribeTriggerWithOptions(clusterId *string, request *DescribeTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -23818,6 +30654,13 @@ func (client *Client) DescribeTriggerWithOptions(clusterId *string, request *Des
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeTrigger operation to query triggers.
+//
+// @param request - DescribeTriggerRequest
+//
+// @return DescribeTriggerResponse
 func (client *Client) DescribeTrigger(clusterId *string, request *DescribeTriggerRequest) (_result *DescribeTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23830,6 +30673,15 @@ func (client *Client) DescribeTrigger(clusterId *string, request *DescribeTrigge
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the Role-Based Access Control (RBAC) permissions that are granted to the current Resource Access Management (RAM) user or RAM role on a Container Service for Kubernetes (ACK) cluster. You can use Kubernetes namespaces to limit users from accessing resources in an ACK cluster. Users that are granted RBAC permissions only on one namespace cannot access resources in other namespaces.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeUserClusterNamespacesResponse
 func (client *Client) DescribeUserClusterNamespacesWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeUserClusterNamespacesResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23854,6 +30706,11 @@ func (client *Client) DescribeUserClusterNamespacesWithOptions(ClusterId *string
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries the Role-Based Access Control (RBAC) permissions that are granted to the current Resource Access Management (RAM) user or RAM role on a Container Service for Kubernetes (ACK) cluster. You can use Kubernetes namespaces to limit users from accessing resources in an ACK cluster. Users that are granted RBAC permissions only on one namespace cannot access resources in other namespaces.
+//
+// @return DescribeUserClusterNamespacesResponse
 func (client *Client) DescribeUserClusterNamespaces(ClusterId *string) (_result *DescribeUserClusterNamespacesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23866,6 +30723,15 @@ func (client *Client) DescribeUserClusterNamespaces(ClusterId *string) (_result 
 	return _result, _err
 }
 
+// Summary:
+//
+// In an Container Service for Kubernetes (ACK) cluster, you can create and specify different Resource Access Management (RAM) users or roles to have different access permissions. This ensures access control and resource isolation. You can call the DescribeUserPermission operation to query the permissions that are granted to a RAM user or RAM role on ACK clusters, including the resources that are allowed to access, the scope of the permissions, the predefined role, and the permission source.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeUserPermissionResponse
 func (client *Client) DescribeUserPermissionWithOptions(uid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeUserPermissionResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23890,6 +30756,11 @@ func (client *Client) DescribeUserPermissionWithOptions(uid *string, headers map
 	return _result, _err
 }
 
+// Summary:
+//
+// In an Container Service for Kubernetes (ACK) cluster, you can create and specify different Resource Access Management (RAM) users or roles to have different access permissions. This ensures access control and resource isolation. You can call the DescribeUserPermission operation to query the permissions that are granted to a RAM user or RAM role on ACK clusters, including the resources that are allowed to access, the scope of the permissions, the predefined role, and the permission source.
+//
+// @return DescribeUserPermissionResponse
 func (client *Client) DescribeUserPermission(uid *string) (_result *DescribeUserPermissionResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23902,6 +30773,15 @@ func (client *Client) DescribeUserPermission(uid *string) (_result *DescribeUser
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries quotas related to Container Service for Kubernetes (ACK) clusters, node pools, and nodes. To increase a quota, submit an application in the Quota Center console.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeUserQuotaResponse
 func (client *Client) DescribeUserQuotaWithOptions(headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeUserQuotaResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23926,6 +30806,11 @@ func (client *Client) DescribeUserQuotaWithOptions(headers map[string]*string, r
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries quotas related to Container Service for Kubernetes (ACK) clusters, node pools, and nodes. To increase a quota, submit an application in the Quota Center console.
+//
+// @return DescribeUserQuotaResponse
 func (client *Client) DescribeUserQuota() (_result *DescribeUserQuotaResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23938,6 +30823,15 @@ func (client *Client) DescribeUserQuota() (_result *DescribeUserQuotaResponse, _
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeWorkflows operation to query all workflows.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return DescribeWorkflowsResponse
 func (client *Client) DescribeWorkflowsWithOptions(headers map[string]*string, runtime *util.RuntimeOptions) (_result *DescribeWorkflowsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -23962,6 +30856,11 @@ func (client *Client) DescribeWorkflowsWithOptions(headers map[string]*string, r
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the DescribeWorkflows operation to query all workflows.
+//
+// @return DescribeWorkflowsResponse
 func (client *Client) DescribeWorkflows() (_result *DescribeWorkflowsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -23974,6 +30873,17 @@ func (client *Client) DescribeWorkflows() (_result *DescribeWorkflowsResponse, _
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the EdgeClusterAddEdgeMachine operation to add a cloud-native box to a Container Service for Kubernetes (ACK) Edge cluster.
+//
+// @param request - EdgeClusterAddEdgeMachineRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return EdgeClusterAddEdgeMachineResponse
 func (client *Client) EdgeClusterAddEdgeMachineWithOptions(clusterid *string, edgeMachineid *string, request *EdgeClusterAddEdgeMachineRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *EdgeClusterAddEdgeMachineResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24016,6 +30926,13 @@ func (client *Client) EdgeClusterAddEdgeMachineWithOptions(clusterid *string, ed
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the EdgeClusterAddEdgeMachine operation to add a cloud-native box to a Container Service for Kubernetes (ACK) Edge cluster.
+//
+// @param request - EdgeClusterAddEdgeMachineRequest
+//
+// @return EdgeClusterAddEdgeMachineResponse
 func (client *Client) EdgeClusterAddEdgeMachine(clusterid *string, edgeMachineid *string, request *EdgeClusterAddEdgeMachineRequest) (_result *EdgeClusterAddEdgeMachineResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24028,17 +30945,27 @@ func (client *Client) EdgeClusterAddEdgeMachine(clusterid *string, edgeMachineid
 	return _result, _err
 }
 
-/**
- * 1.  The Common Vulnerabilities and Exposures (CVE) patching feature is developed based on Security Center. To use this feature, you must purchase the Security Center Ultimate Edition that supports Container Service for Kubernetes (ACK).
- * 2.  ACK may need to restart nodes to patch certain vulnerabilities. ACK drains a node before the node restarts. Make sure that the ACK cluster has sufficient idle nodes to host the pods evicted from the trained nodes. For example, you can scale out a node pool before you patch vulnerabilities for the nodes in the node pool.
- * 3.  Security Center ensures the compatibility of CVE patches. We recommend that you check the compatibility of a CVE patch with your application before you install the patch. You can pause or cancel a CVE patching task anytime.
- * 4.  CVE patching is a progressive task that consists of multiple batches. After you pause or cancel a CVE patching task, ACK continues to process the dispatched batches. Only the batches that have not been dispatched are paused or canceled.
- *
- * @param request FixNodePoolVulsRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return FixNodePoolVulsResponse
- */
+// Summary:
+//
+// Patches node vulnerabilities in a node pool to enhance node security. Cloud Security provided by Alibaba Cloud periodically scans Elastic Compute Service (ECS) instances for vulnerabilities and provides suggestions on how to patch the detected vulnerabilities. Vulnerability patching may require node restarts. Make sure that your cluster has sufficient idle nodes for node draining.
+//
+// Description:
+//
+// 1.  The Common Vulnerabilities and Exposures (CVE) patching feature is developed based on Security Center. To use this feature, you must purchase the Security Center Ultimate Edition that supports Container Service for Kubernetes (ACK).
+//
+// 2.  ACK may need to restart nodes to patch certain vulnerabilities. ACK drains a node before the node restarts. Make sure that the ACK cluster has sufficient idle nodes to host the pods evicted from the trained nodes. For example, you can scale out a node pool before you patch vulnerabilities for the nodes in the node pool.
+//
+// 3.  Security Center ensures the compatibility of CVE patches. We recommend that you check the compatibility of a CVE patch with your application before you install the patch. You can pause or cancel a CVE patching task anytime.
+//
+// 4.  CVE patching is a progressive task that consists of multiple batches. After you pause or cancel a CVE patching task, ACK continues to process the dispatched batches. Only the batches that have not been dispatched are paused or canceled.
+//
+// @param request - FixNodePoolVulsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return FixNodePoolVulsResponse
 func (client *Client) FixNodePoolVulsWithOptions(clusterId *string, nodepoolId *string, request *FixNodePoolVulsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *FixNodePoolVulsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24085,15 +31012,23 @@ func (client *Client) FixNodePoolVulsWithOptions(clusterId *string, nodepoolId *
 	return _result, _err
 }
 
-/**
- * 1.  The Common Vulnerabilities and Exposures (CVE) patching feature is developed based on Security Center. To use this feature, you must purchase the Security Center Ultimate Edition that supports Container Service for Kubernetes (ACK).
- * 2.  ACK may need to restart nodes to patch certain vulnerabilities. ACK drains a node before the node restarts. Make sure that the ACK cluster has sufficient idle nodes to host the pods evicted from the trained nodes. For example, you can scale out a node pool before you patch vulnerabilities for the nodes in the node pool.
- * 3.  Security Center ensures the compatibility of CVE patches. We recommend that you check the compatibility of a CVE patch with your application before you install the patch. You can pause or cancel a CVE patching task anytime.
- * 4.  CVE patching is a progressive task that consists of multiple batches. After you pause or cancel a CVE patching task, ACK continues to process the dispatched batches. Only the batches that have not been dispatched are paused or canceled.
- *
- * @param request FixNodePoolVulsRequest
- * @return FixNodePoolVulsResponse
- */
+// Summary:
+//
+// Patches node vulnerabilities in a node pool to enhance node security. Cloud Security provided by Alibaba Cloud periodically scans Elastic Compute Service (ECS) instances for vulnerabilities and provides suggestions on how to patch the detected vulnerabilities. Vulnerability patching may require node restarts. Make sure that your cluster has sufficient idle nodes for node draining.
+//
+// Description:
+//
+// 1.  The Common Vulnerabilities and Exposures (CVE) patching feature is developed based on Security Center. To use this feature, you must purchase the Security Center Ultimate Edition that supports Container Service for Kubernetes (ACK).
+//
+// 2.  ACK may need to restart nodes to patch certain vulnerabilities. ACK drains a node before the node restarts. Make sure that the ACK cluster has sufficient idle nodes to host the pods evicted from the trained nodes. For example, you can scale out a node pool before you patch vulnerabilities for the nodes in the node pool.
+//
+// 3.  Security Center ensures the compatibility of CVE patches. We recommend that you check the compatibility of a CVE patch with your application before you install the patch. You can pause or cancel a CVE patching task anytime.
+//
+// 4.  CVE patching is a progressive task that consists of multiple batches. After you pause or cancel a CVE patching task, ACK continues to process the dispatched batches. Only the batches that have not been dispatched are paused or canceled.
+//
+// @param request - FixNodePoolVulsRequest
+//
+// @return FixNodePoolVulsResponse
 func (client *Client) FixNodePoolVuls(clusterId *string, nodepoolId *string, request *FixNodePoolVulsRequest) (_result *FixNodePoolVulsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24106,6 +31041,15 @@ func (client *Client) FixNodePoolVuls(clusterId *string, nodepoolId *string, req
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetClusterAddonInstance operation to query the information of a component instance in a cluster, including the version, configurations, and log status of the component instance.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return GetClusterAddonInstanceResponse
 func (client *Client) GetClusterAddonInstanceWithOptions(clusterId *string, instanceName *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterAddonInstanceResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -24130,6 +31074,11 @@ func (client *Client) GetClusterAddonInstanceWithOptions(clusterId *string, inst
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetClusterAddonInstance operation to query the information of a component instance in a cluster, including the version, configurations, and log status of the component instance.
+//
+// @return GetClusterAddonInstanceResponse
 func (client *Client) GetClusterAddonInstance(clusterId *string, instanceName *string) (_result *GetClusterAddonInstanceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24142,6 +31091,15 @@ func (client *Client) GetClusterAddonInstance(clusterId *string, instanceName *s
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries a cluster check task by cluster ID and task ID. You can view the status, check items, creation time, and end time of the task. Container Intelligence Service (CIS) provides a variety of Kubernetes cluster check features, including cluster update check, cluster migration check, component installation check, component update check, and node pool check.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return GetClusterCheckResponse
 func (client *Client) GetClusterCheckWithOptions(clusterId *string, checkId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetClusterCheckResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -24166,6 +31124,11 @@ func (client *Client) GetClusterCheckWithOptions(clusterId *string, checkId *str
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries a cluster check task by cluster ID and task ID. You can view the status, check items, creation time, and end time of the task. Container Intelligence Service (CIS) provides a variety of Kubernetes cluster check features, including cluster update check, cluster migration check, component installation check, component update check, and node pool check.
+//
+// @return GetClusterCheckResponse
 func (client *Client) GetClusterCheck(clusterId *string, checkId *string) (_result *GetClusterCheckResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24178,6 +31141,17 @@ func (client *Client) GetClusterCheck(clusterId *string, checkId *string) (_resu
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetKubernetesTrigger operationto query the triggers of an application by application name.
+//
+// @param request - GetKubernetesTriggerRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return GetKubernetesTriggerResponse
 func (client *Client) GetKubernetesTriggerWithOptions(ClusterId *string, request *GetKubernetesTriggerRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetKubernetesTriggerResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24224,6 +31198,13 @@ func (client *Client) GetKubernetesTriggerWithOptions(ClusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetKubernetesTrigger operationto query the triggers of an application by application name.
+//
+// @param request - GetKubernetesTriggerRequest
+//
+// @return GetKubernetesTriggerResponse
 func (client *Client) GetKubernetesTrigger(ClusterId *string, request *GetKubernetesTriggerRequest) (_result *GetKubernetesTriggerResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24236,6 +31217,15 @@ func (client *Client) GetKubernetesTrigger(ClusterId *string, request *GetKubern
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetUpgradeStatus operation to query the update progress of a cluster by cluster ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return GetUpgradeStatusResponse
 func (client *Client) GetUpgradeStatusWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GetUpgradeStatusResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -24260,6 +31250,11 @@ func (client *Client) GetUpgradeStatusWithOptions(ClusterId *string, headers map
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the GetUpgradeStatus operation to query the update progress of a cluster by cluster ID.
+//
+// @return GetUpgradeStatusResponse
 func (client *Client) GetUpgradeStatus(ClusterId *string) (_result *GetUpgradeStatusResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24272,17 +31267,27 @@ func (client *Client) GetUpgradeStatus(ClusterId *string) (_result *GetUpgradeSt
 	return _result, _err
 }
 
-/**
- * ****
- * *   Make sure that you have granted the RAM user at least read-only permissions on the desired ACK clusters in the RAM console. Otherwise, the `ErrorRamPolicyConfig` error code is returned. For more information about how to authorize a RAM user by attaching RAM policies, see [Create a custom RAM policy](~~86485~~).
- * *   If you use a RAM user to call this API operation, make sure that the RAM user is authorized to modify the permissions of other RAM users on the desired ACK clusters. Otherwise, the `StatusForbidden` or `ForbiddenGrantPermissions` error code is returned. For more information, see [Use a RAM user to grant RBAC permissions to other RAM users](~~119035~~).
- * *   This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
- *
- * @param request GrantPermissionsRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return GrantPermissionsResponse
- */
+// Summary:
+//
+// You can call the GrantPermissions operation to grant a Resource Access Management (RAM) user the permissions to manage Container Service for Kubernetes (ACK) clusters.
+//
+// Description:
+//
+// ***
+//
+// 	- Make sure that you have granted the RAM user at least read-only permissions on the desired ACK clusters in the RAM console. Otherwise, the `ErrorRamPolicyConfig` error code is returned. For more information about how to authorize a RAM user by attaching RAM policies, see [Create a custom RAM policy](https://help.aliyun.com/document_detail/86485.html).
+//
+// 	- If you use a RAM user to call this API operation, make sure that the RAM user is authorized to modify the permissions of other RAM users on the desired ACK clusters. Otherwise, the `StatusForbidden` or `ForbiddenGrantPermissions` error code is returned. For more information, see [Use a RAM user to grant RBAC permissions to other RAM users](https://help.aliyun.com/document_detail/119035.html).
+//
+// 	- This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
+//
+// @param request - GrantPermissionsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return GrantPermissionsResponse
 func (client *Client) GrantPermissionsWithOptions(uid *string, request *GrantPermissionsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *GrantPermissionsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24312,15 +31317,23 @@ func (client *Client) GrantPermissionsWithOptions(uid *string, request *GrantPer
 	return _result, _err
 }
 
-/**
- * ****
- * *   Make sure that you have granted the RAM user at least read-only permissions on the desired ACK clusters in the RAM console. Otherwise, the `ErrorRamPolicyConfig` error code is returned. For more information about how to authorize a RAM user by attaching RAM policies, see [Create a custom RAM policy](~~86485~~).
- * *   If you use a RAM user to call this API operation, make sure that the RAM user is authorized to modify the permissions of other RAM users on the desired ACK clusters. Otherwise, the `StatusForbidden` or `ForbiddenGrantPermissions` error code is returned. For more information, see [Use a RAM user to grant RBAC permissions to other RAM users](~~119035~~).
- * *   This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
- *
- * @param request GrantPermissionsRequest
- * @return GrantPermissionsResponse
- */
+// Summary:
+//
+// You can call the GrantPermissions operation to grant a Resource Access Management (RAM) user the permissions to manage Container Service for Kubernetes (ACK) clusters.
+//
+// Description:
+//
+// ***
+//
+// 	- Make sure that you have granted the RAM user at least read-only permissions on the desired ACK clusters in the RAM console. Otherwise, the `ErrorRamPolicyConfig` error code is returned. For more information about how to authorize a RAM user by attaching RAM policies, see [Create a custom RAM policy](https://help.aliyun.com/document_detail/86485.html).
+//
+// 	- If you use a RAM user to call this API operation, make sure that the RAM user is authorized to modify the permissions of other RAM users on the desired ACK clusters. Otherwise, the `StatusForbidden` or `ForbiddenGrantPermissions` error code is returned. For more information, see [Use a RAM user to grant RBAC permissions to other RAM users](https://help.aliyun.com/document_detail/119035.html).
+//
+// 	- This operation overwrites the permissions that have been granted to the specified RAM user. When you call this operation, make sure that the required permissions are included.
+//
+// @param request - GrantPermissionsRequest
+//
+// @return GrantPermissionsResponse
 func (client *Client) GrantPermissions(uid *string, request *GrantPermissionsRequest) (_result *GrantPermissionsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24333,6 +31346,17 @@ func (client *Client) GrantPermissions(uid *string, request *GrantPermissionsReq
 	return _result, _err
 }
 
+// Summary:
+//
+// Installs a component by specifying the name and version of the component. To enhance Kubernetes capabilities, you can install a variety of components in Container Service for Kubernetes (ACK) clusters, such as fully-managed core components and application, logging and monitoring, network, storage, and security group components.
+//
+// @param request - InstallClusterAddonsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return InstallClusterAddonsResponse
 func (client *Client) InstallClusterAddonsWithOptions(ClusterId *string, request *InstallClusterAddonsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *InstallClusterAddonsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24362,6 +31386,13 @@ func (client *Client) InstallClusterAddonsWithOptions(ClusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// Installs a component by specifying the name and version of the component. To enhance Kubernetes capabilities, you can install a variety of components in Container Service for Kubernetes (ACK) clusters, such as fully-managed core components and application, logging and monitoring, network, storage, and security group components.
+//
+// @param request - InstallClusterAddonsRequest
+//
+// @return InstallClusterAddonsResponse
 func (client *Client) InstallClusterAddons(ClusterId *string, request *InstallClusterAddonsRequest) (_result *InstallClusterAddonsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24374,6 +31405,17 @@ func (client *Client) InstallClusterAddons(ClusterId *string, request *InstallCl
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListAddons operation to query all available components in a cluster. You can query all available components in a cluster by specifying the ID of the cluster. You can also specify parameters such as the region, cluster type, cluster subtype (profile), cluster specification, and cluster version to get a list of available components in clusters that meet the conditions.
+//
+// @param request - ListAddonsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ListAddonsResponse
 func (client *Client) ListAddonsWithOptions(request *ListAddonsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ListAddonsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24428,6 +31470,13 @@ func (client *Client) ListAddonsWithOptions(request *ListAddonsRequest, headers 
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListAddons operation to query all available components in a cluster. You can query all available components in a cluster by specifying the ID of the cluster. You can also specify parameters such as the region, cluster type, cluster subtype (profile), cluster specification, and cluster version to get a list of available components in clusters that meet the conditions.
+//
+// @param request - ListAddonsRequest
+//
+// @return ListAddonsResponse
 func (client *Client) ListAddons(request *ListAddonsRequest) (_result *ListAddonsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24440,6 +31489,15 @@ func (client *Client) ListAddons(request *ListAddonsRequest) (_result *ListAddon
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListClusterAddonInstances operation to query information about the components that are installed in a cluster.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ListClusterAddonInstancesResponse
 func (client *Client) ListClusterAddonInstancesWithOptions(clusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ListClusterAddonInstancesResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -24464,6 +31522,11 @@ func (client *Client) ListClusterAddonInstancesWithOptions(clusterId *string, he
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListClusterAddonInstances operation to query information about the components that are installed in a cluster.
+//
+// @return ListClusterAddonInstancesResponse
 func (client *Client) ListClusterAddonInstances(clusterId *string) (_result *ListClusterAddonInstancesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24476,6 +31539,17 @@ func (client *Client) ListClusterAddonInstances(clusterId *string) (_result *Lis
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListClusterChecks operation to query all the cluster check results of a cluster.
+//
+// @param request - ListClusterChecksRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ListClusterChecksResponse
 func (client *Client) ListClusterChecksWithOptions(clusterId *string, request *ListClusterChecksRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ListClusterChecksResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24514,6 +31588,13 @@ func (client *Client) ListClusterChecksWithOptions(clusterId *string, request *L
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ListClusterChecks operation to query all the cluster check results of a cluster.
+//
+// @param request - ListClusterChecksRequest
+//
+// @return ListClusterChecksResponse
 func (client *Client) ListClusterChecks(clusterId *string, request *ListClusterChecksRequest) (_result *ListClusterChecksResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24526,6 +31607,17 @@ func (client *Client) ListClusterChecks(clusterId *string, request *ListClusterC
 	return _result, _err
 }
 
+// Summary:
+//
+// 获取自动运维执行计划列表
+//
+// @param request - ListOperationPlansRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ListOperationPlansResponse
 func (client *Client) ListOperationPlansWithOptions(request *ListOperationPlansRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ListOperationPlansResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24564,6 +31656,13 @@ func (client *Client) ListOperationPlansWithOptions(request *ListOperationPlansR
 	return _result, _err
 }
 
+// Summary:
+//
+// 获取自动运维执行计划列表
+//
+// @param request - ListOperationPlansRequest
+//
+// @return ListOperationPlansResponse
 func (client *Client) ListOperationPlans(request *ListOperationPlansRequest) (_result *ListOperationPlansResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24576,6 +31675,17 @@ func (client *Client) ListOperationPlans(request *ListOperationPlansRequest) (_r
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries resource labels and the detailed information, such as the key-value pairs of the labels and the clusters to which the labels are added. You can use labels to classify and manage Container Service for Kubernetes (ACK) clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param tmpReq - ListTagResourcesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ListTagResourcesResponse
 func (client *Client) ListTagResourcesWithOptions(tmpReq *ListTagResourcesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ListTagResourcesResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -24636,6 +31746,13 @@ func (client *Client) ListTagResourcesWithOptions(tmpReq *ListTagResourcesReques
 	return _result, _err
 }
 
+// Summary:
+//
+// Queries resource labels and the detailed information, such as the key-value pairs of the labels and the clusters to which the labels are added. You can use labels to classify and manage Container Service for Kubernetes (ACK) clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param request - ListTagResourcesRequest
+//
+// @return ListTagResourcesResponse
 func (client *Client) ListTagResources(request *ListTagResourcesRequest) (_result *ListTagResourcesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24648,6 +31765,17 @@ func (client *Client) ListTagResources(request *ListTagResourcesRequest) (_resul
 	return _result, _err
 }
 
+// Summary:
+//
+// Container Service for Kubernetes (ACK) Pro clusters are developed based on ACK Basic clusters. ACK Pro clusters provide all benefits of ACK managed clusters, such as fully-managed control planes and control plane high availability. In addition, ACK Pro clusters provide you with enhanced reliability, security, and schedulability. ACK Pro clusters are covered by the SLA that supports compensation clauses. ACK Pro clusters are suitable for large-scale businesses that require high stability and security in production environments. We recommend that you migrate from ACK Basic clusters to ACK Pro clusters.
+//
+// @param request - MigrateClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return MigrateClusterResponse
 func (client *Client) MigrateClusterWithOptions(clusterId *string, request *MigrateClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *MigrateClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24686,6 +31814,13 @@ func (client *Client) MigrateClusterWithOptions(clusterId *string, request *Migr
 	return _result, _err
 }
 
+// Summary:
+//
+// Container Service for Kubernetes (ACK) Pro clusters are developed based on ACK Basic clusters. ACK Pro clusters provide all benefits of ACK managed clusters, such as fully-managed control planes and control plane high availability. In addition, ACK Pro clusters provide you with enhanced reliability, security, and schedulability. ACK Pro clusters are covered by the SLA that supports compensation clauses. ACK Pro clusters are suitable for large-scale businesses that require high stability and security in production environments. We recommend that you migrate from ACK Basic clusters to ACK Pro clusters.
+//
+// @param request - MigrateClusterRequest
+//
+// @return MigrateClusterResponse
 func (client *Client) MigrateCluster(clusterId *string, request *MigrateClusterRequest) (_result *MigrateClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24698,6 +31833,17 @@ func (client *Client) MigrateCluster(clusterId *string, request *MigrateClusterR
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyCluster operation to modify the cluster configurations by cluster ID.
+//
+// @param request - ModifyClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyClusterResponse
 func (client *Client) ModifyClusterWithOptions(ClusterId *string, request *ModifyClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24706,6 +31852,10 @@ func (client *Client) ModifyClusterWithOptions(ClusterId *string, request *Modif
 	body := map[string]interface{}{}
 	if !tea.BoolValue(util.IsUnset(request.AccessControlList)) {
 		body["access_control_list"] = request.AccessControlList
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.ApiServerCustomCertSans)) {
+		body["api_server_custom_cert_sans"] = request.ApiServerCustomCertSans
 	}
 
 	if !tea.BoolValue(util.IsUnset(request.ApiServerEip)) {
@@ -24780,6 +31930,13 @@ func (client *Client) ModifyClusterWithOptions(ClusterId *string, request *Modif
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyCluster operation to modify the cluster configurations by cluster ID.
+//
+// @param request - ModifyClusterRequest
+//
+// @return ModifyClusterResponse
 func (client *Client) ModifyCluster(ClusterId *string, request *ModifyClusterRequest) (_result *ModifyClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24792,17 +31949,27 @@ func (client *Client) ModifyCluster(ClusterId *string, request *ModifyClusterReq
 	return _result, _err
 }
 
-/**
- * You can use this API operation to modify the components in a Container Service for Kubernetes (ACK) cluster or the control plane components in an ACK Pro cluster.
- * *   To query the customizable parameters of a component, call the `DescribeClusterAddonMetadata` API operation. For more information, see [Query the metadata of a specified component version](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/query).
- * *   For more information about the customizable parameters of control plane components in ACK Pro clusters, see [Customize the parameters of control plane components in ACK Pro clusters](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/customize-control-plane-parameters-for-a-professional-kubernetes-cluster).
- * After you call this operation, the component may be redeployed and restarted. We recommend that you assess the impact before you call this operation.
- *
- * @param request ModifyClusterAddonRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return ModifyClusterAddonResponse
- */
+// Summary:
+//
+// Modifies the configuration of a cluster component. This operation may affect your businesses. We recommend that you assess the impact, back up data, and perform the operation during off-peak hours.
+//
+// Description:
+//
+// You can use this API operation to modify the components in a Container Service for Kubernetes (ACK) cluster or the control plane components in an ACK Pro cluster.
+//
+// 	- To query the customizable parameters of a component, call the `DescribeClusterAddonMetadata` API operation. For more information, see [Query the metadata of a specified component version](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/query).
+//
+// 	- For more information about the customizable parameters of control plane components in ACK Pro clusters, see [Customize the parameters of control plane components in ACK Pro clusters](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/customize-control-plane-parameters-for-a-professional-kubernetes-cluster).
+//
+// After you call this operation, the component may be redeployed and restarted. We recommend that you assess the impact before you call this operation.
+//
+// @param request - ModifyClusterAddonRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyClusterAddonResponse
 func (client *Client) ModifyClusterAddonWithOptions(clusterId *string, componentId *string, request *ModifyClusterAddonRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterAddonResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24837,15 +32004,23 @@ func (client *Client) ModifyClusterAddonWithOptions(clusterId *string, component
 	return _result, _err
 }
 
-/**
- * You can use this API operation to modify the components in a Container Service for Kubernetes (ACK) cluster or the control plane components in an ACK Pro cluster.
- * *   To query the customizable parameters of a component, call the `DescribeClusterAddonMetadata` API operation. For more information, see [Query the metadata of a specified component version](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/query).
- * *   For more information about the customizable parameters of control plane components in ACK Pro clusters, see [Customize the parameters of control plane components in ACK Pro clusters](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/customize-control-plane-parameters-for-a-professional-kubernetes-cluster).
- * After you call this operation, the component may be redeployed and restarted. We recommend that you assess the impact before you call this operation.
- *
- * @param request ModifyClusterAddonRequest
- * @return ModifyClusterAddonResponse
- */
+// Summary:
+//
+// Modifies the configuration of a cluster component. This operation may affect your businesses. We recommend that you assess the impact, back up data, and perform the operation during off-peak hours.
+//
+// Description:
+//
+// You can use this API operation to modify the components in a Container Service for Kubernetes (ACK) cluster or the control plane components in an ACK Pro cluster.
+//
+// 	- To query the customizable parameters of a component, call the `DescribeClusterAddonMetadata` API operation. For more information, see [Query the metadata of a specified component version](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/query).
+//
+// 	- For more information about the customizable parameters of control plane components in ACK Pro clusters, see [Customize the parameters of control plane components in ACK Pro clusters](https://www.alibabacloud.com/help/zh/container-service-for-kubernetes/latest/customize-control-plane-parameters-for-a-professional-kubernetes-cluster).
+//
+// After you call this operation, the component may be redeployed and restarted. We recommend that you assess the impact before you call this operation.
+//
+// @param request - ModifyClusterAddonRequest
+//
+// @return ModifyClusterAddonResponse
 func (client *Client) ModifyClusterAddon(clusterId *string, componentId *string, request *ModifyClusterAddonRequest) (_result *ModifyClusterAddonResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24858,6 +32033,17 @@ func (client *Client) ModifyClusterAddon(clusterId *string, componentId *string,
 	return _result, _err
 }
 
+// Summary:
+//
+// This API operation applies only to Container Service for Kubernetes (ACK) managed clusters.
+//
+// @param request - ModifyClusterConfigurationRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyClusterConfigurationResponse
 func (client *Client) ModifyClusterConfigurationWithOptions(ClusterId *string, request *ModifyClusterConfigurationRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterConfigurationResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24892,6 +32078,13 @@ func (client *Client) ModifyClusterConfigurationWithOptions(ClusterId *string, r
 	return _result, _err
 }
 
+// Summary:
+//
+// This API operation applies only to Container Service for Kubernetes (ACK) managed clusters.
+//
+// @param request - ModifyClusterConfigurationRequest
+//
+// @return ModifyClusterConfigurationResponse
 func (client *Client) ModifyClusterConfiguration(ClusterId *string, request *ModifyClusterConfigurationRequest) (_result *ModifyClusterConfigurationResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24904,6 +32097,17 @@ func (client *Client) ModifyClusterConfiguration(ClusterId *string, request *Mod
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyClusterNodePool operation to modify the configuration of a node pool with the specified node pool ID.
+//
+// @param request - ModifyClusterNodePoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyClusterNodePoolResponse
 func (client *Client) ModifyClusterNodePoolWithOptions(ClusterId *string, NodepoolId *string, request *ModifyClusterNodePoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterNodePoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -24966,6 +32170,13 @@ func (client *Client) ModifyClusterNodePoolWithOptions(ClusterId *string, Nodepo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyClusterNodePool operation to modify the configuration of a node pool with the specified node pool ID.
+//
+// @param request - ModifyClusterNodePoolRequest
+//
+// @return ModifyClusterNodePoolResponse
 func (client *Client) ModifyClusterNodePool(ClusterId *string, NodepoolId *string, request *ModifyClusterNodePoolRequest) (_result *ModifyClusterNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -24978,6 +32189,17 @@ func (client *Client) ModifyClusterNodePool(ClusterId *string, NodepoolId *strin
 	return _result, _err
 }
 
+// Summary:
+//
+// Modifies the labels of a Container Service for Kubernetes (ACK) cluster. You can use labels (key-value pairs) to classify and manage ACK clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param request - ModifyClusterTagsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyClusterTagsResponse
 func (client *Client) ModifyClusterTagsWithOptions(ClusterId *string, request *ModifyClusterTagsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyClusterTagsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25007,6 +32229,13 @@ func (client *Client) ModifyClusterTagsWithOptions(ClusterId *string, request *M
 	return _result, _err
 }
 
+// Summary:
+//
+// Modifies the labels of a Container Service for Kubernetes (ACK) cluster. You can use labels (key-value pairs) to classify and manage ACK clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param request - ModifyClusterTagsRequest
+//
+// @return ModifyClusterTagsResponse
 func (client *Client) ModifyClusterTags(ClusterId *string, request *ModifyClusterTagsRequest) (_result *ModifyClusterTagsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25019,14 +32248,21 @@ func (client *Client) ModifyClusterTags(ClusterId *string, request *ModifyCluste
 	return _result, _err
 }
 
-/**
- * >  Container Service for Kubernetes (ACK) allows you to modify the kubelet configuration of nodes in a node pool. After you modify the kubelet configuration, the new configuration immediately takes effect on existing nodes in the node pool and is automatically applied to newly added nodes.
- *
- * @param request ModifyNodePoolNodeConfigRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return ModifyNodePoolNodeConfigResponse
- */
+// Summary:
+//
+// Modifies the configuration of a node pool, such as the kubelet configuration and node rolling update configuration. After you modify the node pool configuration, nodes are batch updated and the kubelet on each node is restarted. This may adversely affect the nodes and workloads. We recommend that you perform this operation during off-peak hours.
+//
+// Description:
+//
+// >  Container Service for Kubernetes (ACK) allows you to modify the kubelet configuration of nodes in a node pool. After you modify the kubelet configuration, the new configuration immediately takes effect on existing nodes in the node pool and is automatically applied to newly added nodes.
+//
+// @param request - ModifyNodePoolNodeConfigRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyNodePoolNodeConfigResponse
 func (client *Client) ModifyNodePoolNodeConfigWithOptions(ClusterId *string, NodepoolId *string, request *ModifyNodePoolNodeConfigRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyNodePoolNodeConfigResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25035,6 +32271,10 @@ func (client *Client) ModifyNodePoolNodeConfigWithOptions(ClusterId *string, Nod
 	body := map[string]interface{}{}
 	if !tea.BoolValue(util.IsUnset(request.KubeletConfig)) {
 		body["kubelet_config"] = request.KubeletConfig
+	}
+
+	if !tea.BoolValue(util.IsUnset(request.OsConfig)) {
+		body["os_config"] = request.OsConfig
 	}
 
 	if !tea.BoolValue(util.IsUnset(request.RollingPolicy)) {
@@ -25065,12 +32305,17 @@ func (client *Client) ModifyNodePoolNodeConfigWithOptions(ClusterId *string, Nod
 	return _result, _err
 }
 
-/**
- * >  Container Service for Kubernetes (ACK) allows you to modify the kubelet configuration of nodes in a node pool. After you modify the kubelet configuration, the new configuration immediately takes effect on existing nodes in the node pool and is automatically applied to newly added nodes.
- *
- * @param request ModifyNodePoolNodeConfigRequest
- * @return ModifyNodePoolNodeConfigResponse
- */
+// Summary:
+//
+// Modifies the configuration of a node pool, such as the kubelet configuration and node rolling update configuration. After you modify the node pool configuration, nodes are batch updated and the kubelet on each node is restarted. This may adversely affect the nodes and workloads. We recommend that you perform this operation during off-peak hours.
+//
+// Description:
+//
+// >  Container Service for Kubernetes (ACK) allows you to modify the kubelet configuration of nodes in a node pool. After you modify the kubelet configuration, the new configuration immediately takes effect on existing nodes in the node pool and is automatically applied to newly added nodes.
+//
+// @param request - ModifyNodePoolNodeConfigRequest
+//
+// @return ModifyNodePoolNodeConfigResponse
 func (client *Client) ModifyNodePoolNodeConfig(ClusterId *string, NodepoolId *string, request *ModifyNodePoolNodeConfigRequest) (_result *ModifyNodePoolNodeConfigResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25083,6 +32328,17 @@ func (client *Client) ModifyNodePoolNodeConfig(ClusterId *string, NodepoolId *st
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyPolicyInstance operation to update policy instances in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - ModifyPolicyInstanceRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ModifyPolicyInstanceResponse
 func (client *Client) ModifyPolicyInstanceWithOptions(clusterId *string, policyName *string, request *ModifyPolicyInstanceRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ModifyPolicyInstanceResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25129,6 +32385,13 @@ func (client *Client) ModifyPolicyInstanceWithOptions(clusterId *string, policyN
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ModifyPolicyInstance operation to update policy instances in a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - ModifyPolicyInstanceRequest
+//
+// @return ModifyPolicyInstanceResponse
 func (client *Client) ModifyPolicyInstance(clusterId *string, policyName *string, request *ModifyPolicyInstanceRequest) (_result *ModifyPolicyInstanceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25141,15 +32404,23 @@ func (client *Client) ModifyPolicyInstance(clusterId *string, policyName *string
 	return _result, _err
 }
 
-/**
- * *   You can activate ACK by using Alibaba Cloud accounts.
- * *   To activate ACK by using RAM users, you need to grant the AdministratorAccess permission to the RAM users.
- *
- * @param request OpenAckServiceRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return OpenAckServiceResponse
- */
+// Summary:
+//
+// You can call the OpenAckService operation to activate Container Service for Kubernetes (ACK).
+//
+// Description:
+//
+//   You can activate ACK by using Alibaba Cloud accounts.
+//
+// 	- To activate ACK by using RAM users, you need to grant the AdministratorAccess permission to the RAM users.
+//
+// @param request - OpenAckServiceRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return OpenAckServiceResponse
 func (client *Client) OpenAckServiceWithOptions(request *OpenAckServiceRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *OpenAckServiceResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25184,13 +32455,19 @@ func (client *Client) OpenAckServiceWithOptions(request *OpenAckServiceRequest, 
 	return _result, _err
 }
 
-/**
- * *   You can activate ACK by using Alibaba Cloud accounts.
- * *   To activate ACK by using RAM users, you need to grant the AdministratorAccess permission to the RAM users.
- *
- * @param request OpenAckServiceRequest
- * @return OpenAckServiceResponse
- */
+// Summary:
+//
+// You can call the OpenAckService operation to activate Container Service for Kubernetes (ACK).
+//
+// Description:
+//
+//   You can activate ACK by using Alibaba Cloud accounts.
+//
+// 	- To activate ACK by using RAM users, you need to grant the AdministratorAccess permission to the RAM users.
+//
+// @param request - OpenAckServiceRequest
+//
+// @return OpenAckServiceResponse
 func (client *Client) OpenAckService(request *OpenAckServiceRequest) (_result *OpenAckServiceResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25203,13 +32480,17 @@ func (client *Client) OpenAckService(request *OpenAckServiceRequest) (_result *O
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return PauseClusterUpgradeResponse
- */
+// Deprecated: OpenAPI PauseClusterUpgrade is deprecated
+//
+// Summary:
+//
+// You can call the PauseClusterUpgrade operation to pause the update of a Container Service for Kubernetes (ACK) cluster.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return PauseClusterUpgradeResponse
 // Deprecated
 func (client *Client) PauseClusterUpgradeWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *PauseClusterUpgradeResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -25235,11 +32516,13 @@ func (client *Client) PauseClusterUpgradeWithOptions(ClusterId *string, headers 
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return PauseClusterUpgradeResponse
- */
+// Deprecated: OpenAPI PauseClusterUpgrade is deprecated
+//
+// Summary:
+//
+// You can call the PauseClusterUpgrade operation to pause the update of a Container Service for Kubernetes (ACK) cluster.
+//
+// @return PauseClusterUpgradeResponse
 // Deprecated
 func (client *Client) PauseClusterUpgrade(ClusterId *string) (_result *PauseClusterUpgradeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -25253,6 +32536,15 @@ func (client *Client) PauseClusterUpgrade(ClusterId *string) (_result *PauseClus
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the PauseComponentUpgrade operation to pause the update of a component.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return PauseComponentUpgradeResponse
 func (client *Client) PauseComponentUpgradeWithOptions(clusterid *string, componentid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *PauseComponentUpgradeResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -25277,6 +32569,11 @@ func (client *Client) PauseComponentUpgradeWithOptions(clusterid *string, compon
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the PauseComponentUpgrade operation to pause the update of a component.
+//
+// @return PauseComponentUpgradeResponse
 func (client *Client) PauseComponentUpgrade(clusterid *string, componentid *string) (_result *PauseComponentUpgradeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25289,6 +32586,15 @@ func (client *Client) PauseComponentUpgrade(clusterid *string, componentid *stri
 	return _result, _err
 }
 
+// Summary:
+//
+// Pauses an on-going task.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return PauseTaskResponse
 func (client *Client) PauseTaskWithOptions(taskId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *PauseTaskResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -25313,6 +32619,11 @@ func (client *Client) PauseTaskWithOptions(taskId *string, headers map[string]*s
 	return _result, _err
 }
 
+// Summary:
+//
+// Pauses an on-going task.
+//
+// @return PauseTaskResponse
 func (client *Client) PauseTask(taskId *string) (_result *PauseTaskResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25325,19 +32636,31 @@ func (client *Client) PauseTask(taskId *string) (_result *PauseTaskResponse, _er
 	return _result, _err
 }
 
-/**
- * @deprecated
- * ****
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
- * *   Unknown errors may occur when you remove nodes. Before you remove nodes, back up the data on the nodes.
- * *   Nodes remain in the Unschedulable state when they are being removed.
- * *   You can remove only worker nodes. You cannot remove master nodes.
- *
- * @param request RemoveClusterNodesRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return RemoveClusterNodesResponse
- */
+// Deprecated: OpenAPI RemoveClusterNodes is deprecated
+//
+// Summary:
+//
+// You can call the RemoveClusterNodes operation to remove nodes from a Container Service for Kubernetes (ACK) cluster.
+//
+// Description:
+//
+// ***
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
+//
+// 	- Unknown errors may occur when you remove nodes. Before you remove nodes, back up the data on the nodes.
+//
+// 	- Nodes remain in the Unschedulable state when they are being removed.
+//
+// 	- You can remove only worker nodes. You cannot remove master nodes.
+//
+// @param request - RemoveClusterNodesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return RemoveClusterNodesResponse
 // Deprecated
 func (client *Client) RemoveClusterNodesWithOptions(ClusterId *string, request *RemoveClusterNodesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *RemoveClusterNodesResponse, _err error) {
 	_err = util.ValidateModel(request)
@@ -25381,17 +32704,27 @@ func (client *Client) RemoveClusterNodesWithOptions(ClusterId *string, request *
 	return _result, _err
 }
 
-/**
- * @deprecated
- * ****
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
- * *   Unknown errors may occur when you remove nodes. Before you remove nodes, back up the data on the nodes.
- * *   Nodes remain in the Unschedulable state when they are being removed.
- * *   You can remove only worker nodes. You cannot remove master nodes.
- *
- * @param request RemoveClusterNodesRequest
- * @return RemoveClusterNodesResponse
- */
+// Deprecated: OpenAPI RemoveClusterNodes is deprecated
+//
+// Summary:
+//
+// You can call the RemoveClusterNodes operation to remove nodes from a Container Service for Kubernetes (ACK) cluster.
+//
+// Description:
+//
+// ***
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours.
+//
+// 	- Unknown errors may occur when you remove nodes. Before you remove nodes, back up the data on the nodes.
+//
+// 	- Nodes remain in the Unschedulable state when they are being removed.
+//
+// 	- You can remove only worker nodes. You cannot remove master nodes.
+//
+// @param request - RemoveClusterNodesRequest
+//
+// @return RemoveClusterNodesResponse
 // Deprecated
 func (client *Client) RemoveClusterNodes(ClusterId *string, request *RemoveClusterNodesRequest) (_result *RemoveClusterNodesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -25405,16 +32738,25 @@ func (client *Client) RemoveClusterNodes(ClusterId *string, request *RemoveClust
 	return _result, _err
 }
 
-/**
- * **
- * ****
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
- *
- * @param tmpReq RemoveNodePoolNodesRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return RemoveNodePoolNodesResponse
- */
+// Summary:
+//
+// Removes nodes from a node pool.
+//
+// Description:
+//
+// *
+//
+// ****
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
+//
+// @param tmpReq - RemoveNodePoolNodesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return RemoveNodePoolNodesResponse
 func (client *Client) RemoveNodePoolNodesWithOptions(ClusterId *string, NodepoolId *string, tmpReq *RemoveNodePoolNodesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *RemoveNodePoolNodesResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -25475,14 +32817,21 @@ func (client *Client) RemoveNodePoolNodesWithOptions(ClusterId *string, Nodepool
 	return _result, _err
 }
 
-/**
- * **
- * ****
- * *   When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
- *
- * @param request RemoveNodePoolNodesRequest
- * @return RemoveNodePoolNodesResponse
- */
+// Summary:
+//
+// Removes nodes from a node pool.
+//
+// Description:
+//
+// *
+//
+// ****
+//
+// 	- When you remove a node, the pods that run on the node are migrated to other nodes. This may cause service interruptions. We recommend that you remove nodes during off-peak hours. - The operation may have unexpected risks. Back up the data before you perform this operation. - When the system removes a node, it sets the status of the node to Unschedulable. - The system removes only worker nodes. It does not remove master nodes.
+//
+// @param request - RemoveNodePoolNodesRequest
+//
+// @return RemoveNodePoolNodesResponse
 func (client *Client) RemoveNodePoolNodes(ClusterId *string, NodepoolId *string, request *RemoveNodePoolNodesRequest) (_result *RemoveNodePoolNodesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25495,6 +32844,15 @@ func (client *Client) RemoveNodePoolNodes(ClusterId *string, NodepoolId *string,
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RemoveWorkflow operation to delete a workflow.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return RemoveWorkflowResponse
 func (client *Client) RemoveWorkflowWithOptions(workflowName *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *RemoveWorkflowResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -25519,6 +32877,11 @@ func (client *Client) RemoveWorkflowWithOptions(workflowName *string, headers ma
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RemoveWorkflow operation to delete a workflow.
+//
+// @return RemoveWorkflowResponse
 func (client *Client) RemoveWorkflow(workflowName *string) (_result *RemoveWorkflowResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25531,6 +32894,17 @@ func (client *Client) RemoveWorkflow(workflowName *string) (_result *RemoveWorkf
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RepairClusterNodePool operation to fix issues on specified nodes in a managed node pool.
+//
+// @param request - RepairClusterNodePoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return RepairClusterNodePoolResponse
 func (client *Client) RepairClusterNodePoolWithOptions(clusterId *string, nodepoolId *string, request *RepairClusterNodePoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *RepairClusterNodePoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25569,6 +32943,13 @@ func (client *Client) RepairClusterNodePoolWithOptions(clusterId *string, nodepo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RepairClusterNodePool operation to fix issues on specified nodes in a managed node pool.
+//
+// @param request - RepairClusterNodePoolRequest
+//
+// @return RepairClusterNodePoolResponse
 func (client *Client) RepairClusterNodePool(clusterId *string, nodepoolId *string, request *RepairClusterNodePoolRequest) (_result *RepairClusterNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25581,6 +32962,15 @@ func (client *Client) RepairClusterNodePool(clusterId *string, nodepoolId *strin
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ResumeComponentUpgrade operation to resume the update of a component.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ResumeComponentUpgradeResponse
 func (client *Client) ResumeComponentUpgradeWithOptions(clusterid *string, componentid *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ResumeComponentUpgradeResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -25605,6 +32995,11 @@ func (client *Client) ResumeComponentUpgradeWithOptions(clusterid *string, compo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ResumeComponentUpgrade operation to resume the update of a component.
+//
+// @return ResumeComponentUpgradeResponse
 func (client *Client) ResumeComponentUpgrade(clusterid *string, componentid *string) (_result *ResumeComponentUpgradeResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25617,6 +33012,15 @@ func (client *Client) ResumeComponentUpgrade(clusterid *string, componentid *str
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ResumeTask operation to resume a task.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ResumeTaskResponse
 func (client *Client) ResumeTaskWithOptions(taskId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ResumeTaskResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -25641,6 +33045,11 @@ func (client *Client) ResumeTaskWithOptions(taskId *string, headers map[string]*
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ResumeTask operation to resume a task.
+//
+// @return ResumeTaskResponse
 func (client *Client) ResumeTask(taskId *string) (_result *ResumeTaskResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25653,13 +33062,17 @@ func (client *Client) ResumeTask(taskId *string) (_result *ResumeTaskResponse, _
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return ResumeUpgradeClusterResponse
- */
+// Deprecated: OpenAPI ResumeUpgradeCluster is deprecated
+//
+// Summary:
+//
+// You can call the ResumeUpgradeCluster operation to resume the update of a cluster by cluster ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ResumeUpgradeClusterResponse
 // Deprecated
 func (client *Client) ResumeUpgradeClusterWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ResumeUpgradeClusterResponse, _err error) {
 	req := &openapi.OpenApiRequest{
@@ -25685,11 +33098,13 @@ func (client *Client) ResumeUpgradeClusterWithOptions(ClusterId *string, headers
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @return ResumeUpgradeClusterResponse
- */
+// Deprecated: OpenAPI ResumeUpgradeCluster is deprecated
+//
+// Summary:
+//
+// You can call the ResumeUpgradeCluster operation to resume the update of a cluster by cluster ID.
+//
+// @return ResumeUpgradeClusterResponse
 // Deprecated
 func (client *Client) ResumeUpgradeCluster(ClusterId *string) (_result *ResumeUpgradeClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -25703,6 +33118,17 @@ func (client *Client) ResumeUpgradeCluster(ClusterId *string) (_result *ResumeUp
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RunClusterCheck operation to initiate cluster checks, such as cluster update prechecks.
+//
+// @param request - RunClusterCheckRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return RunClusterCheckResponse
 func (client *Client) RunClusterCheckWithOptions(clusterId *string, request *RunClusterCheckRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *RunClusterCheckResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25745,6 +33171,13 @@ func (client *Client) RunClusterCheckWithOptions(clusterId *string, request *Run
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the RunClusterCheck operation to initiate cluster checks, such as cluster update prechecks.
+//
+// @param request - RunClusterCheckRequest
+//
+// @return RunClusterCheckResponse
 func (client *Client) RunClusterCheck(clusterId *string, request *RunClusterCheckRequest) (_result *RunClusterCheckResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25757,14 +33190,19 @@ func (client *Client) RunClusterCheck(clusterId *string, request *RunClusterChec
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request ScaleClusterRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return ScaleClusterResponse
- */
+// Deprecated: OpenAPI ScaleCluster is deprecated
+//
+// Summary:
+//
+// 扩容Kubernetes集群
+//
+// @param request - ScaleClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ScaleClusterResponse
 // Deprecated
 func (client *Client) ScaleClusterWithOptions(ClusterId *string, request *ScaleClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ScaleClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
@@ -25872,12 +33310,15 @@ func (client *Client) ScaleClusterWithOptions(ClusterId *string, request *ScaleC
 	return _result, _err
 }
 
-/**
- * @deprecated
- *
- * @param request ScaleClusterRequest
- * @return ScaleClusterResponse
- */
+// Deprecated: OpenAPI ScaleCluster is deprecated
+//
+// Summary:
+//
+// 扩容Kubernetes集群
+//
+// @param request - ScaleClusterRequest
+//
+// @return ScaleClusterResponse
 // Deprecated
 func (client *Client) ScaleCluster(ClusterId *string, request *ScaleClusterRequest) (_result *ScaleClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
@@ -25891,6 +33332,17 @@ func (client *Client) ScaleCluster(ClusterId *string, request *ScaleClusterReque
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ScaleClusterNodePool operation to scale out a node pool by node pool ID.
+//
+// @param request - ScaleClusterNodePoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ScaleClusterNodePoolResponse
 func (client *Client) ScaleClusterNodePoolWithOptions(ClusterId *string, NodepoolId *string, request *ScaleClusterNodePoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ScaleClusterNodePoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -25925,6 +33377,13 @@ func (client *Client) ScaleClusterNodePoolWithOptions(ClusterId *string, Nodepoo
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the ScaleClusterNodePool operation to scale out a node pool by node pool ID.
+//
+// @param request - ScaleClusterNodePoolRequest
+//
+// @return ScaleClusterNodePoolResponse
 func (client *Client) ScaleClusterNodePool(ClusterId *string, NodepoolId *string, request *ScaleClusterNodePoolRequest) (_result *ScaleClusterNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -25937,15 +33396,23 @@ func (client *Client) ScaleClusterNodePool(ClusterId *string, NodepoolId *string
 	return _result, _err
 }
 
-/**
- * **
- * ****The ScaleOutCluster API operation is phased out. You must call the node pool-related API operations to manage nodes. If you want to add worker nodes to a Container Service for Kubernetes (ACK) cluster, call the ScaleClusterNodePool API operation. For more information, see [ScaleClusterNodePool](~~184928~~).
- *
- * @param request ScaleOutClusterRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return ScaleOutClusterResponse
- */
+// Summary:
+//
+// You can call the ScaleOutCluster operation to scale out a cluster by cluster ID.
+//
+// Description:
+//
+// *
+//
+// ****The ScaleOutCluster API operation is phased out. You must call the node pool-related API operations to manage nodes. If you want to add worker nodes to a Container Service for Kubernetes (ACK) cluster, call the ScaleClusterNodePool API operation. For more information, see [ScaleClusterNodePool](https://help.aliyun.com/document_detail/184928.html).
+//
+// @param request - ScaleOutClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ScaleOutClusterResponse
 func (client *Client) ScaleOutClusterWithOptions(ClusterId *string, request *ScaleOutClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ScaleOutClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26060,13 +33527,19 @@ func (client *Client) ScaleOutClusterWithOptions(ClusterId *string, request *Sca
 	return _result, _err
 }
 
-/**
- * **
- * ****The ScaleOutCluster API operation is phased out. You must call the node pool-related API operations to manage nodes. If you want to add worker nodes to a Container Service for Kubernetes (ACK) cluster, call the ScaleClusterNodePool API operation. For more information, see [ScaleClusterNodePool](~~184928~~).
- *
- * @param request ScaleOutClusterRequest
- * @return ScaleOutClusterResponse
- */
+// Summary:
+//
+// You can call the ScaleOutCluster operation to scale out a cluster by cluster ID.
+//
+// Description:
+//
+// *
+//
+// ****The ScaleOutCluster API operation is phased out. You must call the node pool-related API operations to manage nodes. If you want to add worker nodes to a Container Service for Kubernetes (ACK) cluster, call the ScaleClusterNodePool API operation. For more information, see [ScaleClusterNodePool](https://help.aliyun.com/document_detail/184928.html).
+//
+// @param request - ScaleOutClusterRequest
+//
+// @return ScaleOutClusterResponse
 func (client *Client) ScaleOutCluster(ClusterId *string, request *ScaleOutClusterRequest) (_result *ScaleOutClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26079,6 +33552,15 @@ func (client *Client) ScaleOutCluster(ClusterId *string, request *ScaleOutCluste
 	return _result, _err
 }
 
+// Summary:
+//
+// The cluster ID.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return ScanClusterVulsResponse
 func (client *Client) ScanClusterVulsWithOptions(clusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *ScanClusterVulsResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -26103,6 +33585,11 @@ func (client *Client) ScanClusterVulsWithOptions(clusterId *string, headers map[
 	return _result, _err
 }
 
+// Summary:
+//
+// The cluster ID.
+//
+// @return ScanClusterVulsResponse
 func (client *Client) ScanClusterVuls(clusterId *string) (_result *ScanClusterVulsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26115,6 +33602,13 @@ func (client *Client) ScanClusterVuls(clusterId *string) (_result *ScanClusterVu
 	return _result, _err
 }
 
+// @param request - StartAlertRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return StartAlertResponse
 func (client *Client) StartAlertWithOptions(ClusterId *string, request *StartAlertRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *StartAlertResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26153,6 +33647,9 @@ func (client *Client) StartAlertWithOptions(ClusterId *string, request *StartAle
 	return _result, _err
 }
 
+// @param request - StartAlertRequest
+//
+// @return StartAlertResponse
 func (client *Client) StartAlert(ClusterId *string, request *StartAlertRequest) (_result *StartAlertResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26165,6 +33662,17 @@ func (client *Client) StartAlert(ClusterId *string, request *StartAlertRequest) 
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the StartWorkflow operation to create a workflow.
+//
+// @param request - StartWorkflowRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return StartWorkflowResponse
 func (client *Client) StartWorkflowWithOptions(request *StartWorkflowRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *StartWorkflowResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26271,6 +33779,13 @@ func (client *Client) StartWorkflowWithOptions(request *StartWorkflowRequest, he
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the StartWorkflow operation to create a workflow.
+//
+// @param request - StartWorkflowRequest
+//
+// @return StartWorkflowResponse
 func (client *Client) StartWorkflow(request *StartWorkflowRequest) (_result *StartWorkflowResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26283,6 +33798,17 @@ func (client *Client) StartWorkflow(request *StartWorkflowRequest) (_result *Sta
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the StopAlert operation to disable an alert rule or an alert rule set in the alert center of Container Service for Kubernetes (ACK).
+//
+// @param request - StopAlertRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return StopAlertResponse
 func (client *Client) StopAlertWithOptions(ClusterId *string, request *StopAlertRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *StopAlertResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26321,6 +33847,13 @@ func (client *Client) StopAlertWithOptions(ClusterId *string, request *StopAlert
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the StopAlert operation to disable an alert rule or an alert rule set in the alert center of Container Service for Kubernetes (ACK).
+//
+// @param request - StopAlertRequest
+//
+// @return StopAlertResponse
 func (client *Client) StopAlert(ClusterId *string, request *StopAlertRequest) (_result *StopAlertResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26333,6 +33866,15 @@ func (client *Client) StopAlert(ClusterId *string, request *StopAlertRequest) (_
 	return _result, _err
 }
 
+// Summary:
+//
+// Synchronizes the information about a node pool, including the metadata and node information of the node pool.
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return SyncClusterNodePoolResponse
 func (client *Client) SyncClusterNodePoolWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *SyncClusterNodePoolResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -26357,6 +33899,11 @@ func (client *Client) SyncClusterNodePoolWithOptions(ClusterId *string, headers 
 	return _result, _err
 }
 
+// Summary:
+//
+// Synchronizes the information about a node pool, including the metadata and node information of the node pool.
+//
+// @return SyncClusterNodePoolResponse
 func (client *Client) SyncClusterNodePool(ClusterId *string) (_result *SyncClusterNodePoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26369,6 +33916,17 @@ func (client *Client) SyncClusterNodePool(ClusterId *string) (_result *SyncClust
 	return _result, _err
 }
 
+// Summary:
+//
+// Adds labels to a Container Service for Kubernetes (ACK) cluster. You can use labels to classify and manage ACK clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param request - TagResourcesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return TagResourcesResponse
 func (client *Client) TagResourcesWithOptions(request *TagResourcesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *TagResourcesResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26415,6 +33973,13 @@ func (client *Client) TagResourcesWithOptions(request *TagResourcesRequest, head
 	return _result, _err
 }
 
+// Summary:
+//
+// Adds labels to a Container Service for Kubernetes (ACK) cluster. You can use labels to classify and manage ACK clusters in order to meet monitoring, cost analysis, and tenant isolation requirements.
+//
+// @param request - TagResourcesRequest
+//
+// @return TagResourcesResponse
 func (client *Client) TagResources(request *TagResourcesRequest) (_result *TagResourcesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26427,6 +33992,17 @@ func (client *Client) TagResources(request *TagResourcesRequest) (_result *TagRe
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UnInstallClusterAddons operation to uninstall the components in a cluster by component names.
+//
+// @param request - UnInstallClusterAddonsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UnInstallClusterAddonsResponse
 func (client *Client) UnInstallClusterAddonsWithOptions(ClusterId *string, request *UnInstallClusterAddonsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UnInstallClusterAddonsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26456,6 +34032,13 @@ func (client *Client) UnInstallClusterAddonsWithOptions(ClusterId *string, reque
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UnInstallClusterAddons operation to uninstall the components in a cluster by component names.
+//
+// @param request - UnInstallClusterAddonsRequest
+//
+// @return UnInstallClusterAddonsResponse
 func (client *Client) UnInstallClusterAddons(ClusterId *string, request *UnInstallClusterAddonsRequest) (_result *UnInstallClusterAddonsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26468,6 +34051,17 @@ func (client *Client) UnInstallClusterAddons(ClusterId *string, request *UnInsta
 	return _result, _err
 }
 
+// Summary:
+//
+// Removes labels from a Container Service for Kubernetes (ACK) cluster.
+//
+// @param tmpReq - UntagResourcesRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UntagResourcesResponse
 func (client *Client) UntagResourcesWithOptions(tmpReq *UntagResourcesRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UntagResourcesResponse, _err error) {
 	_err = util.ValidateModel(tmpReq)
 	if _err != nil {
@@ -26528,6 +34122,13 @@ func (client *Client) UntagResourcesWithOptions(tmpReq *UntagResourcesRequest, h
 	return _result, _err
 }
 
+// Summary:
+//
+// Removes labels from a Container Service for Kubernetes (ACK) cluster.
+//
+// @param request - UntagResourcesRequest
+//
+// @return UntagResourcesResponse
 func (client *Client) UntagResources(request *UntagResourcesRequest) (_result *UntagResourcesResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26540,6 +34141,11 @@ func (client *Client) UntagResources(request *UntagResourcesRequest) (_result *U
 	return _result, _err
 }
 
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpdateContactGroupForAlertResponse
 func (client *Client) UpdateContactGroupForAlertWithOptions(ClusterId *string, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpdateContactGroupForAlertResponse, _err error) {
 	req := &openapi.OpenApiRequest{
 		Headers: headers,
@@ -26564,6 +34170,7 @@ func (client *Client) UpdateContactGroupForAlertWithOptions(ClusterId *string, h
 	return _result, _err
 }
 
+// @return UpdateContactGroupForAlertResponse
 func (client *Client) UpdateContactGroupForAlert(ClusterId *string) (_result *UpdateContactGroupForAlertResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26576,6 +34183,17 @@ func (client *Client) UpdateContactGroupForAlert(ClusterId *string) (_result *Up
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpdateControlPlaneLog operation to modify the log collection configurations for control plane components in a Container Service for Kubernetes (ACK) managed cluster.
+//
+// @param request - UpdateControlPlaneLogRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpdateControlPlaneLogResponse
 func (client *Client) UpdateControlPlaneLogWithOptions(ClusterId *string, request *UpdateControlPlaneLogRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpdateControlPlaneLogResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26622,6 +34240,13 @@ func (client *Client) UpdateControlPlaneLogWithOptions(ClusterId *string, reques
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpdateControlPlaneLog operation to modify the log collection configurations for control plane components in a Container Service for Kubernetes (ACK) managed cluster.
+//
+// @param request - UpdateControlPlaneLogRequest
+//
+// @return UpdateControlPlaneLogResponse
 func (client *Client) UpdateControlPlaneLog(ClusterId *string, request *UpdateControlPlaneLogRequest) (_result *UpdateControlPlaneLogResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26634,16 +34259,25 @@ func (client *Client) UpdateControlPlaneLog(ClusterId *string, request *UpdateCo
 	return _result, _err
 }
 
-/**
- * **
- * ****
- * *   You can call this operation only with an Alibaba Cloud account. - If the kubeconfig file used by your cluster is revoked, the custom validity period of the kubeconfig file is reset. In this case, you need to call this API operation to reconfigure the validity period of the kubeconfig file.
- *
- * @param request UpdateK8sClusterUserConfigExpireRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return UpdateK8sClusterUserConfigExpireResponse
- */
+// Summary:
+//
+// Sets the validity period of a kubeconfig file used by a Resource Access Management (RAM) user or RAM role to connect to a Container Service for Kubernetes (ACK) cluster. The validity period ranges from 1 to 876,000 hours. You can call this API operation when you customize configurations by using an Alibaba Cloud account. The default validity period of a kubeconfig file is three years.
+//
+// Description:
+//
+// *
+//
+// ****
+//
+// 	- You can call this operation only with an Alibaba Cloud account. - If the kubeconfig file used by your cluster is revoked, the custom validity period of the kubeconfig file is reset. In this case, you need to call this API operation to reconfigure the validity period of the kubeconfig file.
+//
+// @param request - UpdateK8sClusterUserConfigExpireRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpdateK8sClusterUserConfigExpireResponse
 func (client *Client) UpdateK8sClusterUserConfigExpireWithOptions(ClusterId *string, request *UpdateK8sClusterUserConfigExpireRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpdateK8sClusterUserConfigExpireResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26682,14 +34316,21 @@ func (client *Client) UpdateK8sClusterUserConfigExpireWithOptions(ClusterId *str
 	return _result, _err
 }
 
-/**
- * **
- * ****
- * *   You can call this operation only with an Alibaba Cloud account. - If the kubeconfig file used by your cluster is revoked, the custom validity period of the kubeconfig file is reset. In this case, you need to call this API operation to reconfigure the validity period of the kubeconfig file.
- *
- * @param request UpdateK8sClusterUserConfigExpireRequest
- * @return UpdateK8sClusterUserConfigExpireResponse
- */
+// Summary:
+//
+// Sets the validity period of a kubeconfig file used by a Resource Access Management (RAM) user or RAM role to connect to a Container Service for Kubernetes (ACK) cluster. The validity period ranges from 1 to 876,000 hours. You can call this API operation when you customize configurations by using an Alibaba Cloud account. The default validity period of a kubeconfig file is three years.
+//
+// Description:
+//
+// *
+//
+// ****
+//
+// 	- You can call this operation only with an Alibaba Cloud account. - If the kubeconfig file used by your cluster is revoked, the custom validity period of the kubeconfig file is reset. In this case, you need to call this API operation to reconfigure the validity period of the kubeconfig file.
+//
+// @param request - UpdateK8sClusterUserConfigExpireRequest
+//
+// @return UpdateK8sClusterUserConfigExpireResponse
 func (client *Client) UpdateK8sClusterUserConfigExpire(ClusterId *string, request *UpdateK8sClusterUserConfigExpireRequest) (_result *UpdateK8sClusterUserConfigExpireResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26702,6 +34343,17 @@ func (client *Client) UpdateK8sClusterUserConfigExpire(ClusterId *string, reques
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpdateTemplate operation to update an orchestration template by template ID.
+//
+// @param request - UpdateTemplateRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpdateTemplateResponse
 func (client *Client) UpdateTemplateWithOptions(TemplateId *string, request *UpdateTemplateRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpdateTemplateResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26752,6 +34404,13 @@ func (client *Client) UpdateTemplateWithOptions(TemplateId *string, request *Upd
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpdateTemplate operation to update an orchestration template by template ID.
+//
+// @param request - UpdateTemplateRequest
+//
+// @return UpdateTemplateResponse
 func (client *Client) UpdateTemplate(TemplateId *string, request *UpdateTemplateRequest) (_result *UpdateTemplateResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26764,6 +34423,17 @@ func (client *Client) UpdateTemplate(TemplateId *string, request *UpdateTemplate
 	return _result, _err
 }
 
+// Summary:
+//
+// 更新指定RAM用户/角色的RBAC权限
+//
+// @param request - UpdateUserPermissionsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpdateUserPermissionsResponse
 func (client *Client) UpdateUserPermissionsWithOptions(uid *string, request *UpdateUserPermissionsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpdateUserPermissionsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26799,6 +34469,13 @@ func (client *Client) UpdateUserPermissionsWithOptions(uid *string, request *Upd
 	return _result, _err
 }
 
+// Summary:
+//
+// 更新指定RAM用户/角色的RBAC权限
+//
+// @param request - UpdateUserPermissionsRequest
+//
+// @return UpdateUserPermissionsResponse
 func (client *Client) UpdateUserPermissions(uid *string, request *UpdateUserPermissionsRequest) (_result *UpdateUserPermissionsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26811,6 +34488,17 @@ func (client *Client) UpdateUserPermissions(uid *string, request *UpdateUserPerm
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpgradeCluster operation to upgrade a cluster by cluster ID.
+//
+// @param request - UpgradeClusterRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpgradeClusterResponse
 func (client *Client) UpgradeClusterWithOptions(ClusterId *string, request *UpgradeClusterRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpgradeClusterResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26857,6 +34545,13 @@ func (client *Client) UpgradeClusterWithOptions(ClusterId *string, request *Upgr
 	return _result, _err
 }
 
+// Summary:
+//
+// You can call the UpgradeCluster operation to upgrade a cluster by cluster ID.
+//
+// @param request - UpgradeClusterRequest
+//
+// @return UpgradeClusterResponse
 func (client *Client) UpgradeCluster(ClusterId *string, request *UpgradeClusterRequest) (_result *UpgradeClusterResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26869,6 +34564,17 @@ func (client *Client) UpgradeCluster(ClusterId *string, request *UpgradeClusterR
 	return _result, _err
 }
 
+// Summary:
+//
+// Updates cluster components to use new features and patch vulnerabilities. You must update cluster components one after one and update a component only after the previous one is successfully updated. Before you update a component, we recommend that you read the update notes for each component. Cluster component updates may affect your businesses. Assess the impact, back up data, and perform the update during off-peak hours.
+//
+// @param request - UpgradeClusterAddonsRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpgradeClusterAddonsResponse
 func (client *Client) UpgradeClusterAddonsWithOptions(ClusterId *string, request *UpgradeClusterAddonsRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpgradeClusterAddonsResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26898,6 +34604,13 @@ func (client *Client) UpgradeClusterAddonsWithOptions(ClusterId *string, request
 	return _result, _err
 }
 
+// Summary:
+//
+// Updates cluster components to use new features and patch vulnerabilities. You must update cluster components one after one and update a component only after the previous one is successfully updated. Before you update a component, we recommend that you read the update notes for each component. Cluster component updates may affect your businesses. Assess the impact, back up data, and perform the update during off-peak hours.
+//
+// @param request - UpgradeClusterAddonsRequest
+//
+// @return UpgradeClusterAddonsResponse
 func (client *Client) UpgradeClusterAddons(ClusterId *string, request *UpgradeClusterAddonsRequest) (_result *UpgradeClusterAddonsResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
@@ -26910,14 +34623,21 @@ func (client *Client) UpgradeClusterAddons(ClusterId *string, request *UpgradeCl
 	return _result, _err
 }
 
-/**
- * This operation allows you to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
- *
- * @param request UpgradeClusterNodepoolRequest
- * @param headers map
- * @param runtime runtime options for this request RuntimeOptions
- * @return UpgradeClusterNodepoolResponse
- */
+// Summary:
+//
+// You can call the UpgradeClusterNodepool operation to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
+//
+// Description:
+//
+// This operation allows you to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
+//
+// @param request - UpgradeClusterNodepoolRequest
+//
+// @param headers - map
+//
+// @param runtime - runtime options for this request RuntimeOptions
+//
+// @return UpgradeClusterNodepoolResponse
 func (client *Client) UpgradeClusterNodepoolWithOptions(ClusterId *string, NodepoolId *string, request *UpgradeClusterNodepoolRequest, headers map[string]*string, runtime *util.RuntimeOptions) (_result *UpgradeClusterNodepoolResponse, _err error) {
 	_err = util.ValidateModel(request)
 	if _err != nil {
@@ -26976,12 +34696,17 @@ func (client *Client) UpgradeClusterNodepoolWithOptions(ClusterId *string, Nodep
 	return _result, _err
 }
 
-/**
- * This operation allows you to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
- *
- * @param request UpgradeClusterNodepoolRequest
- * @return UpgradeClusterNodepoolResponse
- */
+// Summary:
+//
+// You can call the UpgradeClusterNodepool operation to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
+//
+// Description:
+//
+// This operation allows you to update the Kubernetes version, OS version, or container runtime version of the nodes in a node pool.
+//
+// @param request - UpgradeClusterNodepoolRequest
+//
+// @return UpgradeClusterNodepoolResponse
 func (client *Client) UpgradeClusterNodepool(ClusterId *string, NodepoolId *string, request *UpgradeClusterNodepoolRequest) (_result *UpgradeClusterNodepoolResponse, _err error) {
 	runtime := &util.RuntimeOptions{}
 	headers := make(map[string]*string)
