@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
+func TestAccAliCloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_alb_server_group_attachment.default"
 	basicMap := map[string]string{
@@ -18,6 +18,8 @@ func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroupAlbServerGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupAlbServerGroup)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -29,7 +31,14 @@ func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 		CheckDestroy: testAccCheckEssAlbServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssScalingGroupAlbServerGroup(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":          []string{"alicloud_ess_scaling_configuration.default"},
+					"force_attach":        true,
+					"weight":              "100",
+					"port":                "80",
+					"alb_server_group_id": "${alicloud_alb_server_group.default.id}",
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"id": CHECKSET,
@@ -46,7 +55,7 @@ func TestAccAlicloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
+func TestAccAliCloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
 	resourceId := "alicloud_ess_alb_server_group_attachment.default"
 	basicMap := map[string]string{
@@ -54,6 +63,8 @@ func TestAccAlicloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroupAlbServerGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupAlbServerGroupNotForceAttach)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -65,7 +76,14 @@ func TestAccAlicloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
 		CheckDestroy: testAccCheckEssAlbServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
-				Config: testAccEssScalingGroupAlbServerGroupNotForceAttach(EcsInstanceCommonTestCase, rand),
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":          []string{"alicloud_ess_scaling_configuration.default"},
+					"force_attach":        false,
+					"weight":              "11",
+					"port":                "22",
+					"alb_server_group_id": "${alicloud_alb_server_group.default.id}",
+					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"id": CHECKSET,
@@ -104,11 +122,11 @@ func testAccCheckEssAlbServerGroupsDestroy(s *terraform.State) error {
 	}
 	return nil
 }
-func testAccEssScalingGroupAlbServerGroupNotForceAttach(common string, rand int) string {
+func testAccEssScalingGroupAlbServerGroupNotForceAttach(name string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccEssScalingGroupAlbServerGroup-%d"
+		default = "%s"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -130,15 +148,6 @@ func testAccEssScalingGroupAlbServerGroupNotForceAttach(common string, rand int)
 		enable = true
 	}
 
-	resource "alicloud_ess_alb_server_group_attachment" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		alb_server_group_id = "${alicloud_alb_server_group.default.id}"
-		port             = 22
-		weight           = "11"
-		force_attach = false
-		depends_on = ["alicloud_ess_scaling_configuration.default"]
-	}
-
 	resource "alicloud_alb_server_group" "default" {
 		server_group_name = "${var.name}"
 		vpc_id = "${alicloud_vpc.default.id}"
@@ -151,14 +160,14 @@ func testAccEssScalingGroupAlbServerGroupNotForceAttach(common string, rand int)
 		  sticky_session_type    = "Server"
 	  }
 	}
-	`, common, rand)
+	`, EcsInstanceCommonTestCase, name)
 }
 
-func testAccEssScalingGroupAlbServerGroup(common string, rand int) string {
+func testAccEssScalingGroupAlbServerGroup(name string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
-		default = "tf-testAccEssScalingGroupAlbServerGroup-%d"
+		default = "%s"
 	}
 	
 	resource "alicloud_ess_scaling_group" "default" {
@@ -180,15 +189,6 @@ func testAccEssScalingGroupAlbServerGroup(common string, rand int) string {
 		enable = true
 	}
 
-	resource "alicloud_ess_alb_server_group_attachment" "default" {
-		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		alb_server_group_id = "${alicloud_alb_server_group.default.id}"
-		port             = 80
-		weight           = "100"
-		force_attach = true
-		depends_on = ["alicloud_ess_scaling_configuration.default"]
-	}
-
 	resource "alicloud_alb_server_group" "default" {
 		server_group_name = "${var.name}"
 		vpc_id = "${alicloud_vpc.default.id}"
@@ -201,5 +201,5 @@ func testAccEssScalingGroupAlbServerGroup(common string, rand int) string {
 		  sticky_session_type    = "Server"
 	  }
 	}
-	`, common, rand)
+	`, EcsInstanceCommonTestCase, name)
 }
