@@ -7,23 +7,21 @@ description: |-
     Provides a list of availability zones for RDS that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_db\_zones
+# alicloud_db_zones
 
 This data source provides availability zones for RDS that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.73.0+.
+-> **NOTE:** Available since v1.73.0.
 
 ## Example Usage
 
-```
-# Declare the data source
-data "alicloud_db_zones" "zones_ids" {}
-
-# Create an RDS instance with the first matched zone
-resource "alicloud_db_instance" "db" {
-    zone_id = ${data.alicloud_db_zones.zones_ids.zones.0.id}
-
-  # Other properties...
+```terraform
+data "alicloud_db_zones" "example" {
+  engine                   = "MySQL"
+  engine_version           = "8.0"
+  instance_charge_type     = "PostPaid"
+  category                 = "Basic"
+  db_instance_storage_type = "cloud_essd"
 }
 ```
 
@@ -32,12 +30,12 @@ resource "alicloud_db_instance" "db" {
 The following arguments are supported:
 
 * `multi` - (Deprecated) It has been deprecated from version 1.137.0 and using `multi_zone` instead.
-* `multi_zone` - (Optional, Available in 1.137.0+) Indicate whether the zones can be used in a multi AZ configuration. Default to `false`. Multi AZ is usually used to launch RDS instances.
-* `instance_charge_type` - (Optional) Filter the results by a specific instance charge type. Valid values: `PrePaid` and `PostPaid` and `Serverless`. Default to `PostPaid`.
-* `engine` - (Optional, Available in 1.134.0+) Database type. Valid values: "MySQL", "SQLServer", "PostgreSQL", "MariaDB". If not set, it will match all of engines.
-* `engine_version` - (Optional, Available in 1.134.0+) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
-* `category` - (Optional, Available in 1.134.0+) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`, `serverless_basic`, `serverless_standard`, `serverless_ha`, `cluster`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
-* `db_instance_storage_type` - (Optional, Available in 1.134.0+) The DB instance storage space required by the user. Valid values: "cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3".
+* `multi_zone` - (Optional, Available in 1.137.0) Indicate whether the zones can be used in a multi AZ configuration. Default to `false`. Multi AZ is usually used to launch RDS instances.
+* `instance_charge_type` - (ForceNew, Optional) Filter the results by a specific instance charge type. Valid values: `PrePaid` and `PostPaid` and `Serverless`. Default to `PostPaid`.
+* `engine` - (ForceNew, Optional, Available in 1.134.0) Database type. Valid values: "MySQL", "SQLServer", "PostgreSQL", "MariaDB". If not set, it will match all of engines.
+* `engine_version` - (ForceNew, Optional, Available in 1.134.0) Database version required by the user. Value options can refer to the latest docs [detail info](https://www.alibabacloud.com/help/doc-detail/26228.htm) `EngineVersion`.
+* `category` - (Optional, Available in 1.134.0) DB Instance category. the value like [`Basic`, `HighAvailability`, `Finance`, `AlwaysOn`, `serverless_basic`, `serverless_standard`, `serverless_ha`, `cluster`], [detail info](https://www.alibabacloud.com/help/doc-detail/69795.htm).
+* `db_instance_storage_type` - (Optional, Available in 1.134.0) The DB instance storage space required by the user. Valid values: "cloud_ssd", "local_ssd", "cloud_essd", "cloud_essd2", "cloud_essd3".
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

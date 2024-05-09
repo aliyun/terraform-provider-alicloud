@@ -519,6 +519,7 @@ The following arguments are supported:
   - cloud_essd: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd2: specifies to use enhanced SSDs (ESSDs).
   - cloud_essd3: specifies to use enhanced SSDs (ESSDs).
+  - general_essd: general essd.
 
 * `db_time_zone` - (Optional, ForceNew, Available since 1.136.0) The time zone of the instance. This parameter takes effect only when you set the `Engine` parameter to MySQL or PostgreSQL.
   - If you set the `Engine` parameter to MySQL.
