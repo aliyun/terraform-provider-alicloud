@@ -206,6 +206,7 @@ The following arguments are supported:
 * `control_plane_log_components` - (Optional, Available in 1.141.0+) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available in 1.141.0+) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
 * `retain_resources` - (Optional, Available in 1.141.0+) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
+* `delete_options` - (Optional) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `addons` - (Optional, Available in 1.88.0+) The addon you want to install in cluster. See [`addons`](#addons) below.
 
 ### Network params
@@ -527,14 +528,17 @@ The following arguments are supported in the `log_config` configuration block:
 * `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
 * `project` - (Optional) Log Service project name, cluster logs will output to this project.
 
-### runtime
+### `runtime`
+
+* `name` - (Optional) The name of the runtime. Supported runtimes can be queried by data source [alicloud_cs_kubernetes_version](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_version).
+* `version` - (Optional) The version of the runtime.
 
 The following example is the definition of runtime block:
 
 ```
   runtime = {
     name = "containerd"
-    version = "1.5.10"
+    version = "1.6.28"
   }
 ```
 
@@ -562,8 +566,42 @@ The following example is the definition of `worker_vswitch_ids` block.
   worker_vswitch_ids = ["vsw-id1", "vsw-id1", "vsw-id2"]
 ```
 
+### `delete_options`
 
+The following arguments are supported in the `delete_options` configuration block:
+* `delete_mode` - (Optional) The deletion mode of the cluster. Different resources may have different default behavior, see `resource_type` for details. Valid values:
+  - `delete`: delete resources created by the cluster.
+  - `retain`: retain resources created by the cluster.
+* `resource_type` - (Optional) The type of resources that are created by cluster. Valid values:
+  - `SLB`: SLB resources created through the service, default behavior is to delete, option to retain is available. 
+  - `ALB`: ALB resources created by the ALB Ingress Controller, default behavior is to retain, option to delete is available. 
+  - `SLS_Data`: SLS Project used by the cluster logging feature, default behavior is to retain, option to delete is available. 
+  - `SLS_ControlPlane`: SLS Project used for the managed cluster control plane logs, default behavior is to retain, option to delete is available.
 
+```
+  ...
+  // Specify delete_options as below when deleting cluster
+  // delete SLB resources created by the cluster
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLB"
+  }
+  // delete ALB resources created by the ALB Ingress Controller
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "ALB"
+  }
+  // delete SLS Project used by the cluster logging feature
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLS_Data"
+  }
+  // delete SLS Project used for the managed cluster control plane logs
+  delete_options {
+    delete_mode = "delete"
+    resource_type = "SLS_ControlPlane"
+  }
+```
 ## Attributes Reference
 
 The following attributes are exported:

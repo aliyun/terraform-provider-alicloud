@@ -803,6 +803,24 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"delete_options": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"resource_type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"SLB", "ALB", "SLS_Data", "SLS_ControlPlane", "PrivateZone"}, false),
+						},
+						"delete_mode": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: validation.StringInSlice([]string{"delete", "retain"}, false),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -1332,6 +1350,16 @@ func resourceAlicloudCSKubernetesDelete(d *schema.ResourceData, meta interface{}
 	args := &roacs.DeleteClusterRequest{}
 	if v := d.Get("retain_resources"); len(v.([]interface{})) > 0 {
 		args.RetainResources = tea.StringSlice(expandStringList(v.([]interface{})))
+	}
+	if v, ok := d.GetOk("delete_options"); ok && len(v.([]interface{})) > 0 {
+		for _, vv := range v.([]interface{}) {
+			if options, ok := vv.(map[string]interface{}); ok {
+				args.DeleteOptions = append(args.DeleteOptions, &roacs.DeleteClusterRequestDeleteOptions{
+					DeleteMode:   tea.String(options["delete_mode"].(string)),
+					ResourceType: tea.String(options["resource_type"].(string)),
+				})
+			}
+		}
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1935,7 +1963,7 @@ func fetchWorkerNodes(d *schema.ResourceData, meta interface{}) []map[string]int
 	var response *roacs.DescribeClusterNodePoolsResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = csClient.DescribeClusterNodePools(tea.String(d.Id()))
+		response, err = csClient.DescribeClusterNodePools(tea.String(d.Id()), &roacs.DescribeClusterNodePoolsRequest{})
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

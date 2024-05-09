@@ -734,10 +734,13 @@ func (s *CsClient) updateAddonConfig(d *schema.ResourceData) error {
 // This function returns the status of all available addons of the cluster
 func (s *CsClient) DescribeCsKubernetesAddonMetadata(clusterId string, name string, version string) (*Component, error) {
 	var err error
+	req := &client.DescribeClusterAddonMetadataRequest{
+		Version: tea.String(version),
+	}
 	var resp *client.DescribeClusterAddonMetadataResponse
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err = s.client.DescribeClusterAddonMetadata(&clusterId, &name, &version)
+		resp, err = s.client.DescribeClusterAddonMetadata(&clusterId, &name, req)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
