@@ -477,20 +477,25 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.ScalingGroupId = d.Id()
 	request.ForceDelete = requests.NewBoolean(true)
-
-	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
-		return essClient.DeleteScalingGroup(request)
-	})
-
-	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
-			return nil
+	err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.DeleteScalingGroup(request)
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidScalingGroupId.NotFound"}) {
+				return nil
+			}
+			if IsExpectedErrors(err, []string{"InternalError"}) {
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	})
+	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-
 	return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, Timeout5Minute))
 }
 
