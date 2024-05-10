@@ -125,12 +125,12 @@ The following arguments are supported.
 
 The permissions mapping supports the following:
 
-* `cluster` - (Required) The ID of the cluster that you want to manage, When `role_type` value is `all-clusters`, the value of `role_type` must be null.
+* `cluster` - (Required) The ID of the cluster that you want to manage, When `role_type` value is `all-clusters`, the value of `cluster` must be `""`.
 * `role_name` - (Required) Specifies the predefined role that you want to assign. Valid values `admin`, `ops`, `dev`, `restricted` and the custom cluster roles.
 * `role_type` - (Required) The authorization type. Valid values `cluster`, `namespace` and `all-clusters`.
 * `namespace` - (Optional) The namespace to which the permissions are scoped. This parameter is required only if you set role_type to namespace.
 * `is_ram_role` - (Optional) Specifies whether the permissions are granted to a RAM role. When `uid` is ram role id, the value of `is_ram_role` must be `true`.
-* `is_custom` - (Optional) Specifies whether to perform a custom authorization. To perform a custom authorization, set `role_name` to a custom cluster role.
+* `is_custom` - (Optional) Specifies whether to perform a custom authorization. To perform a custom authorization, the value of `is_custom` must be `true`, and set `role_name` to a custom cluster role.
 
 ## Attributes Reference
 
