@@ -2,9 +2,8 @@
 subcategory: "Cloud Enterprise Network (CEN)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_peer_attachment"
-sidebar_current: "docs-alicloud-resource-cen-transit_router_peer_attachment"
 description: |-
-  Provides a Alicloud CEN transit router peer attachment resource.
+  Provides a Alicloud CEN Transit Router Peer Attachment resource.
 ---
 
 # alicloud_cen_transit_router_peer_attachment
@@ -78,6 +77,7 @@ resource "alicloud_cen_transit_router_peer_attachment" "example" {
   transit_router_attachment_name        = var.name
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
@@ -95,9 +95,10 @@ The following arguments are supported:
 * `route_table_propagation_enabled` - (Optional, ForceNew) Whether to propagation route table. System default is `false`.
 * `transit_router_attachment_description` - (Optional) The description of transit router attachment. The description is 2~256 characters long and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
 * `transit_router_attachment_name` - (Optional) The name of transit router attachment. The name is 2~128 characters in length, starts with uppercase and lowercase letters or Chinese, and can contain numbers, underscores (_) and dashes (-)
-* `bandwidth_type` - (Optional, Available in v1.157.0+) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
+* `bandwidth_type` - (Optional, Available since v1.157.0) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
   * `DataTransfer` - uses pay-by-data-transfer bandwidth.
   * `BandwidthPackage` - allocates bandwidth from a bandwidth plan.
+* `default_link_type` - (Optional, Available since v1.223.1) DefaultLinkType. Valid values: `Platinum` and `Gold`.
 
 ## Attributes Reference
 
@@ -105,20 +106,20 @@ The following attributes are exported:
 
 * `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`. 
 * `transit_router_attachment_id` - The ID of transit router attachment id.
-* `status` - The associating status of the network.
+* `status` - The status of the resource.
+* `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 3 mins) Used when creating the cen transit router peer attachment (until it reaches the initial `Attached` status).
-* `update` - (Defaults to 3 mins) Used when update the cen transit router peer attachment.
-* `delete` - (Defaults to 3 mins) Used when delete the cen transit router peer attachment.
+* `create` - (Defaults to 5 mins) Used when create the Transit Router Peer Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Peer Attachment.
+* `update` - (Defaults to 5 mins) Used when update the Transit Router Peer Attachment.
 
 ## Import
 
-CEN instance can be imported using the id, e.g.
+CEN Transit Router Peer Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_peer_attachment.example tr-********:tr-attach-*******
+$ terraform import alicloud_cen_transit_router_peer_attachment.example <id>
 ```
