@@ -1,6 +1,7 @@
 Terraform Provider For Alibaba Cloud
 ==================
 
+
 - Tutorials: [learn.hashicorp.com](https://learn.hashicorp.com/terraform?track=getting-started#getting-started)
 - Documentation: https://www.terraform.io/docs/providers/alicloud/index.html
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
