@@ -1306,4 +1306,396 @@ func TestAccAliCloudHbrPolicyBinding_basic6220_twin(t *testing.T) {
 	})
 }
 
+// Case ECS Instance Backup 6295   raw
+func TestAccAliCloudHbrPolicyBinding_basic6295_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap6295)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence6295)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "UDM_ECS",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "${alicloud_instance.defaultrdRDjb.id}",
+					"policy_binding_description": "policy binding example",
+					"advanced_options": []map[string]interface{}{
+						{
+							"udm_detail": []map[string]interface{}{
+								{
+									"disk_id_list": []string{
+										"d-****************zxcv"},
+									"destination_kms_key_id": "snxs-******-******-llam",
+									"exclude_disk_id_list": []string{
+										"d-****************mopl", "d-****************aqlp"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "UDM_ECS",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             CHECKSET,
+						"policy_binding_description": "policy binding example",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled":                   "true",
+					"policy_binding_description": "policy binding example (update)",
+					"advanced_options": []map[string]interface{}{
+						{
+							"udm_detail": []map[string]interface{}{
+								{
+									"disk_id_list": []string{
+										"d-****************lpsa", "d-****************09", "d-****************qpla"},
+									"destination_kms_key_id": "sdak-******-******-qozp",
+									"exclude_disk_id_list": []string{
+										"d-****************qqaa", "d-****************qqxv", "d-****************qblz"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled":                   "true",
+						"policy_binding_description": "policy binding example (update)",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled": "false",
+					//"advanced_options": []map[string]interface{}{
+					//	{
+					//		"udm_detail": []map[string]interface{}{
+					//			{
+					//				"disk_id_list":         []string{},
+					//				"exclude_disk_id_list": []string{},
+					//			},
+					//		},
+					//	},
+					//},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case Alibaba Nas Backup 6226   raw
+func TestAccAliCloudHbrPolicyBinding_basic6226_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap6226)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence6226)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "NAS",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "${data.alicloud_nas_file_systems.default.systems.0.id}",
+					"policy_binding_description": "policy binding example",
+					"source":                     "/",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "NAS",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             CHECKSET,
+						"policy_binding_description": "policy binding example",
+						"source":                     "/",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled":                   "true",
+					"policy_binding_description": "policy binding example (update)",
+					"source":                     "/backup",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled":                   "true",
+						"policy_binding_description": "policy binding example (update)",
+						"source":                     "/backup",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case OSS Backup 6221   raw
+func TestAccAliCloudHbrPolicyBinding_basic6221_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap6221)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence6221)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "OSS",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "${alicloud_oss_bucket.defaultKtt2XY.bucket}",
+					"policy_binding_description": "policy binding example",
+					"source":                     "prefix-example-create/",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "OSS",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             CHECKSET,
+						"policy_binding_description": "policy binding example",
+						"source":                     "prefix-example-create/",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled":                   "true",
+					"policy_binding_description": "policy binding example (update)",
+					"source":                     "prefix-example-update/",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled":                   "true",
+						"policy_binding_description": "policy binding example (update)",
+						"source":                     "prefix-example-update/",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case ECS File Backup 6219   raw
+func TestAccAliCloudHbrPolicyBinding_basic6219_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap6219)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence6219)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "ECS_FILE",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "i-******************",
+					"policy_binding_description": "policy binding example",
+					"exclude":                    "[\\\"*.pdf\\\",\\\"*.docx\\\"]",
+					"include":                    "[\\\"*.sh\\\",\\\"*.xml\\\"]",
+					"source":                     "/root",
+					"speed_limit":                "0:24:1024",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "ECS_FILE",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             "i-******************",
+						"policy_binding_description": "policy binding example",
+						"exclude":                    "[\"*.pdf\",\"*.docx\"]",
+						"include":                    "[\"*.sh\",\"*.xml\"]",
+						"source":                     "/root",
+						"speed_limit":                "0:24:1024",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled":                   "true",
+					"policy_binding_description": "policy binding example (update)",
+					"exclude":                    "[\\\"*.pdf\\\"]",
+					"include":                    "[\\\"*.sh\\\"]",
+					"source":                     "/opt",
+					"speed_limit":                "0:24:2048",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled":                   "true",
+						"policy_binding_description": "policy binding example (update)",
+						"exclude":                    "[\"*.pdf\"]",
+						"include":                    "[\"*.sh\"]",
+						"source":                     "/opt",
+						"speed_limit":                "0:24:2048",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case File Backup 6220   raw
+func TestAccAliCloudHbrPolicyBinding_basic6220_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap6220)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence6220)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "File",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "c-******************",
+					"policy_binding_description": "policy binding example",
+					"exclude":                    "[\\\"*.pdf\\\",\\\"*.docx\\\"]",
+					"include":                    "[\\\"*.sh\\\",\\\"*.xml\\\"]",
+					"source":                     "/root",
+					"speed_limit":                "0:24:1024",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "File",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             "c-******************",
+						"policy_binding_description": "policy binding example",
+						"exclude":                    "[\"*.pdf\",\"*.docx\"]",
+						"include":                    "[\"*.sh\",\"*.xml\"]",
+						"source":                     "/root",
+						"speed_limit":                "0:24:1024",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disabled":                   "true",
+					"policy_binding_description": "policy binding example (update)",
+					"exclude":                    "[\\\"*.pdf\\\"]",
+					"include":                    "[\\\"*.sh\\\"]",
+					"source":                     "/opt",
+					"speed_limit":                "0:24:2048",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disabled":                   "true",
+						"policy_binding_description": "policy binding example (update)",
+						"exclude":                    "[\"*.pdf\"]",
+						"include":                    "[\"*.sh\"]",
+						"source":                     "/opt",
+						"speed_limit":                "0:24:2048",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
 // Test Hbr PolicyBinding. <<< Resource test cases, automatically generated.

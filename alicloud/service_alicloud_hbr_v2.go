@@ -106,7 +106,7 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["PolicyId"] = parts[0]
+	request["PolicyId"] = parts[0]
 	query["SourceType"] = parts[1]
 
 	runtime := util.RuntimeOptions{}

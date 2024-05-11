@@ -149,7 +149,9 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			dataLoopMap["RetentionRules"] = localMaps
 			dataLoopMap["VaultId"] = dataLoopTmp["vault_id"]
 			dataLoopMap["KeepLatestSnapshots"] = dataLoopTmp["keep_latest_snapshots"]
-			dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
+			if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
+				dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
+			}
 			rulesMaps = append(rulesMaps, dataLoopMap)
 		}
 		request["Rules"], err = convertListMapToJsonString(rulesMaps)
@@ -282,7 +284,9 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				dataLoopMap["RetentionRules"] = localMaps
 				dataLoopMap["VaultId"] = dataLoopTmp["vault_id"]
-				dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
+				if backupType, ok := dataLoopTmp["backup_type"]; ok && backupType != "" {
+					dataLoopMap["BackupType"] = dataLoopTmp["backup_type"]
+				}
 				rulesMaps = append(rulesMaps, dataLoopMap)
 			}
 			request["Rules"], err = convertListMapToJsonString(rulesMaps)
