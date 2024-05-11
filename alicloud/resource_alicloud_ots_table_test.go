@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAlicloudOtsTable_basic(t *testing.T) {
+func TestAccAliCloudOtsTable_basic(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
@@ -136,7 +136,7 @@ func TestAccAlicloudOtsTable_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsTable_highPerformance(t *testing.T) {
+func TestAccAliCloudOtsTable_highPerformance(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
@@ -242,7 +242,7 @@ func TestAccAlicloudOtsTable_highPerformance(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsTable_multi(t *testing.T) {
+func TestAccAliCloudOtsTable_multi(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default.4"
@@ -297,7 +297,7 @@ func TestAccAlicloudOtsTable_multi(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudOtsTable_withTableEncryption(t *testing.T) {
+func TestAccAliCloudOtsTable_withTableEncryption(t *testing.T) {
 	var v *tablestore.DescribeTableResponse
 
 	resourceId := "alicloud_ots_table.default"
@@ -365,8 +365,152 @@ func TestAccAlicloudOtsTable_withTableEncryption(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudOtsTable_withTableByOKEncryption(t *testing.T) {
+	var v *tablestore.DescribeTableResponse
+
+	resourceId := "alicloud_ots_table.default"
+	ra := resourceAttrInit(resourceId, otsTableBasicMap)
+	serviceFunc := func() interface{} {
+		return &OtsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("testAcc%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceOtsTableConfigDependenceSseByOK)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.OtsCapacityNoSupportedRegions)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": "${alicloud_ots_instance.default.name}",
+					"table_name":    "${var.name}",
+					"primary_key": []map[string]interface{}{
+						{
+							"name": "pk1",
+							"type": "Integer",
+						},
+					},
+					"defined_column": []map[string]interface{}{
+						{
+							"name": "col1",
+							"type": "Integer",
+						},
+					},
+					"time_to_live": "-1",
+					"max_version":  "1",
+					"enable_sse":   "true",
+					"sse_key_type": "SSE_BYOK",
+					"sse_key_id":   "${alicloud_kms_key.default.id}",
+					"sse_role_arn": "${alicloud_ram_role.default.arn}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name": "tf-" + name,
+						"table_name":    name,
+						"time_to_live":  "-1",
+						"max_version":   "1",
+						"enable_sse":    "true",
+						"sse_key_type":  "SSE_BYOK",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 func resourceOtsTableConfigDependence(name string) string {
 	return fmt.Sprintf(`
+	variable "name" {
+	  default = "%s"
+	}
+	resource "alicloud_ots_instance" "default" {
+	  name = "tf-${var.name}"
+	  description = "${var.name}"
+	  accessed_by = "Any"
+	  instance_type = "%s"
+	  tags = {
+	    Created = "TF"
+	    For = "acceptance test"
+	  }
+	}
+	`, name, string(OtsCapacity))
+}
+
+func resourceOtsTableConfigDependenceSseByOK(name string) string {
+	return fmt.Sprintf(`
+	resource "alicloud_ram_role" "default" {
+		name        = "tf-${var.name}"
+		document    = <<EOF
+		  {
+			"Statement": [
+			  {
+				"Action": "sts:AssumeRole",
+				"Effect": "Allow",
+				"Principal": {
+				  "Service": [
+					  "ots.aliyuncs.com"
+	  
+				  ]
+				}
+			  }
+			],
+			"Version": "1"
+		  }
+		  EOF
+		description = "this is TfOtsAccessKMS role."
+	  }
+	  resource "alicloud_ram_policy" "default" {
+		policy_name     = "tf-${var.name}"
+		policy_document = <<EOF
+		{
+		  "Statement": [
+			{
+			  "Effect": "Allow",
+			  "Action": [
+					  "kms:Decrypt",
+					  "kms:GenerateDataKey"
+				  ],
+				  "Resource": [
+					  "*"
+				  ]
+			}
+		  ],
+			"Version": "1"
+		}
+		EOF
+		description     = "this is a policy"
+	  }
+	  
+	  resource "alicloud_ram_role_policy_attachment" "default" {
+		policy_name = alicloud_ram_policy.default.policy_name
+		policy_type = alicloud_ram_policy.default.type
+		role_name   = alicloud_ram_role.default.name
+	  }
+	  
+	  resource "alicloud_kms_key" "default" {
+		description            = "Hello KMS"
+		pending_window_in_days = "7"
+		status                 = "Enabled"
+	  }
+
+
 	variable "name" {
 	  default = "%s"
 	}
