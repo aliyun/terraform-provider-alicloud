@@ -125,6 +125,7 @@ type SseKeyTypeString string
 
 const (
 	SseKMSService = SseKeyTypeString("SSE_KMS_SERVICE")
+	SseByOk       = SseKeyTypeString("SSE_BYOK")
 )
 
 type SecondaryIndexTypeString string
