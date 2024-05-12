@@ -19,7 +19,6 @@ type ServiceMeshServiceV2 struct {
 // DescribeServiceMeshServiceMesh <<< Encapsulated get interface for ServiceMesh ServiceMesh.
 
 func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -49,11 +48,11 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound"}) {
+		if IsExpectedErrors(err, []string{"StatusForbidden", "ServiceMesh.NotFound", "403", "503", "500"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -65,7 +64,6 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 	return v.(map[string]interface{}), nil
 }
 func (s *ServiceMeshServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -78,7 +76,7 @@ func (s *ServiceMeshServiceV2) DescribeListTagResources(id string) (object map[s
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "servicemesh"
 	runtime := util.RuntimeOptions{}
@@ -97,18 +95,14 @@ func (s *ServiceMeshServiceV2) DescribeListTagResources(id string) (object map[s
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
 }
 func (s *ServiceMeshServiceV2) DescribeDescribeServiceMeshKubeconfig(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -139,11 +133,11 @@ func (s *ServiceMeshServiceV2) DescribeDescribeServiceMeshKubeconfig(id string) 
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound"}) {
+		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "500"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -162,6 +156,7 @@ func (s *ServiceMeshServiceV2) ServiceMeshServiceMeshStateRefreshFunc(id string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -182,6 +177,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -197,6 +193,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
@@ -208,7 +205,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -233,6 +230,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
@@ -247,7 +245,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -264,7 +262,6 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil

@@ -1057,8 +1057,166 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 							},
 							"control_plane_log": []map[string]interface{}{
 								{
+									"enabled":        "true",
+									"project":        "${local.log_project_1}",
+									"log_ttl_in_day": "10",
+								},
+							},
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
 									"enabled": "true",
 									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"control_plane_log": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"project":        "${local.log_project_2}",
+									"log_ttl_in_day": "20",
+								},
+							},
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_1}",
+								},
+							},
+							"control_plane_log": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"project": "${local.log_project_2}",
 								},
 							},
 						},
@@ -1324,8 +1482,12 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
-									"project": "${local.log_project_1}",
+									"enabled":           "true",
+									"project":           "${local.log_project_1}",
+									"gateway_enabled":   "true",
+									"gateway_lifecycle": "3",
+									"sidecar_enabled":   "true",
+									"sidecar_lifecycle": "3",
 								},
 							},
 							"include_ip_ranges": "*",
@@ -1431,6 +1593,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic6(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"service_mesh_name": "${var.name}",
+					"version":           "${local.version_1}",
 					"network": []map[string]interface{}{
 						{
 							"vpc_id":        "${local.vpc_id}",
