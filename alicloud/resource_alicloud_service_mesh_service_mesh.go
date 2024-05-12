@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -38,7 +39,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"standard", "enterprise", "ultimate"}, false),
+				ValidateFunc: StringInSlice([]string{"standard", "enterprise", "ultimate"}, true),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -53,7 +54,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, false),
+				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, true),
 			},
 			"extra_configuration": {
 				Type:     schema.TypeList,
@@ -120,9 +121,29 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"project": {
 										Type:     schema.TypeString,
 										Optional: true,
+									},
+									"gateway_lifecycle": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: IntBetween(0, 365),
+									},
+									"gateway_enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
 										Computed: true,
 									},
+									"sidecar_lifecycle": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: IntBetween(0, 365),
+									},
 									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"sidecar_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
 										Computed: true,
@@ -133,7 +154,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"pilot": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
@@ -141,7 +161,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"http10_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
 									},
 									"trace_sampling": {
 										Type:     schema.TypeFloat,
@@ -207,7 +226,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"outbound_traffic_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
+							ValidateFunc: StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, true),
 						},
 						"sidecar_injector": {
 							Type:     schema.TypeList,
@@ -359,16 +378,19 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"project": {
-										Type:     schema.TypeString,
-										Optional: true,
-										Computed: true,
-										ForceNew: true,
+										Type:         schema.TypeString,
+										Optional:     true,
+										ValidateFunc: StringMatch(regexp.MustCompile("^[\\w.-]+$"), "The name of the SLS Project to which the control plane logs are collected."),
+									},
+									"log_ttl_in_day": {
+										Type:         schema.TypeInt,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: IntBetween(0, 365),
 									},
 									"enabled": {
 										Type:     schema.TypeBool,
-										Optional: true,
-										Computed: true,
-										ForceNew: true,
+										Required: true,
 									},
 								},
 							},
@@ -440,6 +462,7 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	action := "CreateServiceMesh"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewServicemeshClient()
 	if err != nil {
 		return WrapError(err)
@@ -587,6 +610,11 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("customized_prometheus"); ok {
 		request["CustomizedPrometheus"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
 	if v, ok := d.GetOk("mesh_config"); ok {
 		jsonPathResult26, err := jsonpath.Get("$[0].control_plane_log[0].enabled", v)
 		if err == nil && jsonPathResult26 != "" {
@@ -626,10 +654,10 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"InvalidActiveState.ACK", "ERR404"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"NameAlreadyExist", "InvalidActiveState.ACK", "ERR404"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -669,6 +697,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	}
 
 	d.Set("cluster_spec", objectRaw["ClusterSpec"])
+
 	serviceMeshInfo1RawObj, _ := jsonpath.Get("$.ServiceMeshInfo", objectRaw)
 	serviceMeshInfo1Raw := make(map[string]interface{})
 	if serviceMeshInfo1RawObj != nil {
@@ -679,6 +708,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	d.Set("service_mesh_name", serviceMeshInfo1Raw["Name"])
 	d.Set("status", serviceMeshInfo1Raw["State"])
 	d.Set("version", serviceMeshInfo1Raw["Version"])
+
 	clusters1Raw := make([]interface{}, 0)
 	if objectRaw["Clusters"] != nil {
 		clusters1Raw = objectRaw["Clusters"].([]interface{})
@@ -695,6 +725,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	}
 	if len(cRAggregationConfiguration1Raw) > 0 {
 		extraConfigurationMap["cr_aggregation_enabled"] = cRAggregationConfiguration1Raw["Enabled"]
+
 		extraConfigurationMaps = append(extraConfigurationMaps, extraConfigurationMap)
 	}
 	d.Set("extra_configuration", extraConfigurationMaps)
@@ -710,6 +741,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		loadBalancerMap["api_server_public_eip"] = loadBalancer1Raw["ApiServerPublicEip"]
 		loadBalancerMap["pilot_public_eip"] = loadBalancer1Raw["PilotPublicEip"]
 		loadBalancerMap["pilot_public_loadbalancer_id"] = loadBalancer1Raw["PilotPublicLoadbalancerId"]
+
 		loadBalancerMaps = append(loadBalancerMaps, loadBalancerMap)
 	}
 	d.Set("load_balancer", loadBalancerMaps)
@@ -727,6 +759,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		meshConfigMap["outbound_traffic_policy"] = meshConfig1Raw["OutboundTrafficPolicy"]
 		meshConfigMap["telemetry"] = meshConfig1Raw["Telemetry"]
 		meshConfigMap["tracing"] = meshConfig1Raw["Tracing"]
+
 		accessLogMaps := make([]map[string]interface{}, 0)
 		accessLogMap := make(map[string]interface{})
 		accessLog1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.AccessLog", objectRaw)
@@ -737,6 +770,18 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		if len(accessLog1Raw) > 0 {
 			accessLogMap["enabled"] = accessLog1Raw["Enabled"]
 			accessLogMap["project"] = accessLog1Raw["Project"]
+
+			accessLogExtraConf1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.ExtraConfiguration.AccessLogExtraConf", objectRaw)
+			accessLogExtraConf1Raw := make(map[string]interface{})
+			if accessLogExtraConf1RawObj != nil {
+				accessLogExtraConf1Raw = accessLogExtraConf1RawObj.(map[string]interface{})
+			}
+			if len(accessLogExtraConf1Raw) > 0 {
+				accessLogMap["gateway_enabled"] = accessLogExtraConf1Raw["GatewayEnabled"]
+				accessLogMap["gateway_lifecycle"] = accessLogExtraConf1Raw["GatewayLifecycle"]
+				accessLogMap["sidecar_enabled"] = accessLogExtraConf1Raw["SidecarEnabled"]
+				accessLogMap["sidecar_lifecycle"] = accessLogExtraConf1Raw["SidecarLifecycle"]
+			}
 			accessLogMaps = append(accessLogMaps, accessLogMap)
 		}
 		meshConfigMap["access_log"] = accessLogMaps
@@ -750,6 +795,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		if len(audit1Raw) > 0 {
 			auditMap["enabled"] = audit1Raw["Enabled"]
 			auditMap["project"] = audit1Raw["Project"]
+
 			auditMaps = append(auditMaps, auditMap)
 		}
 		meshConfigMap["audit"] = auditMaps
@@ -762,7 +808,9 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		}
 		if len(controlPlaneLogInfo1Raw) > 0 {
 			controlPlaneLogMap["enabled"] = controlPlaneLogInfo1Raw["Enabled"]
+			controlPlaneLogMap["log_ttl_in_day"] = controlPlaneLogInfo1Raw["LogTTL"]
 			controlPlaneLogMap["project"] = controlPlaneLogInfo1Raw["Project"]
+
 			controlPlaneLogMaps = append(controlPlaneLogMaps, controlPlaneLogMap)
 		}
 		meshConfigMap["control_plane_log"] = controlPlaneLogMaps
@@ -776,6 +824,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		if len(kiali1Raw) > 0 {
 			kialiMap["enabled"] = kiali1Raw["Enabled"]
 			kialiMap["url"] = kiali1Raw["Url"]
+
 			kialiMaps = append(kialiMaps, kialiMap)
 		}
 		meshConfigMap["kiali"] = kialiMaps
@@ -793,6 +842,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			oPAMap["log_level"] = oPA1Raw["LogLevel"]
 			oPAMap["request_cpu"] = oPA1Raw["RequestCPU"]
 			oPAMap["request_memory"] = oPA1Raw["RequestMemory"]
+
 			oPAMaps = append(oPAMaps, oPAMap)
 		}
 		meshConfigMap["opa"] = oPAMaps
@@ -806,6 +856,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		if len(pilot1Raw) > 0 {
 			pilotMap["http10_enabled"] = pilot1Raw["Http10Enabled"]
 			pilotMap["trace_sampling"] = pilot1Raw["TraceSampling"]
+
 			pilotMaps = append(pilotMaps, pilotMap)
 		}
 		meshConfigMap["pilot"] = pilotMaps
@@ -819,6 +870,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		if len(prometheus1Raw) > 0 {
 			prometheusMap["external_url"] = prometheus1Raw["ExternalUrl"]
 			prometheusMap["use_external"] = prometheus1Raw["UseExternal"]
+
 			prometheusMaps = append(prometheusMaps, prometheusMap)
 		}
 		meshConfigMap["prometheus"] = prometheusMaps
@@ -835,6 +887,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			proxyMap["limit_memory"] = proxy1Raw["LimitMemory"]
 			proxyMap["request_cpu"] = proxy1Raw["RequestCPU"]
 			proxyMap["request_memory"] = proxy1Raw["RequestMemory"]
+
 			proxyMaps = append(proxyMaps, proxyMap)
 		}
 		meshConfigMap["proxy"] = proxyMaps
@@ -853,6 +906,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			sidecarInjectorMap["request_cpu"] = sidecarInjector1Raw["RequestCPU"]
 			sidecarInjectorMap["request_memory"] = sidecarInjector1Raw["RequestMemory"]
 			sidecarInjectorMap["sidecar_injector_webhook_as_yaml"] = sidecarInjector1Raw["SidecarInjectorWebhookAsYaml"]
+
 			initCNIConfigurationMaps := make([]map[string]interface{}, 0)
 			initCNIConfigurationMap := make(map[string]interface{})
 			initCNIConfiguration1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.SidecarInjector.InitCNIConfiguration", objectRaw)
@@ -863,6 +917,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			if len(initCNIConfiguration1Raw) > 0 {
 				initCNIConfigurationMap["enabled"] = initCNIConfiguration1Raw["Enabled"]
 				initCNIConfigurationMap["exclude_namespaces"] = initCNIConfiguration1Raw["ExcludeNamespaces"]
+
 				initCNIConfigurationMaps = append(initCNIConfigurationMaps, initCNIConfigurationMap)
 			}
 			sidecarInjectorMap["init_cni_configuration"] = initCNIConfigurationMaps
@@ -882,6 +937,7 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	if len(network1Raw) > 0 {
 		networkMap["security_group_id"] = network1Raw["SecurityGroupId"]
 		networkMap["vpc_id"] = network1Raw["VpcId"]
+
 		vSwitches1Raw, _ := jsonpath.Get("$.Spec.Network.VSwitches", objectRaw)
 		networkMap["vswitche_list"] = vSwitches1Raw
 		networkMaps = append(networkMaps, networkMap)
@@ -908,6 +964,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "UpdateMeshFeature"
@@ -916,8 +973,9 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.tracing") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].tracing", d.Get("mesh_config"))
 		if err == nil {
@@ -925,7 +983,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.pilot.0.trace_sampling") {
 		update = true
 		jsonPathResult1, err := jsonpath.Get("$[0].pilot[0].trace_sampling", d.Get("mesh_config"))
 		if err == nil {
@@ -933,7 +991,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.telemetry") {
 		update = true
 		jsonPathResult2, err := jsonpath.Get("$[0].telemetry", d.Get("mesh_config"))
 		if err == nil {
@@ -941,7 +999,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.customized_zipkin") {
 		update = true
 		jsonPathResult3, err := jsonpath.Get("$[0].customized_zipkin", d.Get("mesh_config"))
 		if err == nil {
@@ -949,7 +1007,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.outbound_traffic_policy") {
 		update = true
 		jsonPathResult4, err := jsonpath.Get("$[0].outbound_traffic_policy", d.Get("mesh_config"))
 		if err == nil {
@@ -957,7 +1015,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.include_ip_ranges") {
 		update = true
 		jsonPathResult5, err := jsonpath.Get("$[0].include_ip_ranges", d.Get("mesh_config"))
 		if err == nil {
@@ -965,7 +1023,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.enable_namespaces_by_default") {
 		update = true
 		jsonPathResult6, err := jsonpath.Get("$[0].sidecar_injector[0].enable_namespaces_by_default", d.Get("mesh_config"))
 		if err == nil {
@@ -973,7 +1031,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.IsNewResource() || d.HasChange("mesh_config.0.pilot.0.http10_enabled") {
 		update = true
 		jsonPathResult7, err := jsonpath.Get("$[0].pilot[0].http10_enabled", d.Get("mesh_config"))
 		if err == nil {
@@ -981,7 +1039,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.log_level") {
 		update = true
 		jsonPathResult8, err := jsonpath.Get("$[0].opa[0].log_level", d.Get("mesh_config"))
 		if err == nil {
@@ -989,7 +1047,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.request_cpu") {
 		update = true
 		jsonPathResult9, err := jsonpath.Get("$[0].opa[0].request_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -997,7 +1055,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.request_memory") {
 		update = true
 		jsonPathResult10, err := jsonpath.Get("$[0].opa[0].request_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1005,7 +1063,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.limit_cpu") {
 		update = true
 		jsonPathResult11, err := jsonpath.Get("$[0].opa[0].limit_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -1013,7 +1071,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.limit_memory") {
 		update = true
 		jsonPathResult12, err := jsonpath.Get("$[0].opa[0].limit_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1021,7 +1079,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.proxy.0.limit_cpu") {
 		update = true
 		jsonPathResult13, err := jsonpath.Get("$[0].proxy[0].limit_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -1029,7 +1087,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.proxy.0.request_cpu") {
 		update = true
 		jsonPathResult14, err := jsonpath.Get("$[0].proxy[0].request_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -1037,7 +1095,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.proxy.0.limit_memory") {
 		update = true
 		jsonPathResult15, err := jsonpath.Get("$[0].proxy[0].limit_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1045,7 +1103,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.kiali.0.enabled") {
 		update = true
 		jsonPathResult16, err := jsonpath.Get("$[0].kiali[0].enabled", d.Get("mesh_config"))
 		if err == nil {
@@ -1053,7 +1111,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.access_log.0.enabled") {
 		update = true
 		jsonPathResult17, err := jsonpath.Get("$[0].access_log[0].enabled", d.Get("mesh_config"))
 		if err == nil {
@@ -1061,7 +1119,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.exclude_namespaces") {
 		update = true
 		jsonPathResult18, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].exclude_namespaces", d.Get("mesh_config"))
 		if err == nil {
@@ -1069,15 +1127,15 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.enabled") {
 		update = true
-		jsonPathResult19, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
-		if err == nil {
-			request["CniEnabled"] = jsonPathResult19
-		}
+	}
+	jsonPathResult19, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
+	if err == nil {
+		request["CniEnabled"] = jsonPathResult19
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.proxy.0.request_memory") {
 		update = true
 		jsonPathResult20, err := jsonpath.Get("$[0].proxy[0].request_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1085,7 +1143,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.request_memory") {
 		update = true
 		jsonPathResult21, err := jsonpath.Get("$[0].sidecar_injector[0].request_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1093,7 +1151,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.limit_memory") {
 		update = true
 		jsonPathResult22, err := jsonpath.Get("$[0].sidecar_injector[0].limit_memory", d.Get("mesh_config"))
 		if err == nil {
@@ -1101,7 +1159,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.limit_cpu") {
 		update = true
 		jsonPathResult23, err := jsonpath.Get("$[0].sidecar_injector[0].limit_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -1109,7 +1167,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.request_cpu") {
 		update = true
 		jsonPathResult24, err := jsonpath.Get("$[0].sidecar_injector[0].request_cpu", d.Get("mesh_config"))
 		if err == nil {
@@ -1117,7 +1175,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.enabled") {
 		update = true
 		jsonPathResult25, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
 		if err == nil {
@@ -1131,19 +1189,51 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("prometheus_url"); ok {
 		request["PrometheusUrl"] = v
 	}
-	if d.HasChange("mesh_config") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.auto_injection_policy_enabled") {
 		update = true
-		jsonPathResult28, err := jsonpath.Get("$[0].sidecar_injector[0].auto_injection_policy_enabled", d.Get("mesh_config"))
-		if err == nil {
-			request["AutoInjectionPolicyEnabled"] = jsonPathResult28
-		}
+	}
+	jsonPathResult28, err := jsonpath.Get("$[0].sidecar_injector[0].auto_injection_policy_enabled", d.Get("mesh_config"))
+	if err == nil {
+		request["AutoInjectionPolicyEnabled"] = jsonPathResult28
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.access_log.0.project") {
 		update = true
 		jsonPathResult29, err := jsonpath.Get("$[0].access_log[0].project", d.Get("mesh_config"))
 		if err == nil {
 			request["AccessLogProject"] = jsonPathResult29
+		}
+	}
+
+	if d.HasChange("mesh_config.0.access_log.0.gateway_enabled") {
+		update = true
+		jsonPathResult30, err := jsonpath.Get("$[0].access_log[0].gateway_enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["AccessLogGatewayEnabled"] = jsonPathResult30
+		}
+	}
+
+	if d.HasChange("mesh_config.0.access_log.0.sidecar_enabled") {
+		update = true
+		jsonPathResult31, err := jsonpath.Get("$[0].access_log[0].sidecar_enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["AccessLogSidecarEnabled"] = jsonPathResult31
+		}
+	}
+
+	if d.HasChange("mesh_config.0.access_log.0.gateway_lifecycle") {
+		update = true
+		jsonPathResult32, err := jsonpath.Get("$[0].access_log[0].gateway_lifecycle", d.Get("mesh_config"))
+		if err == nil && jsonPathResult32.(int) > 0 {
+			request["AccessLogGatewayLifecycle"] = jsonPathResult32
+		}
+	}
+
+	if d.HasChange("mesh_config.0.access_log.0.sidecar_lifecycle") {
+		update = true
+		jsonPathResult33, err := jsonpath.Get("$[0].access_log[0].sidecar_lifecycle", d.Get("mesh_config"))
+		if err == nil && jsonPathResult33.(int) > 0 {
+			request["AccessLogSidecarLifecycle"] = jsonPathResult33
 		}
 	}
 
@@ -1152,7 +1242,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -1172,34 +1262,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("tracing")
-		d.SetPartial("trace_sampling")
-		d.SetPartial("telemetry")
-		d.SetPartial("customized_zipkin")
-		d.SetPartial("outbound_traffic_policy")
-		d.SetPartial("include_ip_ranges")
-		d.SetPartial("enable_namespaces_by_default")
-		d.SetPartial("http10_enabled")
-		d.SetPartial("log_level")
-		d.SetPartial("request_cpu")
-		d.SetPartial("request_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("limit_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("request_cpu")
-		d.SetPartial("limit_memory")
-		d.SetPartial("enabled")
-		d.SetPartial("enabled")
-		d.SetPartial("exclude_namespaces")
-		d.SetPartial("enabled")
-		d.SetPartial("request_memory")
-		d.SetPartial("request_memory")
-		d.SetPartial("limit_memory")
-		d.SetPartial("limit_cpu")
-		d.SetPartial("request_cpu")
-		d.SetPartial("enabled")
-		d.SetPartial("auto_injection_policy_enabled")
-		d.SetPartial("project")
 	}
 	update = false
 	action = "UpdateMeshCRAggregation"
@@ -1208,6 +1270,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
 	if d.HasChange("extra_configuration") {
 		update = true
@@ -1222,7 +1285,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -1242,7 +1305,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("cr_aggregation_enabled")
 	}
 	update = false
 	action = "UpgradeMeshEditionPartially"
@@ -1251,6 +1313,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
 	if !d.IsNewResource() && d.HasChange("version") {
 		update = true
@@ -1263,7 +1326,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -1283,7 +1346,65 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("version")
+	}
+	update = false
+	action = "UpdateControlPlaneLogConfig"
+	conn, err = client.NewServicemeshClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
+	if d.HasChange("mesh_config.0.control_plane_log.0.enabled") {
+		update = true
+	}
+	jsonPathResult, err := jsonpath.Get("$[0].control_plane_log[0].enabled", d.Get("mesh_config"))
+	if err == nil {
+		request["Enabled"] = jsonPathResult
+	}
+
+	if d.HasChange("mesh_config.0.control_plane_log.0.project") {
+		update = true
+		jsonPathResult1, err := jsonpath.Get("$[0].control_plane_log[0].project", d.Get("mesh_config"))
+		if err == nil {
+			request["Project"] = jsonPathResult1
+		}
+	}
+
+	if d.HasChange("mesh_config.0.control_plane_log.0.log_ttl_in_day") {
+		update = true
+		jsonPathResult2, err := jsonpath.Get("$[0].control_plane_log[0].log_ttl_in_day", d.Get("mesh_config"))
+		if err == nil {
+			request["LogTTLInDay"] = jsonPathResult2
+		}
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	if d.HasChange("cluster_ids") {
@@ -1301,6 +1422,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
+				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
@@ -1313,7 +1435,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -1333,10 +1455,8 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("cluster_ids")
 
 			}
-			d.SetPartial("cluster_ids")
 		}
 
 		if len(added.([]interface{})) > 0 {
@@ -1349,6 +1469,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 					return WrapError(err)
 				}
 				request = make(map[string]interface{})
+				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
@@ -1361,7 +1482,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 					if err != nil {
 						if NeedRetry(err) {
@@ -1381,10 +1502,8 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("cluster_ids")
 
 			}
-			d.SetPartial("cluster_ids")
 		}
 	}
 	if d.HasChange("tags") {
@@ -1392,7 +1511,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err := serviceMeshServiceV2.SetResourceTags(d, "servicemesh"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
 	return resourceAliCloudServiceMeshServiceMeshRead(d, meta)
@@ -1404,6 +1522,7 @@ func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	action := "DeleteServiceMesh"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewServicemeshClient()
 	if err != nil {
 		return WrapError(err)
@@ -1418,7 +1537,7 @@ func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"RelatedResourceReused", "StillInitializing"}) || NeedRetry(err) {
@@ -1432,7 +1551,7 @@ func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ServiceMesh.NotFound"}) {
+		if IsExpectedErrors(err, []string{"StatusForbidden", "403"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
