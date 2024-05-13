@@ -190,7 +190,7 @@ The following arguments are supported:
 * `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
 * `node_attributes` - (Required, ForceNew) The node attributes of ecs instances which the emr-cluster belongs. See [`node_attributes`](#node_attributes) below.
 * `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below.
-* `bootstrap_scripts` (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster. See [`bootstrap_scripts`](#bootstrap_scripts) below.
+* `bootstrap_scripts` (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster, if priority is not specified, the scripts will execute in the declared order. See [`bootstrap_scripts`](#bootstrap_scripts) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
 ### `subscription_config`
