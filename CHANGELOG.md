@@ -1,4 +1,35 @@
 ## 1.223.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_cs_kubernetes_permissions: add throttling retry. [GH-7183]
+- resource/alicloud_tsdb_instance: deprecate the resource. [GH-7194]
+- resource/alicloud_oss_bucket_https_config: add resource not found code for describe. [GH-7207]
+- resource/alicloud_polardb_cluster: modify paramater loose_polar_log_bin timeout fix. [GH-7211]
+- resource/alicloud_service_mesh_service_mesh: add new attribute mesh_config.access_log.gateway_lifecycle etc. [GH-7212]
+- resource/alicloud_ecs_network_interface_attachment: Added the field network_card_index; Improved alicloud_ecs_network_interface_attachment testcase. [GH-7213]
+- resource/alicloud_cs_managed_kubernetes: update description of slb_id, cluster_spec, encryption_provider_key; remove limit of pod_vswitch_ids and update pod_vswitch_ids description. resource/alicloud_cs_kubernetes: update slb_id description; remove limit of pod_vswitch_ids and update pod_vswitch_ids description. [GH-7215]
+- resource/alicloud_click_house_account: Added support for creating super account. [GH-7216]
+- resource/alicloud_click_house_db_cluster: Added support for cluster version 23.8, added support for in-place cluster storage upgrade. [GH-7221]
+- resource/alicloud_db_instance: add geberal_essd specification;data-source/alicloud_db_zones: add geberal_essd cloud_auto specification;resource/alicloud_rds_account: add IncorrectDBInstanceState error code. [GH-7222]
+- resource/alicloud_ess_alb_server_group_attachment: add destory retry and fault tolerance. [GH-7223]
+- resource/alicloud_cs_kubernetes_node_pool: support param update_nodes, security_hardening_os; deperacted cis_enabled. [GH-7224]
+- resource/alicloud_ess_scaling_group: add destroy retry and fault tolerance. [GH-7227]
+- resource/alicloud_cen_transit_router_peer_attachment: add new attribute default_link_type. [GH-7228]
+- resource/alicloud_ecs_network_interface: Added retry strategy for error code InvalidOperation.InvalidEniType. [GH-7236]
+- data-source/alicloud_instance_types: Support filter minimum_eni_private_ip_address_quantity. [GH-7217]
+- docs: fix examples for adb, cms, ack, dfs, dms, hbr. [GH-7178]
+- docs: Improved the document ga_endpoint_group description. [GH-7218]
+- docs: Improved the document redis_tair_instance description. [GH-7219]
+- docs: modify resource_alicloud cs_kubernetes_permissions doc for permissions param. [GH-7230]
+
+BUG FIXES:
+
+- resource/alicloud_db_instance: fix kms authorization problem. [GH-7162]
+- resource/alicloud_ga_forwarding_rule: Fixed the update bug in field forwarding_rule_name. [GH-7210]
+- resource/alicloud_emrv2_cluster: Fixed bootstrap_scripts out of order. [GH-7229]
+- resource/alicloud_hbr_policy: fix bug while set rules.backup_type empty. [GH-7231]
+
 ## 1.223.0 (April 29, 2024)
 
 - **New Resource:** `alicloud_oss_bucket_cors` ([#7188](https://github.com/aliyun/terraform-provider-alicloud/issues/7188))
