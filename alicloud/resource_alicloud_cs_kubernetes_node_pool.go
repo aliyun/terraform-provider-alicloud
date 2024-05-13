@@ -52,7 +52,7 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Type:       schema.TypeBool,
 				Optional:   true,
 				ForceNew:   true,
-				Deprecated: "Field 'cis_enabled' has been deprecated from provider version 1.224.0. Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.",
+				Deprecated: "Field 'cis_enabled' has been deprecated from provider version 1.223.1. Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.",
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,

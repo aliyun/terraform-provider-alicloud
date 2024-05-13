@@ -303,7 +303,7 @@ The following arguments are supported:
   - `true`: Automatic renewal. 
   - `false`: Do not renew automatically.
 * `auto_renew_period` - (Optional) The automatic renewal period of nodes in the node pool takes effect only when you select Prepaid and Automatic Renewal, and is a required value. When `PeriodUnit = Month`, the value range is {1, 2, 3, 6, 12}. Default value: 1.
-* `cis_enabled` - (Optional, ForceNew, Deprecated since v1.224.0) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.
+* `cis_enabled` - (Optional, ForceNew, Deprecated since v1.223.1) Whether enable worker node to support cis security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. Use `security_hardening_os` instead.
 * `cluster_id` - (Required, ForceNew) The id of kubernetes cluster.
 * `compensate_with_on_demand` - (Optional) Specifies whether to automatically create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created due to reasons such as cost or insufficient inventory. This parameter takes effect when you set `multi_az_policy` to `COST_OPTIMIZED`. Valid values: `true`: automatically creates pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created. `false`: does not create pay-as-you-go instances to meet the required number of ECS instances if preemptible instances cannot be created.
 * `cpu_policy` - (Optional, Computed) Node CPU management policies. Default value: `none`. When the cluster version is 1.12.6 or later, the following two policies are supported:
