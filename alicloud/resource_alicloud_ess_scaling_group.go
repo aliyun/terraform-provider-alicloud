@@ -53,7 +53,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"health_check_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS", "NONE"}, false),
+				ValidateFunc: validation.StringInSlice([]string{"ECS", "LOAD_BALANCER", "NONE"}, false),
 				Optional:     true,
 			},
 			"default_cooldown": {
