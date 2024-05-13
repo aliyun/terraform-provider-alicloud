@@ -169,6 +169,9 @@ func resourceAliCloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	if v, ok := d.GetOk("bandwidth_type"); ok {
 		request["BandwidthType"] = v
 	}
+	if v, ok := d.GetOk("resource_type"); ok {
+		request["ResourceType"] = v
+	}
 	if v, ok := d.GetOk("transit_router_attachment_name"); ok {
 		request["TransitRouterAttachmentName"] = v
 	}
@@ -183,7 +186,6 @@ func resourceAliCloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"Operation.Blocking", "Throttling.User", "IncorrectStatus.Status"}) || NeedRetry(err) {
@@ -361,6 +363,9 @@ func resourceAliCloudCenTransitRouterPeerAttachmentDelete(d *schema.ResourceData
 	request["ClientToken"] = buildClientToken(action)
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
+	}
+	if v, ok := d.GetOk("resource_type"); ok {
+		request["ResourceType"] = v
 	}
 
 	runtime := util.RuntimeOptions{}

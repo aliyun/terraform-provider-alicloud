@@ -58,6 +58,9 @@ func (s *CenServiceV2) DescribeCenTransitRouterPeerAttachment(id string) (object
 
 	v, err := jsonpath.Get("$.TransitRouterAttachments[*]", response)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ParameterCenInstanceId", "IllegalParam.Region"}) {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CEN Instance ID", id)), NotFoundMsg, ProviderERROR)
+		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments[*]", response)
 	}
 
