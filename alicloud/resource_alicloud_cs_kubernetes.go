@@ -957,7 +957,11 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 
 	d.SetPartial("tags")
 
-	UpgradeAlicloudKubernetesCluster(d, meta)
+	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	d.Partial(false)
 	return resourceAlicloudCSKubernetesRead(d, meta)
 }

@@ -546,7 +546,7 @@ func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta i
 	// upgrade cluster version
 	err := UpgradeAlicloudKubernetesCluster(d, meta)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpgradeClusterVersion", DenverdinoAliyungo)
+		return WrapError(err)
 	}
 
 	if err := modifyKubernetesCluster(d, meta); err != nil {

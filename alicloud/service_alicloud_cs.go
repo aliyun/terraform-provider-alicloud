@@ -1130,84 +1130,42 @@ func (s *CsService) GetUserData(clusterId string, labels string, taints string) 
 	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf(ATTACH_SCRIPT_WITH_VERSION+extra_options_in_line, region, region, version, token))), nil
 }
 
-func (s *CsService) UpgradeCluster(clusterId string, args *cs.UpgradeClusterArgs) error {
-	invoker := NewInvoker()
-	err := invoker.Run(func() error {
-		_, e := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.UpgradeCluster(clusterId, args)
-		})
-		if e != nil {
-			return e
-		}
-		return nil
-	})
-
-	if err != nil {
-		return WrapError(err)
-	}
-
-	state, upgradeError := s.WaitForUpgradeCluster(clusterId, "Upgrade")
-	if state == cs.Task_Status_Success && upgradeError == nil {
-		// ensure upgrading finished, target running
-		stateConf := BuildStateConf([]string{"upgrading"}, []string{"running"}, UpgradeClusterTimeout, 10*time.Second, s.CsKubernetesInstanceStateRefreshFunc(clusterId, []string{"deleting", "failed"}))
-		if _, err := stateConf.WaitForState(); err != nil {
-			return WrapError(err)
-		}
-		return nil
-	}
-
-	// if upgrade failed cancel the task
-	err = invoker.Run(func() error {
-		_, e := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return nil, csClient.CancelUpgradeCluster(clusterId)
-		})
-		if e != nil {
-			return e
-		}
-		return nil
-	})
-	if err != nil {
-		return WrapError(upgradeError)
-	}
-
-	if state, err := s.WaitForUpgradeCluster(clusterId, "CancelUpgrade"); err != nil || state != cs.Task_Status_Success {
-		log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
-	}
-
-	return WrapError(upgradeError)
-}
-
-func (s *CsService) WaitForUpgradeCluster(clusterId string, action string) (string, error) {
-	err := resource.Retry(UpgradeClusterTimeout, func() *resource.RetryError {
-		resp, err := s.client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			return csClient.QueryUpgradeClusterResult(clusterId)
-		})
-		if err != nil || resp == nil {
-			return resource.RetryableError(err)
-		}
-
-		upgradeResult := resp.(*cs.UpgradeClusterResult)
-		if upgradeResult.UpgradeStep == cs.UpgradeStep_Success {
-			return nil
-		}
-
-		if upgradeResult.UpgradeStep == cs.UpgradeStep_Pause && upgradeResult.UpgradeStatus.Failed == "true" {
-			msg := ""
-			events := upgradeResult.UpgradeStatus.Events
-			if len(events) > 0 {
-				msg = events[len(events)-1].Message
+func (s *CsClient) DescribeTaskRefreshFunc(d *schema.ResourceData, taskId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		var err error
+		var taskInfo *client.DescribeTaskInfoResponse
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			taskInfo, err = s.client.DescribeTaskInfo(tea.String(taskId))
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(fmt.Errorf("faild to %s cluster, error: %s", action, msg))
+			return nil
+		})
+
+		if err != nil {
+			if NotFoundError(err) {
+				return taskInfo, "", nil
+			}
+			return nil, "", WrapError(err)
 		}
-		return resource.RetryableError(fmt.Errorf("%s cluster state not matched", action))
-	})
 
-	if err == nil {
-		log.Printf("[INFO] %s ACK Cluster %s successed", action, clusterId)
-		return cs.Task_Status_Success, nil
+		currentState := tea.StringValue(taskInfo.Body.State)
+		for _, failState := range failStates {
+			if currentState == failState {
+				if taskInfo.Body.Error != nil {
+					return taskInfo.Body.Error, currentState, WrapError(Error(FailedToReachTargetStatus, currentState))
+				}
+
+				return taskInfo, currentState, WrapError(Error(FailedToReachTargetStatus, currentState))
+			}
+		}
+		return taskInfo, currentState, nil
 	}
-
-	return cs.Task_Status_Failed, WrapError(err)
 }
 
 func GetKubernetesNetworkName(cluster *cs.KubernetesClusterDetail) (network string, err error) {
@@ -1232,60 +1190,4 @@ func (s *CsClient) DescribeUserPermission(uid string) ([]*client.DescribeUserPer
 	}
 
 	return body.Body, err
-}
-
-func (s *CsClient) DescribeCsAutoscalingConfig(id string) (*client.CreateAutoscalingConfigRequest, error) {
-
-	request := &client.CreateAutoscalingConfigRequest{
-		CoolDownDuration:        tea.String("10m"),
-		UnneededDuration:        tea.String("10m"),
-		UtilizationThreshold:    tea.String("0.5"),
-		GpuUtilizationThreshold: tea.String("0.5"),
-		ScanInterval:            tea.String("30s"),
-	}
-
-	return request, nil
-}
-
-func (s *CsClient) DescribeTaskInfo(taskId string) string {
-	if taskId == "" {
-		return ""
-	}
-	var err error
-	var resp *client.DescribeTaskInfoResponse
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err = s.client.DescribeTaskInfo(tea.String(taskId))
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return ""
-	}
-
-	return fmt.Sprintf("[TASK FAILED!!!]\nDetails: %++v", resp.Body.GoString())
-}
-
-func (s *CsClient) ModifyNodePoolNodeConfig(clusterId, nodepoolId string, request *client.ModifyNodePoolNodeConfigRequest) (interface{}, error) {
-	log.Printf("[DEBUG] modifyNodePoolKubeletRequest %++v", *request)
-
-	resp, err := s.client.ModifyNodePoolNodeConfig(tea.String(clusterId), tea.String(nodepoolId), request)
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["ClusterId"] = clusterId
-		requestMap["NodePoolId"] = nodepoolId
-		requestMap["Args"] = request
-		addDebug("ModifyNodePoolKubeletConfig", resp, requestMap)
-	}
-	return resp, err
 }
