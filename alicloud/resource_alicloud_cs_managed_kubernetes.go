@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -789,22 +790,70 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 }
 
 func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	if d.HasChange("version") {
-		nextVersion := d.Get("version").(string)
-		args := &cs.UpgradeClusterArgs{
-			Version: nextVersion,
-		}
-
-		csService := CsService{client}
-		err := csService.UpgradeCluster(d.Id(), args)
-
-		if err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("version")
+	if !d.HasChange("version") {
+		return nil
 	}
+
+	clusterId := d.Id()
+	version := d.Get("version").(string)
+	action := "UpgradeCluster"
+	c := meta.(*connectivity.AliyunClient)
+	rosCsClient, err := c.NewRoaCsClient()
+	if err != nil {
+		return err
+	}
+	args := &roacs.UpgradeClusterRequest{
+		NextVersion: tea.String(version),
+	}
+	// upgrade cluster
+	var resp *roacs.UpgradeClusterResponse
+	err = resource.Retry(UpgradeClusterTimeout, func() *resource.RetryError {
+		resp, err = rosCsClient.UpgradeCluster(tea.String(clusterId), args)
+		if NeedRetry(err) || resp == nil {
+			return resource.RetryableError(err)
+		}
+		if err != nil {
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, err)
+	}
+
+	taskId := tea.StringValue(resp.Body.TaskId)
+	if taskId == "" {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, resp)
+	}
+
+	csClient := CsClient{client: rosCsClient}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		// try to cancel task
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		_ = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			_, _err := rosCsClient.CancelTask(tea.String(taskId))
+			if _err != nil {
+				if NeedRetry(_err) {
+					wait()
+					return resource.RetryableError(_err)
+				}
+				log.Printf("[WARN] %s ACK Cluster cancel upgrade error: %#v", clusterId, err)
+			}
+			return nil
+		})
+		// output error message
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, jobDetail)
+	}
+	// ensure cluster state is running
+	csService := CsService{client: c}
+	stateConf = BuildStateConf([]string{}, []string{"running"}, UpgradeClusterTimeout, 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(clusterId, []string{"deleting", "failed"}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapError(err)
+	}
+
+	d.SetPartial("version")
 	return nil
 }
 

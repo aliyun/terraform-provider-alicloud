@@ -108,7 +108,7 @@ resource "alicloud_cs_kubernetes" "default" {
 * `timezone` - (Optional, ForceNew, Available since v1.103.2) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
 * `version` - (Optional, Available since v1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
-* `runtime` - (Optional, Available since v1.103.2) The runtime of containers. If you select another container runtime, see [How do I select between Docker and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm?spm=a2c63.p38356.b99.440.22563866AJkBgI). Detailed below.
+* `runtime` - (Optional, Available since v1.103.2) The runtime of containers. If you select another container runtime, see [How do I select between Docker and Sandboxed-Container](https://www.alibabacloud.com/help/doc-detail/160313.htm?spm=a2c63.p38356.b99.440.22563866AJkBgI). See [`runtime`](#runtime) below.
 * `enable_ssh` - (Optional, ForceNew) Enable login to the node through SSH. Default to `false`.
 * `rds_instances` - (Optional, Available since v1.103.2) RDS instance list, You can choose which RDS instances whitelist to add instances to.
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
@@ -250,6 +250,20 @@ The log_config supports the following:
 
 * `type` - (Required) Type of collecting logs, only `SLS` are supported currently.
 * `project` - (Optional) Log Service project name, cluster logs will output to this project.
+
+### `runtime`
+
+* `name` - (Optional) The name of the runtime. Supported runtimes can be queried by data source [alicloud_cs_kubernetes_version](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_version).
+* `version` - (Optional) The version of the runtime.
+
+The following example is the definition of runtime block:
+
+```
+  runtime = {
+    name = "containerd"
+    version = "1.6.28"
+  }
+```
 
 ## Attributes Reference
 

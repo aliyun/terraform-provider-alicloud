@@ -392,7 +392,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name_prefix":                  "tf-testAccKubernetes_prepaid",
-					"version":                      "1.24.6-aliyun.1",
+					"version":                      "1.26.15-aliyun.1",
 					"master_vswitch_ids":           []string{"${local.vswitch_id}", "${local.vswitch_id}", "${local.vswitch_id}"},
 					"master_instance_types":        []string{"${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}", "${data.alicloud_instance_types.default.instance_types.0.id}"},
 					"master_disk_category":         "cloud_ssd",
@@ -449,16 +449,16 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"version": "1.26.15-aliyun.1",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"version": "1.26.15-aliyun.1",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "1.28.9-aliyun.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": "1.28.9-aliyun.1",
+					}),
+				),
+			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -608,7 +608,7 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
   system_disk_size              = 50
   system_disk_category          = "cloud_essd"
   system_disk_performance_level = "PL0"
-  desired_size                  = 1
+  desired_size                  = 2
 }
 `, name)
 }
