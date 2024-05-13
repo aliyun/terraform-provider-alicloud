@@ -405,7 +405,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 				MinItems: 1,
 			},
 			"bootstrap_scripts": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -762,7 +762,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 
 	if scripts, ok := d.GetOk("bootstrap_scripts"); ok {
 		bootstrapScripts := make([]map[string]interface{}, 0)
-		for _, script := range scripts.(*schema.Set).List() {
+		for _, script := range scripts.([]interface{}) {
 			kv := script.(map[string]interface{})
 			bootstrapScript := map[string]interface{}{}
 			if v, ok := kv["script_name"]; ok {
