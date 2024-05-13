@@ -79,7 +79,7 @@ func resourceAlicloudSimpleApplicationServerSnapshotCreate(d *schema.ResourceDat
 
 	d.SetId(fmt.Sprint(response["SnapshotId"]))
 	swasOpenService := SwasOpenService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Accomplished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerSnapshotStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"accomplished"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, swasOpenService.SimpleApplicationServerSnapshotStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
