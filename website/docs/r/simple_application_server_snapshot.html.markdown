@@ -20,12 +20,20 @@ For information about Simple Application Server Snapshot and how to use it, see 
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf_example"
 }
 
-data "alicloud_simple_application_server_images" "default" {}
-data "alicloud_simple_application_server_plans" "default" {}
+data "alicloud_simple_application_server_images" "default" {
+  platform = "Linux"
+}
+data "alicloud_simple_application_server_plans" "default" {
+  platform = "Linux"
+}
 
 resource "alicloud_simple_application_server_instance" "default" {
   payment_type   = "Subscription"
