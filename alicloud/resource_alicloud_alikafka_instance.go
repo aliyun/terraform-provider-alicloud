@@ -105,6 +105,11 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 					return d.Get("deploy_type").(int) == 5
 				},
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"security_group": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -204,26 +209,39 @@ func resourceAliCloudAlikafkaInstanceCreate(d *schema.ResourceData, meta interfa
 	createOrderResponse := make(map[string]interface{})
 	createOrderReq := make(map[string]interface{})
 	createOrderReq["RegionId"] = client.RegionId
+
 	if v, ok := d.GetOk("partition_num"); ok {
 		createOrderReq["PartitionNum"] = v
 	} else if v, ok := d.GetOk("topic_quota"); ok {
 		createOrderReq["TopicQuota"] = v
 	}
+
 	createOrderReq["DiskType"] = d.Get("disk_type")
+
 	createOrderReq["DiskSize"] = d.Get("disk_size")
+
 	createOrderReq["DeployType"] = d.Get("deploy_type")
+
 	if v, ok := d.GetOk("io_max"); ok {
 		createOrderReq["IoMax"] = v
 	}
+
 	if v, ok := d.GetOk("io_max_spec"); ok {
 		createOrderReq["IoMaxSpec"] = v
 	}
+
 	if v, ok := d.GetOk("spec_type"); ok {
 		createOrderReq["SpecType"] = v
 	}
+
 	if v, ok := d.GetOkExists("eip_max"); ok {
 		createOrderReq["EipMax"] = v
 	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		createOrderReq["ResourceGroupId"] = v
+	}
+
 	if v, ok := d.GetOk("paid_type"); ok {
 		switch v.(string) {
 		case "PostPaid":
@@ -360,6 +378,7 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("deploy_type", object["DeployType"])
 	d.Set("io_max", object["IoMax"])
 	d.Set("eip_max", object["EipMax"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("vswitch_id", object["VSwitchId"])
 	d.Set("zone_id", object["ZoneId"])
@@ -415,6 +434,7 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 	if err := alikafkaService.setInstanceTags(d, TagResourceInstance); err != nil {
 		return WrapError(err)
 	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAliCloudAlikafkaInstanceRead(d, meta)
@@ -693,7 +713,47 @@ func resourceAliCloudAlikafkaInstanceUpdate(d *schema.ResourceData, meta interfa
 		d.SetPartial("config")
 	}
 
+	update = false
+	changeResourceGroupReq := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"ResourceId": d.Id(),
+	}
+
+	if d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		changeResourceGroupReq["NewResourceGroupId"] = v
+	}
+
+	if update {
+		action := "ChangeResourceGroup"
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-16"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, changeResourceGroupReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("resource_group_id")
+	}
+
 	d.Partial(false)
+
 	return resourceAliCloudAlikafkaInstanceRead(d, meta)
 }
 

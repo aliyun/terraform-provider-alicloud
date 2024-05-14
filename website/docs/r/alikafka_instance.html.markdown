@@ -91,6 +91,7 @@ The following arguments are supported:
   - You should specify one of the `io_max` and `io_max_spec` parameters, and `io_max_spec` is recommended.
   - For more information about the valid values, see [Billing](https://www.alibabacloud.com/help/en/message-queue-for-apache-kafka/latest/billing-overview).
 * `eip_max` - (Optional) The max bandwidth of the instance. It will be ignored when `deploy_type = 5`. When modify this value, it only supports adjust to a greater value.
+* `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `paid_type` - (Optional) The paid type of the instance. Support two type, "PrePaid": pre paid type instance, "PostPaid": post paid type instance. Default is PostPaid. When modify this value, it only support adjust from post pay to pre pay. 
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
