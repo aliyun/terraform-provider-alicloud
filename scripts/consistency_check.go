@@ -383,5 +383,14 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema)
 			}
 		}
+		if value.Type == schema.TypeMap {
+			if _, ok := value.Elem.(*schema.Resource); ok {
+				vv := resourceAttributeMap[key]
+				vv.ElemType = "Object"
+				resourceAttributeMap[key] = vv
+				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema)
+
+			}
+		}
 	}
 }
