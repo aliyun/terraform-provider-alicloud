@@ -310,7 +310,7 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 
 	// the number of the schema field + 1(id) should equal to the number defined in document
 	resourceAttributes := make(map[string]ResourceAttribute)
-	getResourceAttributes("", resourceAttributes, resourceSchemaDefined)
+	getResourceAttributes("", resourceAttributes, resourceSchemaDefined, "")
 
 	for attributeKey, attributeValue := range resourceAttributes {
 		if _, ok := skippedSchemaKeys[attributeKey]; ok {
@@ -353,10 +353,15 @@ func consistencyCheck(resourceName string, resourceAttributeFromDocs map[string]
 	return isConsistent
 }
 
-func getResourceAttributes(rootName string, resourceAttributeMap map[string]ResourceAttribute, resourceSchema map[string]*schema.Schema) {
+func getResourceAttributes(rootName string, resourceAttributeMap map[string]ResourceAttribute, resourceSchema map[string]*schema.Schema, rootRemoved string) {
 	for key, value := range resourceSchema {
 		if rootName != "" {
 			key = rootName + "." + key
+		}
+
+		var thisRemoved = value.Removed
+		if len(thisRemoved) == 0 && len(rootRemoved) != 0 {
+			thisRemoved = rootRemoved
 		}
 
 		if _, ok := resourceAttributeMap[key]; !ok {
@@ -368,7 +373,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 				ForceNew:   value.ForceNew,
 				Default:    fmt.Sprint(value.Default),
 				Deprecated: value.Deprecated,
-				Removed:    value.Removed,
+				Removed:    thisRemoved,
 			}
 		}
 		if value.Type == schema.TypeSet || value.Type == schema.TypeList {
@@ -380,7 +385,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 				vv := resourceAttributeMap[key]
 				vv.ElemType = "Object"
 				resourceAttributeMap[key] = vv
-				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema)
+				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema, thisRemoved)
 			}
 		}
 		if value.Type == schema.TypeMap {
@@ -388,7 +393,7 @@ func getResourceAttributes(rootName string, resourceAttributeMap map[string]Reso
 				vv := resourceAttributeMap[key]
 				vv.ElemType = "Object"
 				resourceAttributeMap[key] = vv
-				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema)
+				getResourceAttributes(key, resourceAttributeMap, value.Elem.(*schema.Resource).Schema, thisRemoved)
 
 			}
 		}
