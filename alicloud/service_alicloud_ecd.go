@@ -89,7 +89,7 @@ func (s *EcdService) setAuthAccessPolicyRules(d *schema.ResourceData, request ma
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, req, &util.RuntimeOptions{})
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -140,7 +140,7 @@ func (s *EcdService) setAuthSecurityPolicyRules(d *schema.ResourceData, request 
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-30"), StringPointer("AK"), nil, req, &util.RuntimeOptions{})
 				if err != nil {
-					if NeedRetry(err) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidPolicyStatus.Modification"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
