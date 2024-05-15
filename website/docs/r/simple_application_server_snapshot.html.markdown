@@ -28,6 +28,11 @@ variable "name" {
   default = "tf_example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 data "alicloud_simple_application_server_images" "default" {
   platform = "Linux"
 }
@@ -50,7 +55,7 @@ data "alicloud_simple_application_server_disks" "default" {
 
 resource "alicloud_simple_application_server_snapshot" "default" {
   disk_id       = data.alicloud_simple_application_server_disks.default.ids.0
-  snapshot_name = var.name
+  snapshot_name = "${var.name}-${random_integer.default.result}"
 }
 ```
 
