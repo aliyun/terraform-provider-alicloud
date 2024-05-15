@@ -167,8 +167,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -212,8 +210,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-				request["ClientToken"] = buildClientToken(action)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -229,7 +225,6 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
@@ -594,7 +589,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpoint(id string) (object
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -612,11 +607,11 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpoint(id string) (object
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpoint", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -635,7 +630,7 @@ func (s *PrivateLinkServiceV2) DescribeListVpcEndpointConnections(id string) (ob
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -653,7 +648,6 @@ func (s *PrivateLinkServiceV2) DescribeListVpcEndpointConnections(id string) (ob
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpoint", id)), NotFoundMsg, response)
@@ -722,7 +716,7 @@ func (s *PrivateLinkServiceV2) DescribeListVpcEndpointSecurityGroups(id string) 
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -740,11 +734,11 @@ func (s *PrivateLinkServiceV2) DescribeListVpcEndpointSecurityGroups(id string) 
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpoint", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -768,6 +762,7 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointStateRefreshFunc(id string,
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
