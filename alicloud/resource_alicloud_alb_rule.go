@@ -188,7 +188,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 									"host": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.Any(validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."), validation.StringInSlice([]string{"${host}"}, false)),
+										ValidateFunc: StringMatch(regexp.MustCompile(`^.{3,128}$`), "The host name must be 3 to 128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."),
 									},
 									"http_code": {
 										Type:         schema.TypeString,
@@ -225,7 +225,7 @@ func resourceAliCloudAlbRule() *schema.Resource {
 									"host": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: validation.Any(validation.StringMatch(regexp.MustCompile(`^[a-z0-9\-\.\*\?]{3,128}$`), "The host name must be 3 to128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."), validation.StringInSlice([]string{"${host}"}, false)),
+										ValidateFunc: validation.StringMatch(regexp.MustCompile(`^.{3,128}$`), "The host name must be 3 to 128 characters in length, and can contain lowercase letters, digits, hyphens (-), periods (.), asterisks (*), and question marks (?)."),
 									},
 									"path": {
 										Type:         schema.TypeString,
