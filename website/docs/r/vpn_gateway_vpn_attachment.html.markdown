@@ -24,10 +24,10 @@ variable "name" {
   default = "tf-example"
 }
 resource "alicloud_vpn_customer_gateway" "default" {
-  name        = var.name
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = var.name
+  customer_gateway_name = var.name
+  ip_address            = "42.104.22.210"
+  asn                   = "45014"
+  description           = var.name
 }
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id

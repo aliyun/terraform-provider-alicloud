@@ -21,120 +21,11 @@ For information about VPN connection and how to use it, see [What is vpn connect
 
 Basic Usage
 
+[IPsec-VPN connections support the dual-tunnel mode](https://www.alibabacloud.com/help/en/vpn/product-overview/ipsec-vpn-connections-support-the-dual-tunnel-mode)
+
 ```terraform
 variable "name" {
   default = "terraform-example"
-}
-
-provider "alicloud" {
-  region = "me-east-1"
-}
-
-variable "spec" {
-  default = "20"
-}
-
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "me-east-1a"
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = "me-east-1a"
-  vswitch_name = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-
-resource "alicloud_vpn_gateway" "default" {
-  vpn_type         = "Normal"
-  vpn_gateway_name = var.name
-
-  vswitch_id   = local.vswitch_id
-  auto_pay     = true
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  network_type = "public"
-  payment_type = "Subscription"
-  enable_ipsec = true
-  bandwidth    = var.spec
-}
-
-resource "alicloud_vpn_customer_gateway" "default" {
-  description           = var.name
-  ip_address            = "4.3.2.10"
-  asn                   = "1219002"
-  customer_gateway_name = var.name
-}
-
-resource "alicloud_vpn_connection" "default" {
-  local_subnet = [
-    "3.0.0.0/24"
-  ]
-  enable_nat_traversal = "true"
-  bgp_config {
-    local_bgp_ip = "169.254.10.1"
-    tunnel_cidr  = "169.254.10.0/30"
-    enable       = "true"
-    local_asn    = "1219002"
-  }
-
-  customer_gateway_id = alicloud_vpn_customer_gateway.default.id
-  vpn_gateway_id      = alicloud_vpn_gateway.default.id
-  vpn_connection_name = var.name
-  effect_immediately  = "true"
-  health_check_config {
-    enable   = "true"
-    dip      = "1.1.1.1"
-    retry    = "3"
-    sip      = "3.3.3.3"
-    interval = "3"
-  }
-
-  remote_subnet = [
-    "10.0.0.0/24",
-    "10.0.1.0/24"
-  ]
-  ipsec_config {
-    ipsec_enc_alg  = "aes"
-    ipsec_auth_alg = "sha1"
-    ipsec_lifetime = "86400"
-    ipsec_pfs      = "group2"
-  }
-
-  auto_config_route = "true"
-  enable_dpd        = "true"
-  ike_config {
-    ike_lifetime  = "86400"
-    ike_local_id  = "localid1"
-    ike_version   = "ikev2"
-    ike_mode      = "main"
-    psk           = "12345678"
-    ike_remote_id = "remoteId2"
-    ike_pfs       = "group2"
-    ike_auth_alg  = "sha1"
-    ike_enc_alg   = "aes"
-  }
-}
-```
-
-Double tunnels Mode Usage
-
-```terraform
-variable "name" {
-  default = "tf-example"
 }
 
 variable "spec" {
@@ -147,45 +38,25 @@ data "alicloud_vpn_gateway_zones" "default" {
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
+data "alicloud_vswitches" "default0" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_vpn_gateway_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 1)
-  zone_id      = data.alicloud_vpn_gateway_zones.default.ids.0
-  vswitch_name = var.name
-}
-
-data "alicloud_vswitches" "default2" {
+data "alicloud_vswitches" "default1" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_vpn_gateway_zones.default.ids.1
 }
 
-resource "alicloud_vswitch" "vswitch2" {
-  count        = length(data.alicloud_vswitches.default2.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id      = data.alicloud_vpn_gateway_zones.default.ids.1
-  vswitch_name = var.name
-}
-
-locals {
-  vswitch_id  = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-  vswitch_id2 = length(data.alicloud_vswitches.default2.ids) > 0 ? data.alicloud_vswitches.default2.ids[0] : concat(alicloud_vswitch.vswitch2.*.id, [""])[0]
-}
-
 resource "alicloud_vpn_gateway" "HA-VPN" {
   vpn_type                     = "Normal"
-  disaster_recovery_vswitch_id = local.vswitch_id2
+  disaster_recovery_vswitch_id = data.alicloud_vswitches.default1.ids.0
   vpn_gateway_name             = var.name
 
-  vswitch_id   = local.vswitch_id
+  vswitch_id   = data.alicloud_vswitches.default0.ids.0
   auto_pay     = true
   vpc_id       = data.alicloud_vpcs.default.ids.0
   network_type = "public"
