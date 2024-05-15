@@ -37,7 +37,7 @@ func init() {
 func testSweepKmsKey(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 
@@ -119,63 +119,67 @@ func testSweepKmsKey(region string) error {
 	return nil
 }
 
-func TestAccAlicloudKMSKey_basic(t *testing.T) {
+func TestAccAliCloudKmsKey_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
-	ra := resourceAttrInit(resourceId, KmsKeyMap)
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeKmsKey")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccKmsKey%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KmsKeyBasicdependence)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.KmsKeyHSMSupportRegions)
 		},
-
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":            name,
-					"key_spec":               "Aliyun_AES_256",
-					"protection_level":       "HSM",
 					"pending_window_in_days": "7",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Key",
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":            name,
-						"key_spec":               "Aliyun_AES_256",
-						"protection_level":       "HSM",
 						"pending_window_in_days": "7",
-						"tags.%":                 "2",
-						"tags.Created":           "TF",
-						"tags.For":               "Key",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF_Update",
-						"For":     "Key_Update",
-					},
+					"automatic_rotation": "Enabled",
+					"rotation_interval":  "605800s",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF_Update",
-						"tags.For":     "Key_Update",
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Disabled",
+					"rotation_interval":  REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Disabled",
+						"rotation_interval":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
 					}),
 				),
 			},
@@ -201,38 +205,16 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "from_terraform",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "from_terraform",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"automatic_rotation": "Enabled",
-					"rotation_interval":  "2678400s",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"automatic_rotation": "Enabled",
-						"rotation_interval":  "2678400s",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":        name,
-					"automatic_rotation": "Disabled",
-					"rotation_interval":  REMOVEKEY,
-				}),
-
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":        name,
-						"automatic_rotation": "Disabled",
-						"rotation_interval":  REMOVEKEY,
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Key",
 					}),
 				),
 			},
@@ -240,37 +222,24 @@ func TestAccAlicloudKMSKey_basic(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days", "is_enabled"},
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
 			},
 		},
 	})
 }
 
-var KmsKeyMap = map[string]string{
-	"arn":                 CHECKSET,
-	"automatic_rotation":  "Disabled",
-	"creation_date":       CHECKSET,
-	"creator":             CHECKSET,
-	"status":              "Enabled",
-	"key_usage":           "ENCRYPT/DECRYPT",
-	"last_rotation_date":  CHECKSET,
-	"origin":              "Aliyun_KMS",
-	"primary_key_version": CHECKSET,
-	"protection_level":    "SOFTWARE",
-}
-
-func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
+func TestAccAliCloudKmsKey_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_key.default"
-	ra := resourceAttrInit(resourceId, KmsKeyMap)
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeKmsKey")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testAccKmsKey%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, KmsKeyBasicdependence)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -281,19 +250,33 @@ func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":            name,
+					"key_usage":              "ENCRYPT/DECRYPT",
+					"origin":                 "Aliyun_KMS",
 					"key_spec":               "Aliyun_AES_256",
-					"protection_level":       "HSM",
+					"protection_level":       "SOFTWARE",
+					"automatic_rotation":     "Enabled",
+					"rotation_interval":      "605800s",
+					"description":            name,
+					"status":                 "Enabled",
 					"pending_window_in_days": "7",
-					"dkms_instance_id":       os.Getenv("DKMS_INSTANCE_ID"),
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":            name,
-						"key_spec":               "Aliyun_AES_256",
-						"protection_level":       "HSM",
-						"pending_window_in_days": "7",
-						"dkms_instance_id":       CHECKSET,
+						"key_usage":          "ENCRYPT/DECRYPT",
+						"origin":             "Aliyun_KMS",
+						"key_spec":           "Aliyun_AES_256",
+						"protection_level":   "SOFTWARE",
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+						"description":        name,
+						"status":             "Enabled",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Key",
 					}),
 				),
 			},
@@ -301,17 +284,616 @@ func SkipTestAccAlicloudKMSKey_DKMS(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days", "is_enabled"},
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
 			},
 		},
 	})
 }
 
-func KmsKeyBasicdependence(name string) string {
+func TestAccAliCloudKmsKey_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dkms_instance_id":       "${alicloud_kms_instance.default.id}",
+					"pending_window_in_days": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dkms_instance_id":       CHECKSET,
+						"pending_window_in_days": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Enabled",
+					"rotation_interval":  "605800s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Disabled",
+					"rotation_interval":  REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Disabled",
+						"rotation_interval":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"policy": `{\"Statement\": [{\"Action\": [\"kms:*\"],\"Effect\": \"Allow\",\"Principal\": {\"RAM\": [\"acs:ram::` + "${data.alicloud_account.default.id}" + `:*\"]},\"Resource\": [\"*\"],\"Sid\": \"Key\"}],\"Version\": \"1\"}`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"policy": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsKey_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_usage":              "ENCRYPT/DECRYPT",
+					"origin":                 "Aliyun_KMS",
+					"key_spec":               "Aliyun_AES_256",
+					"dkms_instance_id":       "${alicloud_kms_instance.default.id}",
+					"protection_level":       "SOFTWARE",
+					"automatic_rotation":     "Enabled",
+					"rotation_interval":      "605800s",
+					"policy":                 `{\"Statement\": [{\"Action\": [\"kms:*\"],\"Effect\": \"Allow\",\"Principal\": {\"RAM\": [\"acs:ram::` + "${data.alicloud_account.default.id}" + `:*\"]},\"Resource\": [\"*\"],\"Sid\": \"Key\"}],\"Version\": \"1\"}`,
+					"description":            name,
+					"status":                 "Enabled",
+					"pending_window_in_days": "7",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_usage":          "ENCRYPT/DECRYPT",
+						"origin":             "Aliyun_KMS",
+						"key_spec":           "Aliyun_AES_256",
+						"dkms_instance_id":   CHECKSET,
+						"protection_level":   "SOFTWARE",
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+						"policy":             CHECKSET,
+						"description":        name,
+						"status":             "Enabled",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsKey_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pending_window_in_days": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pending_window_in_days": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Enabled",
+					"rotation_interval":  "605800s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Disabled",
+					"rotation_interval":  REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Disabled",
+						"rotation_interval":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_state": "Disabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_state": "Disabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_state": "Enabled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_state": "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsKey_basic2_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_usage":              "ENCRYPT/DECRYPT",
+					"origin":                 "Aliyun_KMS",
+					"key_spec":               "Aliyun_AES_256",
+					"protection_level":       "SOFTWARE",
+					"automatic_rotation":     "Enabled",
+					"rotation_interval":      "605800s",
+					"description":            name,
+					"key_state":              "Enabled",
+					"pending_window_in_days": "7",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_usage":          "ENCRYPT/DECRYPT",
+						"origin":             "Aliyun_KMS",
+						"key_spec":           "Aliyun_AES_256",
+						"protection_level":   "SOFTWARE",
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+						"description":        name,
+						"key_state":          "Enabled",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsKey_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_window_in_days": "7",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_window_in_days": "7",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Enabled",
+					"rotation_interval":  "605800s",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"automatic_rotation": "Disabled",
+					"rotation_interval":  REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"automatic_rotation": "Disabled",
+						"rotation_interval":  REMOVEKEY,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"is_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"is_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"is_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"is_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsKey_basic3_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_key.default"
+	ra := resourceAttrInit(resourceId, AliCloudKmsKeyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsKey")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAcc%sKmsKey%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudKmsKeyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"key_usage":               "ENCRYPT/DECRYPT",
+					"origin":                  "Aliyun_KMS",
+					"key_spec":                "Aliyun_AES_256",
+					"protection_level":        "SOFTWARE",
+					"automatic_rotation":      "Enabled",
+					"rotation_interval":       "605800s",
+					"description":             name,
+					"is_enabled":              "true",
+					"deletion_window_in_days": "7",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Key",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"key_usage":          "ENCRYPT/DECRYPT",
+						"origin":             "Aliyun_KMS",
+						"key_spec":           "Aliyun_AES_256",
+						"protection_level":   "SOFTWARE",
+						"automatic_rotation": "Enabled",
+						"rotation_interval":  "605800s",
+						"description":        name,
+						"is_enabled":         "true",
+						"tags.%":             "2",
+						"tags.Created":       "TF",
+						"tags.For":           "Key",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"pending_window_in_days", "deletion_window_in_days"},
+			},
+		},
+	})
+}
+
+var AliCloudKmsKeyMap0 = map[string]string{
+	"key_usage":           CHECKSET,
+	"origin":              CHECKSET,
+	"key_spec":            CHECKSET,
+	"automatic_rotation":  CHECKSET,
+	"status":              CHECKSET,
+	"arn":                 CHECKSET,
+	"primary_key_version": CHECKSET,
+	"last_rotation_date":  CHECKSET,
+	"creator":             CHECKSET,
+	"creation_date":       CHECKSET,
+	"key_state":           CHECKSET,
+	"is_enabled":          CHECKSET,
+}
+
+var AliCloudKmsKeyMap1 = map[string]string{
+	"key_usage":           CHECKSET,
+	"origin":              CHECKSET,
+	"key_spec":            CHECKSET,
+	"automatic_rotation":  CHECKSET,
+	"policy":              CHECKSET,
+	"status":              CHECKSET,
+	"arn":                 CHECKSET,
+	"primary_key_version": CHECKSET,
+	"last_rotation_date":  CHECKSET,
+	"creator":             CHECKSET,
+	"creation_date":       CHECKSET,
+	"key_state":           CHECKSET,
+	"is_enabled":          CHECKSET,
+}
+
+func AliCloudKmsKeyBasicDependence0(name string) string {
 	return ""
 }
 
-func TestUnitAlicloudKMSKey(t *testing.T) {
+func AliCloudKmsKeyBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+    	default = "%s"
+	}
+
+	data "alicloud_account" "default" {
+	}
+
+	data "alicloud_zones" "default" {
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_kms_instance" "default" {
+  		product_version = "3"
+  		vpc_num         = "1"
+  		key_num         = "1000"
+  		secret_num      = "0"
+  		spec            = "1000"
+  		vpc_id          = data.alicloud_vpcs.default.ids.0
+  		vswitch_ids = [
+    		data.alicloud_vswitches.default.ids.0
+  		]
+  		zone_ids = [
+    		data.alicloud_zones.default.zones.0.id,
+    		data.alicloud_zones.default.zones.1.id
+  		]
+	}
+`, name)
+}
+
+func TestUnitAliCloudKmsKey(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_kms_key"].Schema).Data(nil, nil)
@@ -421,7 +1003,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudKmsKeyCreate(d, rawClient)
+		err := resourceAliCloudKmsKeyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -438,7 +1020,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyCreate(d, rawClient)
+		err := resourceAliCloudKmsKeyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -455,7 +1037,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyCreate(dCreate, rawClient)
+		err := resourceAliCloudKmsKeyCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -473,7 +1055,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudKmsKeyUpdate(d, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -500,7 +1082,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -527,7 +1109,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -562,7 +1144,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -597,7 +1179,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -631,7 +1213,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 		patcheDescribeKmsKey := gomonkey.ApplyMethod(reflect.TypeOf(&KmsService{}), "DescribeKmsKey", func(*KmsService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateDisableKey"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeKmsKey.Reset()
 		assert.NotNil(t, err)
@@ -666,7 +1248,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 		patcheDescribeKmsKey := gomonkey.ApplyMethod(reflect.TypeOf(&KmsService{}), "DescribeKmsKey", func(*KmsService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateDisableKey"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeKmsKey.Reset()
 		assert.Nil(t, err)
@@ -701,7 +1283,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 		patcheDescribeKmsKey := gomonkey.ApplyMethod(reflect.TypeOf(&KmsService{}), "DescribeKmsKey", func(*KmsService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateEnableKey"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeKmsKey.Reset()
 		assert.NotNil(t, err)
@@ -736,7 +1318,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 		patcheDescribeKmsKey := gomonkey.ApplyMethod(reflect.TypeOf(&KmsService{}), "DescribeKmsKey", func(*KmsService, string) (map[string]interface{}, error) {
 			return responseMock["UpdateEnableKey"]("")
 		})
-		err := resourceAlicloudKmsKeyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudKmsKeyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		patcheDescribeKmsKey.Reset()
 		assert.Nil(t, err)
@@ -752,7 +1334,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudKmsKeyDelete(d, rawClient)
+		err := resourceAliCloudKmsKeyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -772,7 +1354,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyDelete(d, rawClient)
+		err := resourceAliCloudKmsKeyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -792,7 +1374,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyDelete(resourceData, rawClient)
+		err := resourceAliCloudKmsKeyDelete(resourceData, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -809,7 +1391,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyRead(d, rawClient)
+		err := resourceAliCloudKmsKeyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -825,7 +1407,7 @@ func TestUnitAlicloudKMSKey(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudKmsKeyRead(d, rawClient)
+		err := resourceAliCloudKmsKeyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

@@ -1197,6 +1197,7 @@ func convertArrayObjectToJsonString(src interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return string(res), nil
 }
 
@@ -1759,6 +1760,23 @@ func ConvertTags(tagsMap map[string]interface{}) []map[string]interface{} {
 			}
 		}
 	}
+
+	return tags
+}
+
+func ConvertTagsForKms(tagsMap map[string]interface{}) []map[string]interface{} {
+	tags := make([]map[string]interface{}, 0)
+	for key, value := range tagsMap {
+		if value != nil {
+			if v, ok := value.(string); ok {
+				tags = append(tags, map[string]interface{}{
+					"TagKey":   key,
+					"TagValue": v,
+				})
+			}
+		}
+	}
+
 	return tags
 }
 
