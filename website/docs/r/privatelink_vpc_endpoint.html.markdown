@@ -20,30 +20,46 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
-resource "alicloud_privatelink_vpc_endpoint_service" "example" {
-  service_description    = var.name
-  connect_bandwidth      = 103
-  auto_accept_connection = false
+provider "alicloud" {
+  region = "ap-southeast-5"
 }
 
-resource "alicloud_vpc" "example" {
-  vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "defaultbFzA4a" {
+  description = "example-terraform"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
 }
 
-resource "alicloud_security_group" "example" {
+resource "alicloud_security_group" "default1FTFrP" {
   name   = var.name
-  vpc_id = alicloud_vpc.example.id
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
 }
 
-resource "alicloud_privatelink_vpc_endpoint" "example" {
-  service_id         = alicloud_privatelink_vpc_endpoint_service.example.id
-  security_group_ids = [alicloud_security_group.example.id]
-  vpc_id             = alicloud_vpc.example.id
-  vpc_endpoint_name  = var.name
+resource "alicloud_security_group" "defaultjljY5S" {
+  name   = var.name
+  vpc_id = alicloud_vpc.defaultbFzA4a.id
+}
+
+resource "alicloud_privatelink_vpc_endpoint" "default" {
+  endpoint_description          = var.name
+  vpc_endpoint_name             = var.name
+  resource_group_id             = data.alicloud_resource_manager_resource_groups.default.ids.0
+  endpoint_type                 = "Interface"
+  vpc_id                        = alicloud_vpc.defaultbFzA4a.id
+  service_name                  = "com.aliyuncs.privatelink.ap-southeast-5.oss"
+  dry_run                       = "false"
+  zone_private_ip_address_count = "1"
+  policy_document               = jsonencode({ "Version" : "1", "Statement" : [{ "Effect" : "Allow", "Action" : ["*"], "Resource" : ["*"], "Principal" : "*" }] })
+  security_group_ids = [
+    "${alicloud_security_group.default1FTFrP.id}"
+  ]
+  service_id        = "epsrv-k1apjysze8u1l9t6uyg9"
+  protected_enabled = "false"
 }
 ```
 
@@ -54,7 +70,8 @@ The following arguments are supported:
   - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `endpoint_description` - (Optional) The description of the endpoint.
-* `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The endpoint type.Only the value: Interface, indicating the Interface endpoint. You can add the service resource types of Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB).
+* `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The endpoint type. Only the value: Interface, indicating the Interface endpoint. You can add the service resource types of Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB).
+* `policy_document` - (Optional, Available since v1.224.0) RAM access policies.
 * `protected_enabled` - (Optional, Available since v1.212.0) Specifies whether to enable user authentication. This parameter is available in Security Token Service (STS) mode. Valid values:
   - **true**: enables user authentication. After user authentication is enabled, only the user who creates the endpoint can modify or delete the endpoint in STS mode.
   - **false (default)**: disables user authentication.
@@ -71,7 +88,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `bandwidth` - The bandwidth of the endpoint connection.  1024 to 10240. Unit: Mbit/s.Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
+* `bandwidth` - The bandwidth of the endpoint connection.  1024 to 10240. Unit: Mbit/s. Note: The bandwidth of an endpoint connection is in the range of 100 to 10,240 Mbit/s. The default bandwidth is 1,024 Mbit/s. When the endpoint is connected to the endpoint service, the default bandwidth is the minimum bandwidth. In this case, the connection bandwidth range is 1,024 to 10,240 Mbit/s.
 * `connection_status` - The state of the endpoint connection. 
 * `create_time` - The time when the endpoint was created.
 * `endpoint_business_status` - The service state of the endpoint. 

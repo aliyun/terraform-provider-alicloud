@@ -58,9 +58,14 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 			"endpoint_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Interface"}, false),
+			},
+			"policy_document": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"protected_enabled": {
 				Type:     schema.TypeBool,
@@ -84,8 +89,8 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 			"service_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -104,9 +109,9 @@ func resourceAliCloudPrivateLinkVpcEndpoint() *schema.Resource {
 			"zone_private_ip_address_count": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: IntInSlice([]int{1}),
+				ForceNew:     true,
+				ValidateFunc: IntInSlice([]int{0, 1}),
 			},
 		},
 	}
@@ -156,18 +161,24 @@ func resourceAliCloudPrivateLinkVpcEndpointCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("protected_enabled"); ok {
 		request["ProtectedEnabled"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request["Tags"] = tagsMap
+	}
+
 	if v, ok := d.GetOk("security_group_ids"); ok {
 		securityGroupIdMaps := v.(*schema.Set).List()
 		request["SecurityGroupId"] = securityGroupIdMaps
 	}
 
+	if v, ok := d.GetOk("policy_document"); ok {
+		request["PolicyDocument"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -215,6 +226,7 @@ func resourceAliCloudPrivateLinkVpcEndpointRead(d *schema.ResourceData, meta int
 	d.Set("endpoint_description", objectRaw["EndpointDescription"])
 	d.Set("endpoint_domain", objectRaw["EndpointDomain"])
 	d.Set("endpoint_type", objectRaw["EndpointType"])
+	d.Set("policy_document", objectRaw["PolicyDocument"])
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("service_id", objectRaw["ServiceId"])
 	d.Set("service_name", objectRaw["ServiceName"])
@@ -271,14 +283,17 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
+	if !d.IsNewResource() && d.HasChange("policy_document") {
+		update = true
+		request["PolicyDocument"] = d.Get("policy_document")
+	}
+
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-			request["ClientToken"] = buildClientToken(action)
-
 			if err != nil {
 				if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied"}) || NeedRetry(err) {
 					wait()
@@ -292,8 +307,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("vpc_endpoint_name")
-		d.SetPartial("endpoint_description")
 	}
 	update = false
 	action = "ChangeResourceGroup"
@@ -317,7 +330,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -336,7 +348,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("resource_group_id")
 	}
 
 	if d.HasChange("tags") {
@@ -344,18 +355,16 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 		if err := privateLinkServiceV2.SetResourceTags(d, "VpcEndpoint"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	if !d.IsNewResource() && d.HasChange("security_group_ids") {
 		oldEntry, newEntry := d.GetChange("security_group_ids")
-		removed := oldEntry.(*schema.Set)
-		added := newEntry.(*schema.Set)
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
 
-		rl := expandStringList(removed.Difference(added).List())
-		al := expandStringList(added.Difference(removed).List())
-
-		if len(al) > 0 {
-			securityGroupIds := al
+		if added.Len() > 0 {
+			securityGroupIds := added.List()
 
 			for _, item := range securityGroupIds {
 				action := "AttachSecurityGroupToVpcEndpoint"
@@ -376,8 +385,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-					request["ClientToken"] = buildClientToken(action)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -396,14 +403,12 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("security_group_ids")
 
 			}
-			d.SetPartial("security_group_ids")
 		}
 
-		if len(rl) > 0 {
-			securityGroupIds := rl
+		if removed.Len() > 0 {
+			securityGroupIds := removed.List()
 
 			for _, item := range securityGroupIds {
 				action := "DetachSecurityGroupFromVpcEndpoint"
@@ -423,8 +428,6 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-					request["ClientToken"] = buildClientToken(action)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -443,11 +446,10 @@ func resourceAliCloudPrivateLinkVpcEndpointUpdate(d *schema.ResourceData, meta i
 				if _, err := stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
 				}
-				d.SetPartial("security_group_ids")
 
 			}
-			d.SetPartial("security_group_ids")
 		}
+
 	}
 	d.Partial(false)
 	return resourceAliCloudPrivateLinkVpcEndpointRead(d, meta)
