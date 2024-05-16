@@ -3,10 +3,12 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
@@ -217,12 +219,25 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+		
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_route_tables", action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
-
+		
 		resp, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.RouterTableList.RouterTableListType", response)
