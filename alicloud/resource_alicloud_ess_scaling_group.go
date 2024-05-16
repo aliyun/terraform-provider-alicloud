@@ -9,8 +9,6 @@ import (
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"reflect"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
@@ -34,17 +32,17 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"min_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2000),
+				ValidateFunc: IntBetween(0, 2000),
 			},
 			"max_size": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ValidateFunc: validation.IntBetween(0, 2000),
+				ValidateFunc: IntBetween(0, 2000),
 			},
 			"desired_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 2000),
+				ValidateFunc: IntBetween(0, 2000),
 			},
 			"scaling_group_name": {
 				Type:     schema.TypeString,
@@ -53,14 +51,14 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"health_check_type": {
 				Type:         schema.TypeString,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS", "NONE"}, false),
+				ValidateFunc: StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER"}, false),
 				Optional:     true,
 			},
 			"default_cooldown": {
 				Type:         schema.TypeInt,
 				Default:      300,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 86400),
+				ValidateFunc: IntBetween(0, 86400),
 			},
 			"vswitch_id": {
 				Type:       schema.TypeString,
@@ -97,26 +95,26 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "PRIORITY",
-				ValidateFunc: validation.StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED"}, false),
+				ValidateFunc: StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED"}, false),
 				ForceNew:     true,
 			},
 			"on_demand_base_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 1000),
+				ValidateFunc: IntBetween(0, 1000),
 			},
 			"on_demand_percentage_above_base_capacity": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(0, 100),
+				ValidateFunc: IntBetween(0, 100),
 			},
 			"spot_instance_pools": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.IntBetween(1, 10),
+				ValidateFunc: IntBetween(1, 10),
 			},
 			"spot_instance_remedy": {
 				Type:     schema.TypeBool,
@@ -142,7 +140,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"ECS", "ECI"}, false),
+				ValidateFunc: StringInSlice([]string{"ECS", "ECI"}, false),
 			},
 			"protected_instances": {
 				Type:     schema.TypeSet,

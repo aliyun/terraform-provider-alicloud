@@ -1267,6 +1267,22 @@ func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
 					"scaling_group_name": "${var.name}",
 					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"health_check_type":  "LOAD_BALANCER",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_type": "LOAD_BALANCER",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
 					"health_check_type":  "ECS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
