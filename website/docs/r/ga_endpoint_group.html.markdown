@@ -165,7 +165,7 @@ The following attributes are exported:
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 15 mins) Used when create the Endpoint Group.
-* `update` - (Defaults to 2 mins) Used when update the Endpoint Group.
+* `update` - (Defaults to 3 mins) Used when update the Endpoint Group.
 * `delete` - (Defaults to 10 mins) Used when delete the Endpoint Group.
 
 ## Import
