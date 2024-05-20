@@ -188,14 +188,14 @@ func TestAccAliCloudCSKubernetesAddon_logtail_ds(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"cluster_id": "${local.cluster_id}",
 					"name":       "logtail-ds",
-					"version":    "v1.8.3.0-aliyun",
+					"version":    "v1.8.5.0-aliyun",
 					"depends_on": []string{"alicloud_cs_kubernetes_node_pool.default"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cluster_id":   CHECKSET,
 						"name":         "logtail-ds",
-						"version":      "v1.8.3.0-aliyun",
+						"version":      "v1.8.5.0-aliyun",
 						"next_version": CHECKSET,
 						"can_upgrade":  CHECKSET,
 						"required":     CHECKSET,
@@ -204,11 +204,11 @@ func TestAccAliCloudCSKubernetesAddon_logtail_ds(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"version": "v1.8.4.0-aliyun",
+					"version": "v1.8.6.0-aliyun",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "v1.8.4.0-aliyun",
+						"version": "v1.8.6.0-aliyun",
 					}),
 				),
 			},

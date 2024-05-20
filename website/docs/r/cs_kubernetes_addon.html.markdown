@@ -9,7 +9,7 @@ description: |-
 
 # alicloud_cs_kubernetes_addon
 
-This resource will help you to manage addon in Kubernetes Cluster, see [What is kubernetes addon](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-install-a-component-in-an-ack-cluster).
+This resource will help you to manage addon in Kubernetes Cluster, see [What is kubernetes addon](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-install-a-component-in-an-ack-cluster). For more usage information, see [Use Terraform to manage addons](https://www.alibabacloud.com/help/en/ack/serverless-kubernetes/developer-reference/use-terraform-to-manage-components).
 
 -> **NOTE:** Available since v1.150.0.
 
