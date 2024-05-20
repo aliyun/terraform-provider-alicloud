@@ -164,7 +164,7 @@ func resourceAlicloudCSKubernetesAddonCreate(d *schema.ResourceData, meta interf
 		// Addon has been installed
 		err = updateAddon(csClient, d, addon)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -186,7 +186,7 @@ func resourceAlicloudCSKubernetesAddonUpdate(d *schema.ResourceData, meta interf
 	if d.HasChange("version") || d.HasChange("config") {
 		err = updateAddon(csClient, d, addon)
 		if err != nil {
-			return err
+			return WrapError(err)
 		}
 	}
 
@@ -251,6 +251,9 @@ func updateAddon(csClient CsClient, d *schema.ResourceData, addon *Component) er
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, ResourceAlicloudCSKubernetesAddon, "updateAddonConfig", err)
 		}
+	}
+	if !updateVersion && !updateConfig {
+		return nil
 	}
 
 	stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, csClient.CsKubernetesAddonTaskRefreshFunc(clusterId, name, []string{"Failed"}))
