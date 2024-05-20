@@ -49,7 +49,6 @@ func (s *EipServiceV2) DescribeEipAddress(id string) (object map[string]interfac
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -97,7 +96,6 @@ func (s *EipServiceV2) DescribeDescribeHighDefinitionMonitorLogAttribute(id stri
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -168,7 +166,6 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -208,7 +205,6 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -224,7 +220,6 @@ func (s *EipServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
