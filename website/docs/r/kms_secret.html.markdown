@@ -4,25 +4,30 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_kms_secret"
 sidebar_current: "docs-alicloud-resource-kms-secret"
 description: |-
-  Provides a Alibaba Cloud kms secret resource.
+  Provides a Alicloud KMS Secret resource.
 ---
 
-# alicloud\_kms\_secret
+# alicloud_kms_secret
 
-This resouce used to create a secret and store its initial version.
+Provides a KMS Secret resource.
 
--> **NOTE:** Available in 1.76.0+.
+For information about KMS Secret and how to use it, see [What is Secret](https://www.alibabacloud.com/help/en/kms/developer-reference/api-createsecret).
+
+-> **NOTE:** Available since v1.76.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 resource "alicloud_kms_secret" "default" {
-  secret_name                   = "secret-foo"
-  description                   = "from terraform"
-  secret_data                   = "Secret data."
-  version_id                    = "000000000001"
+  secret_name                   = var.name
+  secret_data                   = "Secret data"
+  version_id                    = "v1"
   force_delete_without_recovery = true
 }
 ```
@@ -31,46 +36,50 @@ resource "alicloud_kms_secret" "default" {
 
 The following arguments are supported:
 
-* `description` - (Optional) The description of the secret.
-* `encryption_key_id` - (Optional, ForceNew) The ID of the KMS CMK that is used to encrypt the secret value. If you do not specify this parameter, Secrets Manager automatically creates an encryption key to encrypt the secret.
-* `force_delete_without_recovery` - (Optional) Specifies whether to forcibly delete the secret. If this parameter is set to true, the secret cannot be recovered. Valid values: true, false. Default to: false.
-* `recovery_window_in_days` - (Optional) Specifies the recovery period of the secret if you do not forcibly delete it. Default value: 30. It will be ignored when `force_delete_without_recovery` is true.
-* `secret_data` - (Required) The value of the secret that you want to create. Secrets Manager encrypts the secret value and stores it in the initial version. **NOTE:** From version 1.204.1, attribute `secret_data` updating diff will be ignored when `secret_type` is not Generic.
-* `secret_data_type` - (Optional) The type of the secret value. Valid values: text, binary. Default to "text".
 * `secret_name` - (Required, ForceNew) The name of the secret.
-* `version_id` - (Required) The version number of the initial version. Version numbers are unique in each secret object.
-* `version_stages` - (Optional, List(string)) The stage labels that mark the new secret version. If you do not specify this parameter, Secrets Manager marks it with "ACSCurrent".
+* `secret_data` - (Required) The data of the secret. **NOTE:** From version 1.204.1, attribute `secret_data` updating diff will be ignored when `secret_type` is not Generic.
+* `version_id` - (Required) The version number of the initial version.
+* `secret_type` - (Optional, ForceNew, Computed, Available since v1.204.1) The type of the secret. Valid values:
+  - `Generic`: Generic secret.
+  - `Rds`: ApsaraDB RDS secret.
+  - `RAMCredentials`: RAM secret.
+  - `ECS`: ECS secret.
+* `secret_data_type` - (Optional) The type of the secret value. Default value: `text`. Valid values: `text`, `binary`.
+* `encryption_key_id` - (Optional, ForceNew) The ID of the KMS key.
+* `dkms_instance_id` - (Optional, ForceNew, Available since v1.183.0) The ID of the KMS instance.
+* `extended_config` - (Optional, ForceNew, Available since v1.204.1) The extended configuration of the secret. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
+* `enable_automatic_rotation` - (Optional, Bool, Available since v1.124.0) Specifies whether to enable automatic rotation. Default value: `false`. Valid values: `true`, `false`.
+* `rotation_interval` - (Optional, Available since v1.124.0) The interval for automatic rotation.
+* `policy` - (Optional, Available since v1.224.0) The content of the secret policy. The value is in the JSON format. The value can be up to 32,768 bytes in length. For more information, see [How to use it](https://www.alibabacloud.com/help/en/kms/developer-reference/api-setsecretpolicy).
+* `description` - (Optional) The description of the secret.
+* `force_delete_without_recovery` - (Optional, Bool) Specifies whether to immediately delete a secret. Default value: `false`. Valid values: `true`, `false`.
+* `recovery_window_in_days` - (Optional, Int) Specifies the recovery period of the secret if you do not forcibly delete it. Default value: `30`. **NOTE:**  If `force_delete_without_recovery` is set to `true`, `recovery_window_in_days` will be ignored.
+* `version_stages` - (Optional, List) The stage label that is used to mark the new version.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
-* `enable_automatic_rotation` - (Optional, Available in 1.124.0+) Whether to enable automatic key rotation.
-* `rotation_interval` - (Optional, Available in 1.124.0+) The time period of automatic rotation. The format is integer[unit], where integer represents the length of time, and unit represents the unit of time. The legal unit units are: d (day), h (hour), m (minute), s (second). 7d or 604800s both indicate a 7-day cycle.
-* `dkms_instance_id` - (Optional, ForceNew, Available in v1.183.0+) The instance ID of the exclusive KMS instance.
-* `secret_type` - (Optional, ForceNew, Computed, Available in v1.204.1+) The type of the secret. Valid values:
-  - `Generic`: specifies a generic secret.
-  - `Rds`: specifies a managed ApsaraDB RDS secret.
-  - `RAMCredentials`: indicates a managed RAM secret.
-  - `ECS`: specifies a managed ECS secret.
-* `extended_config` - (Optional, ForceNew, Available in v1.204.1+) The extended configuration of the secret. This parameter specifies the properties of the secret of the specific type. The description can be up to 1,024 characters in length. For more information, see [How to use it](https://www.alibabacloud.com/help/en/key-management-service/latest/kms-createsecret).
 
 ## Attributes Reference
 
-* `id` - The ID of the secret. It same with `secret_name`.
-* `arn` - The Alicloud Resource Name (ARN) of the secret.
+The following attributes are exported:
+
+* `id` - The resource ID in terraform of Secret.
+* `arn` - The ARN of the secret.
+* `create_time` - (Available since v1.224.0) The time when the secret is created.
 * `planned_delete_time` - The time when the secret is scheduled to be deleted.
 
-### Timeouts
+## Timeouts
 
--> **NOTE:** Available in 1.103.2+.
+-> **NOTE:** Available since v1.103.2.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when creating the KMS Secret. 
-* `update` - (Defaults to 1 mins, Available in 1.105.0+) Used when updating the KMS Secret. 
-* `delete` - (Defaults to 1 mins, Available in 1.105.0+) Used when deleting the KMS Secret. 
+* `create` - (Defaults to 5 mins) Used when create the Secret.
+* `update` - (Defaults to 5 mins) Used when update the Secret.
+* `delete` - (Defaults to 5 mins) Used when delete the Secret. 
 
 ## Import
 
-KMS secret can be imported using the id, e.g.
+KMS Secret can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_kms_secret.default <id>
+$ terraform import alicloud_kms_secret.example <id>
 ```

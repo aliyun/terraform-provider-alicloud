@@ -1202,7 +1202,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_adb_account":                                           resourceAlicloudAdbAccount(),
 			"alicloud_adb_connection":                                        resourceAlicloudAdbConnection(),
 			"alicloud_cen_flowlog":                                           resourceAlicloudCenFlowlog(),
-			"alicloud_kms_secret":                                            resourceAlicloudKmsSecret(),
+			"alicloud_kms_secret":                                            resourceAliCloudKmsSecret(),
 			"alicloud_maxcompute_project":                                    resourceAlicloudMaxcomputeProject(),
 			"alicloud_kms_alias":                                             resourceAlicloudKmsAlias(),
 			"alicloud_dns_instance":                                          resourceAlicloudAlidnsInstance(),
