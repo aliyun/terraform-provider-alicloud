@@ -10,7 +10,6 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
 func resourceAlicloudEcsDeploymentSet() *schema.Resource {
@@ -26,35 +25,35 @@ func resourceAlicloudEcsDeploymentSet() *schema.Resource {
 			"deployment_set_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^([\w\\:\-]){2,128}$`), "\t\nThe name of the deployment set.\n\nThe name must be 2 to 128 characters in length and can contain letters, digits, colons (:), underscores (_), and hyphens (-)."),
+				ValidateFunc: StringMatch(regexp.MustCompile(`^([\w\\:\-]){2,128}$`), "\t\nThe name of the deployment set.\n\nThe name must be 2 to 128 characters in length and can contain letters, digits, colons (:), underscores (_), and hyphens (-)."),
 			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(2, 256),
+				ValidateFunc: StringLenBetween(2, 256),
 			},
 			"domain": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Default"}, false),
+				ValidateFunc: StringInSlice([]string{"Default"}, false),
 			},
 			"granularity": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Host"}, false),
+				ValidateFunc: StringInSlice([]string{"Host"}, false),
 			},
 			"on_unable_to_redeploy_failed_instance": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"CancelMembershipAndStart", "KeepStopped"}, false),
+				ValidateFunc: StringInSlice([]string{"CancelMembershipAndStart", "KeepStopped"}, false),
 			},
 			"strategy": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Availability"}, false),
+				ValidateFunc: StringInSlice([]string{"Availability", "AvailabilityGroup", "LowLatency"}, false),
 			},
 		},
 	}
