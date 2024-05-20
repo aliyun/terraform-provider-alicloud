@@ -878,6 +878,26 @@ func TestAccAliCloudEIPAddress_basic9(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "BINDED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "BINDED",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "NAT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "NAT",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -887,7 +907,63 @@ func TestAccAliCloudEIPAddress_basic9(t *testing.T) {
 	})
 }
 
-func SkipTestAccAliCloudEIPAddress_basic9_ip(t *testing.T) {
+func TestAccAliCloudEIPAddress_basic13(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eip_address.default"
+	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEipAddress")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seipaddress%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEIPAddressBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcDhcpOptionsSetSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                      name,
+					"bandwidth":                 "10",
+					"description":               name,
+					"instance_charge_type":      "PostPaid",
+					"allocation_id":             "eip-bp1pktw6wwavjqudm4mon",
+					"isp":                       "BGP",
+					"netmode":                   "public",
+					"security_protection_types": []string{"AntiDDoS_Enhanced"},
+					"resource_group_id":         "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"bandwidth":            "10",
+						"description":          name,
+						"instance_charge_type": "PostPaid",
+						"isp":                  "BGP",
+						"netmode":              "public",
+						"resource_group_id":    CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"activity_id", "period", "auto_pay", "allocation_id"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEIPAddress_basic9_ip(t *testing.T) {
+	t.Skipped()
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEIPAddressMap0)
