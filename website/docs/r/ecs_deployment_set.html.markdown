@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud ECS Deployment Set resource.
 ---
 
-# alicloud\_ecs\_deployment\_set
+# alicloud_ecs_deployment_set
 
 Provides a ECS Deployment Set resource.
 
 For information about ECS Deployment Set and how to use it, see [What is Deployment Set](https://www.alibabacloud.com/help/en/doc-detail/91269.htm).
 
--> **NOTE:** Available in v1.140.0+.
+-> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
 
@@ -40,7 +40,7 @@ The following arguments are supported:
 * `on_unable_to_redeploy_failed_instance` - (Optional) The on unable to redeploy failed instance. Valid values: `CancelMembershipAndStart`, `KeepStopped`.
   * `CancelMembershipAndStart` - Removes the instances from the deployment set and restarts the instances immediately after the failover is complete.
   * `KeepStopped`- Keeps the instances in the abnormal state and restarts them after ECS resources are replenished. 
-* `strategy` - (Optional, ForceNew) The deployment strategy. Valid values: `Availability`.
+* `strategy` - (Optional, ForceNew) The deployment strategy. Valid values: `Availability`(Default), `AvailabilityGroup`, `LowLatency`.
 
 ## Attributes Reference
 
