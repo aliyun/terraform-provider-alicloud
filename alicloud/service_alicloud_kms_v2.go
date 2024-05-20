@@ -46,7 +46,6 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)

@@ -497,6 +497,192 @@ func TestAccAliCloudKmsInstance_basic4048_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudKmsInstance_basic4048_postpaid(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMap4048)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsInstanceBasicDependence4048)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":    "PayAsYouGo",
+					"product_version": "3",
+					"vpc_id":          "${local.vpc_id}",
+					"zone_ids": []string{
+						"cn-hangzhou-k", "cn-hangzhou-j"},
+					"vswitch_ids": []string{
+						"${local.vsw_id}"},
+					"bind_vpcs": []map[string]interface{}{
+						{
+							"vpc_id":       "${alicloud_vpc.shareVPC.id}",
+							"region_id":    "cn-hangzhou",
+							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
+							"vpc_owner_id": "1511928242963727",
+						},
+						{
+							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
+							"region_id":    "cn-hangzhou",
+							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
+							"vpc_owner_id": "1511928242963727",
+						},
+					},
+					"force_delete_without_backup": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_version": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bind_vpcs": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bind_vpcs.#": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bind_vpcs": []map[string]interface{}{
+						{
+							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
+							"region_id":    "cn-hangzhou",
+							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
+							"vpc_owner_id": "1511928242963727",
+						},
+						{
+							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
+							"region_id":    "cn-hangzhou",
+							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
+							"vpc_owner_id": "1511928242963727",
+						},
+						{
+							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
+							"region_id":    "cn-hangzhou",
+							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
+							"vpc_owner_id": "1511928242963727",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bind_vpcs.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bind_vpcs": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bind_vpcs.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup", "payment_type"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudKmsInstance_basic4048_postpaid_intl(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_kms_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudKmsInstanceMap4048)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &KmsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeKmsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%skmsinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudKmsInstanceBasicDependence5405)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":    "PayAsYouGo",
+					"product_version": "3",
+					"vpc_id":          "${alicloud_vswitch.vswitch.vpc_id}",
+					"zone_ids": []string{
+						"${alicloud_vswitch.vswitch.zone_id}", "${alicloud_vswitch.vswitch-j.zone_id}"},
+					"vswitch_ids": []string{
+						"${alicloud_vswitch.vswitch-j.id}"},
+					"force_delete_without_backup": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"product_version": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bind_vpcs": []map[string]interface{}{
+						{
+							"vpc_id":       "${alicloud_vswitch.shareVswitch.vpc_id}",
+							"region_id":    defaultRegionToTest,
+							"vswitch_id":   "${alicloud_vswitch.shareVswitch.id}",
+							"vpc_owner_id": "5806750234758840",
+						},
+						{
+							"vpc_id":       "${alicloud_vswitch.share-vswitch2.vpc_id}",
+							"region_id":    defaultRegionToTest,
+							"vswitch_id":   "${alicloud_vswitch.share-vswitch2.id}",
+							"vpc_owner_id": "5806750234758840",
+						},
+						{
+							"vpc_id":       "${alicloud_vswitch.share-vsw3.vpc_id}",
+							"region_id":    defaultRegionToTest,
+							"vswitch_id":   "${alicloud_vswitch.share-vsw3.id}",
+							"vpc_owner_id": "5806750234758840",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bind_vpcs.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"product_version", "renew_period", "renew_status", "period", "force_delete_without_backup", "payment_type"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_kms_instance.default"
@@ -513,6 +699,7 @@ func TestAccAliCloudKmsInstance_basic4048_intl(t *testing.T) {
 		PreCheck: func() {
 			testAccPreCheck(t)
 			testAccPreCheckWithRegions(t, true, connectivity.KmsInstanceIntlSupportRegions)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -765,7 +952,38 @@ resource "alicloud_vswitch" "vswitch-j" {
   cidr_block = "172.16.2.0/24"
 }
 
+resource "alicloud_vpc" "shareVPC" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = "${var.name}3"
+}
 
+resource "alicloud_vswitch" "shareVswitch" {
+  vpc_id     = alicloud_vpc.shareVPC.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vpc" "share-VPC2" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = "${var.name}5"
+}
+
+resource "alicloud_vswitch" "share-vswitch2" {
+  vpc_id     = alicloud_vpc.share-VPC2.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.1.0/24"
+}
+
+resource "alicloud_vpc" "share-VPC3" {
+  cidr_block = "172.16.0.0/12"
+  vpc_name   = "${var.name}7"
+}
+
+resource "alicloud_vswitch" "share-vsw3" {
+  vpc_id     = alicloud_vpc.share-VPC3.id
+  zone_id    = data.alicloud_zones.default.zones.1.id
+  cidr_block = "172.16.1.0/24"
+}
 `, name)
 }
 
