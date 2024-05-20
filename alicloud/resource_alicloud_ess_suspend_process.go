@@ -52,6 +52,9 @@ func resourceAliyunEssSuspendCreate(d *schema.ResourceData, meta interface{}) er
 			return essClient.SuspendProcesses(request)
 		})
 		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
@@ -100,6 +103,9 @@ func resourceAliyunEssSuspendDelete(d *schema.ResourceData, meta interface{}) er
 			return essClient.ResumeProcesses(request)
 		})
 		if err != nil {
+			if IsExpectedErrors(err, []string{"IncorrectScalingGroupStatus"}) {
+				return resource.RetryableError(err)
+			}
 			return resource.NonRetryableError(WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR))
 		}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
