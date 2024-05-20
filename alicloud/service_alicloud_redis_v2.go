@@ -19,7 +19,6 @@ type RedisServiceV2 struct {
 // DescribeRedisTairInstance <<< Encapsulated get interface for Redis TairInstance.
 
 func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -49,11 +48,11 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -81,6 +80,7 @@ func (s *RedisServiceV2) RedisTairInstanceStateRefreshFunc(id string, field stri
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -101,6 +101,7 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -116,6 +117,7 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
@@ -127,8 +129,7 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -152,6 +153,7 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			count := 1
@@ -166,8 +168,7 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -183,7 +184,6 @@ func (s *RedisServiceV2) SetResourceTags(d *schema.ResourceData, resourceType st
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
