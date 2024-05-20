@@ -100,6 +100,24 @@ func resourceAliyunSecurityGroupCreate(d *schema.ResourceData, meta interface{})
 		request.ResourceGroupId = v
 	}
 
+	if v, ok := d.GetOk("tags"); ok {
+		var SecurityGroupTags []ecs.CreateSecurityGroupTag
+		tagsMap, ok := v.(map[string]interface{})
+		if ok {
+			for key, value := range tagsMap {
+				if value != nil {
+					if v, ok := value.(string); ok {
+						SecurityGroupTags = append(SecurityGroupTags, ecs.CreateSecurityGroupTag{
+							Key:   key,
+							Value: v,
+						})
+					}
+				}
+			}
+		}
+		request.Tag = &SecurityGroupTags
+	}
+
 	raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 		return ecsClient.CreateSecurityGroup(request)
 	})
@@ -196,10 +214,12 @@ func resourceAliyunSecurityGroupUpdate(d *schema.ResourceData, meta interface{})
 		d.SetPartial("resource_group_id")
 	}
 
-	if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
-		return WrapError(err)
-	} else {
-		d.SetPartial("tags")
+	if !d.IsNewResource() {
+		if err := setTags(client, TagResourceSecurityGroup, d); err != nil {
+			return WrapError(err)
+		} else {
+			d.SetPartial("tags")
+		}
 	}
 
 	if d.HasChange("inner_access_policy") || d.HasChange("inner_access") || d.IsNewResource() && d.Get("security_group_type").(string) != "enterprise" {
