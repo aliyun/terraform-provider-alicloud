@@ -45,7 +45,7 @@ The following arguments are supported:
   - The name must start with a letter.
   - The name can contain digits, colons (:), underscores (_), and hyphens (-). The name cannot start with `http://` or `https://`.
   - The value of this parameter is empty by default.
-* `file_system_type` - (Optional, ForceNew, Computed, Available since v1.224.0) The file system type.
+* `file_system_type` - (Optional, ForceNew, Computed, Available since v1.223.2) The file system type.
 * `repeat_weekdays` - (Required) The day on which an auto snapshot is created.
   - A maximum of 7 time points can be selected.
   - The format is  an JSON array of ["1", "2", … "7"]  and the time points are separated by commas (,).
