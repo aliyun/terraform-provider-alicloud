@@ -129,7 +129,7 @@ func testSweepMessageServiceQueue(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMessageServiceQueue_basic0(t *testing.T) {
+func TestAccAliCloudMessageServiceQueue_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_message_service_queue.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudMessageServiceQueueMap)
@@ -324,7 +324,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueCreate(dInit, rawClient)
+	err = resourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -347,7 +347,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueCreate(dInit, rawClient)
+		err := resourceAliCloudMessageServiceQueueCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -374,7 +374,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueUpdate(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -421,7 +421,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueUpdate(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -465,7 +465,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueRead(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -484,7 +484,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMessageServiceQueueDelete(dExisted, rawClient)
+	err = resourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -512,7 +512,7 @@ func TestUnitAlicloudMessageServiceQueue(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMessageServiceQueueDelete(dExisted, rawClient)
+		err := resourceAliCloudMessageServiceQueueDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
