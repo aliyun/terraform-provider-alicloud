@@ -119,7 +119,7 @@ func testSweepNasAutoSnapshotPolicy(region string) error {
 	return nil
 }
 
-func TestAccAlicloudNASAutoSnapshotPolicy_basic0(t *testing.T) {
+func TestAccAliCloudNASAutoSnapshotPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_auto_snapshot_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
@@ -201,7 +201,7 @@ func TestAccAlicloudNASAutoSnapshotPolicy_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudNASAutoSnapshotPolicy_basic1(t *testing.T) {
+func TestAccAliCloudNASAutoSnapshotPolicy_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_nas_auto_snapshot_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.NASSupportRegions)
@@ -345,7 +345,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyCreate(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -362,7 +362,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyCreate(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -379,7 +379,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyCreate(dCreate, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -397,7 +397,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudNasAutoSnapshotPolicyUpdate(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -436,7 +436,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -474,7 +474,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -489,7 +489,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -506,7 +506,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -526,7 +526,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 		patcheDescribeNasAutoSnapshotPolicy := gomonkey.ApplyMethod(reflect.TypeOf(&NasService{}), "DescribeNasAutoSnapshotPolicy", func(*NasService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeNasAutoSnapshotPolicy.Reset()
 		assert.Nil(t, err)
@@ -544,7 +544,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyDelete(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -561,7 +561,7 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyRead(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -577,8 +577,91 @@ func TestUnitAlicloudNASAutoSnapshotPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudNasAutoSnapshotPolicyRead(d, rawClient)
+		err := resourceAliCloudNasAutoSnapshotPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
 }
+
+var AlicloudNasAutoSnapshotPolicyMap6532 = map[string]string{
+	"status":         CHECKSET,
+	"create_time":    CHECKSET,
+	"retention_days": CHECKSET,
+}
+
+func AlicloudNasAutoSnapshotPolicyBasicDependence6532(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case 自动快照策略 6532  raw
+func TestAccAliCloudNasAutoSnapshotPolicy_basic6532_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_nas_auto_snapshot_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudNasAutoSnapshotPolicyMap6532)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &NasServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeNasAutoSnapshotPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%snasautosnapshotpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudNasAutoSnapshotPolicyBasicDependence6532)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points":               []string{"0", "1", "2"},
+					"retention_days":            "1",
+					"repeat_weekdays":           []string{"2", "3", "4"},
+					"auto_snapshot_policy_name": name,
+					"file_system_type":          "extreme",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#":             "3",
+						"retention_days":            "1",
+						"repeat_weekdays.#":         "3",
+						"auto_snapshot_policy_name": name,
+						"file_system_type":          "extreme",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"time_points":               []string{"0", "5"},
+					"retention_days":            "2",
+					"repeat_weekdays":           []string{"4", "5", "6", "7"},
+					"auto_snapshot_policy_name": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"time_points.#":             "2",
+						"retention_days":            "2",
+						"repeat_weekdays.#":         "4",
+						"auto_snapshot_policy_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Nas AutoSnapshotPolicy. <<< Resource test cases, automatically generated.
