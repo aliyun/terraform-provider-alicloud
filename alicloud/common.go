@@ -441,6 +441,26 @@ func convertJsonStringToList(configured string) ([]interface{}, error) {
 	return result, nil
 }
 
+func expandArrayToMap(originMap map[string]interface{}, arrayValues []interface{}, arrayKey string) map[string]interface{} {
+	for i, val := range arrayValues {
+		key := fmt.Sprintf("%s.%d", arrayKey, i+1)
+		originMap[key] = fmt.Sprint(val)
+	}
+	return originMap
+}
+
+func expandTagsToMap(originMap map[string]interface{}, tags []map[string]interface{}) map[string]interface{} {
+	for i, tag := range tags {
+		for key, value := range tag {
+			if key == "Key" || key == "Value" {
+				newKey := "Tag" + "." + strconv.Itoa(i+1) + "." + key
+				originMap[newKey] = fmt.Sprintf("%v", value)
+			}
+		}
+	}
+	return originMap
+}
+
 func convertJsonStringToObject(configured interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(configured.(string)), &result); err != nil {
