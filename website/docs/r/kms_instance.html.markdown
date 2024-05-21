@@ -63,21 +63,21 @@ resource "alicloud_kms_instance" "default" {
 
 The following arguments are supported:
 * `bind_vpcs` - (Optional) Aucillary VPCs used to access this KMS instance. See [`bind_vpcs`](#bind_vpcs) below.
-* `key_num` - (Optional) Maximum number of stored keys.
-* `log` - (Optional, Computed) Instance Audit Log Switch.
-* `log_storage` - (Optional, Computed) Instance log capacity.
-* `payment_type` - (Optional, Computed) Payment type,valid values:  Subscription: Prepaid. PayAsYouGo: Postpaid.
-* `period` - (Optional) Purchase cycle, in months.
+* `force_delete_without_backup` - (Optional, Available since v1.223.2) Whether to force deletion even without backup.
+* `key_num` - (Optional) Maximum number of stored keys. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `log` - (Optional, Computed) Instance Audit Log Switch. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `log_storage` - (Optional, Computed) Instance log capacity. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `payment_type` - (Optional, ForceNew) Payment type, valid values:  `Subscription`: Prepaid. `PayAsYouGo`: Postpaid, available since v1.223.2.
+* `period` - (Optional) Purchase cycle, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `product_version` - (Optional) KMS Instance commodity type (software/hardware).
-* `renew_period` - (Optional) Automatic renewal period, in months.
-* `renew_status` - (Optional) Renewal options (manual renewal, automatic renewal, no renewal).
-* `secret_num` - (Optional) Maximum number of Secrets.
-* `spec` - (Optional) The computation performance level of the KMS instance.
+* `renew_period` - (Optional) Automatic renewal period, in months. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `renew_status` - (Optional) Renewal options. Valid values: `AutoRenewal`, `ManualRenewal`. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `secret_num` - (Optional) Maximum number of Secrets. The attribute is valid when the attribute `payment_type` is `Subscription`.
+* `spec` - (Optional) The computation performance level of the KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `vpc_id` - (Required, ForceNew) Instance VPC id.
-* `vpc_num` - (Optional) The number of managed accesses. The maximum number of VPCs that can access this KMS instance.
+* `vpc_num` - (Optional) The number of managed accesses. The maximum number of VPCs that can access this KMS instance. The attribute is valid when the attribute `payment_type` is `Subscription`.
 * `vswitch_ids` - (Required, ForceNew) Instance bind vswitches.
 * `zone_ids` - (Required, ForceNew) zone id.
-* `force_delete_without_backup` - (Optional) Whether to force deletion even without backup.
 
 ### `bind_vpcs`
 
