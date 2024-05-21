@@ -71,7 +71,7 @@ The following arguments are supported:
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `endpoint_description` - (Optional) The description of the endpoint.
 * `endpoint_type` - (Optional, ForceNew, Computed, Available since v1.212.0) The endpoint type. Only the value: Interface, indicating the Interface endpoint. You can add the service resource types of Application Load Balancer (ALB), Classic Load Balancer (CLB), and Network Load Balancer (NLB).
-* `policy_document` - (Optional, Available since v1.224.0) RAM access policies.
+* `policy_document` - (Optional, Available since v1.223.2) RAM access policies.
 * `protected_enabled` - (Optional, Available since v1.212.0) Specifies whether to enable user authentication. This parameter is available in Security Token Service (STS) mode. Valid values:
   - **true**: enables user authentication. After user authentication is enabled, only the user who creates the endpoint can modify or delete the endpoint in STS mode.
   - **false (default)**: disables user authentication.
