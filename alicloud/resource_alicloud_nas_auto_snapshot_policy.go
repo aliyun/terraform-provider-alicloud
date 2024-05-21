@@ -1,51 +1,60 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
-	"regexp"
-	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudNasAutoSnapshotPolicy() *schema.Resource {
+func resourceAliCloudNasAutoSnapshotPolicy() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudNasAutoSnapshotPolicyCreate,
-		Read:   resourceAlicloudNasAutoSnapshotPolicyRead,
-		Update: resourceAlicloudNasAutoSnapshotPolicyUpdate,
-		Delete: resourceAlicloudNasAutoSnapshotPolicyDelete,
+		Create: resourceAliCloudNasAutoSnapshotPolicyCreate,
+		Read:   resourceAliCloudNasAutoSnapshotPolicyRead,
+		Update: resourceAliCloudNasAutoSnapshotPolicyUpdate,
+		Delete: resourceAliCloudNasAutoSnapshotPolicyDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"auto_snapshot_policy_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"file_system_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.All(validation.StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with 'http://', 'https://'."), validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9:_-]{1,127}$`), `The name must start with a letter. It must be 2 to 128 characters in length. It can contain digits, colons (:), underscores (_), and hyphens (-).`)),
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"extreme"}, false),
 			},
 			"repeat_weekdays": {
 				Type:     schema.TypeSet,
 				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"retention_days": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.Any(validation.IntInSlice([]int{-1}), validation.IntBetween(1, 65536)),
+				ValidateFunc: validation.Any(IntBetween(0, 65536), IntBetween(-1, -1)),
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -54,35 +63,51 @@ func resourceAlicloudNasAutoSnapshotPolicy() *schema.Resource {
 			"time_points": {
 				Type:     schema.TypeSet,
 				Required: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
 }
 
-func resourceAlicloudNasAutoSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNasAutoSnapshotPolicyCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateAutoSnapshotPolicy"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+
+	if v, ok := d.GetOk("retention_days"); ok {
+		request["RetentionDays"] = v
 	}
 	if v, ok := d.GetOk("auto_snapshot_policy_name"); ok {
 		request["AutoSnapshotPolicyName"] = v
 	}
 	request["FileSystemType"] = "extreme"
-	request["RepeatWeekdays"] = convertListToCommaSeparate(d.Get("repeat_weekdays").(*schema.Set).List())
-	if v, ok := d.GetOk("retention_days"); ok {
-		request["RetentionDays"] = v
+	if v, ok := d.GetOk("file_system_type"); ok {
+		request["FileSystemType"] = v
 	}
-	request["TimePoints"] = convertListToCommaSeparate(d.Get("time_points").(*schema.Set).List())
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	jsonPathResult3, err := jsonpath.Get("$", d.Get("repeat_weekdays"))
+	if err == nil {
+		request["RepeatWeekdays"] = convertListToCommaSeparate(jsonPathResult3.(*schema.Set).List())
+	}
+
+	jsonPathResult4, err := jsonpath.Get("$", d.Get("time_points"))
+	if err == nil {
+		request["TimePoints"] = convertListToCommaSeparate(jsonPathResult4.(*schema.Set).List())
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -90,78 +115,101 @@ func resourceAlicloudNasAutoSnapshotPolicyCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nas_auto_snapshot_policy", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["AutoSnapshotPolicyId"]))
-	nasService := NasService{client}
-	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nasService.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), []string{}))
+
+	nasServiceV2 := NasServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, nasServiceV2.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudNasAutoSnapshotPolicyRead(d, meta)
+	return resourceAliCloudNasAutoSnapshotPolicyRead(d, meta)
 }
-func resourceAlicloudNasAutoSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNasAutoSnapshotPolicyRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
-	object, err := nasService.DescribeNasAutoSnapshotPolicy(d.Id())
+	nasServiceV2 := NasServiceV2{client}
+
+	objectRaw, err := nasServiceV2.DescribeNasAutoSnapshotPolicy(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_nas_auto_snapshot_policy nasService.DescribeNasAutoSnapshotPolicy Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_nas_auto_snapshot_policy DescribeNasAutoSnapshotPolicy Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("auto_snapshot_policy_name", object["AutoSnapshotPolicyName"])
-	d.Set("repeat_weekdays", strings.Split(object["RepeatWeekdays"].(string), ","))
-	d.Set("retention_days", formatInt(object["RetentionDays"]))
-	d.Set("status", object["Status"])
-	d.Set("time_points", strings.Split(object["TimePoints"].(string), ","))
+
+	d.Set("auto_snapshot_policy_name", objectRaw["AutoSnapshotPolicyName"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("file_system_type", objectRaw["FileSystemType"])
+	d.Set("retention_days", objectRaw["RetentionDays"])
+	d.Set("status", objectRaw["Status"])
+
+	e := jsonata.MustCompile("$split($.RepeatWeekdays, \",\")")
+	evaluation, _ := e.Eval(objectRaw)
+	d.Set("repeat_weekdays", evaluation)
+	e = jsonata.MustCompile("$split($.TimePoints, \",\")")
+	evaluation, _ = e.Eval(objectRaw)
+	d.Set("time_points", evaluation)
+
 	return nil
 }
-func resourceAlicloudNasAutoSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNasAutoSnapshotPolicyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	action := "ModifyAutoSnapshotPolicy"
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	update := false
-	request := map[string]interface{}{
-		"AutoSnapshotPolicyId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AutoSnapshotPolicyId"] = d.Id()
 	if d.HasChange("auto_snapshot_policy_name") {
 		update = true
-		if v, ok := d.GetOk("auto_snapshot_policy_name"); ok {
-			request["AutoSnapshotPolicyName"] = v
-		}
+		request["AutoSnapshotPolicyName"] = d.Get("auto_snapshot_policy_name")
 	}
-	if d.HasChange("repeat_weekdays") {
-		update = true
-		request["RepeatWeekdays"] = convertListToCommaSeparate(d.Get("repeat_weekdays").(*schema.Set).List())
-	}
+
 	if d.HasChange("retention_days") {
 		update = true
-		if v, ok := d.GetOk("retention_days"); ok {
-			request["RetentionDays"] = v
-		}
+		request["RetentionDays"] = d.Get("retention_days")
 	}
+
+	if d.HasChange("repeat_weekdays") {
+		update = true
+	}
+	jsonPathResult2, err := jsonpath.Get("$", d.Get("repeat_weekdays"))
+	if err == nil {
+		request["RepeatWeekdays"] = convertListToCommaSeparate(jsonPathResult2.(*schema.Set).List())
+	}
+
 	if d.HasChange("time_points") {
 		update = true
-		request["TimePoints"] = convertListToCommaSeparate(d.Get("time_points").(*schema.Set).List())
 	}
+	jsonPathResult3, err := jsonpath.Get("$", d.Get("time_points"))
+	if err == nil {
+		request["TimePoints"] = convertListToCommaSeparate(jsonPathResult3.(*schema.Set).List())
+	}
+
 	if update {
-		action := "ModifyAutoSnapshotPolicy"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -169,35 +217,42 @@ func resourceAlicloudNasAutoSnapshotPolicyUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nasService.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), []string{}))
+		nasServiceV2 := NasServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, nasServiceV2.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), "Status", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudNasAutoSnapshotPolicyRead(d, meta)
+
+	return resourceAliCloudNasAutoSnapshotPolicyRead(d, meta)
 }
-func resourceAlicloudNasAutoSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudNasAutoSnapshotPolicyDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	nasService := NasService{client}
 	action := "DeleteAutoSnapshotPolicy"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewNasClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"AutoSnapshotPolicyId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	query["AutoSnapshotPolicyId"] = d.Id()
 
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-06-26"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -205,16 +260,19 @@ func resourceAlicloudNasAutoSnapshotPolicyDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidLifecyclePolicy.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nasService.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), []string{}))
+
+	nasServiceV2 := NasServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 5*time.Second, nasServiceV2.NasAutoSnapshotPolicyStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
