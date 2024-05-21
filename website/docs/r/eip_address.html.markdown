@@ -49,7 +49,7 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 The following arguments are supported:
 * `activity_id` - (Optional) Special activity ID. This parameter is not required.
 * `address_name` - (Optional) The name of the EIP instance. This name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin or end with a hyphen, and must not begin with http:// or https://.
-* `allocation_id` - (Optional, Available since v1.224.0) The ID of the EIP instance. If you specify the instance ID of An EIP that has already been applied for, the IpAddress of that instance will be reused. Only one of the IpAddress and InstanceId parameters needs to be specified. If neither parameter is specified, the system will randomly apply for an EIP.
+* `allocation_id` - (Optional, Available since v1.223.2) The ID of the EIP instance. If you specify the instance ID of An EIP that has already been applied for, the IpAddress of that instance will be reused. Only one of the IpAddress and InstanceId parameters needs to be specified. If neither parameter is specified, the system will randomly apply for an EIP.
 * `auto_pay` - (Optional) Whether to pay automatically. Valid values: `true` and `false`. Default value: `true`. When `auto_pay` is `true`, The order will be automatically paid. When `auto_pay` is `false`, The order needs to go to the order center to complete the payment. **NOTE:** When `payment_type` is `Subscription`, this parameter is valid.
 * `bandwidth` - (Optional, Computed) The maximum bandwidth of the EIP. Valid values: `1` to `200`. Unit: Mbit/s. Default value: `5`.
 * `deletion_protection` - (Optional, Computed, Available since v1.207.0) Whether the delete protection function is turned on.
@@ -77,7 +77,7 @@ The following arguments are supported:
 -> **NOTE:** From version 1.203.0, `isp` can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`, `BGP_International`.
 * `log_project` - (Optional) The Name of the logging service LogProject. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
 * `log_store` - (Optional) The Name of the logging service LogStore. Current parameter is required when configuring high precision second-by-second monitoring for EIP.
-* `mode` - (Optional, Computed, Available since v1.224.0) Binding mode, value:
+* `mode` - (Optional, Computed, Available since v1.223.2) Binding mode, value:
   - **NAT** (default):NAT mode (normal mode).
   - **MULTI_BINDED**: indicates the multi-EIP NIC visible mode.
   - **BINDED**: indicates the mode in which the EIP NIC is visible.

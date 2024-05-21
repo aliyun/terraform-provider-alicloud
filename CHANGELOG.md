@@ -1,4 +1,27 @@
-## 1.224.0 (Unreleased)
+## 1.223.2 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_simple_application_server_snapshot: update query status for create. [GH-7240]
+- resource/alicloud_cs_managed_kubernetes: add param delete_options for delete operation; resource/alicloud_cs_kubernetes: add param delete_options for delete operation. [GH-7241]
+- resource/alicloud_ecd_policy_group: add retry for 'InvalidPolicyStatus.Modification'. [GH-7242]
+- resource/alicloud_kms_instance: support payment_type. [GH-7244]
+- resource/alicloud_privatelink_vpc_endpoint: add new attribute policy_document. [GH-7245]
+- resource/alicloud_cs_managed_kubernetes: output error message when failed to upgrade cluster;resource/alicloud_cs_kubernetes: output error message when failed to upgrade cluster;resource/alicloud_cs_edge_kubernetes: output error message when failed to upgrade cluster;resource/alicloud_cs_serverless_kubernetes: output error message when failed to upgrade cluster. [GH-7248]
+- resource/alicloud_vpc: add retry for DependencyViolation.VSwitch; data-source/alicloud_route_tables: add retry for throttling. [GH-7252]
+- resource/alicloud_ess_scaling_group: support load_balance health check. [GH-7253]
+- resource/alicloud_instance: Added the field network_interfaces.vswitch_id, network_interfaces.network_interface_traffic_mode, network_interfaces.security_group_ids, enable_jumbo_frame. [GH-7255]
+- resource/alicloud_eip_address: add new attributes mode, allocation_id. [GH-7256]
+- resource/alicloud_ga_endpoint_group: Improved default update timeout; resource/alicloud_ga_ip_set: Improved default update timeout. [GH-7259]
+- resource/alicloud_ecs_deployment_set: support more enumeration values for strategy. [GH-7260]
+- resource/alicloud_security_group: tag resource while create phase. [GH-7261]
+- docs: fix datadisk category range,support cloud_essd. [GH-7254]
+- docs: import example for nas. [GH-7265]
+
+BUG FIXES:
+
+- resource/alicloud_alb_rule: fix validation of redirect_config.host. [GH-7250]
+
 ## 1.223.1 (May 13, 2024)
 
 ENHANCEMENTS:
