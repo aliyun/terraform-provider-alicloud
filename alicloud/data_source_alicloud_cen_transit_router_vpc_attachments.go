@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -12,55 +13,68 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
+func dataSourceAliCloudCenTransitRouterVpcAttachments() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCenTransitRouterVpcAttachmentsRead,
+		Read: dataSourceAliCloudCenTransitRouterVpcAttachmentsRead,
 		Schema: map[string]*schema.Schema{
+			"ids": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"name_regex": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: validation.ValidateRegexp,
+			},
 			"cen_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
-			},
-			"ids": {
-				Type:     schema.TypeList,
+			"vpc_id": {
+				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
 			},
 			"transit_router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
+			"transit_router_attachment_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Attached", "Attaching", "Detaching"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"attachments": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"resource_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"status": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"transit_router_attachment_description": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cen_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -68,11 +82,19 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"transit_router_attachment_name": {
+						"vpc_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"vpc_id": {
+						"transit_router_id": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"resource_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"payment_type": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -80,7 +102,19 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"payment_type": {
+						"auto_publish_route_enabled": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"transit_router_attachment_name": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"transit_router_attachment_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"status": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -107,21 +141,32 @@ func dataSourceAlicloudCenTransitRouterVpcAttachments() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListTransitRouterVpcAttachments"
 	request := make(map[string]interface{})
-
+	request["RegionId"] = client.RegionId
+	request["MaxResults"] = PageSizeLarge
 	request["CenId"] = d.Get("cen_id")
 
-	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request["VpcId"] = v
+	}
+
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v
 	}
-	request["MaxResults"] = PageSizeLarge
-	var objects []map[string]interface{}
 
+	if v, ok := d.GetOk("transit_router_attachment_id"); ok {
+		request["TransitRouterAttachmentId"] = v
+	}
+
+	if v, ok := d.GetOk("status"); ok {
+		request["Status"] = v
+	}
+
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -131,12 +176,22 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
-	status, statusOk := d.GetOk("status")
+
+	var transitRouterVpcAttachmentNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		transitRouterVpcAttachmentNameRegex = r
+	}
+
 	var response map[string]interface{}
 	conn, err := client.NewCbnClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -150,75 +205,100 @@ func dataSourceAlicloudCenTransitRouterVpcAttachmentsRead(d *schema.ResourceData
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_vpc_attachments", action, AlibabaCloudSdkGoERROR)
 		}
+
 		resp, err := jsonpath.Get("$.TransitRouterAttachments", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.TransitRouterAttachments", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["TransitRouterAttachmentId"])]; !ok {
+				if _, ok := idsMap[fmt.Sprintf("%v:%v", item["CenId"], item["TransitRouterAttachmentId"])]; !ok {
 					continue
 				}
 			}
-			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
+
+			if transitRouterVpcAttachmentNameRegex != nil && !transitRouterVpcAttachmentNameRegex.MatchString(fmt.Sprint(item["TransitRouterAttachmentName"])) {
 				continue
 			}
+
 			objects = append(objects, item)
 		}
+
 		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
 			request["NextToken"] = nextToken
 		} else {
 			break
 		}
 	}
+
 	ids := make([]string, 0)
+	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"status":                                object["Status"],
-			"transit_router_attachment_description": object["TransitRouterAttachmentDescription"],
-			"id":                                    fmt.Sprint(object["TransitRouterAttachmentId"]),
+			"id":                                    fmt.Sprintf("%v:%v", object["CenId"], object["TransitRouterAttachmentId"]),
+			"cen_id":                                fmt.Sprint(object["CenId"]),
 			"transit_router_attachment_id":          fmt.Sprint(object["TransitRouterAttachmentId"]),
-			"transit_router_attachment_name":        object["TransitRouterAttachmentName"],
 			"vpc_id":                                object["VpcId"],
-			"vpc_owner_id":                          fmt.Sprint(object["VpcOwnerId"]),
+			"transit_router_id":                     object["TransitRouterId"],
 			"resource_type":                         object["ResourceType"],
 			"payment_type":                          convertCenTransitRouterVpcAttachmentPaymentTypeResponse(object["ChargeType"].(string)),
+			"vpc_owner_id":                          fmt.Sprint(object["VpcOwnerId"]),
+			"auto_publish_route_enabled":            object["AutoPublishRouteEnabled"],
+			"transit_router_attachment_name":        object["TransitRouterAttachmentName"],
+			"transit_router_attachment_description": object["TransitRouterAttachmentDescription"],
+			"status":                                object["Status"],
 		}
 
-		zoneMappings := make([]map[string]interface{}, 0)
-		if zoneMappingsList, ok := object["ZoneMappings"].([]interface{}); ok {
-			for _, v := range zoneMappingsList {
-				if m1, ok := v.(map[string]interface{}); ok {
-					temp1 := map[string]interface{}{
-						"vswitch_id": m1["VSwitchId"],
-						"zone_id":    m1["ZoneId"],
-					}
-					zoneMappings = append(zoneMappings, temp1)
+		if zoneMappings, ok := object["ZoneMappings"]; ok {
+			zoneMappingsMaps := make([]map[string]interface{}, 0)
+			for _, zoneMappingsList := range zoneMappings.([]interface{}) {
+				zoneMappingsArg := zoneMappingsList.(map[string]interface{})
+				zoneMappingsMap := map[string]interface{}{}
+
+				if vSwitchId, ok := zoneMappingsArg["VSwitchId"]; ok {
+					zoneMappingsMap["vswitch_id"] = vSwitchId
 				}
+
+				if zoneId, ok := zoneMappingsArg["ZoneId"]; ok {
+					zoneMappingsMap["zone_id"] = zoneId
+				}
+
+				zoneMappingsMaps = append(zoneMappingsMaps, zoneMappingsMap)
 			}
+
+			mapping["zone_mappings"] = zoneMappingsMaps
 		}
-		mapping["zone_mappings"] = zoneMappings
-		ids = append(ids, fmt.Sprint(object["TransitRouterAttachmentId"]))
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["TransitRouterAttachmentName"])
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
+		return WrapError(err)
+	}
+
+	if err := d.Set("names", names); err != nil {
 		return WrapError(err)
 	}
 
 	if err := d.Set("attachments", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}
