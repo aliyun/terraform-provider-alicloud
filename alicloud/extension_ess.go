@@ -16,8 +16,9 @@ const (
 type BatchSize int
 
 const (
-	AttachDetachLoadbalancersBatchsize = BatchSize(5)
-	AttachDetachDbinstancesBatchsize   = BatchSize(5)
+	AttachDetachLoadbalancersBatchsize  = BatchSize(5)
+	AttachDetachDbinstancesBatchsize    = BatchSize(5)
+	AttachDetachAlbServerGroupBatchsize = BatchSize(5)
 )
 
 type MaxItems int
