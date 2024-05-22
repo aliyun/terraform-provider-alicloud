@@ -609,6 +609,175 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 
 }
 
+func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":                "0",
+		"max_size":                "4",
+		"default_cooldown":        "20",
+		"scaling_group_name":      fmt.Sprintf("tf-testAccEssScalingGroupAlb-%d", rand),
+		"vswitch_id":              CHECKSET,
+		"vswitch_ids.#":           "1",
+		"removal_policies.#":      "2",
+		"launch_template_version": "Default",
+		"alb_server_group.#":      "0",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroupAlb-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupAlbServerGroup)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.tmpVs.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
+					"launch_template_version": "Default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":              []string{"alicloud_alb_server_group.default"},
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Latest",
+					"alb_server_group": []map[string]string{{
+						"alb_server_group_id": "${alicloud_alb_server_group.default.0.id}",
+						"weight":              "10",
+						"port":                "20",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":      CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"vswitch_ids.#":           "1",
+						"alb_server_group.#":      "1",
+						"launch_template_version": "Latest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":              []string{"alicloud_alb_server_group.default"},
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Latest",
+					"alb_server_group": []map[string]string{{
+						"alb_server_group_id": "${alicloud_alb_server_group.default.0.id}",
+						"weight":              "10",
+						"port":                "20",
+					},
+						{
+							"alb_server_group_id": "${alicloud_alb_server_group.default.1.id}",
+							"weight":              "20",
+							"port":                "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":      CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"vswitch_ids.#":           "1",
+						"alb_server_group.#":      "2",
+						"launch_template_version": "Latest",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":              []string{"alicloud_alb_server_group.default"},
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Latest",
+					"alb_server_group":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":      CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"vswitch_ids.#":           "1",
+						"alb_server_group.#":      "0",
+						"launch_template_version": "Latest",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"depends_on":              []string{"alicloud_alb_server_group.default"},
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Default",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":      CHECKSET,
+						"vswitch_id":              CHECKSET,
+						"vswitch_ids.#":           "1",
+						"launch_template_version": "Default",
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_costoptimized(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
@@ -1296,6 +1465,113 @@ func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
 
 }
 
+func TestAccAliCloudEssScalingGroup_resourceGroupId(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "0",
+		"max_size":           "4",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":      "1",
+		"removal_policies.#": "2",
+		"health_check_type":  "NONE",
+	}
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupResourceGroupId)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"health_check_type":  "NONE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"health_check_type":  "LOAD_BALANCER",
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_type": "LOAD_BALANCER",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"health_check_type":  "ECS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_type": "ECS",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"resource_group_id":  "",
+					"health_check_type":  "ECS",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_type": "ECS",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+		},
+	})
+
+}
+
 func TestAccAliCloudEssScalingGroup_eci(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
@@ -1691,6 +1967,127 @@ func resourceEssScalingGroupTemplate(name string) string {
   		spot_price_limit              = "5"
   		spot_strategy                 = "SpotWithPriceLimit"
   		security_group_id             = alicloud_security_group.default1.id
+	}
+
+	resource "alicloud_ecs_launch_template" "default" {
+  		launch_template_name = "tf-test1"
+  		image_id             =  data.alicloud_images.default.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.default.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingGroupResourceGroupId(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+
+    resource "alicloud_vswitch" "tmpVs" {
+  		vpc_id = "${alicloud_vpc.default.id}"
+  		cidr_block = "172.16.1.0/24"
+  		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  		name = "${var.name}-bar"
+	}
+
+	resource "alicloud_security_group" "default1" {
+  		name   = var.name
+  		vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	resource "alicloud_ecs_launch_template" "default1" {
+  		launch_template_name = "tf-test"
+  		image_id             =  data.alicloud_images.default.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.default.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+	resource "alicloud_ecs_launch_template" "default" {
+  		launch_template_name = "tf-test1"
+  		image_id             =  data.alicloud_images.default.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.default.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingGroupAlbServerGroup(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+
+    resource "alicloud_vswitch" "tmpVs" {
+  		vpc_id = "${alicloud_vpc.default.id}"
+  		cidr_block = "172.16.1.0/24"
+  		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  		name = "${var.name}-bar"
+	}
+
+	resource "alicloud_security_group" "default1" {
+  		name   = var.name
+  		vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	resource "alicloud_ecs_launch_template" "default1" {
+  		launch_template_name = "tf-test"
+  		image_id             =  data.alicloud_images.default.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.default.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}
+	
+	resource "alicloud_alb_server_group" "default" {
+        count = 2
+		server_group_name = "${var.name}"
+		vpc_id = "${alicloud_vpc.default.id}"
+		health_check_config {
+		  health_check_enabled = "false"
+		}
+		sticky_session_config {
+		  sticky_session_enabled = true
+		  cookie                 = "tf-testAcc"
+		  sticky_session_type    = "Server"
+	  }
 	}
 
 	resource "alicloud_ecs_launch_template" "default" {

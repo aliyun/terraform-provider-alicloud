@@ -900,6 +900,27 @@ func (s *EssService) SetResourceTags(d *schema.ResourceData, scalingGroupId stri
 	return nil
 }
 
+func (s *EssService) ChangeResourceGroup(d *schema.ResourceData, scalingGroupId string, client *connectivity.AliyunClient) error {
+
+	if d.HasChange("resource_group_id") {
+		request := ess.CreateChangeResourceGroupRequest()
+		request.ResourceId = scalingGroupId
+		request.ResourceType = "scalinggroup"
+		request.RegionId = client.RegionId
+		if v, ok := d.GetOk("resource_group_id"); ok {
+			request.NewResourceGroupId = v.(string)
+		}
+		raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
+			return essClient.ChangeResourceGroup(request)
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+	}
+	return nil
+}
+
 func (s *EssService) ListTagResources(scalingGroupId string, client *connectivity.AliyunClient) (object interface{}, err error) {
 	listTagsRequest := ess.CreateListTagResourcesRequest()
 	listTagsRequest.ResourceType = "scalinggroup"

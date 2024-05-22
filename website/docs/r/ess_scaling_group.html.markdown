@@ -143,7 +143,18 @@ The following arguments are supported:
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
 * `protected_instances` - (Optional, Available since v1.182.0) Set or unset instances within group into protected status.
-* `launch_template_override` - (Optional, Available since v1.216.0) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature..  See [`launch_template_override`](#launch_template_override) below for details.
+* `launch_template_override` - (Optional, Available since v1.216.0) The details of the instance types that are specified by using the Extend Instance Type of Launch Template feature.  See [`launch_template_override`](#launch_template_override) below for details.
+* `resource_group_id` - (Optional, Available since v1.224.0) The ID of the resource group to which you want to add the scaling group.
+* `alb_server_group` - (Optional, Available since v1.224.0) If a Serve ALB instance is specified in the scaling group, the scaling group automatically attaches its ECS instances to the Server ALB instance.  See [`alb_server_group`](#alb_server_group) below for details.
+
+### `alb_server_group`
+
+The AlbServerGroup mapping supports the following:
+
+* `alb_server_group_id` - (Optional) The ID of ALB server group.
+* `weight` - (Optional) The weight of the ECS instance as a backend server after Auto Scaling adds the ECS instance to ALB server group.
+* `port` - (Optional) The port number used by an ECS instance after Auto Scaling adds the ECS instance to ALB server group.
+
 
 ### `launch_template_override`
 
