@@ -484,6 +484,7 @@ func (s *NasServiceV2) NasAutoSnapshotPolicyStateRefreshFunc(id string, field st
 }
 
 // DescribeNasAutoSnapshotPolicy >>> Encapsulated.
+
 // DescribeNasAccessPoint <<< Encapsulated get interface for Nas AccessPoint.
 
 func (s *NasServiceV2) DescribeNasAccessPoint(id string) (object map[string]interface{}, err error) {
