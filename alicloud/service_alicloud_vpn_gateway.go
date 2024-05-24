@@ -114,7 +114,7 @@ func (s *VpnGatewayService) DescribeSslVpnClientCert(id string) (v vpc.DescribeS
 		return vpcClient.DescribeSslVpnClientCert(request)
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden", "InvalidSslVpnClientCertId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"Forbidden", "InvalidInstanceId.NotFound"}) {
 			return v, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
 		}
 		return v, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
