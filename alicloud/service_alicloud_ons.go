@@ -126,14 +126,25 @@ func (s *OnsService) DescribeOnsGroup(id string) (object map[string]interface{},
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.SubscribeInfoDo", response)
 	}
+	var exist bool
+	var index int = 0
 	if len(v.([]interface{})) < 1 {
 		return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
 	} else {
-		if v.([]interface{})[0].(map[string]interface{})["GroupId"].(string) != parts[1] {
+		// special handling for fuzzy matching
+		onsGroupList := v.([]interface{})
+		for i, onsGroup := range onsGroupList {
+			if onsGroup.(map[string]interface{})["GroupId"].(string) == parts[1] {
+				exist = true
+				index = i
+				break
+			}
+		}
+		if !exist {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Ons", id)), NotFoundWithResponse, response)
 		}
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+	object = v.([]interface{})[index].(map[string]interface{})
 	return object, nil
 }
 
