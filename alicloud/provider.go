@@ -863,6 +863,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_nas_access_point":                                     resourceAliCloudNasAccessPoint(),
+			"alicloud_api_gateway_access_control_list":                      resourceAliCloudApiGatewayAccessControlList(),
 			"alicloud_sls_alert":                                            resourceAliCloudSlsAlert(),
 			"alicloud_oss_bucket_cors":                                      resourceAliCloudOssBucketCors(),
 			"alicloud_oss_bucket_server_side_encryption":                    resourceAliCloudOssBucketServerSideEncryption(),
@@ -1602,7 +1603,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vod_editing_project":                                   resourceAlicloudVodEditingProject(),
 			"alicloud_api_gateway_model":                                     resourceAlicloudApiGatewayModel(),
 			"alicloud_cen_transit_router_grant_attachment":                   resourceAlicloudCenTransitRouterGrantAttachment(),
-			"alicloud_api_gateway_plugin":                                    resourceAlicloudApiGatewayPlugin(),
+			"alicloud_api_gateway_plugin":                                    resourceAliCloudApiGatewayPlugin(),
 			"alicloud_api_gateway_plugin_attachment":                         resourceAlicloudApiGatewayPluginAttachment(),
 			"alicloud_message_service_queue":                                 resourceAliCloudMessageServiceQueue(),
 			"alicloud_message_service_topic":                                 resourceAlicloudMessageServiceTopic(),
