@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -6,27 +7,36 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudApiGatewayPlugin() *schema.Resource {
+func resourceAliCloudApiGatewayPlugin() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudApiGatewayPluginCreate,
-		Read:   resourceAlicloudApiGatewayPluginRead,
-		Update: resourceAlicloudApiGatewayPluginUpdate,
-		Delete: resourceAlicloudApiGatewayPluginDelete,
+		Create: resourceAliCloudApiGatewayPluginCreate,
+		Read:   resourceAliCloudApiGatewayPluginRead,
+		Update: resourceAliCloudApiGatewayPluginUpdate,
+		Delete: resourceAliCloudApiGatewayPluginDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringLenBetween(1, 200),
+				ValidateFunc: StringMatch(regexp.MustCompile("(.*)"), "The description of the plug-in, which cannot exceed 200 characters."),
 			},
 			"plugin_data": {
 				Type:     schema.TypeString,
@@ -35,45 +45,49 @@ func resourceAlicloudApiGatewayPlugin() *schema.Resource {
 			"plugin_name": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9_]{3,49}$`), "It can contain uppercase English letters, lowercase English letters, Chinese characters, numbers, and underscores (_). It must be 4 to 50 characters in length and cannot start with an underscore (_)"),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "The name of the plug-in that you want to create. It can contain uppercase English letters, lowercase English letters, Chinese characters, numbers, and underscores (_). It must be 4 to 50 characters in length and cannot start with an underscore (_)."),
 			},
 			"plugin_type": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"backendSignature", "caching", "cors", "ipControl", "jwtAuth", "trafficControl"}, false),
+				ValidateFunc: StringInSlice([]string{"trafficControl", "ipControl", "backendSignature", "jwtAuth", "basicAuth", "cors", "caching", "routing", "accessControl", "errorMapping", "circuitBreaker", "remoteAuth", "logMask", "transformer"}, false),
 			},
 			"tags": tagsSchema(),
 		},
 	}
 }
 
-func resourceAlicloudApiGatewayPluginCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudApiGatewayPluginCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreatePlugin"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewApigatewayClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+
+	request["PluginType"] = d.Get("plugin_type")
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["PluginData"] = d.Get("plugin_data")
 	request["PluginName"] = d.Get("plugin_name")
-	request["PluginType"] = d.Get("plugin_type")
+	request["PluginData"] = d.Get("plugin_data")
 	if v, ok := d.GetOk("tags"); ok {
-		count := 1
-		for key, value := range v.(map[string]interface{}) {
-			request[fmt.Sprintf("Tag.%d.Key", count)] = key
-			request[fmt.Sprintf("Tag.%d.Value", count)] = value
-			count++
-		}
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
 	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -81,77 +95,78 @@ func resourceAlicloudApiGatewayPluginCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_api_gateway_plugin", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["PluginId"]))
 
-	return resourceAlicloudApiGatewayPluginRead(d, meta)
+	return resourceAliCloudApiGatewayPluginRead(d, meta)
 }
-func resourceAlicloudApiGatewayPluginRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudApiGatewayPluginRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
-	object, err := cloudApiService.DescribeApiGatewayPlugin(d.Id())
+	apiGatewayServiceV2 := ApiGatewayServiceV2{client}
+
+	objectRaw, err := apiGatewayServiceV2.DescribeApiGatewayPlugin(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_api_gateway_plugin cloudApiService.DescribeApiGatewayPlugin Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_api_gateway_plugin DescribeApiGatewayPlugin Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("description", object["Description"])
-	d.Set("plugin_data", object["PluginData"])
-	d.Set("plugin_name", object["PluginName"])
-	d.Set("plugin_type", object["PluginType"])
-	if tag, ok := object["Tags"]; ok {
-		if v, ok := tag.(map[string]interface{}); ok {
-			d.Set("tags", tagsToMap(v["TagInfo"]))
-		}
-	}
+
+	d.Set("create_time", objectRaw["CreatedTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("plugin_data", objectRaw["PluginData"])
+	d.Set("plugin_name", objectRaw["PluginName"])
+	d.Set("plugin_type", objectRaw["PluginType"])
+
+	tagsMaps, _ := jsonpath.Get("$.Tags.TagInfo", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
 
 	return nil
 }
-func resourceAlicloudApiGatewayPluginUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudApiGatewayPluginUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	cloudApiService := CloudApiService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	action := "ModifyPlugin"
 	conn, err := client.NewApigatewayClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	d.Partial(true)
-
-	if err := cloudApiService.SetResourceTags(d, "plugin"); err != nil {
-		return WrapError(err)
-	}
-	update := false
-	request := map[string]interface{}{
-		"PluginId": d.Id(),
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["PluginId"] = d.Id()
 	if d.HasChange("description") {
 		update = true
+		request["Description"] = d.Get("description")
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
+
+	if d.HasChange("plugin_name") {
+		update = true
 	}
+	request["PluginName"] = d.Get("plugin_name")
 	if d.HasChange("plugin_data") {
 		update = true
 	}
 	request["PluginData"] = d.Get("plugin_data")
-	if !d.IsNewResource() && d.HasChange("plugin_name") {
-		update = true
-	}
-	request["PluginName"] = d.Get("plugin_name")
 	if update {
-		action := "ModifyPlugin"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -159,33 +174,43 @@ func resourceAlicloudApiGatewayPluginUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("plugin_data")
-		d.SetPartial("plugin_name")
 	}
-	d.Partial(false)
-	return resourceAlicloudApiGatewayPluginRead(d, meta)
+
+	if d.HasChange("tags") {
+		apiGatewayServiceV2 := ApiGatewayServiceV2{client}
+		if err := apiGatewayServiceV2.SetResourceTags(d, "plugin"); err != nil {
+			return WrapError(err)
+		}
+	}
+	return resourceAliCloudApiGatewayPluginRead(d, meta)
 }
-func resourceAlicloudApiGatewayPluginDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudApiGatewayPluginDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeletePlugin"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewApigatewayClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"PluginId": d.Id(),
-	}
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	request = make(map[string]interface{})
+	query["PluginId"] = d.Id()
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -193,14 +218,16 @@ func resourceAlicloudApiGatewayPluginDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"500"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
