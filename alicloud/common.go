@@ -1800,9 +1800,9 @@ func expandTagsToMap(originMap map[string]interface{}, tags []map[string]interfa
 
 func convertChargeTypeToPaymentType(source interface{}) interface{} {
 	switch source {
-	case "PostPaid":
+	case "PostPaid", "Postpaid":
 		return "PayAsYouGo"
-	case "PrePaid":
+	case "PrePaid", "Prepaid":
 		return "Subscription"
 	}
 	return source
