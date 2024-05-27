@@ -163,6 +163,7 @@ var IMMSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1, Shenzhen, 
 var CenTRSupportRegions = []Region{EUCentral1, APSouthEast1, Hangzhou, Shanghai, Beijing, Shenzhen, Hongkong, APSouthEast1, USEast1, APSouth1}
 var VbrSupportRegions = []Region{Hangzhou}
 var ClickHouseSupportRegions = []Region{Hangzhou, Qingdao, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, Huhehaote, ChengDu, USWest1, USEast1, APSouthEast1, EUCentral1, EUWest1, APNorthEast1, APSouthEast1, APSouthEast5}
+var SelectDBSupportRegions = []Region{Hangzhou, Beijing, Shenzhen, Hongkong, Shanghai, Zhangjiakou, USWest1, USEast1, APSouthEast1, EUCentral1}
 var ClickHouseBackupPolicySupportRegions = []Region{Shanghai}
 var DatabaseGatewaySupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Beijing, Qingdao, Huhehaote, Shenzhen, ChengDu, Hongkong, APNorthEast1, APSouth1, APSouthEast1, APSouthEast2, APSouthEast3, EUWest1, EUCentral1, APSouthEast5, USWest1, USEast1}
 var CloudSsoSupportRegions = []Region{Shanghai, USWest1}

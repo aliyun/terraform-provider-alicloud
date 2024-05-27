@@ -151,6 +151,7 @@ type Config struct {
 	IotEndpoint                 string
 	ImmEndpoint                 string
 	ClickhouseEndpoint          string
+	SelectDBEndpoint            string
 	DtsEndpoint                 string
 	DgEndpoint                  string
 	CloudssoEndpoint            string
