@@ -386,6 +386,65 @@ func (s *BucketCnameConfigurationCname) SetDomain(v string) *BucketCnameConfigur
 	return s
 }
 
+type BucketDataRedundancyTransition struct {
+	Bucket                 *string `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	CreateTime             *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
+	EndTime                *string `json:"EndTime,omitempty" xml:"EndTime,omitempty"`
+	EstimatedRemainingTime *string `json:"EstimatedRemainingTime,omitempty" xml:"EstimatedRemainingTime,omitempty"`
+	ProcessPercentage      *int32  `json:"ProcessPercentage,omitempty" xml:"ProcessPercentage,omitempty"`
+	StartTime              *string `json:"StartTime,omitempty" xml:"StartTime,omitempty"`
+	Status                 *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	TaskId                 *string `json:"TaskId,omitempty" xml:"TaskId,omitempty"`
+}
+
+func (s BucketDataRedundancyTransition) String() string {
+	return tea.Prettify(s)
+}
+
+func (s BucketDataRedundancyTransition) GoString() string {
+	return s.String()
+}
+
+func (s *BucketDataRedundancyTransition) SetBucket(v string) *BucketDataRedundancyTransition {
+	s.Bucket = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetCreateTime(v string) *BucketDataRedundancyTransition {
+	s.CreateTime = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetEndTime(v string) *BucketDataRedundancyTransition {
+	s.EndTime = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetEstimatedRemainingTime(v string) *BucketDataRedundancyTransition {
+	s.EstimatedRemainingTime = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetProcessPercentage(v int32) *BucketDataRedundancyTransition {
+	s.ProcessPercentage = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetStartTime(v string) *BucketDataRedundancyTransition {
+	s.StartTime = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetStatus(v string) *BucketDataRedundancyTransition {
+	s.Status = &v
+	return s
+}
+
+func (s *BucketDataRedundancyTransition) SetTaskId(v string) *BucketDataRedundancyTransition {
+	s.TaskId = &v
+	return s
+}
+
 type BucketInfo struct {
 	Bucket *BucketInfoBucket `json:"Bucket,omitempty" xml:"Bucket,omitempty" type:"Struct"`
 }
@@ -1495,15 +1554,17 @@ func (s *ExtendWormConfiguration) SetRetentionPeriodInDays(v int32) *ExtendWormC
 }
 
 type GetAccessPointResult struct {
-	AccessPointArn   *string                        `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
-	AccessPointName  *string                        `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
-	AccountId        *string                        `json:"AccountId,omitempty" xml:"AccountId,omitempty"`
-	Alias            *string                        `json:"Alias,omitempty" xml:"Alias,omitempty"`
-	Bucket           *string                        `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
-	Endpoints        *GetAccessPointResultEndpoints `json:"Endpoints,omitempty" xml:"Endpoints,omitempty" type:"Struct"`
-	NetworkOrigin    *string                        `json:"NetworkOrigin,omitempty" xml:"NetworkOrigin,omitempty"`
-	Status           *string                        `json:"Status,omitempty" xml:"Status,omitempty"`
-	VpcConfiguration *AccessPointVpcConfiguration   `json:"VpcConfiguration,omitempty" xml:"VpcConfiguration,omitempty"`
+	AccessPointArn                 *string                         `json:"AccessPointArn,omitempty" xml:"AccessPointArn,omitempty"`
+	AccessPointName                *string                         `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
+	AccountId                      *string                         `json:"AccountId,omitempty" xml:"AccountId,omitempty"`
+	Alias                          *string                         `json:"Alias,omitempty" xml:"Alias,omitempty"`
+	Bucket                         *string                         `json:"Bucket,omitempty" xml:"Bucket,omitempty"`
+	CreationDate                   *string                         `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
+	Endpoints                      *GetAccessPointResultEndpoints  `json:"Endpoints,omitempty" xml:"Endpoints,omitempty" type:"Struct"`
+	NetworkOrigin                  *string                         `json:"NetworkOrigin,omitempty" xml:"NetworkOrigin,omitempty"`
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+	Status                         *string                         `json:"Status,omitempty" xml:"Status,omitempty"`
+	VpcConfiguration               *AccessPointVpcConfiguration    `json:"VpcConfiguration,omitempty" xml:"VpcConfiguration,omitempty"`
 }
 
 func (s GetAccessPointResult) String() string {
@@ -1539,6 +1600,11 @@ func (s *GetAccessPointResult) SetBucket(v string) *GetAccessPointResult {
 	return s
 }
 
+func (s *GetAccessPointResult) SetCreationDate(v string) *GetAccessPointResult {
+	s.CreationDate = &v
+	return s
+}
+
 func (s *GetAccessPointResult) SetEndpoints(v *GetAccessPointResultEndpoints) *GetAccessPointResult {
 	s.Endpoints = v
 	return s
@@ -1546,6 +1612,11 @@ func (s *GetAccessPointResult) SetEndpoints(v *GetAccessPointResultEndpoints) *G
 
 func (s *GetAccessPointResult) SetNetworkOrigin(v string) *GetAccessPointResult {
 	s.NetworkOrigin = &v
+	return s
+}
+
+func (s *GetAccessPointResult) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetAccessPointResult {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
@@ -1786,7 +1857,7 @@ func (s *InventoryDestination) SetOSSBucketDestination(v *InventoryOSSBucketDest
 
 type InventoryEncryption struct {
 	SSEKMS *SSEKMS `json:"SSE-KMS,omitempty" xml:"SSE-KMS,omitempty"`
-	SSEOSS *SSEOSS `json:"SSE-OSS,omitempty" xml:"SSE-OSS,omitempty"`
+	SSEOSS *string `json:"SSE-OSS,omitempty" xml:"SSE-OSS,omitempty"`
 }
 
 func (s InventoryEncryption) String() string {
@@ -1802,13 +1873,20 @@ func (s *InventoryEncryption) SetSSEKMS(v *SSEKMS) *InventoryEncryption {
 	return s
 }
 
-func (s *InventoryEncryption) SetSSEOSS(v *SSEOSS) *InventoryEncryption {
-	s.SSEOSS = v
+func (s *InventoryEncryption) SetSSEOSS(v string) *InventoryEncryption {
+	s.SSEOSS = &v
 	return s
 }
 
 type InventoryFilter struct {
-	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	LastModifyBeginTimeStamp *int64  `json:"LastModifyBeginTimeStamp,omitempty" xml:"LastModifyBeginTimeStamp,omitempty"`
+	LastModifyEndTimeStamp   *int64  `json:"LastModifyEndTimeStamp,omitempty" xml:"LastModifyEndTimeStamp,omitempty"`
+	LowerSizeBound           *int64  `json:"LowerSizeBound,omitempty" xml:"LowerSizeBound,omitempty"`
+	Prefix                   *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+	StorageClass             *string `json:"StorageClass,omitempty" xml:"StorageClass,omitempty"`
+	Tags                     *string `json:"Tags,omitempty" xml:"Tags,omitempty"`
+	TagsCondition            *string `json:"TagsCondition,omitempty" xml:"TagsCondition,omitempty"`
+	UpperSizeBound           *int64  `json:"UpperSizeBound,omitempty" xml:"UpperSizeBound,omitempty"`
 }
 
 func (s InventoryFilter) String() string {
@@ -1819,8 +1897,43 @@ func (s InventoryFilter) GoString() string {
 	return s.String()
 }
 
+func (s *InventoryFilter) SetLastModifyBeginTimeStamp(v int64) *InventoryFilter {
+	s.LastModifyBeginTimeStamp = &v
+	return s
+}
+
+func (s *InventoryFilter) SetLastModifyEndTimeStamp(v int64) *InventoryFilter {
+	s.LastModifyEndTimeStamp = &v
+	return s
+}
+
+func (s *InventoryFilter) SetLowerSizeBound(v int64) *InventoryFilter {
+	s.LowerSizeBound = &v
+	return s
+}
+
 func (s *InventoryFilter) SetPrefix(v string) *InventoryFilter {
 	s.Prefix = &v
+	return s
+}
+
+func (s *InventoryFilter) SetStorageClass(v string) *InventoryFilter {
+	s.StorageClass = &v
+	return s
+}
+
+func (s *InventoryFilter) SetTags(v string) *InventoryFilter {
+	s.Tags = &v
+	return s
+}
+
+func (s *InventoryFilter) SetTagsCondition(v string) *InventoryFilter {
+	s.TagsCondition = &v
+	return s
+}
+
+func (s *InventoryFilter) SetUpperSizeBound(v int64) *InventoryFilter {
+	s.UpperSizeBound = &v
 	return s
 }
 
@@ -1953,6 +2066,7 @@ func (s *LifecycleConfiguration) SetRule(v []*LifecycleRule) *LifecycleConfigura
 
 type LifecycleRule struct {
 	LifecycleAbortMultipartUpload *LifecycleRuleLifecycleAbortMultipartUpload `json:"AbortMultipartUpload,omitempty" xml:"AbortMultipartUpload,omitempty" type:"Struct"`
+	AtimeBase                     *int64                                      `json:"AtimeBase,omitempty" xml:"AtimeBase,omitempty"`
 	LifecycleExpiration           *LifecycleRuleLifecycleExpiration           `json:"Expiration,omitempty" xml:"Expiration,omitempty" type:"Struct"`
 	Filter                        *LifecycleRuleFilter                        `json:"Filter,omitempty" xml:"Filter,omitempty" type:"Struct"`
 	ID                            *string                                     `json:"ID,omitempty" xml:"ID,omitempty"`
@@ -1974,6 +2088,11 @@ func (s LifecycleRule) GoString() string {
 
 func (s *LifecycleRule) SetLifecycleAbortMultipartUpload(v *LifecycleRuleLifecycleAbortMultipartUpload) *LifecycleRule {
 	s.LifecycleAbortMultipartUpload = v
+	return s
+}
+
+func (s *LifecycleRule) SetAtimeBase(v int64) *LifecycleRule {
+	s.AtimeBase = &v
 	return s
 }
 
@@ -2024,6 +2143,7 @@ func (s *LifecycleRule) SetLifecycleTransition(v []*LifecycleRuleLifecycleTransi
 
 type LifecycleRuleLifecycleAbortMultipartUpload struct {
 	CreatedBeforeDate *string `json:"CreatedBeforeDate,omitempty" xml:"CreatedBeforeDate,omitempty"`
+	Date              *string `json:"Date,omitempty" xml:"Date,omitempty"`
 	Days              *int32  `json:"Days,omitempty" xml:"Days,omitempty"`
 }
 
@@ -2040,6 +2160,11 @@ func (s *LifecycleRuleLifecycleAbortMultipartUpload) SetCreatedBeforeDate(v stri
 	return s
 }
 
+func (s *LifecycleRuleLifecycleAbortMultipartUpload) SetDate(v string) *LifecycleRuleLifecycleAbortMultipartUpload {
+	s.Date = &v
+	return s
+}
+
 func (s *LifecycleRuleLifecycleAbortMultipartUpload) SetDays(v int32) *LifecycleRuleLifecycleAbortMultipartUpload {
 	s.Days = &v
 	return s
@@ -2047,6 +2172,7 @@ func (s *LifecycleRuleLifecycleAbortMultipartUpload) SetDays(v int32) *Lifecycle
 
 type LifecycleRuleLifecycleExpiration struct {
 	CreatedBeforeDate         *string `json:"CreatedBeforeDate,omitempty" xml:"CreatedBeforeDate,omitempty"`
+	Date                      *string `json:"Date,omitempty" xml:"Date,omitempty"`
 	Days                      *int32  `json:"Days,omitempty" xml:"Days,omitempty"`
 	ExpiredObjectDeleteMarker *bool   `json:"ExpiredObjectDeleteMarker,omitempty" xml:"ExpiredObjectDeleteMarker,omitempty"`
 }
@@ -2064,6 +2190,11 @@ func (s *LifecycleRuleLifecycleExpiration) SetCreatedBeforeDate(v string) *Lifec
 	return s
 }
 
+func (s *LifecycleRuleLifecycleExpiration) SetDate(v string) *LifecycleRuleLifecycleExpiration {
+	s.Date = &v
+	return s
+}
+
 func (s *LifecycleRuleLifecycleExpiration) SetDays(v int32) *LifecycleRuleLifecycleExpiration {
 	s.Days = &v
 	return s
@@ -2075,7 +2206,9 @@ func (s *LifecycleRuleLifecycleExpiration) SetExpiredObjectDeleteMarker(v bool) 
 }
 
 type LifecycleRuleFilter struct {
-	Not *LifecycleRuleFilterNot `json:"Not,omitempty" xml:"Not,omitempty" type:"Struct"`
+	Not                   *LifecycleRuleFilterNot `json:"Not,omitempty" xml:"Not,omitempty" type:"Struct"`
+	ObjectSizeGreaterThan *int64                  `json:"ObjectSizeGreaterThan,omitempty" xml:"ObjectSizeGreaterThan,omitempty"`
+	ObjectSizeLessThan    *int64                  `json:"ObjectSizeLessThan,omitempty" xml:"ObjectSizeLessThan,omitempty"`
 }
 
 func (s LifecycleRuleFilter) String() string {
@@ -2088,6 +2221,16 @@ func (s LifecycleRuleFilter) GoString() string {
 
 func (s *LifecycleRuleFilter) SetNot(v *LifecycleRuleFilterNot) *LifecycleRuleFilter {
 	s.Not = v
+	return s
+}
+
+func (s *LifecycleRuleFilter) SetObjectSizeGreaterThan(v int64) *LifecycleRuleFilter {
+	s.ObjectSizeGreaterThan = &v
+	return s
+}
+
+func (s *LifecycleRuleFilter) SetObjectSizeLessThan(v int64) *LifecycleRuleFilter {
+	s.ObjectSizeLessThan = &v
 	return s
 }
 
@@ -3002,7 +3145,8 @@ func (s *ObjectProcessConfigurationTransformationConfigurationsTransformationCon
 }
 
 type ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation struct {
-	FunctionCompute *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationFunctionCompute `json:"FunctionCompute,omitempty" xml:"FunctionCompute,omitempty" type:"Struct"`
+	AdditionalFeatures *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures `json:"AdditionalFeatures,omitempty" xml:"AdditionalFeatures,omitempty" type:"Struct"`
+	FunctionCompute    *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationFunctionCompute    `json:"FunctionCompute,omitempty" xml:"FunctionCompute,omitempty" type:"Struct"`
 }
 
 func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation) String() string {
@@ -3013,8 +3157,47 @@ func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConf
 	return s.String()
 }
 
+func (s *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation) SetAdditionalFeatures(v *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures) *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation {
+	s.AdditionalFeatures = v
+	return s
+}
+
 func (s *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation) SetFunctionCompute(v *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationFunctionCompute) *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformation {
 	s.FunctionCompute = v
+	return s
+}
+
+type ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures struct {
+	CustomForwardHeaders *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders `json:"CustomForwardHeaders,omitempty" xml:"CustomForwardHeaders,omitempty" type:"Struct"`
+}
+
+func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures) GoString() string {
+	return s.String()
+}
+
+func (s *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures) SetCustomForwardHeaders(v *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders) *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeatures {
+	s.CustomForwardHeaders = v
+	return s
+}
+
+type ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders struct {
+	CustomForwardHeader []*string `json:"CustomForwardHeader,omitempty" xml:"CustomForwardHeader,omitempty" type:"Repeated"`
+}
+
+func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders) GoString() string {
+	return s.String()
+}
+
+func (s *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders) SetCustomForwardHeader(v []*string) *ObjectProcessConfigurationTransformationConfigurationsTransformationConfigurationContentTransformationAdditionalFeaturesCustomForwardHeaders {
+	s.CustomForwardHeader = v
 	return s
 }
 
@@ -3264,6 +3447,88 @@ func (s *Part) SetSize(v int64) *Part {
 	return s
 }
 
+type PublicAccessBlockConfiguration struct {
+	BlockPublicAccess *bool `json:"BlockPublicAccess,omitempty" xml:"BlockPublicAccess,omitempty"`
+}
+
+func (s PublicAccessBlockConfiguration) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PublicAccessBlockConfiguration) GoString() string {
+	return s.String()
+}
+
+func (s *PublicAccessBlockConfiguration) SetBlockPublicAccess(v bool) *PublicAccessBlockConfiguration {
+	s.BlockPublicAccess = &v
+	return s
+}
+
+type PutReplicationRule struct {
+	Action                      *string                             `json:"Action,omitempty" xml:"Action,omitempty"`
+	Destination                 *ReplicationDestination             `json:"Destination,omitempty" xml:"Destination,omitempty"`
+	EncryptionConfiguration     *ReplicationEncryptionConfiguration `json:"EncryptionConfiguration,omitempty" xml:"EncryptionConfiguration,omitempty"`
+	HistoricalObjectReplication *string                             `json:"HistoricalObjectReplication,omitempty" xml:"HistoricalObjectReplication,omitempty"`
+	ID                          *string                             `json:"ID,omitempty" xml:"ID,omitempty"`
+	PrefixSet                   *ReplicationPrefixSet               `json:"PrefixSet,omitempty" xml:"PrefixSet,omitempty"`
+	RTC                         *RTC                                `json:"RTC,omitempty" xml:"RTC,omitempty"`
+	SourceSelectionCriteria     *ReplicationSourceSelectionCriteria `json:"SourceSelectionCriteria,omitempty" xml:"SourceSelectionCriteria,omitempty"`
+	SyncRole                    *string                             `json:"SyncRole,omitempty" xml:"SyncRole,omitempty"`
+}
+
+func (s PutReplicationRule) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutReplicationRule) GoString() string {
+	return s.String()
+}
+
+func (s *PutReplicationRule) SetAction(v string) *PutReplicationRule {
+	s.Action = &v
+	return s
+}
+
+func (s *PutReplicationRule) SetDestination(v *ReplicationDestination) *PutReplicationRule {
+	s.Destination = v
+	return s
+}
+
+func (s *PutReplicationRule) SetEncryptionConfiguration(v *ReplicationEncryptionConfiguration) *PutReplicationRule {
+	s.EncryptionConfiguration = v
+	return s
+}
+
+func (s *PutReplicationRule) SetHistoricalObjectReplication(v string) *PutReplicationRule {
+	s.HistoricalObjectReplication = &v
+	return s
+}
+
+func (s *PutReplicationRule) SetID(v string) *PutReplicationRule {
+	s.ID = &v
+	return s
+}
+
+func (s *PutReplicationRule) SetPrefixSet(v *ReplicationPrefixSet) *PutReplicationRule {
+	s.PrefixSet = v
+	return s
+}
+
+func (s *PutReplicationRule) SetRTC(v *RTC) *PutReplicationRule {
+	s.RTC = v
+	return s
+}
+
+func (s *PutReplicationRule) SetSourceSelectionCriteria(v *ReplicationSourceSelectionCriteria) *PutReplicationRule {
+	s.SourceSelectionCriteria = v
+	return s
+}
+
+func (s *PutReplicationRule) SetSyncRole(v string) *PutReplicationRule {
+	s.SyncRole = &v
+	return s
+}
+
 type RTC struct {
 	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
 }
@@ -3392,7 +3657,7 @@ func (s *RegionInfo) SetRegion(v string) *RegionInfo {
 }
 
 type ReplicationConfiguration struct {
-	Rule *ReplicationRule `json:"Rule,omitempty" xml:"Rule,omitempty"`
+	Rule *PutReplicationRule `json:"Rule,omitempty" xml:"Rule,omitempty"`
 }
 
 func (s ReplicationConfiguration) String() string {
@@ -3403,7 +3668,7 @@ func (s ReplicationConfiguration) GoString() string {
 	return s.String()
 }
 
-func (s *ReplicationConfiguration) SetRule(v *ReplicationRule) *ReplicationConfiguration {
+func (s *ReplicationConfiguration) SetRule(v *PutReplicationRule) *ReplicationConfiguration {
 	s.Rule = v
 	return s
 }
@@ -3434,6 +3699,23 @@ func (s *ReplicationDestination) SetLocation(v string) *ReplicationDestination {
 
 func (s *ReplicationDestination) SetTransferType(v string) *ReplicationDestination {
 	s.TransferType = &v
+	return s
+}
+
+type ReplicationEncryptionConfiguration struct {
+	ReplicaKmsKeyID *string `json:"ReplicaKmsKeyID,omitempty" xml:"ReplicaKmsKeyID,omitempty"`
+}
+
+func (s ReplicationEncryptionConfiguration) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ReplicationEncryptionConfiguration) GoString() string {
+	return s.String()
+}
+
+func (s *ReplicationEncryptionConfiguration) SetReplicaKmsKeyID(v string) *ReplicationEncryptionConfiguration {
+	s.ReplicaKmsKeyID = &v
 	return s
 }
 
@@ -3531,16 +3813,16 @@ func (s *ReplicationProgressRuleProgress) SetNewObject(v string) *ReplicationPro
 }
 
 type ReplicationRule struct {
-	Action                      *string                                 `json:"Action,omitempty" xml:"Action,omitempty"`
-	Destination                 *ReplicationDestination                 `json:"Destination,omitempty" xml:"Destination,omitempty"`
-	EncryptionConfiguration     *ReplicationRuleEncryptionConfiguration `json:"EncryptionConfiguration,omitempty" xml:"EncryptionConfiguration,omitempty" type:"Struct"`
-	HistoricalObjectReplication *string                                 `json:"HistoricalObjectReplication,omitempty" xml:"HistoricalObjectReplication,omitempty"`
-	ID                          *string                                 `json:"ID,omitempty" xml:"ID,omitempty"`
-	PrefixSet                   *ReplicationPrefixSet                   `json:"PrefixSet,omitempty" xml:"PrefixSet,omitempty"`
-	RTC                         *ReplicationRuleRTC                     `json:"RTC,omitempty" xml:"RTC,omitempty" type:"Struct"`
-	SourceSelectionCriteria     *ReplicationSourceSelectionCriteria     `json:"SourceSelectionCriteria,omitempty" xml:"SourceSelectionCriteria,omitempty"`
-	Status                      *string                                 `json:"Status,omitempty" xml:"Status,omitempty"`
-	SyncRole                    *string                                 `json:"SyncRole,omitempty" xml:"SyncRole,omitempty"`
+	Action                      *string                             `json:"Action,omitempty" xml:"Action,omitempty"`
+	Destination                 *ReplicationDestination             `json:"Destination,omitempty" xml:"Destination,omitempty"`
+	EncryptionConfiguration     *ReplicationEncryptionConfiguration `json:"EncryptionConfiguration,omitempty" xml:"EncryptionConfiguration,omitempty"`
+	HistoricalObjectReplication *string                             `json:"HistoricalObjectReplication,omitempty" xml:"HistoricalObjectReplication,omitempty"`
+	ID                          *string                             `json:"ID,omitempty" xml:"ID,omitempty"`
+	PrefixSet                   *ReplicationPrefixSet               `json:"PrefixSet,omitempty" xml:"PrefixSet,omitempty"`
+	RTC                         *RTC                                `json:"RTC,omitempty" xml:"RTC,omitempty"`
+	SourceSelectionCriteria     *ReplicationSourceSelectionCriteria `json:"SourceSelectionCriteria,omitempty" xml:"SourceSelectionCriteria,omitempty"`
+	Status                      *string                             `json:"Status,omitempty" xml:"Status,omitempty"`
+	SyncRole                    *string                             `json:"SyncRole,omitempty" xml:"SyncRole,omitempty"`
 }
 
 func (s ReplicationRule) String() string {
@@ -3561,7 +3843,7 @@ func (s *ReplicationRule) SetDestination(v *ReplicationDestination) *Replication
 	return s
 }
 
-func (s *ReplicationRule) SetEncryptionConfiguration(v *ReplicationRuleEncryptionConfiguration) *ReplicationRule {
+func (s *ReplicationRule) SetEncryptionConfiguration(v *ReplicationEncryptionConfiguration) *ReplicationRule {
 	s.EncryptionConfiguration = v
 	return s
 }
@@ -3581,7 +3863,7 @@ func (s *ReplicationRule) SetPrefixSet(v *ReplicationPrefixSet) *ReplicationRule
 	return s
 }
 
-func (s *ReplicationRule) SetRTC(v *ReplicationRuleRTC) *ReplicationRule {
+func (s *ReplicationRule) SetRTC(v *RTC) *ReplicationRule {
 	s.RTC = v
 	return s
 }
@@ -3598,40 +3880,6 @@ func (s *ReplicationRule) SetStatus(v string) *ReplicationRule {
 
 func (s *ReplicationRule) SetSyncRole(v string) *ReplicationRule {
 	s.SyncRole = &v
-	return s
-}
-
-type ReplicationRuleEncryptionConfiguration struct {
-	ReplicaKmsKeyID *string `json:"ReplicaKmsKeyID,omitempty" xml:"ReplicaKmsKeyID,omitempty"`
-}
-
-func (s ReplicationRuleEncryptionConfiguration) String() string {
-	return tea.Prettify(s)
-}
-
-func (s ReplicationRuleEncryptionConfiguration) GoString() string {
-	return s.String()
-}
-
-func (s *ReplicationRuleEncryptionConfiguration) SetReplicaKmsKeyID(v string) *ReplicationRuleEncryptionConfiguration {
-	s.ReplicaKmsKeyID = &v
-	return s
-}
-
-type ReplicationRuleRTC struct {
-	Status *string `json:"Status,omitempty" xml:"Status,omitempty"`
-}
-
-func (s ReplicationRuleRTC) String() string {
-	return tea.Prettify(s)
-}
-
-func (s ReplicationRuleRTC) GoString() string {
-	return s.String()
-}
-
-func (s *ReplicationRuleRTC) SetStatus(v string) *ReplicationRuleRTC {
-	s.Status = &v
 	return s
 }
 
@@ -3854,6 +4102,7 @@ func (s *RestoreRequestJobParameters) SetTier(v string) *RestoreRequestJobParame
 
 type RoutingRule struct {
 	Condition  *RoutingRuleCondition `json:"Condition,omitempty" xml:"Condition,omitempty"`
+	LuaConfig  *RoutingRuleLuaConfig `json:"LuaConfig,omitempty" xml:"LuaConfig,omitempty"`
 	Redirect   *RoutingRuleRedirect  `json:"Redirect,omitempty" xml:"Redirect,omitempty"`
 	RuleNumber *int64                `json:"RuleNumber,omitempty" xml:"RuleNumber,omitempty"`
 }
@@ -3868,6 +4117,11 @@ func (s RoutingRule) GoString() string {
 
 func (s *RoutingRule) SetCondition(v *RoutingRuleCondition) *RoutingRule {
 	s.Condition = v
+	return s
+}
+
+func (s *RoutingRule) SetLuaConfig(v *RoutingRuleLuaConfig) *RoutingRule {
+	s.LuaConfig = v
 	return s
 }
 
@@ -3917,8 +4171,10 @@ func (s *RoutingRuleCondition) SetKeySuffixEquals(v string) *RoutingRuleConditio
 }
 
 type RoutingRuleConditionIncludeHeader struct {
-	Equals *string `json:"Equals,omitempty" xml:"Equals,omitempty"`
-	Key    *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	EndsWith   *string `json:"EndsWith,omitempty" xml:"EndsWith,omitempty"`
+	Equals     *string `json:"Equals,omitempty" xml:"Equals,omitempty"`
+	Key        *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	StartsWith *string `json:"StartsWith,omitempty" xml:"StartsWith,omitempty"`
 }
 
 func (s RoutingRuleConditionIncludeHeader) String() string {
@@ -3927,6 +4183,11 @@ func (s RoutingRuleConditionIncludeHeader) String() string {
 
 func (s RoutingRuleConditionIncludeHeader) GoString() string {
 	return s.String()
+}
+
+func (s *RoutingRuleConditionIncludeHeader) SetEndsWith(v string) *RoutingRuleConditionIncludeHeader {
+	s.EndsWith = &v
+	return s
 }
 
 func (s *RoutingRuleConditionIncludeHeader) SetEquals(v string) *RoutingRuleConditionIncludeHeader {
@@ -3939,22 +4200,66 @@ func (s *RoutingRuleConditionIncludeHeader) SetKey(v string) *RoutingRuleConditi
 	return s
 }
 
+func (s *RoutingRuleConditionIncludeHeader) SetStartsWith(v string) *RoutingRuleConditionIncludeHeader {
+	s.StartsWith = &v
+	return s
+}
+
+type RoutingRuleLuaConfig struct {
+	Script *string `json:"Script,omitempty" xml:"Script,omitempty"`
+}
+
+func (s RoutingRuleLuaConfig) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleLuaConfig) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleLuaConfig) SetScript(v string) *RoutingRuleLuaConfig {
+	s.Script = &v
+	return s
+}
+
 type RoutingRuleRedirect struct {
-	EnableReplacePrefix       *bool                             `json:"EnableReplacePrefix,omitempty" xml:"EnableReplacePrefix,omitempty"`
-	HostName                  *string                           `json:"HostName,omitempty" xml:"HostName,omitempty"`
-	HttpRedirectCode          *int64                            `json:"HttpRedirectCode,omitempty" xml:"HttpRedirectCode,omitempty"`
-	MirrorCheckMd5            *bool                             `json:"MirrorCheckMd5,omitempty" xml:"MirrorCheckMd5,omitempty"`
-	MirrorFollowRedirect      *bool                             `json:"MirrorFollowRedirect,omitempty" xml:"MirrorFollowRedirect,omitempty"`
-	MirrorHeaders             *RoutingRuleRedirectMirrorHeaders `json:"MirrorHeaders,omitempty" xml:"MirrorHeaders,omitempty" type:"Struct"`
-	MirrorPassOriginalSlashes *bool                             `json:"MirrorPassOriginalSlashes,omitempty" xml:"MirrorPassOriginalSlashes,omitempty"`
-	MirrorPassQueryString     *bool                             `json:"MirrorPassQueryString,omitempty" xml:"MirrorPassQueryString,omitempty"`
-	MirrorSNI                 *bool                             `json:"MirrorSNI,omitempty" xml:"MirrorSNI,omitempty"`
-	MirrorURL                 *string                           `json:"MirrorURL,omitempty" xml:"MirrorURL,omitempty"`
-	PassQueryString           *bool                             `json:"PassQueryString,omitempty" xml:"PassQueryString,omitempty"`
-	Protocol                  *string                           `json:"Protocol,omitempty" xml:"Protocol,omitempty"`
-	RedirectType              *string                           `json:"RedirectType,omitempty" xml:"RedirectType,omitempty"`
-	ReplaceKeyPrefixWith      *string                           `json:"ReplaceKeyPrefixWith,omitempty" xml:"ReplaceKeyPrefixWith,omitempty"`
-	ReplaceKeyWith            *string                           `json:"ReplaceKeyWith,omitempty" xml:"ReplaceKeyWith,omitempty"`
+	EnableReplacePrefix            *bool                                     `json:"EnableReplacePrefix,omitempty" xml:"EnableReplacePrefix,omitempty"`
+	HostName                       *string                                   `json:"HostName,omitempty" xml:"HostName,omitempty"`
+	HttpRedirectCode               *int64                                    `json:"HttpRedirectCode,omitempty" xml:"HttpRedirectCode,omitempty"`
+	MirrorAllowGetImageInfo        *bool                                     `json:"MirrorAllowGetImageInfo,omitempty" xml:"MirrorAllowGetImageInfo,omitempty"`
+	MirrorAllowHeadObject          *bool                                     `json:"MirrorAllowHeadObject,omitempty" xml:"MirrorAllowHeadObject,omitempty"`
+	MirrorAllowVideoSnapshot       *bool                                     `json:"MirrorAllowVideoSnapshot,omitempty" xml:"MirrorAllowVideoSnapshot,omitempty"`
+	MirrorAsyncStatus              *int64                                    `json:"MirrorAsyncStatus,omitempty" xml:"MirrorAsyncStatus,omitempty"`
+	MirrorAuth                     *RoutingRuleRedirectMirrorAuth            `json:"MirrorAuth,omitempty" xml:"MirrorAuth,omitempty" type:"Struct"`
+	MirrorCheckMd5                 *bool                                     `json:"MirrorCheckMd5,omitempty" xml:"MirrorCheckMd5,omitempty"`
+	MirrorDstRegion                *string                                   `json:"MirrorDstRegion,omitempty" xml:"MirrorDstRegion,omitempty"`
+	MirrorDstSlaveVpcId            *string                                   `json:"MirrorDstSlaveVpcId,omitempty" xml:"MirrorDstSlaveVpcId,omitempty"`
+	MirrorDstVpcId                 *string                                   `json:"MirrorDstVpcId,omitempty" xml:"MirrorDstVpcId,omitempty"`
+	MirrorFollowRedirect           *bool                                     `json:"MirrorFollowRedirect,omitempty" xml:"MirrorFollowRedirect,omitempty"`
+	MirrorHeaders                  *RoutingRuleRedirectMirrorHeaders         `json:"MirrorHeaders,omitempty" xml:"MirrorHeaders,omitempty" type:"Struct"`
+	MirrorIsExpressTunnel          *bool                                     `json:"MirrorIsExpressTunnel,omitempty" xml:"MirrorIsExpressTunnel,omitempty"`
+	MirrorMultiAlternates          *RoutingRuleRedirectMirrorMultiAlternates `json:"MirrorMultiAlternates,omitempty" xml:"MirrorMultiAlternates,omitempty" type:"Struct"`
+	MirrorPassOriginalSlashes      *bool                                     `json:"MirrorPassOriginalSlashes,omitempty" xml:"MirrorPassOriginalSlashes,omitempty"`
+	MirrorPassQueryString          *bool                                     `json:"MirrorPassQueryString,omitempty" xml:"MirrorPassQueryString,omitempty"`
+	MirrorProxyPass                *bool                                     `json:"MirrorProxyPass,omitempty" xml:"MirrorProxyPass,omitempty"`
+	MirrorReturnHeaders            *RoutingRuleRedirectMirrorReturnHeaders   `json:"MirrorReturnHeaders,omitempty" xml:"MirrorReturnHeaders,omitempty" type:"Struct"`
+	MirrorRole                     *string                                   `json:"MirrorRole,omitempty" xml:"MirrorRole,omitempty"`
+	MirrorSNI                      *bool                                     `json:"MirrorSNI,omitempty" xml:"MirrorSNI,omitempty"`
+	MirrorSaveOssMeta              *bool                                     `json:"MirrorSaveOssMeta,omitempty" xml:"MirrorSaveOssMeta,omitempty"`
+	MirrorSwitchAllErrors          *bool                                     `json:"MirrorSwitchAllErrors,omitempty" xml:"MirrorSwitchAllErrors,omitempty"`
+	MirrorTaggings                 *RoutingRuleRedirectMirrorTaggings        `json:"MirrorTaggings,omitempty" xml:"MirrorTaggings,omitempty" type:"Struct"`
+	MirrorTunnelId                 *string                                   `json:"MirrorTunnelId,omitempty" xml:"MirrorTunnelId,omitempty"`
+	MirrorURL                      *string                                   `json:"MirrorURL,omitempty" xml:"MirrorURL,omitempty"`
+	MirrorURLProbe                 *string                                   `json:"MirrorURLProbe,omitempty" xml:"MirrorURLProbe,omitempty"`
+	MirrorURLSlave                 *string                                   `json:"MirrorURLSlave,omitempty" xml:"MirrorURLSlave,omitempty"`
+	MirrorUserLastModified         *bool                                     `json:"MirrorUserLastModified,omitempty" xml:"MirrorUserLastModified,omitempty"`
+	MirrorUsingRole                *bool                                     `json:"MirrorUsingRole,omitempty" xml:"MirrorUsingRole,omitempty"`
+	PassQueryString                *bool                                     `json:"PassQueryString,omitempty" xml:"PassQueryString,omitempty"`
+	Protocol                       *string                                   `json:"Protocol,omitempty" xml:"Protocol,omitempty"`
+	RedirectType                   *string                                   `json:"RedirectType,omitempty" xml:"RedirectType,omitempty"`
+	ReplaceKeyPrefixWith           *string                                   `json:"ReplaceKeyPrefixWith,omitempty" xml:"ReplaceKeyPrefixWith,omitempty"`
+	ReplaceKeyWith                 *string                                   `json:"ReplaceKeyWith,omitempty" xml:"ReplaceKeyWith,omitempty"`
+	TransparentMirrorResponseCodes *string                                   `json:"TransparentMirrorResponseCodes,omitempty" xml:"TransparentMirrorResponseCodes,omitempty"`
 }
 
 func (s RoutingRuleRedirect) String() string {
@@ -3980,8 +4285,48 @@ func (s *RoutingRuleRedirect) SetHttpRedirectCode(v int64) *RoutingRuleRedirect 
 	return s
 }
 
+func (s *RoutingRuleRedirect) SetMirrorAllowGetImageInfo(v bool) *RoutingRuleRedirect {
+	s.MirrorAllowGetImageInfo = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorAllowHeadObject(v bool) *RoutingRuleRedirect {
+	s.MirrorAllowHeadObject = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorAllowVideoSnapshot(v bool) *RoutingRuleRedirect {
+	s.MirrorAllowVideoSnapshot = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorAsyncStatus(v int64) *RoutingRuleRedirect {
+	s.MirrorAsyncStatus = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorAuth(v *RoutingRuleRedirectMirrorAuth) *RoutingRuleRedirect {
+	s.MirrorAuth = v
+	return s
+}
+
 func (s *RoutingRuleRedirect) SetMirrorCheckMd5(v bool) *RoutingRuleRedirect {
 	s.MirrorCheckMd5 = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorDstRegion(v string) *RoutingRuleRedirect {
+	s.MirrorDstRegion = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorDstSlaveVpcId(v string) *RoutingRuleRedirect {
+	s.MirrorDstSlaveVpcId = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorDstVpcId(v string) *RoutingRuleRedirect {
+	s.MirrorDstVpcId = &v
 	return s
 }
 
@@ -3995,6 +4340,16 @@ func (s *RoutingRuleRedirect) SetMirrorHeaders(v *RoutingRuleRedirectMirrorHeade
 	return s
 }
 
+func (s *RoutingRuleRedirect) SetMirrorIsExpressTunnel(v bool) *RoutingRuleRedirect {
+	s.MirrorIsExpressTunnel = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorMultiAlternates(v *RoutingRuleRedirectMirrorMultiAlternates) *RoutingRuleRedirect {
+	s.MirrorMultiAlternates = v
+	return s
+}
+
 func (s *RoutingRuleRedirect) SetMirrorPassOriginalSlashes(v bool) *RoutingRuleRedirect {
 	s.MirrorPassOriginalSlashes = &v
 	return s
@@ -4005,13 +4360,68 @@ func (s *RoutingRuleRedirect) SetMirrorPassQueryString(v bool) *RoutingRuleRedir
 	return s
 }
 
+func (s *RoutingRuleRedirect) SetMirrorProxyPass(v bool) *RoutingRuleRedirect {
+	s.MirrorProxyPass = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorReturnHeaders(v *RoutingRuleRedirectMirrorReturnHeaders) *RoutingRuleRedirect {
+	s.MirrorReturnHeaders = v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorRole(v string) *RoutingRuleRedirect {
+	s.MirrorRole = &v
+	return s
+}
+
 func (s *RoutingRuleRedirect) SetMirrorSNI(v bool) *RoutingRuleRedirect {
 	s.MirrorSNI = &v
 	return s
 }
 
+func (s *RoutingRuleRedirect) SetMirrorSaveOssMeta(v bool) *RoutingRuleRedirect {
+	s.MirrorSaveOssMeta = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorSwitchAllErrors(v bool) *RoutingRuleRedirect {
+	s.MirrorSwitchAllErrors = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorTaggings(v *RoutingRuleRedirectMirrorTaggings) *RoutingRuleRedirect {
+	s.MirrorTaggings = v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorTunnelId(v string) *RoutingRuleRedirect {
+	s.MirrorTunnelId = &v
+	return s
+}
+
 func (s *RoutingRuleRedirect) SetMirrorURL(v string) *RoutingRuleRedirect {
 	s.MirrorURL = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorURLProbe(v string) *RoutingRuleRedirect {
+	s.MirrorURLProbe = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorURLSlave(v string) *RoutingRuleRedirect {
+	s.MirrorURLSlave = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorUserLastModified(v bool) *RoutingRuleRedirect {
+	s.MirrorUserLastModified = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetMirrorUsingRole(v bool) *RoutingRuleRedirect {
+	s.MirrorUsingRole = &v
 	return s
 }
 
@@ -4037,6 +4447,46 @@ func (s *RoutingRuleRedirect) SetReplaceKeyPrefixWith(v string) *RoutingRuleRedi
 
 func (s *RoutingRuleRedirect) SetReplaceKeyWith(v string) *RoutingRuleRedirect {
 	s.ReplaceKeyWith = &v
+	return s
+}
+
+func (s *RoutingRuleRedirect) SetTransparentMirrorResponseCodes(v string) *RoutingRuleRedirect {
+	s.TransparentMirrorResponseCodes = &v
+	return s
+}
+
+type RoutingRuleRedirectMirrorAuth struct {
+	AccessKeyId     *string `json:"AccessKeyId,omitempty" xml:"AccessKeyId,omitempty"`
+	AccessKeySecret *string `json:"AccessKeySecret,omitempty" xml:"AccessKeySecret,omitempty"`
+	AuthType        *string `json:"AuthType,omitempty" xml:"AuthType,omitempty"`
+	Region          *string `json:"Region,omitempty" xml:"Region,omitempty"`
+}
+
+func (s RoutingRuleRedirectMirrorAuth) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorAuth) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorAuth) SetAccessKeyId(v string) *RoutingRuleRedirectMirrorAuth {
+	s.AccessKeyId = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorAuth) SetAccessKeySecret(v string) *RoutingRuleRedirectMirrorAuth {
+	s.AccessKeySecret = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorAuth) SetAuthType(v string) *RoutingRuleRedirectMirrorAuth {
+	s.AuthType = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorAuth) SetRegion(v string) *RoutingRuleRedirectMirrorAuth {
+	s.Region = &v
 	return s
 }
 
@@ -4098,6 +4548,138 @@ func (s *RoutingRuleRedirectMirrorHeadersSet) SetValue(v string) *RoutingRuleRed
 	return s
 }
 
+type RoutingRuleRedirectMirrorMultiAlternates struct {
+	MirrorMultiAlternate []*RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate `json:"MirrorMultiAlternate,omitempty" xml:"MirrorMultiAlternate,omitempty" type:"Repeated"`
+}
+
+func (s RoutingRuleRedirectMirrorMultiAlternates) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorMultiAlternates) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorMultiAlternates) SetMirrorMultiAlternate(v []*RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) *RoutingRuleRedirectMirrorMultiAlternates {
+	s.MirrorMultiAlternate = v
+	return s
+}
+
+type RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate struct {
+	MirrorMultiAlternateDstRegion *string `json:"MirrorMultiAlternateDstRegion,omitempty" xml:"MirrorMultiAlternateDstRegion,omitempty"`
+	MirrorMultiAlternateNumber    *int64  `json:"MirrorMultiAlternateNumber,omitempty" xml:"MirrorMultiAlternateNumber,omitempty"`
+	MirrorMultiAlternateURL       *string `json:"MirrorMultiAlternateURL,omitempty" xml:"MirrorMultiAlternateURL,omitempty"`
+	MirrorMultiAlternateVpcId     *string `json:"MirrorMultiAlternateVpcId,omitempty" xml:"MirrorMultiAlternateVpcId,omitempty"`
+}
+
+func (s RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) SetMirrorMultiAlternateDstRegion(v string) *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate {
+	s.MirrorMultiAlternateDstRegion = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) SetMirrorMultiAlternateNumber(v int64) *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate {
+	s.MirrorMultiAlternateNumber = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) SetMirrorMultiAlternateURL(v string) *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate {
+	s.MirrorMultiAlternateURL = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate) SetMirrorMultiAlternateVpcId(v string) *RoutingRuleRedirectMirrorMultiAlternatesMirrorMultiAlternate {
+	s.MirrorMultiAlternateVpcId = &v
+	return s
+}
+
+type RoutingRuleRedirectMirrorReturnHeaders struct {
+	ReturnHeader []*RoutingRuleRedirectMirrorReturnHeadersReturnHeader `json:"ReturnHeader,omitempty" xml:"ReturnHeader,omitempty" type:"Repeated"`
+}
+
+func (s RoutingRuleRedirectMirrorReturnHeaders) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorReturnHeaders) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorReturnHeaders) SetReturnHeader(v []*RoutingRuleRedirectMirrorReturnHeadersReturnHeader) *RoutingRuleRedirectMirrorReturnHeaders {
+	s.ReturnHeader = v
+	return s
+}
+
+type RoutingRuleRedirectMirrorReturnHeadersReturnHeader struct {
+	Key   *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
+}
+
+func (s RoutingRuleRedirectMirrorReturnHeadersReturnHeader) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorReturnHeadersReturnHeader) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorReturnHeadersReturnHeader) SetKey(v string) *RoutingRuleRedirectMirrorReturnHeadersReturnHeader {
+	s.Key = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorReturnHeadersReturnHeader) SetValue(v string) *RoutingRuleRedirectMirrorReturnHeadersReturnHeader {
+	s.Value = &v
+	return s
+}
+
+type RoutingRuleRedirectMirrorTaggings struct {
+	Taggings []*RoutingRuleRedirectMirrorTaggingsTaggings `json:"Taggings,omitempty" xml:"Taggings,omitempty" type:"Repeated"`
+}
+
+func (s RoutingRuleRedirectMirrorTaggings) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorTaggings) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorTaggings) SetTaggings(v []*RoutingRuleRedirectMirrorTaggingsTaggings) *RoutingRuleRedirectMirrorTaggings {
+	s.Taggings = v
+	return s
+}
+
+type RoutingRuleRedirectMirrorTaggingsTaggings struct {
+	Key   *string `json:"Key,omitempty" xml:"Key,omitempty"`
+	Value *string `json:"Value,omitempty" xml:"Value,omitempty"`
+}
+
+func (s RoutingRuleRedirectMirrorTaggingsTaggings) String() string {
+	return tea.Prettify(s)
+}
+
+func (s RoutingRuleRedirectMirrorTaggingsTaggings) GoString() string {
+	return s.String()
+}
+
+func (s *RoutingRuleRedirectMirrorTaggingsTaggings) SetKey(v string) *RoutingRuleRedirectMirrorTaggingsTaggings {
+	s.Key = &v
+	return s
+}
+
+func (s *RoutingRuleRedirectMirrorTaggingsTaggings) SetValue(v string) *RoutingRuleRedirectMirrorTaggingsTaggings {
+	s.Value = &v
+	return s
+}
+
 type RtcConfiguration struct {
 	ID  *string `json:"ID,omitempty" xml:"ID,omitempty"`
 	RTC *RTC    `json:"RTC,omitempty" xml:"RTC,omitempty"`
@@ -4135,23 +4717,6 @@ func (s SSEKMS) GoString() string {
 
 func (s *SSEKMS) SetKeyId(v string) *SSEKMS {
 	s.KeyId = &v
-	return s
-}
-
-type SSEOSS struct {
-	Unused *string `json:"unused,omitempty" xml:"unused,omitempty"`
-}
-
-func (s SSEOSS) String() string {
-	return tea.Prettify(s)
-}
-
-func (s SSEOSS) GoString() string {
-	return s.String()
-}
-
-func (s *SSEOSS) SetUnused(v string) *SSEOSS {
-	s.Unused = &v
 	return s
 }
 
@@ -5136,6 +5701,8 @@ type CopyObjectHeaders struct {
 	//
 	// For more information about ACLs, see [Object ACL](~~100676~~).
 	Acl *string `json:"x-oss-object-acl,omitempty" xml:"x-oss-object-acl,omitempty"`
+	// The server side data encryption algorithm. Invalid value: SM4
+	XOssServerSideDataEncryption *string `json:"x-oss-server-side-data-encryption,omitempty" xml:"x-oss-server-side-data-encryption,omitempty"`
 	// The entropy coding-based encryption algorithm that OSS uses to encrypt an object when you create the object. The valid values of the header are **AES256** and **KMS**. You must activate Key Management Service (KMS) in the OSS console before you can use the KMS encryption algorithm. Otherwise, the KmsServiceNotEnabled error is returned.
 	//
 	// *   If you do not specify the **x-oss-server-side-encryption** header in the CopyObject request, the destination object is not encrypted on the server regardless of whether the source object is encrypted on the server.
@@ -5220,6 +5787,11 @@ func (s *CopyObjectHeaders) SetMetadataDirective(v string) *CopyObjectHeaders {
 
 func (s *CopyObjectHeaders) SetAcl(v string) *CopyObjectHeaders {
 	s.Acl = &v
+	return s
+}
+
+func (s *CopyObjectHeaders) SetXOssServerSideDataEncryption(v string) *CopyObjectHeaders {
+	s.XOssServerSideDataEncryption = &v
 	return s
 }
 
@@ -5426,8 +5998,9 @@ func (s *CreateAccessPointForObjectProcessRequest) SetCreateAccessPointForObject
 }
 
 type CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration struct {
-	AccessPointName            *string                     `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
-	ObjectProcessConfiguration *ObjectProcessConfiguration `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
+	AccessPointName                      *string                     `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
+	AllowAnonymousAccessForObjectProcess *string                     `json:"AllowAnonymousAccessForObjectProcess,omitempty" xml:"AllowAnonymousAccessForObjectProcess,omitempty"`
+	ObjectProcessConfiguration           *ObjectProcessConfiguration `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
 }
 
 func (s CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration) String() string {
@@ -5440,6 +6013,11 @@ func (s CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProces
 
 func (s *CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration) SetAccessPointName(v string) *CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration {
 	s.AccessPointName = &v
+	return s
+}
+
+func (s *CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration) SetAllowAnonymousAccessForObjectProcess(v string) *CreateAccessPointForObjectProcessRequestCreateAccessPointForObjectProcessConfiguration {
+	s.AllowAnonymousAccessForObjectProcess = &v
 	return s
 }
 
@@ -5517,9 +6095,89 @@ func (s *CreateAccessPointForObjectProcessResponse) SetBody(v *CreateAccessPoint
 	return s
 }
 
+type CreateBucketDataRedundancyTransitionRequest struct {
+	XOssTargetRedundancyType *string `json:"x-oss-target-redundancy-type,omitempty" xml:"x-oss-target-redundancy-type,omitempty"`
+}
+
+func (s CreateBucketDataRedundancyTransitionRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateBucketDataRedundancyTransitionRequest) GoString() string {
+	return s.String()
+}
+
+func (s *CreateBucketDataRedundancyTransitionRequest) SetXOssTargetRedundancyType(v string) *CreateBucketDataRedundancyTransitionRequest {
+	s.XOssTargetRedundancyType = &v
+	return s
+}
+
+type CreateBucketDataRedundancyTransitionResponseBody struct {
+	BucketDataRedundancyTransition *CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition `json:"BucketDataRedundancyTransition,omitempty" xml:"BucketDataRedundancyTransition,omitempty" type:"Struct"`
+}
+
+func (s CreateBucketDataRedundancyTransitionResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateBucketDataRedundancyTransitionResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *CreateBucketDataRedundancyTransitionResponseBody) SetBucketDataRedundancyTransition(v *CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition) *CreateBucketDataRedundancyTransitionResponseBody {
+	s.BucketDataRedundancyTransition = v
+	return s
+}
+
+type CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition struct {
+	TaskId *string `json:"TaskId,omitempty" xml:"TaskId,omitempty"`
+}
+
+func (s CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition) GoString() string {
+	return s.String()
+}
+
+func (s *CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition) SetTaskId(v string) *CreateBucketDataRedundancyTransitionResponseBodyBucketDataRedundancyTransition {
+	s.TaskId = &v
+	return s
+}
+
+type CreateBucketDataRedundancyTransitionResponse struct {
+	Headers    map[string]*string                                `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                            `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *CreateBucketDataRedundancyTransitionResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s CreateBucketDataRedundancyTransitionResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateBucketDataRedundancyTransitionResponse) GoString() string {
+	return s.String()
+}
+
+func (s *CreateBucketDataRedundancyTransitionResponse) SetHeaders(v map[string]*string) *CreateBucketDataRedundancyTransitionResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *CreateBucketDataRedundancyTransitionResponse) SetStatusCode(v int32) *CreateBucketDataRedundancyTransitionResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *CreateBucketDataRedundancyTransitionResponse) SetBody(v *CreateBucketDataRedundancyTransitionResponseBody) *CreateBucketDataRedundancyTransitionResponse {
+	s.Body = v
+	return s
+}
+
 type CreateCnameTokenRequest struct {
 	// The container that stores the CNAME record.
-	BucketCnameConfiguration *BucketCnameConfiguration `json:"BucketCnameConfiguration,omitempty" xml:"BucketCnameConfiguration,omitempty"`
+	BucketCnameConfiguration *CreateCnameTokenRequestBucketCnameConfiguration `json:"BucketCnameConfiguration,omitempty" xml:"BucketCnameConfiguration,omitempty" type:"Struct"`
 }
 
 func (s CreateCnameTokenRequest) String() string {
@@ -5530,8 +6188,44 @@ func (s CreateCnameTokenRequest) GoString() string {
 	return s.String()
 }
 
-func (s *CreateCnameTokenRequest) SetBucketCnameConfiguration(v *BucketCnameConfiguration) *CreateCnameTokenRequest {
+func (s *CreateCnameTokenRequest) SetBucketCnameConfiguration(v *CreateCnameTokenRequestBucketCnameConfiguration) *CreateCnameTokenRequest {
 	s.BucketCnameConfiguration = v
+	return s
+}
+
+type CreateCnameTokenRequestBucketCnameConfiguration struct {
+	// The container that stores the CNAME information.
+	Cname *CreateCnameTokenRequestBucketCnameConfigurationCname `json:"Cname,omitempty" xml:"Cname,omitempty" type:"Struct"`
+}
+
+func (s CreateCnameTokenRequestBucketCnameConfiguration) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateCnameTokenRequestBucketCnameConfiguration) GoString() string {
+	return s.String()
+}
+
+func (s *CreateCnameTokenRequestBucketCnameConfiguration) SetCname(v *CreateCnameTokenRequestBucketCnameConfigurationCname) *CreateCnameTokenRequestBucketCnameConfiguration {
+	s.Cname = v
+	return s
+}
+
+type CreateCnameTokenRequestBucketCnameConfigurationCname struct {
+	// The custom domain name.
+	Domain *string `json:"Domain,omitempty" xml:"Domain,omitempty"`
+}
+
+func (s CreateCnameTokenRequestBucketCnameConfigurationCname) String() string {
+	return tea.Prettify(s)
+}
+
+func (s CreateCnameTokenRequestBucketCnameConfigurationCname) GoString() string {
+	return s.String()
+}
+
+func (s *CreateCnameTokenRequestBucketCnameConfigurationCname) SetDomain(v string) *CreateCnameTokenRequestBucketCnameConfigurationCname {
+	s.Domain = &v
 	return s
 }
 
@@ -5815,6 +6509,46 @@ func (s *DeleteAccessPointPolicyForObjectProcessResponse) SetStatusCode(v int32)
 	return s
 }
 
+type DeleteAccessPointPublicAccessBlockRequest struct {
+	XOssAccessPointName *string `json:"x-oss-access-point-name,omitempty" xml:"x-oss-access-point-name,omitempty"`
+}
+
+func (s DeleteAccessPointPublicAccessBlockRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteAccessPointPublicAccessBlockRequest) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteAccessPointPublicAccessBlockRequest) SetXOssAccessPointName(v string) *DeleteAccessPointPublicAccessBlockRequest {
+	s.XOssAccessPointName = &v
+	return s
+}
+
+type DeleteAccessPointPublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteAccessPointPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteAccessPointPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteAccessPointPublicAccessBlockResponse) SetHeaders(v map[string]*string) *DeleteAccessPointPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteAccessPointPublicAccessBlockResponse) SetStatusCode(v int32) *DeleteAccessPointPublicAccessBlockResponse {
+	s.StatusCode = &v
+	return s
+}
+
 type DeleteBucketResponse struct {
 	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
 	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
@@ -5880,6 +6614,46 @@ func (s *DeleteBucketCorsResponse) SetHeaders(v map[string]*string) *DeleteBucke
 }
 
 func (s *DeleteBucketCorsResponse) SetStatusCode(v int32) *DeleteBucketCorsResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteBucketDataRedundancyTransitionRequest struct {
+	XOssRedundancyTransitionTaskid *string `json:"x-oss-redundancy-transition-taskid,omitempty" xml:"x-oss-redundancy-transition-taskid,omitempty"`
+}
+
+func (s DeleteBucketDataRedundancyTransitionRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteBucketDataRedundancyTransitionRequest) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteBucketDataRedundancyTransitionRequest) SetXOssRedundancyTransitionTaskid(v string) *DeleteBucketDataRedundancyTransitionRequest {
+	s.XOssRedundancyTransitionTaskid = &v
+	return s
+}
+
+type DeleteBucketDataRedundancyTransitionResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteBucketDataRedundancyTransitionResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteBucketDataRedundancyTransitionResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteBucketDataRedundancyTransitionResponse) SetHeaders(v map[string]*string) *DeleteBucketDataRedundancyTransitionResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteBucketDataRedundancyTransitionResponse) SetStatusCode(v int32) *DeleteBucketDataRedundancyTransitionResponse {
 	s.StatusCode = &v
 	return s
 }
@@ -6013,6 +6787,29 @@ func (s *DeleteBucketPolicyResponse) SetHeaders(v map[string]*string) *DeleteBuc
 }
 
 func (s *DeleteBucketPolicyResponse) SetStatusCode(v int32) *DeleteBucketPolicyResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteBucketPublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteBucketPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteBucketPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteBucketPublicAccessBlockResponse) SetHeaders(v map[string]*string) *DeleteBucketPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteBucketPublicAccessBlockResponse) SetStatusCode(v int32) *DeleteBucketPublicAccessBlockResponse {
 	s.StatusCode = &v
 	return s
 }
@@ -6440,6 +7237,29 @@ func (s *DeleteObjectTaggingResponse) SetStatusCode(v int32) *DeleteObjectTaggin
 	return s
 }
 
+type DeletePublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeletePublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeletePublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeletePublicAccessBlockResponse) SetHeaders(v map[string]*string) *DeletePublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeletePublicAccessBlockResponse) SetStatusCode(v int32) *DeletePublicAccessBlockResponse {
+	s.StatusCode = &v
+	return s
+}
+
 type DeleteStyleRequest struct {
 	// The name of the image style.
 	StyleName *string `json:"styleName,omitempty" xml:"styleName,omitempty"`
@@ -6477,6 +7297,29 @@ func (s *DeleteStyleResponse) SetHeaders(v map[string]*string) *DeleteStyleRespo
 }
 
 func (s *DeleteStyleResponse) SetStatusCode(v int32) *DeleteStyleResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type DeleteUserDefinedLogFieldsConfigResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s DeleteUserDefinedLogFieldsConfigResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s DeleteUserDefinedLogFieldsConfigResponse) GoString() string {
+	return s.String()
+}
+
+func (s *DeleteUserDefinedLogFieldsConfigResponse) SetHeaders(v map[string]*string) *DeleteUserDefinedLogFieldsConfigResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *DeleteUserDefinedLogFieldsConfigResponse) SetStatusCode(v int32) *DeleteUserDefinedLogFieldsConfigResponse {
 	s.StatusCode = &v
 	return s
 }
@@ -6837,7 +7680,9 @@ func (s *GetAccessPointConfigForObjectProcessResponseBody) SetGetAccessPointConf
 }
 
 type GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult struct {
-	ObjectProcessConfiguration *ObjectProcessConfiguration `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
+	AllowAnonymousAccessForObjectProcess *string                         `json:"AllowAnonymousAccessForObjectProcess,omitempty" xml:"AllowAnonymousAccessForObjectProcess,omitempty"`
+	ObjectProcessConfiguration           *ObjectProcessConfiguration     `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
+	PublicAccessBlockConfiguration       *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
 }
 
 func (s GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult) String() string {
@@ -6848,8 +7693,18 @@ func (s GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForO
 	return s.String()
 }
 
+func (s *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult) SetAllowAnonymousAccessForObjectProcess(v string) *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult {
+	s.AllowAnonymousAccessForObjectProcess = &v
+	return s
+}
+
 func (s *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult) SetObjectProcessConfiguration(v *ObjectProcessConfiguration) *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult {
 	s.ObjectProcessConfiguration = v
+	return s
+}
+
+func (s *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetAccessPointConfigForObjectProcessResponseBodyGetAccessPointConfigForObjectProcessResult {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
@@ -6923,14 +7778,16 @@ func (s *GetAccessPointForObjectProcessResponseBody) SetGetAccessPointForObjectP
 }
 
 type GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult struct {
-	AccessPointForObjectProcessAlias *string                                                                                  `json:"AccessPointForObjectProcessAlias,omitempty" xml:"AccessPointForObjectProcessAlias,omitempty"`
-	AccessPointForObjectProcessArn   *string                                                                                  `json:"AccessPointForObjectProcessArn,omitempty" xml:"AccessPointForObjectProcessArn,omitempty"`
-	AccessPointName                  *string                                                                                  `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
-	AccessPointNameForObjectProcess  *string                                                                                  `json:"AccessPointNameForObjectProcess,omitempty" xml:"AccessPointNameForObjectProcess,omitempty"`
-	AccountId                        *string                                                                                  `json:"AccountId,omitempty" xml:"AccountId,omitempty"`
-	CreationDate                     *string                                                                                  `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
-	Endpoints                        *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResultEndpoints `json:"Endpoints,omitempty" xml:"Endpoints,omitempty" type:"Struct"`
-	Status                           *string                                                                                  `json:"Status,omitempty" xml:"Status,omitempty"`
+	AccessPointForObjectProcessAlias     *string                                                                                  `json:"AccessPointForObjectProcessAlias,omitempty" xml:"AccessPointForObjectProcessAlias,omitempty"`
+	AccessPointForObjectProcessArn       *string                                                                                  `json:"AccessPointForObjectProcessArn,omitempty" xml:"AccessPointForObjectProcessArn,omitempty"`
+	AccessPointName                      *string                                                                                  `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
+	AccessPointNameForObjectProcess      *string                                                                                  `json:"AccessPointNameForObjectProcess,omitempty" xml:"AccessPointNameForObjectProcess,omitempty"`
+	AccountId                            *string                                                                                  `json:"AccountId,omitempty" xml:"AccountId,omitempty"`
+	AllowAnonymousAccessForObjectProcess *string                                                                                  `json:"AllowAnonymousAccessForObjectProcess,omitempty" xml:"AllowAnonymousAccessForObjectProcess,omitempty"`
+	CreationDate                         *string                                                                                  `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
+	Endpoints                            *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResultEndpoints `json:"Endpoints,omitempty" xml:"Endpoints,omitempty" type:"Struct"`
+	PublicAccessBlockConfiguration       *PublicAccessBlockConfiguration                                                          `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+	Status                               *string                                                                                  `json:"Status,omitempty" xml:"Status,omitempty"`
 }
 
 func (s GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult) String() string {
@@ -6966,6 +7823,11 @@ func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProces
 	return s
 }
 
+func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult) SetAllowAnonymousAccessForObjectProcess(v string) *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult {
+	s.AllowAnonymousAccessForObjectProcess = &v
+	return s
+}
+
 func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult) SetCreationDate(v string) *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult {
 	s.CreationDate = &v
 	return s
@@ -6973,6 +7835,11 @@ func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProces
 
 func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult) SetEndpoints(v *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResultEndpoints) *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult {
 	s.Endpoints = v
+	return s
+}
+
+func (s *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetAccessPointForObjectProcessResponseBodyGetAccessPointForObjectProcessResult {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
@@ -7138,180 +8005,65 @@ func (s *GetAccessPointPolicyForObjectProcessResponse) SetBody(v string) *GetAcc
 	return s
 }
 
-type GetBucketRequest struct {
-	// The character that is used to group objects by name. If you specify prefix and delimiter in the request, the response contains CommonPrefixes. The objects whose name contains the same string from the prefix to the next occurrence of the delimiter are grouped as a single result element in CommonPrefixes.\
-	// By default, this parameter is left empty.
-	Delimiter *string `json:"delimiter,omitempty" xml:"delimiter,omitempty"`
-	// The encoding type of the content in the response.\
-	// By default, this parameter is left empty.\
-	// Set the value to URL.\
-	// The values of Delimiter, Marker, Prefix, NextMarker, and Key are UTF-8 encoded. If the value of Delimiter, Marker, Prefix, NextMarker, or Key contains a control character that is not supported by Extensible Markup Language (XML) 1.0, you can specify encoding-type to encode the value in the response.
-	EncodingType *string `json:"encoding-type,omitempty" xml:"encoding-type,omitempty"`
-	// The name of the object after which the GetBucket (ListObjects) operation begins. If this parameter is specified, objects whose name is alphabetically after the value of marker are returned.\
-	// The objects are returned by page based on marker. The value of marker must be less than 1,024 bytes in length.\
-	// If the value of marker does not exist in the list when you perform a conditional query, the GetBucket (ListObjects) operation also starts from the object name that is alphabetically after the value of marker.\
-	// By default, this parameter is left empty.
-	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
-	// The maximum number of objects to be returned. If the number of returned objects exceeds the value of max-keys, use the value of NextMarker returned in the response as the value of marker in the next request.\
-	// Valid values: 1 to 999.\
-	// Default value: 100.
-	MaxKeys *int64 `json:"max-keys,omitempty" xml:"max-keys,omitempty"`
-	// The prefix that the names of returned objects must contain.
-	//
-	// *   The value of prefix must be less than 1,024 bytes in length.
-	// *   If you specify prefix, the names of the returned objects contain the prefix.\
-	//
-	//
-	// If you set prefix to a directory name, the objects whose name starts with the prefix are listed. The listed objects consist of all objects and subdirectories in the directory.\
-	// If you specify prefix and set delimiter to a forward slash (/), only the objects in the directory are listed. The subdirectories in the directory are returned in CommonPrefixes. Objects and subdirectories in the subdirectories are not listed.\
-	// For example, a bucket contains the following three objects: fun/test.jpg, fun/movie/001.avi, and fun/movie/007.avi. If you set prefix to fun/, the three objects are returned. If you set prefix to fun/and delimiter to a forward slash (/), fun/test.jpg and fun/movie/are returned.\
-	// By default, this parameter is left empty.
-	Prefix *string `json:"prefix,omitempty" xml:"prefix,omitempty"`
+type GetAccessPointPublicAccessBlockRequest struct {
+	XOssAccessPointName *string `json:"x-oss-access-point-name,omitempty" xml:"x-oss-access-point-name,omitempty"`
 }
 
-func (s GetBucketRequest) String() string {
+func (s GetAccessPointPublicAccessBlockRequest) String() string {
 	return tea.Prettify(s)
 }
 
-func (s GetBucketRequest) GoString() string {
+func (s GetAccessPointPublicAccessBlockRequest) GoString() string {
 	return s.String()
 }
 
-func (s *GetBucketRequest) SetDelimiter(v string) *GetBucketRequest {
-	s.Delimiter = &v
+func (s *GetAccessPointPublicAccessBlockRequest) SetXOssAccessPointName(v string) *GetAccessPointPublicAccessBlockRequest {
+	s.XOssAccessPointName = &v
 	return s
 }
 
-func (s *GetBucketRequest) SetEncodingType(v string) *GetBucketRequest {
-	s.EncodingType = &v
-	return s
+type GetAccessPointPublicAccessBlockResponseBody struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
 }
 
-func (s *GetBucketRequest) SetMarker(v string) *GetBucketRequest {
-	s.Marker = &v
-	return s
-}
-
-func (s *GetBucketRequest) SetMaxKeys(v int64) *GetBucketRequest {
-	s.MaxKeys = &v
-	return s
-}
-
-func (s *GetBucketRequest) SetPrefix(v string) *GetBucketRequest {
-	s.Prefix = &v
-	return s
-}
-
-type GetBucketResponseBody struct {
-	// The container that stores the metadata of the returned objects.
-	ListBucketResult *GetBucketResponseBodyListBucketResult `json:"ListBucketResult,omitempty" xml:"ListBucketResult,omitempty" type:"Struct"`
-}
-
-func (s GetBucketResponseBody) String() string {
+func (s GetAccessPointPublicAccessBlockResponseBody) String() string {
 	return tea.Prettify(s)
 }
 
-func (s GetBucketResponseBody) GoString() string {
+func (s GetAccessPointPublicAccessBlockResponseBody) GoString() string {
 	return s.String()
 }
 
-func (s *GetBucketResponseBody) SetListBucketResult(v *GetBucketResponseBodyListBucketResult) *GetBucketResponseBody {
-	s.ListBucketResult = v
+func (s *GetAccessPointPublicAccessBlockResponseBody) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetAccessPointPublicAccessBlockResponseBody {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
-type GetBucketResponseBodyListBucketResult struct {
-	// If delimiter is specified in the request, the response contains CommonPrefixes. The objects whose name contains the same string from the prefix to the next occurrence of the delimiter are grouped as a single result element in CommonPrefixes.
-	CommonPrefixes []*CommonPrefix `json:"CommonPrefixes,omitempty" xml:"CommonPrefixes,omitempty" type:"Repeated"`
-	// The container that stores the returned object metadata
-	Contents []*ObjectSummary `json:"Contents,omitempty" xml:"Contents,omitempty" type:"Repeated"`
-	// The character that is used to group objects by name. The objects whose name contains the same string from the prefix to the next occurrence of the delimiter are grouped as a single result element in CommonPrefixes.
-	Delimiter *string `json:"Delimiter,omitempty" xml:"Delimiter,omitempty"`
-	// Indicates whether the returned results are truncated
-	IsTruncated *bool `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
-	// The name of the object from which the GetBucket (ListObjects) operation begins.
-	Marker *string `json:"Marker,omitempty" xml:"Marker,omitempty"`
-	// The maximum number of returned objects in the response
-	MaxKeys *int32 `json:"MaxKeys,omitempty" xml:"MaxKeys,omitempty"`
-	// The name of the bucket.
-	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
-	// The prefix that the names of returned objects contain
-	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
+type GetAccessPointPublicAccessBlockResponse struct {
+	Headers    map[string]*string                           `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                       `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetAccessPointPublicAccessBlockResponseBody `json:"body,omitempty" xml:"body,omitempty"`
 }
 
-func (s GetBucketResponseBodyListBucketResult) String() string {
+func (s GetAccessPointPublicAccessBlockResponse) String() string {
 	return tea.Prettify(s)
 }
 
-func (s GetBucketResponseBodyListBucketResult) GoString() string {
+func (s GetAccessPointPublicAccessBlockResponse) GoString() string {
 	return s.String()
 }
 
-func (s *GetBucketResponseBodyListBucketResult) SetCommonPrefixes(v []*CommonPrefix) *GetBucketResponseBodyListBucketResult {
-	s.CommonPrefixes = v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetContents(v []*ObjectSummary) *GetBucketResponseBodyListBucketResult {
-	s.Contents = v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetDelimiter(v string) *GetBucketResponseBodyListBucketResult {
-	s.Delimiter = &v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetIsTruncated(v bool) *GetBucketResponseBodyListBucketResult {
-	s.IsTruncated = &v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetMarker(v string) *GetBucketResponseBodyListBucketResult {
-	s.Marker = &v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetMaxKeys(v int32) *GetBucketResponseBodyListBucketResult {
-	s.MaxKeys = &v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetName(v string) *GetBucketResponseBodyListBucketResult {
-	s.Name = &v
-	return s
-}
-
-func (s *GetBucketResponseBodyListBucketResult) SetPrefix(v string) *GetBucketResponseBodyListBucketResult {
-	s.Prefix = &v
-	return s
-}
-
-type GetBucketResponse struct {
-	Headers    map[string]*string     `json:"headers,omitempty" xml:"headers,omitempty"`
-	StatusCode *int32                 `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
-	Body       *GetBucketResponseBody `json:"body,omitempty" xml:"body,omitempty"`
-}
-
-func (s GetBucketResponse) String() string {
-	return tea.Prettify(s)
-}
-
-func (s GetBucketResponse) GoString() string {
-	return s.String()
-}
-
-func (s *GetBucketResponse) SetHeaders(v map[string]*string) *GetBucketResponse {
+func (s *GetAccessPointPublicAccessBlockResponse) SetHeaders(v map[string]*string) *GetAccessPointPublicAccessBlockResponse {
 	s.Headers = v
 	return s
 }
 
-func (s *GetBucketResponse) SetStatusCode(v int32) *GetBucketResponse {
+func (s *GetAccessPointPublicAccessBlockResponse) SetStatusCode(v int32) *GetAccessPointPublicAccessBlockResponse {
 	s.StatusCode = &v
 	return s
 }
 
-func (s *GetBucketResponse) SetBody(v *GetBucketResponseBody) *GetBucketResponse {
+func (s *GetAccessPointPublicAccessBlockResponse) SetBody(v *GetAccessPointPublicAccessBlockResponseBody) *GetAccessPointPublicAccessBlockResponse {
 	s.Body = v
 	return s
 }
@@ -7641,6 +8393,69 @@ func (s *GetBucketCorsResponse) SetBody(v *GetBucketCorsResponseBody) *GetBucket
 	return s
 }
 
+type GetBucketDataRedundancyTransitionRequest struct {
+	XOssRedundancyTransitionTaskid *string `json:"x-oss-redundancy-transition-taskid,omitempty" xml:"x-oss-redundancy-transition-taskid,omitempty"`
+}
+
+func (s GetBucketDataRedundancyTransitionRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketDataRedundancyTransitionRequest) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketDataRedundancyTransitionRequest) SetXOssRedundancyTransitionTaskid(v string) *GetBucketDataRedundancyTransitionRequest {
+	s.XOssRedundancyTransitionTaskid = &v
+	return s
+}
+
+type GetBucketDataRedundancyTransitionResponseBody struct {
+	BucketDataRedundancyTransition *BucketDataRedundancyTransition `json:"BucketDataRedundancyTransition,omitempty" xml:"BucketDataRedundancyTransition,omitempty"`
+}
+
+func (s GetBucketDataRedundancyTransitionResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketDataRedundancyTransitionResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketDataRedundancyTransitionResponseBody) SetBucketDataRedundancyTransition(v *BucketDataRedundancyTransition) *GetBucketDataRedundancyTransitionResponseBody {
+	s.BucketDataRedundancyTransition = v
+	return s
+}
+
+type GetBucketDataRedundancyTransitionResponse struct {
+	Headers    map[string]*string                             `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                         `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetBucketDataRedundancyTransitionResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetBucketDataRedundancyTransitionResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketDataRedundancyTransitionResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketDataRedundancyTransitionResponse) SetHeaders(v map[string]*string) *GetBucketDataRedundancyTransitionResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetBucketDataRedundancyTransitionResponse) SetStatusCode(v int32) *GetBucketDataRedundancyTransitionResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetBucketDataRedundancyTransitionResponse) SetBody(v *GetBucketDataRedundancyTransitionResponseBody) *GetBucketDataRedundancyTransitionResponse {
+	s.Body = v
+	return s
+}
+
 type GetBucketEncryptionResponseBody struct {
 	// The container that stores server-side encryption rules.
 	ServerSideEncryptionRule *GetBucketEncryptionResponseBodyServerSideEncryptionRule `json:"ServerSideEncryptionRule,omitempty" xml:"ServerSideEncryptionRule,omitempty" type:"Struct"`
@@ -7885,7 +8700,7 @@ func (s *GetBucketLifecycleResponseBody) SetLifecycleConfiguration(v *GetBucketL
 
 type GetBucketLifecycleResponseBodyLifecycleConfiguration struct {
 	// The container that stores the lifecycle rules.
-	Rules []*LifecycleRule `json:"Rule,omitempty" xml:"Rule,omitempty" type:"Repeated"`
+	Rule []*LifecycleRule `json:"Rule,omitempty" xml:"Rule,omitempty" type:"Repeated"`
 }
 
 func (s GetBucketLifecycleResponseBodyLifecycleConfiguration) String() string {
@@ -7896,8 +8711,8 @@ func (s GetBucketLifecycleResponseBodyLifecycleConfiguration) GoString() string 
 	return s.String()
 }
 
-func (s *GetBucketLifecycleResponseBodyLifecycleConfiguration) SetRules(v []*LifecycleRule) *GetBucketLifecycleResponseBodyLifecycleConfiguration {
-	s.Rules = v
+func (s *GetBucketLifecycleResponseBodyLifecycleConfiguration) SetRule(v []*LifecycleRule) *GetBucketLifecycleResponseBodyLifecycleConfiguration {
+	s.Rule = v
 	return s
 }
 
@@ -8075,6 +8890,115 @@ func (s *GetBucketPolicyResponse) SetBody(v string) *GetBucketPolicyResponse {
 	return s
 }
 
+type GetBucketPolicyStatusResponseBody struct {
+	PolicyStatus *GetBucketPolicyStatusResponseBodyPolicyStatus `json:"PolicyStatus,omitempty" xml:"PolicyStatus,omitempty" type:"Struct"`
+}
+
+func (s GetBucketPolicyStatusResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketPolicyStatusResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketPolicyStatusResponseBody) SetPolicyStatus(v *GetBucketPolicyStatusResponseBodyPolicyStatus) *GetBucketPolicyStatusResponseBody {
+	s.PolicyStatus = v
+	return s
+}
+
+type GetBucketPolicyStatusResponseBodyPolicyStatus struct {
+	IsPublic *bool `json:"IsPublic,omitempty" xml:"IsPublic,omitempty"`
+}
+
+func (s GetBucketPolicyStatusResponseBodyPolicyStatus) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketPolicyStatusResponseBodyPolicyStatus) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketPolicyStatusResponseBodyPolicyStatus) SetIsPublic(v bool) *GetBucketPolicyStatusResponseBodyPolicyStatus {
+	s.IsPublic = &v
+	return s
+}
+
+type GetBucketPolicyStatusResponse struct {
+	Headers    map[string]*string                 `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetBucketPolicyStatusResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetBucketPolicyStatusResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketPolicyStatusResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketPolicyStatusResponse) SetHeaders(v map[string]*string) *GetBucketPolicyStatusResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetBucketPolicyStatusResponse) SetStatusCode(v int32) *GetBucketPolicyStatusResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetBucketPolicyStatusResponse) SetBody(v *GetBucketPolicyStatusResponseBody) *GetBucketPolicyStatusResponse {
+	s.Body = v
+	return s
+}
+
+type GetBucketPublicAccessBlockResponseBody struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+}
+
+func (s GetBucketPublicAccessBlockResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketPublicAccessBlockResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketPublicAccessBlockResponseBody) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetBucketPublicAccessBlockResponseBody {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
+type GetBucketPublicAccessBlockResponse struct {
+	Headers    map[string]*string                      `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                  `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetBucketPublicAccessBlockResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetBucketPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetBucketPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetBucketPublicAccessBlockResponse) SetHeaders(v map[string]*string) *GetBucketPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetBucketPublicAccessBlockResponse) SetStatusCode(v int32) *GetBucketPublicAccessBlockResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetBucketPublicAccessBlockResponse) SetBody(v *GetBucketPublicAccessBlockResponseBody) *GetBucketPublicAccessBlockResponse {
+	s.Body = v
+	return s
+}
+
 type GetBucketRefererResponseBody struct {
 	// The container that stores the hotlink protection configurations.
 	RefererConfiguration *RefererConfiguration `json:"RefererConfiguration,omitempty" xml:"RefererConfiguration,omitempty"`
@@ -8142,7 +9066,7 @@ func (s *GetBucketReplicationResponseBody) SetReplicationConfiguration(v *GetBuc
 
 type GetBucketReplicationResponseBodyReplicationConfiguration struct {
 	// The container that stores the data replication rules.
-	Rules []*ReplicationRule `json:"Rule,omitempty" xml:"Rule,omitempty" type:"Repeated"`
+	Rule []*ReplicationRule `json:"Rule,omitempty" xml:"Rule,omitempty" type:"Repeated"`
 }
 
 func (s GetBucketReplicationResponseBodyReplicationConfiguration) String() string {
@@ -8153,8 +9077,8 @@ func (s GetBucketReplicationResponseBodyReplicationConfiguration) GoString() str
 	return s.String()
 }
 
-func (s *GetBucketReplicationResponseBodyReplicationConfiguration) SetRules(v []*ReplicationRule) *GetBucketReplicationResponseBodyReplicationConfiguration {
-	s.Rules = v
+func (s *GetBucketReplicationResponseBodyReplicationConfiguration) SetRule(v []*ReplicationRule) *GetBucketReplicationResponseBodyReplicationConfiguration {
+	s.Rule = v
 	return s
 }
 
@@ -8207,7 +9131,8 @@ func (s *GetBucketReplicationLocationResponseBody) SetReplicationLocation(v *Get
 
 type GetBucketReplicationLocationResponseBodyReplicationLocation struct {
 	// The regions in which the destination bucket can be located.
-	Location              []*string                                                                         `json:"Location,omitempty" xml:"Location,omitempty" type:"Repeated"`
+	Location []*string `json:"Location,omitempty" xml:"Location,omitempty" type:"Repeated"`
+	// The container that stores regions in which the RTC can be enabled.
 	LocationRTCConstraint *GetBucketReplicationLocationResponseBodyReplicationLocationLocationRTCConstraint `json:"LocationRTCConstraint,omitempty" xml:"LocationRTCConstraint,omitempty" type:"Struct"`
 	// The container that stores regions in which the destination bucket can be located with TransferType specified.
 	LocationTransferTypeConstraint *GetBucketReplicationLocationResponseBodyReplicationLocationLocationTransferTypeConstraint `json:"LocationTransferTypeConstraint,omitempty" xml:"LocationTransferTypeConstraint,omitempty" type:"Struct"`
@@ -8237,6 +9162,7 @@ func (s *GetBucketReplicationLocationResponseBodyReplicationLocation) SetLocatio
 }
 
 type GetBucketReplicationLocationResponseBodyReplicationLocationLocationRTCConstraint struct {
+	// The regions where RTC is supported.
 	Location []*string `json:"Location,omitempty" xml:"Location,omitempty" type:"Repeated"`
 }
 
@@ -8871,7 +9797,8 @@ func (s *GetBucketWormResponseBody) SetWormConfiguration(v *GetBucketWormRespons
 
 type GetBucketWormResponseBodyWormConfiguration struct {
 	// The time at which the retention policy was created.
-	CreationDate   *string `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
+	CreationDate *string `json:"CreationDate,omitempty" xml:"CreationDate,omitempty"`
+	// The time at which the retention policy will be expired.
 	ExpirationDate *string `json:"ExpirationDate,omitempty" xml:"ExpirationDate,omitempty"`
 	// The number of days for which objects can be retained.
 	RetentionPeriodInDays *int32 `json:"RetentionPeriodInDays,omitempty" xml:"RetentionPeriodInDays,omitempty"`
@@ -9754,166 +10681,48 @@ func (s *GetObjectTaggingResponse) SetBody(v *GetObjectTaggingResponseBody) *Get
 	return s
 }
 
-type GetServiceRequest struct {
-	// The pagination token that is used in the next request to retrieve a new page of results. You do not need to specify this parameter for the first request. You must specify the token that is obtained from the previous query as the value of marker.\
-	// By default, this parameter is left empty.
-	Marker *string `json:"marker,omitempty" xml:"marker,omitempty"`
-	// The maximum number of buckets that can be returned.\
-	// Valid values: 1 to 1000.\
-	// Default value: 100.
-	MaxKeys *int64 `json:"max-keys,omitempty" xml:"max-keys,omitempty"`
-	// The prefix that the names of returned buckets must contain. If this parameter is not specified, prefixes are not used to filter returned buckets.\
-	// By default, this parameter is left empty.
-	Prefix *string `json:"prefix,omitempty" xml:"prefix,omitempty"`
+type GetPublicAccessBlockResponseBody struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
 }
 
-func (s GetServiceRequest) String() string {
+func (s GetPublicAccessBlockResponseBody) String() string {
 	return tea.Prettify(s)
 }
 
-func (s GetServiceRequest) GoString() string {
+func (s GetPublicAccessBlockResponseBody) GoString() string {
 	return s.String()
 }
 
-func (s *GetServiceRequest) SetMarker(v string) *GetServiceRequest {
-	s.Marker = &v
+func (s *GetPublicAccessBlockResponseBody) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *GetPublicAccessBlockResponseBody {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
-func (s *GetServiceRequest) SetMaxKeys(v int64) *GetServiceRequest {
-	s.MaxKeys = &v
-	return s
+type GetPublicAccessBlockResponse struct {
+	Headers    map[string]*string                `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                            `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetPublicAccessBlockResponseBody `json:"body,omitempty" xml:"body,omitempty"`
 }
 
-func (s *GetServiceRequest) SetPrefix(v string) *GetServiceRequest {
-	s.Prefix = &v
-	return s
-}
-
-type GetServiceResponseBody struct {
-	// The container that stores the information about the bucket owner.
-	ListAllMyBucketsResult *GetServiceResponseBodyListAllMyBucketsResult `json:"ListAllMyBucketsResult,omitempty" xml:"ListAllMyBucketsResult,omitempty" type:"Struct"`
-}
-
-func (s GetServiceResponseBody) String() string {
+func (s GetPublicAccessBlockResponse) String() string {
 	return tea.Prettify(s)
 }
 
-func (s GetServiceResponseBody) GoString() string {
+func (s GetPublicAccessBlockResponse) GoString() string {
 	return s.String()
 }
 
-func (s *GetServiceResponseBody) SetListAllMyBucketsResult(v *GetServiceResponseBodyListAllMyBucketsResult) *GetServiceResponseBody {
-	s.ListAllMyBucketsResult = v
-	return s
-}
-
-type GetServiceResponseBodyListAllMyBucketsResult struct {
-	// The container that stores the information about buckets.
-	Buckets *GetServiceResponseBodyListAllMyBucketsResultBuckets `json:"Buckets,omitempty" xml:"Buckets,omitempty" type:"Struct"`
-	// Indicates whether all results are returned. Valid values:
-	//
-	// - true
-	// - false
-	IsTruncated *bool `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
-	// The pagination token used in the current request.
-	Marker *string `json:"Marker,omitempty" xml:"Marker,omitempty"`
-	// The maximum number of buckets that can be returned.
-	MaxKeys *int64 `json:"MaxKeys,omitempty" xml:"MaxKeys,omitempty"`
-	// A pagination token. It can be used in the next request to retrieve a new page of results.
-	NextMarker *string `json:"NextMarker,omitempty" xml:"NextMarker,omitempty"`
-	// The prefix that the names of returned buckets contain.
-	Owner *Owner `json:"Owner,omitempty" xml:"Owner,omitempty"`
-	// The prefix that the names of returned buckets contain.
-	Prefix *string `json:"Prefix,omitempty" xml:"Prefix,omitempty"`
-}
-
-func (s GetServiceResponseBodyListAllMyBucketsResult) String() string {
-	return tea.Prettify(s)
-}
-
-func (s GetServiceResponseBodyListAllMyBucketsResult) GoString() string {
-	return s.String()
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetBuckets(v *GetServiceResponseBodyListAllMyBucketsResultBuckets) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.Buckets = v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetIsTruncated(v bool) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.IsTruncated = &v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetMarker(v string) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.Marker = &v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetMaxKeys(v int64) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.MaxKeys = &v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetNextMarker(v string) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.NextMarker = &v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetOwner(v *Owner) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.Owner = v
-	return s
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResult) SetPrefix(v string) *GetServiceResponseBodyListAllMyBucketsResult {
-	s.Prefix = &v
-	return s
-}
-
-type GetServiceResponseBodyListAllMyBucketsResultBuckets struct {
-	// The container that stores the information about a single bucket.
-	Buckets []*Bucket `json:"Bucket,omitempty" xml:"Bucket,omitempty" type:"Repeated"`
-}
-
-func (s GetServiceResponseBodyListAllMyBucketsResultBuckets) String() string {
-	return tea.Prettify(s)
-}
-
-func (s GetServiceResponseBodyListAllMyBucketsResultBuckets) GoString() string {
-	return s.String()
-}
-
-func (s *GetServiceResponseBodyListAllMyBucketsResultBuckets) SetBuckets(v []*Bucket) *GetServiceResponseBodyListAllMyBucketsResultBuckets {
-	s.Buckets = v
-	return s
-}
-
-type GetServiceResponse struct {
-	Headers    map[string]*string      `json:"headers,omitempty" xml:"headers,omitempty"`
-	StatusCode *int32                  `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
-	Body       *GetServiceResponseBody `json:"body,omitempty" xml:"body,omitempty"`
-}
-
-func (s GetServiceResponse) String() string {
-	return tea.Prettify(s)
-}
-
-func (s GetServiceResponse) GoString() string {
-	return s.String()
-}
-
-func (s *GetServiceResponse) SetHeaders(v map[string]*string) *GetServiceResponse {
+func (s *GetPublicAccessBlockResponse) SetHeaders(v map[string]*string) *GetPublicAccessBlockResponse {
 	s.Headers = v
 	return s
 }
 
-func (s *GetServiceResponse) SetStatusCode(v int32) *GetServiceResponse {
+func (s *GetPublicAccessBlockResponse) SetStatusCode(v int32) *GetPublicAccessBlockResponse {
 	s.StatusCode = &v
 	return s
 }
 
-func (s *GetServiceResponse) SetBody(v *GetServiceResponseBody) *GetServiceResponse {
+func (s *GetPublicAccessBlockResponse) SetBody(v *GetPublicAccessBlockResponseBody) *GetPublicAccessBlockResponse {
 	s.Body = v
 	return s
 }
@@ -9938,7 +10747,7 @@ func (s *GetStyleRequest) SetStyleName(v string) *GetStyleRequest {
 
 type GetStyleResponseBody struct {
 	// The container that stores the information about the image style.
-	Style *GetStyleResponseBodyStyle `json:"Style,omitempty" xml:"Style,omitempty" type:"Struct"`
+	Style *StyleInfo `json:"Style,omitempty" xml:"Style,omitempty"`
 }
 
 func (s GetStyleResponseBody) String() string {
@@ -9949,47 +10758,8 @@ func (s GetStyleResponseBody) GoString() string {
 	return s.String()
 }
 
-func (s *GetStyleResponseBody) SetStyle(v *GetStyleResponseBodyStyle) *GetStyleResponseBody {
+func (s *GetStyleResponseBody) SetStyle(v *StyleInfo) *GetStyleResponseBody {
 	s.Style = v
-	return s
-}
-
-type GetStyleResponseBodyStyle struct {
-	// The content of the image style.
-	Content *string `json:"Content,omitempty" xml:"Content,omitempty"`
-	// The time when the style was created.
-	CreateTime *string `json:"CreateTime,omitempty" xml:"CreateTime,omitempty"`
-	// The time when the image style was modified.
-	LastModifyTime *string `json:"LastModifyTime,omitempty" xml:"LastModifyTime,omitempty"`
-	// The name of the image style.
-	Name *string `json:"Name,omitempty" xml:"Name,omitempty"`
-}
-
-func (s GetStyleResponseBodyStyle) String() string {
-	return tea.Prettify(s)
-}
-
-func (s GetStyleResponseBodyStyle) GoString() string {
-	return s.String()
-}
-
-func (s *GetStyleResponseBodyStyle) SetContent(v string) *GetStyleResponseBodyStyle {
-	s.Content = &v
-	return s
-}
-
-func (s *GetStyleResponseBodyStyle) SetCreateTime(v string) *GetStyleResponseBodyStyle {
-	s.CreateTime = &v
-	return s
-}
-
-func (s *GetStyleResponseBodyStyle) SetLastModifyTime(v string) *GetStyleResponseBodyStyle {
-	s.LastModifyTime = &v
-	return s
-}
-
-func (s *GetStyleResponseBodyStyle) SetName(v string) *GetStyleResponseBodyStyle {
-	s.Name = &v
 	return s
 }
 
@@ -10124,6 +10894,52 @@ func (s *GetUserAntiDDosInfoResponse) SetStatusCode(v int32) *GetUserAntiDDosInf
 }
 
 func (s *GetUserAntiDDosInfoResponse) SetBody(v *GetUserAntiDDosInfoResponseBody) *GetUserAntiDDosInfoResponse {
+	s.Body = v
+	return s
+}
+
+type GetUserDefinedLogFieldsConfigResponseBody struct {
+	UserDefinedLogFieldsConfiguration *UserDefinedLogFieldsConfiguration `json:"UserDefinedLogFieldsConfiguration,omitempty" xml:"UserDefinedLogFieldsConfiguration,omitempty"`
+}
+
+func (s GetUserDefinedLogFieldsConfigResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetUserDefinedLogFieldsConfigResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *GetUserDefinedLogFieldsConfigResponseBody) SetUserDefinedLogFieldsConfiguration(v *UserDefinedLogFieldsConfiguration) *GetUserDefinedLogFieldsConfigResponseBody {
+	s.UserDefinedLogFieldsConfiguration = v
+	return s
+}
+
+type GetUserDefinedLogFieldsConfigResponse struct {
+	Headers    map[string]*string                         `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                     `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *GetUserDefinedLogFieldsConfigResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s GetUserDefinedLogFieldsConfigResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s GetUserDefinedLogFieldsConfigResponse) GoString() string {
+	return s.String()
+}
+
+func (s *GetUserDefinedLogFieldsConfigResponse) SetHeaders(v map[string]*string) *GetUserDefinedLogFieldsConfigResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *GetUserDefinedLogFieldsConfigResponse) SetStatusCode(v int32) *GetUserDefinedLogFieldsConfigResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *GetUserDefinedLogFieldsConfigResponse) SetBody(v *GetUserDefinedLogFieldsConfigResponseBody) *GetUserDefinedLogFieldsConfigResponse {
 	s.Body = v
 	return s
 }
@@ -10790,10 +11606,11 @@ func (s *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectPr
 }
 
 type ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess struct {
-	AccessPointForObjectProcessAlias *string `json:"AccessPointForObjectProcessAlias,omitempty" xml:"AccessPointForObjectProcessAlias,omitempty"`
-	AccessPointName                  *string `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
-	AccessPointNameForObjectProcess  *string `json:"AccessPointNameForObjectProcess,omitempty" xml:"AccessPointNameForObjectProcess,omitempty"`
-	Status                           *string `json:"Status,omitempty" xml:"Status,omitempty"`
+	AccessPointForObjectProcessAlias     *string `json:"AccessPointForObjectProcessAlias,omitempty" xml:"AccessPointForObjectProcessAlias,omitempty"`
+	AccessPointName                      *string `json:"AccessPointName,omitempty" xml:"AccessPointName,omitempty"`
+	AccessPointNameForObjectProcess      *string `json:"AccessPointNameForObjectProcess,omitempty" xml:"AccessPointNameForObjectProcess,omitempty"`
+	AllowAnonymousAccessForObjectProcess *string `json:"AllowAnonymousAccessForObjectProcess,omitempty" xml:"AllowAnonymousAccessForObjectProcess,omitempty"`
+	Status                               *string `json:"Status,omitempty" xml:"Status,omitempty"`
 }
 
 func (s ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess) String() string {
@@ -10816,6 +11633,11 @@ func (s *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectPr
 
 func (s *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess) SetAccessPointNameForObjectProcess(v string) *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess {
 	s.AccessPointNameForObjectProcess = &v
+	return s
+}
+
+func (s *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess) SetAllowAnonymousAccessForObjectProcess(v string) *ListAccessPointsForObjectProcessResponseBodyListAccessPointsForObjectProcessResultAccessPointsForObjectProcessAccessPointForObjectProcess {
+	s.AllowAnonymousAccessForObjectProcess = &v
 	return s
 }
 
@@ -10963,6 +11785,69 @@ func (s *ListBucketAntiDDosInfoResponse) SetStatusCode(v int32) *ListBucketAntiD
 }
 
 func (s *ListBucketAntiDDosInfoResponse) SetBody(v *ListBucketAntiDDosInfoResponseBody) *ListBucketAntiDDosInfoResponse {
+	s.Body = v
+	return s
+}
+
+type ListBucketDataRedundancyTransitionResponseBody struct {
+	ListBucketDataRedundancyTransition *ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition `json:"ListBucketDataRedundancyTransition,omitempty" xml:"ListBucketDataRedundancyTransition,omitempty" type:"Struct"`
+}
+
+func (s ListBucketDataRedundancyTransitionResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListBucketDataRedundancyTransitionResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListBucketDataRedundancyTransitionResponseBody) SetListBucketDataRedundancyTransition(v *ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) *ListBucketDataRedundancyTransitionResponseBody {
+	s.ListBucketDataRedundancyTransition = v
+	return s
+}
+
+type ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition struct {
+	BucketDataRedundancyTransition *BucketDataRedundancyTransition `json:"BucketDataRedundancyTransition,omitempty" xml:"BucketDataRedundancyTransition,omitempty"`
+}
+
+func (s ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) GoString() string {
+	return s.String()
+}
+
+func (s *ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) SetBucketDataRedundancyTransition(v *BucketDataRedundancyTransition) *ListBucketDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition {
+	s.BucketDataRedundancyTransition = v
+	return s
+}
+
+type ListBucketDataRedundancyTransitionResponse struct {
+	Headers    map[string]*string                              `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                          `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListBucketDataRedundancyTransitionResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListBucketDataRedundancyTransitionResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListBucketDataRedundancyTransitionResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListBucketDataRedundancyTransitionResponse) SetHeaders(v map[string]*string) *ListBucketDataRedundancyTransitionResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListBucketDataRedundancyTransitionResponse) SetStatusCode(v int32) *ListBucketDataRedundancyTransitionResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListBucketDataRedundancyTransitionResponse) SetBody(v *ListBucketDataRedundancyTransitionResponseBody) *ListBucketDataRedundancyTransitionResponse {
 	s.Body = v
 	return s
 }
@@ -12558,7 +13443,7 @@ func (s *ListStyleResponseBody) SetStyleList(v *ListStyleResponseBodyStyleList) 
 
 type ListStyleResponseBodyStyleList struct {
 	// The list of styles.
-	Styles []*StyleInfo `json:"Style,omitempty" xml:"Style,omitempty" type:"Repeated"`
+	Style []*StyleInfo `json:"Style,omitempty" xml:"Style,omitempty" type:"Repeated"`
 }
 
 func (s ListStyleResponseBodyStyleList) String() string {
@@ -12569,8 +13454,8 @@ func (s ListStyleResponseBodyStyleList) GoString() string {
 	return s.String()
 }
 
-func (s *ListStyleResponseBodyStyleList) SetStyles(v []*StyleInfo) *ListStyleResponseBodyStyleList {
-	s.Styles = v
+func (s *ListStyleResponseBodyStyleList) SetStyle(v []*StyleInfo) *ListStyleResponseBodyStyleList {
+	s.Style = v
 	return s
 }
 
@@ -12599,6 +13484,104 @@ func (s *ListStyleResponse) SetStatusCode(v int32) *ListStyleResponse {
 }
 
 func (s *ListStyleResponse) SetBody(v *ListStyleResponseBody) *ListStyleResponse {
+	s.Body = v
+	return s
+}
+
+type ListUserDataRedundancyTransitionRequest struct {
+	ContinuationToken *string `json:"continuation-token,omitempty" xml:"continuation-token,omitempty"`
+	MaxKeys           *int32  `json:"max-keys,omitempty" xml:"max-keys,omitempty"`
+}
+
+func (s ListUserDataRedundancyTransitionRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListUserDataRedundancyTransitionRequest) GoString() string {
+	return s.String()
+}
+
+func (s *ListUserDataRedundancyTransitionRequest) SetContinuationToken(v string) *ListUserDataRedundancyTransitionRequest {
+	s.ContinuationToken = &v
+	return s
+}
+
+func (s *ListUserDataRedundancyTransitionRequest) SetMaxKeys(v int32) *ListUserDataRedundancyTransitionRequest {
+	s.MaxKeys = &v
+	return s
+}
+
+type ListUserDataRedundancyTransitionResponseBody struct {
+	ListBucketDataRedundancyTransition *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition `json:"ListBucketDataRedundancyTransition,omitempty" xml:"ListBucketDataRedundancyTransition,omitempty" type:"Struct"`
+}
+
+func (s ListUserDataRedundancyTransitionResponseBody) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListUserDataRedundancyTransitionResponseBody) GoString() string {
+	return s.String()
+}
+
+func (s *ListUserDataRedundancyTransitionResponseBody) SetListBucketDataRedundancyTransition(v *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) *ListUserDataRedundancyTransitionResponseBody {
+	s.ListBucketDataRedundancyTransition = v
+	return s
+}
+
+type ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition struct {
+	BucketDataRedundancyTransition []*BucketDataRedundancyTransition `json:"BucketDataRedundancyTransition,omitempty" xml:"BucketDataRedundancyTransition,omitempty" type:"Repeated"`
+	IsTruncated                    *bool                             `json:"IsTruncated,omitempty" xml:"IsTruncated,omitempty"`
+	NextContinuationToken          *string                           `json:"NextContinuationToken,omitempty" xml:"NextContinuationToken,omitempty"`
+}
+
+func (s ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) GoString() string {
+	return s.String()
+}
+
+func (s *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) SetBucketDataRedundancyTransition(v []*BucketDataRedundancyTransition) *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition {
+	s.BucketDataRedundancyTransition = v
+	return s
+}
+
+func (s *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) SetIsTruncated(v bool) *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition {
+	s.IsTruncated = &v
+	return s
+}
+
+func (s *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition) SetNextContinuationToken(v string) *ListUserDataRedundancyTransitionResponseBodyListBucketDataRedundancyTransition {
+	s.NextContinuationToken = &v
+	return s
+}
+
+type ListUserDataRedundancyTransitionResponse struct {
+	Headers    map[string]*string                            `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32                                        `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+	Body       *ListUserDataRedundancyTransitionResponseBody `json:"body,omitempty" xml:"body,omitempty"`
+}
+
+func (s ListUserDataRedundancyTransitionResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s ListUserDataRedundancyTransitionResponse) GoString() string {
+	return s.String()
+}
+
+func (s *ListUserDataRedundancyTransitionResponse) SetHeaders(v map[string]*string) *ListUserDataRedundancyTransitionResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *ListUserDataRedundancyTransitionResponse) SetStatusCode(v int32) *ListUserDataRedundancyTransitionResponse {
+	s.StatusCode = &v
+	return s
+}
+
+func (s *ListUserDataRedundancyTransitionResponse) SetBody(v *ListUserDataRedundancyTransitionResponseBody) *ListUserDataRedundancyTransitionResponse {
 	s.Body = v
 	return s
 }
@@ -12818,7 +13801,9 @@ func (s *PutAccessPointConfigForObjectProcessRequest) SetPutAccessPointConfigFor
 }
 
 type PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration struct {
-	ObjectProcessConfiguration *ObjectProcessConfiguration `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
+	AllowAnonymousAccessForObjectProcess *string                         `json:"AllowAnonymousAccessForObjectProcess,omitempty" xml:"AllowAnonymousAccessForObjectProcess,omitempty"`
+	ObjectProcessConfiguration           *ObjectProcessConfiguration     `json:"ObjectProcessConfiguration,omitempty" xml:"ObjectProcessConfiguration,omitempty"`
+	PublicAccessBlockConfiguration       *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
 }
 
 func (s PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration) String() string {
@@ -12829,8 +13814,18 @@ func (s PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObject
 	return s.String()
 }
 
+func (s *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration) SetAllowAnonymousAccessForObjectProcess(v string) *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration {
+	s.AllowAnonymousAccessForObjectProcess = &v
+	return s
+}
+
 func (s *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration) SetObjectProcessConfiguration(v *ObjectProcessConfiguration) *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration {
 	s.ObjectProcessConfiguration = v
+	return s
+}
+
+func (s *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutAccessPointConfigForObjectProcessRequestPutAccessPointConfigForObjectProcessConfiguration {
+	s.PublicAccessBlockConfiguration = v
 	return s
 }
 
@@ -12981,6 +13976,52 @@ func (s *PutAccessPointPolicyForObjectProcessResponse) SetHeaders(v map[string]*
 }
 
 func (s *PutAccessPointPolicyForObjectProcessResponse) SetStatusCode(v int32) *PutAccessPointPolicyForObjectProcessResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type PutAccessPointPublicAccessBlockRequest struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+	XOssAccessPointName            *string                         `json:"x-oss-access-point-name,omitempty" xml:"x-oss-access-point-name,omitempty"`
+}
+
+func (s PutAccessPointPublicAccessBlockRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutAccessPointPublicAccessBlockRequest) GoString() string {
+	return s.String()
+}
+
+func (s *PutAccessPointPublicAccessBlockRequest) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutAccessPointPublicAccessBlockRequest {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
+func (s *PutAccessPointPublicAccessBlockRequest) SetXOssAccessPointName(v string) *PutAccessPointPublicAccessBlockRequest {
+	s.XOssAccessPointName = &v
+	return s
+}
+
+type PutAccessPointPublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s PutAccessPointPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutAccessPointPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *PutAccessPointPublicAccessBlockResponse) SetHeaders(v map[string]*string) *PutAccessPointPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *PutAccessPointPublicAccessBlockResponse) SetStatusCode(v int32) *PutAccessPointPublicAccessBlockResponse {
 	s.StatusCode = &v
 	return s
 }
@@ -13417,8 +14458,13 @@ func (s *PutBucketInventoryResponse) SetStatusCode(v int32) *PutBucketInventoryR
 }
 
 type PutBucketLifecycleHeaders struct {
-	CommonHeaders              map[string]*string `json:"commonHeaders,omitempty" xml:"commonHeaders,omitempty"`
-	XOssAllowSameActionOverlap *string            `json:"x-oss-allow-same-action-overlap,omitempty" xml:"x-oss-allow-same-action-overlap,omitempty"`
+	CommonHeaders map[string]*string `json:"commonHeaders,omitempty" xml:"commonHeaders,omitempty"`
+	// Specifies whether to allow overlapped prefixes. Valid values:
+	//
+	// true: Overlapped prefixes are allowed.
+	//
+	// false: Overlapped prefixes are not allowed.
+	XOssAllowSameActionOverlap *string `json:"x-oss-allow-same-action-overlap,omitempty" xml:"x-oss-allow-same-action-overlap,omitempty"`
 }
 
 func (s PutBucketLifecycleHeaders) String() string {
@@ -13558,6 +14604,103 @@ func (s *PutBucketPolicyResponse) SetHeaders(v map[string]*string) *PutBucketPol
 }
 
 func (s *PutBucketPolicyResponse) SetStatusCode(v int32) *PutBucketPolicyResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type PutBucketPublicAccessBlockRequest struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+}
+
+func (s PutBucketPublicAccessBlockRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutBucketPublicAccessBlockRequest) GoString() string {
+	return s.String()
+}
+
+func (s *PutBucketPublicAccessBlockRequest) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutBucketPublicAccessBlockRequest {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
+type PutBucketPublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s PutBucketPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutBucketPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *PutBucketPublicAccessBlockResponse) SetHeaders(v map[string]*string) *PutBucketPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *PutBucketPublicAccessBlockResponse) SetStatusCode(v int32) *PutBucketPublicAccessBlockResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type PutBucketRedundancyTypeRequest struct {
+	DataRedundancyTypeConfiguration *PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration `json:"DataRedundancyTypeConfiguration,omitempty" xml:"DataRedundancyTypeConfiguration,omitempty" type:"Struct"`
+}
+
+func (s PutBucketRedundancyTypeRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutBucketRedundancyTypeRequest) GoString() string {
+	return s.String()
+}
+
+func (s *PutBucketRedundancyTypeRequest) SetDataRedundancyTypeConfiguration(v *PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration) *PutBucketRedundancyTypeRequest {
+	s.DataRedundancyTypeConfiguration = v
+	return s
+}
+
+type PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration struct {
+	Type *string `json:"Type,omitempty" xml:"Type,omitempty"`
+}
+
+func (s PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration) GoString() string {
+	return s.String()
+}
+
+func (s *PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration) SetType(v string) *PutBucketRedundancyTypeRequestDataRedundancyTypeConfiguration {
+	s.Type = &v
+	return s
+}
+
+type PutBucketRedundancyTypeResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s PutBucketRedundancyTypeResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutBucketRedundancyTypeResponse) GoString() string {
+	return s.String()
+}
+
+func (s *PutBucketRedundancyTypeResponse) SetHeaders(v map[string]*string) *PutBucketRedundancyTypeResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *PutBucketRedundancyTypeResponse) SetStatusCode(v int32) *PutBucketRedundancyTypeResponse {
 	s.StatusCode = &v
 	return s
 }
@@ -14403,9 +15546,50 @@ func (s *PutObjectTaggingResponse) SetStatusCode(v int32) *PutObjectTaggingRespo
 	return s
 }
 
+type PutPublicAccessBlockRequest struct {
+	PublicAccessBlockConfiguration *PublicAccessBlockConfiguration `json:"PublicAccessBlockConfiguration,omitempty" xml:"PublicAccessBlockConfiguration,omitempty"`
+}
+
+func (s PutPublicAccessBlockRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutPublicAccessBlockRequest) GoString() string {
+	return s.String()
+}
+
+func (s *PutPublicAccessBlockRequest) SetPublicAccessBlockConfiguration(v *PublicAccessBlockConfiguration) *PutPublicAccessBlockRequest {
+	s.PublicAccessBlockConfiguration = v
+	return s
+}
+
+type PutPublicAccessBlockResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s PutPublicAccessBlockResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutPublicAccessBlockResponse) GoString() string {
+	return s.String()
+}
+
+func (s *PutPublicAccessBlockResponse) SetHeaders(v map[string]*string) *PutPublicAccessBlockResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *PutPublicAccessBlockResponse) SetStatusCode(v int32) *PutPublicAccessBlockResponse {
+	s.StatusCode = &v
+	return s
+}
+
 type PutStyleRequest struct {
 	// The style content.
-	Style *Style `json:"Style,omitempty" xml:"Style,omitempty"`
+	Style    *Style  `json:"Style,omitempty" xml:"Style,omitempty"`
+	Category *string `json:"category,omitempty" xml:"category,omitempty"`
 	// The name of the image style.
 	StyleName *string `json:"styleName,omitempty" xml:"styleName,omitempty"`
 }
@@ -14420,6 +15604,11 @@ func (s PutStyleRequest) GoString() string {
 
 func (s *PutStyleRequest) SetStyle(v *Style) *PutStyleRequest {
 	s.Style = v
+	return s
+}
+
+func (s *PutStyleRequest) SetCategory(v string) *PutStyleRequest {
+	s.Category = &v
 	return s
 }
 
@@ -14536,6 +15725,46 @@ func (s *PutSymlinkResponse) SetHeaders(v map[string]*string) *PutSymlinkRespons
 }
 
 func (s *PutSymlinkResponse) SetStatusCode(v int32) *PutSymlinkResponse {
+	s.StatusCode = &v
+	return s
+}
+
+type PutUserDefinedLogFieldsConfigRequest struct {
+	UserDefinedLogFieldsConfiguration *UserDefinedLogFieldsConfiguration `json:"UserDefinedLogFieldsConfiguration,omitempty" xml:"UserDefinedLogFieldsConfiguration,omitempty"`
+}
+
+func (s PutUserDefinedLogFieldsConfigRequest) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutUserDefinedLogFieldsConfigRequest) GoString() string {
+	return s.String()
+}
+
+func (s *PutUserDefinedLogFieldsConfigRequest) SetUserDefinedLogFieldsConfiguration(v *UserDefinedLogFieldsConfiguration) *PutUserDefinedLogFieldsConfigRequest {
+	s.UserDefinedLogFieldsConfiguration = v
+	return s
+}
+
+type PutUserDefinedLogFieldsConfigResponse struct {
+	Headers    map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	StatusCode *int32             `json:"statusCode,omitempty" xml:"statusCode,omitempty"`
+}
+
+func (s PutUserDefinedLogFieldsConfigResponse) String() string {
+	return tea.Prettify(s)
+}
+
+func (s PutUserDefinedLogFieldsConfigResponse) GoString() string {
+	return s.String()
+}
+
+func (s *PutUserDefinedLogFieldsConfigResponse) SetHeaders(v map[string]*string) *PutUserDefinedLogFieldsConfigResponse {
+	s.Headers = v
+	return s
+}
+
+func (s *PutUserDefinedLogFieldsConfigResponse) SetStatusCode(v int32) *PutUserDefinedLogFieldsConfigResponse {
 	s.StatusCode = &v
 	return s
 }

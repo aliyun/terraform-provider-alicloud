@@ -78,6 +78,14 @@ func (client *Client) ModifyRequest(context *spi.InterceptorContext, attributeMa
 
 	config := context.Configuration
 	regionId := config.RegionId
+	if tea.BoolValue(util.IsUnset(regionId)) || tea.BoolValue(util.Empty(regionId)) {
+		regionId, _err = client.GetRegionIdFromEndpoint(config.Endpoint)
+		if _err != nil {
+			return _err
+		}
+
+	}
+
 	credential := request.Credential
 	accessKeyId, _err := credential.GetAccessKeyId()
 	if _err != nil {
@@ -338,6 +346,21 @@ func (client *Client) ModifyResponse(context *spi.InterceptorContext, attributeM
 	return _err
 }
 
+func (client *Client) GetRegionIdFromEndpoint(endpoint *string) (_result *string, _err error) {
+	if !tea.BoolValue(util.Empty(endpoint)) {
+		if tea.BoolValue(string_.HasPrefix(endpoint, tea.String("oss-"))) && tea.BoolValue(string_.HasSuffix(endpoint, tea.String(".aliyuncs.com"))) {
+			idx := string_.Index(endpoint, tea.String(".aliyuncs.com"))
+			_body := string_.SubString(endpoint, tea.Int(4), idx)
+			_result = _body
+			return _result, _err
+		}
+
+	}
+
+	_result = tea.String("cn-hangzhou")
+	return _result, _err
+}
+
 func (client *Client) GetEndpoint(regionId *string, network *string, endpoint *string) (_result *string, _err error) {
 	if !tea.BoolValue(util.Empty(endpoint)) {
 		_result = endpoint
@@ -556,7 +579,7 @@ func (client *Client) BuildCanonicalizedResource(pathname *string, query map[str
 	sortedParams := array.AscSort(queryKeys)
 	separator := tea.String("?")
 	for _, paramName := range sortedParams {
-		if tea.BoolValue(array.Contains(client.Default_signed_params, paramName)) {
+		if tea.BoolValue(array.Contains(client.Default_signed_params, paramName)) || tea.BoolValue(string_.HasPrefix(paramName, tea.String("x-oss-"))) {
 			canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + tea.StringValue(separator) + tea.StringValue(paramName))
 			if !tea.BoolValue(util.Empty(query[tea.StringValue(paramName)])) {
 				canonicalizedResource = tea.String(tea.StringValue(canonicalizedResource) + "=" + tea.StringValue(query[tea.StringValue(paramName)]))

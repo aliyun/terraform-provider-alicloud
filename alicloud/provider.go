@@ -862,6 +862,9 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_oss_bucket_public_access_block":                       resourceAliCloudOssBucketPublicAccessBlock(),
+			"alicloud_oss_account_public_access_block":                      resourceAliCloudOssAccountPublicAccessBlock(),
+			"alicloud_oss_bucket_data_redundancy_transition":                resourceAliCloudOssBucketDataRedundancyTransition(),
 			"alicloud_oss_bucket_meta_query":                                resourceAliCloudOssBucketMetaQuery(),
 			"alicloud_oss_bucket_access_monitor":                            resourceAliCloudOssBucketAccessMonitor(),
 			"alicloud_oss_bucket_user_defined_log_fields":                   resourceAliCloudOssBucketUserDefinedLogFields(),
