@@ -591,6 +591,13 @@ func sagClientUserPasswordSuppressFunc(k, old, new string, d *schema.ResourceDat
 	return false
 }
 
+func selectdbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("payment_type").(string) == "Subscription" {
+		return false
+	}
+	return true
+}
+
 func cmsClientInfoSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	for _, v := range d.Get("escalations_info").([]interface{}) {
 		mapping := v.(map[string]interface{})
