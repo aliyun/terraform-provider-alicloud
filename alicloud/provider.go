@@ -283,7 +283,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_mns_topics":                                       dataSourceAlicloudMNSTopics(),
 			"alicloud_mns_topic_subscriptions":                          dataSourceAlicloudMNSTopicSubscriptions(),
 			"alicloud_api_gateway_service":                              dataSourceAlicloudApiGatewayService(),
-			"alicloud_api_gateway_apis":                                 dataSourceAlicloudApiGatewayApis(),
+			"alicloud_api_gateway_apis":                                 dataSourceAliCloudApiGatewayApis(),
 			"alicloud_api_gateway_groups":                               dataSourceAlicloudApiGatewayGroups(),
 			"alicloud_api_gateway_apps":                                 dataSourceAlicloudApiGatewayApps(),
 			"alicloud_elasticsearch_instances":                          dataSourceAlicloudElasticsearch(),
