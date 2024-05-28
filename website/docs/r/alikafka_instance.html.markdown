@@ -102,6 +102,7 @@ The following arguments are supported:
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance. The value can be in zone x or region id-x format. **NOTE**: When the available zone is insufficient, another availability zone may be deployed.
 * `selected_zones` - (Optional, Available since v1.195.0) The zones among which you want to deploy the instance.
+* `allowed_list` - (Optional, Set, Available since v1.221.0) The IP address whitelist. See [`allowed_list`](#allowed_list) below.
 
 -> **NOTE:** Arguments io_max, disk_size, topic_quota, eip_max should follow the following constraints.
 
@@ -112,6 +113,27 @@ The following arguments are supported:
 |60          |  1400-6100:100  |   80-450:1  |    1-500:1  |
 |90          |  2100-6100:100  |   100-450:1 |    1-500:1  |
 |120         |  2700-6100:100  |   150-450:1 |    1-500:1  |
+
+### `allowed_list`
+
+The allowed_list supports the following:
+
+* `vpc_list` - (Optional, Set) The whitelist for access from a virtual private cloud (VPC). See [`vpc_list`](#allowed_list-vpc_list) below.
+* `internet_list` - (Optional, Set) The whitelist for access from the Internet. See [`internet_list`](#allowed_list-internet_list) below.
+
+### `allowed_list-vpc_list`
+
+The vpc_list supports the following:
+
+* `port_range` - (Optional) The Port range. Valid Value: `9092/9092`, `9094/9094`, `9095/9095`.
+* `allowed_ip_list` - (Optional, List) The IP address whitelist.
+
+### `allowed_list-internet_list`
+
+The internet_list supports the following:
+
+* `port_range` - (Optional) The Port range. Valid Value: `9093/9093`.
+* `allowed_ip_list` - (Optional, List) The IP address whitelist.
 
 ## Attributes Reference
 

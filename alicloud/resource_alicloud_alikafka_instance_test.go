@@ -331,6 +331,30 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 					"spec_type":       "normal",
 					"service_version": "2.2.0",
 					//"config":          `{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}`,
+					"allowed_list": []map[string]interface{}{
+						{
+							"vpc_list": []map[string]interface{}{
+								{
+									"port_range":      "9092/9092",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9094/9094",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9095/9095",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+							},
+							"internet_list": []map[string]interface{}{
+								{
+									"port_range":      "9093/9093",
+									"allowed_ip_list": []string{"1.1.1.1/1", "2.2.2.2/2", "3.3.3.3/3"},
+								},
+							},
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -351,6 +375,7 @@ func TestAccAliCloudAlikafkaInstance_convert(t *testing.T) {
 						"spec_type":       "normal",
 						"service_version": "2.2.0",
 						//"config":          "{\"enable.vpc_sasl_ssl\":\"false\",\"kafka.log.retention.hours\":\"72\",\"enable.acl\":\"false\",\"kafka.message.max.bytes\":\"1048576\"}",
+						"allowed_list.#": "1",
 						"tags.%":         "2",
 						"tags.Created":   "TF",
 						"tags.For":       "acceptance test",
@@ -386,12 +411,10 @@ func TestAccAliCloudAlikafkaInstance_prepaid(t *testing.T) {
 	}
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeAliKafkaInstance")
 	rac := resourceAttrCheckInit(rc, ra)
-
 	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testacc-alikafkainstancepre%v", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlikafkaInstancePrePaidConfigDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -542,6 +565,165 @@ func TestAccAliCloudAlikafkaInstance_VpcId(t *testing.T) {
 					testAccCheck(map[string]string{
 						"partition_num": "1",
 						"topic_quota":   "1001",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"vpc_list": []map[string]interface{}{
+								{
+									"port_range":      "9092/9092",
+									"allowed_ip_list": []string{"172.168.4.0/25"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"vpc_list": []map[string]interface{}{
+								{
+									"port_range":      "9092/9092",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9094/9094",
+									"allowed_ip_list": []string{"172.168.4.0/25"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"vpc_list": []map[string]interface{}{
+								{
+									"port_range":      "9092/9092",
+									"allowed_ip_list": []string{"172.168.4.0/25"},
+								},
+								{
+									"port_range":      "9094/9094",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9095/9095",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"internet_list": []map[string]interface{}{
+								{
+									"port_range":      "9093/9093",
+									"allowed_ip_list": []string{"1.1.1.1/1", "2.2.2.2/2", "3.3.3.3/3"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"internet_list": []map[string]interface{}{
+								{
+									"port_range":      "9093/9093",
+									"allowed_ip_list": []string{"1.1.1.1/1"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"internet_list": []map[string]interface{}{
+								{
+									"port_range":      "9093/9093",
+									"allowed_ip_list": []string{"1.1.1.1/1", "2.2.2.2/2"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"allowed_list": []map[string]interface{}{
+						{
+							"vpc_list": []map[string]interface{}{
+								{
+									"port_range":      "9092/9092",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9094/9094",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+								{
+									"port_range":      "9095/9095",
+									"allowed_ip_list": []string{"172.168.4.0/25", "172.168.4.0/26", "172.168.4.0/28"},
+								},
+							},
+							"internet_list": []map[string]interface{}{
+								{
+									"port_range":      "9093/9093",
+									"allowed_ip_list": []string{"1.1.1.1/1", "2.2.2.2/2", "3.3.3.3/3"},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"allowed_list.#": "1",
 					}),
 				),
 			},
