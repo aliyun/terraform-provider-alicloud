@@ -13,6 +13,8 @@ Provides a Elasticsearch instance resource. It contains data nodes, dedicated ma
 
 -> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
+-> **NOTE:** Kibana private network configuration is not supported at the time of instance creation. it is only supported after the instance has been created, by calling the relevant API operations.
+
 -> **NOTE:** At present, `version` can not be modified once instance has been created.
 
 ## Example Usage
@@ -61,8 +63,6 @@ The following arguments are supported:
 * `enable_public` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can enable public network access。
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `enable_kibana_public_network` - (Optional, Available in v1.87.0+) Bool, default to true. When it set to false, the instance can enable kibana public network access。
-* `kibana_private_whitelist` - (Optional, Available in v1.87.0+) Set the Kibana's IP whitelist in private network.
-* `enable_kibana_private_network` - (Optional, Available in v1.87.0+) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `zone_count` - (Optional, Available in 1.44.0+) The Multi-AZ supported for Elasticsearch, between 1 and 3. The `data_node_amount` value must be an integral multiple of the `zone_count` value.
 * `tags` - (Optional, Available in v1.73.0+) A mapping of tags to assign to the resource. 
