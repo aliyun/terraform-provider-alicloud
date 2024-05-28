@@ -90,6 +90,11 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.IntBetween(1, INT_MAX),
 			},
+			"allow_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"deviation_cell_version_in_sec": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -150,6 +155,8 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableOption := new(tablestore.TableOption)
 	tableOption.TimeToAlive = d.Get("time_to_live").(int)
 	tableOption.MaxVersion = d.Get("max_version").(int)
+	allowUpdate := d.Get("allow_update").(bool)
+	tableOption.AllowUpdate = &allowUpdate
 	if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
 		tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 	}
@@ -248,6 +255,7 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("time_to_live", tableResp.TableOption.TimeToAlive)
 	d.Set("max_version", tableResp.TableOption.MaxVersion)
+	d.Set("allow_update", *tableResp.TableOption.AllowUpdate)
 	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(tableResp.TableOption.DeviationCellVersionInSec, 10))
 
 	if tableResp.SSEDetails != nil && tableResp.SSEDetails.Enable {
@@ -267,7 +275,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	client := meta.(*connectivity.AliyunClient)
 
-	if d.HasChange("time_to_live") || d.HasChange("max_version") || d.HasChange("deviation_cell_version_in_sec") {
+	if d.HasChange("time_to_live") || d.HasChange("max_version") || d.HasChange("deviation_cell_version_in_sec") || d.HasChange("allow_update") {
 		request := new(tablestore.UpdateTableRequest)
 		request.TableName = tableName
 		tableOption := new(tablestore.TableOption)
@@ -277,6 +285,8 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 		if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
 			tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 		}
+		allowUpdate := d.Get("allow_update").(bool)
+		tableOption.AllowUpdate = &allowUpdate
 
 		request.TableOption = tableOption
 		var requestinfo *tablestore.TableStoreClient
