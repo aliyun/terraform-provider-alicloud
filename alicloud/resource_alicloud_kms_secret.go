@@ -1,41 +1,52 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"time"
 )
 
-func resourceAlicloudKmsSecret() *schema.Resource {
+func resourceAliCloudKmsSecret() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudKmsSecretCreate,
-		Read:   resourceAlicloudKmsSecretRead,
-		Update: resourceAlicloudKmsSecretUpdate,
-		Delete: resourceAlicloudKmsSecretDelete,
+		Create: resourceAliCloudKmsSecretCreate,
+		Read:   resourceAliCloudKmsSecretRead,
+		Update: resourceAliCloudKmsSecretUpdate,
+		Delete: resourceAliCloudKmsSecretDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(1 * time.Minute),
-			Delete: schema.DefaultTimeout(1 * time.Minute),
-			Update: schema.DefaultTimeout(1 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"arn": {
+			"certificate_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"custom_data": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"dkms_instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
 			},
 			"enable_automatic_rotation": {
 				Type:     schema.TypeBool,
@@ -46,142 +57,131 @@ func resourceAlicloudKmsSecret() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"force_delete_without_recovery": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-			"planned_delete_time": {
+			"extended_config": {
 				Type:     schema.TypeString,
-				Computed: true,
+				Optional: true,
+				ForceNew: true,
+			},
+			"extended_config_custom_data": {
+				Type:     schema.TypeMap,
+				Optional: true,
+			},
+			"key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"move_to_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"policy": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"policy_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"recovery_window_in_days": {
-				Type:     schema.TypeInt,
+				Type:     schema.TypeString,
 				Optional: true,
-				Default:  30,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					return d.Get("force_delete_without_recovery").(bool)
-				},
+			},
+			"remove_from_version": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"rotation_interval": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"secret_data": {
-				Type:      schema.TypeString,
-				Required:  true,
-				Sensitive: true,
-				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("secret_type"); ok && v.(string) != "Generic" {
-						return d.Id() != ""
-					}
-					return false
-				},
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"secret_data_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      "text",
-				ValidateFunc: validation.StringInSlice([]string{"binary", "text"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"secret_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"tags": tagsSchema(),
-			"version_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"version_stages": {
-				Type:     schema.TypeSet,
-				Optional: true,
-				Computed: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-			},
-			"dkms_instance_id": {
+			"secret_type": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
 			},
-			"secret_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Generic", "Rds", "RAMCredentials", "ECS"}, false),
-			},
-			"extended_config": {
+			"tags": tagsSchema(),
+			"version_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateSecret"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
+	request = make(map[string]interface{})
+	query["SecretName"] = d.Get("secret_name")
 
-	if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
-		request["EnableAutomaticRotation"] = v
-	}
-
-	if v, ok := d.GetOk("encryption_key_id"); ok {
-		request["EncryptionKeyId"] = v
-	}
-
-	if v, ok := d.GetOk("rotation_interval"); ok {
-		request["RotationInterval"] = v
-	}
-
-	request["SecretData"] = d.Get("secret_data")
 	if v, ok := d.GetOk("secret_data_type"); ok {
 		request["SecretDataType"] = v
 	}
-
-	if v, ok := d.GetOk("dkms_instance_id"); ok {
-		request["DKMSInstanceId"] = v
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
 	}
-
+	request["VersionId"] = d.Get("version_id")
+	if v, ok := d.GetOk("encryption_key_id"); ok {
+		request["EncryptionKeyId"] = v
+	}
+	request["SecretData"] = d.Get("secret_data")
 	if v, ok := d.GetOk("secret_type"); ok {
 		request["SecretType"] = v
 	}
-
+	if v, ok := d.GetOkExists("enable_automatic_rotation"); ok {
+		request["EnableAutomaticRotation"] = v
+	}
+	if v, ok := d.GetOk("rotation_interval"); ok {
+		request["RotationInterval"] = v
+	}
 	if v, ok := d.GetOk("extended_config"); ok {
 		request["ExtendedConfig"] = v
 	}
-
-	request["SecretName"] = d.Get("secret_name")
-	if v, ok := d.GetOk("tags"); ok {
-		addTags := make([]JsonTag, 0)
-		for key, value := range v.(map[string]interface{}) {
-			addTags = append(addTags, JsonTag{
-				TagKey:   key,
-				TagValue: value.(string),
-			})
-		}
-		tags, err := json.Marshal(addTags)
-		if err != nil {
-			return WrapError(err)
-		}
-		request["Tags"] = string(tags)
+	if v, ok := d.GetOk("dkms_instance_id"); ok {
+		request["DKMSInstanceId"] = v
 	}
-	request["VersionId"] = d.Get("version_id")
-	wait := incrementalWait(3*time.Second, 1*time.Second)
+	if v, ok := d.GetOk("policy"); ok {
+		request["Policy"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		jsonPathResult11, err := jsonpath.Get("$", v)
+		if err == nil && jsonPathResult11 != "" {
+			request["Tags"] = jsonPathResult11
+		}
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -189,121 +189,101 @@ func resourceAlicloudKmsSecretCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_secret", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["SecretName"]))
 
-	return resourceAlicloudKmsSecretUpdate(d, meta)
+	return resourceAliCloudKmsSecretRead(d, meta)
 }
 
-func resourceAlicloudKmsSecretRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsSecretRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kmsService := KmsService{client}
-	object, err := kmsService.DescribeKmsSecret(d.Id())
+	kmsServiceV2 := KmsServiceV2{client}
+
+	objectRaw, err := kmsServiceV2.DescribeKmsSecret(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_kms_secret kmsService.DescribeKmsSecret Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_kms_secret DescribeKmsSecret Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("secret_name", d.Id())
-	d.Set("arn", object["Arn"])
-	d.Set("description", object["Description"])
-	d.Set("encryption_key_id", object["EncryptionKeyId"])
-	d.Set("planned_delete_time", object["PlannedDeleteTime"])
-	if v, ok := object["Tags"].(map[string]interface{}); ok {
-		d.Set("tags", tagsToMap(v["Tag"]))
-	}
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("description", objectRaw["Description"])
+	d.Set("dkms_instance_id", objectRaw["DKMSInstanceId"])
+	d.Set("encryption_key_id", objectRaw["EncryptionKeyId"])
+	d.Set("extended_config", objectRaw["ExtendedConfig"])
+	d.Set("rotation_interval", objectRaw["RotationInterval"])
+	d.Set("secret_type", objectRaw["SecretType"])
+	d.Set("secret_name", objectRaw["SecretName"])
 
-	getSecretValueObject, err := kmsService.GetSecretValue(d.Id())
+	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
+	d.Set("tags", tagsToMap(tagsMaps))
+
+	objectRaw, err = kmsServiceV2.DescribeGetSecretValue(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 
-	d.Set("secret_data", getSecretValueObject["SecretData"])
-	d.Set("secret_data_type", getSecretValueObject["SecretDataType"])
-	d.Set("version_id", getSecretValueObject["VersionId"])
-	d.Set("version_stages", getSecretValueObject["VersionStages"].(map[string]interface{})["VersionStage"])
-	d.Set("dkms_instance_id", object["DKMSInstanceId"])
-	d.Set("secret_type", object["SecretType"])
-	d.Set("extended_config", object["ExtendedConfig"])
+	d.Set("create_time", objectRaw["CreateTime"])
+	d.Set("extended_config", objectRaw["ExtendedConfig"])
+	d.Set("rotation_interval", objectRaw["RotationInterval"])
+	d.Set("secret_data", objectRaw["SecretData"])
+	d.Set("secret_data_type", objectRaw["SecretDataType"])
+	d.Set("secret_type", objectRaw["SecretType"])
+	d.Set("version_id", objectRaw["VersionId"])
+	d.Set("secret_name", objectRaw["SecretName"])
+
+	objectRaw, err = kmsServiceV2.DescribeGetSecretPolicy(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("policy", objectRaw["Policy"])
+
+	d.Set("secret_name", d.Id())
 
 	return nil
 }
 
-func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	kmsService := KmsService{client}
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "UpdateSecret"
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	d.Partial(true)
-
-	if !d.IsNewResource() && d.HasChange("tags") {
-		if err := kmsService.SetResourceTags(d, "secret"); err != nil {
-			return WrapError(err)
-		}
-		d.SetPartial("tags")
-	}
-	if !d.IsNewResource() && d.HasChange("description") {
-		request := map[string]interface{}{
-			"SecretName": d.Id(),
-		}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SecretName"] = d.Id()
+	if d.HasChange("description") {
+		update = true
 		request["Description"] = d.Get("description")
-		action := "UpdateSecret"
-		wait := incrementalWait(3*time.Second, 1*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		d.SetPartial("description")
 	}
-	update := false
-	request := map[string]interface{}{
-		"SecretName": d.Id(),
-	}
-	if !d.IsNewResource() && d.HasChange("secret_data") {
-		update = true
-	}
-	request["SecretData"] = d.Get("secret_data")
-	if !d.IsNewResource() && d.HasChange("version_id") {
-		update = true
-	}
-	request["VersionId"] = d.Get("version_id")
-	if !d.IsNewResource() && d.HasChange("secret_data_type") {
-		update = true
-		request["SecretDataType"] = d.Get("secret_data_type")
-	}
-	if d.HasChange("version_stages") {
-		update = true
-		request["VersionStages"] = convertListToJsonString(d.Get("version_stages").(*schema.Set).List())
+
+	if v, ok := d.GetOk("extended_config_custom_data"); ok {
+		request["ExtendedConfig.CustomData"] = convertMapToJsonStringIgnoreError(v.(map[string]interface{}))
 	}
 	if update {
-		action := "PutSecretValue"
-		wait := incrementalWait(3*time.Second, 1*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -311,42 +291,80 @@ func resourceAlicloudKmsSecretUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("secret_data")
-		d.SetPartial("version_id")
-		d.SetPartial("secret_data_type")
-		d.SetPartial("version_stages")
 	}
+	update = false
+	action = "SetSecretPolicy"
+	conn, err = client.NewKmsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["SecretName"] = d.Id()
+	if v, ok := d.GetOk("policy_name"); ok {
+		request["PolicyName"] = v
+	}
+	if d.HasChange("policy") {
+		update = true
+		request["Policy"] = d.Get("policy")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
 	d.Partial(false)
-	return resourceAlicloudKmsSecretRead(d, meta)
+	return resourceAliCloudKmsSecretRead(d, meta)
 }
 
-func resourceAlicloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteSecret"
+	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewKmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	request := map[string]interface{}{
-		"SecretName": d.Id(),
-	}
+	request = make(map[string]interface{})
+	query["SecretName"] = d.Id()
 
-	if v, ok := d.GetOkExists("force_delete_without_recovery"); ok {
-		request["ForceDeleteWithoutRecovery"] = fmt.Sprintf("%v", v.(bool))
-	}
+	request["ForceDeleteWithoutRecovery"] = "true"
 	if v, ok := d.GetOk("recovery_window_in_days"); ok {
 		request["RecoveryWindowInDays"] = v
 	}
-	wait := incrementalWait(3*time.Second, 1*time.Second)
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-01-20"), StringPointer("AK"), query, request, &runtime)
+
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -354,14 +372,13 @@ func resourceAlicloudKmsSecretDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"Forbidden.ResourceNotFound"}) {
-			return nil
-		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }
