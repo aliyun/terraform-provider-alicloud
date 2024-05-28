@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -45,6 +46,46 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				MaxItems: 5,
 				MinItems: 1,
 			},
+			"expressions": {
+				Optional:      true,
+				Computed:      true,
+				Type:          schema.TypeSet,
+				ConflictsWith: []string{"metric_name", "comparison_operator", "statistics", "period", "threshold"},
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"metric_name": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"comparison_operator": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"statistics": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"period": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							Computed: true,
+						},
+						"threshold": {
+							Type:     schema.TypeFloat,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"expressions_logic_operator": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"scaling_group_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -59,19 +100,19 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 			},
 			"metric_name": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				Default:      300,
-				ForceNew:     true,
+				Computed:     true,
 				ValidateFunc: validation.IntInSlice([]int{60, 120, 300, 900}),
 			},
 			"statistics": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Default:  Average,
+				Computed: true,
 				ValidateFunc: validation.StringInSlice([]string{
 					string(Average),
 					string(Minimum),
@@ -80,12 +121,13 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 			},
 			"threshold": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 			},
 			"comparison_operator": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      ">=",
+				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{">", ">=", "<", "<="}, false),
 			},
 			"evaluation_count": {
@@ -195,6 +237,21 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 		return WrapError(err)
 	}
 
+	if len(object.Expressions.Expression) != 0 {
+		result := make([]map[string]interface{}, 0)
+		for _, expression := range object.Expressions.Expression {
+			l := map[string]interface{}{
+				"period":              expression.Period,
+				"statistics":          expression.Statistics,
+				"threshold":           expression.Threshold,
+				"metric_name":         expression.MetricName,
+				"comparison_operator": expression.ComparisonOperator,
+			}
+			result = append(result, l)
+		}
+		d.Set("expressions", result)
+	}
+	d.Set("expressions_logic_operator", object.ExpressionsLogicOperator)
 	return nil
 }
 
@@ -238,6 +295,9 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	if d.HasChange("evaluation_count") {
 		request.EvaluationCount = requests.NewInteger(d.Get("evaluation_count").(int))
 	}
+	if d.HasChange("period") {
+		request.Period = requests.NewInteger(d.Get("period").(int))
+	}
 	if v, ok := d.GetOk("cloud_monitor_group_id"); ok {
 		request.GroupId = requests.NewInteger(v.(int))
 	}
@@ -257,6 +317,31 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 	request.Dimension = &createAlarmDimensions
+
+	if d.HasChange("expressions") {
+		if v, ok := d.GetOk("expressions"); ok {
+			expressions := v.(*schema.Set).List()
+			createAlarmExpressions := make([]ess.ModifyAlarmExpression, 0, len(expressions))
+			for _, rew := range expressions {
+				item := rew.(map[string]interface{})
+				str := fmt.Sprintf("%f", item["threshold"])
+				dimension := ess.ModifyAlarmExpression{
+					Period:             strconv.Itoa(item["period"].(int)),
+					Threshold:          str,
+					MetricName:         item["metric_name"].(string),
+					ComparisonOperator: item["comparison_operator"].(string),
+					Statistics:         item["statistics"].(string),
+				}
+				createAlarmExpressions = append(createAlarmExpressions, dimension)
+			}
+			request.Expression = &createAlarmExpressions
+		}
+	}
+	if d.HasChange("expressions_logic_operator") {
+		if expressionsLogicOperator, ok := d.GetOk("expressions_logic_operator"); ok && expressionsLogicOperator.(string) != "" {
+			request.ExpressionsLogicOperator = expressionsLogicOperator.(string)
+		}
+	}
 
 	raw, err := client.WithEssClient(func(essClient *ess.Client) (interface{}, error) {
 		return essClient.ModifyAlarm(request)
@@ -398,5 +483,26 @@ func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest,
 		request.Dimension = &createAlarmDimensions
 	}
 
+	if v, ok := d.GetOk("expressions"); ok {
+		expressions := v.(*schema.Set).List()
+		createAlarmExpressions := make([]ess.CreateAlarmExpression, 0, len(expressions))
+		for _, rew := range expressions {
+			item := rew.(map[string]interface{})
+			str := fmt.Sprintf("%f", item["threshold"])
+			dimension := ess.CreateAlarmExpression{
+				Period:             strconv.Itoa(item["period"].(int)),
+				Threshold:          str,
+				MetricName:         item["metric_name"].(string),
+				ComparisonOperator: item["comparison_operator"].(string),
+				Statistics:         item["statistics"].(string),
+			}
+			createAlarmExpressions = append(createAlarmExpressions, dimension)
+		}
+		request.Expression = &createAlarmExpressions
+	}
+
+	if expressionsLogicOperator, ok := d.GetOk("expressions_logic_operator"); ok && expressionsLogicOperator.(string) != "" {
+		request.ExpressionsLogicOperator = expressionsLogicOperator.(string)
+	}
 	return request, nil
 }

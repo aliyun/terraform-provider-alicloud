@@ -129,18 +129,30 @@ The following arguments are supported:
 * `alarm_actions` - (Required) The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
 * `scaling_group_id` - (Required, ForceNew) The scaling group associated with this alarm, the 'ForceNew' attribute is available in 1.56.0+.
 * `metric_type` - (Optional, ForceNew) The type for the alarm's associated metric. Supported value: system, custom. "system" means the metric data is collected by Aliyun Cloud Monitor Service(CMS), "custom" means the metric data is upload to CMS by users. Defaults to system. 
-* `metric_name` - (Required) The name for the alarm's associated metric. See [`dimensions`](#dimensions) below for details.
-* `period` - (Optional, ForceNew) The period in seconds over which the specified statistic is applied. Supported value: 60, 120, 300, 900. Defaults to 300.
+* `metric_name` - (Optional) The name for the alarm's associated metric. See [`dimensions`](#dimensions) below for details.
+* `period` - (Optional) The period in seconds over which the specified statistic is applied. Supported value: 60, 120, 300, 900. Defaults to 300.
 * `statistics` - (Optional) The statistic to apply to the alarm's associated metric. Supported value: Average, Minimum, Maximum. Defaults to Average.
-* `threshold` - (Required) The value against which the specified statistics is compared.
+* `threshold` - (Optional) The value against which the specified statistics is compared.
 * `comparison_operator` - (Optional) The arithmetic operation to use when comparing the specified Statistic and Threshold. The specified Statistic value is used as the first operand. Supported value: >=, <=, >, <. Defaults to >=.
 * `evaluation_count` - (Optional) The number of times that needs to satisfies comparison condition before transition into ALARM state. Defaults to 3.
 * `cloud_monitor_group_id` - (Optional) Defines the application group id defined by CMS which is assigned when you upload custom metric to CMS, only available for custom metirc.
 * `dimensions` - (Optional) The dimension map for the alarm's associated metric. For all metrics, you can not set the dimension key as "scaling_group" or "userId", which is set by default, the second dimension for metric, such as "device" for "PackagesNetIn", need to be set by users. See [`dimensions`](#dimensions) below.
+* `expressions` - (Optional, Available since v1.226.0) Support multi alert rule. See [`expressions`](#expressions) below for details.
+* `expressions_logic_operator` - (Optional, Available since v1.226.0) The relationship between the trigger conditions in the multi-metric alert rule.
 * `state` - (Optional) The status of the event-triggered task. Valid values:
  - ALARM: The alert condition is met and an alert is triggered.
  - OK: The alert condition is not met.
  - INSUFFICIENT_DATA: Auto Scaling cannot determine whether the alert condition is met due to insufficient data.
+
+### `expressions`
+
+The Expressions mapping supports the following:
+
+* `metric_name` - (Optional) The name for the alarm's associated metric. See [`dimensions`](#dimensions) below for details.
+* `period` - (Optional) The period in seconds over which the specified statistic is applied. Supported value: 60, 120, 300, 900. Defaults to 300.
+* `statistics` - (Optional) The statistic to apply to the alarm's associated metric. Supported value: Average, Minimum, Maximum. Defaults to Average.
+* `threshold` - (Optional) The value against which the specified statistics is compared.
+* `comparison_operator` - (Optional) The arithmetic operation to use when comparing the specified Statistic and Threshold. The specified Statistic value is used as the first operand. Supported value: >=, <=, >, <. Defaults to >=.
 
 ### `dimensions`
 
