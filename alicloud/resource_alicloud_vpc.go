@@ -605,7 +605,7 @@ func resourceAliCloudVpcVpcDelete(d *schema.ResourceData, meta interface{}) erro
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.VSwitch"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DependencyViolation.VSwitch", "DependencyViolation.SecurityGroup"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
