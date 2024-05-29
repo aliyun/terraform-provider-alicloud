@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Bucket Public Access Block resource. Blocking public access at the bucket-level.
 
-For information about OSS Bucket Public Access Block and how to use it, see [What is Bucket Public Access Block](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Public Access Block and how to use it, see [What is Bucket Public Access Block](https://www.alibabacloud.com/help/en/oss/developer-reference/putbucketpublicaccessblock).
 
 -> **NOTE:** Available since v1.224.0.
 

@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Bucket Access Monitor resource. Enables or disables access tracking for a bucket.
 
-For information about OSS Bucket Access Monitor and how to use it, see [What is Bucket Access Monitor](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Access Monitor and how to use it, see [What is Bucket Access Monitor](https://www.alibabacloud.com/help/en/oss/developer-reference/putbucketaccessmonitor).
 
 -> **NOTE:** Available since v1.224.0.
 

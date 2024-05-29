@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Account Public Access Block resource. Blocking public access at the account level.
 
-For information about OSS Account Public Access Block and how to use it, see [What is Account Public Access Block](https://www.alibabacloud.com/help/en/).
+For information about OSS Account Public Access Block and how to use it, see [What is Account Public Access Block](https://www.alibabacloud.com/help/en/oss/developer-reference/putpublicaccessblock).
 
 -> **NOTE:** Available since v1.224.0.
 
