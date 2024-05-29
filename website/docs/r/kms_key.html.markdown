@@ -41,7 +41,7 @@ The following arguments are supported:
 * `automatic_rotation` - (Optional) Specifies whether to enable automatic key rotation. Default value: `Disabled`. Valid values: `Enabled`, `Disabled`.
 * `rotation_interval` - (Optional) The period of automatic key rotation. The following units are supported: d (day), h (hour), m (minute), and s (second). For example, you can use either 7d or 604800s to specify a seven-day interval.
 **NOTE**: If `automatic_rotation` is set to `Enabled`, `rotation_interval` is required.
-* `policy` - (Optional, Available since v1.224.0) The policy of the key.
+* `policy` - (Optional, Available since v1.224.0) The content of the key policy. The value is in the JSON format. The value can be up to 32,768 bytes in length. For more information, see [How to use it](https://www.alibabacloud.com/help/en/kms/developer-reference/api-setkeypolicy).
 * `description` - (Optional) The description of the key.
 * `status` - (Optional, Available since v1.123.1) The status of key. Default value: `Enabled`. Valid values: `Enabled`, `Disabled`, `PendingDeletion`.
 * `pending_window_in_days` - (Optional, Int) The number of days before the CMK is deleted. During this period, the CMK is in the PendingDeletion state. After this period ends, you cannot cancel the deletion. Unit: days. Valid values: `7` to `366`.
