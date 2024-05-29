@@ -10,7 +10,7 @@ description: |-
 
 Provides a Cloud Firewall Nat Firewall Control Policy resource. Nat firewall access control policy.
 
-For information about Cloud Firewall Nat Firewall Control Policy and how to use it, see [What is Nat Firewall Control Policy](https://www.alibabacloud.com/help/en/).
+For information about Cloud Firewall Nat Firewall Control Policy and how to use it, see [What is Nat Firewall Control Policy](https://www.alibabacloud.com/help/en/cloud-firewall/developer-reference/api-cloudfw-2017-12-07-createnatfirewallcontrolpolicy).
 
 -> **NOTE:** Available since v1.224.0.
 
@@ -117,9 +117,7 @@ resource "alicloud_cloud_firewall_nat_firewall_control_policy" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `acl_action` - (Required) The method (action) of access traffic passing through Cloud Firewall in the security access control policy.
-
-Value:
+* `acl_action` - (Required) The method (action) of access traffic passing through Cloud Firewall in the security access control policy. Valid values:
   - **accept**: Release
   - **drop**: Refused
   - **log**: Observation.
@@ -131,36 +129,23 @@ Value:
   - When the protocol type is TCP, UDP, or ANY, and the destination port type (DestPortType) IS group, the value of DestPort is null.
 -> **NOTE:**  When you select group (destination port address book) for the destination port type of the access control policy, you do not need to set a specific destination port number. All ports that need to be controlled by this access control policy are included in the destination port address book.
   - When the protocol type is TCP, UDP, or ANY, and the destination port type (DestPortType) is port, the value of DestPort is the destination port number.
-.
 * `dest_port_group` - (Optional) The address book name of the destination port of the access traffic in the access control policy.
 -> **NOTE:**  When DestPortType is set to group, you need to set the destination port address book name.
 * `dest_port_type` - (Optional) The destination port type of the access traffic in the security access control policy.
   - **port**: port
   - **group**: Port Address Book.
-* `destination` - (Required) The destination address segment in the access control policy.
-
-Value:
-  - When DestinationType is net, Destination is the Destination CIDR.
-
-For example: 1.2.XX.XX/24
-  - When DestinationType IS group, Destination is the name of the Destination address book.
-
-For example: db_group
-  - When DestinationType is domain, Destination is the Destination domain name.
-
-For example: * .aliyuncs.com
-  - When DestinationType is location, Destination is the Destination region.
-
-For example: \["BJ11", "ZB"\].
-* `destination_type` - (Required) The destination address type in the access control policy.
-
-Value:
+* `destination` - (Required) The destination address segment in the access control policy. Valid values:
+  - When DestinationType is net, Destination is the Destination CIDR. For example: 1.2.XX.XX/24
+  - When DestinationType IS group, Destination is the name of the Destination address book. For example: db_group
+  - When DestinationType is domain, Destination is the Destination domain name. For example: * .aliyuncs.com
+  - When DestinationType is location, Destination is the Destination region. For example: \["BJ11", "ZB"\].
+* `destination_type` - (Required) The destination address type in the access control policy. Valid values:
   - **net**: Destination Network segment (CIDR address)
   - **group**: Destination Address Book
   - **domain**: the destination domain name.
-* `direction` - (Required, ForceNew) The traffic direction of the access control policy. Value:
+* `direction` - (Required, ForceNew) The traffic direction of the access control policy. Valid values:
   - **out**: Internal and external traffic access control.
-* `domain_resolve_type` - (Optional) The domain name resolution method of the access control policy. The policy is enabled by default after it is created. Value:
+* `domain_resolve_type` - (Optional) The domain name resolution method of the access control policy. The policy is enabled by default after it is created. Valid values:
   - **0**: Based on FQDN
   - **1**: DNS-based dynamic resolution
   - **2**: dynamic resolution based on FQDN and DNS.
@@ -170,9 +155,7 @@ Value:
   - **4** (default): indicates the IPv4 address.
 * `nat_gateway_id` - (Required, ForceNew) The ID of the NAT gateway instance.
 * `new_order` - (Required) The priority for the access control policy to take effect. The priority number increases sequentially from 1, and the smaller the priority number, the higher the priority.
-* `proto` - (Required) The security protocol type for traffic access in the access control policy.
-
-Value:
+* `proto` - (Required) The security protocol type for traffic access in the access control policy. Valid values:
   - ANY (indicates that all protocol types are queried)
   - TCP
   - UDP
@@ -181,14 +164,9 @@ Value:
   - **true**: Enable access control policy
   - **false**: Do not enable access control policies.
 * `repeat_days` - (Optional) Collection of recurring dates for the policy validity period of the access control policy.
-  - When RepeatType is 'Permanent', 'None', 'Daily', RepeatDays is an empty collection.
-For example:[]
-  - When RepeatType is Weekly, RepeatDays cannot be empty.
-For example:[0, 6]
-When the RepeatType is set to Weekly, RepeatDays cannot be repeated.
-  - RepeatDays cannot be empty when RepeatType is 'Monthly.
-For example:[1, 31]
-When RepeatType is set to Monthly, RepeatDays cannot be repeated.
+  - When RepeatType is 'Permanent', 'None', 'Daily', RepeatDays is an empty collection. For example:[]
+  - When RepeatType is Weekly, RepeatDays cannot be empty. For example:["0", "6"]. When the RepeatType is set to Weekly, RepeatDays cannot be repeated.
+  - RepeatDays cannot be empty when RepeatType is 'Monthly. For example:[1, 31]. When RepeatType is set to Monthly, RepeatDays cannot be repeated.
 * `repeat_end_time` - (Optional) The recurring end time of the policy validity period of the access control policy. For example: 23:30, it must be the whole point or half point time, and at least half an hour greater than the repeat start time.
 -> **NOTE:**  When RepeatType is set to normal or None, RepeatEndTime is null. When the RepeatType is Daily, Weekly, or Monthly, the RepeatEndTime must have a value, and you need to set the repeat end time.
 * `repeat_start_time` - (Optional) The recurring start time of the policy validity period of the access control policy. For example: 08:00, it must be the whole point or half point time, and at least half an hour less than the repeat end time.
@@ -199,21 +177,12 @@ When RepeatType is set to Monthly, RepeatDays cannot be repeated.
   - **Daily**: Daily
   - **Weekly**: Weekly
   - **Monthly**: Monthly.
-* `source` - (Required) The source address in the access control policy.
-
-Value:
-  - When **SourceType** is set to 'net', Source is the Source CIDR address.
-
-For example: 10.2.4.0/24
-  - When **SourceType** is set to 'group', Source is the name of the Source address book.
-
-For example: db_group.
-* `source_type` - (Required) The source address type in the access control policy.
-
-Value:
+* `source` - (Required) The source address in the access control policy. Valid values:
+  - When **SourceType** is set to 'net', Source is the Source CIDR address. For example: 10.2.4.0/24
+  - When **SourceType** is set to 'group', Source is the name of the Source address book. For example: db_group.
+* `source_type` - (Required) The source address type in the access control policy. Valid values:
   - **net**: the source network segment (CIDR address)
   - **group**: source address book
-.
 * `start_time` - (Optional) The start time of the policy validity period of the access control policy. Expresses using the second-level timestamp format. It must be a full or half hour and at least half an hour less than the end time.
 -> **NOTE:**  When RepeatType is set to normal, StartTime is null. When the RepeatType is None, Daily, Weekly, or Monthly, StartTime must have a value and you need to set the start time.
 
