@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Bucket Transfer Acceleration resource. Transfer acceleration configuration of a bucket.
 
-For information about OSS Bucket Transfer Acceleration and how to use it, see [What is Bucket Transfer Acceleration](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Transfer Acceleration and how to use it, see [What is Bucket Transfer Acceleration](https://www.alibabacloud.com/help/en/oss/developer-reference/putbuckettransferacceleration).
 
 -> **NOTE:** Available since v1.224.0.
 

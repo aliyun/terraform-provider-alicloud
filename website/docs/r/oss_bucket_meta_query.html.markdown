@@ -10,7 +10,7 @@ description: |-
 
 Provides a OSS Bucket Meta Query resource. Enables the metadata management feature for a bucket.
 
-For information about OSS Bucket Meta Query and how to use it, see [What is Bucket Meta Query](https://www.alibabacloud.com/help/en/).
+For information about OSS Bucket Meta Query and how to use it, see [What is Bucket Meta Query](https://www.alibabacloud.com/help/en/oss/developer-reference/openmetaquery).
 
 -> **NOTE:** Available since v1.224.0.
 

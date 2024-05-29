@@ -10,7 +10,7 @@ description: |-
 
 Provides a NAS Access Point resource. 
 
-For information about NAS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/en/).
+For information about NAS Access Point and how to use it, see [What is Access Point](https://www.alibabacloud.com/help/zh/nas/developer-reference/api-nas-2017-06-26-createaccesspoint).
 
 -> **NOTE:** Available since v1.224.0.
 
