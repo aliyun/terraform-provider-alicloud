@@ -3,14 +3,14 @@ subcategory: "Log Service (SLS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_sls_scheduled_sql"
 description: |-
-  Provides a Alicloud SLS Scheduled S Q L resource.
+  Provides a Alicloud SLS Scheduled SQL resource.
 ---
 
 # alicloud_sls_scheduled_sql
 
-Provides a SLS Scheduled S Q L resource. Scheduled SQL task.
+Provides a SLS Scheduled SQL resource. Scheduled SQL task.
 
-For information about SLS Scheduled S Q L and how to use it, see [What is Scheduled S Q L](https://www.alibabacloud.com/help/en/).
+For information about SLS Scheduled SQL and how to use it, see [What is Scheduled SQL](https://www.alibabacloud.com/help/zh/sls/developer-reference/api-sls-2020-12-30-createscheduledsql).
 
 -> **NOTE:** Available since v1.224.0.
 
@@ -127,13 +127,13 @@ The following attributes are exported:
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Scheduled S Q L.
-* `delete` - (Defaults to 5 mins) Used when delete the Scheduled S Q L.
-* `update` - (Defaults to 5 mins) Used when update the Scheduled S Q L.
+* `create` - (Defaults to 5 mins) Used when create the Scheduled SQL.
+* `delete` - (Defaults to 5 mins) Used when delete the Scheduled SQL.
+* `update` - (Defaults to 5 mins) Used when update the Scheduled SQL.
 
 ## Import
 
-SLS Scheduled S Q L can be imported using the id, e.g.
+SLS Scheduled SQL can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_sls_scheduled_sql.example <project>:<scheduled_sql_name>
