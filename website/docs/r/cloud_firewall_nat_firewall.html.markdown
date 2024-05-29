@@ -10,7 +10,7 @@ description: |-
 
 Provides a Cloud Firewall Nat Firewall resource. 
 
-For information about Cloud Firewall Nat Firewall and how to use it, see [What is Nat Firewall](https://www.alibabacloud.com/help/en/).
+For information about Cloud Firewall Nat Firewall and how to use it, see [What is Nat Firewall](https://www.alibabacloud.com/help/zh/cloud-firewall/developer-reference/api-cloudfw-2017-12-07-createsecurityproxy).
 
 -> **NOTE:** Available since v1.224.0.
 
