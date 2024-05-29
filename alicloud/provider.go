@@ -872,6 +872,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_sls_scheduled_sql":                                    resourceAliCloudSlsScheduledSQL(),
 			"alicloud_nas_access_point":                                     resourceAliCloudNasAccessPoint(),
 			"alicloud_api_gateway_access_control_list":                      resourceAliCloudApiGatewayAccessControlList(),
+			"alicloud_cloud_firewall_nat_firewall_control_policy": resourceAliCloudCloudFirewallNatFirewallControlPolicy(),
 			"alicloud_sls_alert":                                            resourceAliCloudSlsAlert(),
 			"alicloud_oss_bucket_cors":                                      resourceAliCloudOssBucketCors(),
 			"alicloud_oss_bucket_server_side_encryption":                    resourceAliCloudOssBucketServerSideEncryption(),
