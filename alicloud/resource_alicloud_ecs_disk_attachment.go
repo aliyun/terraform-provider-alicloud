@@ -21,8 +21,8 @@ func resourceAlicloudEcsDiskAttachment() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
+			Delete: schema.DefaultTimeout(10 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"bootable": {
@@ -203,7 +203,7 @@ func resourceAlicloudEcsDiskAttachmentDelete(d *schema.ResourceData, meta interf
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"DisksDetachingOnEcsExceeded","IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"DisksDetachingOnEcsExceeded", "IncorrectDiskStatus", "IncorrectInstanceStatus", "OperationConflict", "InternalError", "InvalidOperation.Conflict", "IncorrectDiskStatus.Initializing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
