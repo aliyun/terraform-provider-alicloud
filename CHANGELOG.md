@@ -1,45 +1,46 @@
-## 1.224.0 (Unreleased)
+## 1.224.1 (Unreleased)
+## 1.224.0 (May 30, 2024)
 
-- **New Resource:** `alicloud_api_gateway_access_control_list` [GH-7278]
-- **New Resource:** `alicloud_nas_access_point` [GH-7280]
-- **New Resource:** `alicloud_oss_bucket_access_monitor` [GH-7289]
-- **New Resource:** `alicloud_oss_bucket_meta_query` [GH-7289]
-- **New Resource:** `alicloud_oss_bucket_transfer_acceleration` [GH-7289]
-- **New Resource:** `alicloud_oss_bucket_user_defined_log_fields` [GH-7289]
-- **New Resource:** `alicloud_sls_scheduled_sql` [GH-7290]
-- **New Resource:** `alicloud_oss_bucket_public_access_block` [GH-7294]
-- **New Resource:** `alicloud_oss_account_public_access_block` [GH-7294]
-- **New Resource:** `alicloud_oss_bucket_data_redundancy_transition` [GH-7294]
-- **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy` [GH-7299]
-- **New Resource:** `alicloud_cloud_firewall_nat_firewall` [GH-7302]
+- **New Resource:** `alicloud_api_gateway_access_control_list` ([#7278](https://github.com/aliyun/terraform-provider-alicloud/issues/7278))
+- **New Resource:** `alicloud_nas_access_point` ([#7280](https://github.com/aliyun/terraform-provider-alicloud/issues/7280))
+- **New Resource:** `alicloud_oss_bucket_access_monitor` ([#7289](https://github.com/aliyun/terraform-provider-alicloud/issues/7289))
+- **New Resource:** `alicloud_oss_bucket_meta_query` ([#7289](https://github.com/aliyun/terraform-provider-alicloud/issues/7289))
+- **New Resource:** `alicloud_oss_bucket_transfer_acceleration` ([#7289](https://github.com/aliyun/terraform-provider-alicloud/issues/7289))
+- **New Resource:** `alicloud_oss_bucket_user_defined_log_fields` ([#7289](https://github.com/aliyun/terraform-provider-alicloud/issues/7289))
+- **New Resource:** `alicloud_sls_scheduled_sql` ([#7290](https://github.com/aliyun/terraform-provider-alicloud/issues/7290))
+- **New Resource:** `alicloud_oss_bucket_public_access_block` ([#7294](https://github.com/aliyun/terraform-provider-alicloud/issues/7294))
+- **New Resource:** `alicloud_oss_account_public_access_block` ([#7294](https://github.com/aliyun/terraform-provider-alicloud/issues/7294))
+- **New Resource:** `alicloud_oss_bucket_data_redundancy_transition` ([#7294](https://github.com/aliyun/terraform-provider-alicloud/issues/7294))
+- **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy` ([#7299](https://github.com/aliyun/terraform-provider-alicloud/issues/7299))
+- **New Resource:** `alicloud_cloud_firewall_nat_firewall` ([#7302](https://github.com/aliyun/terraform-provider-alicloud/issues/7302))
 
 ENHANCEMENTS:
 
-- client: Improved bssopenapi client. [GH-7274]
-- provider: add common function. [GH-7270]
-- resource/alicloud_alikafka_instance: Added the field resource_group_id. [GH-7247]
-- resource/alicloud_kms_key: Added the field policy; Improved alicloud_kms_key testcase. [GH-7251]
-- resource/alicloud_ess_suspend_process: add fault tolerance. [GH-7263]
-- resource/alicloud_kms_secret: Added the field policy, create_time; Improved alicloud_kms_secret testcase. [GH-7264]
-- resource/alicloud_ess_scaling_group: add alb_server_group & resource_group_id and disable group retry fault tolerance. [GH-7273]
-- resource/alicloud_redis_tair_instance: add new attribute cluster_backup_id, node_type, read_only_count, slave_read_only_count. [GH-7276]
-- resource/alicloud_api_gateway_plugin: add new attribute create_time. [GH-7278]
-- resource/alicloud_ssl_vpn_client_cert: update error code for DescribeSslVpnClientCert. [GH-7286]
-- resource/alicloud_ons_group: improve processing logic for OnsGroupList. [GH-7288]
-- resource/alicloud_eip_association: adjust the timeout period of the deletion operation. [GH-7304]
-- data-source/alicloud_cen_transit_router_vpc_attachments: Added the field name_regex, vpc_id, transit_router_attachment_id, auto_publish_route_enabled. [GH-7272]
-- docs: improve examples. [GH-7286]
-- docs: Improved the document security_group_rule. [GH-7296]
-- docs: Improved the document kms_key description. [GH-7303]
-- docs: improve description for cloud_firewall_nat_firewall and cloud_firewall_nat_firewall_control_policy. [GH-7307]
-- docs: improve document for sls_scheduled_sql. [GH-7308]
-- docs: improve document for sls and oss. [GH-7309]
-- testcase: add testcase for multiple ons group. [GH-7288]
+- client: Improved bssopenapi client. ([#7274](https://github.com/aliyun/terraform-provider-alicloud/issues/7274))
+- provider: add common function. ([#7270](https://github.com/aliyun/terraform-provider-alicloud/issues/7270))
+- resource/alicloud_alikafka_instance: Added the field resource_group_id. ([#7247](https://github.com/aliyun/terraform-provider-alicloud/issues/7247))
+- resource/alicloud_kms_key: Added the field policy; Improved alicloud_kms_key testcase. ([#7251](https://github.com/aliyun/terraform-provider-alicloud/issues/7251))
+- resource/alicloud_ess_suspend_process: add fault tolerance. ([#7263](https://github.com/aliyun/terraform-provider-alicloud/issues/7263))
+- resource/alicloud_kms_secret: Added the field policy, create_time; Improved alicloud_kms_secret testcase. ([#7264](https://github.com/aliyun/terraform-provider-alicloud/issues/7264))
+- resource/alicloud_ess_scaling_group: add alb_server_group & resource_group_id and disable group retry fault tolerance. ([#7273](https://github.com/aliyun/terraform-provider-alicloud/issues/7273))
+- resource/alicloud_redis_tair_instance: add new attribute cluster_backup_id, node_type, read_only_count, slave_read_only_count. ([#7276](https://github.com/aliyun/terraform-provider-alicloud/issues/7276))
+- resource/alicloud_api_gateway_plugin: add new attribute create_time. ([#7278](https://github.com/aliyun/terraform-provider-alicloud/issues/7278))
+- resource/alicloud_ssl_vpn_client_cert: update error code for DescribeSslVpnClientCert. ([#7286](https://github.com/aliyun/terraform-provider-alicloud/issues/7286))
+- resource/alicloud_ons_group: improve processing logic for OnsGroupList. ([#7288](https://github.com/aliyun/terraform-provider-alicloud/issues/7288))
+- resource/alicloud_eip_association: adjust the timeout period of the deletion operation. ([#7304](https://github.com/aliyun/terraform-provider-alicloud/issues/7304))
+- data-source/alicloud_cen_transit_router_vpc_attachments: Added the field name_regex, vpc_id, transit_router_attachment_id, auto_publish_route_enabled. ([#7272](https://github.com/aliyun/terraform-provider-alicloud/issues/7272))
+- docs: improve examples. ([#7286](https://github.com/aliyun/terraform-provider-alicloud/issues/7286))
+- docs: Improved the document security_group_rule. ([#7296](https://github.com/aliyun/terraform-provider-alicloud/issues/7296))
+- docs: Improved the document kms_key description. ([#7303](https://github.com/aliyun/terraform-provider-alicloud/issues/7303))
+- docs: improve description for cloud_firewall_nat_firewall and cloud_firewall_nat_firewall_control_policy. ([#7307](https://github.com/aliyun/terraform-provider-alicloud/issues/7307))
+- docs: improve document for sls_scheduled_sql. ([#7308](https://github.com/aliyun/terraform-provider-alicloud/issues/7308))
+- docs: improve document for sls and oss. ([#7309](https://github.com/aliyun/terraform-provider-alicloud/issues/7309))
+- testcase: add testcase for multiple ons group. ([#7288](https://github.com/aliyun/terraform-provider-alicloud/issues/7288))
 
 BUG FIXES:
 
-- resource/alicloud_polardb_cluster: bug fixed the serverless_steady_switch order. [GH-7157]
-- data-source/alicloud_api_gateway_apis: Fixed the read bug; Added the field api_id. [GH-7291]
+- resource/alicloud_polardb_cluster: bug fixed the serverless_steady_switch order. ([#7157](https://github.com/aliyun/terraform-provider-alicloud/issues/7157))
+- data-source/alicloud_api_gateway_apis: Fixed the read bug; Added the field api_id. ([#7291](https://github.com/aliyun/terraform-provider-alicloud/issues/7291))
 
 ## 1.223.2 (May 22, 2024)
 
