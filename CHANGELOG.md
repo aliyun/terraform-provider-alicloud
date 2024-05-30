@@ -1,4 +1,46 @@
 ## 1.224.0 (Unreleased)
+
+- **New Resource:** `alicloud_api_gateway_access_control_list` [GH-7278]
+- **New Resource:** `alicloud_nas_access_point` [GH-7280]
+- **New Resource:** `alicloud_oss_bucket_access_monitor` [GH-7289]
+- **New Resource:** `alicloud_oss_bucket_meta_query` [GH-7289]
+- **New Resource:** `alicloud_oss_bucket_transfer_acceleration` [GH-7289]
+- **New Resource:** `alicloud_oss_bucket_user_defined_log_fields` [GH-7289]
+- **New Resource:** `alicloud_sls_scheduled_sql` [GH-7290]
+- **New Resource:** `alicloud_oss_bucket_public_access_block` [GH-7294]
+- **New Resource:** `alicloud_oss_account_public_access_block` [GH-7294]
+- **New Resource:** `alicloud_oss_bucket_data_redundancy_transition` [GH-7294]
+- **New Resource:** `alicloud_cloud_firewall_nat_firewall_control_policy` [GH-7299]
+- **New Resource:** `alicloud_cloud_firewall_nat_firewall` [GH-7302]
+
+ENHANCEMENTS:
+
+- client: Improved bssopenapi client. [GH-7274]
+- provider: add common function. [GH-7270]
+- resource/alicloud_alikafka_instance: Added the field resource_group_id. [GH-7247]
+- resource/alicloud_kms_key: Added the field policy; Improved alicloud_kms_key testcase. [GH-7251]
+- resource/alicloud_ess_suspend_process: add fault tolerance. [GH-7263]
+- resource/alicloud_kms_secret: Added the field policy, create_time; Improved alicloud_kms_secret testcase. [GH-7264]
+- resource/alicloud_ess_scaling_group: add alb_server_group & resource_group_id and disable group retry fault tolerance. [GH-7273]
+- resource/alicloud_redis_tair_instance: add new attribute cluster_backup_id, node_type, read_only_count, slave_read_only_count. [GH-7276]
+- resource/alicloud_api_gateway_plugin: add new attribute create_time. [GH-7278]
+- resource/alicloud_ssl_vpn_client_cert: update error code for DescribeSslVpnClientCert. [GH-7286]
+- resource/alicloud_ons_group: improve processing logic for OnsGroupList. [GH-7288]
+- resource/alicloud_eip_association: adjust the timeout period of the deletion operation. [GH-7304]
+- data-source/alicloud_cen_transit_router_vpc_attachments: Added the field name_regex, vpc_id, transit_router_attachment_id, auto_publish_route_enabled. [GH-7272]
+- docs: improve examples. [GH-7286]
+- docs: Improved the document security_group_rule. [GH-7296]
+- docs: Improved the document kms_key description. [GH-7303]
+- docs: improve description for cloud_firewall_nat_firewall and cloud_firewall_nat_firewall_control_policy. [GH-7307]
+- docs: improve document for sls_scheduled_sql. [GH-7308]
+- docs: improve document for sls and oss. [GH-7309]
+- testcase: add testcase for multiple ons group. [GH-7288]
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: bug fixed the serverless_steady_switch order. [GH-7157]
+- data-source/alicloud_api_gateway_apis: Fixed the read bug; Added the field api_id. [GH-7291]
+
 ## 1.223.2 (May 22, 2024)
 
 ENHANCEMENTS:
@@ -16,8 +58,8 @@ ENHANCEMENTS:
 - resource/alicloud_ga_endpoint_group: Improved default update timeout; resource/alicloud_ga_ip_set: Improved default update timeout. ([#7259](https://github.com/aliyun/terraform-provider-alicloud/issues/7259))
 - resource/alicloud_ecs_deployment_set: support more enumeration values for strategy. ([#7260](https://github.com/aliyun/terraform-provider-alicloud/issues/7260))
 - resource/alicloud_security_group: tag resource while create phase. ([#7261](https://github.com/aliyun/terraform-provider-alicloud/issues/7261))
-- resource/alicloud_message_service_queue: Optimization check function. ([#7271](https://github.com/aliyun/terraform-provider-alicloud/issues/7271))
 - resource/alicloud_nas_auto_snapshot_policy: add new attribute file_system_type. ([#7267](https://github.com/aliyun/terraform-provider-alicloud/issues/7267))
+- resource/alicloud_message_service_queue: Optimization check function. ([#7271](https://github.com/aliyun/terraform-provider-alicloud/issues/7271))
 - docs: fix datadisk category range,support cloud_essd. ([#7254](https://github.com/aliyun/terraform-provider-alicloud/issues/7254))
 - docs: import example for nas. ([#7265](https://github.com/aliyun/terraform-provider-alicloud/issues/7265))
 - docs: import description for kms_instance. ([#7269](https://github.com/aliyun/terraform-provider-alicloud/issues/7269))
