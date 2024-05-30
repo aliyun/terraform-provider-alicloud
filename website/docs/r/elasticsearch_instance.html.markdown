@@ -13,6 +13,8 @@ Provides an Elasticsearch instance resource. It contains data nodes, dedicated m
 
 -> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
+-> **NOTE:** Kibana private network configuration is not supported at the time of instance creation. it is only supported after the instance has been created, by calling the relevant API operations.
+
 -> **NOTE:** At present, `version` can not be modified once instance has been created.
 
 -> **NOTE:** Available since v1.30.0.
@@ -87,8 +89,6 @@ The following arguments are supported:
 * `enable_public` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can enable public network access。
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `enable_kibana_public_network` - (Optional, Available since v1.87.0) Bool, default to true. When it set to false, the instance can enable kibana public network access。
-* `kibana_private_whitelist` - (Optional, Available since v1.87.0) Set the Kibana's IP whitelist in private network.
-* `enable_kibana_private_network` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `master_node_disk_type` - (Optional, Available since 1.208.1) The single master node storage space. Valid values are `PrePaid`, `PostPaid`.
 * `client_node_amount` - (Optional, Available since v1.101.0) The Elasticsearch cluster's client node quantity, between 2 and 25.
