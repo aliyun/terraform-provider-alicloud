@@ -2,14 +2,13 @@
 subcategory: "Express Connect"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_bgp_peer"
-sidebar_current: "docs-alicloud-resource-vpc-bgp-peer"
 description: |-
-  Provides a Alicloud VPC Bgp Peer resource.
+  Provides a Alicloud Express Connect Bgp Peer resource.
 ---
 
 # alicloud_vpc_bgp_peer
 
-Provides a VPC Bgp Peer resource.
+Provides a Express Connect Bgp Peer resource. 
 
 For information about VPC Bgp Peer and how to use it, see [What is Bgp Peer](https://www.alibabacloud.com/help/en/doc-detail/91267.html).
 
@@ -77,21 +76,20 @@ The following arguments are supported:
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Bgp Peer.
-* `status` - The status of the BGP peer.
+* `id` - The ID of the resource supplied above.
+* `bgp_peer_name` - The name of the BGP neighbor.
+* `status` - Status of BGP neighbors.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Bgp Peer.
 * `delete` - (Defaults to 5 mins) Used when delete the Bgp Peer.
 * `update` - (Defaults to 5 mins) Used when update the Bgp Peer.
 
 ## Import
 
-VPC Bgp Peer can be imported using the id, e.g.
+Express Connect Bgp Peer can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_bgp_peer.example <id>

@@ -1515,7 +1515,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alidns_access_strategy":                                resourceAlicloudAlidnsAccessStrategy(),
 			"alicloud_alidns_monitor_config":                                 resourceAlicloudAlidnsMonitorConfig(),
 			"alicloud_vpc_dhcp_options_set_attachment":                       resourceAlicloudVpcDhcpOptionsSetAttachement(),
-			"alicloud_vpc_bgp_peer":                                          resourceAlicloudVpcBgpPeer(),
+			"alicloud_vpc_bgp_peer":                                          resourceAliCloudExpressConnectBgpPeer(),
 			"alicloud_nas_fileset":                                           resourceAlicloudNasFileset(),
 			"alicloud_nas_auto_snapshot_policy":                              resourceAliCloudNasAutoSnapshotPolicy(),
 			"alicloud_nas_lifecycle_policy":                                  resourceAlicloudNasLifecyclePolicy(),
