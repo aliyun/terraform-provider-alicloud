@@ -1645,7 +1645,10 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 			if w, ok := d.GetOk("hot_standby_cluster"); ok && w.(string) != "" {
 				if w.(string) == "ON" {
 					// 标准版：STANDBY=开启；OFF=关闭；集群版：ON=开启；OFF=关闭；
-					request["HotStandbyCluster"] = "STANDBY"
+					// PolarDB PG 创建标准版带热备集群 需要传入参数HotStandbyCluster 为 ON
+					if ok && db.(string) == "MySQL"  {
+						request["HotStandbyCluster"] = "STANDBY"
+					}
 				}
 			}
 
