@@ -4,33 +4,56 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_image_import"
 sidebar_current: "docs-alicloud-resource-image-import"
 description: |-
-  Provides an ECS image import resource.
+  Provides a Alicloud ECS Image Import resource.
 ---
 
-# alicloud\_image\_import
+# alicloud_image_import
 
-Import a copy of your local on-premise file to ECS, and appear as a custom replacement in the corresponding domain.
+Provides a ECS Image Import resource.
+
+For information about ECS Image Import and how to use it, see [What is Image Import](https://www.alibabacloud.com/help/en/ecs/developer-reference/api-ecs-2014-05-26-importimage).
+
+-> **NOTE:** Available since v1.69.0.
 
 -> **NOTE:** You must upload the image file to the object storage OSS in advance.
 
 -> **NOTE:** The region where the image is imported must be the same region as the OSS bucket where the image file is uploaded.
 
--> **NOTE:** Available in 1.69.0+.
-
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-resource "alicloud_image_import" "this" {
-  description  = "test import image"
+variable "name" {
+  default = "terraform-image-import-example"
+}
+
+resource "alicloud_oss_bucket" "default" {
+  bucket = var.name
+}
+
+resource "alicloud_oss_bucket_object" "default" {
+  bucket  = alicloud_oss_bucket.default.id
+  key     = "fc/hello.zip"
+  content = <<EOF
+    # -*- coding: utf-8 -*-
+    def handler(event, context):
+    print "hello world"
+    return 'hello world'
+    EOF
+}
+
+resource "alicloud_image_import" "default" {
   architecture = "x86_64"
-  image_name   = "test-import-image"
-  license_type = "Auto"
-  platform     = "Ubuntu"
   os_type      = "linux"
+  platform     = "Ubuntu"
+  license_type = "Auto"
+  image_name   = var.name
+  description  = var.name
   disk_device_mapping {
+    oss_bucket      = alicloud_oss_bucket.default.id
+    oss_object      = alicloud_oss_bucket_object.default.id
     disk_image_size = 5
-    oss_bucket      = "testimportimage"
-    oss_object      = "root.img"
   }
 }
 ```
@@ -39,41 +62,43 @@ resource "alicloud_image_import" "this" {
 
 The following arguments are supported:
 
-* `architecture` - (Optional, ForceNew) Specifies the architecture of the system disk after you specify a data disk snapshot as the data source of the system disk for creating an image. Valid values: `i386` , Default is `x86_64`.
-* `description` - (Optional) Description of the image. The length is 2 to 256 English or Chinese characters, and cannot begin with http: // and https: //.
-* `image_name` - (Optional) The image name. The length is 2 ~ 128 English or Chinese characters. Must start with a english letter or Chinese, and cannot start with http: // and https: //. Can contain numbers, colons (:), underscores (_), or hyphens (-).
-* `license_type` - (Optional, ForceNew) The type of the license used to activate the operating system after the image is imported. Default value: `Auto`. Valid values: `Auto`,`Aliyun`,`BYOL`.
-* `platform` - (Optional, ForceNew) The operating system distribution. Default value: Others Linux. 
-  More valid values refer to [ImportImage OpenAPI](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/importimage).
-  **NOTE**: It's default value is Ubuntu before version 1.197.0.
-* `os_type` - (Optional, ForceNew) Operating system platform type. Valid values: `windows`, Default is `linux`.
-* `disk_device_mapping` - (Required, ForceNew) Description of the system with disks and snapshots under the image.
-  * `device` - (Optional, ForceNew) The name of disk N in the custom image.
-  * `disk_image_size` - (Optional, ForceNew) Resolution size. You must ensure that the system disk space ≥ file system space. Ranges: When n = 1, the system disk: 5 ~ 500GiB, When n = 2 ~ 17, that is, data disk: 5 ~ 1000GiB, When temporary is introduced, the system automatically detects the size, which is subject to the detection result.
-  * `format` - (Optional, ForceNew) Image format. Value range: When the `RAW`, `VHD`, `qcow2` is imported into the image, the system automatically detects the image format, whichever comes first.
-  * `oss_bucket` - (Optional) Save the exported OSS bucket.
-  * `oss_object` - (Optional, ForceNew) The file name of your OSS Object.
+* `architecture` - (Optional, ForceNew) The architecture of the image. Default value: `x86_64`. Valid values: `x86_64`, `i386`.
+* `os_type` - (Optional, ForceNew) The type of the operating system. Default value: `linux`. Valid values: `windows`, `linux`.
+* `platform` - (Optional, ForceNew) The operating system platform. More valid values refer to [ImportImage OpenAPI](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/importimage).
+-> **NOTE:** Before provider version 1.197.0, the default value of `platform` is `Ubuntu`.
+* `boot_mode` - (Optional, ForceNew, Available since v1.225.0) The boot mode of the image. Valid values: `BIOS`, `UEFI`.
+* `license_type` - (Optional, ForceNew) The type of the license used to activate the operating system after the image is imported. Default value: `Auto`. Valid values: `Auto`, `Aliyun`, `BYOL`.
+* `image_name` - (Optional) The name of the image. The `image_name` must be `2` to `128` characters in length. The `image_name` must start with a letter and cannot start with acs: or aliyun. The `image_name` cannot contain http:// or https://. The `image_name` can contain letters, digits, periods (.), colons (:), underscores (_), and hyphens (-).
+* `description` - (Optional) The description of the image. The `description` must be 2 to 256 characters in length and cannot start with http:// or https://.
+* `disk_device_mapping` - (Required, ForceNew, Set) The information about the custom image. See [`disk_device_mapping`](#disk_device_mapping) below.
 
--> **NOTE:** The disk_device_mapping is a list and it's first item will be used to system disk and other items are used to data disks.
+### `disk_device_mapping`
+
+The disk_device_mapping supports the following:
+
+* `format` - (Optional, ForceNew) The format of the image. Valid values: `RAW`, `VHD`, `qcow2`.
+* `oss_bucket` - (Optional, ForceNew) The OSS bucket where the image file is stored.
+* `oss_object` - (Optional, ForceNew) The name (key) of the object that the uploaded image is stored as in the OSS bucket.
+* `device` - (Optional, ForceNew) The device name of the disk.
+* `disk_image_size` - (Optional, ForceNew, Int) The size of the disk. Default value: `5`.
+
+## Attributes Reference
+
+The following attributes are exported:
+
+* `id` - The resource ID in terraform of Image Import.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 20 mins) Used when copying the image (until it reaches the initial `Available` status). 
-* `delete` - (Defaults to 20 mins) Used when terminating the image.
-   
-   
-## Attributes Reference0
- 
- The following attributes are exported:
- 
-* `id` - ID of the image.
+* `create` - (Defaults to 20 mins) Used when create the Image Import.
+* `delete` - (Defaults to 20 mins) Used when delete the Image Import.
 
 ## Import
- 
-image can be imported using the id, e.g.
+
+ECS Image Import can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_image_import.default m-uf66871ape***yg1q***
+$ terraform import alicloud_image_import.example <id>
 ```
