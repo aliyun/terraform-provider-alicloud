@@ -33,7 +33,6 @@ func resourceAliCloudMongoDBInstance() *schema.Resource {
 			"engine_version": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"db_instance_class": {
 				Type:     schema.TypeString,
@@ -546,9 +545,11 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
-	if period, ok := backupPolicy["PreferredBackupPeriod"]; ok && fmt.Sprint(period) != "" {
-		d.Set("backup_period", strings.Split(period.(string), ","))
+
+	if backupPeriod, ok := backupPolicy["PreferredBackupPeriod"]; ok && fmt.Sprint(backupPeriod) != "" {
+		d.Set("backup_period", strings.Split(backupPeriod.(string), ","))
 	}
+
 	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
@@ -635,8 +636,52 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 	d.Partial(true)
 
 	update := false
+	upgradeDBInstanceEngineVersionReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("engine_version") {
+		update = true
+	}
+	upgradeDBInstanceEngineVersionReq["EngineVersion"] = d.Get("engine_version").(string)
+
+	if update {
+		action := "UpgradeDBInstanceEngineVersion"
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, upgradeDBInstanceEngineVersionReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, upgradeDBInstanceEngineVersionReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("engine_version")
+	}
+
+	update = false
 	modifyDBInstanceSpecReq := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
@@ -723,7 +768,6 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	update = false
 	modifySecurityGroupConfigurationReq := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
@@ -766,7 +810,6 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	update = false
 	modifyDBInstanceDescriptionReq := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
@@ -961,7 +1004,6 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		modifyDBInstanceSSLReq := map[string]interface{}{
-			"RegionId":     client.RegionId,
 			"DBInstanceId": d.Id(),
 		}
 
@@ -1005,7 +1047,6 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		modifyDBInstanceMaintainTimeReq := map[string]interface{}{
-			"RegionId":     client.RegionId,
 			"DBInstanceId": d.Id(),
 		}
 
@@ -1049,7 +1090,6 @@ func resourceAliCloudMongoDBInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		modifyDBInstanceTDEReq := map[string]interface{}{
-			"RegionId":     client.RegionId,
 			"DBInstanceId": d.Id(),
 		}
 
@@ -1148,7 +1188,6 @@ func resourceAliCloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 
 	request := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
