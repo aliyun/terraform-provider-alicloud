@@ -72,7 +72,7 @@ to create a MongoDB instance resource one-click.
 
 The following arguments are supported:
 
-* `engine_version` - (Required, ForceNew) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`.
+* `engine_version` - (Required) Database version. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/doc-detail/61763.htm) `EngineVersion`. **NOTE:** From version 1.225.0, `engine_version` can be modified.
 * `db_instance_class` - (Required) Instance specification. see [Instance specifications](https://www.alibabacloud.com/help/doc-detail/57141.htm).
 * `db_instance_storage` - (Required, Int) User-defined DB instance storage space.Unit: GB. Value range:
   - Custom storage space.

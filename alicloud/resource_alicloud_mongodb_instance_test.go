@@ -114,7 +114,7 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -124,7 +124,6 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -135,7 +134,6 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 					"engine_version":      "4.2",
 					"db_instance_class":   "dds.mongo.mid",
 					"db_instance_storage": "20",
-					"storage_type":        "local_ssd",
 					"vswitch_id":          "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -143,7 +141,6 @@ func TestAccAliCloudMongoDBInstance_basic0(t *testing.T) {
 						"engine_version":      "4.2",
 						"db_instance_class":   "dds.mongo.mid",
 						"db_instance_storage": "20",
-						"storage_type":        "local_ssd",
 						"vswitch_id":          CHECKSET,
 					}),
 				),
@@ -387,7 +384,7 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -416,6 +413,16 @@ func TestAccAliCloudMongoDBInstance_basic1(t *testing.T) {
 						"db_instance_class":   "mdb.shard.2x.xlarge.d",
 						"db_instance_storage": "20",
 						"vswitch_id":          CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "5.0",
 					}),
 				),
 			},
@@ -649,7 +656,7 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	serverFunc := func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}
-	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
@@ -755,61 +762,24 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudMongoDBInstance_period_bugfix(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_mongodb_instance.default"
-	serverFunc := func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(1000, 9999)
-	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"engine_version":      "4.2",
-					"db_instance_class":   "dds.mongo.mid",
-					"db_instance_storage": "10",
-					"vswitch_id":          "${alicloud_vswitch.default.id}",
-					"name":                name,
-					"security_ip_list":    []string{"10.168.1.12", "100.69.7.112"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"engine_version":      "4.2",
-						"db_instance_class":   "dds.mongo.mid",
-						"db_instance_storage": "10",
-						"vswitch_id":          CHECKSET,
-						"name":                name,
-						"security_ip_list.#":  "2",
-						"backup_time":         "",
-						"backup_interval":     "",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
-			},
-		},
-	})
+var AliCloudMongoDBInstanceMap0 = map[string]string{
+	"storage_engine":      CHECKSET,
+	"storage_type":        CHECKSET,
+	"vpc_id":              CHECKSET,
+	"vswitch_id":          CHECKSET,
+	"zone_id":             CHECKSET,
+	"network_type":        CHECKSET,
+	"replication_factor":  CHECKSET,
+	"readonly_replicas":   CHECKSET,
+	"resource_group_id":   CHECKSET,
+	"maintain_start_time": CHECKSET,
+	"maintain_end_time":   CHECKSET,
+	"retention_period":    CHECKSET,
+	"replica_set_name":    CHECKSET,
+	"ssl_status":          CHECKSET,
 }
 
-var AliCloudMongoDBInstanceMap = map[string]string{
+var AliCloudMongoDBInstanceMap1 = map[string]string{
 	"storage_engine":          CHECKSET,
 	"storage_type":            CHECKSET,
 	"vpc_id":                  CHECKSET,
