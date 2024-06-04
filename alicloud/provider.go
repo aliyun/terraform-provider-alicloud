@@ -860,6 +860,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ga_endpoint_group_ip_address_cidr_blocks":         dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks(),
 			"alicloud_quotas_template_applications":                     dataSourceAliCloudQuotasTemplateApplications(),
 			"alicloud_cloud_monitor_service_hybrid_double_writes":       dataSourceAliCloudCloudMonitorServiceHybridDoubleWrites(),
+			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_cloud_firewall_nat_firewall":                          resourceAliCloudCloudFirewallNatFirewall(),
