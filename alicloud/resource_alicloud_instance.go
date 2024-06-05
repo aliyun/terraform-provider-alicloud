@@ -31,13 +31,11 @@ func resourceAliCloudInstance() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -68,11 +66,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				}, false),
 			},
 			"security_groups": {
-				Type:         schema.TypeSet,
-				Elem:         &schema.Schema{Type: schema.TypeString},
-				Computed:     true,
-				Optional:     true,
-				AtLeastOneOf: []string{"security_groups", "launch_template_id", "launch_template_name"},
+				Type:     schema.TypeSet,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Computed: true,
+				Optional: true,
 			},
 			"allocate_public_ip": {
 				Type:       schema.TypeBool,
@@ -292,6 +289,12 @@ func resourceAliCloudInstance() *schema.Resource {
 							ForceNew: true,
 							Computed: true,
 						},
+						"instance_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
 						"vswitch_id": {
 							Type:     schema.TypeString,
 							Optional: true,
@@ -300,6 +303,12 @@ func resourceAliCloudInstance() *schema.Resource {
 						},
 						"network_interface_traffic_mode": {
 							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"network_card_index": {
+							Type:     schema.TypeInt,
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
@@ -914,18 +923,26 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 			if networkInterfaceId, ok := networkInterfacesArg["network_interface_id"]; ok && fmt.Sprint(networkInterfaceId) != "" {
 				networkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
-			}
+			} else {
+				if instanceType, ok := networkInterfacesArg["instance_type"]; ok {
+					networkInterfacesMap["InstanceType"] = instanceType
+				}
 
-			if vSwitchId, ok := networkInterfacesArg["vswitch_id"]; ok {
-				networkInterfacesMap["VSwitchId"] = vSwitchId
-			}
+				if vSwitchId, ok := networkInterfacesArg["vswitch_id"]; ok {
+					networkInterfacesMap["VSwitchId"] = vSwitchId
+				}
 
-			if networkInterfaceTrafficMode, ok := networkInterfacesArg["network_interface_traffic_mode"]; ok {
-				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
-			}
+				if networkInterfaceTrafficMode, ok := networkInterfacesArg["network_interface_traffic_mode"]; ok {
+					networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
+				}
 
-			if securityGroupIds, ok := networkInterfacesArg["security_group_ids"]; ok {
-				networkInterfacesMap["SecurityGroupIds"] = securityGroupIds
+				if networkCardIndex, ok := networkInterfacesArg["network_card_index"]; ok {
+					networkInterfacesMap["NetworkCardIndex"] = networkCardIndex
+				}
+
+				if securityGroupIds, ok := networkInterfacesArg["security_group_ids"]; ok {
+					networkInterfacesMap["SecurityGroupIds"] = securityGroupIds
+				}
 			}
 
 			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
@@ -1198,21 +1215,32 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 		if obj.Type == "Primary" {
 			networkInterfaceId = obj.NetworkInterfaceId
 			d.Set("primary_ip_address", obj.PrimaryIpAddress)
-		} else {
-			networkInterfaceMap := make(map[string]interface{})
-			networkInterfaceMap["network_interface_id"] = obj.NetworkInterfaceId
-
-			object, err := ecsService.DescribeEcsNetworkInterface(obj.NetworkInterfaceId)
-			if err != nil {
-				return WrapError(err)
-			}
-
-			networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
-			networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
-			networkInterfaceMap["security_group_ids"] = object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"]
-			networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 		}
+
+		networkInterfaceMap := make(map[string]interface{})
+		networkInterfaceMap["network_interface_id"] = obj.NetworkInterfaceId
+
+		object, err := ecsService.DescribeEcsNetworkInterface(obj.NetworkInterfaceId)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		networkInterfaceMap["instance_type"] = object["Type"]
+		networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
+		networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
+		networkInterfaceMap["security_group_ids"] = object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"]
+
+		if attachment, ok := object["Attachment"]; ok {
+			attachmentArg := attachment.(map[string]interface{})
+
+			if networkCardIndex, ok := attachmentArg["NetworkCardIndex"]; ok {
+				networkInterfaceMap["network_card_index"] = networkCardIndex
+			}
+		}
+
+		networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 	}
+
 	d.Set("network_interfaces", networkInterfaceMaps)
 
 	if len(networkInterfaceId) != 0 {

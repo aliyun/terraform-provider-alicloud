@@ -91,7 +91,7 @@ The following arguments are supported:
 * `instance_type` - (Optional) The type of instance to start. When it is changed, the instance will reboot to make the change take effect. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `instance_type`.
 * `io_optimized` - (Removed) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
 * `is_outdated` - (Optional) Whether to use outdated instance type. Default to false.
-* `security_groups` - (Optional)  A list of security group ids to associate with. If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`.
+* `security_groups` - (Optional)  A list of security group ids to associate with. **NOTE:** If you do not use `launch_template_id` or `launch_template_name` to specify a launch template, you must specify `security_groups`. From version 1.225.0, If `network_interfaces.instance_type` is set to `Primary`, you cannot specify `security_groups`.
 * `availability_zone` - (Optional, ForceNew) The Zone to start the instance in. It is ignored and will be computed when set `vswitch_id`.
 * `instance_name` - (Optional) The name of the ECS. This instance_name can have a string of 2 to 128 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen, and must not begin with http:// or https://. If not specified,
   Terraform will autogenerate a default name is `ECS-Instance`.
@@ -117,7 +117,7 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive) Password to an instance is a string of 8 to 30 characters. It must contain uppercase/lowercase letters and numerals, but cannot contain special symbols. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encrypted_password` - (Optional, Available since v1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored. When it is changed, the instance will reboot to make the change take effect.
 * `kms_encryption_context` - (Optional, MapString, Available since v1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating an instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set. When it is changed, the instance will reboot to make the change take effect.
-* `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect.
+* `vswitch_id` - (Optional) The virtual switch ID to launch in VPC. This parameter must be set unless you can create classic network instances. When it is changed, the instance will reboot to make the change take effect. **NOTE:** From version 1.225.0, If `network_interfaces.instance_type` is set to `Primary`, you cannot specify `vswitch_id`.
 * `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`, The default is `PostPaid`.
   **NOTE:** Since 1.9.6, it can be changed each other between `PostPaid` and `PrePaid`.
   However, since [some limitation about CPU core count in one month](https://www.alibabacloud.com/help/en/elastic-compute-service/latest/modifyinstancechargetype),
@@ -264,12 +264,14 @@ The data_disks supports the following:
 
 The network_interfaces supports the following. Currently only one secondary ENI can be specified.
 
-* `network_interface_id` - (Optional, ForceNew) The ID of the secondary ENI.
-* `vswitch_id` - (Optional, ForceNew, Available since v1.223.2) The ID of the vSwitch to which to connect ENI N.
+* `network_interface_id` - (Optional, ForceNew) The ID of the ENI.
+* `instance_type` - (Optional, ForceNew, Available since v1.225.0) The type of the ENI. Valid values: `Primary`, `Secondary`.
+* `vswitch_id` - (Optional, ForceNew, Available since v1.223.2) The ID of the vSwitch to which to connect ENI N. **NOTE:** From version 1.225.0, If `network_interfaces.instance_type` is set to `Primary`, you must set`network_interfaces.vswitch_id`.
 * `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.2) The communication mode of the ENI. Default value: `Standard`. Valid values:
   - `Standard`: Uses the TCP communication mode.
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
-* `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign ENI N.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.225.0) The index of the network card.
+* `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign ENI N. **NOTE:** From version 1.225.0, If `network_interfaces.instance_type` is set to `Primary`, you must set`network_interfaces.security_group_ids`.
 
 ### `maintenance_time`
 
