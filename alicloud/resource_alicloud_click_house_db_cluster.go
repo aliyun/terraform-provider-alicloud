@@ -104,6 +104,18 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Month", "Year"}, false),
 			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "Normal"}, false),
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" {
+						return false
+					}
+					return true
+				},
+			},
 			"storage_type": {
 				Type:         schema.TypeString,
 				Required:     true,
@@ -179,6 +191,15 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	request["DBClusterVersion"] = d.Get("db_cluster_version")
 	request["DBNodeGroupCount"] = d.Get("db_node_group_count")
 	request["DBNodeStorage"] = d.Get("db_node_storage")
+	if v, ok := d.GetOk("renewal_status"); ok {
+		switch v.(string) {
+		case "Normal":
+			request["AutoRenew"] = false
+		case "AutoRenewal":
+			request["AutoRenew"] = true
+		default:
+		}
+	}
 	if v, ok := d.GetOk("encryption_key"); ok {
 		request["EncryptionKey"] = v
 	}
@@ -246,6 +267,12 @@ func resourceAlicloudClickHouseDbClusterCreate(d *schema.ResourceData, meta inte
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+	if d.Get("payment_type").(string) == "Subscription" {
+		stateConf = BuildStateConf([]string{""}, []string{"Normal", "AutoRenewal", "NotRenewal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseAutoRenewStatusRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
 	return resourceAlicloudClickHouseDbClusterUpdate(d, meta)
 }
 func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interface{}) error {
@@ -278,6 +305,20 @@ func resourceAlicloudClickHouseDbClusterRead(d *schema.ResourceData, meta interf
 	d.Set("vpc_id", object["VpcId"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
+
+	object, err = clickhouseService.DescribeClickHouseAutoRenewStatus(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_click_house_db_cluster clickhouseService.DescribeClickHouseAutoRenewStatus Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+	if v, ok := object["RenewalStatus"]; ok {
+		d.Set("renewal_status", v)
+	}
+
 	describeDBClusterAccessWhiteListObject, err := clickhouseService.DescribeDBClusterAccessWhiteList(d.Id())
 	if err != nil {
 		return WrapError(err)
@@ -551,6 +592,42 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("db_node_storage")
+	}
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.HasChange("renewal_status") && !d.IsNewResource(){
+		action := "ModifyAutoRenewAttribute"
+		conn, err := client.NewClickhouseClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		if s, ok := d.GetOk("renewal_status"); ok {
+			request := map[string]interface{}{
+				"DBClusterIds":  d.Id(),
+				"RenewalStatus": s,
+				"RegionId":      client.RegionId,
+			}
+			wait := incrementalWait(3*time.Second, 3*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				if err != nil {
+					if IsExpectedErrors(err, []string{"IncorrectDBInstanceState"}) || NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, request)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			clickhouseService := ClickhouseService{client}
+			stateConf := BuildStateConf([]string{""}, []string{"Normal", "AutoRenewal", "NotRenewal"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, clickhouseService.ClickHouseAutoRenewStatusRefreshFunc(d.Id(), []string{}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+			d.SetPartial("renewal_status")
+		}
 	}
 
 	d.Partial(false)
