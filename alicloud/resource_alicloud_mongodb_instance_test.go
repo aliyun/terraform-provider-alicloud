@@ -755,6 +755,60 @@ func TestAccAliCloudMongoDBInstance_basic1_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMongoDBInstance_period_bugfix(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBInstanceMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBInstanceClassicConfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version":      "4.2",
+					"db_instance_class":   "dds.mongo.mid",
+					"db_instance_storage": "10",
+					"vswitch_id":          "${alicloud_vswitch.default.id}",
+					"name":                name,
+					"security_ip_list":    []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":      "4.2",
+						"db_instance_class":   "dds.mongo.mid",
+						"db_instance_storage": "10",
+						"vswitch_id":          CHECKSET,
+						"name":                name,
+						"security_ip_list.#":  "2",
+						"backup_time":         "",
+						"backup_interval":     "",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "ssl_action", "effective_time", "order_type", "parameters", "replica_sets"},
+			},
+		},
+	})
+}
+
 var AliCloudMongoDBInstanceMap = map[string]string{
 	"storage_engine":          CHECKSET,
 	"storage_type":            CHECKSET,

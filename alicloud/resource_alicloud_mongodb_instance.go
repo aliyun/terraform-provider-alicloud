@@ -546,7 +546,9 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	}
 
 	d.Set("backup_time", backupPolicy["PreferredBackupTime"])
-	d.Set("backup_period", strings.Split(backupPolicy["PreferredBackupPeriod"].(string), ","))
+	if period, ok := backupPolicy["PreferredBackupPeriod"]; ok && fmt.Sprint(period) != "" {
+		d.Set("backup_period", strings.Split(period.(string), ","))
+	}
 	d.Set("backup_retention_period", formatInt(backupPolicy["BackupRetentionPeriod"]))
 	d.Set("backup_interval", backupPolicy["BackupInterval"])
 	d.Set("snapshot_backup_type", backupPolicy["SnapshotBackupType"])
