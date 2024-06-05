@@ -236,36 +236,57 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 		"Code":  "Spec",
 		"Value": convertCloudFirewallInstanceVersion(d.Get("spec").(string)),
 	})
+
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "IpNumber",
 		"Value": d.Get("ip_number"),
 	})
+
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "BandWidth",
 		"Value": d.Get("band_width"),
 	})
+
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "CfwLog",
 		"Value": d.Get("cfw_log"),
 	})
+
 	if v, ok := d.GetOk("cfw_log_storage"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "CfwLogStorage",
 			"Value": v,
 		})
 	}
+
+	if v, ok := d.GetOkExists("cfw_account"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccount",
+			"Value": v,
+		})
+	}
+
+	if v, ok := d.GetOkExists("account_number"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccountNum",
+			"Value": v,
+		})
+	}
+
 	if v, ok := d.GetOk("fw_vpc_number"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "FwVpcNumber",
 			"Value": v,
 		})
 	}
+
 	if v, ok := d.GetOk("instance_count"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "InstanceCount",
 			"Value": v,
 		})
 	}
+
 	request["Parameter"] = parameterMapList
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -285,6 +306,16 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 					request["ProductType"] = "cfw_elasticity_public_intl"
 				}
 
+				if _, ok := d.GetOkExists("account_number"); ok {
+					for _, v := range parameterMapList {
+						if fmt.Sprint(v["Code"]) == "CfwAccountNum" {
+							v["Code"] = "CfwAccountIntlNum"
+						}
+					}
+				}
+
+				request["Parameter"] = parameterMapList
+
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 				return resource.RetryableError(err)
 			}
@@ -303,6 +334,7 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
 	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
 }
+
 func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
@@ -326,6 +358,7 @@ func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 	d.Set("end_time", getQueryInstanceObject["EndTime"])
 	return nil
 }
+
 func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewBssopenapiClient()
@@ -427,17 +460,19 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 	if d.HasChange("cfw_account") {
 		update = true
 	}
-	parameterMapList = append(parameterMapList, map[string]interface{}{
-		"Code":  "CfwAccount",
-		"Value": d.Get("cfw_account"),
-	})
+	if v, ok := d.GetOkExists("cfw_account"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "CfwAccount",
+			"Value": v,
+		})
+	}
 
 	if d.HasChange("account_number") {
 		update = true
 	}
-	if v, ok := d.GetOk("account_number"); ok {
+	if v, ok := d.GetOkExists("account_number"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "AccountNum",
+			"Code":  "CfwAccountNum",
 			"Value": v,
 		})
 	}
@@ -451,6 +486,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			})
 		}
 	}
+
 	if d.HasChange("ip_number") {
 		update = true
 	}
@@ -460,6 +496,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": v,
 		})
 	}
+
 	if d.HasChange("cfw_log_storage") {
 		update = true
 	}
@@ -469,6 +506,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": v,
 		})
 	}
+
 	if d.HasChange("cfw_log") {
 		update = true
 	}
@@ -478,6 +516,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": v,
 		})
 	}
+
 	if d.HasChange("band_width") {
 		update = true
 	}
@@ -487,6 +526,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": v,
 		})
 	}
+
 	if d.HasChange("spec") {
 		update = true
 	}
@@ -496,6 +536,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": convertCloudFirewallInstanceVersion(v.(string)),
 		})
 	}
+
 	if d.HasChange("instance_count") {
 		update = true
 	}
@@ -505,7 +546,9 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			"Value": v,
 		})
 	}
+
 	modifyInstanceRequest["Parameter"] = parameterMapList
+
 	if update {
 		if v, ok := d.GetOk("modify_type"); ok {
 			modifyInstanceRequest["ModifyType"] = v
@@ -529,6 +572,16 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 					if fmt.Sprint(modifyInstanceRequest["SubscriptionType"]) == "PayAsYouGo" {
 						modifyInstanceRequest["ProductType"] = "cfw_elasticity_public_intl"
 					}
+
+					if _, ok := d.GetOkExists("account_number"); ok {
+						for _, v := range parameterMapList {
+							if fmt.Sprint(v["Code"]) == "CfwAccountNum" {
+								v["Code"] = "CfwAccountIntlNum"
+							}
+						}
+					}
+
+					modifyInstanceRequest["Parameter"] = parameterMapList
 
 					conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
 					return resource.RetryableError(err)
@@ -563,6 +616,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 	d.Partial(false)
 	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
 }
+
 func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" {
 		log.Printf("[WARN] Cannot destroy resourceAliCloudCloudFirewallInstance. Terraform will remove this resource from the state file, however resources may remain.")
