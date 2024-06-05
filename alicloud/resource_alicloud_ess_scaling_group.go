@@ -113,8 +113,24 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Default:      "PRIORITY",
-				ValidateFunc: StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED"}, false),
+				ValidateFunc: StringInSlice([]string{"PRIORITY", "BALANCE", "COST_OPTIMIZED", "COMPOSABLE"}, false),
 				ForceNew:     true,
+			},
+			"az_balance": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"allocation_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"priority", "lowestPrice"}, false),
+				Computed:     true,
+			},
+			"spot_allocation_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"priority", "lowestPrice"}, false),
+				Computed:     true,
 			},
 			"on_demand_base_capacity": {
 				Type:         schema.TypeInt,
@@ -280,6 +296,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("scaling_group_name", object["ScalingGroupName"])
 	d.Set("default_cooldown", object["DefaultCooldown"])
 	d.Set("multi_az_policy", object["MultiAZPolicy"])
+	d.Set("az_balance", object["AzBalance"])
+	d.Set("allocation_strategy", object["AllocationStrategy"])
+	d.Set("spot_allocation_strategy", object["SpotAllocationStrategy"])
 	d.Set("on_demand_base_capacity", object["OnDemandBaseCapacity"])
 	d.Set("on_demand_percentage_above_base_capacity", object["OnDemandPercentageAboveBaseCapacity"])
 	d.Set("spot_instance_pools", object["SpotInstancePools"])
@@ -460,6 +479,18 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request["SpotInstanceRemedy"] = requests.NewBoolean(d.Get("spot_instance_remedy").(bool))
 	}
 
+	if d.HasChange("az_balance") {
+		request["AzBalance"] = requests.NewBoolean(d.Get("az_balance").(bool))
+	}
+
+	if d.HasChange("allocation_strategy") {
+		request["AllocationStrategy"] = d.Get("allocation_strategy").(string)
+	}
+
+	if d.HasChange("spot_allocation_strategy") {
+		request["SpotAllocationStrategy"] = d.Get("spot_allocation_strategy").(string)
+	}
+
 	if d.HasChange("group_deletion_protection") {
 		request["GroupDeletionProtection"] = requests.NewBoolean(d.Get("group_deletion_protection").(bool))
 	}
@@ -573,6 +604,17 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("scaling_group_name"); ok && v.(string) != "" {
 		request["ScalingGroupName"] = v
+	}
+
+	if v, ok := d.GetOk("allocation_strategy"); ok && v.(string) != "" {
+		request["AllocationStrategy"] = v
+	}
+	if v, ok := d.GetOk("spot_allocation_strategy"); ok && v.(string) != "" {
+		request["SpotAllocationStrategy"] = v
+	}
+
+	if v, ok := d.GetOk("az_balance"); ok {
+		request["AzBalance"] = v
 	}
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
