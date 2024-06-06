@@ -223,6 +223,8 @@ func resourceAliyunEssScalingGroupCreate(d *schema.ResourceData, meta interface{
 			return resource.NonRetryableError(err)
 		}
 		d.SetId(raw.(map[string]interface{})["ScalingGroupId"].(string))
+		d.Set("alb_server_group", request["AlbServerGroup"])
+
 		return nil
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ess_scaling_group", "CreateScalingGroup", AlibabaCloudSdkGoERROR)
@@ -334,18 +336,29 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 
 	if v := object["AlbServerGroups"]; v != nil {
 		result := make([]map[string]interface{}, 0)
-		for _, i := range v.(map[string]interface{})["AlbServerGroup"].([]interface{}) {
-			r := i.(map[string]interface{})
-			l := map[string]interface{}{
-				"alb_server_group_id": r["AlbServerGroupId"],
-				"weight":              r["Weight"],
-				"port":                r["Port"],
+		if w, ok := d.GetOk("alb_server_group"); ok {
+			albServerGroups := w.(*schema.Set).List()
+			for _, rew := range albServerGroups {
+				item := rew.(map[string]interface{})
+				for _, i := range v.(map[string]interface{})["AlbServerGroup"].([]interface{}) {
+					r := i.(map[string]interface{})
+					uu, _ := r["Port"].(json.Number).Int64()
+					if albServerGroupId, ok := item["alb_server_group_id"].(string); ok && albServerGroupId != "" {
+						if r["AlbServerGroupId"].(string) == albServerGroupId && int64(item["port"].(int)) == uu {
+							l := map[string]interface{}{
+								"alb_server_group_id": r["AlbServerGroupId"],
+								"weight":              r["Weight"],
+								"port":                r["Port"],
+							}
+							result = append(result, l)
+						}
+					}
+				}
+				err := d.Set("alb_server_group", result)
+				if err != nil {
+					return WrapError(err)
+				}
 			}
-			result = append(result, l)
-		}
-		err := d.Set("alb_server_group", result)
-		if err != nil {
-			return WrapError(err)
 		}
 	}
 
