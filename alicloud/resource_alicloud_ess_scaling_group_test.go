@@ -450,6 +450,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -528,6 +529,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -613,6 +615,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -1646,6 +1649,7 @@ func TestAccAliCloudEssScalingGroup_protected_instances(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
+	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size": "0",
