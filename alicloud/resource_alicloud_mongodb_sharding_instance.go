@@ -33,7 +33,6 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 			"engine_version": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"storage_engine": {
 				Type:         schema.TypeString,
@@ -41,6 +40,13 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"WiredTiger", "RocksDB"}, false),
+			},
+			"storage_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"cloud_essd1", "cloud_essd2", "cloud_essd3", "local_ssd"}, false),
 			},
 			"protocol_type": {
 				Type:         schema.TypeString,
@@ -178,7 +184,7 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				},
 			},
 			"shard_list": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				MinItems: 2,
 				MaxItems: 32,
@@ -286,6 +292,10 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 		request["StorageEngine"] = v
 	}
 
+	if v, ok := d.GetOk("storage_type"); ok {
+		request["StorageType"] = v
+	}
+
 	if v, ok := d.GetOk("protocol_type"); ok {
 		request["ProtocolType"] = v
 	}
@@ -384,7 +394,7 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 
 	shardList := d.Get("shard_list")
 	shardListMaps := make([]map[string]interface{}, 0)
-	for _, shardLists := range shardList.(*schema.Set).List() {
+	for _, shardLists := range shardList.([]interface{}) {
 		shardListMap := map[string]interface{}{}
 		shardListArg := shardLists.(map[string]interface{})
 
@@ -467,6 +477,7 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 
 	d.Set("engine_version", object["EngineVersion"])
 	d.Set("storage_engine", object["StorageEngine"])
+	d.Set("storage_type", object["StorageType"])
 	d.Set("protocol_type", object["ProtocolType"])
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
@@ -639,8 +650,52 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 	d.Partial(true)
 
 	update := false
+	upgradeDBInstanceEngineVersionReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("engine_version") {
+		update = true
+	}
+	upgradeDBInstanceEngineVersionReq["EngineVersion"] = d.Get("engine_version")
+
+	if update {
+		action := "UpgradeDBInstanceEngineVersion"
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, upgradeDBInstanceEngineVersionReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, upgradeDBInstanceEngineVersionReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("engine_version")
+	}
+
+	update = false
 	modifySecurityGroupConfigurationReq := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
@@ -688,7 +743,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	update = false
 	modifyDBInstanceDescriptionReq := map[string]interface{}{
-		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
 
@@ -880,7 +934,6 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		modifyDBInstanceTDEReq := map[string]interface{}{
-			"RegionId":     client.RegionId,
 			"DBInstanceId": d.Id(),
 		}
 
@@ -932,7 +985,7 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 
 	if !d.IsNewResource() && d.HasChange("shard_list") {
 		state, diff := d.GetChange("shard_list")
-		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.(*schema.Set).Difference(diff.(*schema.Set)).List(), diff.(*schema.Set).Difference(state.(*schema.Set)).List())
+		err := ddsService.ModifyMongodbShardingInstanceNode(d, MongoDBShardingNodeShard, state.([]interface{}), diff.([]interface{}))
 		if err != nil {
 			return WrapError(err)
 		}
@@ -968,7 +1021,6 @@ func resourceAliCloudMongoDBShardingInstanceDelete(d *schema.ResourceData, meta 
 
 	request := map[string]interface{}{
 		"DBInstanceId": d.Id(),
-		"RegionId":     client.RegionId,
 	}
 
 	runtime := util.RuntimeOptions{}

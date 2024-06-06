@@ -23,7 +23,6 @@ func init() {
 }
 
 func testSweepMongoDBShardingInstances(region string) error {
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting AliCloud client: %s", err)
@@ -33,6 +32,7 @@ func testSweepMongoDBShardingInstances(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
+
 	action := "DescribeDBInstances"
 	request := map[string]interface{}{}
 	request["RegionId"] = client.RegionId
@@ -124,7 +124,6 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -351,16 +350,16 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine_version":       "4.2",
 					"storage_engine":       "WiredTiger",
+					"storage_type":         "local_ssd",
 					"protocol_type":        "mongodb",
 					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
@@ -403,6 +402,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"engine_version":       "4.2",
 						"storage_engine":       "WiredTiger",
+						"storage_type":         "local_ssd",
 						"protocol_type":        "mongodb",
 						"vpc_id":               CHECKSET,
 						"vswitch_id":           CHECKSET,
@@ -435,6 +435,218 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_sharding_instance.default"
+	serverFunc := func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serverFunc, "DescribeMongoDBShardingInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
+	name := fmt.Sprintf("tf-testAccMongoDBShardingInstance%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingInstanceBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "4.4",
+					"vswitch_id":     "${alicloud_vswitch.default.id}",
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+					},
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "mdb.shard.8x.large.d",
+							"node_storage": "20",
+						},
+						{
+							"node_class":        "mdb.shard.8x.xlarge.d",
+							"node_storage":      "50",
+							"readonly_replicas": "1",
+						},
+					},
+					"config_server_list": []map[string]interface{}{
+						{
+							"node_class":   "mdb.shard.2x.xlarge.d",
+							"node_storage": "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version":       "4.4",
+						"vswitch_id":           CHECKSET,
+						"mongo_list.#":         "2",
+						"shard_list.#":         "2",
+						"config_server_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine_version": "5.0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine_version": "5.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_group_id": "${alicloud_security_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_ip_list": []string{"10.168.1.12"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_ip_list.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_password": "YourPassword_123",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"account_password": "YourPassword_123",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_time": "11:00Z-12:00Z",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_time": "11:00Z-12:00Z",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"backup_period": []string{"Wednesday"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"backup_period.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "ShardingInstance",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "ShardingInstance",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mongo_list": []map[string]interface{}{
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+						{
+							"node_class": "mdb.shard.8x.large.d",
+						},
+						{
+							"node_class": "mdb.shard.8x.xlarge.d",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mongo_list.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"shard_list": []map[string]interface{}{
+						{
+							"node_class":   "mdb.shard.8x.large.d",
+							"node_storage": "20",
+						},
+						{
+							"node_class":        "mdb.shard.8x.xlarge.d",
+							"node_storage":      "60",
+							"readonly_replicas": "1",
+						},
+						// There is an api bug that does not support to update readonly_replicas
+						//{
+						//	"node_class":        "mdb.shard.8x.xlarge.d",
+						//	"node_storage":      "50",
+						//	"readonly_replicas": "2",
+						//},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"shard_list.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_password", "kms_encrypted_password", "kms_encryption_context", "auto_renew", "order_type"},
+			},
+		},
+	})
+}
+
 func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_sharding_instance.default"
@@ -451,16 +663,16 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.MongoDBClassicNoSupportedRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"engine_version":       "4.4",
 					"storage_engine":       "WiredTiger",
+					"storage_type":         "cloud_essd2",
 					"protocol_type":        "mongodb",
 					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
@@ -485,18 +697,18 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"shard_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.8x.large.d",
-							"node_storage": "20",
+							"node_storage": "500",
 						},
 						{
-							"node_class":        "mdb.shard.8x.large.d",
-							"node_storage":      "30",
+							"node_class":        "mdb.shard.8x.xlarge.d",
+							"node_storage":      "510",
 							"readonly_replicas": "1",
 						},
 					},
 					"config_server_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.2x.xlarge.d",
-							"node_storage": "30",
+							"node_storage": "500",
 						},
 					},
 					"tags": map[string]string{
@@ -508,6 +720,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"engine_version":       "4.4",
 						"storage_engine":       "WiredTiger",
+						"storage_type":         "cloud_essd2",
 						"protocol_type":        "mongodb",
 						"vpc_id":               CHECKSET,
 						"vswitch_id":           CHECKSET,
@@ -542,6 +755,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 
 var AliCloudMongoDBShardingInstanceMap0 = map[string]string{
 	"storage_engine":       CHECKSET,
+	"storage_type":         CHECKSET,
 	"protocol_type":        CHECKSET,
 	"vpc_id":               CHECKSET,
 	"vswitch_id":           CHECKSET,
