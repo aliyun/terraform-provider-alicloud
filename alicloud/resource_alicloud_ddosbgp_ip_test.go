@@ -46,11 +46,13 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 					"ip":                "${alicloud_eip_address.default.ip_address}",
 					"instance_id":       "${local.instance_id}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"member_uid":        "${data.alicloud_account.current.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ip":          CHECKSET,
 						"instance_id": CHECKSET,
+						"member_uid":  CHECKSET,
 					}),
 				),
 			},
@@ -58,7 +60,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"resource_group_id"},
+				ImportStateVerifyIgnore: []string{"resource_group_id", "member_uid"},
 			},
 		},
 	})
@@ -77,6 +79,7 @@ variable "name" {
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}
+data "alicloud_account" "current" {}
 
 resource "alicloud_eip_address" "default" {
 	address_name = var.name
