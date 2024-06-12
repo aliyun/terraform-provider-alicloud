@@ -205,6 +205,7 @@ The mesh_config-proxy supports the following:
 * `limit_memory` - (Optional) Memory limit resource.
 * `request_cpu` - (Optional) CPU requests resources.
 * `request_memory` - (Optional) A memory request resources.
+* `cluster_domain` - (Optional, ForceNew) Cluster domain name.
 
 ### `mesh_config-sidecar_injector`
 
@@ -243,8 +244,6 @@ The following attributes are exported:
   * `prometheus` - Prometheus configuration.
     * `external_url` - Prometheus service addresses (enabled external Prometheus when the system automatically populates).
     * `use_external` - Whether to enable external Prometheus.
-  * `proxy` - Proxy configuration.
-    * `cluster_domain` - Cluster domain name.
   * `sidecar_injector` - Sidecar injector configuration.
     * `sidecar_injector_webhook_as_yaml` - Other automatic injection Sidecar configuration (in YAML format).
 * `network` - Service grid network configuration information.

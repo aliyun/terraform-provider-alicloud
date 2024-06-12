@@ -182,12 +182,19 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 									"request_cpu":                   "100m",
 									"auto_injection_policy_enabled": "true",
 									"limit_cpu":                     "2000m",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled": "false",
+										},
+									},
 								},
 							},
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
 								},
 							},
 						},
@@ -227,8 +234,8 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 							"tracing": "true",
 							"pilot": []map[string]interface{}{
 								{
-									"http10_enabled": "false",
-									"trace_sampling": "80",
+									"http10_enabled": "true",
+									"trace_sampling": "100",
 								},
 							},
 							"opa": []map[string]interface{}{
@@ -263,12 +270,90 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 									"request_cpu":                   "400m",
 									"auto_injection_policy_enabled": "true",
 									"limit_cpu":                     "3000m",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled":            "false",
+											"exclude_namespaces": "",
+										},
+									},
 								},
 							},
 							"outbound_traffic_policy": "REGISTRY_ONLY",
 							"access_log": []map[string]interface{}{
 								{
+									"enabled": "false",
+								},
+							},
+						},
+					},
+				}),
+
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin": "true",
+							"telemetry":         "true",
+							"kiali": []map[string]interface{}{
+								{
 									"enabled": "true",
+								},
+							},
+
+							"tracing": "true",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "false",
+									"trace_sampling": "100",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "true",
+									"log_level":      "warn",
+									"request_cpu":    "2",
+									"request_memory": "1024Mi",
+									"limit_cpu":      "4",
+									"limit_memory":   "2048Mi",
+								},
+							},
+							//"audit": []map[string]interface{}{
+							//	{
+							//		"enabled": "false",
+							//		"project": "",
+							//	},
+							//},
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "256Mi",
+									"limit_memory":   "2048Mi",
+									"request_cpu":    "200m",
+									"limit_cpu":      "3000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "true",
+									"request_memory":                "256Mi",
+									"limit_memory":                  "2048Mi",
+									"request_cpu":                   "400m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "3000m",
+								},
+							},
+							"outbound_traffic_policy": "REGISTRY_ONLY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
 								},
 							},
 						},
@@ -430,12 +515,19 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 									"request_cpu":                   "100m",
 									"auto_injection_policy_enabled": "true",
 									"limit_cpu":                     "2000m",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled": "false",
+										},
+									},
 								},
 							},
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
 								},
 							},
 						},
@@ -588,7 +680,9 @@ func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
 								},
 							},
 						},
@@ -741,7 +835,9 @@ func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
+									"enabled":         "false",
+									"gateway_enabled": "false",
+									"sidecar_enabled": "false",
 								},
 							},
 						},
@@ -1046,13 +1142,20 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 									"request_cpu":                   "100m",
 									"auto_injection_policy_enabled": "true",
 									"limit_cpu":                     "2000m",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled": "false",
+										},
+									},
 								},
 							},
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
-									"project": "${local.log_project_1}",
+									"enabled":         "true",
+									"project":         "${local.log_project_1}",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
 								},
 							},
 							"control_plane_log": []map[string]interface{}{
@@ -1130,7 +1233,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
+									"enabled": "false",
 									"project": "${local.log_project_1}",
 								},
 							},
@@ -1209,8 +1312,10 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 							"outbound_traffic_policy": "ALLOW_ANY",
 							"access_log": []map[string]interface{}{
 								{
-									"enabled": "true",
-									"project": "${local.log_project_1}",
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
+									"project":         "${local.log_project_1}",
 								},
 							},
 							"control_plane_log": []map[string]interface{}{
@@ -1600,6 +1705,7 @@ func TestAccAliCloudServiceMeshServiceMesh_basic6(t *testing.T) {
 							"vswitche_list": []string{"${local.vswitch_id}"},
 						},
 					},
+					"edition": "Default",
 				}),
 
 				Check: resource.ComposeTestCheckFunc(
