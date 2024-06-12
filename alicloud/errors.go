@@ -246,6 +246,43 @@ func NeedRetry(err error) bool {
 	return false
 }
 
+func NoCodeRegexRetry(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	postRegex := regexp.MustCompile("^Post [\"]*https://.*")
+	if postRegex.MatchString(err.Error()) {
+		return true
+	}
+
+	throttlingRegex := regexp.MustCompile("Throttling")
+
+	if e, ok := err.(*tea.SDKError); ok {
+		if strings.Contains(*e.Message, "code: 500, 您已开通过") {
+			return false
+		}
+
+		if strings.Contains(*e.Message, "Client.Timeout") {
+			return true
+		}
+
+		if *e.Code == ServiceUnavailable || *e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(*e.Code) {
+			return true
+		}
+	}
+
+	if e, ok := err.(*errors.ServerError); ok {
+		return e.ErrorCode() == ServiceUnavailable || e.ErrorCode() == "Rejected.Throttling" || throttlingRegex.MatchString(e.ErrorCode())
+	}
+
+	if e, ok := err.(*common.Error); ok {
+		return e.Code == ServiceUnavailable || e.Code == "Rejected.Throttling" || throttlingRegex.MatchString(e.Code)
+	}
+
+	return false
+}
+
 func IsExpectedErrorCodes(code string, errorCodes []string) bool {
 	if code == "" {
 		return false
