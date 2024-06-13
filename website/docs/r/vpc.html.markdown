@@ -14,8 +14,6 @@ Provides a Vpc Vpc resource. A VPC instance creates a VPC. You can fully control
 
 -> **NOTE:** This resource will auto build a router and a route table while it uses `alicloud_vpc` to build a vpc resource. 
 
--> **NOTE:** Currently, the IPv4 / IPv6 dual-stack VPC function is under public testing. Only the following regions support IPv4 / IPv6 dual-stack VPC: `cn-hangzhou`, `cn-shanghai`, `cn-shenzhen`, `cn-beijing`, `cn-huhehaote`, `cn-hongkong` and `ap-southeast-1`, and need to apply for public beta qualification. To use, please [submit an application](https://www.alibabacloud.com/help/en/vpc/getting-started/create-a-vpc-with-an-ipv6-cidr-block).
-
 ## Module Support
 
 You can use the existing [vpc module](https://registry.terraform.io/modules/alibaba/vpc/alicloud) 
