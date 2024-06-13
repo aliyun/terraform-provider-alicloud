@@ -3341,6 +3341,12 @@ data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
 
+resource "alicloud_kms_key" "default" {
+  description = var.name
+  pending_window_in_days  = 7
+  key_state               = "Enabled"
+}
+
 `, name)
 }
 func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
