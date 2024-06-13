@@ -1833,12 +1833,15 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("acl", sslAction["ACL"])
 	d.Set("replication_acl", sslAction["ReplicationACL"])
 	d.Set("ssl_connection_string", sslAction["ConnectionString"])
-	tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
-	if err != nil && !IsExpectedErrors(err, DBInstanceTDEErrors) {
-		return WrapError(err)
-	}
-	d.Set("tde_Status", tdeInfo["TDEStatus"])
 
+	//When the instance schema is docker on ECS, TDE encryption is not supported, so the query is not executed.
+	if kindCode, ok := instance["kindCode"]; ok && kindCode != "3" {
+		tdeInfo, err := rdsService.DescribeRdsTDEInfo(d.Id())
+		if err != nil && !IsExpectedErrors(err, DBInstanceTDEErrors) {
+			return WrapError(err)
+		}
+		d.Set("tde_Status", tdeInfo["TDEStatus"])
+	}
 	res, err := rdsService.DescribeHASwitchConfig(d.Id())
 	if err != nil {
 		return WrapError(err)
