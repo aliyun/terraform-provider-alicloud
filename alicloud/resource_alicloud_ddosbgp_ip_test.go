@@ -58,7 +58,7 @@ func TestAccAlicloudDdosbgpIp_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"resource_group_id"},
+				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
