@@ -10,7 +10,7 @@ description: |-
 
 Provides a Express Connect Traffic Qos Rule resource. Express Connect Traffic QoS Rule.
 
-For information about Express Connect Traffic Qos Rule and how to use it, see [What is Traffic Qos Rule](https://www.alibabacloud.com/help/en/).
+For information about Express Connect Traffic Qos Rule and how to use it, see [What is Traffic Qos Rule](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateExpressConnectTrafficQosRule).
 
 -> **NOTE:** Available since v1.224.0.
 

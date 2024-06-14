@@ -10,7 +10,7 @@ description: |-
 
 Provides a Express Connect Router Express Connect Router resource. Express Connect Router.
 
-For information about Express Connect Router Express Connect Router and how to use it, see [What is Express Connect Router](https://www.alibabacloud.com/help/en/).
+For information about Express Connect Router Express Connect Router and how to use it, see [What is Express Connect Router](https://next.api.alibabacloud.com/api/ExpressConnectRouter/2023-09-01/CreateExpressConnectRouter).
 
 -> **NOTE:** Available since v1.224.0.
 
