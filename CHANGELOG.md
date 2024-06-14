@@ -1,41 +1,42 @@
-## 1.225.0 (Unreleased)
+## 1.226.0 (Unreleased)
+## 1.225.0 (June 14, 2024)
 
-- **New Resource:** `alicloud_express_connect_traffic_qos` [GH-7282]
-- **New Resource:** `alicloud_express_connect_traffic_qos_rule` [GH-7282]
-- **New Resource:** `alicloud_express_connect_traffic_qos_queue` [GH-7282]
-- **New Resource:** `alicloud_express_connect_traffic_qos_association` [GH-7282]
-- **New Resource:** `alicloud_express_connect_router_express_connect_router` [GH-7330]
-- **New Resource:** `alicloud_express_connect_router_tr_association` [GH-7330]
-- **New Resource:** `alicloud_express_connect_router_vbr_child_instance` [GH-7330]
-- **New Resource:** `alicloud_express_connect_router_vpc_association` [GH-7330]
-- **New Resource:** `alicloud_gpdb_db_resource_group` [GH-7346]
-- **New Data Source:** `alicloud_cms_site_monitors` [GH-7326]
+- **New Resource:** `alicloud_express_connect_traffic_qos` ([#7282](https://github.com/aliyun/terraform-provider-alicloud/issues/7282))
+- **New Resource:** `alicloud_express_connect_traffic_qos_rule` ([#7282](https://github.com/aliyun/terraform-provider-alicloud/issues/7282))
+- **New Resource:** `alicloud_express_connect_traffic_qos_queue` ([#7282](https://github.com/aliyun/terraform-provider-alicloud/issues/7282))
+- **New Resource:** `alicloud_express_connect_traffic_qos_association` ([#7282](https://github.com/aliyun/terraform-provider-alicloud/issues/7282))
+- **New Resource:** `alicloud_express_connect_router_express_connect_router` ([#7330](https://github.com/aliyun/terraform-provider-alicloud/issues/7330))
+- **New Resource:** `alicloud_express_connect_router_tr_association` ([#7330](https://github.com/aliyun/terraform-provider-alicloud/issues/7330))
+- **New Resource:** `alicloud_express_connect_router_vbr_child_instance` ([#7330](https://github.com/aliyun/terraform-provider-alicloud/issues/7330))
+- **New Resource:** `alicloud_express_connect_router_vpc_association` ([#7330](https://github.com/aliyun/terraform-provider-alicloud/issues/7330))
+- **New Resource:** `alicloud_gpdb_db_resource_group` ([#7346](https://github.com/aliyun/terraform-provider-alicloud/issues/7346))
+- **New Data Source:** `alicloud_cms_site_monitors` ([#7326](https://github.com/aliyun/terraform-provider-alicloud/issues/7326))
 
 ENHANCEMENTS:
 
-- resource/alicloud_service_mesh_service_mesh: supports attribute mesh_config modifiable. [GH-7279]
-- resource/alicloud_vpc_bgp_peer: add new attribute bgp_peer_name. [GH-7281]
-- resource/alicloud_vpc: add retry for DependencyViolation.SecurityGroup. [GH-7295]
-- resource/alicloud_ecs_disk: adjust timeouts; resource/alicloud_ecs_disk_attachment: adjust timeouts. [GH-7314]
-- resource/alicloud_ons_topic: add state wait while creating. [GH-7315]
-- resource/alicloud_click_house_db_cluster: Added support for cluster auto renew. [GH-7317]
-- resource/alicloud_ots_table: support new sse type ByOk and allow_update param; resource/alicloud_ots_search_index: fix optional bug of index_setting and index_sort. [GH-7320]
-- resource/alicloud_image_import: Added the field boot_mode; Improved alicloud_image_import testcase. [GH-7322]
-- resource/alicloud_mongodb_instance: Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. [GH-7325]
-- resource/alicloud_cms_alarm: Supported comparison_operator set to GreaterThanYesterday, LessThanYesterday, GreaterThanLastWeek, LessThanLastWeek, GreaterThanLastPeriod, LessThanLastPeriod. [GH-7345]
-- resource/alicloud_gpdb_instance: add new attribute resource_management_mode. [GH-7346]
-- data-source/alicloud_cen_transit_router_available_resources: Added the field support_multicast, available_zones. [GH-7338]
-- docs: fix examples for ecd, realtime_compute, sas. [GH-7249]
-- docs: Improve code sample for alicloud_cs_kubernetes_node_pool; update node_name_mode description. [GH-7266]
-- docs: improve document for hbase_instance_types. [GH-7342]
-- docs: improve document for vpc. [GH-7344]
-- docs: improve document for express_connect_router and express_connect. [GH-7349]
+- resource/alicloud_service_mesh_service_mesh: supports attribute mesh_config modifiable. ([#7279](https://github.com/aliyun/terraform-provider-alicloud/issues/7279))
+- resource/alicloud_vpc_bgp_peer: add new attribute bgp_peer_name. ([#7281](https://github.com/aliyun/terraform-provider-alicloud/issues/7281))
+- resource/alicloud_vpc: add retry for DependencyViolation.SecurityGroup. ([#7295](https://github.com/aliyun/terraform-provider-alicloud/issues/7295))
+- resource/alicloud_ecs_disk: adjust timeouts; resource/alicloud_ecs_disk_attachment: adjust timeouts. ([#7314](https://github.com/aliyun/terraform-provider-alicloud/issues/7314))
+- resource/alicloud_ons_topic: add state wait while creating. ([#7315](https://github.com/aliyun/terraform-provider-alicloud/issues/7315))
+- resource/alicloud_click_house_db_cluster: Added support for cluster auto renew. ([#7317](https://github.com/aliyun/terraform-provider-alicloud/issues/7317))
+- resource/alicloud_ots_table: support new sse type ByOk and allow_update param; resource/alicloud_ots_search_index: fix optional bug of index_setting and index_sort. ([#7320](https://github.com/aliyun/terraform-provider-alicloud/issues/7320))
+- resource/alicloud_image_import: Added the field boot_mode; Improved alicloud_image_import testcase. ([#7322](https://github.com/aliyun/terraform-provider-alicloud/issues/7322))
+- resource/alicloud_mongodb_instance: Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. ([#7325](https://github.com/aliyun/terraform-provider-alicloud/issues/7325))
+- resource/alicloud_cms_alarm: Supported comparison_operator set to GreaterThanYesterday, LessThanYesterday, GreaterThanLastWeek, LessThanLastWeek, GreaterThanLastPeriod, LessThanLastPeriod. ([#7345](https://github.com/aliyun/terraform-provider-alicloud/issues/7345))
+- resource/alicloud_gpdb_instance: add new attribute resource_management_mode. ([#7346](https://github.com/aliyun/terraform-provider-alicloud/issues/7346))
+- data-source/alicloud_cen_transit_router_available_resources: Added the field support_multicast, available_zones. ([#7338](https://github.com/aliyun/terraform-provider-alicloud/issues/7338))
+- docs: fix examples for ecd, realtime_compute, sas. ([#7249](https://github.com/aliyun/terraform-provider-alicloud/issues/7249))
+- docs: Improve code sample for alicloud_cs_kubernetes_node_pool; update node_name_mode description. ([#7266](https://github.com/aliyun/terraform-provider-alicloud/issues/7266))
+- docs: improve document for hbase_instance_types. ([#7342](https://github.com/aliyun/terraform-provider-alicloud/issues/7342))
+- docs: improve document for vpc. ([#7344](https://github.com/aliyun/terraform-provider-alicloud/issues/7344))
+- docs: improve document for express_connect_router and express_connect. ([#7349](https://github.com/aliyun/terraform-provider-alicloud/issues/7349))
 
 BUG FIXES:
 
-- resource/alicloud_kvstore_instance: fix bug for creating status polling. [GH-7318]
-- resource/alicloud_mongodb_instance: fix nil pointer err while read backup_period. [GH-7327]
-- resource/alicloud_ots_instance: fix network_type_acl default values. [GH-7337]
+- resource/alicloud_kvstore_instance: fix bug for creating status polling. ([#7318](https://github.com/aliyun/terraform-provider-alicloud/issues/7318))
+- resource/alicloud_mongodb_instance: fix nil pointer err while read backup_period. ([#7327](https://github.com/aliyun/terraform-provider-alicloud/issues/7327))
+- resource/alicloud_ots_instance: fix network_type_acl default values. ([#7337](https://github.com/aliyun/terraform-provider-alicloud/issues/7337))
 
 ## 1.224.0 (May 30, 2024)
 
