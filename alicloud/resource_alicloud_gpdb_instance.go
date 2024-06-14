@@ -72,6 +72,12 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"resource_management_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"resourceGroup", "resourceQueue"}, false),
+			},
 			"instance_network_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -512,6 +518,14 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 
 	if v, ok := describeDBInstanceSSLObject["SSLEnabled"]; ok && strconv.FormatBool(v.(bool)) != "" {
 		d.Set("ssl_enabled", convertGpdbDbInstanceSSLEnabledResponse(v))
+	}
+
+	resourceManagementModeObject, err := gpdbService.DescribeDBResourceManagementMode(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if v, ok := resourceManagementModeObject["ResourceManagementMode"]; ok {
+		d.Set("resource_management_mode", v)
 	}
 
 	return nil
@@ -1013,6 +1027,43 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		}
 
 		d.SetPartial("master_cu")
+	}
+
+	update = false
+	request = map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+	action := "EnableDBResourceGroup"
+	request["RegionId"] = client.RegionId
+	if v, ok := d.GetOk("resource_management_mode"); ok && d.HasChange("resource_management_mode") {
+		update = true
+		if v == "resourceGroup" {
+			action = "EnableDBResourceGroup"
+		} else {
+			action = "DisableDBResourceGroup"
+		}
+	}
+	if update {
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Running", "IDLE"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	d.Partial(false)
