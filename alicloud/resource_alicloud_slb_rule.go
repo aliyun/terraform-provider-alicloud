@@ -87,7 +87,7 @@ func resourceAliyunSlbRule() *schema.Resource {
 			},
 			"cookie_timeout": {
 				Type:             schema.TypeInt,
-				ValidateFunc:     validation.IntBetween(1, 86400),
+				ValidateFunc:     validation.IntBetween(0, 86400),
 				Optional:         true,
 				DiffSuppressFunc: slbRuleCookieTimeoutDiffSuppressFunc,
 			},
