@@ -1,4 +1,42 @@
-## 1.224.1 (Unreleased)
+## 1.225.0 (Unreleased)
+
+- **New Resource:** `alicloud_express_connect_traffic_qos` [GH-7282]
+- **New Resource:** `alicloud_express_connect_traffic_qos_rule` [GH-7282]
+- **New Resource:** `alicloud_express_connect_traffic_qos_queue` [GH-7282]
+- **New Resource:** `alicloud_express_connect_traffic_qos_association` [GH-7282]
+- **New Resource:** `alicloud_express_connect_router_express_connect_router` [GH-7330]
+- **New Resource:** `alicloud_express_connect_router_tr_association` [GH-7330]
+- **New Resource:** `alicloud_express_connect_router_vbr_child_instance` [GH-7330]
+- **New Resource:** `alicloud_express_connect_router_vpc_association` [GH-7330]
+- **New Resource:** `alicloud_gpdb_db_resource_group` [GH-7346]
+- **New Data Source:** `alicloud_cms_site_monitors` [GH-7326]
+
+ENHANCEMENTS:
+
+- resource/alicloud_service_mesh_service_mesh: supports attribute mesh_config modifiable. [GH-7279]
+- resource/alicloud_vpc_bgp_peer: add new attribute bgp_peer_name. [GH-7281]
+- resource/alicloud_vpc: add retry for DependencyViolation.SecurityGroup. [GH-7295]
+- resource/alicloud_ecs_disk: adjust timeouts; resource/alicloud_ecs_disk_attachment: adjust timeouts. [GH-7314]
+- resource/alicloud_ons_topic: add state wait while creating. [GH-7315]
+- resource/alicloud_click_house_db_cluster: Added support for cluster auto renew. [GH-7317]
+- resource/alicloud_ots_table: support new sse type ByOk and allow_update param; resource/alicloud_ots_search_index: fix optional bug of index_setting and index_sort. [GH-7320]
+- resource/alicloud_image_import: Added the field boot_mode; Improved alicloud_image_import testcase. [GH-7322]
+- resource/alicloud_mongodb_instance: Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. [GH-7325]
+- resource/alicloud_cms_alarm: Supported comparison_operator set to GreaterThanYesterday, LessThanYesterday, GreaterThanLastWeek, LessThanLastWeek, GreaterThanLastPeriod, LessThanLastPeriod. [GH-7345]
+- resource/alicloud_gpdb_instance: add new attribute resource_management_mode. [GH-7346]
+- data-source/alicloud_cen_transit_router_available_resources: Added the field support_multicast, available_zones. [GH-7338]
+- docs: fix examples for ecd, realtime_compute, sas. [GH-7249]
+- docs: Improve code sample for alicloud_cs_kubernetes_node_pool; update node_name_mode description. [GH-7266]
+- docs: improve document for hbase_instance_types. [GH-7342]
+- docs: improve document for vpc. [GH-7344]
+- docs: improve document for express_connect_router and express_connect. [GH-7349]
+
+BUG FIXES:
+
+- resource/alicloud_kvstore_instance: fix bug for creating status polling. [GH-7318]
+- resource/alicloud_mongodb_instance: fix nil pointer err while read backup_period. [GH-7327]
+- resource/alicloud_ots_instance: fix network_type_acl default values. [GH-7337]
+
 ## 1.224.0 (May 30, 2024)
 
 - **New Resource:** `alicloud_api_gateway_access_control_list` ([#7278](https://github.com/aliyun/terraform-provider-alicloud/issues/7278))
@@ -197,7 +235,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_oss_bucket_referer` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
 - **New Resource:** `alicloud_oss_bucket_https_config` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
 - **New Resource:** `alicloud_oss_bucket_policy` ([#7102](https://github.com/aliyun/terraform-provider-alicloud/issues/7102))
-- **New Datasource:** `alicloud_cloud_monitor_service_hybrid_double_writes` ([#7096](https://github.com/aliyun/terraform-provider-alicloud/issues/7096))
+- **New Data Source:** `alicloud_cloud_monitor_service_hybrid_double_writes` ([#7096](https://github.com/aliyun/terraform-provider-alicloud/issues/7096))
 
 ENHANCEMENTS:
 
@@ -385,7 +423,7 @@ ENHANCEMENTS:
 - **New Resource:** `alicloud_ens_disk_instance_attachment` ([#6903](https://github.com/aliyun/terraform-provider-alicloud/issues/6903))
 - **New Resource:** `alicloud_ens_instance_security_group_attachment` ([#6903](https://github.com/aliyun/terraform-provider-alicloud/issues/6903))
 - **New Resource:** `alicloud_vpc_ipv6_address` ([#6919](https://github.com/aliyun/terraform-provider-alicloud/issues/6919))
-- **New Datasource:** `alicloud_vpn_gateway_zones` ([#6914](https://github.com/aliyun/terraform-provider-alicloud/issues/6914))
+- **New Data Source:** `alicloud_vpn_gateway_zones` ([#6914](https://github.com/aliyun/terraform-provider-alicloud/issues/6914))
 
 ENHANCEMENTS:
 
@@ -512,7 +550,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_threat_detection_malicious_file_whitelist_config` ([#6749](https://github.com/aliyun/terraform-provider-alicloud/issues/6749))
 - **New Resource:** `alicloud_realtime_compute_vvp_instance` ([#6758](https://github.com/aliyun/terraform-provider-alicloud/issues/6758))
 - **New Resource:** `alicloud_quotas_template_applications` ([#6760](https://github.com/aliyun/terraform-provider-alicloud/issues/6760))
-- **New Datasource:** `alicloud_quotas_template_applications` ([#6772](https://github.com/aliyun/terraform-provider-alicloud/issues/6772))
+- **New Data Source:** `alicloud_quotas_template_applications` ([#6772](https://github.com/aliyun/terraform-provider-alicloud/issues/6772))
 
 ENHANCEMENTS:
 
@@ -596,7 +634,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_ens_security_group` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
 - **New Resource:** `alicloud_ens_eip` ([#6678](https://github.com/aliyun/terraform-provider-alicloud/issues/6678))
 - **New Resource:** `alicloud_hologram_instance` ([#6682](https://github.com/aliyun/terraform-provider-alicloud/issues/6682))
-- **New Datasource:** `alicloud_ga_endpoint_group_ip_address_cidr_blocks` ([#6661](https://github.com/aliyun/terraform-provider-alicloud/issues/6661))
+- **New Data Source:** `alicloud_ga_endpoint_group_ip_address_cidr_blocks` ([#6661](https://github.com/aliyun/terraform-provider-alicloud/issues/6661))
 
 ENHANCEMENTS:
 
@@ -780,7 +818,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_ims_oidc_provider` ([#6471](https://github.com/aliyun/terraform-provider-alicloud/issues/6471))
 - **New Resource:** `alicloud_cddc_dedicated_propre_host` ([#6472](https://github.com/aliyun/terraform-provider-alicloud/issues/6472))
 - **New Resource:** `alicloud_event_bridge_connection` ([#6503](https://github.com/aliyun/terraform-provider-alicloud/issues/6503))
-- **New Datasource:** `alicloud_arms_prometheus_monitorings` ([#6443](https://github.com/aliyun/terraform-provider-alicloud/issues/6443))
+- **New Data Source:** `alicloud_arms_prometheus_monitorings` ([#6443](https://github.com/aliyun/terraform-provider-alicloud/issues/6443))
 
 ENHANCEMENTS:
 
@@ -856,8 +894,8 @@ BUG FIXES:
 - **New Resource:** `alicloud_arms_prometheus_monitoring` ([#6351](https://github.com/aliyun/terraform-provider-alicloud/issues/6351))
 - **New Resource:** `alicloud_nlb_loadbalancer_common_bandwidth_package_attachment` ([#6365](https://github.com/aliyun/terraform-provider-alicloud/issues/6365))
 - **New Resource:** `alicloud_nlb_listener_additional_certificate_attachment` ([#6365](https://github.com/aliyun/terraform-provider-alicloud/issues/6365))
-- **New Datasource:** `alicloud_vpc_flow_log_service` ([#6354](https://github.com/aliyun/terraform-provider-alicloud/issues/6354))
-- **New Datasource:** `alicloud_rds_class_details` ([#6359](https://github.com/aliyun/terraform-provider-alicloud/issues/6359))
+- **New Data Source:** `alicloud_vpc_flow_log_service` ([#6354](https://github.com/aliyun/terraform-provider-alicloud/issues/6354))
+- **New Data Source:** `alicloud_rds_class_details` ([#6359](https://github.com/aliyun/terraform-provider-alicloud/issues/6359))
 
 ENHANCEMENTS:
 
@@ -1061,7 +1099,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_compute_nest_service_instance` ([#6162](https://github.com/aliyun/terraform-provider-alicloud/issues/6162))
 - **New Resource:** `alicloud_vpc_ha_vip` ([#6129](https://github.com/aliyun/terraform-provider-alicloud/issues/6129))
 - **New Resource:** `alicloud_vpc_vswitch_cidr_reservation` ([#6130](https://github.com/aliyun/terraform-provider-alicloud/issues/6130))
-- **New Datasource:** `alicloud_compute_nest_service_instances` ([#6162](https://github.com/aliyun/terraform-provider-alicloud/issues/6162))
+- **New Data Source:** `alicloud_compute_nest_service_instances` ([#6162](https://github.com/aliyun/terraform-provider-alicloud/issues/6162))
 
 ENHANCEMENTS:
 
@@ -1113,10 +1151,10 @@ BUG FIXES:
 - **New Resource:** `alicloud_eflo_subnet` ([#6019](https://github.com/aliyun/terraform-provider-alicloud/issues/6019))
 - **New Resource:** `alicloud_service_catalog_portfolio` ([#6002](https://github.com/aliyun/terraform-provider-alicloud/issues/6002))
 - **New Resource:** `alicloud_arms_remote_write` ([#5998](https://github.com/aliyun/terraform-provider-alicloud/issues/5998))
-- **New Datasource:** `alicloud_rds_slots` ([#6075](https://github.com/aliyun/terraform-provider-alicloud/issues/6075))
-- **New Datasource:** `alicloud_eflo_subnets` ([#6019](https://github.com/aliyun/terraform-provider-alicloud/issues/6019))
-- **New Datasource:** `alicloud_service_catalog_portfolios` ([#6002](https://github.com/aliyun/terraform-provider-alicloud/issues/6002))
-- **New Datasource:** `alicloud_arms_remote_writes` ([#5998](https://github.com/aliyun/terraform-provider-alicloud/issues/5998))
+- **New Data Source:** `alicloud_rds_slots` ([#6075](https://github.com/aliyun/terraform-provider-alicloud/issues/6075))
+- **New Data Source:** `alicloud_eflo_subnets` ([#6019](https://github.com/aliyun/terraform-provider-alicloud/issues/6019))
+- **New Data Source:** `alicloud_service_catalog_portfolios` ([#6002](https://github.com/aliyun/terraform-provider-alicloud/issues/6002))
+- **New Data Source:** `alicloud_arms_remote_writes` ([#5998](https://github.com/aliyun/terraform-provider-alicloud/issues/5998))
 
 ENHANCEMENTS:
 
@@ -1153,12 +1191,12 @@ BUG FIXES:
 - **New Resource:** `alicloud_oos_default_patch_baseline` ([#6058](https://github.com/aliyun/terraform-provider-alicloud/issues/6058))
 - **New Resource:** `alicloud_ocean_base_instance` ([#6069](https://github.com/aliyun/terraform-provider-alicloud/issues/6069))
 - **New Resource:** `alicloud_rds_db_instance_endpoint` ([#6056](https://github.com/aliyun/terraform-provider-alicloud/issues/6056))
-- **New Resource** `alicloud_chatbot_publish_task` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
-- **New Resource** `alicloud_arms_integration_exporter` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
-- **New Datasource** `alicloud_arms_integration_exporters` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
-- **New Datasource** `alicloud_chatbot_agents` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
-- **New Datasource:** `alicloud_arms_prometheis` ([#5961](https://github.com/aliyun/terraform-provider-alicloud/issues/5961))
-- **New Datasource:** `alicloud_ocean_base_instances` ([#6069](https://github.com/aliyun/terraform-provider-alicloud/issues/6069))
+- **New Resource:** `alicloud_chatbot_publish_task` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
+- **New Resource:** `alicloud_arms_integration_exporter` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
+- **New Data Source:** `alicloud_arms_integration_exporters` ([#5990](https://github.com/aliyun/terraform-provider-alicloud/issues/5990))
+- **New Data Source:** `alicloud_chatbot_agents` ([#6014](https://github.com/aliyun/terraform-provider-alicloud/issues/6014))
+- **New Data Source:** `alicloud_arms_prometheis` ([#5961](https://github.com/aliyun/terraform-provider-alicloud/issues/5961))
+- **New Data Source:** `alicloud_ocean_base_instances` ([#6069](https://github.com/aliyun/terraform-provider-alicloud/issues/6069))
 
 ENHANCEMENTS:
 
@@ -3863,8 +3901,8 @@ BUG FIXES:
 - **New Data Source:** `alicloud_hbr_ecs_backup_clients`([#3863](https://github.com/aliyun/terraform-provider-alicloud/issues/3863))  
 - **New Data Source:** `alicloud_msc_sub_contacts`([#3872](https://github.com/aliyun/terraform-provider-alicloud/issues/3872))
 - **New Data Source:** `alicloud_express_connect_physical_connections`([#3876](https://github.com/aliyun/terraform-provider-alicloud/issues/3876))
-- **New Data Source:**`alicloud_sddp_rules`([#3875](https://github.com/aliyun/terraform-provider-alicloud/issues/3875))
-- **New Data Source:**`alicloud_bastionhost_user_groups`([#3879](https://github.com/aliyun/terraform-provider-alicloud/issues/3879))
+- **New Data Source:** `alicloud_sddp_rules`([#3875](https://github.com/aliyun/terraform-provider-alicloud/issues/3875))
+- **New Data Source:** `alicloud_bastionhost_user_groups`([#3879](https://github.com/aliyun/terraform-provider-alicloud/issues/3879))
 
 ENHANCEMENTS:
 
@@ -4411,11 +4449,11 @@ ENHANCEMENTS:
 - **New Resource:** `alicloud_resource_manager_control_policy`([#3383](https://github.com/aliyun/terraform-provider-alicloud/issues/3383))
 - **New Resource:** `alicloud_ga_forwarding_rule`([#3384](https://github.com/aliyun/terraform-provider-alicloud/issues/3384))
 - **New Resource:** `alicloud_ecs_snapshot`([#3403](https://github.com/aliyun/terraform-provider-alicloud/issues/3403))
-- **Data Source:** `alicloud_resource_manager_control_policies`([#3383](https://github.com/aliyun/terraform-provider-alicloud/issues/3383))
-- **Data Source:** `alicloud_ga_forwarding_rules`([#3384](https://github.com/aliyun/terraform-provider-alicloud/issues/3384))
-- **Data Source:** `alicloud_sae_service`([#3390](https://github.com/aliyun/terraform-provider-alicloud/issues/3390))
-- **Data Source:** `alicloud_rds_accounts`([#3399](https://github.com/aliyun/terraform-provider-alicloud/issues/3399))
-- **Data Source:** `alicloud_ecs_snapshots`([#3403](https://github.com/aliyun/terraform-provider-alicloud/issues/3403))
+- **New Data Source:** `alicloud_resource_manager_control_policies`([#3383](https://github.com/aliyun/terraform-provider-alicloud/issues/3383))
+- **New Data Source:** `alicloud_ga_forwarding_rules`([#3384](https://github.com/aliyun/terraform-provider-alicloud/issues/3384))
+- **New Data Source:** `alicloud_sae_service`([#3390](https://github.com/aliyun/terraform-provider-alicloud/issues/3390))
+- **New Data Source:** `alicloud_rds_accounts`([#3399](https://github.com/aliyun/terraform-provider-alicloud/issues/3399))
+- **New Data Source:** `alicloud_ecs_snapshots`([#3403](https://github.com/aliyun/terraform-provider-alicloud/issues/3403))
 
 ENHANCEMENTS:
 
@@ -4465,7 +4503,7 @@ BUG FIXES:
 ## 1.119.0 (March 19, 2021)
 
 - **New Resource:** `alicloud_rds_parameter_group`([#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343))
-- **Data Source:** `alicloud_rds_parameter_groups`([#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343)) 
+- **New Data Source:** `alicloud_rds_parameter_groups`([#3343](https://github.com/aliyun/terraform-provider-alicloud/issues/3343)) 
 
 ENHANCEMENTS:
 
@@ -4491,8 +4529,8 @@ BUG FIXES:
 
 FEATURES:
 
-- **Data Source:** `alicloud_mns_service`([#3325](https://github.com/aliyun/terraform-provider-alicloud/issues/3325))
-- **Data Source:** `alicloud_dataworks_service`([#3333](https://github.com/aliyun/terraform-provider-alicloud/issues/3333))
+- **New Data Source:** `alicloud_mns_service`([#3325](https://github.com/aliyun/terraform-provider-alicloud/issues/3325))
+- **New Data Source:** `alicloud_dataworks_service`([#3333](https://github.com/aliyun/terraform-provider-alicloud/issues/3333))
 
 ENHANCEMENTS:
 
@@ -4518,10 +4556,10 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_vpc_flow_log`([#3290](https://github.com/aliyun/terraform-provider-alicloud/issues/3290))
 - **New Resource:** `alicloud_brain_industrial_pid_loop`([#3252](https://github.com/aliyun/terraform-provider-alicloud/issues/3252))
-- **Data Source:** `alicloud_brain_industrial_pid_loops`([#3252](https://github.com/aliyun/terraform-provider-alicloud/issues/3252))
-- **Data Source:** `alicloud_maxcompute_service`([#3304](https://github.com/aliyun/terraform-provider-alicloud/issues/3304))
-- **Data Source:** `alicloud_cloud_storage_gateway_service`([#3308](https://github.com/aliyun/terraform-provider-alicloud/issues/3308))
-- **Data Source:** `alicloud_ecs_auoto_snapshot_policies`([#3309](https://github.com/aliyun/terraform-provider-alicloud/issues/3309))
+- **New Data Source:** `alicloud_brain_industrial_pid_loops`([#3252](https://github.com/aliyun/terraform-provider-alicloud/issues/3252))
+- **New Data Source:** `alicloud_maxcompute_service`([#3304](https://github.com/aliyun/terraform-provider-alicloud/issues/3304))
+- **New Data Source:** `alicloud_cloud_storage_gateway_service`([#3308](https://github.com/aliyun/terraform-provider-alicloud/issues/3308))
+- **New Data Source:** `alicloud_ecs_auoto_snapshot_policies`([#3309](https://github.com/aliyun/terraform-provider-alicloud/issues/3309))
 
 IMPROVEMENTS:
 
@@ -4542,12 +4580,12 @@ BUG FIXES:
 - **New Resource:** `alicloud_cloud_storage_gateway_storage_bundle`([#3297](https://github.com/aliyun/terraform-provider-alicloud/issues/3297))
 - **New Resource:** `alicloud_ecs_command`([#3296](https://github.com/aliyun/terraform-provider-alicloud/issues/3296))
 - **New Resource:** `alicloud_quotas_quota_alarm`([#3293](https://github.com/aliyun/terraform-provider-alicloud/issues/3293))
-- **Data Source:** `alicloud_ecs_hpc_clusters`([#3303](https://github.com/aliyun/terraform-provider-alicloud/issues/3303))
-- **Data Source:** `alicloud_cloud_storage_gateway_storage_bundles`([#3297](https://github.com/aliyun/terraform-provider-alicloud/issues/3297))
-- **Data Source:** `alicloud_ecs_commands`([#3296](https://github.com/aliyun/terraform-provider-alicloud/issues/3296))
-- **Data Source:** `alicloud_cr_service`([#3294](https://github.com/aliyun/terraform-provider-alicloud/issues/3294))
-- **Data Source:** `alicloud_quotas_quota_alarms`([#3293](https://github.com/aliyun/terraform-provider-alicloud/issues/3293))
-- **Data Source:** `alicloud_vs_service`([#3292](https://github.com/aliyun/terraform-provider-alicloud/issues/3292))
+- **New Data Source:** `alicloud_ecs_hpc_clusters`([#3303](https://github.com/aliyun/terraform-provider-alicloud/issues/3303))
+- **New Data Source:** `alicloud_cloud_storage_gateway_storage_bundles`([#3297](https://github.com/aliyun/terraform-provider-alicloud/issues/3297))
+- **New Data Source:** `alicloud_ecs_commands`([#3296](https://github.com/aliyun/terraform-provider-alicloud/issues/3296))
+- **New Data Source:** `alicloud_cr_service`([#3294](https://github.com/aliyun/terraform-provider-alicloud/issues/3294))
+- **New Data Source:** `alicloud_quotas_quota_alarms`([#3293](https://github.com/aliyun/terraform-provider-alicloud/issues/3293))
+- **New Data Source:** `alicloud_vs_service`([#3292](https://github.com/aliyun/terraform-provider-alicloud/issues/3292))
 
 IMPROVEMENTS:
 
@@ -4572,11 +4610,11 @@ IMPROVEMENTS:
 
 - **New Resource:** `alicloud_cms_monitor_group_instances`([#3267](https://github.com/aliyun/terraform-provider-alicloud/issues/3267))
 - **New Resource:** `alicloud_quotas_application_info`([#3261](https://github.com/aliyun/terraform-provider-alicloud/issues/3261))
-- **Data Source:** `alicloud_iot_service`([#3270](https://github.com/aliyun/terraform-provider-alicloud/issues/3270))
-- **Data Source:** `alicloud_cms_monitor_group_instanceses`([#3267](https://github.com/aliyun/terraform-provider-alicloud/issues/3267))
-- **Data Source:** `alicloud_brain_industrial_service`([#3266](https://github.com/aliyun/terraform-provider-alicloud/issues/3266))
-- **Data Source:** `alicloud_quotas_quotas`([#3265](https://github.com/aliyun/terraform-provider-alicloud/issues/3265))
-- **Data Source:** `alicloud_quotas_application_infos`([#3261](https://github.com/aliyun/terraform-provider-alicloud/issues/3261))
+- **New Data Source:** `alicloud_iot_service`([#3270](https://github.com/aliyun/terraform-provider-alicloud/issues/3270))
+- **New Data Source:** `alicloud_cms_monitor_group_instanceses`([#3267](https://github.com/aliyun/terraform-provider-alicloud/issues/3267))
+- **New Data Source:** `alicloud_brain_industrial_service`([#3266](https://github.com/aliyun/terraform-provider-alicloud/issues/3266))
+- **New Data Source:** `alicloud_quotas_quotas`([#3265](https://github.com/aliyun/terraform-provider-alicloud/issues/3265))
+- **New Data Source:** `alicloud_quotas_application_infos`([#3261](https://github.com/aliyun/terraform-provider-alicloud/issues/3261))
 
 IMPROVEMENTS:
 
@@ -4599,9 +4637,9 @@ BUG FIXES:
 ## 1.114.0 (January 29, 2021)
 
 - **New Resource:** `alicloud_ram_saml_provider`([#3235](https://github.com/aliyun/terraform-provider-alicloud/issues/3235))
-- **Data Source:** `alicloud_fnf_service`([#3258](https://github.com/aliyun/terraform-provider-alicloud/issues/3258))
-- **Data Source:** `alicloud_pvtz_service`([#3237](https://github.com/aliyun/terraform-provider-alicloud/issues/3237))
-- **Data Source:** `alicloud_ram_saml_providers`([#3235](https://github.com/aliyun/terraform-provider-alicloud/issues/3235))
+- **New Data Source:** `alicloud_fnf_service`([#3258](https://github.com/aliyun/terraform-provider-alicloud/issues/3258))
+- **New Data Source:** `alicloud_pvtz_service`([#3237](https://github.com/aliyun/terraform-provider-alicloud/issues/3237))
+- **New Data Source:** `alicloud_ram_saml_providers`([#3235](https://github.com/aliyun/terraform-provider-alicloud/issues/3235))
 
 IMPROVEMENTS:
 
@@ -4639,14 +4677,14 @@ BUG FIXES:
 - **New Resource:** `alicloud_cms_monitor_group`([#3204](https://github.com/aliyun/terraform-provider-alicloud/issues/3204))
 - **New Resource:** `alicloud_ga_endpoint_group`([#3202](https://github.com/aliyun/terraform-provider-alicloud/issues/3202))
 - **New Resource:** `alicloud_eipanycast_anycast_eip_address`([#3198](https://github.com/aliyun/terraform-provider-alicloud/issues/3198))
-- **Data Source:** `alicloud_privatelink_service`([#3224](https://github.com/aliyun/terraform-provider-alicloud/issues/3224))
-- **Data Source:** `alicloud_ack_service`([#3221](https://github.com/aliyun/terraform-provider-alicloud/issues/3221))
-- **Data Source:** `alicloud_brain_industrial_pid_projects`([#3212](https://github.com/aliyun/terraform-provider-alicloud/issues/3212))
-- **Data Source:** `alicloud_ga_ip_sets`([#3211](https://github.com/aliyun/terraform-provider-alicloud/issues/3211))
-- **Data Source:** `alicloud_brain_industrial_pid_organizations`([#3209](https://github.com/aliyun/terraform-provider-alicloud/issues/3209))
-- **Data Source:** `alicloud_cms_monitor_groups`([#3204](https://github.com/aliyun/terraform-provider-alicloud/issues/3204))
-- **Data Source:** `alicloud_ga_endpoint_groups`([#3202](https://github.com/aliyun/terraform-provider-alicloud/issues/3202))
-- **Data Source:** `alicloud_eipanycast_anycast_eip_addresses`([#3198](https://github.com/aliyun/terraform-provider-alicloud/issues/3198))
+- **New Data Source:** `alicloud_privatelink_service`([#3224](https://github.com/aliyun/terraform-provider-alicloud/issues/3224))
+- **New Data Source:** `alicloud_ack_service`([#3221](https://github.com/aliyun/terraform-provider-alicloud/issues/3221))
+- **New Data Source:** `alicloud_brain_industrial_pid_projects`([#3212](https://github.com/aliyun/terraform-provider-alicloud/issues/3212))
+- **New Data Source:** `alicloud_ga_ip_sets`([#3211](https://github.com/aliyun/terraform-provider-alicloud/issues/3211))
+- **New Data Source:** `alicloud_brain_industrial_pid_organizations`([#3209](https://github.com/aliyun/terraform-provider-alicloud/issues/3209))
+- **New Data Source:** `alicloud_cms_monitor_groups`([#3204](https://github.com/aliyun/terraform-provider-alicloud/issues/3204))
+- **New Data Source:** `alicloud_ga_endpoint_groups`([#3202](https://github.com/aliyun/terraform-provider-alicloud/issues/3202))
+- **New Data Source:** `alicloud_eipanycast_anycast_eip_addresses`([#3198](https://github.com/aliyun/terraform-provider-alicloud/issues/3198))
 
 IMPROVEMENTS:
 
@@ -4667,10 +4705,10 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_ga_bandwidth_package`([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
 - **New Resource:** `alicloud_tsdb_instance`([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
-- **Data Source:** `alicloud_ga_bandwidth_packages`([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
-- **Data Source:** `alicloud_tsdb_instances`([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
-- **Data Source:** `alicloud_tsdb_zones`([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
-- **Data Source:** `alicloud_fc_service`([#3191](https://github.com/aliyun/terraform-provider-alicloud/issues/3191))
+- **New Data Source:** `alicloud_ga_bandwidth_packages`([#3194](https://github.com/aliyun/terraform-provider-alicloud/issues/3194))
+- **New Data Source:** `alicloud_tsdb_instances`([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
+- **New Data Source:** `alicloud_tsdb_zones`([#3192](https://github.com/aliyun/terraform-provider-alicloud/issues/3192))
+- **New Data Source:** `alicloud_fc_service`([#3191](https://github.com/aliyun/terraform-provider-alicloud/issues/3191))
 
 IMPROVEMENTS:
 
@@ -4699,17 +4737,17 @@ BUG FIXES:
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_zone`([#3163](https://github.com/aliyun/terraform-provider-alicloud/issues/3163))
 - **New Resource:** `alicloud_ga_accelerator`([#3162](https://github.com/aliyun/terraform-provider-alicloud/issues/3162))
 - **New Resource:** `alicloud_resource_manager_resource_share`([#3158](https://github.com/aliyun/terraform-provider-alicloud/issues/3158))
-- **Data Source:** `alicloud_dcdn_service`([#3177](https://github.com/aliyun/terraform-provider-alicloud/issues/3177))
-- **Data Source:** `alicloud_ga_listeners`([#3173](https://github.com/aliyun/terraform-provider-alicloud/issues/3173))
-- **Data Source:** `alicloud_resource_manager_shared_resources`([#3168](https://github.com/aliyun/terraform-provider-alicloud/issues/3168))
-- **Data Source:** `alicloud_resource_manager_shared_targets`([#3168](https://github.com/aliyun/terraform-provider-alicloud/issues/3168))
-- **Data Source:** `alicloud_datahub_service`([#3167](https://github.com/aliyun/terraform-provider-alicloud/issues/3167))
-- **Data Source:** `alicloud_eci_container_groups`([#3166](https://github.com/aliyun/terraform-provider-alicloud/issues/3166))
-- **Data Source:** `alicloud_ons_service`([#3164](https://github.com/aliyun/terraform-provider-alicloud/issues/3164))
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_zones`([#3163](https://github.com/aliyun/terraform-provider-alicloud/issues/3163))
-- **Data Source:** `alicloud_ga_accelerators`([#3162](https://github.com/aliyun/terraform-provider-alicloud/issues/3162))
-- **Data Source:** `alicloud_cms_service`([#3161](https://github.com/aliyun/terraform-provider-alicloud/issues/3161))
-- **Data Source:** `alicloud_resource_manager_resource_shares`([#3158](https://github.com/aliyun/terraform-provider-alicloud/issues/3158))
+- **New Data Source:** `alicloud_dcdn_service`([#3177](https://github.com/aliyun/terraform-provider-alicloud/issues/3177))
+- **New Data Source:** `alicloud_ga_listeners`([#3173](https://github.com/aliyun/terraform-provider-alicloud/issues/3173))
+- **New Data Source:** `alicloud_resource_manager_shared_resources`([#3168](https://github.com/aliyun/terraform-provider-alicloud/issues/3168))
+- **New Data Source:** `alicloud_resource_manager_shared_targets`([#3168](https://github.com/aliyun/terraform-provider-alicloud/issues/3168))
+- **New Data Source:** `alicloud_datahub_service`([#3167](https://github.com/aliyun/terraform-provider-alicloud/issues/3167))
+- **New Data Source:** `alicloud_eci_container_groups`([#3166](https://github.com/aliyun/terraform-provider-alicloud/issues/3166))
+- **New Data Source:** `alicloud_ons_service`([#3164](https://github.com/aliyun/terraform-provider-alicloud/issues/3164))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoint_zones`([#3163](https://github.com/aliyun/terraform-provider-alicloud/issues/3163))
+- **New Data Source:** `alicloud_ga_accelerators`([#3162](https://github.com/aliyun/terraform-provider-alicloud/issues/3162))
+- **New Data Source:** `alicloud_cms_service`([#3161](https://github.com/aliyun/terraform-provider-alicloud/issues/3161))
+- **New Data Source:** `alicloud_resource_manager_resource_shares`([#3158](https://github.com/aliyun/terraform-provider-alicloud/issues/3158))
 
 IMPROVEMENTS:
 
@@ -4732,9 +4770,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_service_resource`([#3154](https://github.com/aliyun/terraform-provider-alicloud/issues/3154))
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_service_user`([#3153](https://github.com/aliyun/terraform-provider-alicloud/issues/3153))
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_connection`([#3145](https://github.com/aliyun/terraform-provider-alicloud/issues/3145))
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_service_resources`([#3154](https://github.com/aliyun/terraform-provider-alicloud/issues/3154))
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_service_users`([#3153](https://github.com/aliyun/terraform-provider-alicloud/issues/3153))
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_connections`([#3145](https://github.com/aliyun/terraform-provider-alicloud/issues/3145))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoint_service_resources`([#3154](https://github.com/aliyun/terraform-provider-alicloud/issues/3154))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoint_service_users`([#3153](https://github.com/aliyun/terraform-provider-alicloud/issues/3153))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoint_connections`([#3145](https://github.com/aliyun/terraform-provider-alicloud/issues/3145))
 
 IMPROVEMENTS:
 
@@ -4765,8 +4803,8 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_privatelink_vpc_endpoint`([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
 - **New Resource:** `alicloud_privatelink_vpc_endpoint_service`([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
-- **Data Source:** `alicloud_privatelink_vpc_endpoints`([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
-- **Data Source:** `alicloud_privatelink_vpc_endpoint_services`([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoints`([#3134](https://github.com/aliyun/terraform-provider-alicloud/issues/3134))
+- **New Data Source:** `alicloud_privatelink_vpc_endpoint_services`([#3126](https://github.com/aliyun/terraform-provider-alicloud/issues/3126))
 
 IMPROVEMENTS:
 
@@ -4786,8 +4824,8 @@ BUG FIXES:
 ## 1.108.0 (December 11, 2020)
 
 - **New Resource:** `alicloud_ros_template`([#3113](https://github.com/aliyun/terraform-provider-alicloud/issues/3113))
-- **Data Source:** `alicloud_kms_service`([#3116](https://github.com/aliyun/terraform-provider-alicloud/issues/3116))
-- **Data Source:** `alicloud_ros_templates`([#3113](https://github.com/aliyun/terraform-provider-alicloud/issues/3113))
+- **New Data Source:** `alicloud_kms_service`([#3116](https://github.com/aliyun/terraform-provider-alicloud/issues/3116))
+- **New Data Source:** `alicloud_ros_templates`([#3113](https://github.com/aliyun/terraform-provider-alicloud/issues/3113))
 
 IMPROVEMENTS:
 
@@ -4802,7 +4840,7 @@ BUG FIXES:
 ## 1.107.0 (December 8, 2020)
 
 - **New Resource:** `alicloud_ros_stack_group` (([#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)))
-- **Data Source:** `alicloud_ros_stack_groups` (([#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)))
+- **New Data Source:** `alicloud_ros_stack_groups` (([#3109](https://github.com/aliyun/terraform-provider-alicloud/issues/3109)))
 
 IMPROVEMENTS:
 
@@ -4817,8 +4855,8 @@ IMPROVEMENTS:
 ## 1.106.0 (December 4, 2020)
 
 - **New Resource:** `alicloud_ros_change_set`([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
-- **Data Source:** `alicloud_hbase_instance_types`([#3091](https://github.com/aliyun/terraform-provider-alicloud/issues/3091))
-- **Data Source:** `alicloud_ros_change_sets`([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
+- **New Data Source:** `alicloud_hbase_instance_types`([#3091](https://github.com/aliyun/terraform-provider-alicloud/issues/3091))
+- **New Data Source:** `alicloud_ros_change_sets`([#3083](https://github.com/aliyun/terraform-provider-alicloud/issues/3083))
 
 IMPROVEMENTS:
 
@@ -4835,8 +4873,8 @@ BUG FIXES:
 - **New Resource:** `alicloud_fnf_schedule`([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
 - **New Resource:** `alicloud_fnf_flow`([#3057](https://github.com/aliyun/terraform-provider-alicloud/issues/3057))
 - **New Resource:** `alicloud_edas_k8s_application`([#3039](https://github.com/aliyun/terraform-provider-alicloud/issues/3039))
-- **Data Source:** `alicloud_fnf_schedules`([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
-- **Data Source:** `alicloud_fnf_flows`([#3057](https://github.com/aliyun/terraform-provider-alicloud/issues/3057))
+- **New Data Source:** `alicloud_fnf_schedules`([#3078](https://github.com/aliyun/terraform-provider-alicloud/issues/3078))
+- **New Data Source:** `alicloud_fnf_flows`([#3057](https://github.com/aliyun/terraform-provider-alicloud/issues/3057))
 
 IMPROVEMENTS:
 
@@ -4872,7 +4910,7 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_cms_group_metric_rule`([#3044](https://github.com/aliyun/terraform-provider-alicloud/issues/3044))
 - **New Resource:** `alicloud_fc_alias`([#3038](https://github.com/aliyun/terraform-provider-alicloud/issues/3038))
-- **Data Source:** `alicloud_cms_group_metric_rules`([#3044](https://github.com/aliyun/terraform-provider-alicloud/issues/3044))
+- **New Data Source:** `alicloud_cms_group_metric_rules`([#3044](https://github.com/aliyun/terraform-provider-alicloud/issues/3044))
 
 IMPROVEMENTS:
 
@@ -4936,7 +4974,7 @@ BUG FIXES:
 ## 1.103.0 (October 30, 2020)
 
 - **New Resource:** `alicloud_cs_edge_kubernetes`([#2871](https://github.com/aliyun/terraform-provider-alicloud/issues/2871))
-- **Data Source:** `alicloud_cs_edge_kubernetes_clusters`([#2871](https://github.com/aliyun/terraform-provider-alicloud/issues/2871))
+- **New Data Source:** `alicloud_cs_edge_kubernetes_clusters`([#2871](https://github.com/aliyun/terraform-provider-alicloud/issues/2871))
 
 IMPROVEMENTS:
 
@@ -4958,8 +4996,8 @@ BUG FIXES:
 
 ## 1.102.0 (October 23, 2020)
 
-- **Data Source:** `alicloud_kvstore_accounts`([#2952](https://github.com/aliyun/terraform-provider-alicloud/issues/2952))
-- **Data Source:** `alicloud_enhanced_nat_available_zones`([#2907](https://github.com/aliyun/terraform-provider-alicloud/issues/2907))
+- **New Data Source:** `alicloud_kvstore_accounts`([#2952](https://github.com/aliyun/terraform-provider-alicloud/issues/2952))
+- **New Data Source:** `alicloud_enhanced_nat_available_zones`([#2907](https://github.com/aliyun/terraform-provider-alicloud/issues/2907))
 
 IMPROVEMENTS:
 
@@ -4994,8 +5032,8 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_cms_alarm_contact_group`([#2885](https://github.com/aliyun/terraform-provider-alicloud/issues/2885))
 - **New Resource:** `alicloud_kvstore_connection`([#2867](https://github.com/aliyun/terraform-provider-alicloud/issues/2867))
-- **Data Source:** `alicloud_cms_alarm_contact_groups`([#2885](https://github.com/aliyun/terraform-provider-alicloud/issues/2885))
-- **Data Source:** `alicloud_kvstore_connections`([#2867](https://github.com/aliyun/terraform-provider-alicloud/issues/2867))
+- **New Data Source:** `alicloud_cms_alarm_contact_groups`([#2885](https://github.com/aliyun/terraform-provider-alicloud/issues/2885))
+- **New Data Source:** `alicloud_kvstore_connections`([#2867](https://github.com/aliyun/terraform-provider-alicloud/issues/2867))
 
 IMPROVEMENTS:
 
@@ -5063,11 +5101,11 @@ BUG FIXES:
 - **New Resource:** `alicloud_config_delivery_channel`([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
 - **New Resource:** `alicloud_config_configuration_recorder`([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
 - **New Resource:** `alicloud_config_rule`([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
-- **Data Source:** `alicloud_cms_alarm_contacts`([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
-- **Data Source:** `alicloud_cen_route_services`([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
-- **Data Source:** `alicloud_config_delivery_channels`([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
-- **Data Source:** `alicloud_config_configuration_recorders`([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
-- **Data Source:** `alicloud_config_rules`([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
+- **New Data Source:** `alicloud_cms_alarm_contacts`([#2870](https://github.com/aliyun/terraform-provider-alicloud/issues/2870))
+- **New Data Source:** `alicloud_cen_route_services`([#2868](https://github.com/aliyun/terraform-provider-alicloud/issues/2868))
+- **New Data Source:** `alicloud_config_delivery_channels`([#2865](https://github.com/aliyun/terraform-provider-alicloud/issues/2865))
+- **New Data Source:** `alicloud_config_configuration_recorders`([#2863](https://github.com/aliyun/terraform-provider-alicloud/issues/2863))
+- **New Data Source:** `alicloud_config_rules`([#2858](https://github.com/aliyun/terraform-provider-alicloud/issues/2858))
 
 IMPROVEMENTS:
 
@@ -5087,10 +5125,10 @@ BUG FIXES:
 ## 1.98.0 (September 22, 2020)
 
 - **New Resource:** `alicloud_fc_custom_domain`([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))
-- **Data Source:** `alicloud_cen_vbr_health_checks`([#2854](https://github.com/aliyun/terraform-provider-alicloud/issues/2854))
-- **Data Source:** `alicloud_edas_services`([#2852](https://github.com/aliyun/terraform-provider-alicloud/issues/2852))
-- **Data Source:** `alicloud_cdn_services`([#2850](https://github.com/aliyun/terraform-provider-alicloud/issues/2850))
-- **Data Source:** `alicloud_fc_custom_domains`([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))
+- **New Data Source:** `alicloud_cen_vbr_health_checks`([#2854](https://github.com/aliyun/terraform-provider-alicloud/issues/2854))
+- **New Data Source:** `alicloud_edas_services`([#2852](https://github.com/aliyun/terraform-provider-alicloud/issues/2852))
+- **New Data Source:** `alicloud_cdn_services`([#2850](https://github.com/aliyun/terraform-provider-alicloud/issues/2850))
+- **New Data Source:** `alicloud_fc_custom_domains`([#2828](https://github.com/aliyun/terraform-provider-alicloud/issues/2828))
 
 IMPROVEMENTS:
 
@@ -5118,11 +5156,11 @@ BUG FIXES:
 - **New Resource:** `alicloud_cen_instance_attachment`([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
 - **New Resource:** `alicloud_ons_instance`([#2820](https://github.com/aliyun/terraform-provider-alicloud/issues/2820))
 - **New Resource:** `alicloud_cs_node_pool`([#2787](https://github.com/aliyun/terraform-provider-alicloud/issues/2787))
-- **Data Source:** `alicloud_cen_instance_attachments`([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
-- **Data Source:** `alicloud_ons_instances`([#2820](https://github.com/aliyun/terraform-provider-alicloud/issues/2820))
-- **Data Source:** `alicloud_nas_services`([#2813](https://github.com/aliyun/terraform-provider-alicloud/issues/2813))
-- **Data Source:** `alicloud_oss_services`([#2812](https://github.com/aliyun/terraform-provider-alicloud/issues/2812))
-- **Data Source:** `alicloud_ots_services`([#2807](https://github.com/aliyun/terraform-provider-alicloud/issues/2807))
+- **New Data Source:** `alicloud_cen_instance_attachments`([#2822](https://github.com/aliyun/terraform-provider-alicloud/issues/2822))
+- **New Data Source:** `alicloud_ons_instances`([#2820](https://github.com/aliyun/terraform-provider-alicloud/issues/2820))
+- **New Data Source:** `alicloud_nas_services`([#2813](https://github.com/aliyun/terraform-provider-alicloud/issues/2813))
+- **New Data Source:** `alicloud_oss_services`([#2812](https://github.com/aliyun/terraform-provider-alicloud/issues/2812))
+- **New Data Source:** `alicloud_ots_services`([#2807](https://github.com/aliyun/terraform-provider-alicloud/issues/2807))
 
 IMPROVEMENTS:
 
@@ -5154,8 +5192,8 @@ BUG FIXES:
 
 ## 1.96.0 (September 13, 2020)
 
-- **Data Source:** `alicloud_log_service`([#2804](https://github.com/aliyun/terraform-provider-alicloud/issues/2804))
-- **Data Source:** `alicloud_api_gateway_service`([#2801](https://github.com/aliyun/terraform-provider-alicloud/issues/2801))
+- **New Data Source:** `alicloud_log_service`([#2804](https://github.com/aliyun/terraform-provider-alicloud/issues/2804))
+- **New Data Source:** `alicloud_api_gateway_service`([#2801](https://github.com/aliyun/terraform-provider-alicloud/issues/2801))
 
 IMPROVEMENTS:
 
@@ -5176,7 +5214,7 @@ BUG FIXES:
 ## 1.95.0 (September 03, 2020)
 
 - **New Resource:** `alicloud_actiontrail_trail`([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
-- **Data Source:** `alicloud_actiontrail_trails`([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
+- **New Data Source:** `alicloud_actiontrail_trails`([#2758](https://github.com/aliyun/terraform-provider-alicloud/issues/2758))
 
 IMPROVEMENTS:
 
@@ -5206,9 +5244,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_dcdn_domain`([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
 - **New Resource:** `alicloud_mse_cluster`([#2733](https://github.com/aliyun/terraform-provider-alicloud/issues/2733))
 - **New Resource:** `alicloud_resource_manager_policy_attachment`([#2696](https://github.com/aliyun/terraform-provider-alicloud/issues/2696))
-- **Data Source:** `alicloud_dcdn_domains`([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
-- **Data Source:** `alicloud_mse_clusters`([#2733](https://github.com/aliyun/terraform-provider-alicloud/issues/2733))
-- **Data Source:** `alicloud_resource_manager_policy_attachments`([#2696](https://github.com/aliyun/terraform-provider-alicloud/issues/2696))
+- **New Data Source:** `alicloud_dcdn_domains`([#2744](https://github.com/aliyun/terraform-provider-alicloud/issues/2744))
+- **New Data Source:** `alicloud_mse_clusters`([#2733](https://github.com/aliyun/terraform-provider-alicloud/issues/2733))
+- **New Data Source:** `alicloud_resource_manager_policy_attachments`([#2696](https://github.com/aliyun/terraform-provider-alicloud/issues/2696))
 
 IMPROVEMENTS:
 
@@ -5236,7 +5274,7 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_oos_execution`([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
 - **New Resource:** `alicloud_edas_k8s_cluster`([#2678](https://github.com/aliyun/terraform-provider-alicloud/issues/2678))
-- **Data Source:** `alicloud_oos_execution`([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
+- **New Data Source:** `alicloud_oos_execution`([#2679](https://github.com/aliyun/terraform-provider-alicloud/issues/2679))
 
 IMPROVEMENTS:
 
@@ -5269,7 +5307,7 @@ BUG FIXES:
 ## 1.92.0 (July 31, 2020)
 
 - **New Resource:** `alicloud_oos_template`([#2670](https://github.com/aliyun/terraform-provider-alicloud/issues/2670))
-- **Data Source:** `alicloud_oos_template`([#2670](https://github.com/aliyun/terraform-provider-alicloud/issues/2670))
+- **New Data Source:** `alicloud_oos_template`([#2670](https://github.com/aliyun/terraform-provider-alicloud/issues/2670))
 
 IMPROVEMENTS:
 
@@ -5286,7 +5324,7 @@ BUG FIXES:
 ## 1.91.0 (July 24, 2020)
 
 - **New Resource:** `alicloud_ecs_dedicated_host`([#2652](https://github.com/aliyun/terraform-provider-alicloud/issues/2652))
-- **Data Source:** `alicloud_ecs_dedicated_hosts`([#2652](https://github.com/aliyun/terraform-provider-alicloud/issues/2652))
+- **New Data Source:** `alicloud_ecs_dedicated_hosts`([#2652](https://github.com/aliyun/terraform-provider-alicloud/issues/2652))
 
 IMPROVEMENTS:
 
@@ -5330,10 +5368,10 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_container_registry_enterprise_sync_rule`([#2607](https://github.com/aliyun/terraform-provider-alicloud/issues/2607))
 - **New Resource:** `alicloud_dms_user`([#2604](https://github.com/aliyun/terraform-provider-alicloud/issues/2604))
-- **Data Source:** `alicloud_cr_ee_sync_rules`([#2630](https://github.com/aliyun/terraform-provider-alicloud/issues/2630))
-- **Data Source:** `alicloud_eci_image_cache`([#2627](https://github.com/aliyun/terraform-provider-alicloud/issues/2627))
-- **Data Source:** `alicloud_waf_instance`([#2617](https://github.com/aliyun/terraform-provider-alicloud/issues/2617))
-- **Data Source:** `alicloud_dms_user`([#2604](https://github.com/aliyun/terraform-provider-alicloud/issues/2604))
+- **New Data Source:** `alicloud_cr_ee_sync_rules`([#2630](https://github.com/aliyun/terraform-provider-alicloud/issues/2630))
+- **New Data Source:** `alicloud_eci_image_cache`([#2627](https://github.com/aliyun/terraform-provider-alicloud/issues/2627))
+- **New Data Source:** `alicloud_waf_instance`([#2617](https://github.com/aliyun/terraform-provider-alicloud/issues/2617))
+- **New Data Source:** `alicloud_dms_user`([#2604](https://github.com/aliyun/terraform-provider-alicloud/issues/2604))
 
 IMPROVEMENTS:
 
@@ -5379,10 +5417,10 @@ BUG FIXES:
 ## 1.88.0 (June 22, 2020)
 
 - **New Resource:** `alicloud_cen_vbr_health_check`([#2575](https://github.com/aliyun/terraform-provider-alicloud/issues/2575))
-- **Data Source:** `alicloud_cen_private_zones`([#2564](https://github.com/aliyun/terraform-provider-alicloud/issues/2564))
-- **Data Source:** `alicloud_dms_enterprise_instances`([#2557](https://github.com/aliyun/terraform-provider-alicloud/issues/2557))
-- **Data Source:** `alicloud_cassandra`([#2574](https://github.com/aliyun/terraform-provider-alicloud/issues/2574))
-- **Data Source:** `alicloud_kms_secret_versions`([#2583](https://github.com/aliyun/terraform-provider-alicloud/issues/2583))
+- **New Data Source:** `alicloud_cen_private_zones`([#2564](https://github.com/aliyun/terraform-provider-alicloud/issues/2564))
+- **New Data Source:** `alicloud_dms_enterprise_instances`([#2557](https://github.com/aliyun/terraform-provider-alicloud/issues/2557))
+- **New Data Source:** `alicloud_cassandra`([#2574](https://github.com/aliyun/terraform-provider-alicloud/issues/2574))
+- **New Data Source:** `alicloud_kms_secret_versions`([#2583](https://github.com/aliyun/terraform-provider-alicloud/issues/2583))
 
 IMPROVEMENTS:
 
@@ -5402,10 +5440,10 @@ BUG FIXES:
 
 ## 1.87.0 (June 12, 2020)
 
-- **Data Source:** `alicloud_container_registry_enterprise_repos`([#2538](https://github.com/aliyun/terraform-provider-alicloud/issues/2538))
-- **Data Source:** `alicloud_container_registry_enterprise_namespaces`([#2530](https://github.com/aliyun/terraform-provider-alicloud/issues/2530))
-- **Data Source:** `alicloud_container_registry_enterprise_instances`([#2526](https://github.com/aliyun/terraform-provider-alicloud/issues/2526))
-- **Data Source:** `alicloud_cen_route_maps`([#2554](https://github.com/aliyun/terraform-provider-alicloud/issues/2554))
+- **New Data Source:** `alicloud_container_registry_enterprise_repos`([#2538](https://github.com/aliyun/terraform-provider-alicloud/issues/2538))
+- **New Data Source:** `alicloud_container_registry_enterprise_namespaces`([#2530](https://github.com/aliyun/terraform-provider-alicloud/issues/2530))
+- **New Data Source:** `alicloud_container_registry_enterprise_instances`([#2526](https://github.com/aliyun/terraform-provider-alicloud/issues/2526))
+- **New Data Source:** `alicloud_cen_route_maps`([#2554](https://github.com/aliyun/terraform-provider-alicloud/issues/2554))
 
 IMPROVEMENTS:
 
@@ -5433,13 +5471,13 @@ BUG FIXES:
 - **New Resource:** `alicloud_Container_registry_enterprise_namespace`([#2519](https://github.com/aliyun/terraform-provider-alicloud/issues/2519))
 - **New Resource:** `alicloud_ddoscoo_scheduler_rule`([#2476](https://github.com/aliyun/terraform-provider-alicloud/issues/2476))
 - **New Resource:** `alicloud_resource_manager_policies`([#2474](https://github.com/aliyun/terraform-provider-alicloud/issues/2474))
-- **Data Source:** `alicloud_waf_domains`([#2498](https://github.com/aliyun/terraform-provider-alicloud/issues/2498))
-- **Data Source:** `alicloud_kms_secrets`([#2515](https://github.com/aliyun/terraform-provider-alicloud/issues/2515))
-- **Data Source:** `alicloud_alidns_domain_records`([#2503](https://github.com/aliyun/terraform-provider-alicloud/issues/2503))
-- **Data Source:** `alicloud_resource_manager_resource_directories`([#2499](https://github.com/aliyun/terraform-provider-alicloud/issues/2499))
-- **Data Source:** `alicloud_resource_manager_handshakes`([#2489](https://github.com/aliyun/terraform-provider-alicloud/issues/2489))
-- **Data Source:** `alicloud_resource_manager_accounts`([#2488](https://github.com/aliyun/terraform-provider-alicloud/issues/2488))
-- **Data Source:** `alicloud_resource_manager_roles`([#2483](https://github.com/aliyun/terraform-provider-alicloud/issues/2483))
+- **New Data Source:** `alicloud_waf_domains`([#2498](https://github.com/aliyun/terraform-provider-alicloud/issues/2498))
+- **New Data Source:** `alicloud_kms_secrets`([#2515](https://github.com/aliyun/terraform-provider-alicloud/issues/2515))
+- **New Data Source:** `alicloud_alidns_domain_records`([#2503](https://github.com/aliyun/terraform-provider-alicloud/issues/2503))
+- **New Data Source:** `alicloud_resource_manager_resource_directories`([#2499](https://github.com/aliyun/terraform-provider-alicloud/issues/2499))
+- **New Data Source:** `alicloud_resource_manager_handshakes`([#2489](https://github.com/aliyun/terraform-provider-alicloud/issues/2489))
+- **New Data Source:** `alicloud_resource_manager_accounts`([#2488](https://github.com/aliyun/terraform-provider-alicloud/issues/2488))
+- **New Data Source:** `alicloud_resource_manager_roles`([#2483](https://github.com/aliyun/terraform-provider-alicloud/issues/2483))
 
 IMPROVEMENTS:
 - support "resource_group_id" for Elasticsearch instance([#2528](https://github.com/aliyun/terraform-provider-alicloud/issues/2528))
@@ -5464,9 +5502,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_alidns_record`([#2495](https://github.com/aliyun/terraform-provider-alicloud/issues/2495))
 - **New Resource:** `alicloud_kms_key`([#2444](https://github.com/aliyun/terraform-provider-alicloud/issues/2444))
 - **New Resource:** `alicloud_kms_keyversion`([#2471](https://github.com/aliyun/terraform-provider-alicloud/issues/2471))
-- **Data Source:** `alicloud_resource_manager_policy_versions`([#2496](https://github.com/aliyun/terraform-provider-alicloud/issues/2496))
-- **Data Source:** `alicloud_kms_key_versions`([#2494](https://github.com/aliyun/terraform-provider-alicloud/issues/2494))
-- **Data Source:** `alicloud_alidns_domain_group`([#2482](https://github.com/aliyun/terraform-provider-alicloud/issues/2482))
+- **New Data Source:** `alicloud_resource_manager_policy_versions`([#2496](https://github.com/aliyun/terraform-provider-alicloud/issues/2496))
+- **New Data Source:** `alicloud_kms_key_versions`([#2494](https://github.com/aliyun/terraform-provider-alicloud/issues/2494))
+- **New Data Source:** `alicloud_alidns_domain_group`([#2482](https://github.com/aliyun/terraform-provider-alicloud/issues/2482))
 
 IMPROVEMENTS:
 
@@ -5485,9 +5523,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_alidns_domain_group.`([#2454](https://github.com/aliyun/terraform-provider-alicloud/issues/2454))
 - **New Resource:** `alicloud_resource_manager_resource_directory`([#2459](https://github.com/aliyun/terraform-provider-alicloud/issues/2459))
 - **New Resource:** `alicloud_resource_manager_policy_version`([#2457](https://github.com/aliyun/terraform-provider-alicloud/issues/2457))
-- **Data Source:** `alicloud_resource_manager_folders`([#2467](https://github.com/aliyun/terraform-provider-alicloud/issues/2467))
-- **Data Source:** `alicloud_alidns_instance.`([#2468](https://github.com/aliyun/terraform-provider-alicloud/issues/2468))
-- **Data Source:** `alicloud_resource_manager_resource_groups`([#2462](https://github.com/aliyun/terraform-provider-alicloud/issues/2462))
+- **New Data Source:** `alicloud_resource_manager_folders`([#2467](https://github.com/aliyun/terraform-provider-alicloud/issues/2467))
+- **New Data Source:** `alicloud_alidns_instance.`([#2468](https://github.com/aliyun/terraform-provider-alicloud/issues/2468))
+- **New Data Source:** `alicloud_resource_manager_resource_groups`([#2462](https://github.com/aliyun/terraform-provider-alicloud/issues/2462))
 
 IMPROVEMENTS:
 
@@ -5532,9 +5570,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_edas_instance_cluster_attachment`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
 - **New Resource:** `alicloud_edas_application_deployment`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
 - **New Resource:** `alicloud_cen_route_map`([#2371](https://github.com/aliyun/terraform-provider-alicloud/issues/2371))
-- **Data Source:** `alicloud_edas_applications`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
-- **Data Source:** `alicloud_edas_deploy_groups`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
-- **Data Source:** `alicloud_edas_clusters`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
+- **New Data Source:** `alicloud_edas_applications`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
+- **New Data Source:** `alicloud_edas_deploy_groups`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
+- **New Data Source:** `alicloud_edas_clusters`([#2384](https://github.com/aliyun/terraform-provider-alicloud/issues/2384))
 
 IMPROVEMENTS:
 
@@ -5556,7 +5594,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_adb_connection`([#2392](https://github.com/aliyun/terraform-provider-alicloud/issues/2392))
 - **New Resource:** `alicloud_cs_kubernetes`([#2391](https://github.com/aliyun/terraform-provider-alicloud/issues/2391))
 - **New Resource:** `alicloud_dms_enterprise_instance`([#2390](https://github.com/aliyun/terraform-provider-alicloud/issues/2390))
-- **Data Source:** `alicloud_polardb_node_classes`([#2369](https://github.com/aliyun/terraform-provider-alicloud/issues/2369))
+- **New Data Source:** `alicloud_polardb_node_classes`([#2369](https://github.com/aliyun/terraform-provider-alicloud/issues/2369))
 
 IMPROVEMENTS:
 
@@ -5594,8 +5632,8 @@ BUG FIXES:
 - **New Resource:** `alicloud_dns_domain_attachmen`([#2365](https://github.com/aliyun/terraform-provider-alicloud/issues/2365))
 - **New Resource:** `alicloud_dns_instance`([#2361](https://github.com/aliyun/terraform-provider-alicloud/issues/2361))
 - **New Resource:** `alicloud_polardb_endpoint`([#2321](https://github.com/aliyun/terraform-provider-alicloud/issues/2321))
-- **Data Source:** `alicloud_dns_domain_txt_guid`([#2357](https://github.com/aliyun/terraform-provider-alicloud/issues/2357))
-- **Data Source:** `alicloud_kms_aliases`([#2353](https://github.com/aliyun/terraform-provider-alicloud/issues/2353))
+- **New Data Source:** `alicloud_dns_domain_txt_guid`([#2357](https://github.com/aliyun/terraform-provider-alicloud/issues/2357))
+- **New Data Source:** `alicloud_kms_aliases`([#2353](https://github.com/aliyun/terraform-provider-alicloud/issues/2353))
 
 IMPROVEMENTS:
 
@@ -5643,7 +5681,7 @@ BUG FIXES:
 ## 1.78.0 (April 03, 2020)
 
 - **New Resource:** `alicloud_log_alert`([#2325](https://github.com/aliyun/terraform-provider-alicloud/issues/2325))
-- **Data Source:** `alicloud_cen_flowlogs`([#2336](https://github.com/aliyun/terraform-provider-alicloud/issues/2336))
+- **New Data Source:** `alicloud_cen_flowlogs`([#2336](https://github.com/aliyun/terraform-provider-alicloud/issues/2336))
 
 IMPROVEMENTS:
 
@@ -5693,9 +5731,9 @@ BUG FIXES:
 
 ## 1.75.0 (March 20, 2020)
 
-- **Data Source:** `alicloud_adb_zones`([#2248](https://github.com/aliyun/terraform-provider-alicloud/issues/2248))
-- **Data Source:** `alicloud_slb_zones`([#2244](https://github.com/aliyun/terraform-provider-alicloud/issues/2244))
-- **Data Source:** `alicloud_elasticsearch_zones`([#2243](https://github.com/aliyun/terraform-provider-alicloud/issues/2243))
+- **New Data Source:** `alicloud_adb_zones`([#2248](https://github.com/aliyun/terraform-provider-alicloud/issues/2248))
+- **New Data Source:** `alicloud_slb_zones`([#2244](https://github.com/aliyun/terraform-provider-alicloud/issues/2244))
+- **New Data Source:** `alicloud_elasticsearch_zones`([#2243](https://github.com/aliyun/terraform-provider-alicloud/issues/2243))
 
 IMPROVEMENTS:
 
@@ -5725,8 +5763,8 @@ BUG FIXES:
 
 ## 1.74.0 (March 16, 2020)
 
-- **Data Source:** `alicloud_fc_zones`([#2256](https://github.com/aliyun/terraform-provider-alicloud/issues/2256))
-- **Data Source:** `alicloud_polardb_zones`([#2250](https://github.com/aliyun/terraform-provider-alicloud/issues/2250))
+- **New Data Source:** `alicloud_fc_zones`([#2256](https://github.com/aliyun/terraform-provider-alicloud/issues/2256))
+- **New Data Source:** `alicloud_polardb_zones`([#2250](https://github.com/aliyun/terraform-provider-alicloud/issues/2250))
 
 IMPROVEMENTS:
 
@@ -5744,11 +5782,11 @@ BUG FIXES:
 ## 1.73.0 (March 13, 2020)
 
 - **New Resource:** `alicloud_cen_flowlog`([#2229](https://github.com/aliyun/terraform-provider-alicloud/issues/2229))
-- **Data Source:** `alicloud_gpdb_zones`([#2241](https://github.com/aliyun/terraform-provider-alicloud/issues/2241))
-- **Data Source:** `alicloud_hbase_zones`([#2240](https://github.com/aliyun/terraform-provider-alicloud/issues/2240))
-- **Data Source:** `alicloud_mongodb_zones`([#2238](https://github.com/aliyun/terraform-provider-alicloud/issues/2238))
-- **Data Source:** `alicloud_kvstore_zones`([#2236](https://github.com/aliyun/terraform-provider-alicloud/issues/2236))
-- **Data Source:** `alicloud_db_zones`([#2235](https://github.com/aliyun/terraform-provider-alicloud/issues/2235))
+- **New Data Source:** `alicloud_gpdb_zones`([#2241](https://github.com/aliyun/terraform-provider-alicloud/issues/2241))
+- **New Data Source:** `alicloud_hbase_zones`([#2240](https://github.com/aliyun/terraform-provider-alicloud/issues/2240))
+- **New Data Source:** `alicloud_mongodb_zones`([#2238](https://github.com/aliyun/terraform-provider-alicloud/issues/2238))
+- **New Data Source:** `alicloud_kvstore_zones`([#2236](https://github.com/aliyun/terraform-provider-alicloud/issues/2236))
+- **New Data Source:** `alicloud_db_zones`([#2235](https://github.com/aliyun/terraform-provider-alicloud/issues/2235))
 
 IMPROVEMENTS:
 
@@ -5769,9 +5807,9 @@ BUG FIXES:
 ## 1.72.0 (March 06, 2020)
 
 - **New Resource:** `alicloud_cms_site_monitor`([#2191](https://github.com/aliyun/terraform-provider-alicloud/issues/2191))
-- **Data Source:** `alicloud_ess_alarms`([#2215](https://github.com/aliyun/terraform-provider-alicloud/issues/2215))
-- **Data Source:** `alicloud_ess_notifications`([#2161](https://github.com/aliyun/terraform-provider-alicloud/issues/2161))
-- **Data Source:** `alicloud_ess_scheduled_tasks`([#2160](https://github.com/aliyun/terraform-provider-alicloud/issues/2160))
+- **New Data Source:** `alicloud_ess_alarms`([#2215](https://github.com/aliyun/terraform-provider-alicloud/issues/2215))
+- **New Data Source:** `alicloud_ess_notifications`([#2161](https://github.com/aliyun/terraform-provider-alicloud/issues/2161))
+- **New Data Source:** `alicloud_ess_scheduled_tasks`([#2160](https://github.com/aliyun/terraform-provider-alicloud/issues/2160))
 
 IMPROVEMENTS:
 
@@ -5837,7 +5875,7 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_adb_account`([#2169](https://github.com/aliyun/terraform-provider-alicloud/issues/2169))
 - **New Resource:** `alicloud_adb_backup_policy`([#2169](https://github.com/aliyun/terraform-provider-alicloud/issues/2169))
-- **Data Source:** `alicloud_adb_clusters`([#2153](https://github.com/aliyun/terraform-provider-alicloud/issues/2153))
+- **New Data Source:** `alicloud_adb_clusters`([#2153](https://github.com/aliyun/terraform-provider-alicloud/issues/2153))
 
 IMPROVEMENTS:
 
@@ -5896,8 +5934,8 @@ BUG FIXES:
 
 ## 1.70.0 (January 17, 2020)
 
-- **Data Source:** `alicloud_polardb_accounts`([#2091](https://github.com/aliyun/terraform-provider-alicloud/issues/2091))
-- **Data Source:** `alicloud_polardb_databases`([#2091](https://github.com/aliyun/terraform-provider-alicloud/issues/2091))
+- **New Data Source:** `alicloud_polardb_accounts`([#2091](https://github.com/aliyun/terraform-provider-alicloud/issues/2091))
+- **New Data Source:** `alicloud_polardb_databases`([#2091](https://github.com/aliyun/terraform-provider-alicloud/issues/2091))
 
 IMPROVEMENTS:
 
@@ -5935,7 +5973,7 @@ BUG FIXES:
 
 - **New Resource:** `alicloud_market_order`([#2084](https://github.com/aliyun/terraform-provider-alicloud/issues/2084))
 - **New Resource:** `alicloud_image_import`([#2051](https://github.com/aliyun/terraform-provider-alicloud/issues/2051))
-- **Data Source:** `alicloud_market_product`([#2070](https://github.com/aliyun/terraform-provider-alicloud/issues/2070))
+- **New Data Source:** `alicloud_market_product`([#2070](https://github.com/aliyun/terraform-provider-alicloud/issues/2070))
 
 IMPROVEMENTS:
 
@@ -5970,7 +6008,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_export_image`([#2036](https://github.com/aliyun/terraform-provider-alicloud/issues/2036))
 - **New Resource:** `alicloud_image_share_permission`([#2026](https://github.com/aliyun/terraform-provider-alicloud/issues/2026))
 - **New Resource:** `alicloud_polardb_endpoint_address`([#2020](https://github.com/aliyun/terraform-provider-alicloud/issues/2020))
-- **Data Source:** `alicloud_polardb_endpoints`([#2020](https://github.com/aliyun/terraform-provider-alicloud/issues/2020))
+- **New Data Source:** `alicloud_polardb_endpoints`([#2020](https://github.com/aliyun/terraform-provider-alicloud/issues/2020))
 
 IMPROVEMENTS:
 
@@ -5994,7 +6032,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_hbase_instance`([#2012](https://github.com/aliyun/terraform-provider-alicloud/issues/2012))
 - **New Resource:** `alicloud_polardb_account_privilege`([#2005](https://github.com/aliyun/terraform-provider-alicloud/issues/2005))
 - **New Resource:** `alicloud_polardb_account`([#1998](https://github.com/aliyun/terraform-provider-alicloud/issues/1998))
-- **Data Source:** `alicloud_hbase_instances`([#2012](https://github.com/aliyun/terraform-provider-alicloud/issues/2012))
+- **New Data Source:** `alicloud_hbase_instances`([#2012](https://github.com/aliyun/terraform-provider-alicloud/issues/2012))
 
 
 IMPROVEMENTS:
@@ -6025,9 +6063,9 @@ BUG FIXES:
 - **New Resource:** `alicloud_poloardb_cluster`([#1978](https://github.com/aliyun/terraform-provider-alicloud/issues/1978))
 - **New Resource:** `alicloud_alikafka_sasl_acl` （[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)
 - **New Resource:** `alicloud_alikafka_sasl_user` （[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)
-- **Data Source:** `alicloud_poloardb_clusters`([#1978](https://github.com/aliyun/terraform-provider-alicloud/issues/1978))
-- **Data Source:** `alicloud_alikafka_sasl_acls` （[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)）
-- **Data Source:** `alicloud_alikafka_sasl_users`（[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)）
+- **New Data Source:** `alicloud_poloardb_clusters`([#1978](https://github.com/aliyun/terraform-provider-alicloud/issues/1978))
+- **New Data Source:** `alicloud_alikafka_sasl_acls` （[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)）
+- **New Data Source:** `alicloud_alikafka_sasl_users`（[#2000](https://github.com/aliyun/terraform-provider-alicloud/issues/2000)）
 
 IMPROVEMENTS:
 
@@ -6550,7 +6588,7 @@ BUG FIXES:
 - **New Resource:** `alicloud_slb_backend_server`([#1498](https://github.com/aliyun/terraform-provider-alicloud/issues/1498))
 - **New Resource:** `alicloud_ons_topic`([#1483](https://github.com/aliyun/terraform-provider-alicloud/issues/1483))
 - **New Data Source:** `alicloud_ons_groups`([#1506](https://github.com/aliyun/terraform-provider-alicloud/issues/1506))
-- **New Data source:** `alicloud_slb_backend_servers`([#1498](https://github.com/aliyun/terraform-provider-alicloud/issues/1498))
+- **New Data Source:** `alicloud_slb_backend_servers`([#1498](https://github.com/aliyun/terraform-provider-alicloud/issues/1498))
 - **New Data Source:** `alicloud_ons_topics`([#1483](https://github.com/aliyun/terraform-provider-alicloud/issues/1483))
 
 
@@ -6656,7 +6694,7 @@ BUG FIXES:
 
 ## 1.52.0 (July 12, 2019)
 
-- **New Datasource:** `alicloud_ons_instances`([#1411](https://github.com/aliyun/terraform-provider-alicloud/issues/1411))
+- **New Data Source:** `alicloud_ons_instances`([#1411](https://github.com/aliyun/terraform-provider-alicloud/issues/1411))
 
 IMPROVEMENTS:
 
@@ -6678,7 +6716,7 @@ BUG FIXES:
 
 ## 1.51.0 (July 08, 2019)
 
-- **New Date Source:** `alicloud_kvstore_instance_engines`([#1371](https://github.com/aliyun/terraform-provider-alicloud/issues/1371))
+- **New Data Source:** `alicloud_kvstore_instance_engines`([#1371](https://github.com/aliyun/terraform-provider-alicloud/issues/1371))
 - **New Resource:** `alicloud_ons_instance`([#1333](https://github.com/aliyun/terraform-provider-alicloud/issues/1333))
 
 IMPROVEMENTS:
@@ -6735,7 +6773,7 @@ BUG FIXES:
 
 ## 1.49.0 (June 28, 2019)
 
-- **New Date Source:** `alicloud_kvstore_instance_classes`([#1315](https://github.com/aliyun/terraform-provider-alicloud/issues/1315))
+- **New Data Source:** `alicloud_kvstore_instance_classes`([#1315](https://github.com/aliyun/terraform-provider-alicloud/issues/1315))
 
 IMPROVEMENTS:
 
@@ -6796,7 +6834,7 @@ BUG FIXES:
 
 ## 1.47.0 (June 17, 2019)
 
-- **New Date Source:** `alicloud_gpdb_instances`([#1279](https://github.com/aliyun/terraform-provider-alicloud/issues/1279))
+- **New Data Source:** `alicloud_gpdb_instances`([#1279](https://github.com/aliyun/terraform-provider-alicloud/issues/1279))
 - **New Resource:** `alicloud_gpdb_instance`([#1260](https://github.com/aliyun/terraform-provider-alicloud/issues/1260))
 
 IMPROVEMENTS:
@@ -6834,8 +6872,8 @@ BUG FIXES:
 ## 1.46.0 (June 10, 2019)
 
 - **New Resource:** `alicloud_ram_account_password_policy`([#1212](https://github.com/aliyun/terraform-provider-alicloud/issues/1212))
-- **New Date Source:** `alicloud_db_instance_engines`([#1201](https://github.com/aliyun/terraform-provider-alicloud/issues/1201))
-- **New Date Source:** `alicloud_db_instance_classes`([#1201](https://github.com/aliyun/terraform-provider-alicloud/issues/1201))
+- **New Data Source:** `alicloud_db_instance_engines`([#1201](https://github.com/aliyun/terraform-provider-alicloud/issues/1201))
+- **New Data Source:** `alicloud_db_instance_classes`([#1201](https://github.com/aliyun/terraform-provider-alicloud/issues/1201))
 
 IMPROVEMENTS:
 
@@ -8104,7 +8142,7 @@ IMPROVEMENTS:
 
 - *New Resource*: _alicloud_cms_alarm_([#146](https://github.com/aliyun/terraform-provider-alicloud/pull/146))
 - *New Resource*: _alicloud_cs_application_([#136](https://github.com/aliyun/terraform-provider-alicloud/pull/136))
-- *New Datasource*: _alicloud_security_group_rules_([#135](https://github.com/aliyun/terraform-provider-alicloud/pull/135))
+- *New Data Source*: _alicloud_security_group_rules_([#135](https://github.com/aliyun/terraform-provider-alicloud/pull/135))
 - Output application attribution service block([#141](https://github.com/aliyun/terraform-provider-alicloud/pull/141))
 - Output swarm attribution 'vpc_id'([#140](https://github.com/aliyun/terraform-provider-alicloud/pull/140))
 - Support to release eip after deploying swarm cluster.([#139](https://github.com/aliyun/terraform-provider-alicloud/pull/139))
@@ -8322,13 +8360,13 @@ IMPROVEMENTS:
 - *New Resource:* _alicloud_ram_policy_([#46](https://github.com/aliyun/terraform-provider-alicloud/pull/46))
 - *New Resource*: _alicloud_ram_user_policy_attachment_([#46](https://github.com/aliyun/terraform-provider-alicloud/pull/46))
 - *New Resource* _alicloud_ram_user_([#44](https://github.com/aliyun/terraform-provider-alicloud/pull/44))
-- *New Datasource* _alicloud_ram_policies_([#46](https://github.com/aliyun/terraform-provider-alicloud/pull/46))
-- *New Datasource* _alicloud_ram_users_([#44](https://github.com/aliyun/terraform-provider-alicloud/pull/44))
-- *New Datasource*: _alicloud_ram_roles_([#48](https://github.com/aliyun/terraform-provider-alicloud/pull/48))
-- *New Datasource*: _alicloud_ram_account_aliases_([#50](https://github.com/aliyun/terraform-provider-alicloud/pull/50))
-- *New Datasource*: _alicloud_dns_domains_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
-- *New Datasource*: _alicloud_dns_groups_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
-- *New Datasource*: _alicloud_dns_records_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
+- *New Data Source* _alicloud_ram_policies_([#46](https://github.com/aliyun/terraform-provider-alicloud/pull/46))
+- *New Data Source* _alicloud_ram_users_([#44](https://github.com/aliyun/terraform-provider-alicloud/pull/44))
+- *New Data Source*: _alicloud_ram_roles_([#48](https://github.com/aliyun/terraform-provider-alicloud/pull/48))
+- *New Data Source*: _alicloud_ram_account_aliases_([#50](https://github.com/aliyun/terraform-provider-alicloud/pull/50))
+- *New Data Source*: _alicloud_dns_domains_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
+- *New Data Source*: _alicloud_dns_groups_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
+- *New Data Source*: _alicloud_dns_records_([#51](https://github.com/aliyun/terraform-provider-alicloud/pull/51))
 - resource/instance: add new parameter `role_name`([#48](https://github.com/aliyun/terraform-provider-alicloud/pull/48))
 - resource/slb: remove slb schema field `listeners` and using new listener resource to replace([#55](https://github.com/aliyun/terraform-provider-alicloud/pull/55))
 - resource/ess_scaling_configuration: add new parameters `key_name`, `role_name`, `user_data`, `force_delete` and `tags`([#54](https://github.com/aliyun/terraform-provider-alicloud/pull/54))
@@ -8369,8 +8407,8 @@ IMPROVEMENTS:
 - *New Resource*: _alicloud_router_interface_([#40](https://github.com/aliyun/terraform-provider-alicloud/pull/40))
 - *New Resource:* _alicloud_oss_bucket_([#10](https://github.com/aliyun/terraform-provider-alicloud/pull/10))
 - *New Resource*: _alicloud_oss_bucket_object_([#14](https://github.com/aliyun/terraform-provider-alicloud/pull/14))
-- *New Datasource* _alicloud_key_pairs_([#30](https://github.com/aliyun/terraform-provider-alicloud/pull/30))
-- *New Datasource* _alicloud_vpcs_([#34](https://github.com/aliyun/terraform-provider-alicloud/pull/34))
+- *New Data Source* _alicloud_key_pairs_([#30](https://github.com/aliyun/terraform-provider-alicloud/pull/30))
+- *New Data Source* _alicloud_vpcs_([#34](https://github.com/aliyun/terraform-provider-alicloud/pull/34))
 - *New output_file* option for data sources: export data to a specified file([#29](https://github.com/aliyun/terraform-provider-alicloud/pull/29))
 - resource/instance:add new parameter `key_name`([#31](https://github.com/aliyun/terraform-provider-alicloud/pull/31))
 - resource/route_entry: new nexthop type 'RouterInterface' for route entry([#41](https://github.com/aliyun/terraform-provider-alicloud/pull/41))
