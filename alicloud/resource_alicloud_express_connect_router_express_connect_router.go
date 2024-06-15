@@ -30,10 +30,9 @@ func resourceAliCloudExpressConnectRouterExpressConnectRouter() *schema.Resource
 		},
 		Schema: map[string]*schema.Schema{
 			"alibaba_side_asn": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: IntBetween(0, 4294967295),
+				Type:     schema.TypeInt,
+				Required: true,
+				ForceNew: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
