@@ -282,7 +282,9 @@ func resourceAliCloudKmsKeyRead(d *schema.ResourceData, meta interface{}) error 
 				return WrapError(err)
 			}
 
-			d.Set("policy", policy["Policy"])
+			if keyPolicy, ok := policy["Policy"]; ok {
+				d.Set("policy", keyPolicy)
+			}
 		}
 	}
 
