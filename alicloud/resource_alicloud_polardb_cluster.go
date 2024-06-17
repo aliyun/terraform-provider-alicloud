@@ -530,7 +530,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	polarDBService := PolarDBService{client}
 	d.Partial(true)
 
-	if d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin") {
+	if !d.IsNewResource() && (d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin")) {
 		if err := polarDBService.CreateClusterParamsModifyParameters(d); err != nil {
 			return WrapError(err)
 		}
