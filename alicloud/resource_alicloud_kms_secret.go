@@ -256,7 +256,9 @@ func resourceAliCloudKmsSecretRead(d *schema.ResourceData, meta interface{}) err
 				return WrapError(err)
 			}
 
-			d.Set("policy", policy["Policy"])
+			if secretPolicy, ok := policy["Policy"]; ok {
+				d.Set("policy", secretPolicy)
+			}
 		}
 	}
 
