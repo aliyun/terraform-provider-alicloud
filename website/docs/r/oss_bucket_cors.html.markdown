@@ -27,9 +27,13 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
+resource "random_uuid" "default" {
+
+}
+
 resource "alicloud_oss_bucket" "CreateBucket" {
   storage_class = "Standard"
-  bucket        = var.name
+  bucket        = "${var.name}-${random_uuid.default.result}"
   lifecycle {
     ignore_changes = [
       cors_rule,

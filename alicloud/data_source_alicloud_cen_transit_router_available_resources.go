@@ -6,15 +6,22 @@ import (
 
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/hashcode"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func dataSourceAlicloudCenTransitRouterAvailableResources() *schema.Resource {
+func dataSourceAliCloudCenTransitRouterAvailableResources() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudCenTransitRouterAvailableResourcesRead,
+		Read: dataSourceAliCloudCenTransitRouterAvailableResourcesRead,
 		Schema: map[string]*schema.Schema{
+			"support_multicast": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -24,12 +31,21 @@ func dataSourceAlicloudCenTransitRouterAvailableResources() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"support_multicast": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
 						"master_zones": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"slave_zones": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
+						"available_zones": {
 							Type:     schema.TypeList,
 							Computed: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
@@ -41,18 +57,23 @@ func dataSourceAlicloudCenTransitRouterAvailableResources() *schema.Resource {
 	}
 }
 
-func dataSourceAlicloudCenTransitRouterAvailableResourcesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudCenTransitRouterAvailableResourcesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "ListTransitRouterAvailableResource"
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOkExists("support_multicast"); ok {
+		request["SupportMulticast"] = v
+	}
+
 	var response map[string]interface{}
 	conn, err := client.NewCbnClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -68,27 +89,33 @@ func dataSourceAlicloudCenTransitRouterAvailableResourcesRead(d *schema.Resource
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_cen_transit_router_available_resources", action, AlibabaCloudSdkGoERROR)
 	}
+
 	resp, err := jsonpath.Get("$", response)
 	if err != nil {
 		return WrapErrorf(err, FailedGetAttributeMsg, action, "$", response)
 	}
 
-	ids := make([]string, 0)
+	result, _ := resp.(map[string]interface{})
 	s := make([]map[string]interface{}, 0)
 	mapping := map[string]interface{}{
-		"master_zones": resp.(map[string]interface{})["MasterZones"],
-		"slave_zones":  resp.(map[string]interface{})["SlaveZones"],
+		"support_multicast": result["SupportMulticast"],
+		"master_zones":      result["MasterZones"],
+		"slave_zones":       result["SlaveZones"],
+		"available_zones":   result["AvailableZones"],
 	}
-	ids = append(ids, fmt.Sprint(mapping["id"]))
+
 	s = append(s, mapping)
 
-	d.SetId(dataResourceIdHash(ids))
+	d.SetId(tea.ToString(hashcode.String(fmt.Sprint(s))))
+
 	if err := d.Set("resources", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

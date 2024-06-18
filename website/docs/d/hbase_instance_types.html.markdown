@@ -7,11 +7,11 @@ description: |-
     Provides a list of availability instance_types for HBase that can be used by an Alibaba Cloud account.
 ---
 
-# alicloud\_hbase\_instance\_types
+# alicloud_hbase_instance_types
 
 This data source provides availability instance_types for HBase that can be accessed by an Alibaba Cloud account within the region configured in the provider.
 
--> **NOTE:** Available in v1.106.0+.
+-> **NOTE:** Available since v1.106.0.
 
 ## Example Usage
 
@@ -65,7 +65,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `version` - The version of the engine.
     * `category` - Name of the category, single or cluster.
     * `storage_type` - Name of the storage type.
-    * `instance_type` - Name of the instance type.
     * `instance_type` - Name of the instance type.
     * `cpu_size` - Cpu size of the instance type.
     * `mem_size` - Mem size of the instance type.

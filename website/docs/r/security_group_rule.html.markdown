@@ -25,9 +25,8 @@ Basic Usage
 
 ```terraform
 resource "alicloud_security_group" "default" {
-  name = "terraform-example"
+  name = "default"
 }
-
 resource "alicloud_security_group_rule" "allow_all_tcp" {
   type              = "ingress"
   ip_protocol       = "tcp"

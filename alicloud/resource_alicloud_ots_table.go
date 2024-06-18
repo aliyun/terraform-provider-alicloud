@@ -90,6 +90,11 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Required:     true,
 				ValidateFunc: validation.IntBetween(1, INT_MAX),
 			},
+			"allow_update": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+			},
 			"deviation_cell_version_in_sec": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -104,7 +109,21 @@ func resourceAlicloudOtsTable() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ValidateFunc: validation.StringInSlice([]string{
-					string(SseKMSService)}, false),
+					string(SseKMSService), string(SseByOk)}, false),
+			},
+			"sse_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return string(SseByOk) != d.Get("sse_key_type").(string)
+				},
+			},
+			"sse_role_arn": {
+				Type:     schema.TypeString,
+				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					return string(SseByOk) != d.Get("sse_key_type").(string)
+				},
 			},
 		},
 	}
@@ -150,6 +169,8 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 	tableOption := new(tablestore.TableOption)
 	tableOption.TimeToAlive = d.Get("time_to_live").(int)
 	tableOption.MaxVersion = d.Get("max_version").(int)
+	allowUpdate := d.Get("allow_update").(bool)
+	tableOption.AllowUpdate = &allowUpdate
 	if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
 		tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 	}
@@ -169,10 +190,21 @@ func resourceAliyunOtsTableCreate(d *schema.ResourceData, meta interface{}) erro
 			switch sseKeyType.(string) {
 			case string(SseKMSService):
 				typ = tablestore.SSE_KMS_SERVICE
+			case string(SseByOk):
+				typ = tablestore.SSE_BYOK
 			default:
 				return WrapError(Error("unknown sse key type: " + sseKeyType.(string)))
 			}
 			sseSpec.KeyType = &typ
+		}
+		if sseKeyId, ok3 := d.GetOk("sse_key_id"); ok3 {
+			keyId := sseKeyId.(string)
+			sseSpec.KeyId = &keyId
+		}
+
+		if sseRoleArn, ok4 := d.GetOk("sse_role_arn"); ok4 {
+			roleArn := sseRoleArn.(string)
+			sseSpec.RoleArn = &roleArn
 		}
 		request.SSESpecification = sseSpec
 	}
@@ -248,11 +280,15 @@ func resourceAliyunOtsTableRead(d *schema.ResourceData, meta interface{}) error 
 
 	d.Set("time_to_live", tableResp.TableOption.TimeToAlive)
 	d.Set("max_version", tableResp.TableOption.MaxVersion)
+	d.Set("allow_update", *tableResp.TableOption.AllowUpdate)
 	d.Set("deviation_cell_version_in_sec", strconv.FormatInt(tableResp.TableOption.DeviationCellVersionInSec, 10))
 
 	if tableResp.SSEDetails != nil && tableResp.SSEDetails.Enable {
 		d.Set("enable_sse", tableResp.SSEDetails.Enable)
 		d.Set("sse_key_type", tableResp.SSEDetails.KeyType.String())
+		d.Set("sse_key_id", tableResp.SSEDetails.KeyId)
+		d.Set("sse_role_arn", tableResp.SSEDetails.RoleArn)
+
 	}
 
 	return nil
@@ -267,7 +303,7 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	client := meta.(*connectivity.AliyunClient)
 
-	if d.HasChange("time_to_live") || d.HasChange("max_version") || d.HasChange("deviation_cell_version_in_sec") {
+	if d.HasChange("time_to_live") || d.HasChange("max_version") || d.HasChange("deviation_cell_version_in_sec") || d.HasChange("allow_update") {
 		request := new(tablestore.UpdateTableRequest)
 		request.TableName = tableName
 		tableOption := new(tablestore.TableOption)
@@ -277,6 +313,8 @@ func resourceAliyunOtsTableUpdate(d *schema.ResourceData, meta interface{}) erro
 		if deviation, ok := d.GetOk("deviation_cell_version_in_sec"); ok {
 			tableOption.DeviationCellVersionInSec, _ = strconv.ParseInt(deviation.(string), 10, 64)
 		}
+		allowUpdate := d.Get("allow_update").(bool)
+		tableOption.AllowUpdate = &allowUpdate
 
 		request.TableOption = tableOption
 		var requestinfo *tablestore.TableStoreClient

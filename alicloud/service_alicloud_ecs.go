@@ -808,13 +808,15 @@ func (s *EcsService) updateImage(d *schema.ResourceData) error {
 		raw, err := s.client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
 			return ecsClient.ModifyImageAttribute(request)
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
+
 		d.SetPartial("name")
 		d.SetPartial("image_name")
 		d.SetPartial("description")
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	}
 
 	d.Partial(false)

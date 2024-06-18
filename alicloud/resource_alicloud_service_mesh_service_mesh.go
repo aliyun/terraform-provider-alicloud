@@ -24,7 +24,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(5 * time.Minute),
+			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
@@ -38,8 +38,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"standard", "enterprise", "ultimate"}, true),
+				ValidateFunc: StringInSlice([]string{"standard", "enterprise", "ultimate"}, false),
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -52,9 +51,8 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"edition": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, true),
+				ValidateFunc: StringInSlice([]string{"Default", "Pro"}, false),
 			},
 			"extra_configuration": {
 				Type:     schema.TypeList,
@@ -78,7 +76,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -89,7 +86,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"pilot_public_eip": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							ForceNew: true,
 						},
 						"pilot_public_loadbalancer_id": {
 							Type:     schema.TypeString,
@@ -107,14 +103,12 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 				Type:     schema.TypeList,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"access_log": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -131,7 +125,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"gateway_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
 									},
 									"sidecar_lifecycle": {
 										Type:         schema.TypeInt,
@@ -146,7 +139,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"sidecar_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
 									},
 								},
 							},
@@ -154,7 +146,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"pilot": {
 							Type:     schema.TypeList,
 							Optional: true,
-							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -226,29 +217,25 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"outbound_traffic_policy": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, true),
+							ValidateFunc: StringInSlice([]string{"ALLOW_ANY", "REGISTRY_ONLY"}, false),
 						},
 						"sidecar_injector": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"limit_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
 									},
 									"auto_injection_policy_enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
-										Computed: true,
 									},
 									"request_memory": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
 									},
 									"enable_namespaces_by_default": {
 										Type:     schema.TypeBool,
@@ -257,7 +244,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"limit_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
 									},
 									"init_cni_configuration": {
 										Type:     schema.TypeList,
@@ -280,7 +266,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									"request_cpu": {
 										Type:     schema.TypeString,
 										Optional: true,
-										Computed: true,
 									},
 									"sidecar_injector_webhook_as_yaml": {
 										Type:     schema.TypeString,
@@ -293,7 +278,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 							Type:     schema.TypeList,
 							Optional: true,
 							Computed: true,
-							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -301,13 +285,11 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										Computed: true,
-										ForceNew: true,
 									},
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
 										Computed: true,
-										ForceNew: true,
 									},
 								},
 							},
@@ -315,7 +297,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"kiali": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -346,7 +327,9 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 									},
 									"cluster_domain": {
 										Type:     schema.TypeString,
+										Optional: true,
 										Computed: true,
+										ForceNew: true,
 									},
 									"limit_cpu": {
 										Type:     schema.TypeString,
@@ -372,8 +355,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"control_plane_log": {
 							Type:     schema.TypeList,
 							Optional: true,
-							Computed: true,
-							ForceNew: true,
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
@@ -402,7 +383,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 						"customized_zipkin": {
 							Type:     schema.TypeBool,
 							Optional: true,
-							Computed: true,
 						},
 					},
 				},
@@ -439,7 +419,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"service_mesh_name": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -449,7 +428,6 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"version": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Computed: true,
 			},
 		},
 	}
@@ -484,121 +462,115 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 			request["ApiServerPublicEip"] = jsonPathResult2
 		}
 	}
-	if v, ok := d.GetOk("load_balancer"); ok {
-		jsonPathResult3, err := jsonpath.Get("$[0].pilot_public_eip", v)
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult3, err := jsonpath.Get("$[0].tracing", v)
 		if err == nil && jsonPathResult3 != "" {
-			request["PilotPublicEip"] = jsonPathResult3
+			request["Tracing"] = jsonPathResult3
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult4, err := jsonpath.Get("$[0].tracing", v)
+		jsonPathResult4, err := jsonpath.Get("$[0].pilot[0].trace_sampling", v)
 		if err == nil && jsonPathResult4 != "" {
-			request["Tracing"] = jsonPathResult4
+			request["TraceSampling"] = jsonPathResult4
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult5, err := jsonpath.Get("$[0].pilot[0].trace_sampling", v)
+		jsonPathResult5, err := jsonpath.Get("$[0].customized_zipkin", v)
 		if err == nil && jsonPathResult5 != "" {
-			request["TraceSampling"] = jsonPathResult5
+			request["CustomizedZipkin"] = jsonPathResult5
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult6, err := jsonpath.Get("$[0].customized_zipkin", v)
+		jsonPathResult6, err := jsonpath.Get("$[0].telemetry", v)
 		if err == nil && jsonPathResult6 != "" {
-			request["CustomizedZipkin"] = jsonPathResult6
+			request["Telemetry"] = jsonPathResult6
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult7, err := jsonpath.Get("$[0].telemetry", v)
+		jsonPathResult7, err := jsonpath.Get("$[0].include_ip_ranges", v)
 		if err == nil && jsonPathResult7 != "" {
-			request["Telemetry"] = jsonPathResult7
+			request["IncludeIPRanges"] = jsonPathResult7
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult8, err := jsonpath.Get("$[0].include_ip_ranges", v)
+		jsonPathResult8, err := jsonpath.Get("$[0].opa[0].log_level", v)
 		if err == nil && jsonPathResult8 != "" {
-			request["IncludeIPRanges"] = jsonPathResult8
+			request["OPALogLevel"] = jsonPathResult8
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult9, err := jsonpath.Get("$[0].opa[0].log_level", v)
+		jsonPathResult9, err := jsonpath.Get("$[0].opa[0].request_cpu", v)
 		if err == nil && jsonPathResult9 != "" {
-			request["OPALogLevel"] = jsonPathResult9
+			request["OPARequestCPU"] = jsonPathResult9
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult10, err := jsonpath.Get("$[0].opa[0].request_cpu", v)
+		jsonPathResult10, err := jsonpath.Get("$[0].opa[0].limit_cpu", v)
 		if err == nil && jsonPathResult10 != "" {
-			request["OPARequestCPU"] = jsonPathResult10
+			request["OPALimitCPU"] = jsonPathResult10
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult11, err := jsonpath.Get("$[0].opa[0].limit_cpu", v)
+		jsonPathResult11, err := jsonpath.Get("$[0].opa[0].limit_memory", v)
 		if err == nil && jsonPathResult11 != "" {
-			request["OPALimitCPU"] = jsonPathResult11
+			request["OPALimitMemory"] = jsonPathResult11
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult12, err := jsonpath.Get("$[0].opa[0].limit_memory", v)
+		jsonPathResult12, err := jsonpath.Get("$[0].opa[0].request_memory", v)
 		if err == nil && jsonPathResult12 != "" {
-			request["OPALimitMemory"] = jsonPathResult12
+			request["OPARequestMemory"] = jsonPathResult12
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult13, err := jsonpath.Get("$[0].opa[0].request_memory", v)
+		jsonPathResult13, err := jsonpath.Get("$[0].proxy[0].request_cpu", v)
 		if err == nil && jsonPathResult13 != "" {
-			request["OPARequestMemory"] = jsonPathResult13
+			request["ProxyRequestCPU"] = jsonPathResult13
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult14, err := jsonpath.Get("$[0].proxy[0].request_cpu", v)
+		jsonPathResult14, err := jsonpath.Get("$[0].proxy[0].limit_cpu", v)
 		if err == nil && jsonPathResult14 != "" {
-			request["ProxyRequestCPU"] = jsonPathResult14
+			request["ProxyLimitCPU"] = jsonPathResult14
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult15, err := jsonpath.Get("$[0].proxy[0].limit_cpu", v)
+		jsonPathResult15, err := jsonpath.Get("$[0].proxy[0].limit_memory", v)
 		if err == nil && jsonPathResult15 != "" {
-			request["ProxyLimitCPU"] = jsonPathResult15
+			request["ProxyLimitMemory"] = jsonPathResult15
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult16, err := jsonpath.Get("$[0].proxy[0].limit_memory", v)
+		jsonPathResult16, err := jsonpath.Get("$[0].proxy[0].request_memory", v)
 		if err == nil && jsonPathResult16 != "" {
-			request["ProxyLimitMemory"] = jsonPathResult16
+			request["ProxyRequestMemory"] = jsonPathResult16
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult17, err := jsonpath.Get("$[0].proxy[0].request_memory", v)
+		jsonPathResult17, err := jsonpath.Get("$[0].kiali[0].enabled", v)
 		if err == nil && jsonPathResult17 != "" {
-			request["ProxyRequestMemory"] = jsonPathResult17
+			request["KialiEnabled"] = jsonPathResult17
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult18, err := jsonpath.Get("$[0].kiali[0].enabled", v)
+		jsonPathResult18, err := jsonpath.Get("$[0].access_log[0].enabled", v)
 		if err == nil && jsonPathResult18 != "" {
-			request["KialiEnabled"] = jsonPathResult18
+			request["AccessLogEnabled"] = jsonPathResult18
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult19, err := jsonpath.Get("$[0].access_log[0].enabled", v)
+		jsonPathResult19, err := jsonpath.Get("$[0].enable_locality_lb", v)
 		if err == nil && jsonPathResult19 != "" {
-			request["AccessLogEnabled"] = jsonPathResult19
-		}
-	}
-	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult20, err := jsonpath.Get("$[0].enable_locality_lb", v)
-		if err == nil && jsonPathResult20 != "" {
-			request["LocalityLoadBalancing"] = jsonPathResult20
+			request["LocalityLoadBalancing"] = jsonPathResult19
 		}
 	}
 	if v, ok := d.GetOk("version"); ok {
 		request["IstioVersion"] = v
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult22, err := jsonpath.Get("$[0].opa[0].enabled", v)
-		if err == nil && jsonPathResult22 != "" {
-			request["OpaEnabled"] = jsonPathResult22
+		jsonPathResult21, err := jsonpath.Get("$[0].opa[0].enabled", v)
+		if err == nil && jsonPathResult21 != "" {
+			request["OpaEnabled"] = jsonPathResult21
 		}
 	}
 	if v, ok := d.GetOk("edition"); ok {
@@ -616,38 +588,44 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	}
 
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult26, err := jsonpath.Get("$[0].control_plane_log[0].enabled", v)
+		jsonPathResult25, err := jsonpath.Get("$[0].control_plane_log[0].enabled", v)
+		if err == nil && jsonPathResult25 != "" {
+			request["ControlPlaneLogEnabled"] = jsonPathResult25
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult26, err := jsonpath.Get("$[0].control_plane_log[0].project", v)
 		if err == nil && jsonPathResult26 != "" {
-			request["ControlPlaneLogEnabled"] = jsonPathResult26
+			request["ControlPlaneLogProject"] = jsonPathResult26
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult27, err := jsonpath.Get("$[0].control_plane_log[0].project", v)
+		jsonPathResult27, err := jsonpath.Get("$[0].audit[0].enabled", v)
 		if err == nil && jsonPathResult27 != "" {
-			request["ControlPlaneLogProject"] = jsonPathResult27
+			request["EnableAudit"] = jsonPathResult27
 		}
 	}
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult28, err := jsonpath.Get("$[0].audit[0].enabled", v)
+		jsonPathResult28, err := jsonpath.Get("$[0].audit[0].project", v)
 		if err == nil && jsonPathResult28 != "" {
-			request["EnableAudit"] = jsonPathResult28
+			request["AuditProject"] = jsonPathResult28
 		}
 	}
-	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult29, err := jsonpath.Get("$[0].audit[0].project", v)
-		if err == nil && jsonPathResult29 != "" {
-			request["AuditProject"] = jsonPathResult29
-		}
-	}
-	jsonPathResult30, err := jsonpath.Get("$[0].vswitche_list", d.Get("network"))
+	jsonPathResult29, err := jsonpath.Get("$[0].vswitche_list", d.Get("network"))
 	if err == nil {
-		request["VSwitches"] = convertListToJsonString(jsonPathResult30.([]interface{}))
+		request["VSwitches"] = convertListToJsonString(jsonPathResult29.([]interface{}))
 	}
 
 	if v, ok := d.GetOk("mesh_config"); ok {
-		jsonPathResult31, err := jsonpath.Get("$[0].access_log[0].project", v)
+		jsonPathResult30, err := jsonpath.Get("$[0].access_log[0].project", v)
+		if err == nil && jsonPathResult30 != "" {
+			request["AccessLogProject"] = jsonPathResult30
+		}
+	}
+	if v, ok := d.GetOk("mesh_config"); ok {
+		jsonPathResult31, err := jsonpath.Get("$[0].proxy[0].cluster_domain", v)
 		if err == nil && jsonPathResult31 != "" {
-			request["AccessLogProject"] = jsonPathResult31
+			request["ClusterDomain"] = jsonPathResult31
 		}
 	}
 	runtime := util.RuntimeOptions{}
@@ -655,7 +633,6 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NameAlreadyExist", "InvalidActiveState.ACK", "ERR404"}) || NeedRetry(err) {
 				wait()
@@ -1031,7 +1008,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.IsNewResource() || d.HasChange("mesh_config.0.pilot.0.http10_enabled") {
+	if d.HasChange("mesh_config.0.pilot.0.http10_enabled") {
 		update = true
 		jsonPathResult7, err := jsonpath.Get("$[0].pilot[0].http10_enabled", d.Get("mesh_config"))
 		if err == nil {
@@ -1119,7 +1096,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.exclude_namespaces") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.exclude_namespaces") && (d.Get("cluster_spec") == "enterprise" || d.Get("cluster_spec") == "ultimate") {
 		update = true
 		jsonPathResult18, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].exclude_namespaces", d.Get("mesh_config"))
 		if err == nil {
@@ -1127,7 +1104,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.enabled") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.enabled") && (d.Get("cluster_spec") == "enterprise" || d.Get("cluster_spec") == "ultimate") {
 		update = true
 	}
 	jsonPathResult19, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
@@ -1177,10 +1154,10 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.enabled") {
 		update = true
-		jsonPathResult25, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
-		if err == nil {
-			request["OpaEnabled"] = jsonPathResult25
-		}
+	}
+	jsonPathResult25, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
+	if err == nil {
+		request["OpaEnabled"] = jsonPathResult25
 	}
 
 	if v, ok := d.GetOkExists("customized_prometheus"); ok {
@@ -1237,13 +1214,33 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.audit.0.project") {
+		update = true
+	}
+	jsonPathResult34, err := jsonpath.Get("$[0].audit[0].project", d.Get("mesh_config"))
+	if err == nil {
+		request["AuditProject"] = jsonPathResult34
+	}
+
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.audit.0.enabled") {
+		update = true
+	}
+	jsonPathResult35, err := jsonpath.Get("$[0].audit[0].enabled", d.Get("mesh_config"))
+	if err == nil {
+		request["EnableAudit"] = jsonPathResult35
+	}
+
+	if !d.IsNewResource() && d.HasChange("cluster_spec") {
+		update = true
+		request["ClusterSpec"] = d.Get("cluster_spec")
+	}
+
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1272,7 +1269,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
-	if d.HasChange("extra_configuration") {
+	if d.HasChange("extra_configuration.0.cr_aggregation_enabled") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].cr_aggregation_enabled", d.Get("extra_configuration"))
 		if err == nil {
@@ -1286,7 +1283,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1327,7 +1323,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1356,7 +1351,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
-	if d.HasChange("mesh_config.0.control_plane_log.0.enabled") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.control_plane_log.0.enabled") {
 		update = true
 	}
 	jsonPathResult, err := jsonpath.Get("$[0].control_plane_log[0].enabled", d.Get("mesh_config"))
@@ -1364,7 +1359,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		request["Enabled"] = jsonPathResult
 	}
 
-	if d.HasChange("mesh_config.0.control_plane_log.0.project") {
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.control_plane_log.0.project") {
 		update = true
 		jsonPathResult1, err := jsonpath.Get("$[0].control_plane_log[0].project", d.Get("mesh_config"))
 		if err == nil {
@@ -1375,7 +1370,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	if d.HasChange("mesh_config.0.control_plane_log.0.log_ttl_in_day") {
 		update = true
 		jsonPathResult2, err := jsonpath.Get("$[0].control_plane_log[0].log_ttl_in_day", d.Get("mesh_config"))
-		if err == nil {
+		if err == nil && jsonPathResult2.(int) > 0 {
 			request["LogTTLInDay"] = jsonPathResult2
 		}
 	}
@@ -1386,7 +1381,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1404,6 +1398,40 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifyServiceMeshName"
+	conn, err = client.NewServicemeshClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
+	if !d.IsNewResource() && d.HasChange("service_mesh_name") {
+		update = true
+		request["Name"] = d.Get("service_mesh_name")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
@@ -1436,7 +1464,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1483,7 +1510,6 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -1510,6 +1536,85 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
 		if err := serviceMeshServiceV2.SetResourceTags(d, "servicemesh"); err != nil {
 			return WrapError(err)
+		}
+	}
+	if !d.IsNewResource() && d.HasChange("load_balancer") {
+		oldEntry, newEntry := d.GetChange("load_balancer")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			action := "ModifyPilotEipResource"
+			conn, err := client.NewServicemeshClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceMeshId"] = d.Id()
+			request["Operation"] = "UnBindEip"
+			if v, ok := d.GetOk("load_balancer"); ok {
+				jsonPathResult, err := jsonpath.Get("$[0].pilot_public_eip", v)
+				if err == nil && jsonPathResult != "" {
+					request["EipId"] = jsonPathResult
+				}
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added.([]interface{})) > 0 {
+			action := "ModifyPilotEipResource"
+			conn, err := client.NewServicemeshClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			request["ServiceMeshId"] = d.Id()
+			if v, ok := d.GetOk("load_balancer"); ok {
+				jsonPathResult, err := jsonpath.Get("$[0].pilot_public_eip", v)
+				if err == nil && jsonPathResult != "" {
+					request["EipId"] = jsonPathResult
+				}
+			}
+			request["Operation"] = "BindEip"
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
 		}
 	}
 	d.Partial(false)

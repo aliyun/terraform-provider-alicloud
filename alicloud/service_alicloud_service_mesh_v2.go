@@ -49,7 +49,7 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"StatusForbidden", "ServiceMesh.NotFound", "403", "503", "500"}) {
+		if IsExpectedErrors(err, []string{"StatusForbidden", "403", "503", "500", "ServiceMesh.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
@@ -206,7 +206,6 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -246,7 +245,6 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

@@ -10,7 +10,7 @@ description: |-
 
 Provides a Express Connect Traffic Qos Queue resource. Express Connect Traffic QoS Queue.
 
-For information about Express Connect Traffic Qos Queue and how to use it, see [What is Traffic Qos Queue](https://www.alibabacloud.com/help/en/).
+For information about Express Connect Traffic Qos Queue and how to use it, see [What is Traffic Qos Queue](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/CreateExpressConnectTrafficQosQueue).
 
 -> **NOTE:** Available since v1.224.0.
 

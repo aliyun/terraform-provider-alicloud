@@ -286,3 +286,63 @@ func (s *ClickhouseService) ClickHouseBackupPolicyStateRefreshFunc(id string, fa
 		return object, fmt.Sprint(object["Switch"]), nil
 	}
 }
+
+func (s *ClickhouseService) DescribeClickHouseAutoRenewStatus(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewClickhouseClient()
+	action := "DescribeAutoRenewAttribute"
+	request := map[string]interface{}{
+		"DBClusterIds": id,
+		"RegionId":     conn.RegionId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-11"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidDBClusterId.NotFound"}) {
+			return nil, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	items, err := jsonpath.Get("$.Items.AutoRenewAttribute", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.AutoRenewAttribute.length", response)
+	}
+	if len(items.([]interface{})) == 0 {
+		return object, nil
+	}
+	object = items.([]interface{})[0].(map[string]interface{})
+	return object, nil
+}
+
+func (s *ClickhouseService) ClickHouseAutoRenewStatusRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeClickHouseAutoRenewStatus(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["RenewalStatus"]) == failState {
+				return object, fmt.Sprint(object["RenewalStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["RenewalStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["RenewalStatus"]), nil
+	}
+}

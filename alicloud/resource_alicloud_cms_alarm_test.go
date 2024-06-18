@@ -98,7 +98,7 @@ func testSweepCMSAlarms(region string) error {
 func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -106,7 +106,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -123,10 +123,9 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 					"contact_groups": []string{"${alicloud_cms_monitor_group.default.id}"},
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
-							"statistics":          "Average",
-							"threshold":           "90",
-							"times":               "1",
+							"statistics": "Average",
+							"threshold":  "90",
+							"times":      "1",
 						},
 					},
 				}),
@@ -239,7 +238,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": "<=",
+							"comparison_operator": ">",
 							"statistics":          "Maximum",
 							"threshold":           "35",
 							"times":               "2",
@@ -256,7 +255,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_info": []map[string]interface{}{
 						{
-							"comparison_operator": ">",
+							"comparison_operator": ">=",
 							"statistics":          "Minimum",
 							"threshold":           "20",
 							"times":               "3",
@@ -273,7 +272,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_warn": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "<",
 							"statistics":          "Average",
 							"threshold":           "30",
 							"times":               "5",
@@ -315,7 +314,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -323,7 +322,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -350,7 +349,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 					},
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "<=",
 							"statistics":          "Average",
 							"threshold":           "90",
 							"times":               "1",
@@ -358,7 +357,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 					},
 					"escalations_info": []map[string]interface{}{
 						{
-							"comparison_operator": ">",
+							"comparison_operator": "!=",
 							"statistics":          "Minimum",
 							"threshold":           "20",
 							"times":               "3",
@@ -366,7 +365,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 					},
 					"escalations_warn": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "GreaterThanYesterday",
 							"statistics":          "Average",
 							"threshold":           "30",
 							"times":               "5",
@@ -415,7 +414,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 func TestAccAliCloudCmsAlarm_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -423,7 +422,7 @@ func TestAccAliCloudCmsAlarm_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -589,7 +588,7 @@ func TestAccAliCloudCmsAlarm_basic1(t *testing.T) {
 func TestAccAliCloudCmsAlarm_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -597,7 +596,7 @@ func TestAccAliCloudCmsAlarm_basic1_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -671,7 +670,7 @@ func TestAccAliCloudCmsAlarm_basic1_twin(t *testing.T) {
 func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -679,7 +678,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -696,7 +695,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 					"contact_groups": []string{"${alicloud_cms_monitor_group.default.id}"},
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "LessThanYesterday",
 							"statistics":          "Average",
 							"threshold":           "90",
 							"times":               "1",
@@ -819,7 +818,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": "<=",
+							"comparison_operator": "GreaterThanLastWeek",
 							"statistics":          "Maximum",
 							"threshold":           "35",
 							"times":               "2",
@@ -836,7 +835,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_info": []map[string]interface{}{
 						{
-							"comparison_operator": ">",
+							"comparison_operator": "LessThanLastWeek",
 							"statistics":          "Minimum",
 							"threshold":           "20",
 							"times":               "3",
@@ -853,7 +852,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_warn": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "GreaterThanLastPeriod",
 							"statistics":          "Average",
 							"threshold":           "30",
 							"times":               "5",
@@ -896,7 +895,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
-	ra := resourceAttrInit(resourceId, resourceAliCloudCmsAlarmMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlarm")
@@ -904,7 +903,7 @@ func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAliCloudCmsAlarmBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -935,7 +934,7 @@ func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
 					},
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": ">=",
+							"comparison_operator": "LessThanLastPeriod",
 							"statistics":          "Average",
 							"threshold":           "90",
 							"times":               "1",
@@ -1001,11 +1000,11 @@ func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
 	})
 }
 
-var resourceAliCloudCmsAlarmMap0 = map[string]string{
+var AliCloudCmsAlarmMap0 = map[string]string{
 	"status": CHECKSET,
 }
 
-func resourceAliCloudCmsAlarmBasicDependence0(name string) string {
+func AliCloudCmsAlarmBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
   		default = "%s"
@@ -1016,15 +1015,14 @@ func resourceAliCloudCmsAlarmBasicDependence0(name string) string {
   		available_resource_creation = "VSwitch"
 	}
 
-	data "alicloud_instance_types" "default" {
-  		availability_zone    = data.alicloud_zones.default.zones.0.id
-  		instance_type_family = "ecs.sn1ne"
-	}
-
 	data "alicloud_images" "default" {
-  		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
   		owners      = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		image_id          = data.alicloud_images.default.images.0.id
 	}
 
 	resource "alicloud_cms_alarm_contact_group" "default" {

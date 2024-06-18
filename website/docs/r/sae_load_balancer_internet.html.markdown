@@ -61,19 +61,20 @@ resource "alicloud_sae_namespace" "default" {
 }
 
 resource "alicloud_sae_application" "default" {
-  app_description   = var.name
-  app_name          = "${var.name}-${random_integer.default.result}"
-  namespace_id      = alicloud_sae_namespace.default.id
-  image_url         = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
-  package_type      = "Image"
-  jdk               = "Open JDK 8"
-  security_group_id = alicloud_security_group.default.id
-  vpc_id            = alicloud_vpc.default.id
-  vswitch_id        = alicloud_vswitch.default.id
-  timezone          = "Asia/Beijing"
-  replicas          = "5"
-  cpu               = "500"
-  memory            = "2048"
+  app_description    = var.name
+  app_name           = "${var.name}-${random_integer.default.result}"
+  namespace_id       = alicloud_sae_namespace.default.id
+  image_url          = "registry-vpc.cn-hangzhou.aliyuncs.com/lxepoo/apache-php5"
+  package_type       = "Image"
+  jdk                = "Open JDK 8"
+  security_group_id  = alicloud_security_group.default.id
+  vpc_id             = alicloud_vpc.default.id
+  vswitch_id         = alicloud_vswitch.default.id
+  timezone           = "Asia/Beijing"
+  replicas           = "5"
+  cpu                = "500"
+  memory             = "2048"
+  micro_registration = "0"
 }
 
 resource "alicloud_slb_load_balancer" "default" {

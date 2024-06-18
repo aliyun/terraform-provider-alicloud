@@ -149,6 +149,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -211,7 +212,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "no",
 						"lazyfree-lazy-eviction": "no",
-						"EvictionPolicy":         "volatile-lru",
+						"maxmemory-policy":       "volatile-lru",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -219,7 +220,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "no",
 						"config.lazyfree-lazy-eviction": "no",
-						"config.EvictionPolicy":         "volatile-lru",
+						"config.maxmemory-policy":       "volatile-lru",
 					}),
 				),
 			},
@@ -381,7 +382,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
-						"EvictionPolicy":         "volatile-lru",
+						"maxmemory-policy":       "volatile-lru",
 					},
 					"tags": map[string]string{
 						"Created": "TF",
@@ -414,7 +415,7 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
-						"config.EvictionPolicy":         "volatile-lru",
+						"config.maxmemory-policy":       "volatile-lru",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
 						"tags.For":                      "acceptance test",
@@ -449,6 +450,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -757,6 +759,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1022,6 +1025,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -1829,7 +1833,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	// en-central-1 has no enough quota for this class
-	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1, connectivity.Hangzhou})
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -2112,7 +2116,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T) {
 	var v r_kvstore.DBInstanceAttribute
 	// en-central-1 has no enough quota for this class
-	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.APSouthEast1, connectivity.Hangzhou})
+	checkoutSupportedRegions(t, true, []connectivity.Region{connectivity.Hangzhou})
 	resourceId := "alicloud_kvstore_instance.default"
 	ra := resourceAttrInit(resourceId, RedisDbInstanceMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -2402,7 +2406,7 @@ func KvstoreInstanceVpcTestdependence(name string) string {
 		instance_charge_type = "PostPaid"
 	}
 	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+		name_regex = "^default-NODELETING-Redis$"
 		cidr_block = "192.168.0.0/16"
 	}
 	data "alicloud_vswitches" "default" {

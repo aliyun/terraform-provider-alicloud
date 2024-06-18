@@ -20,6 +20,10 @@ For information about Simple Application Server Firewall Rule and how to use it,
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf_example"
 }
