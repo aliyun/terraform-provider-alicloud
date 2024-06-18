@@ -96,9 +96,11 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 						"comparison_operator": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Default:  Equal,
+							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
 								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
+								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
 						},
 						"statistics": {
@@ -128,9 +130,11 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 						"comparison_operator": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Default:  Equal,
+							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
 								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
+								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
 						},
 						"statistics": {
@@ -160,9 +164,11 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 						"comparison_operator": {
 							Type:     schema.TypeString,
 							Optional: true,
-							Default:  Equal,
+							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
 								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
+								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
 						},
 						"statistics": {
@@ -270,7 +276,7 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ValidateFunc: StringInSlice([]string{
-					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, Equal, NotEqual,
+					MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
 				}, false),
 				Removed: "Field `operator` has been removed from provider version 1.216.0. New field `escalations_critical.comparison_operator` instead.",
 			},
@@ -347,7 +353,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		if critical, ok := escalations["Critical"].(map[string]interface{}); ok {
 			mapping := map[string]interface{}{
 				"statistics":          critical["Statistics"],
-				"comparison_operator": convertOperator(fmt.Sprint(critical["ComparisonOperator"])),
+				"comparison_operator": convertCmsAlarmComparisonOperator(fmt.Sprint(critical["ComparisonOperator"])),
 				"threshold":           critical["Threshold"],
 				"times":               formatInt(critical["Times"]),
 			}
@@ -357,7 +363,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		if info, ok := escalations["Info"].(map[string]interface{}); ok {
 			mappingInfo := map[string]interface{}{
 				"statistics":          info["Statistics"],
-				"comparison_operator": convertOperator(fmt.Sprint(info["ComparisonOperator"])),
+				"comparison_operator": convertCmsAlarmComparisonOperator(fmt.Sprint(info["ComparisonOperator"])),
 				"threshold":           info["Threshold"],
 				"times":               formatInt(info["Times"]),
 			}
@@ -367,7 +373,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		if warn, ok := escalations["Warn"].(map[string]interface{}); ok {
 			mappingWarn := map[string]interface{}{
 				"statistics":          warn["Statistics"],
-				"comparison_operator": convertOperator(fmt.Sprint(warn["ComparisonOperator"])),
+				"comparison_operator": convertCmsAlarmComparisonOperator(fmt.Sprint(warn["ComparisonOperator"])),
 				"threshold":           warn["Threshold"],
 				"times":               formatInt(warn["Times"]),
 			}
@@ -402,7 +408,7 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 			}
 
 			if v, ok := prometheus["Level"]; ok {
-				mapping["level"] = convertCmsPrometheusLevelResponse(v.(string))
+				mapping["level"] = convertCmsAlarmPrometheusLevelResponse(v.(string))
 			}
 
 			if v, ok := prometheus["Times"]; ok {
@@ -546,7 +552,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			escalationsCriticalArg := escalationsCriticalList.(map[string]interface{})
 
 			if comparisonOperator, ok := escalationsCriticalArg["comparison_operator"]; ok {
-				request["Escalations.Critical.ComparisonOperator"] = convertOperator(fmt.Sprint(comparisonOperator))
+				request["Escalations.Critical.ComparisonOperator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
 			}
 
 			if statistics, ok := escalationsCriticalArg["statistics"]; ok {
@@ -569,7 +575,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			escalationsInfoArg := escalationsInfoList.(map[string]interface{})
 
 			if comparisonOperator, ok := escalationsInfoArg["comparison_operator"]; ok {
-				request["Escalations.Info.ComparisonOperator"] = convertOperator(fmt.Sprint(comparisonOperator))
+				request["Escalations.Info.ComparisonOperator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
 			}
 
 			if statistics, ok := escalationsInfoArg["statistics"]; ok {
@@ -592,7 +598,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 			escalationsWarnArg := escalationsWarnList.(map[string]interface{})
 
 			if comparisonOperator, ok := escalationsWarnArg["comparison_operator"]; ok {
-				request["Escalations.Warn.ComparisonOperator"] = convertOperator(fmt.Sprint(comparisonOperator))
+				request["Escalations.Warn.ComparisonOperator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
 			}
 
 			if statistics, ok := escalationsWarnArg["statistics"]; ok {
@@ -847,8 +853,8 @@ func resourceAliCloudCmsAlarmDelete(d *schema.ResourceData, meta interface{}) er
 	return nil
 }
 
-func convertOperator(operator string) string {
-	switch operator {
+func convertCmsAlarmComparisonOperator(comparisonOperator string) string {
+	switch comparisonOperator {
 	case MoreThan:
 		return "GreaterThanThreshold"
 	case MoreThanOrEqual:
@@ -859,8 +865,6 @@ func convertOperator(operator string) string {
 		return "LessThanOrEqualToThreshold"
 	case NotEqual:
 		return "NotEqualToThreshold"
-	case Equal:
-		return "GreaterThanThreshold"
 	case "GreaterThanThreshold":
 		return MoreThan
 	case "GreaterThanOrEqualToThreshold":
@@ -872,11 +876,11 @@ func convertOperator(operator string) string {
 	case "NotEqualToThreshold":
 		return NotEqual
 	default:
-		return ""
+		return comparisonOperator
 	}
 }
 
-func convertCmsPrometheusLevelResponse(source interface{}) interface{} {
+func convertCmsAlarmPrometheusLevelResponse(source interface{}) interface{} {
 	switch source {
 	case "2":
 		return "Critical"

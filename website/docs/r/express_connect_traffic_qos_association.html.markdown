@@ -10,7 +10,7 @@ description: |-
 
 Provides a Express Connect Traffic Qos Association resource. Express Connect QoS associated resources.
 
-For information about Express Connect Traffic Qos Association and how to use it, see [What is Traffic Qos Association](https://www.alibabacloud.com/help/en/).
+For information about Express Connect Traffic Qos Association and how to use it, see [What is Traffic Qos Association](https://next.api.alibabacloud.com/document/Vpc/2016-04-28/ModifyExpressConnectTrafficQos).
 
 -> **NOTE:** Available since v1.224.0.
 

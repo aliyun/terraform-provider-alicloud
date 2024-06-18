@@ -47,7 +47,7 @@ The following arguments are supported:
     * `VPC` - VPC network.
     * `INTERNET` - Public internet.
 
-    Default to ["VPC", "CLASSIC"].
+    Default to ["VPC", "CLASSIC", "INTERNET"].
 * `network_source_acl` - (Optional, Available since v1.221.0) The set of request sources that are allowed access. Valid optional values:
   * `TRUST_PROXY` - Trusted proxy, usually the Alibaba Cloud console.
 

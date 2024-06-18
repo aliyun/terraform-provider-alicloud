@@ -568,7 +568,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 
 	d.SetId(fmt.Sprintf("%v", response.InstanceId))
 
-	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 180*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutCreate), 180*time.Second, r_kvstoreService.KvstoreInstancesStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}

@@ -221,6 +221,26 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_management_mode": "resourceGroup",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_management_mode": "resourceGroup",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_management_mode": "resourceQueue",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_management_mode": "resourceQueue",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"ip_whitelist": []map[string]interface{}{
 						{
 							"ip_group_name":    "default",
@@ -594,6 +614,26 @@ func TestAccAliCloudGPDBDBInstance_basic1(t *testing.T) {
 						"encryption_type":       "CloudDisk",
 						"encryption_key":        CHECKSET,
 						"ssl_enabled":           "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_management_mode": "resourceGroup",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_management_mode": "resourceGroup",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_management_mode": "resourceQueue",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_management_mode": "resourceQueue",
 					}),
 				),
 			},

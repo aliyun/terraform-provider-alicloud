@@ -67,6 +67,7 @@ The following arguments are supported:
 * `encryption_key` - (Optional, ForceNew) Key management service KMS key ID. It is valid and required when encryption_type is `CloudDisk`.
 * `encryption_type` - (Optional, ForceNew) Currently only supports ECS disk encryption, with a value of CloudDisk, not encrypted when empty.
 * `payment_type` - (Required, ForceNew) The payment type of the resource. Valid values: `PayAsYouGo`,`Subscription`.
+* `renewal_status` - (Optional, Computed, Available since v1.215.0) The renewal status of the resource. Valid values: `AutoRenewal`,`Normal`. It is valid and required when payment_type is `Subscription`. When `renewal_status` is set to `AutoRenewal`, the resource is renewed automatically.
 * `period` - (Optional) Pre-paid cluster of the pay-as-you-go cycle. It is valid and required when payment_type is `Subscription`. Valid values: `Month`, `Year`.
 * `storage_type` - (Required, ForceNew) Storage type of DBCluster. Valid values: `cloud_essd`, `cloud_efficiency`, `cloud_essd_pl2`, `cloud_essd_pl3`.
 * `used_time` - (Optional) The used time of DBCluster. It is valid and required when payment_type is `Subscription`. item choices: [1-9] when period is `Month`, [1-3] when period is `Year`.

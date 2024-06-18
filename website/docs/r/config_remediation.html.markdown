@@ -27,8 +27,13 @@ data "alicloud_regions" "default" {
   current = true
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_oss_bucket" "default" {
-  bucket = var.name
+  bucket = "${var.name}-${random_integer.default.result}"
   acl    = "public-read"
   tags = {
     For = "example"

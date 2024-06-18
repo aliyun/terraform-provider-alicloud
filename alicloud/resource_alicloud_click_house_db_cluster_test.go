@@ -380,7 +380,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sclic  khousedbcluster%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -633,6 +633,87 @@ func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":      "22.8.5.29",
+					"category":                "Basic",
+					"db_cluster_class":        "S8",
+					"db_cluster_network_type": "vpc",
+					"db_node_group_count":     "1",
+					"payment_type":            "Subscription",
+					"period":                  "Month",
+					"used_time":               "1",
+					"db_node_storage":         "100",
+					"storage_type":            "cloud_essd",
+					"vswitch_id":              "${data.alicloud_vswitches.default.vswitches.0.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":      "22.8.5.29",
+						"category":                "Basic",
+						"db_cluster_class":        "S8",
+						"db_cluster_network_type": "vpc",
+						"db_node_group_count":     "1",
+						"payment_type":            "Subscription",
+						"period":                  "Month",
+						"used_time":               "1",
+						"db_node_storage":         "100",
+						"storage_type":            "cloud_essd",
+						"renewal_status":          "Normal",
+						"vswitch_id":              CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "AutoRenewal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "AutoRenewal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"renewal_status": "Normal",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"renewal_status": "Normal",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"period", "used_time"},
 			},
 		},
 	})

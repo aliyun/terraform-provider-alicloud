@@ -270,6 +270,70 @@ func (s *R_kvstoreService) KvstoreInstanceAttributeRefreshFunc(id, attribute str
 	}
 }
 
+func (s *R_kvstoreService) DescribeKvstoreInstances(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewRedisaClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "DescribeInstances"
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"InstanceIds": id,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("KvstoreInstance", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	v, err := jsonpath.Get("$.Instances.KVStoreInstance", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances", response)
+	}
+	if v == nil || len(v.([]interface{})) < 1 || fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["InstanceId"]) != id {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Redis", id)), NotFoundWithResponse, response)
+	}
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+
+func (s *R_kvstoreService) KvstoreInstancesStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeKvstoreInstances(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["InstanceStatus"] == failState {
+				return object, fmt.Sprint(object["InstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["InstanceStatus"])))
+			}
+		}
+		return object, fmt.Sprint(object["InstanceStatus"]), nil
+	}
+}
+
 func (s *R_kvstoreService) DescribeKvstoreInstanceDeleted(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	conn, err := s.client.NewRedisaClient()

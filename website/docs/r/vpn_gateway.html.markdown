@@ -22,13 +22,11 @@ For information about VPN gateway and how to use it, see [What is VPN gateway](h
 
 Basic Usage
 
+[IPsec-VPN connections support the dual-tunnel mode](https://www.alibabacloud.com/help/en/vpn/product-overview/ipsec-vpn-connections-support-the-dual-tunnel-mode)
+
 ```terraform
 variable "name" {
   default = "terraform-example"
-}
-
-provider "alicloud" {
-  region = "me-east-1"
 }
 
 variable "spec" {
@@ -41,36 +39,31 @@ data "alicloud_zones" "default" {
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "172.16.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
+data "alicloud_vswitches" "default0" {
   vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = "me-east-1a"
+  zone_id = data.alicloud_zones.default.ids.0
 }
 
-resource "alicloud_vswitch" "vswitch" {
-  count        = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  cidr_block   = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id      = "me-east-1a"
-  vswitch_name = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+data "alicloud_vswitches" "default1" {
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_zones.default.ids.1
 }
 
 resource "alicloud_vpn_gateway" "default" {
   vpn_type         = "Normal"
   vpn_gateway_name = var.name
 
-  vswitch_id   = local.vswitch_id
-  auto_pay     = true
-  vpc_id       = data.alicloud_vpcs.default.ids.0
-  network_type = "public"
-  payment_type = "Subscription"
-  enable_ipsec = true
-  bandwidth    = var.spec
+  vswitch_id                   = data.alicloud_vswitches.default0.ids.0
+  disaster_recovery_vswitch_id = data.alicloud_vswitches.default1.ids.0
+  auto_pay                     = true
+  vpc_id                       = data.alicloud_vpcs.default.ids.0
+  network_type                 = "public"
+  payment_type                 = "Subscription"
+  enable_ipsec                 = true
+  bandwidth                    = var.spec
 }
 ```
 

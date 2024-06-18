@@ -276,8 +276,11 @@ func parseIndexSort(schemaArg map[string]interface{}) (*search.Sort, error) {
 	var indexSort *search.Sort
 	if v, ok := schemaArg["index_sort"]; ok {
 		var sorts []search.Sorter
-
-		indexSortArg := v.(*schema.Set).List()[0].(map[string]interface{})
+		valSet := v.(*schema.Set)
+		if valSet == nil || valSet.Len() == 0 {
+			return indexSort, nil
+		}
+		indexSortArg := valSet.List()[0].(map[string]interface{})
 		if v, ok := indexSortArg["sorter"]; ok {
 			sortersArg := v.([]interface{})
 			for _, s := range sortersArg {
@@ -308,7 +311,11 @@ func parseIndexSort(schemaArg map[string]interface{}) (*search.Sort, error) {
 
 func parseIndexSetting(schemaArg map[string]interface{}) *tablestore.IndexSetting {
 	if v, ok := schemaArg["index_setting"]; ok {
-		indexSettingArg := v.(*schema.Set).List()[0].(map[string]interface{})
+		valSet := v.(*schema.Set)
+		if valSet == nil || valSet.Len() == 0 {
+			return nil
+		}
+		indexSettingArg := valSet.List()[0].(map[string]interface{})
 		if v, ok := indexSettingArg["routing_fields"]; ok {
 			routersArg := v.([]interface{})
 			var routerPKs []string

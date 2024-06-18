@@ -143,7 +143,7 @@ func buildCreateInstanceRoaRequest(d *schema.ResourceData, regionId string, inst
 	// LIST or SET cannot set default values in schema in latest terraform version, so do it manually
 	// terraform cannot handle nil and[] in list/set: https://github.com/hashicorp/terraform-plugin-sdk/issues/142
 	// in terraform the zero value of list/set is [], in golang the zero value of slice is nil
-	netTypeList := []string{string(VpcAccess), string(ClassicAccess)}
+	netTypeList := []string{string(VpcAccess), string(ClassicAccess), string(InternetAccess)}
 	// v not nil and [], it will be ok
 	if v, ok := d.GetOk("network_type_acl"); ok {
 		hasSetACL = true

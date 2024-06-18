@@ -43,6 +43,11 @@ func resourceAlicloudDdosbgpIp() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"member_uid": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -57,7 +62,11 @@ func resourceAlicloudDdosbgpIpCreate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request["InstanceId"] = d.Get("instance_id")
-	request["IpList"] = fmt.Sprintf("[{\"ip\":\"%s\"}]", d.Get("ip"))
+	if memberUid, ok := d.GetOk("member_uid"); !ok {
+		request["IpList"] = fmt.Sprintf("[{\"ip\":\"%s\"}]", d.Get("ip"))
+	} else {
+		request["IpList"] = fmt.Sprintf(`[{"ip":"%s","member_uid":"%s"}]`, d.Get("ip"), memberUid)
+	}
 	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
@@ -102,6 +111,7 @@ func resourceAlicloudDdosbgpIpRead(d *schema.ResourceData, meta interface{}) err
 	d.Set("instance_id", parts[0])
 	d.Set("ip", object["Ip"])
 	d.Set("status", object["Status"])
+	d.Set("member_uid", object["MemberUid"])
 	return nil
 }
 func resourceAlicloudDdosbgpIpDelete(d *schema.ResourceData, meta interface{}) error {
