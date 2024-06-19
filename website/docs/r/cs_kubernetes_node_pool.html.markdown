@@ -300,7 +300,7 @@ resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auto_renew` - (Optional) Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `true`. Valid values:
+* `auto_renew` - (Optional) Whether to enable automatic renewal for nodes in the node pool takes effect only when `instance_charge_type` is set to `PrePaid`. Default value: `false`. Valid values:
   - `true`: Automatic renewal. 
   - `false`: Do not renew automatically.
 * `auto_renew_period` - (Optional) The automatic renewal period of nodes in the node pool takes effect only when you select Prepaid and Automatic Renewal, and is a required value. When `PeriodUnit = Month`, the value range is {1, 2, 3, 6, 12}. Default value: 1.
