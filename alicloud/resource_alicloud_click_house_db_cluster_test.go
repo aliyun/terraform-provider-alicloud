@@ -630,6 +630,26 @@ func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_node_group_count": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_node_group_count": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_class": "S16",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_class": "S16",
+					}),
+				),
+			},
+			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
