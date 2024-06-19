@@ -44,17 +44,17 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636(t *testing.T) {
 						},
 					},
 					"vvp_instance_name": name,
-					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-h",
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"zone_id":           "cn-shanghai-f",
 					"vswitch_ids": []string{
-						"${data.alicloud_vswitches.default.ids.0}"},
+						"${alicloud_vswitch.default.id}"},
 					"payment_type": "PayAsYouGo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-shanghai-f",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
@@ -147,13 +147,16 @@ data "alicloud_zones" "default" {
   available_resource_creation = "VSwitch"
 }
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  vpc_name = var.name
+  cidr_block = "172.16.0.0/12"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = "cn-hangzhou-h"
+resource "alicloud_vswitch" "default" {
+  vpc_id = alicloud_vpc.default.id
+  cidr_block = "172.16.0.0/21"
+  zone_id = "cn-shanghai-f"
+  vswitch_name = "${var.name}"
 }
 
 resource "alicloud_oss_bucket" "defaultOSS" {
@@ -299,7 +302,7 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ESSSupportRegions)
+			testAccPreCheckWithRegions(t, true, connectivity.HologramSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -317,17 +320,17 @@ func TestAccAliCloudRealtimeComputeVvpInstance_basic4636_twin(t *testing.T) {
 						},
 					},
 					"vvp_instance_name": name,
-					"vpc_id":            "${data.alicloud_vpcs.default.ids.0}",
-					"zone_id":           "cn-hangzhou-h",
+					"vpc_id":            "${alicloud_vpc.default.id}",
+					"zone_id":           "cn-shanghai-f",
 					"vswitch_ids": []string{
-						"${data.alicloud_vswitches.default.ids.0}"},
+						"${alicloud_vswitch.default.id}"},
 					"payment_type": "PayAsYouGo",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"vvp_instance_name": name,
 						"vpc_id":            CHECKSET,
-						"zone_id":           "cn-hangzhou-h",
+						"zone_id":           "cn-shanghai-f",
 						"vswitch_ids.#":     "1",
 						"payment_type":      "PayAsYouGo",
 					}),
