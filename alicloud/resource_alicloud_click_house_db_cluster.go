@@ -57,7 +57,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 			},
 			"db_cluster_class": {
 				Type:     schema.TypeString,
-				ForceNew: true,
 				Required: true,
 			},
 			"db_cluster_network_type": {
@@ -80,7 +79,6 @@ func resourceAlicloudClickHouseDbCluster() *schema.Resource {
 				Type:         schema.TypeInt,
 				ValidateFunc: validation.IntBetween(1, 48),
 				Required:     true,
-				ForceNew:     true,
 			},
 
 			"encryption_key": {
@@ -540,7 +538,7 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	if !d.IsNewResource() && d.HasChange("db_node_storage") {
+	if !d.IsNewResource() && (d.HasChange("db_node_storage") || d.HasChange("db_node_group_count") || d.HasChange("db_cluster_class")){
 		clickhouseService := ClickhouseService{client}
 		object, err := clickhouseService.DescribeClickHouseDbCluster(d.Id())
 		if err != nil {
@@ -554,8 +552,16 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapError(err)
 		}
-		if storageLocal <= storageRemote {
-			return WrapError(fmt.Errorf("Downgrading storage is not supported"))
+		if storageLocal < storageRemote {
+			return WrapError(fmt.Errorf("downgrading storage is not supported"))
+		}
+		nodeCountLocal := d.Get("db_node_group_count").(int)
+		nodeCountRemote, err := object["DBNodeCount"].(json.Number).Int64()
+		if err != nil {
+			return WrapError(err)
+		}
+		if int64(nodeCountLocal) < nodeCountRemote {
+			return WrapError(fmt.Errorf("downgrading db_node_group_count is not supported"))
 		}
 		request := map[string]interface{}{
 			"DBClusterId":       d.Id(),
@@ -587,11 +593,13 @@ func resourceAlicloudClickHouseDbClusterUpdate(d *schema.ResourceData, meta inte
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		stateConf := BuildStateConf([]string{"ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
+		stateConf := BuildStateConf([]string{"ClassChanging","SCALING_OUT"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, clickhouseService.ClickHouseDbClusterStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 		d.SetPartial("db_node_storage")
+		d.SetPartial("db_node_group_count")
+		d.SetPartial("db_cluster_class")
 	}
 	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "Subscription" && d.HasChange("renewal_status") && !d.IsNewResource(){
 		action := "ModifyAutoRenewAttribute"
