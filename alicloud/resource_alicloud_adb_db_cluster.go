@@ -189,6 +189,10 @@ func resourceAliCloudAdbDbCluster() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"enable_ssl": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"tags": tagsSchema(),
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -410,6 +414,13 @@ func resourceAliCloudAdbDbClusterRead(d *schema.ResourceData, meta interface{}) 
 	}
 
 	d.Set("security_ips", strings.Split(describeDBClusterAccessWhiteListObject["SecurityIPList"].(string), ","))
+
+	ssl, err := adbService.DescribeAdbDbClusterSSL(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("enable_ssl", ssl["SSLEnabled"])
 
 	return nil
 }
@@ -798,6 +809,49 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		}
 
 		d.SetPartial("db_node_storage")
+	}
+
+	update = false
+	modifyDBClusterSSLReq := map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("enable_ssl") {
+		update = true
+
+		if v, ok := d.GetOkExists("enable_ssl"); ok {
+			modifyDBClusterSSLReq["EnableSSL"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyDBClusterSSL"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterSSLReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBClusterSSLReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("enable_ssl")
 	}
 
 	d.Partial(false)
