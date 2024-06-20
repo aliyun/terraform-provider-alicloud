@@ -1899,7 +1899,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.FnfEndpoint = strings.TrimSpace(endpoints["fnf"].(string))
 		config.RosEndpoint = strings.TrimSpace(endpoints["ros"].(string))
 		config.PrivatelinkEndpoint = strings.TrimSpace(endpoints["privatelink"].(string))
-		config.ResourcesharingEndpoint = strings.TrimSpace(endpoints["resourcesharing"].(string))
+		config.ResourcesharingEndpoint = strings.TrimSpace(endpoints["ressharing"].(string))
 		config.GaEndpoint = strings.TrimSpace(endpoints["ga"].(string))
 		config.HitsdbEndpoint = strings.TrimSpace(endpoints["hitsdb"].(string))
 		config.BrainIndustrialEndpoint = strings.TrimSpace(endpoints["brain_industrial"].(string))
@@ -2946,7 +2946,7 @@ func endpointsSchema() *schema.Schema {
 					Description: descriptions["brain_industrial_endpoint"],
 				},
 
-				"resourcesharing": {
+				"ressharing": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
@@ -3387,7 +3387,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["fnf"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ros"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["privatelink"].(string)))
-	buf.WriteString(fmt.Sprintf("%s-", m["resourcesharing"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["ressharing"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["ga"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["hitsdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["brain_industrial"].(string)))
