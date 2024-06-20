@@ -2059,6 +2059,10 @@ func buildDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[string]
 		request["Category"] = v
 	}
 
+	if v, ok := d.GetOk("private_ip_address"); ok && v.(string) != "" {
+		request["PrivateIpAddress"] = v
+	}
+
 	if request["PayType"] == string(Serverless) {
 		if v, ok := d.GetOk("serverless_config"); ok {
 			v := v.([]interface{})[0].(map[string]interface{})
