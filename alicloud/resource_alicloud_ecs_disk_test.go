@@ -691,6 +691,7 @@ data "alicloud_instance_types" "default" {
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 data "alicloud_vpcs" "default" {
     name_regex = "^default-NODELETING$"
@@ -763,6 +764,7 @@ resource "alicloud_disk" "default" {
 data "alicloud_images" "default" {
   name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   owners      = "system"
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
 }
 
 resource "alicloud_instance" "default" {

@@ -34,7 +34,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"category": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud", "cloud_efficiency", "cloud_essd", "cloud_ssd", "cloud_auto", "cloud_essd_entry", "elastic_ephemeral_disk_standard", "elastic_ephemeral_disk_premium"}, false),
 				Default:      "cloud_efficiency",
 			},
 			"dedicated_block_storage_cluster_id": {
