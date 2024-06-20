@@ -21,6 +21,10 @@ For information about CBWP Common Bandwidth Package and how to use it, see [What
 Basic Usage
 
 ```terraform
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
 variable "name" {
   default = "terraform-example"
 }
@@ -50,23 +54,43 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Required) The peak bandwidth of the shared bandwidth. Unit: Mbps. 
-  Valid values: [2, 20000] for China-Site account; [1, 5000] for International-Site account. See [Account Guide](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/guides/getting-account) details.
-* `bandwidth_package_name` - (Optional, Available since v1.120.0) The name of the Internet Shared Bandwidth instance.
-* `deletion_protection` - (Optional, Available since v1.124.4) Whether enable the deletion protection or not. Default value: false.
-  - **true**: Enable deletion protection.
-  - **false**: Disable deletion protection.
-* `description` - (Optional) The description of the shared bandwidth.
-* `force` - (Optional) Whether to forcibly delete an Internet Shared Bandwidth instance. Value:
-  - **false** (default): only the internet shared bandwidth that does not contain the EIP is deleted.
-  - **true**: removes all EIPs from the internet shared bandwidth instance and deletes the internet shared bandwidth.
-* `internet_charge_type` - (Optional, ForceNew) The billing method of the common bandwidth package. Valid values are `PayByBandwidth` and `PayBy95` and `PayByTraffic`, `PayByDominantTraffic`. `PayBy95` is pay by classic 95th percentile pricing. International-Site Account doesn't support `PayByBandwidth` and `PayBy95`. Default to `PayByTraffic`. **NOTE:** From 1.176.0+, `PayByDominantTraffic` is available.
-* `isp` - (Optional, ForceNew, Computed, Available since v1.90.1) The type of the Internet Service Provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2` and `BGP_FinanceCloud`. Default to `BGP`. **NOTE:** From version 1.203.0, isp can be set to `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`, `BGP_International`.
-* `ratio` - (Optional, ForceNew, Computed, Available since v1.55.3) Ratio of the common bandwidth package. It is valid when `internet_charge_type` is `PayBy95`. Default to 100. Valid values: [10-100].
-* `resource_group_id` - (Optional, Computed, Available since v1.115.0) The Id of resource group which the common bandwidth package belongs.
-* `security_protection_types` - (Optional, ForceNew, Available since v1.184.0) The edition of Anti-DDoS. If you do not set this parameter, Anti-DDoS Origin Basic is used. If you set the value to AntiDDoS_Enhanced, Anti-DDoS Pro(Premium) is used. It is valid when `internet_charge_type` is `PayBy95`.
-* `tags` - (Optional, Map, Available since v1.207.0) The tag of the resource.
-* `zone` - (Optional, Available since v1.120.0) The available area of the shared bandwidth.
+* `bandwidth` - (Required) The maximum bandwidth of the Internet Shared Bandwidth instance. Unit: Mbit/s. Valid values: `1` to `1000`. Default value: `1`. 
+* `bandwidth_package_name` - (Optional) The name of the Internet Shared Bandwidth instance. The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (\_), and hyphens (-). The name must start with a letter. 
+* `deletion_protection` - (Optional) Specifies whether to enable deletion protection. Valid values:
+  - `true`: yes
+  - `false`: no
+
+* `description` - (Optional) The description of the Internet Shared Bandwidth instance. The description must be 2 to 256 characters in length and start with a letter. The description cannot start with `http://` or `https://`. 
+* `force` - (Optional) Specifies whether to forcefully delete the Internet Shared Bandwidth instance. Valid values:
+  - `false` (default): deletes the Internet Shared Bandwidth instance only when no EIPs are associated with the Internet Shared Bandwidth instance.
+  - `true`: disassociates all EIPs from the Internet Shared Bandwidth instance and deletes the Internet Shared Bandwidth instance.
+
+* `internet_charge_type` - (Optional, ForceNew, Computed) The billing method of the Internet Shared Bandwidth instance. Set the value to `PayByTraffic`, which specifies the pay-by-data-transfer billing method. 
+* `isp` - (Optional, ForceNew, Computed) The line type. Valid values:
+  - `BGP` All regions support BGP (Multi-ISP).
+  - `BGP_PRO` BGP (Multi-ISP) Pro lines are available in the China (Hong Kong), Singapore, Japan (Tokyo), Philippines (Manila), Malaysia (Kuala Lumpur), Indonesia (Jakarta), and Thailand (Bangkok) regions.
+
+  If you are allowed to use single-ISP bandwidth, you can also use one of the following values:
+  - `ChinaTelecom`
+  - `ChinaUnicom`
+  - `ChinaMobile`
+  - `ChinaTelecom_L2`
+  - `ChinaUnicom_L2`
+  - `ChinaMobile_L2`
+
+  If your services are deployed in China East 1 Finance, this parameter is required and you must set the value to `BGP_FinanceCloud`.
+
+* `ratio` - (Optional, ForceNew, Computed) The percentage of the minimum bandwidth commitment. Set the parameter to `20`.
+
+-> **NOTE:**  This parameter is available only on the Alibaba Cloud China site.
+
+* `resource_group_id` - (Optional, Computed) The ID of the resource group to which you want to move the resource.
+
+-> **NOTE:**   You can use resource groups to facilitate resource grouping and permission management for an Alibaba Cloud. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+
+* `security_protection_types` - (Optional, ForceNew) The edition of Anti-DDoS. If you do not set this parameter, Anti-DDoS Origin Basic is used. If you set the value to AntiDDoS_Enhanced, Anti-DDoS Pro(Premium) is used. It is valid when `internet_charge_type` is `PayBy95`.
+* `tags` - (Optional, Map) The tag of the resource
+* `zone` - (Optional) The zone of the Internet Shared Bandwidth instance. This parameter is required if you create an Internet Shared Bandwidth instance for a cloud box. 
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.120.0). Field 'name' has been deprecated from provider version 1.120.0. New field 'bandwidth_package_name' instead.
@@ -75,9 +99,9 @@ The following arguments will be discarded. Please use new fields as soon as poss
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
-* `create_time` - The create time.
 * `payment_type` - The billing type of the Internet Shared Bandwidth instance. Valid values: `PayAsYouGo`, `Subscription`.
-* `status` - The status of the Internet Shared Bandwidth instance. Default value: **Available**.
+* `create_time` - The creation time.
+* `status` - The status of the Internet Shared Bandwidth instance. Default value: `Available`.
 
 ## Timeouts
 

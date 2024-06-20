@@ -20,7 +20,6 @@ type CbwpServiceV2 struct {
 // DescribeCbwpCommonBandwidthPackage <<< Encapsulated get interface for Cbwp CommonBandwidthPackage.
 
 func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -32,13 +31,14 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	query["BandwidthPackageId"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -51,9 +51,7 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackage", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -63,13 +61,12 @@ func (s *CbwpServiceV2) DescribeCbwpCommonBandwidthPackage(id string) (object ma
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackage", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackage", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
 func (s *CbwpServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -81,14 +78,15 @@ func (s *CbwpServiceV2) DescribeListTagResources(id string) (object map[string]i
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-
 	request["ResourceId.1"] = id
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	request["ResourceType"] = "COMMONBANDWIDTHPACKAGE"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -101,9 +99,7 @@ func (s *CbwpServiceV2) DescribeListTagResources(id string) (object map[string]i
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CommonBandwidthPackage", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
-		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -120,7 +116,9 @@ func (s *CbwpServiceV2) CbwpCommonBandwidthPackageStateRefreshFunc(id string, fi
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -141,6 +139,7 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
+		query := make(map[string]interface{})
 
 		added, removed := parsingTags(d)
 		removedTagKeys := make([]string, 0)
@@ -156,7 +155,7 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			for i, key := range removedTagKeys {
@@ -164,10 +163,11 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -191,7 +191,7 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
-
+			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
 			request["RegionId"] = client.RegionId
 			count := 1
@@ -202,10 +202,11 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 			request["ResourceType"] = resourceType
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -221,7 +222,6 @@ func (s *CbwpServiceV2) SetResourceTags(d *schema.ResourceData, resourceType str
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
