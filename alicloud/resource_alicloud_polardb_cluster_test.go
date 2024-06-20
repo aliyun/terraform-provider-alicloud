@@ -694,6 +694,8 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
 					"lower_case_table_names": "0",
 					"backup_retention_policy_on_cluster_deletion": "NONE",
+					"loose_xengine":                "ON",
+					"loose_xengine_use_memory_pct": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -719,7 +721,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion"},
+				ImportStateVerifyIgnore: []string{"modify_type", "creation_option", "db_node_num", "parameter_group_id", "backup_retention_policy_on_cluster_deletion", "loose_xengine", "loose_xengine_use_memory_pct"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
