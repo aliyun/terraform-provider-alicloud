@@ -387,6 +387,14 @@ func polardbAndCreationDiffSuppressFunc(k, old, new string, d *schema.ResourceDa
 	return true
 }
 
+func polardbXengineDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	creationCategory, categoryOk := d.GetOk("creation_category")
+	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" && d.Get("db_version").(string) == "8.0" && (creationCategory == "Normal" || creationCategory == "SENormal" || !categoryOk) {
+		return false
+	}
+	return true
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false

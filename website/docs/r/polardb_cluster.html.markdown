@@ -199,7 +199,8 @@ The following arguments are supported:
 * `db_node_id` - (Optional, Available since v1.211.2) The ID of the node or node subscript. Node subscript values: 1 to 15.
 * `hot_replica_mode` - (Optional, Available since v1.211.2) Indicates whether the hot standby feature is enabled. Valid values are `ON`, `OFF`. Only MySQL supports.
 * `target_db_revision_version_code` - (Optional, Available since v1.216.0) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersion](https://www.alibabacloud.com/help/en/polardb/latest/describedbclusterversion) interface.
-
+* `loose_xengine` - (Optional, Available since v1.226.0) Specifies whether to enable X-Engine. Valid values are `ON`, `OFF`.
+* `loose_xengine_use_memory_pct` - (Optional, Available since v1.226.0) Set the ratio to enable the X-Engine storage engine. Valid values: 10 to 90.
 ### `db_cluster_ip_array`
 
 The db_cluster_ip_array supports the following:

@@ -472,6 +472,20 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 					},
 				},
 			},
+			"loose_xengine": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
+				DiffSuppressFunc: polardbXengineDiffSuppressFunc,
+				ForceNew:         true,
+			},
+			"loose_xengine_use_memory_pct": {
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntBetween(10, 90),
+				DiffSuppressFunc: polardbXengineDiffSuppressFunc,
+				ForceNew:         true,
+			},
 		},
 	}
 }
@@ -1762,6 +1776,13 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	if v, ok := d.GetOk("default_time_zone"); ok {
 		request["DefaultTimeZone"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("loose_xengine"); ok && v.(string) == "ON" {
+		request["LooseXEngine"] = v.(string)
+		if l, ok := d.GetOk("loose_xengine_use_memory_pct"); ok {
+			request["LooseXEngineUseMemoryPct"] = l.(int)
+		}
 	}
 
 	return request, nil
