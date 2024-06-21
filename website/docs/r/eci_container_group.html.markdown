@@ -421,6 +421,7 @@ The security_context supports the following:
 
 * `capability` - (Optional, Available since 1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#containers-security_context-capability) below.
 * `run_as_user` - (Optional, Long, Available since 1.215.0) The ID of the user who runs the container.
+* `privileged` - (Optional, Bool, ForceNew, Available since 1.226.0) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
 
 ### `containers-security_context-capability`
 
