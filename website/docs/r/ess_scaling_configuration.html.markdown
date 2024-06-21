@@ -85,12 +85,13 @@ resource "alicloud_ess_scaling_group" "default" {
 }
 
 resource "alicloud_ess_scaling_configuration" "default" {
-  scaling_group_id  = alicloud_ess_scaling_group.default.id
-  image_id          = data.alicloud_images.default.images[0].id
-  instance_type     = data.alicloud_instance_types.default.instance_types[0].id
-  security_group_id = alicloud_security_group.default.id
-  force_delete      = true
-  active            = true
+  scaling_group_id     = alicloud_ess_scaling_group.default.id
+  image_id             = data.alicloud_images.default.images[0].id
+  instance_type        = data.alicloud_instance_types.default.instance_types[0].id
+  security_group_id    = alicloud_security_group.default.id
+  system_disk_category = "cloud_efficiency"
+  force_delete         = true
+  active               = true
 }
 ```
 
@@ -119,6 +120,7 @@ The following arguments are supported:
 * `internet_max_bandwidth_out` - (Optional, Available since v1.214.0) Maximum outgoing bandwidth from the public network, measured in Mbps (Mega bit per second). The value range for PayByBandwidth is [0,1024].
 * `credit_specification` - (Optional, Available since v1.98.0) Performance mode of the t5 burstable instance. Valid values: 'Standard', 'Unlimited'.
 * `system_disk_category` - (Optional) Category of the system disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd`, `cloud_essd` and `cloud`. `cloud` only is used to some no I/O optimized instance. Default to `cloud_efficiency`.
+* `system_disk_categories` - (Optional, Available since v1.226.0) Category N of the system disk. Valid values of N: 1 to 4. A smaller value of N specifies a higher priority. If Auto Scaling cannot create disks by using the disk category of the highest priority, it creates disks by using the disk category of the next highest priority.
 * `system_disk_size` - (Optional) Size of system disk, in GiB. Optional values: cloud: 20-500, cloud_efficiency: 20-500, cloud_ssd: 20-500, ephemeral_ssd: 20-500 The default value is max{40, ImageSize}. If this parameter is set, the system disk size must be greater than or equal to max{40, ImageSize}.
 * `system_disk_name` - (Optional, Available since v1.92.0) The name of the system disk. It must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-). Default value: null.
 * `system_disk_description` - (Optional, Available since v1.92.0) The description of the system disk. The description must be 2 to 256 characters in length and cannot start with http:// or https://.
