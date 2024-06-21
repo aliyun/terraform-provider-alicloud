@@ -29,7 +29,7 @@ data "alicloud_cdn_service" "open" {
 The following arguments are supported:
 
 * `enable` - (Optional) Setting the value to `On` to enable the service. If has been enabled, return the result. Valid values: "On" or "Off". Default to "Off".
-* `internet_charge_type` - (Optional) The new billing method. Valid values: `PayByTraffic` and `PayByBandwidth`. Default value: `PayByTraffic`.
+* `internet_charge_type` - (Optional) The new billing method. Valid values: `PayByTraffic` and `PayByBandwidth`.
 It is required when `enable = on`. If the CDN service has been opened and you can update its internet charge type by modifying the filed `internet_charge_type`. 
 As a note, the updated internet charge type will be effective in the next day zero time.
 
