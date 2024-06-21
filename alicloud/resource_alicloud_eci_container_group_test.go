@@ -950,6 +950,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 										},
 									},
 									"run_as_user": "0",
+									"privileged":  true,
 								},
 							},
 							"environment_vars": []map[string]interface{}{
@@ -1129,6 +1130,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 										},
 									},
 									"run_as_user": "1",
+									"privileged":  false,
 								},
 							},
 							"environment_vars": []map[string]interface{}{
@@ -1265,7 +1267,7 @@ func TestAccAliCloudEciContainerGroup_basic6(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec", "auto_match_image_cache"},
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec", "auto_match_image_cache", "containers.0.security_context.0.privileged"},
 			},
 		},
 	})

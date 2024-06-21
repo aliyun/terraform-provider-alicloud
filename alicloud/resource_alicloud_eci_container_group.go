@@ -421,6 +421,11 @@ func resourceAlicloudEciContainerGroup() *schema.Resource {
 										Type:     schema.TypeInt,
 										Optional: true,
 									},
+									"privileged": {
+										Type:     schema.TypeBool,
+										Optional: true,
+										ForceNew: true,
+									},
 								},
 							},
 						},
@@ -1009,6 +1014,7 @@ func resourceAlicloudEciContainerGroupCreate(d *schema.ResourceData, meta interf
 				}
 			}
 			SecurityContext["RunAsUser"] = SecurityContextMap["run_as_user"]
+			Containers[i]["SecurityContextPrivileged"] = SecurityContextMap["privileged"]
 		}
 		Containers[i]["SecurityContext"] = SecurityContext
 
@@ -1487,6 +1493,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 					SecurityContextValue := m1["SecurityContext"].(map[string]interface{})
 					SecurityContextMap := map[string]interface{}{
 						"run_as_user": SecurityContextValue["RunAsUser"],
+						"privileged":  getSecurityContextPrivileged(d, temp1["name"]),
 					}
 					if SecurityContextValue["Capability"] != nil && SecurityContextValue["Capability"].(map[string]interface{})["Adds"] != nil {
 						Capabilities := make([]map[string]interface{}, 0)
@@ -1728,6 +1735,30 @@ func getLifecyclePreStopHandlerExec(d *schema.ResourceData, name interface{}) (r
 		}
 	}
 	return ""
+}
+
+func getSecurityContextPrivileged(d *schema.ResourceData, name interface{}) (result interface{}) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("getSecurityContextPrivileged Recovered from panic: %v", r)
+			result = nil
+		}
+	}()
+	for _, srcContainer := range d.Get("containers").([]interface{}) {
+		c := srcContainer.(map[string]interface{})
+		if c["name"].(string) == name.(string) {
+			if c["security_context"] != nil {
+				scs := c["security_context"].([]interface{})
+				for _, tscs := range scs {
+					mapData, ok := tscs.(map[string]interface{})
+					if ok {
+						return mapData["privileged"]
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func getConfigFileContent(d *schema.ResourceData, name interface{}, path interface{}) (result interface{}) {
