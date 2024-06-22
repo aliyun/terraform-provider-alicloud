@@ -5,7 +5,7 @@ Terraform Provider For Alibaba Cloud
 - Documentation: https://www.terraform.io/docs/providers/alicloud/index.html
 - [![Gitter chat](https://badges.gitter.im/hashicorp-terraform/Lobby.png)](https://gitter.im/hashicorp-terraform/Lobby)
 - Mailing list: [Google Groups](http://groups.google.com/group/terraform-tool)
-
+- Increased the size limit for file uploads
 Supported Versions
 ------------------
 
