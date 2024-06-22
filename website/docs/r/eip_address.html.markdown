@@ -64,7 +64,7 @@ The following arguments are supported:
   If `payment_type` is set to `Subscription`, this parameter is required. If `payment_type` is set to `PayAsYouGo`, this parameter is not required.
 
 * `bandwidth` - (Optional, Computed) The maximum bandwidth of the specified EIP. Unit: Mbit/s.
-  - When `payment_type` is set to `PayAsYouGo` and `internet_charge_type` is set to `bandwidth`, valid values for `bandwidth` are `1` to `500`.
+  - When `payment_type` is set to `PayAsYouGo` and `internet_charge_type` is set to `PayByBandwidth`, valid values for `bandwidth` are `1` to `500`.
   - When `payment_type` is set to `PayAsYouGo` and `internet_charge_type` is set to `PayByTraffic`, valid values for `bandwidth` are `1` to `200`.
   - When `payment_type` is set to `Subscription`, valid values for `bandwidth` are `1` to `1000`.
 
