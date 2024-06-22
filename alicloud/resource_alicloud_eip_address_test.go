@@ -922,6 +922,7 @@ func TestAccAliCloudEIPAddress_basic13(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheckWithRegions(t, true, connectivity.VpcDhcpOptionsSetSupportRegions)
 		},
 		IDRefreshName: resourceId,
@@ -978,6 +979,7 @@ func TestAccAliCloudEIPAddress_basic9_ip(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithTime(t, []int{1})
 			testAccPreCheckWithRegions(t, true, connectivity.EipAddressZoneSupportRegions)
 		},
 		IDRefreshName: resourceId,
