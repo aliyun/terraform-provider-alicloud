@@ -11,7 +11,7 @@ import (
 
 // Test Eip SegmentAddress. >>> Resource test cases, automatically generated.
 // Case 3419
-func TestAccAlicloudEipSegmentAddress_basic3419(t *testing.T) {
+func TestAccAliCloudEipSegmentAddress_basic3419(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_segment_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)
@@ -85,7 +85,7 @@ variable "name" {
 }
 
 // Case 3419  twin
-func TestAccAlicloudEipSegmentAddress_basic3419_twin(t *testing.T) {
+func TestAccAliCloudEipSegmentAddress_basic3419_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eip_segment_address.default"
 	ra := resourceAttrInit(resourceId, AlicloudEipSegmentAddressMap3419)

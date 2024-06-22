@@ -41,16 +41,17 @@ func resourceAliCloudEipAddress() *schema.Resource {
 			"allocation_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"auto_pay": {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
 			"bandwidth": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringLenBetween(1, 200),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -318,26 +319,61 @@ func resourceAliCloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(err)
 	}
 
-	d.Set("address_name", objectRaw["Name"])
-	if eipBandwidth, ok := objectRaw["EipBandwidth"]; ok {
-		d.Set("bandwidth", eipBandwidth)
-	} else {
-		d.Set("bandwidth", objectRaw["Bandwidth"])
+	if objectRaw["Name"] != nil {
+		d.Set("address_name", objectRaw["Name"])
 	}
-	d.Set("create_time", objectRaw["AllocationTime"])
-	d.Set("deletion_protection", objectRaw["DeletionProtection"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("high_definition_monitor_log_status", objectRaw["HDMonitorStatus"])
-	d.Set("internet_charge_type", objectRaw["InternetChargeType"])
-	d.Set("ip_address", objectRaw["IpAddress"])
-	d.Set("isp", objectRaw["ISP"])
-	d.Set("mode", objectRaw["Mode"])
-	d.Set("netmode", objectRaw["Netmode"])
-	d.Set("payment_type", convertEipAddressEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
-	d.Set("public_ip_address_pool_id", objectRaw["PublicIpAddressPoolId"])
-	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	d.Set("status", objectRaw["Status"])
-	d.Set("zone", objectRaw["Zone"])
+	if objectRaw["Bandwidth"] != nil || objectRaw["EipBandwidth"] != nil {
+		if eipBandwidth, ok := objectRaw["EipBandwidth"]; ok {
+			d.Set("bandwidth", eipBandwidth)
+		} else {
+			d.Set("bandwidth", objectRaw["Bandwidth"])
+		}
+	}
+	if objectRaw["AllocationTime"] != nil {
+		d.Set("create_time", objectRaw["AllocationTime"])
+	}
+	if objectRaw["DeletionProtection"] != nil {
+		d.Set("deletion_protection", objectRaw["DeletionProtection"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["HDMonitorStatus"] != nil {
+		d.Set("high_definition_monitor_log_status", objectRaw["HDMonitorStatus"])
+	}
+	if objectRaw["InternetChargeType"] != nil {
+		d.Set("internet_charge_type", objectRaw["InternetChargeType"])
+	}
+	if objectRaw["IpAddress"] != nil {
+		d.Set("ip_address", objectRaw["IpAddress"])
+	}
+	if objectRaw["ISP"] != nil {
+		d.Set("isp", objectRaw["ISP"])
+	}
+	if objectRaw["Mode"] != nil {
+		d.Set("mode", objectRaw["Mode"])
+	}
+	if objectRaw["Netmode"] != nil {
+		d.Set("netmode", objectRaw["Netmode"])
+	}
+	if convertEipAddressEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]) != nil {
+		d.Set("payment_type", convertEipAddressEipAddressesEipAddressChargeTypeResponse(objectRaw["ChargeType"]))
+	}
+	if objectRaw["PublicIpAddressPoolId"] != nil {
+		d.Set("public_ip_address_pool_id", objectRaw["PublicIpAddressPoolId"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["Zone"] != nil {
+		d.Set("zone", objectRaw["Zone"])
+	}
+	if objectRaw["AllocationId"] != nil {
+		d.Set("allocation_id", objectRaw["AllocationId"])
+	}
 
 	securityProtectionType1Raw, _ := jsonpath.Get("$.SecurityProtectionTypes.SecurityProtectionType", objectRaw)
 	d.Set("security_protection_types", securityProtectionType1Raw)
@@ -352,10 +388,19 @@ func resourceAliCloudEipAddressRead(d *schema.ResourceData, meta interface{}) er
 			return WrapError(err)
 		}
 
-		d.Set("log_project", objectRaw["LogProject"])
-		d.Set("log_store", objectRaw["LogStore"])
+		if objectRaw["LogProject"] != nil {
+			d.Set("log_project", objectRaw["LogProject"])
+		}
+		if objectRaw["LogStore"] != nil {
+			d.Set("log_store", objectRaw["LogStore"])
+		}
+		if objectRaw["InstanceId"] != nil {
+			d.Set("allocation_id", objectRaw["InstanceId"])
+		}
 
 	}
+
+	d.Set("allocation_id", d.Id())
 
 	d.Set("name", d.Get("address_name"))
 	d.Set("instance_charge_type", objectRaw["ChargeType"])
@@ -594,11 +639,12 @@ func resourceAliCloudEipAddressUpdate(d *schema.ResourceData, meta interface{}) 
 
 func resourceAliCloudEipAddressDelete(d *schema.ResourceData, meta interface{}) error {
 
-	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
-		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_eip_address. Terraform will remove this resource from the state file, however resources may remain.")
-		return nil
+	if v, ok := d.GetOk("payment_type"); ok || d.Get("instance_charge_type").(string) == "Prepaid" {
+		if v == "Subscription" {
+			log.Printf("[WARN] Cannot destroy resource alicloud_eip_address which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
+			return nil
+		}
 	}
-
 	client := meta.(*connectivity.AliyunClient)
 	action := "ReleaseEipAddress"
 	var request map[string]interface{}
