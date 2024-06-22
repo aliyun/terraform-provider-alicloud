@@ -73,9 +73,10 @@ func Serve(opts *ServeOpts) {
 			}
 		}
 	}
+        maxSize := 256 << 20
 	grpcOpts := []grpc.ServerOption{
-		grpc.MaxRecvMsgSize(256 << 20),
-		grpc.MaxSendMsgSize(256 << 20),
+		grpc.MaxRecvMsgSize(maxSize),
+		grpc.MaxSendMsgSize(maxSize),
 	}
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig:  Handshake,
