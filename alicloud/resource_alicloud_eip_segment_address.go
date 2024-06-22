@@ -23,13 +23,13 @@ func resourceAliCloudEipSegmentAddress() *schema.Resource {
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"bandwidth": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringLenBetween(1, 1000),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -54,20 +54,36 @@ func resourceAliCloudEipSegmentAddress() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"public"}, false),
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"segment_address_name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
+			},
+			"zone": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
 func resourceAliCloudEipSegmentAddressCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "AllocateEipSegmentAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipClient()
 	if err != nil {
 		return WrapError(err)
@@ -89,11 +105,17 @@ func resourceAliCloudEipSegmentAddressCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("netmode"); ok {
 		request["Netmode"] = v
 	}
+	if v, ok := d.GetOk("zone"); ok {
+		request["Zone"] = v
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationFailed.LastTokenProcessing", "IncorrectStatus", "SystemBusy", "OperationConflict", "ServiceUnavailable"}) || NeedRetry(err) {
 				wait()
@@ -134,8 +156,18 @@ func resourceAliCloudEipSegmentAddressRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreationTime"])
-	d.Set("status", objectRaw["Status"])
+	if objectRaw["CreationTime"] != nil {
+		d.Set("create_time", objectRaw["CreationTime"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("segment_address_name", objectRaw["Name"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["Zone"] != nil {
+		d.Set("zone", objectRaw["Zone"])
+	}
 
 	return nil
 }
@@ -148,24 +180,25 @@ func resourceAliCloudEipSegmentAddressUpdate(d *schema.ResourceData, meta interf
 func resourceAliCloudEipSegmentAddressDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "ReleaseEipSegmentAddress"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewEipClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["SegmentInstanceId"] = d.Id()
+	query["SegmentInstanceId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {

@@ -8,11 +8,11 @@ description: |-
 
 # alicloud_eip_segment_address
 
-Provides a EIP Segment Address resource. 
+Provides a EIP Segment Address resource.
 
 For information about EIP Segment Address and how to use it, see [What is Segment Address](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/allocateeipsegmentaddress).
 
--> **NOTE:** Available since v1.207.0.
+-> **NOTE:** Available since v1.226.0.
 
 ## Example Usage
 
@@ -40,31 +40,53 @@ resource "alicloud_eip_segment_address" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth` - (Optional) The peak bandwidth of the EIP. Unit: Mbps. When the value of instancargetype is PostPaid and the value of InternetChargeType is PayByBandwidth, the range of Bandwidth is 1 to 500. If the value of instancargetype is PostPaid and the value of InternetChargeType is PayByTraffic, the range of Bandwidth is 1 to 200. When instancargetype is set to PrePaid, the range of Bandwidth is 1 to 1000. The default value is 5 Mbps.
-* `eip_mask` - (Required) Mask of consecutive EIPs. Value:28: For a single call, the system will allocate 16 consecutive EIPs.27: For a single call, the system will allocate 32 consecutive EIPs.26: For a single call, the system will allocate 64 consecutive EIPs.25: For a single call, the system will allocate 128 consecutive EIPs.24: For a single call, the system will allocate 256 consecutive EIPs.
-* `internet_charge_type` - (Optional) Continuous EIP billing method, valid values:
-  - **PayByBandwidth** (default): Billing based on fixed bandwidth.
-  - **PayByTraffic**: Billing by usage flow.
-* `isp` - (Optional) Line type. Valid values:
-  - **BGP** (default):BGP (multi-line) line. BGP (multi-line) EIP is supported in all regions.
-  - **BGP_PRO** :BGP (multi-line)_boutique line. Currently, only Hong Kong, Singapore, Japan (Tokyo), Malaysia (Kuala Lumpur), the Philippines (Manila), Indonesia (Jakarta), and Thailand (Bangkok) regions support BGP (multi-line)_boutique route EIP.
-For more information about BGP (multi-line) lines and BGP (multi-line) premium lines, see EIP line types.
-If you are a whitelist user with single-line bandwidth, you can also select the following types:
-  - **ChinaTelecom** : China Telecom
-  - **ChinaUnicom** : China Unicom
-  - **ChinaMobile** : China Mobile
-  - **ChinaTelecom_L2** : China Telecom L2
-  - **ChinaUnicom_L2** : China Unicom L2
-  - **ChinaMobile_L2** : China Mobile L2
-If you are a user of Hangzhou Financial Cloud, this field is required. The value is `BGP_FinanceCloud`.
-* `netmode` - (Optional) The network type. Set the value to **public**.
+* `bandwidth` - (Optional, Available since v1.207.0) The maximum bandwidth of the contiguous EIP group. Unit: Mbit/s.
+  - Valid values when `InstanceChargeType` is set to `PostPaid` and `InternetChargeType` is set to `PayByBandwidth`: `1` to `500`.****
+  - Valid values when `InstanceChargeType` is set to `PostPaid` and `InternetChargeType` is set to `PayByTraffic`: `1` to `200`.****
+  - Valid values when `InstanceChargeType` is set to `PrePaid`: `1` to `1000`.****
+
+  Default value: `5`. Unit: Mbit/s.
+
+* `eip_mask` - (Required, Available since v1.207.0) The subnet mask of the contiguous EIP group. Valid values:
+  - `28`: applies for 16 contiguous EIPs in each call.
+  - `27`: applies for 32 contiguous EIPs in each call.
+  - `26`: applies for 64 contiguous EIPs in each call.
+  - `25`: applies for 128 contiguous EIPs in each call.
+  - `24`: applies for 256 contiguous EIPs in each call.
+
+-> **NOTE:**   Some IP address are reserved for specific purposes. Therefore, the actual number of the contiguous EIPs may be one, three, or four less than the expected number.
+
+* `internet_charge_type` - (Optional, Available since v1.207.0) The metering method of the contiguous EIP group. Valid values:
+  - `PayByBandwidth` (default)
+  - `PayByTraffic`
+
+* `isp` - (Optional, Available since v1.207.0) The line type. Valid values:
+  - `BGP` (default): BGP (Multi-ISP) line The BGP (Multi-ISP) line is supported in all regions.
+  - `BGP_PRO`: BGP (Multi-ISP) Pro line BGP (Multi-ISP) Pro line is supported only in the China (Hong Kong), Singapore, Japan (Tokyo), Malaysia (Kuala Lumpur), Philippines (Manila), Indonesia (Jakarta), and Thailand (Bangkok) regions.
+
+  For more information about the BGP (Multi-ISP) line and BGP (Multi-ISP) Pro line, see [EIP line types](https://www.alibabacloud.com/help/en/doc-detail/32321.html).
+
+  If you are allowed to use single-ISP bandwidth, you can also use one of the following values:
+  - `ChinaTelecom`
+  - `ChinaUnicom`
+  - `ChinaMobile`
+  - `ChinaTelecom_L2`
+  - `ChinaUnicom_L2`
+  - `ChinaMobile_L2`
+
+  If your services are deployed in China East 1 Finance, this parameter is required and you must set the parameter to `BGP_FinanceCloud`.
+
+* `netmode` - (Optional, Available since v1.207.0) The network type. Set the value to `public`, which specifies the public network type. 
+* `resource_group_id` - (Optional) The resource group ID. 
+* `zone` - (Optional, ForceNew, Computed) The zone of the contiguous EIP group. 
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The time when the contiguous Elastic IP address group was created. The time follows the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time is displayed in UTC.
-* `status` - The status of the resource.
+* `segment_address_name` - The name of the contiguous Elastic IP address group.
+* `status` - The status of the resource
 
 ## Timeouts
 

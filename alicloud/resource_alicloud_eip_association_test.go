@@ -181,6 +181,16 @@ func TestAccAliCloudEipAssociation_basic1_twin(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"mode": "BINDED",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"mode": "BINDED",
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -307,6 +317,7 @@ func AliCloudEipAssociationBasicDependence0(name string) string {
 	data "alicloud_images" "default" {
   		name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
   		most_recent = true
+		instance_type = data.alicloud_instance_types.default.instance_types.0.id
   		owners      = "system"
 	}
 
@@ -390,8 +401,9 @@ func AliCloudEipAssociationBasicDependence2(name string) string {
   		default = "%s"
 	}
 
-	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+	resource "alicloud_vpc" "default" {
+	  cidr_block = "192.168.0.0/16"
+	  name = var.name
 	}
 
 	resource "alicloud_eip_address" "default" {
@@ -399,9 +411,10 @@ func AliCloudEipAssociationBasicDependence2(name string) string {
 	}
 
 	resource "alicloud_vpc_ipv4_gateway" "default" {
-  		vpc_id                   = data.alicloud_vpcs.default.ids.0
+  		vpc_id                   = alicloud_vpc.default.id
   		ipv4_gateway_name        = var.name
   		ipv4_gateway_description = var.name
+        enabled                  = true
 	}
 `, name)
 }
