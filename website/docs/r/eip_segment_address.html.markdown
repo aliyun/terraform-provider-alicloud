@@ -12,7 +12,7 @@ Provides a EIP Segment Address resource.
 
 For information about EIP Segment Address and how to use it, see [What is Segment Address](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/allocateeipsegmentaddress).
 
--> **NOTE:** Available since v1.226.0.
+-> **NOTE:** Available since v1.207.0.
 
 ## Example Usage
 
