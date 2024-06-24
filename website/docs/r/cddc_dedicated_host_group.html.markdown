@@ -15,6 +15,8 @@ For information about ApsaraDB for MyBase Dedicated Host Group and how to use it
 
 -> **NOTE:** Available since v1.132.0.
 
+-> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`. 
+
 ## Example Usage
 
 Basic Usage

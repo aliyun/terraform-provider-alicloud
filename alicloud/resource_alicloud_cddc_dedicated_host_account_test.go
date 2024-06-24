@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCddcDedicatedHostAccount_basic0(t *testing.T) {
+func SkipTestAccAlicloudCddcDedicatedHostAccount_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cddc_dedicated_host_account.default"
 	ra := resourceAttrInit(resourceId, AlicloudCDDCDedicatedHostAccountMap0)
