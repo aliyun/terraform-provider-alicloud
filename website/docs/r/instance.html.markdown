@@ -22,6 +22,14 @@ variable "name" {
   default = "terraform-example"
 }
 
+variable "instance_type" {
+  default = "ecs.n4.large"
+}
+
+variable "image_id" {
+  default = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
+}
+
 # Create a new ECS instance for a VPC
 resource "alicloud_security_group" "group" {
   name        = var.name
@@ -38,6 +46,7 @@ resource "alicloud_kms_key" "key" {
 data "alicloud_zones" "default" {
   available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
+  available_instance_type     = var.instance_type
 }
 
 # Create a new ECS instance for VPC
@@ -59,11 +68,11 @@ resource "alicloud_instance" "instance" {
   security_groups   = alicloud_security_group.group.*.id
 
   # series III
-  instance_type              = "ecs.n4.large"
+  instance_type              = var.instance_type
   system_disk_category       = "cloud_efficiency"
   system_disk_name           = var.name
   system_disk_description    = "test_foo_system_disk_description"
-  image_id                   = "ubuntu_18_04_64_20G_alibase_20190624.vhd"
+  image_id                   = var.image_id
   instance_name              = var.name
   vswitch_id                 = alicloud_vswitch.vswitch.id
   internet_max_bandwidth_out = 10
