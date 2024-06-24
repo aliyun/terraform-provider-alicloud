@@ -5261,13 +5261,24 @@ func (client *AliyunClient) NewAckClient() (*roa.Client, error) {
 func (client *AliyunClient) NewOssClient() (*openapi.Client, error) {
 	config := &client.teaRoaOpenapiConfig
 
-	productCode := "OSS"
+	productCode := "oss"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.config.RegionId)
+		// Firstly, load endpoint from provider
+		endpoint = client.config.OssEndpoint
+		if endpoint == "" {
+			// Secondly, load endpoint from environment
+			endpoint = loadEndpoint(client.config.RegionId, OSSCode)
+		}
+		if endpoint == "" {
+			// Thirdly, load endpoint from common method
+			if err := client.loadEndpoint(productCode); err != nil {
+				endpoint = fmt.Sprintf("oss-%s.aliyuncs.com", client.config.RegionId)
+				client.config.Endpoints.Store(productCode, endpoint)
+				log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+			}
+		} else {
 			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
