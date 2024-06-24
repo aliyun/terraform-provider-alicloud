@@ -56,7 +56,7 @@ The following arguments are supported:
 
 -> **NOTE:**   You cannot specify this parameter if you create a subscription EIP.
 
-* `allocation_id` - (Optional, ForceNew, Computed, Available since v1.226.0) The ID of the EIP instance.
+* `allocation_id` - (Optional, ForceNew, Computed, Available since v1.225.1) The ID of the EIP instance.
 * `auto_pay` - (Optional) Specifies whether to enable automatic payment. Valid values:
   - `false` (default): The automatic payment is disabled. If you select this option, you must go to the Order Center to complete the payment after an order is generated.
   - `true`: The automatic payment is enabled. Payments are automatically complete after an order is generated.
@@ -111,7 +111,7 @@ The following arguments are supported:
 
 * `log_project` - (Optional) The name of the Simple Log Service (SLS) project. 
 * `log_store` - (Optional) The name of the Logstore. 
-* `mode` - (Optional, Computed, Available since v1.226.0) The association mode. Valid values:
+* `mode` - (Optional, Computed, Available since v1.225.1) The association mode. Valid values:
   - `NAT` (default): NAT mode
   - `MULTI_BINDED`: multi-EIP-to-ENI mode
   - `BINDED`: cut-network interface controller mode

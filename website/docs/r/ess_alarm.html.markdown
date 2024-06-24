@@ -137,8 +137,8 @@ The following arguments are supported:
 * `evaluation_count` - (Optional) The number of times that needs to satisfies comparison condition before transition into ALARM state. Defaults to 3.
 * `cloud_monitor_group_id` - (Optional) Defines the application group id defined by CMS which is assigned when you upload custom metric to CMS, only available for custom metirc.
 * `dimensions` - (Optional) The dimension map for the alarm's associated metric. For all metrics, you can not set the dimension key as "scaling_group" or "userId", which is set by default, the second dimension for metric, such as "device" for "PackagesNetIn", need to be set by users. See [`dimensions`](#dimensions) below.
-* `expressions` - (Optional, Available since v1.226.0) Support multi alert rule. See [`expressions`](#expressions) below for details.
-* `expressions_logic_operator` - (Optional, Available since v1.226.0) The relationship between the trigger conditions in the multi-metric alert rule.
+* `expressions` - (Optional, Available since v1.225.1) Support multi alert rule. See [`expressions`](#expressions) below for details.
+* `expressions_logic_operator` - (Optional, Available since v1.225.1) The relationship between the trigger conditions in the multi-metric alert rule.
 * `state` - (Optional) The status of the event-triggered task. Valid values:
  - ALARM: The alert condition is met and an alert is triggered.
  - OK: The alert condition is not met.

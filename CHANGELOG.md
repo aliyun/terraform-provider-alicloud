@@ -1,4 +1,33 @@
-## 1.226.0 (Unreleased)
+## 1.225.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- client: Improved oss client. [GH-7380]
+- resource/alicloud_ess_alarm: add expressions and expressions_logic_operator. [GH-7298]
+- resource/alicloud_ess_scaling_group: support composable and add az_balance,allocation_strategy and spot_allocation_strategy. [GH-7329]
+- resource/alicloud_ess_scaling_group: fix alb_server_group conflict. [GH-7333]
+- resource/alicloud_mongodb_sharding_instance: Added the field storage_type; Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. [GH-7334]
+- resource/alicloud_slb_rule: modify cookie_timeout validation. [GH-7351]
+- resource/alicloud_kms_key: Added error code Forbidden.ResourceNotFound. [GH-7352]
+- resource/alicloud_kms_secret: Added error code Forbidden.ResourceNotFound. [GH-7353]
+- resource/alicloud_ddosbgp_ip: Added the field member_uid. [GH-7354]
+- resource/alicloud_click_house_db_cluster: Added support for in-place cluster node group and class upgrade. [GH-7360]
+- resource/alicloud_ecs_disk: supports new category. [GH-7363]
+- resource/alicloud_common_bandwidth_package: improve code implementation and document. [GH-7368]
+- resource/alicloud_common_bandwidth_package_attachment: improve code implementation and document. [GH-7369]
+- resource/alicloud_eci_container_group: add privileged. [GH-7372]
+- resource/alicloud_eip_address: improve document; resource/alicloud_eip_association: improve document; resource/alicloud_eip_segment_address: add new attribute zone, resource_group_id and segment_address_name. [GH-7373]
+- docs: update auto_renew description for alicloud_cs_kubernetes_node_pool. [GH-7359]
+- docs: improve description for eip address. [GH-7374]
+- docs: deprecate the product cddc, resource log_oss_shipper. [GH-7376]
+- docs: Improve the example ecs_instance. [GH-7382]
+- docs: improve document for ddosbgp_ip. [GH-7384]
+
+BUG FIXES:
+
+- provider: Fixed resourcesharing endpoint invalid error. [GH-7364]
+- resource/alicloud_cloud_firewall_instance: Fixed account_number invalid error. [GH-7357]
+
 ## 1.225.0 (June 14, 2024)
 
 - **New Resource:** `alicloud_express_connect_traffic_qos` ([#7282](https://github.com/aliyun/terraform-provider-alicloud/issues/7282))
