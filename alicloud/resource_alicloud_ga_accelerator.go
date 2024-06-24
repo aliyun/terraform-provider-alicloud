@@ -87,6 +87,11 @@ func resourceAliCloudGaAccelerator() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"accelerator_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -153,6 +158,10 @@ func resourceAliCloudGaAcceleratorCreate(d *schema.ResourceData, meta interface{
 		request["PromotionOptionNo"] = v
 	}
 
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
@@ -190,6 +199,7 @@ func resourceAliCloudGaAcceleratorRead(d *schema.ResourceData, meta interface{})
 	d.Set("payment_type", convertGaAcceleratorPaymentTypeResponse(object["InstanceChargeType"]))
 	d.Set("cross_border_status", object["CrossBorderStatus"])
 	d.Set("cross_border_mode", object["CrossBorderMode"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("accelerator_name", object["Name"])
 	d.Set("description", object["Description"])
 	d.Set("status", object["State"])
@@ -433,6 +443,51 @@ func resourceAliCloudGaAcceleratorUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("cross_border_mode")
+	}
+
+	update = false
+	changeResourceGroupReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ClientToken":  buildClientToken("ChangeResourceGroup"),
+		"ResourceId":   d.Id(),
+		"ResourceType": "accelerator",
+	}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		changeResourceGroupReq["NewResourceGroupId"] = v
+	}
+
+	if update {
+		action := "ChangeResourceGroup"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, changeResourceGroupReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("resource_group_id")
 	}
 
 	d.Partial(false)

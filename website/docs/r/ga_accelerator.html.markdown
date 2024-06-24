@@ -62,6 +62,7 @@ The following arguments are supported:
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 * `auto_renew_duration` - (Optional, Int, Available since v1.146.0) Auto renewal period of an instance, in the unit of month. The value range is 1-12.
 * `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `accelerator_name` - (Optional) The Name of the GA instance.
 * `description` - (Optional) Descriptive information of the global acceleration instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
