@@ -58,7 +58,7 @@ The following arguments are supported:
 * `instance_id` - (Required, ForceNew) The ID of the native protection enterprise instance to be operated.
 * `ip` - (Required, ForceNew) The IP address.
 * `resource_group_id` - (Optional, ForceNew) The ID of the resource group.
-* `member_uid` - (Optional, ForceNew) The member account id of the IP address.
+* `member_uid` - (Optional, ForceNew, Available since v1.225.1) The member account id of the IP address.
 
 ## Attributes Reference
 
