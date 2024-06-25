@@ -86,6 +86,13 @@ func resourceAliCloudEipAssociationCreate(d *schema.ResourceData, meta interface
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
+	request["InstanceType"] = EcsInstance
+	if strings.HasPrefix(query["InstanceId"].(string), "lb-") {
+		request["InstanceType"] = SlbInstance
+	}
+	if strings.HasPrefix(query["InstanceId"].(string), "ngw-") {
+		request["InstanceType"] = Nat
+	}
 	if v, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = v
 	}
@@ -225,6 +232,13 @@ func resourceAliCloudEipAssociationDelete(d *schema.ResourceData, meta interface
 
 	request["ClientToken"] = buildClientToken(action)
 
+	request["InstanceType"] = EcsInstance
+	if strings.HasPrefix(parts[1], "lb-") {
+		request["InstanceType"] = SlbInstance
+	}
+	if strings.HasPrefix(parts[1], "ngw-") {
+		request["InstanceType"] = Nat
+	}
 	if v, ok := d.GetOk("instance_type"); ok {
 		request["InstanceType"] = v
 	}
