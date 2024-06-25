@@ -20,11 +20,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudGaBasicAccelerator_basic0(t *testing.T) {
+func TestAccAliCloudGaBasicAccelerator_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_accelerator.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaBasicAcceleratorMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicAccelerator")
@@ -32,11 +32,10 @@ func TestAccAlicloudGaBasicAccelerator_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicAccelerator-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicAcceleratorBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicAcceleratorBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -44,33 +43,31 @@ func TestAccAlicloudGaBasicAccelerator_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"bandwidth_billing_type": "BandwidthPackage",
-					"duration":               "1",
-					"pricing_cycle":          "Month",
-					"basic_accelerator_name": name,
-					"description":            "tf-description",
-					"auto_pay":               "true",
-					"auto_use_coupon":        "true",
-					"auto_renew":             "false",
-					"auto_renew_duration":    "1",
+					"auto_pay": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"bandwidth_billing_type": "BandwidthPackage",
-						"basic_accelerator_name": name,
-						"description":            "tf-description",
+						"auto_pay": "true",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"basic_accelerator_name": name + "-update",
-					"description":            "update-tf-description",
+					"basic_accelerator_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"basic_accelerator_name": name + "-update",
-						"description":            "update-tf-description",
+						"basic_accelerator_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
 					}),
 				),
 			},
@@ -93,17 +90,17 @@ func TestAccAlicloudGaBasicAccelerator_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_pay", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "duration", "pricing_cycle", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
+func TestAccAliCloudGaBasicAccelerator_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_accelerator.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaBasicAcceleratorMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicAccelerator")
@@ -111,11 +108,10 @@ func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicAccelerator-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicAcceleratorBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicAcceleratorBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -125,14 +121,14 @@ func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"bandwidth_billing_type": "BandwidthPackage",
 					"payment_type":           "Subscription",
+					"auto_pay":               "true",
 					"duration":               "1",
 					"pricing_cycle":          "Month",
-					"basic_accelerator_name": name,
-					"description":            "tf-description",
-					"auto_pay":               "true",
 					"auto_use_coupon":        "true",
 					"auto_renew":             "false",
 					"auto_renew_duration":    "1",
+					"basic_accelerator_name": name,
+					"description":            name,
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "BasicAccelerator",
@@ -143,7 +139,7 @@ func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
 						"bandwidth_billing_type": "BandwidthPackage",
 						"payment_type":           "Subscription",
 						"basic_accelerator_name": name,
-						"description":            "tf-description",
+						"description":            name,
 						"tags.%":                 "2",
 						"tags.Created":           "TF",
 						"tags.For":               "BasicAccelerator",
@@ -154,17 +150,17 @@ func TestAccAlicloudGaBasicAccelerator_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_pay", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "duration", "pricing_cycle", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudGaBasicAccelerator_basic2(t *testing.T) {
+func TestAccAliCloudGaBasicAccelerator_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_basic_accelerator.default"
-	ra := resourceAttrInit(resourceId, resourceAlicloudGaBasicAcceleratorMap)
+	ra := resourceAttrInit(resourceId, AliCloudGaBasicAcceleratorMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaBasicAccelerator")
@@ -172,7 +168,7 @@ func TestAccAlicloudGaBasicAccelerator_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAccGaBasicAccelerator-name%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudGaBasicAcceleratorBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicAcceleratorBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -195,13 +191,31 @@ func TestAccAlicloudGaBasicAccelerator_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"basic_accelerator_name": name + "-update",
-					"description":            "update-tf-description",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"basic_accelerator_name": name + "-update",
-						"description":            "update-tf-description",
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"basic_accelerator_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"basic_accelerator_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
 					}),
 				),
 			},
@@ -224,22 +238,82 @@ func TestAccAlicloudGaBasicAccelerator_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"duration", "pricing_cycle", "auto_pay", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
+				ImportStateVerifyIgnore: []string{"auto_pay", "duration", "pricing_cycle", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
 			},
 		},
 	})
 }
 
-var resourceAlicloudGaBasicAcceleratorMap = map[string]string{
-	"payment_type": "Subscription",
-	"status":       CHECKSET,
+func TestAccAliCloudGaBasicAccelerator_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
+	resourceId := "alicloud_ga_basic_accelerator.default"
+	ra := resourceAttrInit(resourceId, AliCloudGaBasicAcceleratorMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeGaBasicAccelerator")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAccGaBasicAccelerator-name%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaBasicAcceleratorBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"bandwidth_billing_type": "CDT",
+					"payment_type":           "PayAsYouGo",
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"basic_accelerator_name": name,
+					"description":            name,
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "BasicAccelerator",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth_billing_type": "CDT",
+						"payment_type":           "PayAsYouGo",
+						"resource_group_id":      CHECKSET,
+						"basic_accelerator_name": name,
+						"description":            name,
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "BasicAccelerator",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_pay", "duration", "pricing_cycle", "auto_use_coupon", "auto_renew", "auto_renew_duration", "promotion_option_no"},
+			},
+		},
+	})
 }
 
-func resourceAlicloudGaBasicAcceleratorBasicDependence(name string) string {
-	return ""
+var AliCloudGaBasicAcceleratorMap0 = map[string]string{
+	"payment_type":      CHECKSET,
+	"resource_group_id": CHECKSET,
+	"status":            CHECKSET,
 }
 
-func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
+func AliCloudGaBasicAcceleratorBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+`)
+}
+
+func TestUnitAliCloudGaBasicAccelerator(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_ga_basic_accelerator"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_ga_basic_accelerator"].Schema).Data(nil, nil)
@@ -308,7 +382,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicAcceleratorCreate(dInit, rawClient)
+	err = resourceAliCloudGaBasicAcceleratorCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -331,7 +405,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAcceleratorCreate(dInit, rawClient)
+		err := resourceAliCloudGaBasicAcceleratorCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -358,7 +432,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicAcceleratorUpdate(dExisted, rawClient)
+	err = resourceAliCloudGaBasicAcceleratorUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -394,7 +468,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAcceleratorUpdate(dExisted, rawClient)
+		err := resourceAliCloudGaBasicAcceleratorUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -438,7 +512,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAcceleratorRead(dExisted, rawClient)
+		err := resourceAliCloudGaBasicAcceleratorRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -457,7 +531,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudGaBasicAcceleratorDelete(dExisted, rawClient)
+	err = resourceAliCloudGaBasicAcceleratorDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -485,7 +559,7 @@ func TestUnitAlicloudGaBasicAccelerator(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudGaBasicAcceleratorDelete(dExisted, rawClient)
+		err := resourceAliCloudGaBasicAcceleratorDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
