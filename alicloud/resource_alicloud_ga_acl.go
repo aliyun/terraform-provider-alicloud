@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaAcl() *schema.Resource {
+func resourceAliCloudGaAcl() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaAclCreate,
-		Read:   resourceAlicloudGaAclRead,
-		Update: resourceAlicloudGaAclUpdate,
-		Delete: resourceAlicloudGaAclDelete,
+		Create: resourceAliCloudGaAclCreate,
+		Read:   resourceAliCloudGaAclRead,
+		Update: resourceAliCloudGaAclUpdate,
+		Delete: resourceAliCloudGaAclDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -37,6 +37,11 @@ func resourceAlicloudGaAcl() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter."),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"acl_entries": {
 				Type:       schema.TypeSet,
@@ -72,7 +77,7 @@ func resourceAlicloudGaAcl() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -89,6 +94,10 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 
 	if v, ok := d.GetOk("acl_name"); ok {
 		request["AclName"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	if m, ok := d.GetOk("acl_entries"); ok {
@@ -130,10 +139,10 @@ func resourceAlicloudGaAclCreate(d *schema.ResourceData, meta interface{}) error
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaAclUpdate(d, meta)
+	return resourceAliCloudGaAclUpdate(d, meta)
 }
 
-func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	object, err := gaService.DescribeGaAcl(d.Id())
@@ -148,6 +157,7 @@ func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("address_ip_version", object["AddressIPVersion"])
 	d.Set("acl_name", object["AclName"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("status", object["AclStatus"])
 
 	if v, ok := object["AclEntries"].([]interface{}); ok {
@@ -175,7 +185,7 @@ func resourceAlicloudGaAclRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -341,12 +351,57 @@ func resourceAlicloudGaAclUpdate(d *schema.ResourceData, meta interface{}) error
 		d.SetPartial("acl_entries")
 	}
 
+	update = false
+	changeResourceGroupReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ClientToken":  buildClientToken("ChangeResourceGroup"),
+		"ResourceId":   d.Id(),
+		"ResourceType": "acl",
+	}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		changeResourceGroupReq["NewResourceGroupId"] = v
+	}
+
+	if update {
+		action := "ChangeResourceGroup"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, changeResourceGroupReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("resource_group_id")
+	}
+
 	d.Partial(false)
 
-	return resourceAlicloudGaAclRead(d, meta)
+	return resourceAliCloudGaAclRead(d, meta)
 }
 
-func resourceAlicloudGaAclDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaAclDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteAcl"

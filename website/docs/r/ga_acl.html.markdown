@@ -38,16 +38,17 @@ The following arguments are supported:
 
 * `address_ip_version` - (Required, ForceNew) The IP version. Valid values: `IPv4` and `IPv6`.
 * `acl_name` - (Optional) The name of the ACL. The name must be `2` to `128` characters in length, and can contain letters, digits, periods (.), hyphens (-) and underscores (_). It must start with a letter.
-* `acl_entries` - (Optional, Computed, Set, Deprecated since v1.190.0) The entries of the Acl. See [`acl_entries`](#acl_entries) below. **NOTE:** "Field `acl_entries` has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`."
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
+* `acl_entries` - (Optional, Set, Deprecated since v1.190.0) The entries of the Acl. See [`acl_entries`](#acl_entries) below. **NOTE:** "Field `acl_entries` has been deprecated from provider version 1.190.0 and it will be removed in the future version. Please use the new resource `alicloud_ga_acl_entry_attachment`."
 * `dry_run` - (Optional, Bool) The dry run.
 
 ### `acl_entries`
 
 The acl_entries supports the following: 
 
-* `entry` - (Optional, Computed) The IP address(192.168.XX.XX) or CIDR(10.0.XX.XX/24) block that you want to add to the network ACL.
-* `entry_description` - (Optional, Computed) The description of the IP entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_).
+* `entry` - (Optional) The IP address(192.168.XX.XX) or CIDR(10.0.XX.XX/24) block that you want to add to the network ACL.
+* `entry_description` - (Optional) The description of the IP entry. The description must be `1` to `256` characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.),and underscores (_).
 
 ## Attributes Reference
 
