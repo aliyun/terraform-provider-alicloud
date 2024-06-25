@@ -52,6 +52,17 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER"}, false),
 				Optional:     true,
 			},
+			"scaling_policy": {
+				Type:         schema.TypeString,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"recycle", "release", "forceRecycle", "forceRelease"}, false),
+				Optional:     true,
+			},
+			"max_instance_lifetime": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(86400),
+			},
 			"default_cooldown": {
 				Type:         schema.TypeInt,
 				Default:      300,
@@ -295,6 +306,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("desired_capacity", object["DesiredCapacity"])
 	d.Set("scaling_group_name", object["ScalingGroupName"])
 	d.Set("default_cooldown", object["DefaultCooldown"])
+	if object["MaxInstanceLifetime"] != nil {
+		d.Set("max_instance_lifetime", object["MaxInstanceLifetime"])
+	}
 	d.Set("multi_az_policy", object["MultiAZPolicy"])
 	d.Set("az_balance", object["AzBalance"])
 	d.Set("allocation_strategy", object["AllocationStrategy"])
@@ -386,6 +400,7 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("launch_template_version", object["LaunchTemplateVersion"])
 	d.Set("group_type", object["GroupType"])
 	d.Set("health_check_type", object["HealthCheckType"])
+	d.Set("scaling_policy", object["ScalingPolicy"])
 
 	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
 	if err != nil {
@@ -435,6 +450,10 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 		request["HealthCheckType"] = d.Get("health_check_type").(string)
 	}
 
+	if d.HasChange("scaling_policy") {
+		request["ScalingPolicy"] = d.Get("scaling_policy").(string)
+	}
+
 	if d.HasChange("min_size") {
 		request["MinSize"] = requests.NewInteger(d.Get("min_size").(int))
 	}
@@ -445,6 +464,11 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("desired_capacity") {
 		if v, ok := d.GetOkExists("desired_capacity"); ok {
 			request["DesiredCapacity"] = requests.NewInteger(v.(int))
+		}
+	}
+	if d.HasChange("max_instance_lifetime") {
+		if v, ok := d.GetOkExists("max_instance_lifetime"); ok {
+			request["MaxInstanceLifetime"] = requests.NewInteger(v.(int))
 		}
 	}
 	if d.HasChange("default_cooldown") {
@@ -662,6 +686,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		request["DesiredCapacity"] = v
 	}
 
+	if v, ok := d.GetOk("max_instance_lifetime"); ok {
+		request["MaxInstanceLifetime"] = v
+	}
+
 	request["OnDemandBaseCapacity"] = d.Get("on_demand_base_capacity")
 
 	request["OnDemandPercentageAboveBaseCapacity"] = d.Get("on_demand_percentage_above_base_capacity")
@@ -676,6 +704,10 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("health_check_type"); ok {
 		request["HealthCheckType"] = v
+	}
+
+	if v, ok := d.GetOk("scaling_policy"); ok {
+		request["ScalingPolicy"] = v
 	}
 
 	if v, ok := d.GetOk("group_deletion_protection"); ok {
