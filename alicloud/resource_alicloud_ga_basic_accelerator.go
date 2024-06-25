@@ -11,12 +11,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGaBasicAccelerator() *schema.Resource {
+func resourceAliCloudGaBasicAccelerator() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGaBasicAcceleratorCreate,
-		Read:   resourceAlicloudGaBasicAcceleratorRead,
-		Update: resourceAlicloudGaBasicAcceleratorUpdate,
-		Delete: resourceAlicloudGaBasicAcceleratorDelete,
+		Create: resourceAliCloudGaBasicAcceleratorCreate,
+		Read:   resourceAliCloudGaBasicAcceleratorRead,
+		Update: resourceAliCloudGaBasicAcceleratorUpdate,
+		Delete: resourceAliCloudGaBasicAcceleratorDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -43,6 +43,10 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"auto_pay": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"duration": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -51,10 +55,6 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Month", "Year"}, false),
-			},
-			"auto_pay": {
-				Type:     schema.TypeBool,
-				Optional: true,
 			},
 			"auto_use_coupon": {
 				Type:     schema.TypeString,
@@ -73,6 +73,11 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"basic_accelerator_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -90,7 +95,7 @@ func resourceAlicloudGaBasicAccelerator() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -112,16 +117,16 @@ func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta inter
 		request["ChargeType"] = convertGaBasicAcceleratorPaymentTypeRequest(v.(string))
 	}
 
+	if v, ok := d.GetOkExists("auto_pay"); ok {
+		request["AutoPay"] = v
+	}
+
 	if v, ok := d.GetOkExists("duration"); ok {
 		request["Duration"] = v
 	}
 
 	if v, ok := d.GetOk("pricing_cycle"); ok {
 		request["PricingCycle"] = v
-	}
-
-	if v, ok := d.GetOkExists("auto_pay"); ok {
-		request["AutoPay"] = v
 	}
 
 	if v, ok := d.GetOk("auto_use_coupon"); ok {
@@ -138,6 +143,10 @@ func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta inter
 
 	if v, ok := d.GetOk("promotion_option_no"); ok {
 		request["PromotionOptionNo"] = v
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -167,10 +176,10 @@ func resourceAlicloudGaBasicAcceleratorCreate(d *schema.ResourceData, meta inter
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGaBasicAcceleratorUpdate(d, meta)
+	return resourceAliCloudGaBasicAcceleratorUpdate(d, meta)
 }
 
-func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 
@@ -186,6 +195,7 @@ func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interfa
 	d.Set("bandwidth_billing_type", object["BandwidthBillingType"])
 	d.Set("payment_type", convertGaBasicAcceleratorPaymentTypeResponse(object["InstanceChargeType"]))
 	d.Set("cross_border_status", object["CrossBorderStatus"])
+	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("basic_accelerator_name", object["Name"])
 	d.Set("description", object["Description"])
 	d.Set("status", object["State"])
@@ -200,7 +210,7 @@ func resourceAlicloudGaBasicAcceleratorRead(d *schema.ResourceData, meta interfa
 	return nil
 }
 
-func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	var response map[string]interface{}
@@ -222,6 +232,7 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("basic_accelerator_name") {
 		update = true
+
 		if v, ok := d.GetOk("basic_accelerator_name"); ok {
 			request["Name"] = v
 		}
@@ -229,6 +240,7 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 
 	if d.HasChange("description") {
 		update = true
+
 		if v, ok := d.GetOk("description"); ok {
 			request["Description"] = v
 		}
@@ -319,12 +331,57 @@ func resourceAlicloudGaBasicAcceleratorUpdate(d *schema.ResourceData, meta inter
 		d.SetPartial("cross_border_status")
 	}
 
+	update = false
+	changeResourceGroupReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"ClientToken":  buildClientToken("ChangeResourceGroup"),
+		"ResourceId":   d.Id(),
+		"ResourceType": "basicaccelerator",
+	}
+
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		changeResourceGroupReq["NewResourceGroupId"] = v
+	}
+
+	if update {
+		action := "ChangeResourceGroup"
+		conn, err := client.NewGaplusClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, changeResourceGroupReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("resource_group_id")
+	}
+
 	d.Partial(false)
 
-	return resourceAlicloudGaBasicAcceleratorRead(d, meta)
+	return resourceAliCloudGaBasicAcceleratorRead(d, meta)
 }
 
-func resourceAlicloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
 	action := "DeleteBasicAccelerator"
@@ -345,7 +402,7 @@ func resourceAlicloudGaBasicAcceleratorDelete(d *schema.ResourceData, meta inter
 	}
 
 	if fmt.Sprint(object["InstanceChargeType"]) == "PREPAY" {
-		log.Printf("[WARN] Cannot destroy resourceAlicloudGaBasicAccelerator prepay type. Terraform will remove this resource from the state file, however resources may remain.")
+		log.Printf("[WARN] Cannot destroy resourceAliCloudGaBasicAccelerator prepay type. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
 

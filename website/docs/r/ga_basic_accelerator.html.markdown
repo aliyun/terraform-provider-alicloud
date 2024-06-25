@@ -21,13 +21,13 @@ Basic Usage
 
 ```terraform
 resource "alicloud_ga_basic_accelerator" "default" {
-  duration               = 1
-  pricing_cycle          = "Month"
-  basic_accelerator_name = "tf-example-value"
-  description            = "tf-example-value"
   bandwidth_billing_type = "BandwidthPackage"
   auto_pay               = true
+  duration               = 1
+  pricing_cycle          = "Month"
   auto_use_coupon        = "true"
+  basic_accelerator_name = "tf-example-value"
+  description            = "tf-example-value"
 }
 ```
 
@@ -40,19 +40,20 @@ The following arguments are supported:
 * `cross_border_status` - (Optional, Bool, Available since v1.208.1) Indicates whether cross-border acceleration is enabled. Default value: `false`. Valid values:
   - `true`: Enable.
   - `false`: Disable.
+* `auto_pay` - (Optional, Bool) Specifies whether to enable automatic payment. Default value: `false`. Valid values:
+  - `true`: enables automatic payment. Payments are automatically completed.
+  - `false`: disables automatic payment. If you select this option, you must go to the Order Center to complete the payment after an order is generated.
 * `duration` - (Optional, Int) The subscription duration. Default value: `1`.
   * If the `pricing_cycle` parameter is set to `Month`, the valid values for the `duration` parameter are `1` to `9`.
   * If the `pricing_cycle` parameter is set to `Year`, the valid values for the `duration` parameter are `1` to `3`.
 * `pricing_cycle` - (Optional) The billing cycle. Default value: `Month`. Valid values: `Month`, `Year`.
-* `auto_pay` - (Optional, Bool) Specifies whether to enable automatic payment. Default value: `false`. Valid values:
-  - `true`: enables automatic payment. Payments are automatically completed.
-  - `false`: disables automatic payment. If you select this option, you must go to the Order Center to complete the payment after an order is generated.
 * `auto_use_coupon` - (Optional) Specifies whether to automatically pay bills by using coupons. Default value: `false`. **NOTE:** This parameter is required only if `auto_pay` is set to `true`.
 * `auto_renew` - (Optional, Bool) Specifies whether to enable auto-renewal for the GA Basic Accelerator instance. Default value: `false`. Valid values:
   - `true`: enables auto-renewal.
   - `false`: disables auto-renewal.
 * `auto_renew_duration` - (Optional, Int) The auto-renewal period. Unit: months. Default value: `1`. Valid values: `1` to `12`. **NOTE:** This parameter is required only if `auto_renew` is set to `true`.
 * `promotion_option_no` - (Optional, Available since v1.208.1) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `basic_accelerator_name` - (Optional) The name of the Global Accelerator Basic Accelerator instance.
 * `description` - (Optional) The description of the Global Accelerator Basic Accelerator instance.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.

@@ -1642,7 +1642,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_network_acl_attachment":                            resourceAliCloudVpcNetworkAclAttachment(),
 			"alicloud_cen_transit_router_cidr":                               resourceAlicloudCenTransitRouterCidr(),
 			"alicloud_das_switch_das_pro":                                    resourceAlicloudDasSwitchDasPro(),
-			"alicloud_ga_basic_accelerator":                                  resourceAlicloudGaBasicAccelerator(),
+			"alicloud_ga_basic_accelerator":                                  resourceAliCloudGaBasicAccelerator(),
 			"alicloud_ga_basic_endpoint_group":                               resourceAliCloudGaBasicEndpointGroup(),
 			"alicloud_cms_metric_rule_black_list":                            resourceAlicloudCmsMetricRuleBlackList(),
 			"alicloud_ga_basic_ip_set":                                       resourceAliCloudGaBasicIpSet(),
