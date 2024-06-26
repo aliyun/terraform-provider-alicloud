@@ -28,7 +28,6 @@ resource "alicloud_ga_bandwidth_package" "example" {
   bandwidth_type = "Basic"
   duration       = 1
   auto_pay       = true
-  ratio          = 30
 }
 ```
 
@@ -40,24 +39,25 @@ The following arguments are supported:
 * `type` - (Required, ForceNew) The type of the bandwidth packet. China station only supports return to basic. Valid values: `Basic`, `CrossDomain`.
 * `bandwidth_type` - (Optional) The bandwidth type of the bandwidth. Valid values: `Advanced`, `Basic`, `Enhanced`. If `type` is set to `Basic`, this parameter is required.
 -> **NOTE:** At present, only basic can be configured to enhanced, but not enhanced and advanced to other types of accelerated bandwidth.
-* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`. **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
 * `payment_type` - (Optional, ForceNew) The payment type of the bandwidth. Default value: `Subscription`. Valid values: `PayAsYouGo`, `Subscription`.
+* `billing_type` - (Optional, ForceNew) The billing type. Valid values: `PayBy95`, `PayByTraffic`. **NOTE:** `billing_type` is valid only when `payment_type` is set to `PayAsYouGo`.
 * `ratio` - (Optional, ForceNew, Int) The minimum percentage for the pay-by-95th-percentile metering method. Valid values: `30` to `100`. **NOTE:** `ratio` is valid only when `billing_type` is set to `PayBy95`.
-* `cbn_geographic_region_ida` - (Optional, ForceNew, Computed) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value: `China-mainland`.
-* `cbn_geographic_region_idb` - (Optional, ForceNew, Computed) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value: `Global`.
+* `cbn_geographic_region_ida` - (Optional, ForceNew) Interworking area A of cross domain acceleration package. Only international stations support returning this parameter. Default value: `China-mainland`.
+* `cbn_geographic_region_idb` - (Optional, ForceNew) Interworking area B of cross domain acceleration package. Only international stations support returning this parameter. Default value: `Global`.
 * `auto_pay` - (Optional, Bool) Whether to pay automatically. Valid values:
   - `false`: If automatic payment is not enabled, you need to go to the order center to complete the payment after the order is generated.
   - `true`: Enable automatic payment, automatic payment order.
+* `duration` - (Optional) The subscription duration. **NOTE:** The ForceNew attribute has be removed from version 1.148.0. If `payment_type` is set to `Subscription`, this parameter is required.
 * `auto_use_coupon` - (Optional, Bool) Whether use vouchers. Default value: `false`. Valid values:
   - `false`: Not used.
   - `true`: Use.
-* `duration` - (Optional) The subscription duration. **NOTE:** The ForceNew attribute has be removed from version 1.148.0. If `payment_type` is set to `Subscription`, this parameter is required.  
-* `auto_renew_duration` - (Optional, Int, Available since v1.169.0) Auto renewal period of a bandwidth packet, in the unit of month. The value range is 1-12.
-* `renewal_status` - (Optional, Computed, Available since v1.169.0) Whether to renew a bandwidth packet. automatically or not. Valid values:
+* `renewal_status` - (Optional, Available since v1.169.0) Whether to renew a bandwidth packet. automatically or not. Valid values:
   - `AutoRenewal`: Enable auto renewal.
   - `Normal`: Disable auto renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
+* `auto_renew_duration` - (Optional, Int, Available since v1.169.0) Auto renewal period of a bandwidth packet, in the unit of month. Valid values: `1` to `12`.
 * `promotion_option_no` - (Optional, Available since v1.208.0) The code of the coupon. **NOTE:** The `promotion_option_no` takes effect only for accounts registered on the international site (alibabacloud.com).
+* `resource_group_id` - (Optional, Available since v1.226.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `bandwidth_package_name` - (Optional) The name of the bandwidth packet.
 * `description` - (Optional) The description of bandwidth package.
 * `tags` - (Optional, Available since v1.207.1) A mapping of tags to assign to the resource.
