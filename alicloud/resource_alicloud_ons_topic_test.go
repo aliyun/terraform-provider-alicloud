@@ -200,6 +200,14 @@ resource "alicloud_ons_instance" "default" {
 variable "topic" {
  default = "%s"
 }
+
+resource "alicloud_ons_topic" "mutilple" {
+  count        = 10
+  topic_name   = format("%%s%%s", var.topic, count.index)
+  instance_id  = alicloud_ons_instance.default.id
+  message_type = 0
+  remark       = "dafault_ons_topic_remark"
+}
 `, name, name)
 }
 

@@ -115,7 +115,7 @@ func resourceAlicloudOnsTopicCreate(d *schema.ResourceData, meta interface{}) er
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Topic"]))
 
 	onsService := OnsService{client}
-	stateConf := BuildStateConf([]string{}, []string{"#CHECKSET"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, onsService.OceanOnsTopicStateRefreshFunc(d.Id(), "$.CreateTime", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, onsService.OceanOnsTopicStateRefreshFunc(d.Id(), "$.ServiceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
