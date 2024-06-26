@@ -1,32 +1,36 @@
-## 1.225.1 (Unreleased)
+## 1.226.0 (Unreleased)
+## 1.225.1 (June 26, 2024)
 
 ENHANCEMENTS:
 
-- client: Improved oss client. [GH-7380]
-- resource/alicloud_ess_alarm: add expressions and expressions_logic_operator. [GH-7298]
-- resource/alicloud_ess_scaling_group: support composable and add az_balance,allocation_strategy and spot_allocation_strategy. [GH-7329]
-- resource/alicloud_ess_scaling_group: fix alb_server_group conflict. [GH-7333]
-- resource/alicloud_mongodb_sharding_instance: Added the field storage_type; Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. [GH-7334]
-- resource/alicloud_slb_rule: modify cookie_timeout validation. [GH-7351]
-- resource/alicloud_kms_key: Added error code Forbidden.ResourceNotFound. [GH-7352]
-- resource/alicloud_kms_secret: Added error code Forbidden.ResourceNotFound. [GH-7353]
-- resource/alicloud_ddosbgp_ip: Added the field member_uid. [GH-7354]
-- resource/alicloud_click_house_db_cluster: Added support for in-place cluster node group and class upgrade. [GH-7360]
-- resource/alicloud_ecs_disk: supports new category. [GH-7363]
-- resource/alicloud_common_bandwidth_package: improve code implementation and document. [GH-7368]
-- resource/alicloud_common_bandwidth_package_attachment: improve code implementation and document. [GH-7369]
-- resource/alicloud_eci_container_group: add privileged. [GH-7372]
-- resource/alicloud_eip_address: improve document; resource/alicloud_eip_association: improve document; resource/alicloud_eip_segment_address: add new attribute zone, resource_group_id and segment_address_name. [GH-7373]
-- docs: update auto_renew description for alicloud_cs_kubernetes_node_pool. [GH-7359]
-- docs: improve description for eip address. [GH-7374]
-- docs: deprecate the product cddc, resource log_oss_shipper. [GH-7376]
-- docs: Improve the example ecs_instance. [GH-7382]
-- docs: improve document for ddosbgp_ip. [GH-7384]
+- client: Improved oss client. ([#7380](https://github.com/aliyun/terraform-provider-alicloud/issues/7380))
+- resource/alicloud_ess_alarm: add expressions and expressions_logic_operator. ([#7298](https://github.com/aliyun/terraform-provider-alicloud/issues/7298))
+- resource/alicloud_ess_scaling_group: support composable and add az_balance,allocation_strategy and spot_allocation_strategy. ([#7329](https://github.com/aliyun/terraform-provider-alicloud/issues/7329))
+- resource/alicloud_ess_scaling_group: fix alb_server_group conflict. ([#7333](https://github.com/aliyun/terraform-provider-alicloud/issues/7333))
+- resource/alicloud_mongodb_sharding_instance: Added the field storage_type; Removed the ForceNew for field engine_version; Supported for new action UpgradeDBInstanceEngineVersion. ([#7334](https://github.com/aliyun/terraform-provider-alicloud/issues/7334))
+- resource/alicloud_slb_rule: modify cookie_timeout validation. ([#7351](https://github.com/aliyun/terraform-provider-alicloud/issues/7351))
+- resource/alicloud_kms_key: Added error code Forbidden.ResourceNotFound. ([#7352](https://github.com/aliyun/terraform-provider-alicloud/issues/7352))
+- resource/alicloud_kms_secret: Added error code Forbidden.ResourceNotFound. ([#7353](https://github.com/aliyun/terraform-provider-alicloud/issues/7353))
+- resource/alicloud_ddosbgp_ip: Added the field member_uid. ([#7354](https://github.com/aliyun/terraform-provider-alicloud/issues/7354))
+- resource/alicloud_click_house_db_cluster: Added support for in-place cluster node group and class upgrade. ([#7360](https://github.com/aliyun/terraform-provider-alicloud/issues/7360))
+- resource/alicloud_ecs_disk: supports new category. ([#7363](https://github.com/aliyun/terraform-provider-alicloud/issues/7363))
+- resource/alicloud_common_bandwidth_package: improve code implementation and document. ([#7368](https://github.com/aliyun/terraform-provider-alicloud/issues/7368))
+- resource/alicloud_common_bandwidth_package_attachment: improve code implementation and document. ([#7369](https://github.com/aliyun/terraform-provider-alicloud/issues/7369))
+- resource/alicloud_eci_container_group: add privileged. ([#7372](https://github.com/aliyun/terraform-provider-alicloud/issues/7372))
+- resource/alicloud_eip_address: improve document; resource/alicloud_eip_association: improve document; resource/alicloud_eip_segment_address: add new attribute zone, resource_group_id and segment_address_name. ([#7373](https://github.com/aliyun/terraform-provider-alicloud/issues/7373))
+- docs: update auto_renew description for alicloud_cs_kubernetes_node_pool. ([#7359](https://github.com/aliyun/terraform-provider-alicloud/issues/7359))
+- docs: improve description for eip address. ([#7374](https://github.com/aliyun/terraform-provider-alicloud/issues/7374))
+- docs: deprecate the product cddc, resource log_oss_shipper. ([#7376](https://github.com/aliyun/terraform-provider-alicloud/issues/7376))
+- docs: Improve the example ecs_instance. ([#7382](https://github.com/aliyun/terraform-provider-alicloud/issues/7382))
+- docs: improve document for ddosbgp_ip. ([#7384](https://github.com/aliyun/terraform-provider-alicloud/issues/7384))
 
 BUG FIXES:
 
-- provider: Fixed resourcesharing endpoint invalid error. [GH-7364]
-- resource/alicloud_cloud_firewall_instance: Fixed account_number invalid error. [GH-7357]
+- provider: Fixed resourcesharing endpoint invalid error. ([#7364](https://github.com/aliyun/terraform-provider-alicloud/issues/7364))
+- resource/alicloud_cloud_firewall_instance: Fixed account_number invalid error. ([#7357](https://github.com/aliyun/terraform-provider-alicloud/issues/7357))
+- resource/alicloud_eip_association: fix bug while create and delete eip association. ([#7392](https://github.com/aliyun/terraform-provider-alicloud/issues/7392))
+- resource/alicloud_cs_kubernetes_addon: fix WaitForState if addon exists. ([#7385](https://github.com/aliyun/terraform-provider-alicloud/issues/7385))
+- resource/alicloud_db_instance: Fixed dockeronecs instance tde query. ([#7343](https://github.com/aliyun/terraform-provider-alicloud/issues/7343))
 
 ## 1.225.0 (June 14, 2024)
 
