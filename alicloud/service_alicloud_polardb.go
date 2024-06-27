@@ -965,7 +965,7 @@ func (s *PolarDBService) ModifyParameters(d *schema.ResourceData) error {
 			value := i.(map[string]interface{})["value"].(string)
 			allConfig[key] = value
 		}
-		if err := s.WaitForPolarDBParameter(d.Id(), DefaultTimeoutMedium, allConfig); err != nil {
+		if err := s.WaitForPolarDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
 			return WrapError(err)
 		}
 	}
@@ -1002,7 +1002,7 @@ func (s *PolarDBService) CreateClusterParamsModifyParameters(d *schema.ResourceD
 
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	// wait instance parameter expect after modifying
-	if err := s.WaitForPolarDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
+	if err := s.WaitForPolarDBParameter(d.Id(), 1200, allConfig); err != nil {
 		return WrapError(err)
 	}
 	for _, i := range changeParams {
