@@ -232,7 +232,7 @@ func resourceAlicloudCenInstanceDelete(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus"}) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InvalidOperation.CenInstanceStatus", "Operation.Blocking"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
