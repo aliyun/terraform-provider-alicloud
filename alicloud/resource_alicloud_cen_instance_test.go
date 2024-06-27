@@ -461,7 +461,7 @@ func testSweepCenInstances(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCenInstance_basic(t *testing.T) {
+func TestAccAliCloudCenInstance_basic(t *testing.T) {
 	var cen cbn.Cen
 	resourceId := "alicloud_cen_instance.default"
 	ra := resourceAttrInit(resourceId, cenInstanceMap)
@@ -556,7 +556,7 @@ func TestAccAlicloudCenInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenInstance_basic1(t *testing.T) {
+func TestAccAliCloudCenInstance_basic1(t *testing.T) {
 	var cen cbn.Cen
 	resourceId := "alicloud_cen_instance.default"
 	ra := resourceAttrInit(resourceId, cenInstanceMap)
@@ -604,7 +604,7 @@ func TestAccAlicloudCenInstance_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenInstance_multi(t *testing.T) {
+func TestAccAliCloudCenInstance_multi(t *testing.T) {
 	var cen cbn.Cen
 	resourceId := "alicloud_cen_instance.default.4"
 	ra := resourceAttrInit(resourceId, nil)
