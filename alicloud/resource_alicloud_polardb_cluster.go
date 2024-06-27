@@ -405,9 +405,10 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				DiffSuppressFunc: polardbDiffSuppressFunc,
 			},
 			"db_node_num": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntInSlice([]int{1, 2}),
+				Type:             schema.TypeInt,
+				Optional:         true,
+				ValidateFunc:     IntInSlice([]int{1, 2}),
+				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
 			},
 			"parameter_group_id": {
 				Type:     schema.TypeString,
@@ -512,16 +513,33 @@ func resourceAlicloudPolarDBClusterCreate(d *schema.ResourceData, meta interface
 	d.SetId(fmt.Sprint(response["DBClusterId"]))
 
 	// wait cluster status change from Creating to running
-	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{"Creating", "WarmCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	if v, ok := d.GetOk("db_type"); ok && v.(string) == "MySQL" {
-		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, d.Timeout(schema.TimeoutUpdate), 3*time.Minute, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
+		categoryConf := BuildStateConf([]string{}, []string{"Normal", "Basic", "ArchiveNormal", "NormalMultimaster", "SENormal"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, polarDBService.PolarDBClusterCategoryRefreshFunc(d.Id(), []string{}))
 		if _, err := categoryConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	allConfig := make(map[string]string)
+	if v, ok := d.GetOk("loose_polar_log_bin"); ok {
+		allConfig["loose_polar_log_bin"] = fmt.Sprint(v)
+	}
+	if v, ok := d.GetOk("default_time_zone"); ok {
+		allConfig["default_time_zone"] = fmt.Sprint(v)
+	}
+	if v, ok := d.GetOk("lower_case_table_names"); ok {
+		allConfig["lower_case_table_names"] = fmt.Sprint(v)
+	}
+	// wait instance parameter expect after modifying
+	if len(allConfig) > 0 {
+		if err := polarDBService.WaitForPolarDBParameter(d.Id(), DefaultLongTimeout, allConfig); err != nil {
+			return WrapError(err)
+		}
+	}
+
 	return resourceAlicloudPolarDBClusterUpdate(d, meta)
 }
 
@@ -530,7 +548,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	polarDBService := PolarDBService{client}
 	d.Partial(true)
 
-	if d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin") {
+	if !d.IsNewResource() && (d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin")) {
 		if err := polarDBService.CreateClusterParamsModifyParameters(d); err != nil {
 			return WrapError(err)
 		}
@@ -603,7 +621,6 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		request := polardb.CreateModifyAutoRenewAttributeRequest()
 		request.DBClusterIds = d.Id()
 		request.RenewalStatus = status
-
 		if status == string(RenewAutoRenewal) {
 			period := d.Get("auto_renew_period").(int)
 			request.Duration = strconv.Itoa(period)
@@ -617,13 +634,25 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		if err := polarDBService.WaitForPolarDBPayType(d.Id(), "Prepaid", DefaultLongTimeout); err != nil {
 			return WrapError(err)
 		}
-		raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-			return polarDBClient.ModifyAutoRenewAttribute(request)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err := client.WithPolarDBClient(func(polardbClient *polardb.Client) (interface{}, error) {
+				return polardbClient.ModifyAutoRenewAttribute(request)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"-999"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+			return nil
 		})
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		d.SetPartial("renewal_status")
 		d.SetPartial("auto_renew_period")
 	}
@@ -1762,6 +1791,12 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	if v, ok := d.GetOk("default_time_zone"); ok {
 		request["DefaultTimeZone"] = v.(string)
+	}
+
+	if v, ok := d.GetOk("security_ips"); ok {
+		ipList := expandStringList(v.(*schema.Set).List())
+		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
+		request["SecurityIPList"] = ipstr
 	}
 
 	return request, nil
