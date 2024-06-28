@@ -981,10 +981,11 @@ func (s *PolarDBService) CreateClusterParamsModifyParameters(d *schema.ResourceD
 	allConfig := make(map[string]string)
 	changeParams := []string{"loose_polar_log_bin", "default_time_zone"}
 	for _, i := range changeParams {
-		v := d.Get(i)
-		if v != nil {
-			config[i] = v
-			allConfig[i] = fmt.Sprint(v)
+		if v, ok := d.GetOk(i); ok {
+			if d.HasChange(i) {
+				config[i] = v
+				allConfig[i] = fmt.Sprint(v)
+			}
 		}
 	}
 	cfg, _ := json.Marshal(config)
