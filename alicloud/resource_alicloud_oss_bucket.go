@@ -512,8 +512,21 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 		oss.RedundancyType(oss.DataRedundancyType(d.Get("redundancy_type").(string))),
 		oss.ACL(oss.ACLType(d.Get("acl").(string))),
 	}
+	options := []oss.Option{
+		req.StorageClassOption,
+		req.RedundancyTypeOption,
+		req.AclTypeOption,
+	}
+
+	//resource_group_id
+	if resourceGroupId, ok := d.Get("resource_group_id").(string); ok {
+		if len(resourceGroupId) > 0 {
+			options = append(options, oss.SetHeader("x-oss-resource-group-id", resourceGroupId))
+		}
+	}
+
 	raw, err = client.WithOssClient(func(ossClient *oss.Client) (interface{}, error) {
-		return nil, ossClient.CreateBucket(req.BucketName, req.StorageClassOption, req.RedundancyTypeOption, req.AclTypeOption)
+		return nil, ossClient.CreateBucket(req.BucketName, options...)
 	})
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_oss_bucket", "CreateBucket", AliyunOssGoSdk)
@@ -1043,7 +1056,7 @@ func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) e
 		d.SetPartial("transfer_acceleration")
 	}
 
-	if d.HasChange("resource_group_id") {
+	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		resourceGroupId := d.Get("resource_group_id").(string)
 		request := map[string]string{"bucketName": d.Id(), "resourceGroupId": resourceGroupId}
 		var requestInfo *oss.Client
