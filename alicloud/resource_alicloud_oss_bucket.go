@@ -542,7 +542,7 @@ func resourceAlicloudOssBucketCreate(d *schema.ResourceData, meta interface{}) e
 	// Assign the bucket name as the resource ID
 	d.SetId(request["bucketName"])
 
-	return resourceAlicloudOssBucketUpdate(d, meta)
+	return resourceAlicloudOssBucketUpdateEx(d, meta, true)
 }
 
 func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) error {
@@ -938,6 +938,10 @@ func resourceAlicloudOssBucketRead(d *schema.ResourceData, meta interface{}) err
 }
 
 func resourceAlicloudOssBucketUpdate(d *schema.ResourceData, meta interface{}) error {
+	return resourceAlicloudOssBucketUpdateEx(d, meta, false)
+}
+
+func resourceAlicloudOssBucketUpdateEx(d *schema.ResourceData, meta interface{}, fromCreate bool) error {
 	client := meta.(*connectivity.AliyunClient)
 
 	d.Partial(true)
