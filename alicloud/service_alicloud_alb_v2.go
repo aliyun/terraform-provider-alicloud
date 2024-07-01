@@ -340,3 +340,93 @@ func (s *AlbServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
+// DescribeAlbLoadBalancerSecurityGroupAttachment <<< Encapsulated get interface for Alb LoadBalancerSecurityGroupAttachment.
+
+func (s *AlbServiceV2) DescribeAlbLoadBalancerSecurityGroupAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "GetLoadBalancerAttribute"
+	conn, err := client.NewAlbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["LoadBalancerId"] = parts[0]
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$", response)
+	instanceIds, err := jsonpath.Get("$.SecurityGroupIds[*]", v)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityGroupIds[*]", v)
+	}
+	found := false
+	for _, vv := range instanceIds.([]interface{}) {
+		if vv.(string) == parts[1] {
+			found = true
+			break
+		}
+	}
+	if found {
+		return v.(map[string]interface{}), nil
+	}
+
+	return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancerSecurityGroupAttachment", id)), NotFoundMsg, response)
+}
+
+func (s *AlbServiceV2) AlbLoadBalancerSecurityGroupAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeAlbLoadBalancerSecurityGroupAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		if field == "#ID" {
+			if currentStatus != "" {
+				currentStatus = "#CHECKSET"
+			}
+		}
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeAlbLoadBalancerSecurityGroupAttachment >>> Encapsulated.
