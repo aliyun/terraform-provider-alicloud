@@ -2225,6 +2225,7 @@ func TestAccAliCloudOssBucketResourceGroup(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"bucket":            name,
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"redundancy_type":   "LRS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -2232,6 +2233,7 @@ func TestAccAliCloudOssBucketResourceGroup(t *testing.T) {
 						"access_monitor.#":        "1",
 						"access_monitor.0.status": "Disabled",
 						"resource_group_id":       CHECKSET,
+						"redundancy_type":         "LRS",
 					}),
 				),
 			},
@@ -2244,6 +2246,7 @@ func TestAccAliCloudOssBucketResourceGroup(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"force_destroy":     true,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
