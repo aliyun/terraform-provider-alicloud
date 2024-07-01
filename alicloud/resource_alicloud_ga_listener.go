@@ -59,6 +59,16 @@ func resourceAliCloudGaListener() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"http1.1", "http2", "http3"}, false),
 			},
+			"idle_timeout": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
+			"request_timeout": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+			},
 			"client_affinity": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -179,6 +189,14 @@ func resourceAliCloudGaListenerCreate(d *schema.ResourceData, meta interface{}) 
 		request["HttpVersion"] = v
 	}
 
+	if v, ok := d.GetOkExists("idle_timeout"); ok {
+		request["IdleTimeout"] = v
+	}
+
+	if v, ok := d.GetOkExists("request_timeout"); ok {
+		request["RequestTimeout"] = v
+	}
+
 	if v, ok := d.GetOk("client_affinity"); ok {
 		request["ClientAffinity"] = v
 	}
@@ -276,6 +294,8 @@ func resourceAliCloudGaListenerRead(d *schema.ResourceData, meta interface{}) er
 	d.Set("security_policy_id", object["SecurityPolicyId"])
 	d.Set("listener_type", object["Type"])
 	d.Set("http_version", object["HttpVersion"])
+	d.Set("idle_timeout", object["IdleTimeout"])
+	d.Set("request_timeout", object["RequestTimeout"])
 	d.Set("client_affinity", object["ClientAffinity"])
 	d.Set("name", object["Name"])
 	d.Set("description", object["Description"])
@@ -374,6 +394,22 @@ func resourceAliCloudGaListenerUpdate(d *schema.ResourceData, meta interface{}) 
 			request["Certificates"] = Certificates
 		}
 
+	}
+
+	if d.HasChange("idle_timeout") {
+		update = true
+
+		if v, ok := d.GetOkExists("idle_timeout"); ok {
+			request["IdleTimeout"] = v
+		}
+	}
+
+	if d.HasChange("request_timeout") {
+		update = true
+
+		if v, ok := d.GetOkExists("request_timeout"); ok {
+			request["RequestTimeout"] = v
+		}
 	}
 
 	if d.HasChange("client_affinity") {

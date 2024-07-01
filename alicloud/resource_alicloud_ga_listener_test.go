@@ -69,6 +69,16 @@ func TestAccAliCloudGaListener_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"idle_timeout": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"idle_timeout": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"client_affinity": "SOURCE_IP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -148,6 +158,7 @@ func TestAccAliCloudGaListener_basic0_twin(t *testing.T) {
 					"protocol":        "TCP",
 					"proxy_protocol":  "true",
 					"listener_type":   "Standard",
+					"idle_timeout":    "10",
 					"client_affinity": "SOURCE_IP",
 					"name":            name,
 					"description":     name,
@@ -164,6 +175,7 @@ func TestAccAliCloudGaListener_basic0_twin(t *testing.T) {
 						"protocol":        "TCP",
 						"proxy_protocol":  "true",
 						"listener_type":   "Standard",
+						"idle_timeout":    "10",
 						"client_affinity": "SOURCE_IP",
 						"name":            name,
 						"description":     name,
@@ -184,7 +196,7 @@ func TestAccAliCloudGaListener_basic1(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
-	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaListener")
@@ -253,6 +265,26 @@ func TestAccAliCloudGaListener_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"http_version": "http3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"idle_timeout": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"idle_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"request_timeout": "80",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"request_timeout": "80",
 					}),
 				),
 			},
@@ -346,7 +378,7 @@ func TestAccAliCloudGaListener_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.GaSupportRegions)
 	resourceId := "alicloud_ga_listener.default"
-	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudGaListenerMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GaService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeGaListener")
@@ -370,6 +402,8 @@ func TestAccAliCloudGaListener_basic1_twin(t *testing.T) {
 					"security_policy_id": "tls_cipher_policy_1_1",
 					"listener_type":      "Standard",
 					"http_version":       "http3",
+					"idle_timeout":       "60",
+					"request_timeout":    "80",
 					"client_affinity":    "SOURCE_IP",
 					"name":               name,
 					"description":        name,
@@ -401,6 +435,8 @@ func TestAccAliCloudGaListener_basic1_twin(t *testing.T) {
 						"security_policy_id":     "tls_cipher_policy_1_1",
 						"listener_type":          "Standard",
 						"http_version":           "http3",
+						"idle_timeout":           "60",
+						"request_timeout":        "80",
 						"client_affinity":        "SOURCE_IP",
 						"name":                   name,
 						"description":            name,
@@ -420,7 +456,14 @@ func TestAccAliCloudGaListener_basic1_twin(t *testing.T) {
 }
 
 var AliCloudGaListenerMap0 = map[string]string{
-	"status": CHECKSET,
+	"idle_timeout": CHECKSET,
+	"status":       CHECKSET,
+}
+
+var AliCloudGaListenerMap1 = map[string]string{
+	"idle_timeout":    CHECKSET,
+	"request_timeout": CHECKSET,
+	"status":          CHECKSET,
 }
 
 func AliCloudGaListenerBasicDependence0(name string) string {

@@ -79,6 +79,12 @@ The following arguments are supported:
   - `CustomRouting`: custom routing.
 * `http_version` - (Optional, Available since v1.220.0) The maximum version of the HTTP protocol. Default Value: `http2`. Valid values: `http1.1`, `http2`, `http3`.
 -> **NOTE:** `http_version` is only valid when `protocol` is `HTTPS`.
+* `idle_timeout` - (Optional, Int, Available since v1.226.1) The timeout period of idle connections. Unit: seconds. Valid values:
+  - If you set `protocol` to `TCP`. Default Value: `900`. Valid values: `10` to `900`.
+  - If you set `protocol` to `UDP`. Default Value: `20`. Valid values: `10` to `20`.
+  - If you set `protocol` to `HTTP` or `HTTPS`. Default Value: `15`. Valid values: `1` to `60`.
+* `request_timeout` - (Optional, Int, Available since v1.226.1) The timeout period for HTTP or HTTPS requests. Unit: seconds. Default Value: `60`. Valid values: `1` to `180`.
+-> **NOTE:** `request_timeout` is only valid when `protocol` is `HTTP` or `HTTPS`.
 * `client_affinity` - (Optional) The clientAffinity of the listener. Default value: `NONE`. Valid values:
   - `NONE`: client affinity is not maintained, that is, connection requests from the same client cannot always be directed to the same terminal node.
   - `SOURCE_IP`: maintain client affinity. When a client accesses a stateful application, all requests from the same client can be directed to the same terminal node, regardless of the source port and protocol.
