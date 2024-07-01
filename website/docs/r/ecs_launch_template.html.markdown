@@ -7,7 +7,7 @@ description: |-
   Provides a Alicloud ECS Launch Template resource.
 ---
 
-# alicloud\_ecs\_launch\_template
+# alicloud_ecs_launch_template
 
 Provides a ECS Launch Template resource.
 
@@ -120,6 +120,8 @@ resource "alicloud_ecs_launch_template" "default" {
 
 The following arguments are supported:
 
+* `auto_renew` - (Optional, ForceNew, Computed, Available since v1.226.0) Specifies whether to enable auto-renewal for the instance. This parameter is valid only if `internet_charge_type` is set to `PrePaid`.
+* `auto_renew_period` - (Optional, ForceNew, Computed, Available since v1.226.0) The auto-renewal period of the instance. Valid values when `period_unit` is set to `Month`: 1, 2, 3, 6, 12, 24, 36, 48, and 60. Default value: 1.
 * `auto_release_time` - (Optional) Instance auto release time. The time is presented using the ISO8601 standard and in UTC time. The format is  YYYY-MM-DDTHH:MM:SSZ.
 * `data_disks` - (Optional) The list of data disks created with instance. See [`data_disks`](#data_disks) below.
 * `deployment_set_id` - (Optional) The Deployment Set Id.
@@ -142,7 +144,8 @@ The following arguments are supported:
 * `network_interfaces` - (Optional) The list of network interfaces created with instance. See [`network_interfaces`](#network_interfaces) below.
 * `network_type` - (Optional) Network type of the instance. Valid values: `classic`, `vpc`.
 * `password_inherit` - (Optional) Whether to use the password preset by the mirror.
-* `period` - (Optional) The subscription period of the instance. Unit: months. This parameter takes effect and is required only when InstanceChargeType is set to PrePaid. If the DedicatedHostId parameter is specified, the value of the Period parameter must be within the subscription period of the dedicated host.
+* `period_unit` - (Optional, ForceNew, Computed, Available since v1.226.0) The unit of the subscription period. Valid values: `Month` (default).
+* `period` - (Optional, ForceNew, Computed) The subscription period of the instance. Unit: months. This parameter takes effect and is required only when InstanceChargeType is set to PrePaid. If the DedicatedHostId parameter is specified, the value of the Period parameter must be within the subscription period of the dedicated host.
     - When the PeriodUnit parameter is set to `Week`, the valid values of the Period parameter are `1`, `2`, `3`, and `4`.
     - When the PeriodUnit parameter is set to `Month`, the valid values of the Period parameter are `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `12`, `24`, `36`, `48`, and `60`.
 * `private_ip_address` - (Optional) The private IP address of the instance.
