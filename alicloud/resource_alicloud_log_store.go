@@ -207,11 +207,21 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 	client := meta.(*connectivity.AliyunClient)
 
 	if v, ok := d.GetOk("telemetry_type"); ok && v == "Metrics" {
+
+		projectName := d.Get("project_name").(string)
+		if v, ok := d.GetOkExists("project"); ok {
+			projectName = v.(string)
+		}
+		logstoreName := d.Get("logstore_name").(string)
+		if v, ok := d.GetOkExists("name"); ok {
+			logstoreName = v.(string)
+		}
+
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
 		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.CreateMetricStore(d.Get("project").(string), logstore)
+				return nil, slsClient.CreateMetricStore(projectName, logstore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -221,7 +231,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 				return resource.NonRetryableError(err)
 			}
 			addDebug("CreateMetricStore", raw, requestinfo, map[string]interface{}{
-				"project":  d.Get("project").(string),
+				"project":  projectName,
 				"logstore": logstore,
 			})
 			return nil
@@ -229,7 +239,7 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_log_store", "CreateLogStoreV2", AliyunLogGoSdkERROR)
 		}
-		d.SetId(fmt.Sprintf("%s%s%s", d.Get("project").(string), COLON_SEPARATED, d.Get("name").(string)))
+		d.SetId(fmt.Sprintf("%s%s%s", projectName, COLON_SEPARATED, logstoreName))
 		return resourceAliCloudSlsLogStoreUpdate(d, meta)
 	}
 
@@ -532,11 +542,16 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	}
 	if v, ok := d.GetOk("telemetry_type"); ok && v == "Metrics" {
 
+		projectName := d.Get("project_name").(string)
+		if v, ok := d.GetOkExists("project"); ok {
+			projectName = v.(string)
+		}
+
 		logstore := buildLogStore(d)
 		var requestinfo *sls.Client
 		err := resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 			raw, err := client.WithLogClient(func(slsClient *sls.Client) (interface{}, error) {
-				return nil, slsClient.UpdateMetricStore(d.Get("project").(string), logstore)
+				return nil, slsClient.UpdateMetricStore(projectName, logstore)
 			})
 			if err != nil {
 				if IsExpectedErrors(err, []string{"InternalServerError", LogClientTimeout}) {
@@ -546,7 +561,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 				return resource.NonRetryableError(err)
 			}
 			addDebug("UpdateMetricStore", raw, requestinfo, map[string]interface{}{
-				"project":  d.Get("project").(string),
+				"project":  projectName,
 				"logstore": logstore,
 			})
 			return nil
