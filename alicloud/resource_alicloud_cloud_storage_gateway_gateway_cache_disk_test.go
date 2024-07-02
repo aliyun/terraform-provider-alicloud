@@ -19,18 +19,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway_cache_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayCacheDiskMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayCacheDiskMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudStorageGatewayGatewayCacheDisk")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc-cloudstoragegatewaygatewaycachedisk%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudStorageGatewayGatewayCacheDiskBasicDependence0)
+	name := fmt.Sprintf("tf-testacc-CloudStorageGatewayGatewayCacheDisk%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayCacheDiskBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -41,13 +41,11 @@ func TestAccAlicloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cache_disk_category":   "cloud_efficiency",
 					"gateway_id":            "${alicloud_cloud_storage_gateway_gateway.default.id}",
 					"cache_disk_size_in_gb": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cache_disk_category":   "cloud_efficiency",
 						"gateway_id":            CHECKSET,
 						"cache_disk_size_in_gb": "50",
 					}),
@@ -72,64 +70,100 @@ func TestAccAlicloudCloudStorageGatewayGatewayCacheDisk_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudCloudStorageGatewayGatewayCacheDiskMap0 = map[string]string{
+func TestAccAliCloudCloudStorageGatewayGatewayCacheDisk_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_storage_gateway_gateway_cache_disk.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayCacheDiskMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudStorageGatewayGatewayCacheDisk")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-CloudStorageGatewayGatewayCacheDisk%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayCacheDiskBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_id":            "${alicloud_cloud_storage_gateway_gateway.default.id}",
+					"cache_disk_size_in_gb": "50",
+					"cache_disk_category":   "cloud_essd",
+					"performance_level":     "PL1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_id":            CHECKSET,
+						"cache_disk_size_in_gb": "50",
+						"cache_disk_category":   "cloud_essd",
+						"performance_level":     "PL1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudCloudStorageGatewayGatewayCacheDiskMap0 = map[string]string{
 	"cache_disk_category": CHECKSET,
-	"gateway_id":          CHECKSET,
+	"cache_id":            CHECKSET,
 	"local_file_path":     CHECKSET,
 	"status":              CHECKSET,
-	"cache_id":            CHECKSET,
 }
 
-func AlicloudCloudStorageGatewayGatewayCacheDiskBasicDependence0(name string) string {
+func AliCloudCloudStorageGatewayGatewayCacheDiskBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_cloud_storage_gateway_stocks" "default" {
-  gateway_class = "Standard"
-}
+	data "alicloud_cloud_storage_gateway_stocks" "default" {
+  		gateway_class = "Standard"
+	}
 
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "172.16.0.0/16"
+	}
 
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
-  vswitch_name      = var.name
-}
+	resource "alicloud_vswitch" "default" {
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "172.16.0.0/24"
+  		zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
+  		vswitch_name = var.name
+	}
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
+	resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
+  		storage_bundle_name = var.name
+	}
 
-resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = var.name
-}
-
-resource "alicloud_cloud_storage_gateway_gateway" "default" {
-  description              = "tf-acctestDesalone"
-  gateway_class            = "Standard"
-  type                     = "File"
-  payment_type             = "PayAsYouGo"
-  vswitch_id               = local.vswitch_id
-  release_after_expiration = true
-  public_network_bandwidth = 10
-  storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
-  location                 = "Cloud"
-  gateway_name             = var.name
-}
+	resource "alicloud_cloud_storage_gateway_gateway" "default" {
+  		description              = var.name
+  		gateway_class            = "Standard"
+  		type                     = "File"
+  		payment_type             = "PayAsYouGo"
+  		vswitch_id               = alicloud_vswitch.default.id
+  		release_after_expiration = true
+  		public_network_bandwidth = 10
+  		storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
+  		location                 = "Cloud"
+  		gateway_name             = var.name
+	}
 `, name)
 }
 
-func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
+func TestUnitAliCloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_cache_disk"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_storage_gateway_gateway_cache_disk"].Schema).Data(nil, nil)
@@ -228,7 +262,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCloudStorageGatewayGatewayCacheDiskCreate(dInit, rawClient)
+	err = resourceAliCloudCloudStorageGatewayGatewayCacheDiskCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -261,7 +295,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudStorageGatewayGatewayCacheDiskCreate(dInit, rawClient)
+		err := resourceAliCloudCloudStorageGatewayGatewayCacheDiskCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -286,7 +320,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			Message: String("loadEndpoint error"),
 		}
 	})
-	err = resourceAlicloudCloudStorageGatewayGatewayCacheDiskUpdate(dExisted, rawClient)
+	err = resourceAliCloudCloudStorageGatewayGatewayCacheDiskUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ExpandCacheDisk
@@ -326,7 +360,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudStorageGatewayGatewayCacheDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudCloudStorageGatewayGatewayCacheDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -370,7 +404,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudStorageGatewayGatewayCacheDiskRead(dExisted, rawClient)
+		err := resourceAliCloudCloudStorageGatewayGatewayCacheDiskRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -388,7 +422,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCloudStorageGatewayGatewayCacheDiskDelete(dExisted, rawClient)
+	err = resourceAliCloudCloudStorageGatewayGatewayCacheDiskDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -427,7 +461,7 @@ func TestUnitAlicloudCloudStorageGatewayGatewayCacheDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudStorageGatewayGatewayCacheDiskDelete(dExisted, rawClient)
+		err := resourceAliCloudCloudStorageGatewayGatewayCacheDiskDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

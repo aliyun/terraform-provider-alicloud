@@ -24,43 +24,42 @@ variable "name" {
   default = "tf-example"
 }
 
-resource "random_uuid" "default" {
-}
-resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+data "alicloud_cloud_storage_gateway_stocks" "default" {
+  gateway_class = "Standard"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+  cidr_block = "172.16.0.0/16"
 }
-data "alicloud_cloud_storage_gateway_stocks" "default" {
-  gateway_class = "Standard"
-}
+
 resource "alicloud_vswitch" "default" {
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/21"
+  cidr_block   = "172.16.0.0/24"
   zone_id      = data.alicloud_cloud_storage_gateway_stocks.default.stocks.0.zone_id
   vswitch_name = var.name
 }
 
+resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
+  storage_bundle_name = var.name
+}
+
 resource "alicloud_cloud_storage_gateway_gateway" "default" {
-  gateway_name             = var.name
   description              = var.name
   gateway_class            = "Standard"
   type                     = "File"
   payment_type             = "PayAsYouGo"
   vswitch_id               = alicloud_vswitch.default.id
   release_after_expiration = true
-  public_network_bandwidth = 40
   storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
   location                 = "Cloud"
+  gateway_name             = var.name
 }
 
 resource "alicloud_cloud_storage_gateway_gateway_cache_disk" "default" {
-  cache_disk_category   = "cloud_efficiency"
   gateway_id            = alicloud_cloud_storage_gateway_gateway.default.id
   cache_disk_size_in_gb = 50
+  cache_disk_category   = "cloud_efficiency"
 }
 ```
 
@@ -68,18 +67,19 @@ resource "alicloud_cloud_storage_gateway_gateway_cache_disk" "default" {
 
 The following arguments are supported:
 
-* `cache_disk_category` - (Optional, ForceNew) The cache disk type. Valid values: `cloud_efficiency`, `cloud_ssd`.
-* `cache_disk_size_in_gb` - (Required) size of the cache disk. Unit: `GB`. The upper limit of the basic gateway cache disk is `1` TB (`1024` GB), that of the standard gateway is `2` TB (`2048` GB), and that of other gateway cache disks is `32` TB (`32768` GB). The lower limit for the file gateway cache disk capacity is `40` GB, and the lower limit for the block gateway cache disk capacity is `20` GB.
 * `gateway_id` - (Required, ForceNew) The ID of the gateway.
+* `cache_disk_size_in_gb` - (Required, Int) The capacity of the cache disk.
+* `cache_disk_category` - (Optional, ForceNew) The type of the cache disk. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. **NOTE:** From version 1.226.1, `cache_disk_category` can be set to `cloud_essd`.
+* `performance_level` - (Optional, ForceNew, Available since v1.226.1) The performance level (PL) of the Enterprise SSD (ESSD). Valid values: `PL1`, `PL2`, `PL3`. **NOTE:** If `cache_disk_category` is set to `cloud_essd`, `performance_level` is required.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Gateway Cache Disk. The value formats as `<gateway_id>:<cache_id>:<local_file_path>`.
-* `local_file_path` - The cache disk inside the device name.
-* `status` - The status of the resource. Valid values: `0`, `1`, `2`. `0`: Normal. `1`: Is about to expire. `2`: Has expired.
-* `cache_id` - The ID of the cache.
+* `id` - The resource ID in terraform of Gateway Cache Disk. It formats as `<gateway_id>:<cache_id>:<local_file_path>`.
+* `cache_id` - The ID of the cache disk.
+* `local_file_path` - The path of the cache disk.
+* `status` - The status of the Gateway Cache Disk.
 
 ## Import
 
