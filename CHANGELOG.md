@@ -1,4 +1,27 @@
 ## 1.226.0 (Unreleased)
+
+- **New Resource:** `alicloud_alb_load_balancer_security_group_attachment` [GH-7397]
+- **New Resource:** `alicloud_cen_transit_router_ecr_attachment` [GH-7400]
+- **New Resource:** `alicloud_ddos_bgp_policy` [GH-7402]
+
+ENHANCEMENTS:
+
+- resource/alicloud_polardb_cluster: create dbCluster reduce time consumption. [GH-7328]
+- resource/alicloud_kvstore_instance: Added the field read_only_count, slave_read_only_count; Refactored resourceAliCloudKvstoreInstanceCreate. [GH-7341]
+- resource/alicloud_ga_accelerator: Added the field resource_group_id. [GH-7378]
+- resource/alicloud_ga_acl: Added the field resource_group_id. [GH-7389]
+- resource/alicloud_ga_basic_accelerator: Added the field resource_group_id. [GH-7391]
+- resource/alicloud_ga_bandwidth_package: Added the field resource_group_id. [GH-7394]
+- resource/alicloud_cen_instance: add retry while deleting instance. [GH-7401]
+- resource/alicloud_ecs_launch_template: add new attribute auto_renew, auto_renew_period and period_unit. [GH-7404]
+- docs: Improved the document cloud_storage_gateway_gateway. [GH-7399]
+
+BUG FIXES:
+
+- resource/alicloud_polardb_cluster: fix create cluster issue;resouce/alicloud_polardb_cluster_test testcase: TestAccAliCloudPolarDBCluster_CreateDBCluster. [GH-7390]
+- resource/alicloud_ons_topic: fix bug while creating topic. [GH-7395]
+- resource/alicloud_log_store: fix bug while creating Metrics telemetry_type. [GH-7409]
+
 ## 1.225.1 (June 26, 2024)
 
 ENHANCEMENTS:
