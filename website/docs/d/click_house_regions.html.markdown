@@ -4,12 +4,12 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_click_house_regions"
 sidebar_current: "docs-alicloud-datasource-click-house-regions"
 description: |-
-  Provides a list of Click House Accounts to the user.
+  Provides a list of Click House Regions to the user.
 ---
 
 # alicloud\_click\_house\_regions
 
-This data source provides the Click House Accounts of the current Alibaba Cloud user.
+This data source provides the Click House Regions of the current Alibaba Cloud user.
 
 -> **NOTE:** Available in v1.138.0+.
 
