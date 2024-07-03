@@ -104,6 +104,14 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"cpu_options_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"cpu_options_threads_per_core": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"active_deadline_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -663,6 +671,8 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
 	request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
 	request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
+	request["CpuOptionsCore"] = d.Get("cpu_options_core")
+	request["CpuOptionsThreadsPerCore"] = d.Get("cpu_options_threads_per_core")
 	request["EphemeralStorage"] = d.Get("ephemeral_storage")
 	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 
@@ -945,6 +955,8 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("termination_grace_period_seconds", o["TerminationGracePeriodSeconds"])
 	d.Set("auto_match_image_cache", o["AutoMatchImageCache"])
 	d.Set("ipv6_address_count", o["Ipv6AddressCount"])
+	d.Set("cpu_options_core", o["CpuOptionsCore"])
+	d.Set("cpu_options_threads_per_core", o["CpuOptionsThreadsPerCore"])
 	d.Set("active_deadline_seconds", o["ActiveDeadlineSeconds"])
 	d.Set("auto_create_eip", o["AutoCreateEip"])
 	d.Set("eip_bandwidth", o["EipBandwidth"])
@@ -1314,6 +1326,14 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	if d.HasChange("ipv6_address_count") {
 		update = true
 		request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
+	}
+	if d.HasChange("cpu_options_core") {
+		update = true
+		request["CpuOptionsCore"] = d.Get("cpu_options_core")
+	}
+	if d.HasChange("cpu_options_threads_per_core") {
+		update = true
+		request["CpuOptionsThreadsPerCore"] = d.Get("cpu_options_threads_per_core")
 	}
 	if d.HasChange("active_deadline_seconds") {
 		update = true

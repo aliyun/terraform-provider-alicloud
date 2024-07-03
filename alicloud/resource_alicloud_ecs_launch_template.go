@@ -26,6 +26,18 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			"auto_renew": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"auto_renew_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"auto_release_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -200,6 +212,14 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"period": {
 				Type:     schema.TypeInt,
 				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"period_unit": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"private_ip_address": {
 				Type:     schema.TypeString,
@@ -424,6 +444,14 @@ func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 	}
 
+	if v, ok := d.GetOk("auto_renew"); ok {
+		request["AutoRenew"] = v
+	}
+
+	if v, ok := d.GetOk("auto_renew_period"); ok {
+		request["AutoRenewPeriod"] = v
+	}
+
 	if v, ok := d.GetOk("deployment_set_id"); ok {
 		request["DeploymentSetId"] = v
 	}
@@ -510,6 +538,10 @@ func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 	if v, ok := d.GetOkExists("password_inherit"); ok {
 		request["PasswordInherit"] = v
+	}
+
+	if v, ok := d.GetOk("period_unit"); ok {
+		request["PeriodUnit"] = v
 	}
 
 	if v, ok := d.GetOk("period"); ok {
@@ -745,9 +777,12 @@ func resourceAlicloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	if err := d.Set("network_interfaces", networkInterface); err != nil {
 		return WrapError(err)
 	}
+	d.Set("auto_renew", formatBool(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenew"]))
+	d.Set("auto_renew_period", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["AutoRenewPeriod"]))
 	d.Set("network_type", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["NetworkType"])
 	d.Set("password_inherit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PasswordInherit"])
 	d.Set("period", formatInt(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["Period"]))
+	d.Set("period_unit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PeriodUnit"])
 	d.Set("private_ip_address", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["PrivateIpAddress"])
 	d.Set("ram_role_name", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["RamRoleName"])
 	d.Set("security_enhancement_strategy", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["SecurityEnhancementStrategy"])
