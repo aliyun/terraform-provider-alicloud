@@ -962,10 +962,14 @@ func (s *AdbService) DescribeClusterAccessWhiteList(id string) (object map[strin
 }
 
 func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeDBResourceGroup"
+
 	conn, err := s.client.NewAdsClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -976,13 +980,12 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 		"GroupName":   parts[1],
 	}
 
-	var response map[string]interface{}
-	action := "DescribeDBResourceGroup"
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -990,40 +993,36 @@ func (s *AdbService) DescribeAdbResourceGroup(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
-			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+		if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound", "InvalidDBClusterId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Adb:ResourceGroup", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.GroupsInfo", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ResourceGroup", id)), NotFoundWithResponse, response)
-	}
-	return v.([]interface{})[0].(map[string]interface{}), nil
-}
 
-func (s *AdbService) AdbResourceGroupStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeAdbResourceGroup(d.Id())
-		if err != nil {
-			if NotFoundError(err) {
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-		for _, failState := range failStates {
-			if fmt.Sprint(object[""]) == failState {
-				return object, fmt.Sprint(object[""]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object[""])))
-			}
-		}
-		return object, fmt.Sprint(object[""]), nil
+	resp, err := jsonpath.Get("$.GroupsInfo", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.GroupsInfo", response)
 	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Adb:ResourceGroup", id)), NotFoundWithResponse, response)
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["GroupName"]) == strings.ToUpper(parts[1]) {
+			idExist = true
+			return v.(map[string]interface{}), nil
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Adb:ResourceGroup", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
 }
