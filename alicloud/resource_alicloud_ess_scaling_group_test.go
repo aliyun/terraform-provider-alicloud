@@ -573,6 +573,10 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
 					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
 					"launch_template_version": "Default",
+					"launch_template_override": []map[string]string{{
+						"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
+					},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -590,7 +594,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
 					"launch_template_version": "Latest",
 					"launch_template_override": []map[string]string{{
-						"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+						"instance_type":     "${data.alicloud_instance_types.default.instance_types.1.id}",
 						"weighted_capacity": "4",
 						"spot_price_limit":  "2.1",
 					},
@@ -602,6 +606,39 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 						"vswitch_id":                 CHECKSET,
 						"vswitch_ids.#":              "1",
 						"launch_template_override.#": "1",
+						"launch_template_version":    "Latest",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":                "0",
+					"max_size":                "4",
+					"scaling_group_name":      "${var.name}",
+					"default_cooldown":        "20",
+					"vswitch_id":              "${alicloud_vswitch.default.id}",
+					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
+					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
+					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_version": "Latest",
+					"launch_template_override": []map[string]string{{
+						"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
+						"weighted_capacity": "3",
+						"spot_price_limit":  "1.2",
+					},
+						{
+							"instance_type":     "${data.alicloud_instance_types.default.instance_types.1.id}",
+							"weighted_capacity": "2",
+							"spot_price_limit":  "1.1",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"launch_template_id":         CHECKSET,
+						"vswitch_id":                 CHECKSET,
+						"vswitch_ids.#":              "1",
+						"launch_template_override.#": "2",
 						"launch_template_version":    "Latest",
 					}),
 				),
