@@ -142,8 +142,8 @@ The following arguments are supported:
 * `launch_template_version` - (Optional, Available since v1.159.0) The version number of the launch template. Valid values are the version number, `Latest`, or `Default`, Default value: `Default`.
 * `group_type` - (Optional, ForceNew, Available since v1.164.0) Resource type within scaling group. Optional values: ECS, ECI. Default to ECS.
 * `health_check_type` - (Optional, Available since v1.193.0) Resource type within scaling group. Optional values: ECS, NONE, LOAD_BALANCER. Default to ECS.
-* `scaling_policy` - (Optional, Available since v1.226.0) The reclaim mode of the scaling group. Optional values: recycle, release, forceRecycle, forceRelease. 
-* `max_instance_lifetime` - (Optional, Available since v1.226.0) The maximum life span of an instance in the scaling group. Unit: seconds.
+* `scaling_policy` - (Optional, Available since v1.227.0) The reclaim mode of the scaling group. Optional values: recycle, release, forceRecycle, forceRelease. 
+* `max_instance_lifetime` - (Optional, Available since v1.227.0) The maximum life span of an instance in the scaling group. Unit: seconds.
 * `tags` - (Optional, Available since v1.160.0) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.

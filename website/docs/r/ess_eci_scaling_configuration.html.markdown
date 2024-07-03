@@ -129,8 +129,8 @@ The following arguments are supported:
 * `termination_grace_period_seconds` - (Optional) The program's buffering time before closing.
 * `auto_match_image_cache` - (Optional) Whether to automatically match the image cache.
 * `ipv6_address_count` - (Optional) Number of IPv6 addresses.
-* `cpu_options_core` - (Optional, Available since v1.226.0) The number of physical CPU cores. You can specify this parameter for only specific instance types.
-* `cpu_options_threads_per_core` - (Optional, Available since v1.226.0) The number of threads per core. You can specify this parameter for only specific instance types. If you set this parameter to 1, Hyper-Threading is disabled.
+* `cpu_options_core` - (Optional, Available since v1.227.0) The number of physical CPU cores. You can specify this parameter for only specific instance types.
+* `cpu_options_threads_per_core` - (Optional, Available since v1.227.0) The number of threads per core. You can specify this parameter for only specific instance types. If you set this parameter to 1, Hyper-Threading is disabled.
 * `active_deadline_seconds` - (Optional) The duration in seconds relative to the startTime that the job may be active before the system tries to terminate it.
 * `ephemeral_storage` - (Optional) The size of ephemeral storage.
 * `load_balancer_weight` - (Optional) The weight of an ECI instance attached to the Server Group.
