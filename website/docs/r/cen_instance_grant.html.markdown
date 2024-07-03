@@ -1,5 +1,5 @@
 ---
-subcategory: "Cloud Enterprise Network (CEN)"
+subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_instance_grant"
 sidebar_current: "docs-alicloud-resource-cen-instance-grant"

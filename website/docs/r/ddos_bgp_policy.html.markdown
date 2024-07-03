@@ -1,5 +1,5 @@
 ---
-subcategory: "Ddos Bgp"
+subcategory: "Anti-DDoS Pro (DdosBgp)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ddos_bgp_policy"
 description: |-
