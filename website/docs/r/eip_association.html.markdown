@@ -41,9 +41,8 @@ data "alicloud_instance_types" "example" {
 }
 
 data "alicloud_images" "example" {
-  name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  owners        = "system"
-  instance_type = data.alicloud_instance_types.example.instance_types.0.id
+  name_regex = "^ubuntu_18.*64"
+  owners     = "system"
 }
 
 resource "alicloud_vpc" "example" {
