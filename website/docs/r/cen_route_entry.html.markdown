@@ -32,7 +32,7 @@ data "alicloud_instance_types" "example" {
   memory_size       = 2
 }
 data "alicloud_images" "example" {
-  name_regex = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  name_regex = "^ubuntu_18.*64"
   owners     = "system"
 }
 

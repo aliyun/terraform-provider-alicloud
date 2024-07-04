@@ -15,6 +15,8 @@ Provides a HaVip resource, see [What is HAVIP](https://www.alibabacloud.com/help
 
 -> **NOTE:** Available since v1.18.0.
 
+-> **DEPRECATED:**  This resource has been renamed to [alicloud_vpc_ha_vip](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/vpc_ha_vip) from version 1.205.0.
+
 ## Example Usage
 
 Basic Usage

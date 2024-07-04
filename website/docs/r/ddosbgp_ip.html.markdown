@@ -28,7 +28,6 @@ variable "name" {
   default = "tf-example"
 }
 data "alicloud_resource_manager_resource_groups" "default" {}
-data "alicloud_account" "current" {}
 resource "alicloud_ddosbgp_instance" "instance" {
   name             = var.name
   base_bandwidth   = 20
@@ -47,7 +46,6 @@ resource "alicloud_ddosbgp_ip" "default" {
   instance_id       = alicloud_ddosbgp_instance.instance.id
   ip                = alicloud_eip_address.default.ip_address
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.groups.0.id
-  member_uid        = data.alicloud_account.current.id
 }
 ```
 

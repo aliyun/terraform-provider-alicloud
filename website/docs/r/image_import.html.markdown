@@ -28,8 +28,13 @@ variable "name" {
   default = "terraform-image-import-example"
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_oss_bucket" "default" {
-  bucket = var.name
+  bucket = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_oss_bucket_object" "default" {
