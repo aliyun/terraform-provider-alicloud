@@ -34,7 +34,7 @@ data "alicloud_instance_types" "default" {
 }
 
 data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  name_regex  = "^ubuntu_18.*64"
   most_recent = true
   owners      = "system"
 }
