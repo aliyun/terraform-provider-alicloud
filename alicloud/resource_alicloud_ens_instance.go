@@ -121,8 +121,9 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 			},
 			"internet_max_bandwidth_out": {
 				Type:     schema.TypeInt,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"ip_type": {
 				Type:         schema.TypeString,

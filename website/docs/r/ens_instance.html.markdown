@@ -100,7 +100,7 @@ The following arguments are supported:
 * `internet_charge_type` - (Optional, Available since v1.208.0) Instance bandwidth billing method. If the billing method can be selected for the first purchase, the subsequent value of this field will be processed by default according to the billing method selected for the first time. Optional values:
   - BandwidthByDay: Daily peak bandwidth
   - 95bandwidthbymonth: 95 peak bandwidth.
-* `internet_max_bandwidth_out` - (Required, ForceNew, Available since v1.208.0) Maximum public network bandwidth. The field type is Long, and the precision may be lost during serialization/deserialization. Please note that the value must not be greater than 9007199254740991.
+* `internet_max_bandwidth_out` - (Optional, ForceNew, Computed, Available since v1.208.0) Maximum public network bandwidth. The field type is Long, and the precision may be lost during serialization/deserialization. Please note that the value must not be greater than 9007199254740991.
 * `ip_type` - (Optional) The IP type. Value:
   - ipv4 (default):IPv4
   - ipv6:IPv6
