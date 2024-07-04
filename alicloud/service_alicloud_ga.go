@@ -146,32 +146,48 @@ func (s *GaService) GaListenerStateRefreshFunc(id string, failStates []string) r
 
 func (s *GaService) DescribeGaBandwidthPackage(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeBandwidthPackage"
+
 	conn, err := s.client.NewGaplusClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeBandwidthPackage"
+
 	request := map[string]interface{}{
 		"RegionId":           s.client.RegionId,
 		"BandwidthPackageId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackage", id)), NotFoundMsg, ProviderERROR)
-			return object, err
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BandwidthPackage", id)), NotFoundWithResponse, response)
 		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(action, response, request)
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
@@ -187,11 +203,12 @@ func (s *GaService) GaBandwidthPackageStateRefreshFunc(id string, failStates []s
 		}
 
 		for _, failState := range failStates {
-			if object["State"].(string) == failState {
-				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
+			if fmt.Sprint(object["State"]) == failState {
+				return object, fmt.Sprint(object["State"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["State"])))
 			}
 		}
-		return object, object["State"].(string), nil
+
+		return object, fmt.Sprint(object["State"]), nil
 	}
 }
 
@@ -372,44 +389,53 @@ func (s *GaService) DescribeGaIpSet(id string) (object map[string]interface{}, e
 }
 
 func (s *GaService) DescribeGaBandwidthPackageAttachment(id string) (object map[string]interface{}, err error) {
-	var response map[string]interface{}
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	conn, err := s.client.NewGaplusClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-	action := "DescribeAccelerator"
-	request := map[string]interface{}{
-		"RegionId":      s.client.RegionId,
-		"AcceleratorId": parts[0],
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
-	if err != nil {
-		if IsExpectedErrors(err, []string{"UnknownError"}) {
-			err = WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
-			return object, err
-		}
-		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-		return object, err
-	}
-	addDebug(action, response, request)
-	v, err := jsonpath.Get("$", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
-	}
-	object = v.(map[string]interface{})
 
-	basic, exist1 := object["BasicBandwidthPackage"]
-	cross, exist2 := object["CrossDomainBandwidthPackage"]
-	if (exist1 && basic.(map[string]interface{})["InstanceId"] == parts[1]) || (exist2 && cross.(map[string]interface{})["InstanceId"] == parts[1]) {
-		return object, nil
+	object, err = s.DescribeGaBandwidthPackage(fmt.Sprint(parts[1]))
+	if err != nil {
+		return object, WrapError(err)
 	}
-	return object, WrapErrorf(Error(GetNotFoundMessage("GaBandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR)
+
+	idExist := false
+	if accelerators, ok := object["Accelerators"]; ok {
+		acceleratorList := accelerators.([]interface{})
+		for _, accelerator := range acceleratorList {
+			if accelerator == fmt.Sprint(parts[0]) {
+				idExist = true
+				return object, nil
+			}
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ga:BandwidthPackageAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
+	}
+
+	return object, nil
+}
+
+func (s *GaService) GaBandwidthPackageAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGaBandwidthPackageAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["State"]) == failState {
+				return object, fmt.Sprint(object["State"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["State"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["State"]), nil
+	}
 }
 
 func (s *GaService) GaEndpointGroupStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -450,26 +476,6 @@ func (s *GaService) GaForwardingRuleStateRefreshFunc(id string, failStates []str
 		}
 
 		return object, object["ForwardingRuleStatus"].(string), nil
-	}
-}
-
-func (s *GaService) GaBandwidthPackageAttachmentStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
-	return func() (interface{}, string, error) {
-		object, err := s.DescribeGaBandwidthPackageAttachment(id)
-		if err != nil {
-			if NotFoundError(err) {
-				// Set this to nil as if we didn't find anything.
-				return nil, "", nil
-			}
-			return nil, "", WrapError(err)
-		}
-
-		for _, failState := range failStates {
-			if object["State"].(string) == failState {
-				return object, object["State"].(string), WrapError(Error(FailedToReachTargetStatus, object["State"].(string)))
-			}
-		}
-		return object, object["State"].(string), nil
 	}
 }
 
