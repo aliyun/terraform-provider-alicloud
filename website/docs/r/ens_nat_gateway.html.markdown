@@ -1,0 +1,87 @@
+---
+subcategory: "Ens"
+layout: "alicloud"
+page_title: "Alicloud: alicloud_ens_nat_gateway"
+description: |-
+  Provides a Alicloud Ens Nat Gateway resource.
+---
+
+# alicloud_ens_nat_gateway
+
+Provides a Ens Nat Gateway resource.
+
+Nat gateway of ENS.
+
+For information about Ens Nat Gateway and how to use it, see [What is Nat Gateway](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.227.0.
+
+## Example Usage
+
+Basic Usage
+
+```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
+provider "alicloud" {
+  region = "cn-hangzhou"
+}
+
+variable "ens_region_id" {
+  default = "cn-chenzhou-telecom_unicom_cmcc"
+}
+
+resource "alicloud_ens_network" "defaultObbrL7" {
+  network_name  = var.name
+  description   = var.name
+  cidr_block    = "10.0.0.0/8"
+  ens_region_id = var.ens_region_id
+}
+
+resource "alicloud_ens_vswitch" "defaulteFw783" {
+  cidr_block    = "10.0.8.0/24"
+  vswitch_name  = var.name
+  ens_region_id = alicloud_ens_network.defaultObbrL7.ens_region_id
+  network_id    = alicloud_ens_network.defaultObbrL7.id
+}
+
+resource "alicloud_ens_nat_gateway" "default" {
+  vswitch_id    = alicloud_ens_vswitch.defaulteFw783.id
+  ens_region_id = alicloud_ens_vswitch.defaulteFw783.ens_region_id
+  network_id    = alicloud_ens_vswitch.defaulteFw783.network_id
+  instance_type = "enat.default"
+  nat_name      = var.name
+}
+```
+
+## Argument Reference
+
+The following arguments are supported:
+* `ens_region_id` - (Required, ForceNew) The ID of the ENS node.
+* `instance_type` - (Optional, ForceNew) NAT specifications. Value: `enat.default`.
+* `nat_name` - (Optional) The name of the NAT gateway. The length is 1 to 128 characters, but it cannot start with 'http:// 'or 'https.
+* `network_id` - (Required, ForceNew) The network ID.
+* `vswitch_id` - (Required, ForceNew) The vSwitch ID.
+
+## Attributes Reference
+
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `create_time` - Creation time. UTC time, in the format of YYYY-MM-DDThh:mm:ssZ.
+
+## Timeouts
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+* `create` - (Defaults to 5 mins) Used when create the Nat Gateway.
+* `delete` - (Defaults to 5 mins) Used when delete the Nat Gateway.
+* `update` - (Defaults to 5 mins) Used when update the Nat Gateway.
+
+## Import
+
+Ens Nat Gateway can be imported using the id, e.g.
+
+```shell
+$ terraform import alicloud_ens_nat_gateway.example <id>
+```

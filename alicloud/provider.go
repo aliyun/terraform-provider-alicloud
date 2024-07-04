@@ -863,6 +863,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_ens_nat_gateway":                                      resourceAliCloudEnsNatGateway(),
+			"alicloud_ens_eip_instance_attachment":                          resourceAliCloudEnsEipInstanceAttachment(),
 			"alicloud_ddos_bgp_policy":                                      resourceAliCloudDdosBgpPolicy(),
 			"alicloud_cen_transit_router_ecr_attachment":                    resourceAliCloudCenTransitRouterEcrAttachment(),
 			"alicloud_alb_load_balancer_security_group_attachment":          resourceAliCloudAlbLoadBalancerSecurityGroupAttachment(),
