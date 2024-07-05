@@ -971,7 +971,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ha_vip":                                           resourceAliCloudVpcHaVip(),
 			"alicloud_config_remediation":                                   resourceAliCloudConfigRemediation(),
 			"alicloud_instance":                                             resourceAliCloudInstance(),
-			"alicloud_image":                                                resourceAliCloudImage(),
+			"alicloud_image":                                                resourceAliCloudEcsImage(),
 			"alicloud_reserved_instance":                                    resourceAliCloudReservedInstance(),
 			"alicloud_copy_image":                                           resourceAliCloudImageCopy(),
 			"alicloud_image_export":                                         resourceAliCloudImageExport(),
