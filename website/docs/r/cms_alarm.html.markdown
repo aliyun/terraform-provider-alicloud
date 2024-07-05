@@ -165,10 +165,11 @@ The prometheus supports the following:
 
 The targets supports the following:
 
-* `target_id` - (Optional) The ID of the resource for which alerts are triggered.
-* `json_params` - (Optional) The parameters of the alert callback. The parameters are in the JSON format.
+* `target_id` - (Optional) The ID of the resource for which alerts are triggered. This is typically used to specify individual resources that should respond to the alert.
+* `json_params` - (Optional) Specifies additional parameters for the alert callback in JSON format. This can include configuration settings specific to the alert action.
 * `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
-* `arn` - (Optional) The Alibaba Cloud Resource Name (ARN) of the resource.
+* `arn` - (Optional) ARN uniquely identifies the resource that the alert targets.
+-> **NOTE:** The targets attribute is used to specify where notifications or actions should be directed when an alarm condition is met. This attribute corresponds to what is referred to as the "Push Channel" in the Alibaba Cloud console.
 -> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
 
 ## Attributes Reference
