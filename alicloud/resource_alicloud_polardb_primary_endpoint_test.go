@@ -101,7 +101,7 @@ func TestAccAliCloudPolarDBPrimaryEndpointConfigUpdate(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"ssl_enabled", "net_type"},
+				ImportStateVerifyIgnore: []string{"net_type"},
 			},
 		},
 	})

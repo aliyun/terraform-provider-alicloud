@@ -253,6 +253,9 @@ func resourceAlicloudPolarDBEndpointRead(d *schema.ResourceData, meta interface{
 	if err := d.Set("ssl_auto_rotate", sslAutoRotate); err != nil {
 		return WrapError(err)
 	}
+	if err := d.Set("ssl_enabled", sslEnabled); err != nil {
+		return WrapError(err)
+	}
 	polarDBService.fillingPolarDBEndpointSslCertificateUrl(sslEnabled, d)
 
 	privateAdress, err := polarDBService.DescribePolarDBConnectionV2(d.Id(), "Private")

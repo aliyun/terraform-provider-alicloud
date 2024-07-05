@@ -643,7 +643,7 @@ func (s *PolarDBService) DescribePolarDBClusterSSL(d *schema.ResourceData) (ssl 
 	request.RegionId = s.client.RegionId
 	request.DBClusterId = dbClusterId
 	var raw interface{}
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
 		raw, err = s.client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
 			return polarDBClient.DescribeDBClusterSSL(request)
 		})
