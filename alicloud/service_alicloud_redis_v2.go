@@ -67,6 +67,95 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeSecurityGroupConfiguration"
+	conn, err := client.NewRedisClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["InstanceId"] = id
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.Items.EcsSecurityGroupRelation[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.EcsSecurityGroupRelation[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, nil
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *RedisServiceV2) DescribeDescribeInstanceSSL(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeInstanceSSL"
+	conn, err := client.NewRedisClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["InstanceId"] = id
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
 
 func (s *RedisServiceV2) RedisTairInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
