@@ -20,10 +20,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudFirewallControlPolicy_basic0(t *testing.T) {
+func TestAccAliCloudCloudFirewallControlPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_control_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallControlPolicyMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudFirewallControlPolicy")
@@ -31,7 +31,7 @@ func TestAccAlicloudCloudFirewallControlPolicy_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallControlPolicyBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,218 +42,179 @@ func TestAccAlicloudCloudFirewallControlPolicy_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"application_name": "ANY",
-					"acl_action":       "accept",
-					"description":      "放行所有流量",
-					"destination_type": "net",
-					"destination":      "100.1.1.0/24",
-					"direction":        "out",
-					"proto":            "ANY",
-					"source":           "1.2.3.0/24",
-					"source_type":      "net",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"application_name": "ANY",
-						"acl_action":       "accept",
-						"description":      "放行所有流量",
-						"destination_type": "net",
-						"destination":      "100.1.1.0/24",
-						"direction":        "out",
-						"proto":            "ANY",
-						"source":           "1.2.3.0/24",
-						"source_type":      "net",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"release": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"release": "false",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_action": "log",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_action": "log",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "Any",
-					"destination_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      "Any",
-						"destination_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "www.aliyun.com",
-					"destination_type": "domain",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      "www.aliyun.com",
-						"destination_type": "domain",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source":      "Any",
-					"source_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source":      "Any",
-						"source_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dest_port_group": "Any",
-					"dest_port_type":  "group",
-					"dest_port":       "0",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dest_port_group": "Any",
-						"dest_port_type":  "group",
-						"dest_port":       "0",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dest_port":       "100/200",
-					"dest_port_type":  "port",
-					"dest_port_group": "",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dest_port":       "100/200",
-						"dest_port_type":  "port",
-						"dest_port_group": "",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"proto": "TCP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proto": "TCP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "放行TCP流量",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "放行TCP流量",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "100.1.1.0/24",
-					"application_name": "ANY",
-					"description":      "放行所有流量",
-					"source_type":      "net",
-					"acl_action":       "accept",
-					"destination_type": "net",
-					"direction":        "out",
-					"source":           "1.2.3.0/24",
-					"dest_port_type":   "port",
-					"proto":            "ANY",
-					"dest_port":        "0/0",
-					"release":          "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      "100.1.1.0/24",
-						"application_name": "ANY",
-						"description":      "放行所有流量",
-						"source_type":      "net",
-						"acl_action":       "accept",
-						"destination_type": "net",
-						"direction":        "out",
-						"source":           "1.2.3.0/24",
-						"dest_port_type":   "port",
-						"proto":            "ANY",
-						"dest_port":        "0/0",
-						"release":          "true",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"ip_version", "source_ip"},
-			},
-		},
-	})
-}
-
-func TestAccAlicloudCloudFirewallControlPolicy_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_cloud_firewall_control_policy.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallControlPolicyMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeCloudFirewallControlPolicy")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallControlPolicyBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"application_name": "ANY",
-					"acl_action":       "accept",
-					"description":      "放行所有流量",
-					"destination_type": "net",
-					"destination":      "100.1.1.0/24",
 					"direction":        "in",
-					"proto":            "ANY",
-					"source":           "1.2.3.0/24",
+					"application_name": "ANY",
+					"description":      name,
+					"acl_action":       "accept",
+					"source":           "127.0.0.1/32",
 					"source_type":      "net",
+					"destination":      "127.0.0.2/32",
+					"destination_type": "net",
+					"proto":            "TCP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"direction":        "in",
+						"application_name": "ANY",
+						"description":      name,
+						"acl_action":       "accept",
+						"source":           "127.0.0.1/32",
+						"source_type":      "net",
+						"destination":      "127.0.0.2/32",
+						"destination_type": "net",
+						"proto":            "TCP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action": "drop",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action": "drop",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "127.0.0.2/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": "127.0.0.2/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"source_type": "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":      CHECKSET,
+						"source_type": "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "${alicloud_cloud_firewall_address_book.ip_update.group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "127.0.0.3/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": "127.0.0.3/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"destination_type": "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination":      CHECKSET,
+						"destination_type": "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "${alicloud_cloud_firewall_address_book.ip_update.group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "ANY",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"application_name": "ANY",
-						"acl_action":       "accept",
-						"description":      "放行所有流量",
-						"destination_type": "net",
-						"destination":      "100.1.1.0/24",
-						"direction":        "in",
-						"proto":            "ANY",
-						"source":           "1.2.3.0/24",
-						"source_type":      "net",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proto": "ANY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proto": "ANY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port": "20/22",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port": "20/22",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       REMOVEKEY,
+					"dest_port_group": "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":  "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       REMOVEKEY,
+						"dest_port_group": CHECKSET,
+						"dest_port_type":  "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       "20/22",
+					"dest_port_group": REMOVEKEY,
+					"dest_port_type":  "port",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       "20/22",
+						"dest_port_group": REMOVEKEY,
+						"dest_port_type":  "port",
 					}),
 				),
 			},
@@ -268,135 +229,412 @@ func TestAccAlicloudCloudFirewallControlPolicy_basic1(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_action": "log",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_action": "log",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "Any",
-					"destination_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      "Any",
-						"destination_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"source":      "Any",
-					"source_type": "group",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"source":      "Any",
-						"source_type": "group",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"dest_port":      "100/200",
-					"dest_port_type": "port",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"dest_port":      "100/200",
-						"dest_port_type": "port",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"proto": "TCP",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"proto": "TCP",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "放行TCP流量",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "放行TCP流量",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"destination":      "100.1.1.0/24",
-					"application_name": "ANY",
-					"description":      "放行所有流量",
-					"source_type":      "net",
-					"acl_action":       "accept",
-					"destination_type": "net",
-					"direction":        "out",
-					"source":           "1.2.3.0/24",
-					"dest_port_type":   "port",
-					"proto":            "ANY",
-					"dest_port":        "0/0",
-					"release":          "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"destination":      "100.1.1.0/24",
-						"application_name": "ANY",
-						"description":      "放行所有流量",
-						"source_type":      "net",
-						"acl_action":       "accept",
-						"destination_type": "net",
-						"direction":        "out",
-						"source":           "1.2.3.0/24",
-						"dest_port_type":   "port",
-						"proto":            "ANY",
-						"dest_port":        "0/0",
-						"release":          "true",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"ip_version", "source_ip"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_ip", "lang"},
 			},
 		},
 	})
 }
 
-var AlicloudCloudFirewallControlPolicyMap0 = map[string]string{
-
-	"release":          "true",
-	"source_ip":        NOSET,
-	"application_name": "ANY",
-	"description":      "放行所有流量",
-	"destination":      "100.1.1.0/24",
-	"proto":            "ANY",
-	"source":           "1.2.3.0/24",
-	"acl_action":       "accept",
-	"destination_type": "net",
-	"source_type":      "net",
+func TestAccAliCloudCloudFirewallControlPolicy_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"direction":        "in",
+					"application_name": "ANY",
+					"description":      name,
+					"acl_action":       "accept",
+					"source":           "::1/128",
+					"source_type":      "net",
+					"destination":      "::2/128",
+					"destination_type": "net",
+					"proto":            "TCP",
+					"dest_port":        "20/22",
+					"dest_port_type":   "port",
+					"ip_version":       "6",
+					"release":          "false",
+					"source_ip":        "127.0.0.1",
+					"lang":             "zh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"direction":        "in",
+						"application_name": "ANY",
+						"description":      name,
+						"acl_action":       "accept",
+						"source":           "::1/128",
+						"source_type":      "net",
+						"destination":      "::2/128",
+						"destination_type": "net",
+						"proto":            "TCP",
+						"dest_port":        "20/22",
+						"dest_port_type":   "port",
+						"ip_version":       "6",
+						"release":          "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_ip", "lang"},
+			},
+		},
+	})
 }
 
-func AlicloudCloudFirewallControlPolicyBasicDependence0(name string) string {
+func TestAccAliCloudCloudFirewallControlPolicy_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"direction":        "out",
+					"application_name": "ANY",
+					"description":      name,
+					"acl_action":       "accept",
+					"source":           "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"source_type":      "group",
+					"destination":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"destination_type": "group",
+					"proto":            "TCP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"direction":        "out",
+						"application_name": "ANY",
+						"description":      name,
+						"acl_action":       "accept",
+						"source":           CHECKSET,
+						"source_type":      "group",
+						"destination":      CHECKSET,
+						"destination_type": "group",
+						"proto":            "TCP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "HTTP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": "HTTP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_action": "drop",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_action": "drop",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "${alicloud_cloud_firewall_address_book.ip_update.group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source":      "127.0.0.2/32",
+					"source_type": "net",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source":      "127.0.0.2/32",
+						"source_type": "net",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source": "127.0.0.1/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source": "127.0.0.1/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "${alicloud_cloud_firewall_address_book.ip_update.group_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination":      "127.0.0.3/32",
+					"destination_type": "net",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination":      "127.0.0.3/32",
+						"destination_type": "net",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"destination": "127.0.0.2/32",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"destination": "127.0.0.2/32",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"application_name": "ANY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"application_name": "ANY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"proto": "ANY",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"proto": "ANY",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port_group": "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":  "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port_group": CHECKSET,
+						"dest_port_type":  "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       "20/22",
+					"dest_port_group": REMOVEKEY,
+					"dest_port_type":  "port",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       "20/22",
+						"dest_port_group": REMOVEKEY,
+						"dest_port_type":  "port",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"dest_port":       REMOVEKEY,
+					"dest_port_group": "${alicloud_cloud_firewall_address_book.port_update.group_name}",
+					"dest_port_type":  "group",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"dest_port":       REMOVEKEY,
+						"dest_port_group": CHECKSET,
+						"dest_port_type":  "group",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"release": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"release": "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_ip", "lang"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallControlPolicy_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_control_policy.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"direction":        "out",
+					"application_name": "ANY",
+					"description":      name,
+					"acl_action":       "accept",
+					"source":           "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"source_type":      "group",
+					"destination":      "${alicloud_cloud_firewall_address_book.ip.group_name}",
+					"destination_type": "group",
+					"proto":            "TCP",
+					"dest_port_group":  "${alicloud_cloud_firewall_address_book.port.group_name}",
+					"dest_port_type":   "group",
+					"ip_version":       "4",
+					"release":          "false",
+					"source_ip":        "127.0.0.1",
+					"lang":             "en",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"direction":        "out",
+						"application_name": "ANY",
+						"description":      name,
+						"acl_action":       "accept",
+						"source":           CHECKSET,
+						"source_type":      "group",
+						"destination":      CHECKSET,
+						"destination_type": "group",
+						"proto":            "TCP",
+						"dest_port":        CHECKSET,
+						"dest_port_type":   "group",
+						"ip_version":       "4",
+						"release":          "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source_ip", "lang"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudFirewallControlPolicyMap0 = map[string]string{
+	"dest_port":      CHECKSET,
+	"dest_port_type": CHECKSET,
+	"ip_version":     CHECKSET,
+	"release":        CHECKSET,
+	"acl_uuid":       CHECKSET,
+}
+
+func AliCloudCloudFirewallControlPolicyBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "ip" {
+  		group_name   = var.name
+  		group_type   = "ip"
+  		description  = var.name
+  		address_list = ["10.21.0.0/16", "10.168.0.0/16"]
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "ip_update" {
+  		group_name   = "${var.name}-update"
+  		group_type   = "ip"
+  		description  = "${var.name}-update"
+  		address_list = ["10.21.0.0/16", "10.22.0.0/16", "10.168.0.0/16"]
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "port" {
+  		group_name   = var.name
+  		group_type   = "port"
+  		description  = var.name
+  		address_list = ["1/1", "22/22", "88/88"]
+	}
+
+	resource "alicloud_cloud_firewall_address_book" "port_update" {
+  		group_name   = "${var.name}-update"
+  		group_type   = "port"
+  		description  = "${var.name}-update"
+  		address_list = ["22/22", "88/88"]
+	}
 `, name)
 }
 
-func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
+func TestUnitAliCloudCloudFirewallControlPolicy(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy"].Schema).Data(nil, nil)
@@ -499,7 +737,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyCreate(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -516,7 +754,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyCreate(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -533,7 +771,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyCreate(dCreate, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -551,7 +789,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudCloudFirewallControlPolicyUpdate(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -586,7 +824,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -621,7 +859,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -641,7 +879,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -656,7 +894,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyDelete(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -673,7 +911,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyDelete(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -693,7 +931,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 		patcheDescribeCenInstance := gomonkey.ApplyMethod(reflect.TypeOf(&CbnService{}), "DescribeCenInstance", func(*CbnService, string) (map[string]interface{}, error) {
 			return responseMock["NotFoundError"]("ResourceNotfound")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyDelete(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyDelete(d, rawClient)
 		patches.Reset()
 		patcheDescribeCenInstance.Reset()
 		assert.Nil(t, err)
@@ -714,7 +952,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyDelete(resourceData1, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyDelete(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -731,7 +969,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyRead(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -747,7 +985,7 @@ func TestUnitAlicloudCloudFirewallControlPolicy(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyRead(d, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
