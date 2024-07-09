@@ -166,6 +166,7 @@ func (s *DfsServiceV2) DfsAccessRuleStateRefreshFunc(id string, field string, fa
 }
 
 // DescribeDfsAccessRule >>> Encapsulated.
+
 // DescribeDfsFileSystem <<< Encapsulated get interface for Dfs FileSystem.
 
 func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]interface{}, err error) {
@@ -199,7 +200,6 @@ func (s *DfsServiceV2) DescribeDfsFileSystem(id string) (object map[string]inter
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidParameter.FileSystemNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("FileSystem", id)), NotFoundMsg, response)

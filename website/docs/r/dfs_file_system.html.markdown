@@ -56,7 +56,7 @@ The following arguments are supported:
 * `storage_set_name` - (Optional, Available since v1.218.0) Save set identity, used to select a user-specified save set.
 * `storage_type` - (Required, ForceNew) The storage media type. Value: STANDARD (default): STANDARD PERFORMANCE: PERFORMANCE type.
 * `throughput_mode` - (Optional) The throughput mode. Value: Standard (default): Standard throughput Provisioned: preset throughput.
-* `zone_id` - (Required, ForceNew) Zone Id, which is used to create file system resources to the specified zone.
+* `zone_id` - (Optional, ForceNew) Zone Id, which is used to create file system resources to the specified zone.
 
 ## Attributes Reference
 
