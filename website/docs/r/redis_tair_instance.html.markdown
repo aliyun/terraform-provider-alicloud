@@ -65,7 +65,7 @@ resource "alicloud_redis_tair_instance" "default" {
 
 ### Deleting `alicloud_redis_tair_instance` or removing it from your configuration
 
-The `alicloud_redis_tair_instance` resource allows you to manage  `payment_type = "PayAsYouGo"`  instance, but Terraform cannot destroy it.
+The `alicloud_redis_tair_instance` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
 Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
 You can resume managing the subscription instance via the AlibabaCloud Console.
 
@@ -82,7 +82,7 @@ The following arguments are supported:
 * `instance_type` - (Required, ForceNew) The storage medium of the instance. Valid values: tair_rdb, tair_scm, tair_essd.
 * `node_type` - (Optional, Computed, Available since v1.224.0) Node type, value: MASTER_SLAVE: high availability (dual copy) STAND_ALONE: single copy double: double copy single: single copy Note For Cloud Native instances, select MASTER_SLAVE or STAND_ALONE. For Classic instances, select double or single.
 * `password` - (Optional) The password that is used to connect to the instance. The password must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include ! @ # $ % ^ & * ( ) _ + - =
-* `payment_type` - (Optional, Computed) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
+* `payment_type` - (Optional, Computed) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo. Since version 1.227.0, you can transfer prepaid instance to postpaid.
 * `period` - (Optional) The subscription duration. Unit: months. Valid values: 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 24,36, and 60. This parameter is required only if you set the PaymentType parameter to Subscription.
 * `port` - (Optional, ForceNew, Computed) The Tair service port. The service port of the instance. Valid values: 1024 to 65535. Default value: 6379.
 * `read_only_count` - (Optional, Available since v1.224.0) Number of read-only nodes in the primary zone. Valid values: 0 to 5. This parameter is only applicable to the following conditions: If the instance is in the cloud disk version standard architecture, you can set this parameter to a value greater than 0 to enable the read/write splitting architecture. If the instance is a cloud disk version read/write splitting architecture instance, you can use this parameter to customize the number of read-only nodes, or set this parameter to 0 to disable the read/write splitting architecture and switch the instance to the standard architecture.
