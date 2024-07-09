@@ -605,6 +605,11 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringInSlice([]string{"Up", "Down", "TempUpgrade", "Serverless"}, false),
 			},
+			"target_major_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -880,6 +885,44 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 	}
 
 	if !d.IsNewResource() && d.HasChange("engine_version") && d.Get("engine").(string) == string(MySQL) {
+		var response map[string]interface{}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		instance, err := rdsService.DescribeDBInstance(d.Id())
+		skipPrecheck := instance["EngineVersion"] == "5.7" && d.Get("category") == "Basic" && d.Get("db_instance_storage_type") == "cloud_essd"
+		if !skipPrecheck {
+			action := "UpgradeDBInstanceMajorVersionPrecheck"
+			request := map[string]interface{}{
+				"RegionId":     client.RegionId,
+				"DBInstanceId": d.Id(),
+				"SourceIp":     client.SourceIp,
+			}
+			if v, ok := d.GetOk("target_major_version"); ok && v.(string) != "" {
+				request["TargetMajorVersion"] = v
+			} else {
+				request["TargetMajorVersion"] = d.Get("engine_version")
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			addDebug(action, response, request)
+			stateConf := BuildStateConf([]string{}, []string{"Success"}, d.Timeout(schema.TimeoutCreate), 3*time.Second, rdsService.RdsUpgradeMajorVersionRefreshFunc(d.Id(), formatInt(response["TaskId"]), []string{"Deleting"}))
+			if _, err := stateConf.WaitForState(); err != nil {
+				return WrapErrorf(err, IdMsg, d.Id())
+			}
+		}
 		action := "UpgradeDBInstanceEngineVersion"
 		request := map[string]interface{}{
 			"RegionId":      client.SourceIp,
@@ -889,8 +932,6 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			"ClientToken":   buildClientToken(action),
 			"SourceIp":      client.SourceIp,
 		}
-		var response map[string]interface{}
-		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
@@ -906,9 +947,10 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		addDebug(action, response, request)
-		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, rdsService.RdsDBInstanceStateRefreshFunc(d.Id(), []string{"Deleting"}))
 		d.SetPartial("engine_version")
 		d.SetPartial("effective_time")
+		d.SetPartial("target_major_version")
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
