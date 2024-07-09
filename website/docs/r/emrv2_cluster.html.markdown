@@ -178,7 +178,7 @@ resource "alicloud_emrv2_cluster" "default" {
 The following arguments are supported:
 
 * `resource_group_id` - (Optional) The Id of resource group which the emr-cluster belongs.
-* `payment_type` - (Optional, ForceNew) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
+* `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription. **NOTE:** From version 1.227.0, `payment_type` can be modified.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#subscription_config) below.
 * `cluster_type` - (Required, ForceNew) EMR Cluster Type, e.g. DATALAKE, OLAP, DATAFLOW, DATASERVING, CUSTOM etc. You can find all valid EMR cluster type in emr web console.
 * `release_version` - (Required, ForceNew) EMR Version, e.g. EMR-5.10.0. You can find the all valid EMR Version in emr web console.
@@ -189,7 +189,7 @@ The following arguments are supported:
 * `applications` - (Required, ForceNew) The applications of EMR cluster to be installed, e.g. HADOOP-COMMON, HDFS, YARN, HIVE, SPARK2, SPARK3, ZOOKEEPER etc. You can find all valid applications in emr web console.
 * `application_configs` - (Optional) The application configurations of EMR cluster. See [`application_configs`](#application_configs) below.
 * `node_attributes` - (Required, ForceNew) The node attributes of ecs instances which the emr-cluster belongs. See [`node_attributes`](#node_attributes) below.
-* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below.
+* `node_groups` - (Required) Groups of node, You can specify MASTER as a group, CORE as a group (just like the above example). See [`node_groups`](#node_groups) below. **NOTE:** Since version 1.227.0, the type of `node_groups` changed from Set to List.
 * `bootstrap_scripts` (Optional) The bootstrap scripts to be effected when creating emr-cluster or resize emr-cluster, if priority is not specified, the scripts will execute in the declared order. See [`bootstrap_scripts`](#bootstrap_scripts) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
@@ -221,11 +221,11 @@ The `application_configs` block supports the following:
 
 The `node_attributes` block supports the following:
 
-* `vpc_id` - (Required) Used to retrieve instances belong to specified VPC.
-* `zone_id` - (Required) Zone ID, e.g. cn-hangzhou-i
-* `security_group_id` - (Required) Security Group ID for Cluster.
-* `ram_role` - (Required) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
-* `key_pair_name` - (Required) The name of the key pair.
+* `vpc_id` - (Required, ForceNew) Used to retrieve instances belong to specified VPC.
+* `zone_id` - (Required, ForceNew) Zone ID, e.g. cn-hangzhou-i
+* `security_group_id` - (Required, ForceNew) Security Group ID for Cluster.
+* `ram_role` - (Required, ForceNew) Alicloud EMR uses roles to perform actions on your behalf when provisioning cluster resources, running applications, dynamically scaling resources. EMR uses the following roles when interacting with other Alicloud services. Default value is AliyunEmrEcsDefaultRole.
+* `key_pair_name` - (Required, ForceNew) The name of the key pair.
 * `data_disk_encrypted` - (Optional, ForceNew, Available since v1.204.0) Whether to enable data disk encryption.
 * `data_disk_kms_key_id` - (Optional, ForceNew, Available since v1.204.0) The kms key id used to encrypt the data disk. It takes effect when data_disk_encrypted is true.
 
@@ -249,6 +249,7 @@ The node_groups mapping supports the following:
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
 * `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below.
 * `deployment_set_strategy` - (Optional, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP.
+* `auto_scaling_policy` - (Optional, Available since v1.227.0) The node group auto scaling policy for emr cluster. See [`auto_scaling_policy`](#node_groups-auto_scaling_policy) below.
 * `node_resize_strategy` - (Optional, Available since v1.219.0) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
 
 ### `node_groups-subscription_config`
@@ -295,6 +296,79 @@ The cost_optimized_config mapping supports the following:
 * `on_demand_percentage_above_base_capacity` - (Required) The cost optimized configuration which on demand percentage above based capacity.
 * `spot_instance_pools` - (Required) The cost optimized configuration with spot instance pools.
 
+### `node_groups-auto_scaling_policy`
+
+The auto_scaling_policy mapping supports the following:
+
+* `scaling_rules` - (Optional) The scaling rules of auto scaling policy. See [`scaling_rules`](#node_groups-auto_scaling_policy-scaling_rules) below.
+* `constraints` - (Optional) The constraints of auto scaling policy. See [`constraints`](#node_groups-auto_scaling_policy-constraints) below.
+
+### `node_groups-auto_scaling_policy-scaling_rules`
+
+The scaling_rules mapping supports the following:
+
+* `rule_name` - (Required) The rule name of auto scaling policy.
+* `trigger_type` - (Required) The trigger type of auto scaling policy. Valid values: `TIME_TRIGGER` and `METRICS_TRIGGER`.
+* `activity_type` - (Required) The activity type of auto scaling policy. Valid values: `SCALE_OUT` and `SCALE_IN`.
+* `adjustment_type` - (Optional) The adjustment type of auto scaling policy. Valid values: `CHANGE_IN_CAPACITY` and `EXACT_CAPACITY`.
+* `adjustment_value` - (Required) The adjustment value of auto scaling policy. The value should between 1 and 5000.
+* `min_adjustment_value` - (Optional) The minimum adjustment value of auto scaling policy.
+* `time_trigger` - (Optional) The trigger time of scaling rules for emr node group auto scaling policy. See [`time_trigger`](#node_groups-auto_scaling_policy-scaling_rules-time_trigger) below.
+* `metrics_trigger` - (Optional) The trigger metrics of scaling rules for emr node group auto scaling policy. See [`metrics_trigger`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger) below.
+
+### `node_groups-auto_scaling_policy-scaling_rules-time_trigger`
+
+The time_trigger mapping supports the following:
+
+* `launch_time` - (Required) The launch time for this scaling rule specific time trigger.
+* `start_time` - (Optional) The start time for this scaling rule specific time trigger.
+* `end_time` - (Optional) The end time for this scaling rule specific time trigger.
+* `launch_expiration_time` - (Optional) The launch expiration time for this scaling rule specific time trigger. The value should between 0 and 3600.
+* `recurrence_type` - (Optional) The recurrence type for this scaling rule specific time trigger. Valid values: `MINUTELY`, `HOURLY`, `DAILY`, `WEEKLY`, `MONTHLY`.
+* `recurrence_value` - (Optional) The recurrence value for this scaling rule specific time trigger.
+
+### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger`
+
+The metrics_trigger mapping supports the following:
+
+* `time_window` - (Required) The time window for this scaling rule specific metrics trigger.
+* `evaluation_count` - (Required) The evaluation count for this scaling rule specific metrics trigger.
+* `cool_down_interval` - (Optional) The time of cool down interval for this scaling rule specific metrics trigger.
+* `condition_logic_operator` - (Optional) The condition logic operator for this scaling rule specific metrics trigger. Valid values: `And` and `Or`.
+* `time_constraints` - (Optional) The time constraints for this scaling rule specific metrics trigger. See [`time_constraints`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-time_constraints) below.
+* `conditions` - (Optional) The conditions for this scaling rule specific metrics trigger. See [`conditions`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions) below.
+
+### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-time_constraints`
+
+The time_constraints mapping supports the following:
+
+* `start_time` - (Optional) The start time for this scaling rule specific metrics trigger.
+* `end_time` - (Optional) The end time for this scaling rule specific metrics trigger.
+
+### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions`
+
+The conditions mapping supports the following:
+
+* `metric_name` - (Required) The metric name for this scaling rule specific metrics trigger.
+* `statistics` - (Required) The statistics for this scaling rule specific metrics trigger.
+* `comparison_operator` - (Required) The comparison operator for this scaling rule specific metrics trigger. Invalid values: `EQ`, `NE`, `GT`, `LT`, `GE`, `LE`.
+* `threshold` - (Required) The threshold for this scaling rule specific metrics trigger.
+* `tags` - (Optional) The tags for this scaling rule specific metrics trigger. See [`tags`](#node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions-tags) below.
+
+### `node_groups-auto_scaling_policy-scaling_rules-metrics_trigger-conditions-tags`
+
+The tags mapping supports the following:
+
+* `key` - (Required) The tag key for this scaling rule specific metrics trigger.
+* `value` - (Optional) The tag value for this scaling rule specific metrics trigger.
+
+### `node_groups-auto_scaling_policy-constraints`
+
+The constraints supports the following:
+
+* `max_capacity` - (Optional) The maximum capacity of constraints for emr node group auto scaling policy.
+* `min_capacity` - (Optional) The minimum capacity of constraints for emr node group auto scaling policy.
+
 ### `bootstrap_scripts`
 
 The bootstrap_scripts mapping supports the following: 
@@ -302,7 +376,7 @@ The bootstrap_scripts mapping supports the following:
 * `script_name` - (Required) The bootstrap script name.
 * `script_path` - (Required) The bootstrap script path, e.g. "oss://bucket/path".
 * `script_args` - (Required) The bootstrap script args, e.g. "--a=b".
-* `priority` - (Optional) The bootstrap scripts priority.
+* `priority` - (Deprecated since v1.227.0) The bootstrap scripts priority.
 * `execution_moment` - (Required) The bootstrap scripts execution moment, ’BEFORE_INSTALL’ or ‘AFTER_STARTED’ .
 * `execution_fail_strategy` - (Required) The bootstrap scripts execution fail strategy, ’FAILED_BLOCKED’ or ‘FAILED_CONTINUE’ .
 * `node_selector` - (Required) The bootstrap scripts execution target. See [`node_selector`](#bootstrap_scripts-node_selector) below.
@@ -313,9 +387,11 @@ The node_selector mapping supports the following:
 
 * `node_select_type` - (Required) The bootstrap scripts execution target node select type. Supported value: NODE, NODEGROUP or CLUSTER.
 * `node_names` - (Optional) The bootstrap scripts execution target node names.
-* `node_group_id` - (Optional) The bootstrap scripts execution target node group id.
+* `node_group_id` - (Deprecated since v1.227.0) It has been deprecated from version 1.227.0 and new field 'node_group_ids' replaces it.
+* `node_group_ids` - (Optional, Available since v1.227.0) The bootstrap scripts execution target node group ids.
 * `node_group_types` - (Optional) The bootstrap scripts execution target node group types.
-* `node_group_name` - (Optional) The bootstrap scripts execution target node group name.
+* `node_group_name` - (Deprecated since v1.227.0) It has been deprecated from version 1.227.0 and new field 'node_group_names' replaces it.
+* `node_group_names` - (Optional, Available since v1.227.0) The bootstrap scripts execution target node group names.
 
 ## Attributes Reference
 

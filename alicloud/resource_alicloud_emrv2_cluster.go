@@ -2,6 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/ecs"
+	"reflect"
 	"strings"
 	"time"
 
@@ -39,7 +42,6 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 			},
@@ -169,22 +171,27 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"vpc_id": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"zone_id": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"security_group_id": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"ram_role": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"key_pair_name": {
 							Type:     schema.TypeString,
 							Required: true,
+							ForceNew: true,
 						},
 						"data_disk_encrypted": {
 							Type:     schema.TypeBool,
@@ -204,7 +211,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 				ForceNew: true,
 			},
 			"node_groups": {
-				Type:     schema.TypeSet,
+				Type:     schema.TypeList,
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -400,6 +407,192 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							},
 							MaxItems: 1,
 						},
+						"auto_scaling_policy": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"scaling_rules": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"rule_name": {
+													Type:     schema.TypeString,
+													Required: true,
+												},
+												"trigger_type": {
+													Type:         schema.TypeString,
+													Required:     true,
+													ValidateFunc: StringInSlice([]string{"TIME_TRIGGER", "METRICS_TRIGGER"}, false),
+												},
+												"activity_type": {
+													Type:         schema.TypeString,
+													Required:     true,
+													ValidateFunc: StringInSlice([]string{"SCALE_OUT", "SCALE_IN"}, false),
+												},
+												"adjustment_type": {
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: StringInSlice([]string{"CHANGE_IN_CAPACITY", "EXACT_CAPACITY"}, false),
+												},
+												"adjustment_value": {
+													Type:         schema.TypeInt,
+													Required:     true,
+													ValidateFunc: IntBetween(1, 5000),
+												},
+												"min_adjustment_value": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+												"time_trigger": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"launch_time": {
+																Type:     schema.TypeString,
+																Required: true,
+															},
+															"start_time": {
+																Type:     schema.TypeString,
+																Optional: true,
+															},
+															"end_time": {
+																Type:     schema.TypeString,
+																Optional: true,
+															},
+															"launch_expiration_time": {
+																Type:         schema.TypeInt,
+																Optional:     true,
+																ValidateFunc: IntBetween(0, 3600),
+															},
+															"recurrence_type": {
+																Type:         schema.TypeString,
+																Optional:     true,
+																ValidateFunc: StringInSlice([]string{"MINUTELY", "HOURLY", "DAILY", "WEEKLY", "MONTHLY"}, false),
+															},
+															"recurrence_value": {
+																Type:     schema.TypeString,
+																Optional: true,
+															},
+														},
+													},
+													MaxItems: 1,
+												},
+												"metrics_trigger": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem: &schema.Resource{
+														Schema: map[string]*schema.Schema{
+															"time_window": {
+																Type:         schema.TypeInt,
+																Required:     true,
+																ValidateFunc: IntBetween(30, 1800),
+															},
+															"evaluation_count": {
+																Type:         schema.TypeInt,
+																Required:     true,
+																ValidateFunc: IntBetween(1, 5),
+															},
+															"cool_down_interval": {
+																Type:         schema.TypeInt,
+																Optional:     true,
+																ValidateFunc: IntBetween(0, 10800),
+															},
+															"condition_logic_operator": {
+																Type:         schema.TypeString,
+																Optional:     true,
+																ValidateFunc: StringInSlice([]string{"And", "Or"}, false),
+															},
+															"time_constraints": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"start_time": {
+																			Type:     schema.TypeString,
+																			Optional: true,
+																		},
+																		"end_time": {
+																			Type:     schema.TypeString,
+																			Optional: true,
+																		},
+																	},
+																},
+															},
+															"conditions": {
+																Type:     schema.TypeList,
+																Optional: true,
+																Elem: &schema.Resource{
+																	Schema: map[string]*schema.Schema{
+																		"metric_name": {
+																			Type:     schema.TypeString,
+																			Required: true,
+																		},
+																		"statistics": {
+																			Type:         schema.TypeString,
+																			Required:     true,
+																			ValidateFunc: StringInSlice([]string{"MAX", "MIN", "AVG"}, false),
+																		},
+																		"comparison_operator": {
+																			Type:         schema.TypeString,
+																			Required:     true,
+																			ValidateFunc: StringInSlice([]string{"EQ", "NE", "GT", "LT", "GE", "LE"}, false),
+																		},
+																		"threshold": {
+																			Type:     schema.TypeFloat,
+																			Required: true,
+																		},
+																		"tags": {
+																			Type:     schema.TypeList,
+																			Optional: true,
+																			Elem: &schema.Resource{
+																				Schema: map[string]*schema.Schema{
+																					"key": {
+																						Type:     schema.TypeString,
+																						Required: true,
+																					},
+																					"value": {
+																						Type:     schema.TypeString,
+																						Optional: true,
+																					},
+																				},
+																			},
+																		},
+																	},
+																},
+															},
+														},
+													},
+													MaxItems: 1,
+												},
+											},
+										},
+									},
+									"constraints": {
+										Type:     schema.TypeList,
+										Optional: true,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"max_capacity": {
+													Type:         schema.TypeInt,
+													Optional:     true,
+													ValidateFunc: IntBetween(0, 2000),
+												},
+												"min_capacity": {
+													Type:         schema.TypeInt,
+													Optional:     true,
+													ValidateFunc: IntBetween(0, 2000),
+												},
+											},
+										},
+										MaxItems: 1,
+									},
+								},
+							},
+							MaxItems: 1,
+						},
 					},
 				},
 				MinItems: 1,
@@ -422,8 +615,9 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 							Required: true,
 						},
 						"priority": {
-							Type:     schema.TypeInt,
-							Optional: true,
+							Type:       schema.TypeInt,
+							Optional:   true,
+							Deprecated: "Field 'priority' has been deprecated from provider version 1.227.0.",
 						},
 						"execution_moment": {
 							Type:         schema.TypeString,
@@ -451,8 +645,14 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"node_group_id": {
-										Type:     schema.TypeString,
+										Type:       schema.TypeString,
+										Optional:   true,
+										Deprecated: "Field 'node_group_id' has been deprecated from provider version 1.227.0. New field 'node_group_ids' replaces it.",
+									},
+									"node_group_ids": {
+										Type:     schema.TypeList,
 										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"node_group_types": {
 										Type:     schema.TypeList,
@@ -460,8 +660,14 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 									"node_group_name": {
-										Type:     schema.TypeString,
+										Type:       schema.TypeString,
+										Optional:   true,
+										Deprecated: "Field 'node_group_name' has been deprecated from provider version 1.227.0. New field 'node_group_names' replaces it.",
+									},
+									"node_group_names": {
+										Type:     schema.TypeList,
 										Optional: true,
+										Elem:     &schema.Schema{Type: schema.TypeString},
 									},
 								},
 							},
@@ -597,7 +803,7 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 
 	nodeGroups := make([]map[string]interface{}, 0)
 	if nodeGroupsList, ok := d.GetOk("node_groups"); ok {
-		for _, nodeGroupItem := range nodeGroupsList.(*schema.Set).List() {
+		for _, nodeGroupItem := range nodeGroupsList.([]interface{}) {
 			nodeGroup := map[string]interface{}{}
 			kv := nodeGroupItem.(map[string]interface{})
 			if v, ok := kv["node_group_type"]; ok {
@@ -755,6 +961,12 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					nodeGroup["CostOptimizedConfig"] = costOptimizedConfig
 				}
 			}
+			if v, ok := kv["auto_scaling_policy"]; ok {
+				scalingPolicies := v.([]interface{})
+				if len(scalingPolicies) == 1 {
+					nodeGroup["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(scalingPolicies[0].(map[string]interface{}))
+				}
+			}
 			nodeGroups = append(nodeGroups, nodeGroup)
 		}
 	}
@@ -801,6 +1013,13 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					if value, exists := nodeSelectorMap["node_group_id"]; exists {
 						nodeSelector["NodeGroupId"] = value
 					}
+					if value, exists := nodeSelectorMap["node_group_ids"]; exists {
+						var nodeGroupIds []string
+						for _, ngId := range value.([]interface{}) {
+							nodeGroupIds = append(nodeGroupIds, ngId.(string))
+						}
+						nodeSelector["NodeGroupIds"] = nodeGroupIds
+					}
 					if value, exists := nodeSelectorMap["node_group_types"]; exists {
 						var nodeGroupTypes []string
 						for _, nodeGroupType := range value.([]interface{}) {
@@ -810,6 +1029,13 @@ func resourceAlicloudEmrV2ClusterCreate(d *schema.ResourceData, meta interface{}
 					}
 					if value, exists := nodeSelectorMap["node_group_name"]; exists {
 						nodeSelector["NodeGroupName"] = value
+					}
+					if value, exists := nodeSelectorMap["node_group_names"]; exists {
+						var nodeGroupNames []string
+						for _, ngName := range value.([]interface{}) {
+							nodeGroupNames = append(nodeGroupNames, ngName.(string))
+						}
+						nodeSelector["NodeGroupNames"] = nodeGroupNames
 					}
 					bootstrapScript["NodeSelector"] = nodeSelector
 				}
@@ -893,6 +1119,13 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 		d.Set("log_collect_strategy", logCollectStrategy)
 	}
 
+	if _, ok := object["SubscriptionConfig"]; ok {
+		sc := d.Get("subscription_config").(*schema.Set).List()
+		if len(sc) > 0 {
+			d.Set("subscription_config", []map[string]interface{}{sc[0].(map[string]interface{})})
+		}
+	}
+
 	var nodeAttributes []map[string]interface{}
 	if v, ok := object["NodeAttributes"]; ok {
 		nodeAttributesMap := v.(map[string]interface{})
@@ -949,6 +1182,7 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 			"METASTORE":            {},
 			"MYSQL":                {},
 			"SPARK-EXTENSION":      {},
+			"SPARK-NATIVE":         {},
 			"TAIHAODOCTOR":         {},
 			"EMRHOOK":              {},
 			"JINDOSDK":             {},
@@ -965,6 +1199,96 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 			applications = append(applications, app)
 		}
 		d.Set("applications", applications)
+	}
+
+	action = "ListScripts"
+	listScriptsRequest := map[string]interface{}{
+		"RegionId":   client.RegionId,
+		"ClusterId":  d.Id(),
+		"ScriptType": "BOOTSTRAP",
+	}
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, listScriptsRequest, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	v, err = jsonpath.Get("$.Scripts", response)
+	if err != nil {
+		return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Scripts", response)
+	}
+	if v != nil && len(v.([]interface{})) > 0 {
+		scriptsMaps := v.([]interface{})
+		var scripts []map[string]interface{}
+		for _, item := range scriptsMaps {
+			scriptMap := item.(map[string]interface{})
+			script := map[string]interface{}{
+				"script_name":             scriptMap["ScriptName"],
+				"script_path":             scriptMap["ScriptPath"],
+				"script_args":             scriptMap["ScriptArgs"],
+				"execution_moment":        scriptMap["ExecutionMoment"],
+				"execution_fail_strategy": scriptMap["ExecutionFailStrategy"],
+			}
+
+			if v, ok := scriptMap["NodeSelector"]; ok && len(v.(map[string]interface{})) > 0 {
+				nodeSelectorMap := v.(map[string]interface{})
+				nodeSelector := map[string]interface{}{
+					"node_select_type": nodeSelectorMap["NodeSelectType"],
+				}
+
+				if nodeGroupId, exists := nodeSelectorMap["NodeGroupId"]; exists && nodeGroupId.(string) != "" {
+					nodeSelector["node_group_id"] = nodeGroupId
+				}
+
+				if ngIDs, exists := nodeSelectorMap["NodeGroupIds"]; exists && len(ngIDs.([]interface{})) > 0 {
+					var nodeGroupIDs []string
+					for _, ngID := range ngIDs.([]interface{}) {
+						nodeGroupIDs = append(nodeGroupIDs, ngID.(string))
+					}
+					nodeSelector["node_group_ids"] = nodeGroupIDs
+				}
+
+				if nodeGroupName, exists := nodeSelectorMap["NodeGroupName"]; exists && nodeGroupName.(string) != "" {
+					nodeSelector["node_group_name"] = nodeGroupName
+				}
+
+				if ngNames, exists := nodeSelectorMap["NodeGroupNames"]; exists && len(ngNames.([]interface{})) > 0 {
+					var nodeGroupNames []string
+					for _, ngName := range ngNames.([]interface{}) {
+						nodeGroupNames = append(nodeGroupNames, ngName.(string))
+					}
+					nodeSelector["node_group_names"] = nodeGroupNames
+				}
+
+				if ngTypes, exists := nodeSelectorMap["NodeGroupTypes"]; exists && len(ngTypes.([]interface{})) > 0 {
+					var nodeGroupTypes []string
+					for _, ngType := range ngTypes.([]interface{}) {
+						nodeGroupTypes = append(nodeGroupTypes, ngType.(string))
+					}
+					nodeSelector["node_group_types"] = nodeGroupTypes
+				}
+
+				if nn, exists := nodeSelectorMap["NodeNames"]; exists && len(nn.([]interface{})) > 0 {
+					var nodeNames []string
+					for _, nodeName := range nn.([]interface{}) {
+						nodeNames = append(nodeNames, nodeName.(string))
+					}
+					nodeSelector["node_names"] = nodeNames
+				}
+				script["node_selector"] = []map[string]interface{}{nodeSelector}
+			}
+			scripts = append(scripts, script)
+		}
+		d.Set("bootstrap_scripts", scripts)
 	}
 
 	action = "ListNodeGroups"
@@ -990,7 +1314,7 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 	if v != nil && len(v.([]interface{})) > 0 {
 		oldNodeGroupsMap := map[string]map[string]interface{}{}
 		if oldNodeGroups, ok := d.GetOk("node_groups"); ok {
-			for _, item := range oldNodeGroups.(*schema.Set).List() {
+			for _, item := range oldNodeGroups.([]interface{}) {
 				oldNodeGroup := item.(map[string]interface{})
 				oldNodeGroupsMap[oldNodeGroup["node_group_name"].(string)] = oldNodeGroup
 			}
@@ -1025,6 +1349,155 @@ func resourceAlicloudEmrV2ClusterRead(d *schema.ResourceData, meta interface{}) 
 						spotBidPrices = append(spotBidPrices, item.(map[string]interface{}))
 					}
 					nodeGroup["spot_bid_prices"] = spotBidPrices
+				}
+
+				if v, ok := oldNodeGroup["auto_scaling_policy"]; ok && len(v.([]interface{})) == 1 {
+					var scalingPolicies []map[string]interface{}
+					scalingPolicy := map[string]interface{}{}
+					scalingPolicyMap := v.([]interface{})[0].(map[string]interface{})
+					if scalingPolicyValue, scalingPolicyExists := scalingPolicyMap["scaling_rules"]; scalingPolicyExists && len(scalingPolicyValue.([]interface{})) > 0 {
+						var scalingRules []map[string]interface{}
+						for _, sr := range scalingPolicyValue.([]interface{}) {
+							scalingRule := map[string]interface{}{}
+							scalingRuleMap := sr.(map[string]interface{})
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["rule_name"]; scalingRuleExists && scalingRuleValue.(string) != "" {
+								scalingRule["rule_name"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["trigger_type"]; scalingRuleExists && scalingRuleValue.(string) != "" {
+								scalingRule["trigger_type"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["activity_type"]; scalingRuleExists && scalingRuleValue.(string) != "" {
+								scalingRule["activity_type"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["adjustment_type"]; scalingRuleExists && scalingRuleValue.(string) != "" {
+								scalingRule["adjustment_type"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["adjustment_value"]; scalingRuleExists && scalingRuleValue.(int) != 0 {
+								scalingRule["adjustment_value"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["min_adjustment_value"]; scalingRuleExists {
+								scalingRule["min_adjustment_value"] = scalingRuleValue
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["time_trigger"]; scalingRuleExists && len(scalingRuleValue.([]interface{})) > 0 {
+								var timeTriggers []map[string]interface{}
+								for _, tt := range scalingRuleValue.([]interface{}) {
+									timeTrigger := map[string]interface{}{}
+									timeTriggerMap := tt.(map[string]interface{})
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["launch_time"]; timeTriggerExists && timeTriggerValue.(string) != "" {
+										timeTrigger["launch_time"] = timeTriggerValue
+									}
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["start_time"]; timeTriggerExists && timeTriggerValue.(string) != "" {
+										timeTrigger["start_time"] = timeTriggerValue
+									}
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["end_time"]; timeTriggerExists && timeTriggerValue.(string) != "" {
+										timeTrigger["end_time"] = timeTriggerValue
+									}
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["launch_expiration_time"]; timeTriggerExists && timeTriggerValue.(int) != 0 {
+										timeTrigger["launch_expiration_time"] = timeTriggerValue
+									}
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["recurrence_type"]; timeTriggerExists && timeTriggerValue.(string) != "" {
+										timeTrigger["recurrence_type"] = timeTriggerValue
+									}
+									if timeTriggerValue, timeTriggerExists := timeTriggerMap["recurrence_value"]; timeTriggerExists && timeTriggerValue.(string) != "" {
+										timeTrigger["recurrence_value"] = timeTriggerValue
+									}
+									timeTriggers = append(timeTriggers, timeTrigger)
+								}
+								scalingRule["time_trigger"] = timeTriggers
+							}
+							if scalingRuleValue, scalingRuleExists := scalingRuleMap["metrics_trigger"]; scalingRuleExists && len(scalingRuleValue.([]interface{})) > 0 {
+								var metricsTriggers []map[string]interface{}
+								for _, mt := range scalingRuleValue.([]interface{}) {
+									metricsTrigger := map[string]interface{}{}
+									metricsTriggerMap := mt.(map[string]interface{})
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["time_window"]; metricsTriggerExists && metricsTriggerValue.(int) != 0 {
+										metricsTrigger["time_window"] = metricsTriggerValue
+									}
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["evaluation_count"]; metricsTriggerExists && metricsTriggerValue.(int) != 0 {
+										metricsTrigger["evaluation_count"] = metricsTriggerValue
+									}
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["cool_down_interval"]; metricsTriggerExists && metricsTriggerValue.(int) != 0 {
+										metricsTrigger["cool_down_interval"] = metricsTriggerValue
+									}
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["condition_logic_operator"]; metricsTriggerExists && metricsTriggerValue.(string) != "" {
+										metricsTrigger["condition_logic_operator"] = metricsTriggerValue
+									}
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["time_constraints"]; metricsTriggerExists && len(metricsTriggerValue.([]interface{})) > 0 {
+										var timeConstraints []map[string]interface{}
+										for _, tc := range metricsTriggerValue.([]interface{}) {
+											timeConstraint := map[string]interface{}{}
+											timeConstraintMap := tc.(map[string]interface{})
+											if timeConstraintValue, timeConstraintExists := timeConstraintMap["start_time"]; timeConstraintExists && timeConstraintValue.(string) != "" {
+												timeConstraint["start_time"] = timeConstraintValue
+											}
+											if timeConstraintValue, timeConstraintExists := timeConstraintMap["end_time"]; timeConstraintExists && timeConstraintValue.(string) != "" {
+												timeConstraint["end_time"] = timeConstraintValue
+											}
+											timeConstraints = append(timeConstraints, timeConstraint)
+										}
+										metricsTrigger["time_constraints"] = timeConstraints
+									}
+									if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["conditions"]; metricsTriggerExists && len(metricsTriggerValue.([]interface{})) > 0 {
+										var conditions []map[string]interface{}
+										for _, cd := range metricsTriggerValue.([]interface{}) {
+											condition := map[string]interface{}{}
+											conditionMap := cd.(map[string]interface{})
+											if conditionValue, conditionExists := conditionMap["metric_name"]; conditionExists && conditionValue.(string) != "" {
+												condition["metric_name"] = conditionValue
+											}
+											if conditionValue, conditionExists := conditionMap["statistics"]; conditionExists && conditionValue.(string) != "" {
+												condition["statistics"] = conditionValue
+											}
+											if conditionValue, conditionExists := conditionMap["comparison_operator"]; conditionExists && conditionValue.(string) != "" {
+												condition["comparison_operator"] = conditionValue
+											}
+											if conditionValue, conditionExists := conditionMap["threshold"]; conditionExists && conditionValue.(float64) != 0.0 {
+												condition["threshold"] = conditionValue
+											}
+											if conditionValue, conditionExists := conditionMap["tags"]; conditionExists && len(conditionValue.([]interface{})) > 0 {
+												var tags []map[string]interface{}
+												for _, tg := range conditionValue.([]interface{}) {
+													tag := map[string]interface{}{}
+													tagMap := tg.(map[string]interface{})
+													if tagValue, tagExists := tagMap["key"]; tagExists && tagValue.(string) != "" {
+														tag["key"] = tagValue
+													}
+													if tagValue, tagExists := tagMap["value"]; tagExists && tagValue.(string) != "" {
+														tag["value"] = tagValue
+													}
+													tags = append(tags, tag)
+												}
+												condition["tags"] = tags
+											}
+											conditions = append(conditions, condition)
+										}
+										metricsTrigger["conditions"] = conditions
+									}
+									metricsTriggers = append(metricsTriggers, metricsTrigger)
+								}
+								scalingRule["metrics_trigger"] = metricsTriggers
+							}
+							scalingRules = append(scalingRules, scalingRule)
+						}
+						scalingPolicy["scaling_rules"] = scalingRules
+					}
+					if scalingPolicyValue, scalingPolicyExists := scalingPolicyMap["constraints"]; scalingPolicyExists && len(scalingPolicyValue.([]interface{})) > 0 {
+						var constraints []map[string]interface{}
+						for _, ct := range scalingPolicyValue.([]interface{}) {
+							constraint := map[string]interface{}{}
+							constraintMap := ct.(map[string]interface{})
+							if constraintValue, constraintExists := constraintMap["max_capacity"]; constraintExists && constraintValue.(int) != 0 {
+								constraint["max_capacity"] = constraintValue
+							}
+							if constraintValue, constraintExists := constraintMap["min_capacity"]; constraintExists && constraintValue.(int) != 0 {
+								constraint["min_capacity"] = constraintValue
+							}
+							constraints = append(constraints, constraint)
+						}
+						scalingPolicy["constraints"] = constraints
+					}
+					scalingPolicies = append(scalingPolicies, scalingPolicy)
+					nodeGroup["auto_scaling_policy"] = scalingPolicies
 				}
 			}
 
@@ -1200,8 +1673,15 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("cluster_name")
 	}
 
+	if d.HasChange("payment_type") {
+		_, newPaymentType := d.GetChange("payment_type")
+		if "PayAsYouGo" == newPaymentType.(string) {
+			return WrapError(Error("EMR cluster can only change paymentType from PayAsYouGo to Subscription."))
+		}
+	}
+
 	if d.HasChange("node_groups") {
-		_, newNodeGroupsList := d.GetChange("node_groups")
+		oldNodeGroupsList, newNodeGroupsList := d.GetChange("node_groups")
 
 		listNodeGroupsRequest := map[string]interface{}{
 			"ClusterId": d.Id(),
@@ -1238,10 +1718,87 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 			oldNodeGroupMap[oldNodeGroup["NodeGroupName"].(string)] = oldNodeGroup
 		}
 
+		originNodeGroupMap := map[string]map[string]interface{}{}
+		for _, nodeGroupItem := range oldNodeGroupsList.([]interface{}) {
+			originNodeGroup := nodeGroupItem.(map[string]interface{})
+			originNodeGroupMap[originNodeGroup["node_group_name"].(string)] = originNodeGroup
+		}
+
 		newNodeGroupMap := map[string]map[string]interface{}{}
-		for _, nodeGroupItem := range newNodeGroupsList.(*schema.Set).List() {
+		for _, nodeGroupItem := range newNodeGroupsList.([]interface{}) {
 			newNodeGroup := nodeGroupItem.(map[string]interface{})
 			newNodeGroupMap[newNodeGroup["node_group_name"].(string)] = newNodeGroup
+		}
+
+		isUpdateClusterPaymentType := false
+		if d.HasChange("payment_type") {
+			action = "UpdateClusterPaymentType"
+			updateClusterPaymentTypeRequest := map[string]interface{}{
+				"ClusterId": d.Id(),
+				"RegionId":  client.RegionId,
+			}
+			if sc, ok := d.GetOk("subscription_config"); ok {
+				if autoPay, exists := sc.(*schema.Set).List()[0].(map[string]interface{})["auto_pay_order"]; exists {
+					updateClusterPaymentTypeRequest["AutoPayOrder"] = autoPay.(bool)
+				} else {
+					updateClusterPaymentTypeRequest["AutoPayOrder"] = true
+				}
+			}
+			var convertNodeGroups []map[string]interface{}
+			for originNodeGroupName := range originNodeGroupMap {
+				convertNodeGroup := map[string]interface{}{
+					"NodeGroupId": oldNodeGroupMap[originNodeGroupName]["NodeGroupId"],
+				}
+				if newNodeGroup, ok := newNodeGroupMap[originNodeGroupName]; ok {
+					if newNodeGroupValue, newNodeGroupExists := newNodeGroup["payment_type"]; newNodeGroupExists && "Subscription" == newNodeGroupValue {
+						convertNodeGroup["PaymentType"] = newNodeGroupValue
+					} else {
+						continue
+					}
+					if subscriptionConfig, exists := newNodeGroup["subscription_config"]; exists && len(subscriptionConfig.(*schema.Set).List()) > 0 {
+						subscriptionConfigMap := subscriptionConfig.(*schema.Set).List()[0].(map[string]interface{})
+						if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["payment_duration"]; subscriptionConfigExists {
+							convertNodeGroup["PaymentDuration"] = subscriptionConfigValue
+						}
+						if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["payment_duration_unit"]; subscriptionConfigExists {
+							convertNodeGroup["PaymentDurationUnit"] = subscriptionConfigValue
+						}
+					} else {
+						return WrapError(Error("The '%s' nodeGroup: '%s' is needed parameter 'subscription_config' for changing paymentType.",
+							newNodeGroup["node_group_type"], newNodeGroup["node_group_name"]))
+					}
+					convertNodeGroups = append(convertNodeGroups, convertNodeGroup)
+				}
+			}
+			updateClusterPaymentTypeRequest["NodeGroups"] = convertNodeGroups
+			wait = incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, updateClusterPaymentTypeRequest, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, updateClusterPaymentTypeRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+			// Wait for cluster payment type has been changed
+			if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+				if cluster, err := emrService.GetEmrV2Cluster(d.Id()); err != nil {
+					return resource.NonRetryableError(err)
+				} else if cluster["PaymentType"].(string) == "Subscription" {
+					return nil
+				}
+				return resource.RetryableError(Error("Waiting for cluster %s payment type to be changed.", d.Id()))
+			}); err != nil {
+				return WrapError(err)
+			}
+			isUpdateClusterPaymentType = true
 		}
 
 		var increaseNodesGroups []map[string]interface{}
@@ -1249,6 +1806,40 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 
 		for nodeGroupName, newNodeGroup := range newNodeGroupMap {
 			if oldNodeGroup, ok := oldNodeGroupMap[nodeGroupName]; ok {
+				if !reflect.DeepEqual(originNodeGroupMap[nodeGroupName]["auto_scaling_policy"], newNodeGroup["auto_scaling_policy"]) {
+					if len(newNodeGroup["auto_scaling_policy"].([]interface{})) > 0 {
+						adaptedScalingPolicy := adaptAutoScalingPolicyRequest(newNodeGroup["auto_scaling_policy"].([]interface{})[0].(map[string]interface{}))
+						if aspValue, aspExists := adaptedScalingPolicy["scalingRules"]; aspExists {
+							adaptedScalingPolicy["ScalingRules"] = aspValue
+							delete(adaptedScalingPolicy, "scalingRules")
+						}
+						if aspValue, aspExists := adaptedScalingPolicy["constraints"]; aspExists {
+							adaptedScalingPolicy["Constraints"] = aspValue
+							delete(adaptedScalingPolicy, "constraints")
+						}
+						adaptedScalingPolicy["RegionId"] = client.RegionId
+						adaptedScalingPolicy["ClusterId"] = d.Id()
+						adaptedScalingPolicy["NodeGroupId"] = oldNodeGroup["NodeGroupId"]
+
+						action = "PutAutoScalingPolicy"
+						err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+							response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, adaptedScalingPolicy, &runtime)
+							if err != nil {
+								if NeedRetry(err) {
+									wait()
+									return resource.RetryableError(err)
+								}
+								return resource.NonRetryableError(err)
+							}
+							return nil
+						})
+						addDebug(action, response, adaptedScalingPolicy)
+						if err != nil {
+							return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+						}
+					}
+				}
+
 				newNodeCount := formatInt(newNodeGroup["node_count"])
 				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
 
@@ -1377,6 +1968,9 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"DataDisks":          dataDisks,
 					"GracefulShutdown":   newNodeGroup["graceful_shutdown"],
 					"SpotInstanceRemedy": newNodeGroup["spot_instance_remedy"],
+				}
+				if value, exists := newNodeGroup["auto_scaling_policy"]; exists && len(value.([]interface{})) > 0 {
+					nodeGroupParam["AutoScalingPolicy"] = adaptAutoScalingPolicyRequest(value.([]interface{})[0].(map[string]interface{}))
 				}
 				if value, exists := newNodeGroup["deployment_set_strategy"]; exists && value.(string) != "" {
 					nodeGroupParam["DeploymentSetStrategy"] = value.(string)
@@ -1507,7 +2101,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 
 		var deleteNodeGroups []map[string]interface{}
 		for nodeGroupName, oldNodeGroup := range oldNodeGroupMap { // Delete empty nodeGroup
-			if _, ok := newNodeGroupMap[nodeGroupName]; !ok {
+			if newNodeGroup, ok := newNodeGroupMap[nodeGroupName]; !ok {
 				oldNodeCount := formatInt(oldNodeGroup["RunningNodeCount"])
 				if oldNodeCount > 0 {
 					return WrapError(Error(fmt.Sprintf("The [nodeGroup: %v, nodeGroupType: %v] can not delete cause exists running nodes", nodeGroupName, oldNodeGroup["NodeGroupType"].(string))))
@@ -1517,6 +2111,68 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					"NodeGroupId": oldNodeGroup["NodeGroupId"],
 					"RegionId":    client.RegionId,
 				})
+			} else if newNodeGroup["payment_type"] == "Subscription" && oldNodeGroup["PaymentType"] == "PayAsYouGo" &&
+				!isUpdateClusterPaymentType && d.Get("payment_type") == "Subscription" {
+				updateNodeGroupPaymentType := map[string]interface{}{
+					"NodeGroupId": oldNodeGroup["NodeGroupId"],
+				}
+				if newNodeGroupValue, newNodeGroupExists := newNodeGroup["payment_type"]; newNodeGroupExists {
+					updateNodeGroupPaymentType["PaymentType"] = newNodeGroupValue
+				}
+				if subscriptionConfig, exists := newNodeGroup["subscription_config"]; exists && len(subscriptionConfig.(*schema.Set).List()) > 0 {
+					subscriptionConfigMap := subscriptionConfig.(*schema.Set).List()[0].(map[string]interface{})
+					if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["payment_duration"]; subscriptionConfigExists {
+						updateNodeGroupPaymentType["PaymentDuration"] = subscriptionConfigValue
+					}
+					if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["payment_duration_unit"]; subscriptionConfigExists {
+						updateNodeGroupPaymentType["PaymentDurationUnit"] = subscriptionConfigValue
+					}
+				} else {
+					return WrapError(Error("The '%s' nodeGroup: '%s' is needed parameter 'subscription_config' for changing paymentType.",
+						newNodeGroup["node_group_type"], newNodeGroup["node_group_name"]))
+				}
+				action = "UpdateNodeGroupPaymentType"
+				UpdateNodeGroupPaymentTypeRequest := map[string]interface{}{
+					"ClusterId": d.Id(),
+					"RegionId":  client.RegionId,
+				}
+				if autoPay, ok := newNodeGroup["auto_pay_order"]; ok {
+					UpdateNodeGroupPaymentTypeRequest["AutoPayOrder"] = autoPay.(bool)
+				} else {
+					UpdateNodeGroupPaymentTypeRequest["AutoPayOrder"] = true
+				}
+				UpdateNodeGroupPaymentTypeRequest["NodeGroup"] = updateNodeGroupPaymentType
+				wait = incrementalWait(3*time.Second, 5*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, UpdateNodeGroupPaymentTypeRequest, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, UpdateNodeGroupPaymentTypeRequest)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				// Wait for node group payment type has been changed
+				if err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+					nodeGroupId := updateNodeGroupPaymentType["NodeGroupId"].(string)
+					if nodeGroups, err := emrService.ListEmrV2NodeGroups(d.Id(), []string{nodeGroupId}); err != nil {
+						return resource.NonRetryableError(err)
+					} else if len(nodeGroups) > 0 && "Subscription" == nodeGroups[0].(map[string]interface{})["PaymentType"].(string) {
+						return nil
+					}
+					return resource.RetryableError(Error("Waiting for node group %s payment type to be changed.", nodeGroupId))
+				}); err != nil {
+					return WrapError(err)
+				}
+			} else if !isUpdateClusterPaymentType && d.Get("payment_type") == "Subscription" &&
+				oldNodeGroup["PaymentType"] == "Subscription" && newNodeGroup["payment_type"] == "PayAsYouGo" {
+				return WrapError(Error("EMR cluster can only change paymentType from PayAsYouGo to Subscription."))
 			}
 		}
 
@@ -1592,6 +2248,145 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("node_groups")
 	}
 
+	if d.HasChange("bootstrap_scripts") {
+		_, newBootstrapScripts := d.GetChange("bootstrap_scripts")
+		listScriptsRequest := map[string]interface{}{
+			"ClusterId":  d.Id(),
+			"RegionId":   client.RegionId,
+			"ScriptType": "BOOTSTRAP",
+		}
+		action := "ListScripts"
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, listScriptsRequest, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, listScriptsRequest)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		resp, err := jsonpath.Get("$.Scripts", response)
+
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Scripts", response)
+		}
+
+		if resp != nil && len(resp.([]interface{})) > 0 {
+			deleteScriptRequest := map[string]interface{}{
+				"ClusterId":  d.Id(),
+				"RegionId":   client.RegionId,
+				"ScriptType": "BOOTSTRAP",
+			}
+			action = "DeleteScript"
+			for _, v := range resp.([]interface{}) {
+				scriptMap := v.(map[string]interface{})
+				deleteScriptRequest["ScriptId"] = scriptMap["ScriptId"]
+
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, deleteScriptRequest, &runtime)
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				addDebug(action, response, deleteScriptRequest)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+			}
+		}
+
+		if newBootstrapScripts != nil && len(newBootstrapScripts.([]interface{})) > 0 {
+			var newScripts []map[string]interface{}
+			createScriptRequest := map[string]interface{}{
+				"ClusterId":  d.Id(),
+				"RegionId":   client.RegionId,
+				"ScriptType": "BOOTSTRAP",
+			}
+			for _, bs := range newBootstrapScripts.([]interface{}) {
+				newScriptMap := bs.(map[string]interface{})
+				newScript := map[string]interface{}{
+					"ScriptName":            newScriptMap["script_name"],
+					"ScriptPath":            newScriptMap["script_path"],
+					"ScriptArgs":            newScriptMap["script_args"],
+					"ExecutionMoment":       newScriptMap["execution_moment"],
+					"ExecutionFailStrategy": newScriptMap["execution_fail_strategy"],
+				}
+				if value, exists := newScriptMap["priority"]; exists && value.(int) > 0 {
+					newScript["Priority"] = value.(int)
+				}
+				if value, exists := newScriptMap["node_selector"]; exists && len(value.(*schema.Set).List()) == 1 {
+					nodeSelectorMap := value.(*schema.Set).List()[0].(map[string]interface{})
+					nodeSelector := map[string]interface{}{
+						"NodeSelectType": nodeSelectorMap["node_select_type"],
+						"NodeGroupId":    nodeSelectorMap["node_group_id"],
+						"NodeGroupName":  nodeSelectorMap["node_group_name"],
+					}
+					if v, ok := nodeSelectorMap["node_names"]; ok && len(v.([]interface{})) > 0 {
+						var nodeNames []string
+						for _, nn := range v.([]interface{}) {
+							nodeNames = append(nodeNames, nn.(string))
+						}
+						nodeSelector["NodeNames"] = nodeNames
+					}
+					if v, ok := nodeSelectorMap["node_group_ids"]; ok && len(v.([]interface{})) > 0 {
+						var nodeGroupIds []string
+						for _, ngId := range v.([]interface{}) {
+							nodeGroupIds = append(nodeGroupIds, ngId.(string))
+						}
+						nodeSelector["NodeGroupIds"] = nodeGroupIds
+					}
+					if v, ok := nodeSelectorMap["node_group_types"]; ok && len(v.([]interface{})) > 0 {
+						var nodeGroupTypes []string
+						for _, ngType := range v.([]interface{}) {
+							nodeGroupTypes = append(nodeGroupTypes, ngType.(string))
+						}
+						nodeSelector["NodeGroupTypes"] = nodeGroupTypes
+					}
+					if v, ok := nodeSelectorMap["node_group_names"]; ok && len(v.([]interface{})) > 0 {
+						var nodeGroupNames []string
+						for _, ngName := range v.([]interface{}) {
+							nodeGroupNames = append(nodeGroupNames, ngName.(string))
+						}
+						nodeSelector["NodeGroupNames"] = nodeGroupNames
+					}
+					newScript["NodeSelector"] = nodeSelector
+				}
+				newScripts = append(newScripts, newScript)
+			}
+			createScriptRequest["Scripts"] = newScripts
+			action = "CreateScript"
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, createScriptRequest, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				return nil
+			})
+			addDebug(action, response, createScriptRequest)
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+		}
+	}
+
 	d.Partial(false)
 
 	return nil
@@ -1605,6 +2400,54 @@ func resourceAlicloudEmrV2ClusterDelete(d *schema.ResourceData, meta interface{}
 	if err != nil {
 		return WrapError(err)
 	}
+	if paymentType, ok := d.GetOk("payment_type"); ok && paymentType.(string) == "Subscription" {
+		v, err := emrService.ListEmrV2NodeGroups(d.Id(), []string{})
+		if err != nil {
+			return WrapError(err)
+		}
+		if v != nil && len(v) > 0 {
+			action := "ListNodes"
+			request := map[string]interface{}{
+				"ClusterId": d.Id(),
+				"RegionId":  client.RegionId,
+			}
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			for _, item := range v {
+				nodeGroupMap := item.(map[string]interface{})
+				if value, exists := nodeGroupMap["PaymentType"]; exists && value.(string) == "Subscription" {
+					request["MaxResults"] = 100
+					request["NodeGroupIds"] = []string{nodeGroupMap["NodeGroupId"].(string)}
+					err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, request, &runtime)
+						if err != nil {
+							if NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, request)
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+					nodes, err := jsonpath.Get("$.Nodes", response)
+					if err != nil {
+						return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Nodes", response)
+					}
+					if nodes != nil && len(nodes.([]interface{})) > 0 {
+						if err = deleteSubscriptionInstances(d, meta, nodes.([]interface{})); err != nil {
+							return WrapError(err)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	action := "DeleteCluster"
 	request := map[string]interface{}{
 		"ClusterId": d.Id(),
@@ -1616,7 +2459,7 @@ func resourceAlicloudEmrV2ClusterDelete(d *schema.ResourceData, meta interface{}
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || strings.Contains(err.Error(), "cluster exists nonempty pre-paid nodeGroups") {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -1636,4 +2479,217 @@ func resourceAlicloudEmrV2ClusterDelete(d *schema.ResourceData, meta interface{}
 	}
 
 	return WrapError(emrService.WaitForEmrV2Cluster(d.Id(), Deleted, DefaultTimeoutMedium))
+}
+
+func deleteSubscriptionInstances(d *schema.ResourceData, meta interface{}, instances []interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+	request := ecs.CreateModifyInstanceChargeTypeRequest()
+	var instanceIds []interface{}
+	for _, item := range instances {
+		instanceIds = append(instanceIds, item.(map[string]interface{})["NodeId"])
+	}
+	request.InstanceIds = convertListToJsonString(instanceIds)
+	request.AutoPay = requests.NewBoolean(true)
+	request.DryRun = requests.NewBoolean(false)
+	request.InstanceChargeType = string(PostPaid)
+	if err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+		raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+			return ecsClient.ModifyInstanceChargeType(request)
+		})
+		if err != nil {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
+				time.Sleep(3 * time.Second)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+		return nil
+	}); err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
+	for _, instanceId := range instanceIds {
+		deleteRequest := ecs.CreateDeleteInstanceRequest()
+		deleteRequest.InstanceId = instanceId.(string)
+		deleteRequest.Force = requests.NewBoolean(true)
+
+		wait := incrementalWait(1*time.Second, 1*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+			raw, err := client.WithEcsClient(func(ecsClient *ecs.Client) (interface{}, error) {
+				return ecsClient.DeleteInstance(deleteRequest)
+			})
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectInstanceStatus", "DependencyViolation.RouteEntry", "IncorrectInstanceStatus.Initializing"}) {
+					return resource.RetryableError(err)
+				}
+				if IsExpectedErrors(err, []string{Throttling, "LastTokenProcessing"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(deleteRequest.GetActionName(), raw)
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, EcsNotFound) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), deleteRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{"Pending", "Running", "Stopped", "Stopping"}, []string{}, d.Timeout(schema.TimeoutDelete), 10*time.Second, ecsService.InstanceStateRefreshFunc(d.Id(), []string{}))
+
+		if _, err = stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	return nil
+}
+
+func adaptAutoScalingPolicyRequest(r map[string]interface{}) map[string]interface{} {
+	scalingPolicy := map[string]interface{}{}
+	if value, exists := r["constraints"]; exists {
+		constraints := value.([]interface{})
+		if len(constraints) == 1 {
+			constraint := map[string]interface{}{}
+			constraintMap := constraints[0].(map[string]interface{})
+			if constraintValue, constraintExists := constraintMap["max_capacity"]; constraintExists {
+				constraint["maxCapacity"] = constraintValue
+				constraint["MaxCapacity"] = constraintValue
+			}
+			if constraintValue, constraintExists := constraintMap["min_capacity"]; constraintExists {
+				constraint["minCapacity"] = constraintValue
+				constraint["MinCapacity"] = constraintValue
+			}
+			scalingPolicy["constraints"] = constraint
+		}
+	}
+	if value, exists := r["scaling_rules"]; exists {
+		var scalingRules []map[string]interface{}
+		for _, sr := range value.([]interface{}) {
+			scalingRule := map[string]interface{}{}
+			scalingRuleMap := sr.(map[string]interface{})
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["rule_name"]; scalingRuleExists {
+				scalingRule["RuleName"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["trigger_type"]; scalingRuleExists {
+				scalingRule["TriggerType"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["activity_type"]; scalingRuleExists {
+				scalingRule["ActivityType"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["adjustment_type"]; scalingRuleExists {
+				scalingRule["AdjustmentType"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["adjustment_value"]; scalingRuleExists {
+				scalingRule["AdjustmentValue"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["min_adjustment_value"]; scalingRuleExists {
+				scalingRule["MinAdjustmentValue"] = scalingRuleValue
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["time_trigger"]; scalingRuleExists {
+				timeTriggers := scalingRuleValue.([]interface{})
+				if len(timeTriggers) == 1 {
+					timeTrigger := map[string]interface{}{}
+					timeTriggerMap := timeTriggers[0].(map[string]interface{})
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["launch_time"]; timeTriggerExists {
+						timeTrigger["LaunchTime"] = timeTriggerValue
+					}
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["start_time"]; timeTriggerExists {
+						timeTrigger["StartTime"] = timeTriggerValue
+					}
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["end_time"]; timeTriggerExists {
+						timeTrigger["EndTime"] = timeTriggerValue
+					}
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["launch_expiration_time"]; timeTriggerExists {
+						timeTrigger["LaunchExpirationTime"] = timeTriggerValue
+					}
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["recurrence_type"]; timeTriggerExists {
+						timeTrigger["RecurrenceType"] = timeTriggerValue
+					}
+					if timeTriggerValue, timeTriggerExists := timeTriggerMap["recurrence_value"]; timeTriggerExists {
+						timeTrigger["RecurrenceValue"] = timeTriggerValue
+					}
+					scalingRule["TimeTrigger"] = timeTrigger
+				}
+			}
+			if scalingRuleValue, scalingRuleExists := scalingRuleMap["metrics_trigger"]; scalingRuleExists {
+				metricsTriggers := scalingRuleValue.([]interface{})
+				if len(metricsTriggers) == 1 {
+					metricsTrigger := map[string]interface{}{}
+					metricsTriggerMap := metricsTriggers[0].(map[string]interface{})
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["time_window"]; metricsTriggerExists {
+						metricsTrigger["TimeWindow"] = metricsTriggerValue
+					}
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["evaluation_count"]; metricsTriggerExists {
+						metricsTrigger["EvaluationCount"] = metricsTriggerValue
+					}
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["cool_down_interval"]; metricsTriggerExists {
+						metricsTrigger["CoolDownInterval"] = metricsTriggerValue
+					}
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["condition_logic_operator"]; metricsTriggerExists {
+						metricsTrigger["ConditionLogicOperator"] = metricsTriggerValue
+					}
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["time_constraints"]; metricsTriggerExists {
+						var timeConstraints []map[string]interface{}
+						for _, tc := range metricsTriggerValue.([]interface{}) {
+							timeConstraint := map[string]interface{}{}
+							timeConstraintMap := tc.(map[string]interface{})
+							if timeConstraintValue, timeConstraintExists := timeConstraintMap["start_time"]; timeConstraintExists {
+								timeConstraint["StartTime"] = timeConstraintValue
+							}
+							if timeConstraintValue, timeConstraintExists := timeConstraintMap["end_time"]; timeConstraintExists {
+								timeConstraint["EndTime"] = timeConstraintValue
+							}
+							timeConstraints = append(timeConstraints, timeConstraint)
+						}
+						metricsTrigger["TimeConstraints"] = timeConstraints
+					}
+					if metricsTriggerValue, metricsTriggerExists := metricsTriggerMap["conditions"]; metricsTriggerExists {
+						var conditions []map[string]interface{}
+						for _, cd := range metricsTriggerValue.([]interface{}) {
+							condition := map[string]interface{}{}
+							conditionMap := cd.(map[string]interface{})
+							if conditionValue, conditionExists := conditionMap["metric_name"]; conditionExists {
+								condition["MetricName"] = conditionValue
+							}
+							if conditionValue, conditionExists := conditionMap["statistics"]; conditionExists {
+								condition["Statistics"] = conditionValue
+							}
+							if conditionValue, conditionExists := conditionMap["comparison_operator"]; conditionExists {
+								condition["ComparisonOperator"] = conditionValue
+							}
+							if conditionValue, conditionExists := conditionMap["threshold"]; conditionExists {
+								condition["Threshold"] = conditionValue
+							}
+							if conditionValue, conditionExists := conditionMap["tags"]; conditionExists {
+								var tags []map[string]interface{}
+								for _, t := range conditionValue.([]interface{}) {
+									tag := map[string]interface{}{}
+									tagMap := t.(map[string]interface{})
+									if tagValue, tagExists := tagMap["key"]; tagExists {
+										tag["Key"] = tagValue
+									}
+									if tagValue, tagExists := tagMap["value"]; tagExists {
+										tag["Value"] = tagValue
+									}
+									tags = append(tags, tag)
+								}
+								condition["Tags"] = tags
+							}
+							conditions = append(conditions, condition)
+						}
+						metricsTrigger["Conditions"] = conditions
+					}
+					scalingRule["MetricsTrigger"] = metricsTrigger
+				}
+			}
+			scalingRules = append(scalingRules, scalingRule)
+		}
+		scalingPolicy["scalingRules"] = scalingRules
+	}
+	return scalingPolicy
 }
