@@ -9,19 +9,17 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCloudFirewallControlPolicyOrder() *schema.Resource {
+func resourceAliCloudCloudFirewallControlPolicyOrder() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCloudFirewallControlPolicyOrderCreate,
-		Read:   resourceAlicloudCloudFirewallControlPolicyOrderRead,
-		Update: resourceAlicloudCloudFirewallControlPolicyOrderUpdate,
-		Delete: resourceAlicloudCloudFirewallControlPolicyOrderDelete,
+		Create: resourceAliCloudCloudFirewallControlPolicyOrderCreate,
+		Read:   resourceAliCloudCloudFirewallControlPolicyOrderRead,
+		Update: resourceAliCloudCloudFirewallControlPolicyOrderUpdate,
+		Delete: resourceAliCloudCloudFirewallControlPolicyOrderDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"acl_uuid": {
 				Type:     schema.TypeString,
@@ -32,17 +30,17 @@ func resourceAlicloudCloudFirewallControlPolicyOrder() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"in", "out"}, false),
+				ValidateFunc: StringInSlice([]string{"in", "out"}, false),
 			},
 			"order": {
 				Type:     schema.TypeInt,
-				Optional: true,
+				Required: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCloudFirewallControlPolicyOrderCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallControlPolicyOrderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "ModifyControlPolicyPriority"
@@ -51,13 +49,16 @@ func resourceAlicloudCloudFirewallControlPolicyOrderCreate(d *schema.ResourceDat
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["AclUuid"] = d.Get("acl_uuid")
 	request["Direction"] = d.Get("direction")
 	request["Order"] = d.Get("order")
-	request["AclUuid"] = d.Get("acl_uuid")
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -65,49 +66,78 @@ func resourceAlicloudCloudFirewallControlPolicyOrderCreate(d *schema.ResourceDat
 			}
 			return resource.NonRetryableError(err)
 		}
+
 		if fmt.Sprint(response["Message"]) == "not buy user" {
 			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
+
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_control_policy_order", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["AclUuid"], ":", request["Direction"]))
+	d.SetId(fmt.Sprintf("%v:%v", request["AclUuid"], request["Direction"]))
 
-	return resourceAlicloudCloudFirewallControlPolicyRead(d, meta)
+	return resourceAliCloudCloudFirewallControlPolicyOrderRead(d, meta)
 }
 
-func resourceAlicloudCloudFirewallControlPolicyOrderUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCloudFirewallControlPolicyOrderRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	cloudfwService := CloudfwService{client}
+
+	object, err := cloudfwService.DescribeCloudFirewallControlPolicy(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_control_policy_order cloudfwService.DescribeCloudFirewallControlPolicy Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	d.Set("acl_uuid", object["AclUuid"])
+	d.Set("direction", object["Direction"])
+	d.Set("order", formatInt(object["Order"]))
+
+	return nil
+}
+
+func resourceAliCloudCloudFirewallControlPolicyOrderUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	update := false
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
-	action := "ModifyControlPolicyPriority"
-	conn, err := client.NewCloudfwClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
-	update := false
 	request := map[string]interface{}{
 		"AclUuid":   parts[0],
 		"Direction": parts[1],
 	}
+
 	if d.HasChange("order") {
 		update = true
-		request["Order"] = d.Get("order")
 	}
+	request["Order"] = d.Get("order")
 
 	if update {
+		action := "ModifyControlPolicyPriority"
+		conn, err := client.NewCloudfwClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -115,49 +145,26 @@ func resourceAlicloudCloudFirewallControlPolicyOrderUpdate(d *schema.ResourceDat
 				}
 				return resource.NonRetryableError(err)
 			}
+
 			if fmt.Sprint(response["Message"]) == "not buy user" {
 				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
 				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
+
 			return nil
 		})
-	}
-	addDebug(action, response, request)
-	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_control_policy_order", action, AlibabaCloudSdkGoERROR)
-	}
+		addDebug(action, response, request)
 
-	d.SetId(fmt.Sprint(request["AclUuid"], ":", request["Direction"]))
-
-	return resourceAlicloudCloudFirewallControlPolicyRead(d, meta)
-}
-
-func resourceAlicloudCloudFirewallControlPolicyOrderRead(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
-	cloudfwService := CloudfwService{client}
-	object, err := cloudfwService.DescribeCloudFirewallControlPolicy(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cloud_firewall_control_policy_order cloudfwService.DescribeCloudFirewallControlPolicy Failed!!! %s", err)
-			d.SetId("")
-			return nil
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_control_policy_order", action, AlibabaCloudSdkGoERROR)
 		}
-		return WrapError(err)
-	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
 	}
 
-	d.Set("acl_uuid", parts[0])
-	d.Set("direction", parts[1])
-	d.Set("order", formatInt(object["Order"]))
-
-	return nil
+	return resourceAliCloudCloudFirewallControlPolicyOrderRead(d, meta)
 }
 
-func resourceAlicloudCloudFirewallControlPolicyOrderDelete(d *schema.ResourceData, meta interface{}) error {
-
+func resourceAliCloudCloudFirewallControlPolicyOrderDelete(d *schema.ResourceData, meta interface{}) error {
 	log.Printf("[DEBUG] Resource alicloud_cloud_firewall_control_policy_order [%s]  will not be deleted", d.Id())
+
 	return nil
 }
