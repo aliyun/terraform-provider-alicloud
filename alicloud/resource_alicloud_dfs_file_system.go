@@ -34,7 +34,11 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 			"data_redundancy_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"LRS", "ZRS"}, true),
+				ValidateFunc: StringInSlice([]string{"LRS", "ZRS"}, false),
+			},
+			"dedicated_cluster_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"description": {
 				Type:     schema.TypeString,
@@ -52,18 +56,18 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"HDFS"}, true),
+				ValidateFunc: StringInSlice([]string{"HDFS"}, false),
 			},
 			"provisioned_throughput_in_mi_bps": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: IntBetween(0, 1024),
+				Type:     schema.TypeInt,
+				Optional: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("throughput_mode"); ok && v.(string) == "Provisioned" {
 						return false
 					}
 					return true
 				},
+				ValidateFunc: IntBetween(0, 1024),
 			},
 			"space_capacity": {
 				Type:     schema.TypeInt,
@@ -77,17 +81,17 @@ func resourceAliCloudDfsFileSystem() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"STANDARD", "PERFORMANCE"}, true),
+				ValidateFunc: StringInSlice([]string{"STANDARD", "PERFORMANCE"}, false),
 			},
 			"throughput_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"Standard", "Provisioned"}, true),
+				ValidateFunc: StringInSlice([]string{"Standard", "Provisioned"}, false),
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
 				ForceNew: true,
 			},
 		},
@@ -107,9 +111,11 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	query["InputRegionId"] = client.RegionId
 
-	request["ZoneId"] = d.Get("zone_id")
-	request["InputRegionId"] = client.RegionId
+	if v, ok := d.GetOk("zone_id"); ok {
+		request["ZoneId"] = v
+	}
 	request["ProtocolType"] = d.Get("protocol_type")
 	request["StorageType"] = d.Get("storage_type")
 	if v, ok := d.GetOk("description"); ok {
@@ -120,11 +126,12 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("throughput_mode"); ok {
 		request["ThroughputMode"] = v
 	}
-	if v, ok := d.GetOk("provisioned_throughput_in_mi_bps"); ok {
+	if v, ok := d.GetOk("provisioned_throughput_in_mi_bps"); ok && v.(int) > 0 {
 		request["ProvisionedThroughputInMiBps"] = v
 	}
 	if v, ok := d.GetOk("storage_set_name"); ok {
 		request["StorageSetName"] = v
+		request["PartitionNumber"] = d.Get("partition_number")
 	}
 	if v, ok := d.GetOk("partition_number"); ok {
 		request["PartitionNumber"] = v
@@ -132,12 +139,14 @@ func resourceAliCloudDfsFileSystemCreate(d *schema.ResourceData, meta interface{
 	if v, ok := d.GetOk("data_redundancy_type"); ok {
 		request["DataRedundancyType"] = v
 	}
+	if v, ok := d.GetOk("dedicated_cluster_id"); ok {
+		request["DedicatedClusterId"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -172,15 +181,33 @@ func resourceAliCloudDfsFileSystemRead(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("file_system_name", objectRaw["FileSystemName"])
-	d.Set("protocol_type", objectRaw["ProtocolType"])
-	d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
-	d.Set("space_capacity", objectRaw["SpaceCapacity"])
-	d.Set("storage_type", objectRaw["StorageType"])
-	d.Set("throughput_mode", objectRaw["ThroughputMode"])
-	d.Set("zone_id", objectRaw["ZoneId"])
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["FileSystemName"] != nil {
+		d.Set("file_system_name", objectRaw["FileSystemName"])
+	}
+	if objectRaw["ProtocolType"] != nil {
+		d.Set("protocol_type", objectRaw["ProtocolType"])
+	}
+	if objectRaw["ProvisionedThroughputInMiBps"] != nil {
+		d.Set("provisioned_throughput_in_mi_bps", formatInt(objectRaw["ProvisionedThroughputInMiBps"]))
+	}
+	if objectRaw["SpaceCapacity"] != nil {
+		d.Set("space_capacity", objectRaw["SpaceCapacity"])
+	}
+	if objectRaw["StorageType"] != nil {
+		d.Set("storage_type", objectRaw["StorageType"])
+	}
+	if objectRaw["ThroughputMode"] != nil {
+		d.Set("throughput_mode", objectRaw["ThroughputMode"])
+	}
+	if objectRaw["ZoneId"] != nil {
+		d.Set("zone_id", objectRaw["ZoneId"])
+	}
 
 	return nil
 }
@@ -233,7 +260,6 @@ func resourceAliCloudDfsFileSystemUpdate(d *schema.ResourceData, meta interface{
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-06-20"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"FileSystem.ModifyThroughputModeTooFrequent"}) {
 					wait()
