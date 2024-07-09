@@ -19,18 +19,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudFirewallControlPolicyOrder_basic0(t *testing.T) {
+func TestAccAliCloudCloudFirewallControlPolicyOrder_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_control_policy_order.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudFirewallControlPolicyOrderMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyOrderMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudFirewallControlPolicy")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicy%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudFirewallControlPolicyOrderBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicyorder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyOrderBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,11 +43,13 @@ func TestAccAlicloudCloudFirewallControlPolicyOrder_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"acl_uuid":  "${alicloud_cloud_firewall_control_policy.default.acl_uuid}",
 					"direction": "${alicloud_cloud_firewall_control_policy.default.direction}",
-					"order":     "3",
+					"order":     "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"order": "3",
+						"acl_uuid":  CHECKSET,
+						"direction": CHECKSET,
+						"order":     "1",
 					}),
 				),
 			},
@@ -70,30 +72,72 @@ func TestAccAlicloudCloudFirewallControlPolicyOrder_basic0(t *testing.T) {
 	})
 }
 
-var AlicloudCloudFirewallControlPolicyOrderMap0 = map[string]string{
-	"acl_uuid":  CHECKSET,
-	"direction": CHECKSET,
-	"order":     CHECKSET,
+func TestAccAliCloudCloudFirewallControlPolicyOrder_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_control_policy_order.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallControlPolicyOrderMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CloudfwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudFirewallControlPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudfirewallcontrolpolicyorder%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallControlPolicyOrderBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"acl_uuid":  "${alicloud_cloud_firewall_control_policy.default.acl_uuid}",
+					"direction": "${alicloud_cloud_firewall_control_policy.default.direction}",
+					"order":     "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"acl_uuid":  CHECKSET,
+						"direction": CHECKSET,
+						"order":     "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
 }
 
-func AlicloudCloudFirewallControlPolicyOrderBasicDependence0(name string) string {
+var AliCloudCloudFirewallControlPolicyOrderMap0 = map[string]string{}
+
+func AliCloudCloudFirewallControlPolicyOrderBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_cloud_firewall_control_policy" "default" {
-	application_name =  "ANY"
-	acl_action       =  "accept"
-	description      =  "%s"
-	destination_type =  "net"
-	destination      =  "100.1.1.0/24"
-	direction        =  "out"
-	proto            =  "ANY"
-	source           =  "1.2.3.0/24"
-	source_type      =  "net"
-}
+	resource "alicloud_cloud_firewall_control_policy" "default" {
+  		direction        = "in"
+  		application_name = "ANY"
+  		description      = var.name
+  		acl_action       = "accept"
+  		source           = "127.0.0.1/32"
+  		source_type      = "net"
+  		destination      = "127.0.0.2/32"
+  		destination_type = "net"
+  		proto            = "ANY"
+	}
 `, name)
 }
 
-func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
+func TestUnitAliCloudCloudFirewallControlPolicyOrder(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy_order"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cloud_firewall_control_policy_order"].Schema).Data(nil, nil)
@@ -159,7 +203,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCloudFirewallControlPolicyOrderCreate(dInit, rawClient)
+	err = resourceAliCloudCloudFirewallControlPolicyOrderCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -184,7 +228,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyOrderCreate(dInit, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyOrderCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -211,7 +255,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCloudFirewallControlPolicyOrderUpdate(dExisted, rawClient)
+	err = resourceAliCloudCloudFirewallControlPolicyOrderUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyControlPolicyPriority
@@ -249,7 +293,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyOrderUpdate(dExisted, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyOrderUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -294,7 +338,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCloudFirewallControlPolicyOrderRead(dExisted, rawClient)
+		err := resourceAliCloudCloudFirewallControlPolicyOrderRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -305,7 +349,7 @@ func TestUnitAlicloudCloudFirewallControlPolicyOrder(t *testing.T) {
 	}
 
 	// Delete
-	err = resourceAlicloudCloudFirewallControlPolicyOrderDelete(dExisted, rawClient)
+	err = resourceAliCloudCloudFirewallControlPolicyOrderDelete(dExisted, rawClient)
 	assert.Nil(t, err)
 
 }

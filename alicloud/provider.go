@@ -1364,7 +1364,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_security_policy":                                   resourceAlicloudAlbSecurityPolicy(),
 			"alicloud_kvstore_audit_log_config":                              resourceAlicloudKvstoreAuditLogConfig(),
 			"alicloud_event_bridge_event_source":                             resourceAlicloudEventBridgeEventSource(),
-			"alicloud_cloud_firewall_control_policy_order":                   resourceAlicloudCloudFirewallControlPolicyOrder(),
+			"alicloud_cloud_firewall_control_policy_order":                   resourceAliCloudCloudFirewallControlPolicyOrder(),
 			"alicloud_ecd_policy_group":                                      resourceAlicloudEcdPolicyGroup(),
 			"alicloud_ecp_key_pair":                                          resourceAlicloudEcpKeyPair(),
 			"alicloud_hbr_ecs_backup_plan":                                   resourceAlicloudHbrEcsBackupPlan(),
