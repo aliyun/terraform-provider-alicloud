@@ -1,33 +1,34 @@
-## 1.227.0 (Unreleased)
+## 1.228.0 (Unreleased)
+## 1.227.0 (July 10, 2024)
 
-- **New Resource:** `alicloud_ens_nat_gateway` [GH-7425]
-- **New Resource:** `alicloud_ens_eip_instance_attachment` [GH-7425]
-- **New Resource:** `alicloud_gpdb_external_data_service` [GH-7430]
-- **New Resource:** `alicloud_gpdb_remote_adb_data_source` [GH-7430]
-- **New Resource:** `alicloud_gpdb_streaming_data_service` [GH-7430]
-- **New Resource:** `alicloud_gpdb_streaming_data_source` [GH-7430]
+- **New Resource:** `alicloud_ens_nat_gateway` ([#7425](https://github.com/aliyun/terraform-provider-alicloud/issues/7425))
+- **New Resource:** `alicloud_ens_eip_instance_attachment` ([#7425](https://github.com/aliyun/terraform-provider-alicloud/issues/7425))
+- **New Resource:** `alicloud_gpdb_external_data_service` ([#7430](https://github.com/aliyun/terraform-provider-alicloud/issues/7430))
+- **New Resource:** `alicloud_gpdb_remote_adb_data_source` ([#7430](https://github.com/aliyun/terraform-provider-alicloud/issues/7430))
+- **New Resource:** `alicloud_gpdb_streaming_data_service` ([#7430](https://github.com/aliyun/terraform-provider-alicloud/issues/7430))
+- **New Resource:** `alicloud_gpdb_streaming_data_source` ([#7430](https://github.com/aliyun/terraform-provider-alicloud/issues/7430))
 
 ENHANCEMENTS:
 
-- resource/alicloud_emrv2_cluster: supported create auto scaling policies when create emr cluster. [GH-7262]
-- resource/alicloud_ess_scaling_group: add scaling_policy and max_instance_lifetime. [GH-7393]
-- resource/alicloud_ess_eci_scaling_configuration: add cpu_options_threads_per_core and cpu_options_core. [GH-7396]
-- resource/alicloud_dcdn_domain_config: Added retry strategy for error code FlowControlError. [GH-7405]
-- resource/alicloud_ga_listener: Added the field idle_timeout, request_timeout. [GH-7410]
-- resource/alicloud_cloud_storage_gateway_gateway_cache_disk: Added the field performance_level; Supported cache_disk_category set to cloud_essd. [GH-7412]
-- resource/alicloud_oss_bucket: Improved the filed resource_group_id. [GH-7414]
-- resource/alicloud_adb_resource_group: Added the field users; Improved alicloud_adb_resource_group testcase. [GH-7417]
-- resource/alicloud_image: add new attribute boot_mode, detection_strategy, features etc. [GH-7420]
-- resource/alicloud_ens_instance: remove Required label for internet_max_bandwidth_out; resource/alicloud_ens_vswitch: modify timeoutes threshold. [GH-7422]
-- resource/alicloud_ga_bandwidth_package_attachment: Updated action DescribeAccelerator to DescribeBandwidthPackage to fix read error. [GH-7423]
-- resource/alicloud_polardb_endpoint: return ssl_enabled;resource/alicloud_polardb_endpoint_test: support returning ssl_enabled;resource/alicloud_polardb_cluster_endpoint: return ssl_enabled;resource/alicloud_polardb_cluster_endpoint_test: support returning ssl_enabled;resource/alicloud_polardb_primary_endpoint: return ssl_enabled;resource/alicloud_polardb_primary_endpoint_test: support returning ssl_enabled. [GH-7426]
-- resource/alicloud_redis_tair_instance: add new attribute security_group_id, ssl_enabled. [GH-7429]
-- resource/alicloud_dfs_file_system: remove Required label for zone_id. [GH-7436]
-- docs: fix typo in description of click_house_regions. [GH-7413]
-- docs: update scaling_policy,max_instance_lifetime,cpu_options_core and cpu_options_core available version. [GH-7415]
-- docs: update subcategory for alicloud_cen_instance_grant and alicloud_ddos_bgp_policy. [GH-7416]
-- docs: improve description for tair instance. [GH-7433]
-- docs: improve description for ecs image. [GH-7434]
+- resource/alicloud_emrv2_cluster: supported create auto scaling policies when create emr cluster. ([#7262](https://github.com/aliyun/terraform-provider-alicloud/issues/7262))
+- resource/alicloud_ess_scaling_group: add scaling_policy and max_instance_lifetime. ([#7393](https://github.com/aliyun/terraform-provider-alicloud/issues/7393))
+- resource/alicloud_ess_eci_scaling_configuration: add cpu_options_threads_per_core and cpu_options_core. ([#7396](https://github.com/aliyun/terraform-provider-alicloud/issues/7396))
+- resource/alicloud_dcdn_domain_config: Added retry strategy for error code FlowControlError. ([#7405](https://github.com/aliyun/terraform-provider-alicloud/issues/7405))
+- resource/alicloud_ga_listener: Added the field idle_timeout, request_timeout. ([#7410](https://github.com/aliyun/terraform-provider-alicloud/issues/7410))
+- resource/alicloud_cloud_storage_gateway_gateway_cache_disk: Added the field performance_level; Supported cache_disk_category set to cloud_essd. ([#7412](https://github.com/aliyun/terraform-provider-alicloud/issues/7412))
+- resource/alicloud_oss_bucket: Improved the filed resource_group_id. ([#7414](https://github.com/aliyun/terraform-provider-alicloud/issues/7414))
+- resource/alicloud_adb_resource_group: Added the field users; Improved alicloud_adb_resource_group testcase. ([#7417](https://github.com/aliyun/terraform-provider-alicloud/issues/7417))
+- resource/alicloud_image: add new attribute boot_mode, detection_strategy, features etc. ([#7420](https://github.com/aliyun/terraform-provider-alicloud/issues/7420))
+- resource/alicloud_ens_instance: remove Required label for internet_max_bandwidth_out; resource/alicloud_ens_vswitch: modify timeoutes threshold. ([#7422](https://github.com/aliyun/terraform-provider-alicloud/issues/7422))
+- resource/alicloud_ga_bandwidth_package_attachment: Updated action DescribeAccelerator to DescribeBandwidthPackage to fix read error. ([#7423](https://github.com/aliyun/terraform-provider-alicloud/issues/7423))
+- resource/alicloud_polardb_endpoint: return ssl_enabled;resource/alicloud_polardb_endpoint_test: support returning ssl_enabled;resource/alicloud_polardb_cluster_endpoint: return ssl_enabled;resource/alicloud_polardb_cluster_endpoint_test: support returning ssl_enabled;resource/alicloud_polardb_primary_endpoint: return ssl_enabled;resource/alicloud_polardb_primary_endpoint_test: support returning ssl_enabled. ([#7426](https://github.com/aliyun/terraform-provider-alicloud/issues/7426))
+- resource/alicloud_redis_tair_instance: add new attribute security_group_id, ssl_enabled. ([#7429](https://github.com/aliyun/terraform-provider-alicloud/issues/7429))
+- resource/alicloud_dfs_file_system: remove Required label for zone_id. ([#7436](https://github.com/aliyun/terraform-provider-alicloud/issues/7436))
+- docs: fix typo in description of click_house_regions. ([#7413](https://github.com/aliyun/terraform-provider-alicloud/issues/7413))
+- docs: update scaling_policy,max_instance_lifetime,cpu_options_core and cpu_options_core available version. ([#7415](https://github.com/aliyun/terraform-provider-alicloud/issues/7415))
+- docs: update subcategory for alicloud_cen_instance_grant and alicloud_ddos_bgp_policy. ([#7416](https://github.com/aliyun/terraform-provider-alicloud/issues/7416))
+- docs: improve description for tair instance. ([#7433](https://github.com/aliyun/terraform-provider-alicloud/issues/7433))
+- docs: improve description for ecs image. ([#7434](https://github.com/aliyun/terraform-provider-alicloud/issues/7434))
 
 ## 1.226.0 (July 2, 2024)
 
