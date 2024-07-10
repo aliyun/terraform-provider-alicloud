@@ -1049,6 +1049,100 @@ func TestAccAliCloudCSKubernetesNodePool_DeploymentSet(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudCSKubernetesNodePool_AttachInstances(t *testing.T) {
+	var v *cs.NodePoolDetail
+
+	resourceId := "alicloud_cs_kubernetes_node_pool.default"
+	ra := resourceAttrInit(resourceId, csdKubernetesNodePoolBasicMap)
+
+	serviceFunc := func() interface{} {
+		return &CsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccNodePool-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCSNodePoolConfigDependence_AttachInstances)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		// module name
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":                 name,
+					"cluster_id":           "${local.cluster_id}",
+					"vswitch_ids":          []string{"${local.vswitch_id}"},
+					"instance_types":       []string{"${data.alicloud_instance_types.default.instance_types.0.id}"},
+					"key_name":             "${alicloud_key_pair.default.key_name}",
+					"system_disk_category": "cloud_efficiency",
+					"system_disk_size":     "40",
+					"image_type":           "AliyunLinux3",
+					"instances":            []string{"${alicloud_instance.default.0.id}"},
+					"format_disk":          false,
+					"keep_instance_name":   true,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                 name,
+						"cluster_id":           CHECKSET,
+						"vswitch_ids.#":        "1",
+						"instance_types.#":     "1",
+						"key_name":             CHECKSET,
+						"system_disk_category": "cloud_efficiency",
+						"system_disk_size":     "40",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password", "force_delete", "instances", "format_disk", "keep_instance_name"},
+			},
+			// change, attach 1 and remove 0
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instances":          []string{"${alicloud_instance.default.1.id}"},
+			//		"format_disk":        true,
+			//		"keep_instance_name": false,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
+			// attach one more instance
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instances":          []string{"${alicloud_instance.default.0.id}", "${alicloud_instance.default.1.id}"},
+					"format_disk":        true,
+					"keep_instance_name": false,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			// remove instance
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instances": []string{"${alicloud_instance.default.1.id}"},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{}),
+			//	),
+			//},
+		},
+	})
+}
+
 // auto_scaling has concurrent config conflict
 func SkipTestAccAliCloudCSKubernetesNodePool_ScalingConflict(t *testing.T) {
 	var v *cs.NodePoolDetail
@@ -1670,6 +1764,91 @@ resource "alicloud_ecs_deployment_set" "default" {
   domain              = "Default"
   granularity         = "Host"
   deployment_set_name = var.name
+}
+
+data "alicloud_cs_managed_kubernetes_clusters" "default" {
+ name_regex = "^Default"
+}
+
+resource "alicloud_cs_managed_kubernetes" "default" {
+ count                = length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? 0 : 1
+ name                 = var.name
+ cluster_spec         = "ack.pro.small"
+ worker_vswitch_ids   = [local.vswitch_id]
+ new_nat_gateway      = false
+ pod_cidr             = cidrsubnet("10.0.0.0/8", 8, 36)
+ service_cidr         = cidrsubnet("172.16.0.0/16", 4, 7)
+ slb_internet_enabled = true
+}
+
+locals {
+ vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+ cluster_id =  length(data.alicloud_cs_managed_kubernetes_clusters.default.ids) > 0 ? data.alicloud_cs_managed_kubernetes_clusters.default.ids.0 : alicloud_cs_managed_kubernetes.default.0.id
+}
+`, name)
+}
+
+func resourceCSNodePoolConfigDependence_AttachInstances(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+	default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation  = "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+data "alicloud_instance_types" "default" {
+	availability_zone          = data.alicloud_zones.default.zones.0.id
+	cpu_core_count             = 4
+	memory_size                = 8
+	kubernetes_node_role       = "Worker"
+}
+
+data "alicloud_vpcs" "default" {
+	name_regex = "^default-NODELETING-ACK$"
+}
+
+data "alicloud_vswitches" "default" {
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_zones.default.zones.0.id
+}
+
+resource "alicloud_vswitch" "vswitch" {
+  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
+  vpc_id            = data.alicloud_vpcs.default.ids.0
+  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
+  zone_id           = data.alicloud_zones.default.zones.0.id
+  vswitch_name      = var.name
+}
+
+resource "alicloud_key_pair" "default" {
+	key_name = var.name
+}
+
+resource "alicloud_security_group" "group" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  security_group_type = "enterprise"
+}
+
+data "alicloud_images" "default" {
+  name_regex = "^aliyun_3_[0-9]+_x64*"
+  owners     = "system"
+}
+
+resource "alicloud_instance" "default" {
+  count             = 2
+  availability_zone = data.alicloud_zones.default.zones.0.id
+  instance_name     = "terraform-example"
+  image_id          = data.alicloud_images.default.images.0.id
+  instance_type     = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups   = [alicloud_security_group.group.id]
+  vswitch_id        = local.vswitch_id
+  lifecycle {
+    ignore_changes = [user_data, instance_name, image_id, security_groups]
+  }
 }
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
