@@ -1383,7 +1383,9 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 	}
 
 	if v, ok := d.GetOk("instances"); ok && v != nil {
-		attachExistingInstance(d, meta)
+		if err := attachExistingInstance(d, meta, expandStringList(v.([]interface{}))); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_kubernetes_node_pool", action, AlibabaCloudSdkGoERROR)
+		}
 	}
 
 	return resourceAliCloudAckNodepoolRead(d, meta)
@@ -2242,7 +2244,9 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(fmt.Errorf("node_count new value can not be parsed"), "parseError %d", newValue)
 		}
 		if newValue < oldValue {
-			removeNodePoolNodes(d, meta, parts, nil, nil)
+			if err = removeNodePoolNodes(d, meta, parts, nil, nil); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveNodePoolNodes", AlibabaCloudSdkGoERROR)
+			}
 			// The removal of a node is logically independent.
 			// The removal of a node should not involve parameter changes.
 			return resourceAliCloudAckNodepoolRead(d, meta)
@@ -2433,33 +2437,50 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		if ok != true {
 			return WrapErrorf(fmt.Errorf("instances new value can not be parsed"), "parseError %d", oldValue)
 		}
-
-		if len(newValue) > len(oldValue) {
-			attachExistingInstance(d, meta)
-		} else {
-			removeNodePoolNodes(d, meta, parts, oldValue, newValue)
+		attach, remove := diffInstances(expandStringList(oldValue), expandStringList(newValue))
+		if len(attach) > 0 {
+			if err = attachExistingInstance(d, meta, attach); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "AttachInstances", AlibabaCloudSdkGoERROR)
+			}
+		}
+		if len(remove) > 0 {
+			if err = removeNodePoolNodes(d, meta, parts, oldValue, newValue); err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), "RemoveNodePoolNodes", AlibabaCloudSdkGoERROR)
+			}
 		}
 	}
 
-	csService := CsService{client}
-	_ = resource.Retry(10*time.Minute, func() *resource.RetryError {
-		log.Printf("[DEBUG] Start retry fetch node pool info: %s", d.Id())
-		nodePoolDetail, err := csService.DescribeCsKubernetesNodePool(d.Id())
-		if err != nil {
-			return resource.NonRetryableError(err)
-		}
-
-		if nodePoolDetail.TotalNodes != d.Get("node_count").(int) && nodePoolDetail.TotalNodes != d.Get("desired_size").(int) {
-			time.Sleep(20 * time.Second)
-			return resource.RetryableError(Error("[ERROR] The number of nodes is inconsistent %s", d.Id()))
-		}
-
-		return resource.NonRetryableError(Error("[DEBUG] The number of nodes is the same"))
-	})
 	d.Partial(false)
 	return resourceAliCloudAckNodepoolRead(d, meta)
 }
 
+func diffInstances(old []string, new []string) (attach []string, remove []string) {
+	for i, _ := range new {
+		found := false
+		for j, _ := range old {
+			if new[i] == old[j] {
+				found = true
+			}
+		}
+		if found == false {
+			attach = append(attach, new[i])
+		}
+	}
+
+	for i, _ := range old {
+		found := false
+		for j, _ := range new {
+			if old[i] == new[j] {
+				found = true
+			}
+		}
+		if found == false {
+			remove = append(remove, old[i])
+		}
+	}
+
+	return
+}
 func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
@@ -2548,21 +2569,22 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	// remove manually added nodes
 	if d.HasChange("instances") {
 		var removeInstanceList []string
-		var attachNodeList []string
+		var removeInstances []string
 		if oldNodes != nil && newNodes != nil {
-			attachNodeList = difference(expandStringList(oldNodes), expandStringList(newNodes))
-		}
-		if len(newNodes) == 0 {
-			attachNodeList = expandStringList(oldNodes)
+			_, removeInstances = diffInstances(expandStringList(oldNodes), expandStringList(newNodes))
 		}
 		for _, v := range ret {
-			for _, name := range attachNodeList {
+			for _, name := range removeInstances {
 				if name == v.InstanceId {
 					removeInstanceList = append(removeInstanceList, v.NodeName)
 				}
 			}
 		}
 		removeNodesName = removeInstanceList
+	}
+
+	if len(removeNodesName) == 0 {
+		return nil
 	}
 
 	removeNodesArgs := &cs.DeleteKubernetesClusterNodesRequest{
@@ -2572,10 +2594,22 @@ func removeNodePoolNodes(d *schema.ResourceData, meta interface{}, parseId []str
 	}
 	if err := invoker.Run(func() error {
 		var err error
-		response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			resp, err := csClient.DeleteKubernetesClusterNodes(parseId[0], removeNodesArgs)
-			return resp, err
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
+				resp, err := csClient.DeleteKubernetesClusterNodes(parseId[0], removeNodesArgs)
+				return resp, err
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+
 		return err
 	}); err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "DeleteKubernetesClusterNodes", DenverdinoAliyungo)
@@ -2627,11 +2661,11 @@ func flattenTagsConfig(config []cs.Tag) map[string]string {
 	return m
 }
 
-func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
-	csService := CsService{meta.(*connectivity.AliyunClient)}
+func attachExistingInstance(d *schema.ResourceData, meta interface{}, attachInstances []string) error {
+	action := "AttachInstancesToNodePool"
 	client, err := meta.(*connectivity.AliyunClient).NewRoaCsClient()
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "InitializeClient", err)
 	}
 
 	parts, err := ParseResourceId(d.Id(), 2)
@@ -2641,18 +2675,13 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 	clusterId := parts[0]
 	nodePoolId := parts[1]
 
-	args := &roacs.AttachInstancesRequest{
-		NodepoolId:       tea.String(nodePoolId),
+	args := &roacs.AttachInstancesToNodePoolRequest{
 		FormatDisk:       tea.Bool(false),
 		KeepInstanceName: tea.Bool(true),
 	}
 
 	if v, ok := d.GetOk("password"); ok {
 		args.Password = tea.String(v.(string))
-	}
-
-	if v, ok := d.GetOk("key_name"); ok {
-		args.KeyPair = tea.String(v.(string))
 	}
 
 	if v, ok := d.GetOk("format_disk"); ok {
@@ -2663,22 +2692,34 @@ func attachExistingInstance(d *schema.ResourceData, meta interface{}) error {
 		args.KeepInstanceName = tea.Bool(v.(bool))
 	}
 
-	if v, ok := d.GetOk("image_id"); ok {
-		args.ImageId = tea.String(v.(string))
-	}
+	args.Instances = tea.StringSlice(attachInstances)
 
-	if v, ok := d.GetOk("instances"); ok {
-		args.Instances = tea.StringSlice(expandStringList(v.([]interface{})))
-	}
+	var resp *roacs.AttachInstancesToNodePoolResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err = client.AttachInstancesToNodePool(tea.String(clusterId), tea.String(nodePoolId), args)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 
-	_, err = client.AttachInstances(tea.String(clusterId), args)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "AttachInstances", AliyunTablestoreGoSdk)
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	taskId := tea.StringValue(resp.Body.TaskId)
+	if taskId == "" {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, resp)
 	}
 
-	stateConf := BuildStateConf([]string{"scaling"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, csService.CsKubernetesNodePoolStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-	if _, err := stateConf.WaitForState(); err != nil {
-		return WrapErrorf(err, IdMsg, d.Id())
+	csClient := CsClient{client: client}
+	stateConf := BuildStateConf([]string{}, []string{"success"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, csClient.DescribeTaskRefreshFunc(d, taskId, []string{"fail", "failed"}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, ResponseCodeMsg, d.Id(), action, jobDetail)
 	}
 
 	return nil
