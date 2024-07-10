@@ -69,8 +69,8 @@ The following arguments are supported:
 
 * `gateway_id` - (Required, ForceNew) The ID of the gateway.
 * `cache_disk_size_in_gb` - (Required, Int) The capacity of the cache disk.
-* `cache_disk_category` - (Optional, ForceNew) The type of the cache disk. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. **NOTE:** From version 1.226.1, `cache_disk_category` can be set to `cloud_essd`.
-* `performance_level` - (Optional, ForceNew, Available since v1.226.1) The performance level (PL) of the Enterprise SSD (ESSD). Valid values: `PL1`, `PL2`, `PL3`. **NOTE:** If `cache_disk_category` is set to `cloud_essd`, `performance_level` is required.
+* `cache_disk_category` - (Optional, ForceNew) The type of the cache disk. Valid values: `cloud_efficiency`, `cloud_ssd`, `cloud_essd`. **NOTE:** From version 1.227.0, `cache_disk_category` can be set to `cloud_essd`.
+* `performance_level` - (Optional, ForceNew, Available since v1.227.0) The performance level (PL) of the Enterprise SSD (ESSD). Valid values: `PL1`, `PL2`, `PL3`. **NOTE:** If `cache_disk_category` is set to `cloud_essd`, `performance_level` is required.
 
 ## Attributes Reference
 
