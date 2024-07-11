@@ -31,13 +31,11 @@ func resourceAliCloudInstance() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(10 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
-
 		Schema: map[string]*schema.Schema{
 			"availability_zone": {
 				Type:     schema.TypeString,
@@ -209,6 +207,23 @@ func resourceAliCloudInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"network_interface_traffic_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Standard", "HighPerformance"}, false),
+			},
+			"network_card_index": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"queue_pair_number": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"data_disks": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -299,7 +314,20 @@ func resourceAliCloudInstance() *schema.Resource {
 							Computed: true,
 						},
 						"network_interface_traffic_mode": {
-							Type:     schema.TypeString,
+							Type:         schema.TypeString,
+							Optional:     true,
+							ForceNew:     true,
+							Computed:     true,
+							ValidateFunc: StringInSlice([]string{"Standard", "HighPerformance"}, false),
+						},
+						"network_card_index": {
+							Type:     schema.TypeInt,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"queue_pair_number": {
+							Type:     schema.TypeInt,
 							Optional: true,
 							ForceNew: true,
 							Computed: true,
@@ -705,16 +733,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["SystemDisk.EncryptAlgorithm"] = v
 	}
 
-	if v, ok := d.GetOk("security_groups"); ok {
-		// At present, the classic network instance does not support multi sg in runInstances
-		sgs := expandStringList(v.(*schema.Set).List())
-		if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
-			request["SecurityGroupId"] = sgs[0]
-		} else {
-			request["SecurityGroupIds"] = sgs
-		}
-	}
-
 	request["InstanceName"] = "ECS-Instance"
 	if v, ok := d.GetOk("instance_name"); ok {
 		request["InstanceName"] = v
@@ -776,12 +794,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 	vswitchValue := d.Get("vswitch_id")
 	if vswitchValue == "" {
 		vswitchValue = d.Get("subnet_id")
-	}
-	if vswitchValue != "" {
-		request["VSwitchId"] = vswitchValue
-		if v, ok := d.GetOk("private_ip"); ok {
-			request["PrivateIpAddress"] = v
-		}
 	}
 
 	request["InstanceChargeType"] = "PostPaid"
@@ -906,29 +918,120 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 		request["DataDisk"] = disksMaps
 	}
 
+	networkInterfacesMaps := make([]map[string]interface{}, 0)
+
+	_, networkInterfaceTrafficModeOk := d.GetOk("network_interface_traffic_mode")
+	_, networkCardIndexOk := d.GetOkExists("network_card_index")
+	_, queuePairNumberOk := d.GetOkExists("queue_pair_number")
+
+	if networkInterfaceTrafficModeOk || networkCardIndexOk || queuePairNumberOk {
+		primaryNetworkInterfacesMap := make(map[string]interface{})
+		primaryNetworkInterfacesMap["InstanceType"] = "Primary"
+
+		if v, ok := d.GetOk("security_groups"); ok {
+			// At present, the classic network instance does not support multi sg in runInstances
+			sgs := expandStringList(v.(*schema.Set).List())
+			if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
+				primaryNetworkInterfacesMap["SecurityGroupId"] = sgs[0]
+			} else {
+				primaryNetworkInterfacesMap["SecurityGroupIds"] = sgs
+			}
+		}
+
+		if vswitchValue != "" {
+			primaryNetworkInterfacesMap["VSwitchId"] = vswitchValue
+
+			if v, ok := d.GetOk("private_ip"); ok {
+				primaryNetworkInterfacesMap["PrimaryIpAddress"] = v
+			}
+		}
+
+		if v, ok := d.GetOk("ipv6_addresses"); ok {
+			primaryNetworkInterfacesMap["Ipv6Address"] = v.(*schema.Set).List()
+		}
+
+		if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+			primaryNetworkInterfacesMap["Ipv6AddressCount"] = v
+		}
+
+		if v, ok := d.GetOk("network_interface_traffic_mode"); ok {
+			primaryNetworkInterfacesMap["NetworkInterfaceTrafficMode"] = v
+		}
+
+		if v, ok := d.GetOkExists("network_card_index"); ok {
+			primaryNetworkInterfacesMap["NetworkCardIndex"] = v
+		}
+
+		if v, ok := d.GetOkExists("queue_pair_number"); ok {
+			primaryNetworkInterfacesMap["QueuePairNumber"] = v
+		}
+
+		networkInterfacesMaps = append(networkInterfacesMaps, primaryNetworkInterfacesMap)
+	} else {
+		if vswitchValue != "" {
+			request["VSwitchId"] = vswitchValue
+
+			if v, ok := d.GetOk("private_ip"); ok {
+				request["PrivateIpAddress"] = v
+			}
+		}
+
+		if v, ok := d.GetOk("security_groups"); ok {
+			// At present, the classic network instance does not support multi sg in runInstances
+			sgs := expandStringList(v.(*schema.Set).List())
+			if d.Get("vswitch_id").(string) == "" && len(sgs) > 0 {
+				request["SecurityGroupId"] = sgs[0]
+			} else {
+				request["SecurityGroupIds"] = sgs
+			}
+		}
+
+		if v, ok := d.GetOk("ipv6_addresses"); ok {
+			request["Ipv6Address"] = v.(*schema.Set).List()
+		}
+
+		if v, ok := d.GetOkExists("ipv6_address_count"); ok {
+			request["Ipv6AddressCount"] = v
+		}
+	}
+
 	if v, ok := d.GetOk("network_interfaces"); ok {
-		networkInterfacesMaps := make([]map[string]interface{}, 0)
 		for _, networkInterfaces := range v.([]interface{}) {
-			networkInterfacesMap := make(map[string]interface{})
-			networkInterfacesArg := networkInterfaces.(map[string]interface{})
+			secondaryNetworkInterfacesMap := make(map[string]interface{})
+			secondaryNetworkInterfacesArg := networkInterfaces.(map[string]interface{})
 
-			if networkInterfaceId, ok := networkInterfacesArg["network_interface_id"]; ok && fmt.Sprint(networkInterfaceId) != "" {
-				networkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
+			if networkInterfaceId, ok := secondaryNetworkInterfacesArg["network_interface_id"]; ok && fmt.Sprint(networkInterfaceId) != "" {
+				secondaryNetworkInterfacesMap["NetworkInterfaceId"] = networkInterfaceId
+			} else {
+				secondaryNetworkInterfacesMap["InstanceType"] = "Secondary"
+
+				if vSwitchId, ok := secondaryNetworkInterfacesArg["vswitch_id"]; ok {
+					secondaryNetworkInterfacesMap["VSwitchId"] = vSwitchId
+				}
+
+				if networkInterfaceTrafficMode, ok := secondaryNetworkInterfacesArg["network_interface_traffic_mode"]; ok {
+					secondaryNetworkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
+				}
+
+				isSupported, err := ecsService.isSupportedNetworkCardIndex(fmt.Sprint(request["InstanceType"]))
+				if err != nil {
+					return WrapError(err)
+				}
+
+				if networkCardIndex, ok := secondaryNetworkInterfacesArg["network_card_index"]; ok && isSupported {
+					secondaryNetworkInterfacesMap["NetworkCardIndex"] = networkCardIndex
+				}
+
+				if queuePairNumber, ok := secondaryNetworkInterfacesArg["queue_pair_number"]; ok && fmt.Sprint(queuePairNumber) != "0" {
+					secondaryNetworkInterfacesMap["QueuePairNumber"] = queuePairNumber
+				}
+
+				if securityGroupIds, ok := secondaryNetworkInterfacesArg["security_group_ids"]; ok {
+					secondaryNetworkInterfacesMap["SecurityGroupIds"] = securityGroupIds
+				}
 			}
 
-			if vSwitchId, ok := networkInterfacesArg["vswitch_id"]; ok {
-				networkInterfacesMap["VSwitchId"] = vSwitchId
-			}
-
-			if networkInterfaceTrafficMode, ok := networkInterfacesArg["network_interface_traffic_mode"]; ok {
-				networkInterfacesMap["NetworkInterfaceTrafficMode"] = networkInterfaceTrafficMode
-			}
-
-			if securityGroupIds, ok := networkInterfacesArg["security_group_ids"]; ok {
-				networkInterfacesMap["SecurityGroupIds"] = securityGroupIds
-			}
-
-			networkInterfacesMaps = append(networkInterfacesMaps, networkInterfacesMap)
+			networkInterfacesMaps = append(networkInterfacesMaps, secondaryNetworkInterfacesMap)
 		}
 
 		request["NetworkInterface"] = networkInterfacesMaps
@@ -971,12 +1074,6 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 	if v, ok := d.GetOkExists("spot_duration"); ok {
 		request["SpotDuration"] = v
-	}
-	if v, ok := d.GetOk("ipv6_addresses"); ok {
-		request["Ipv6Address"] = v.(*schema.Set).List()
-	}
-	if v, ok := d.GetOkExists("ipv6_address_count"); ok {
-		request["Ipv6AddressCount"] = v
 	}
 
 	if v, ok := d.GetOk("dedicated_host_id"); ok {
@@ -1194,10 +1291,24 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	networkInterfaceId := ""
 	networkInterfaceMaps := make([]map[string]interface{}, 0)
 	for _, obj := range instance.NetworkInterfaces.NetworkInterface {
-
 		if obj.Type == "Primary" {
 			networkInterfaceId = obj.NetworkInterfaceId
+			object, err := ecsService.DescribeEcsNetworkInterface(obj.NetworkInterfaceId)
+			if err != nil {
+				return WrapError(err)
+			}
+
 			d.Set("primary_ip_address", obj.PrimaryIpAddress)
+			d.Set("network_interface_traffic_mode", object["NetworkInterfaceTrafficMode"])
+			d.Set("queue_pair_number", object["QueuePairNumber"])
+
+			if attachment, ok := object["Attachment"]; ok {
+				attachmentArg := attachment.(map[string]interface{})
+
+				if networkCardIndex, ok := attachmentArg["NetworkCardIndex"]; ok {
+					d.Set("network_card_index", networkCardIndex)
+				}
+			}
 		} else {
 			networkInterfaceMap := make(map[string]interface{})
 			networkInterfaceMap["network_interface_id"] = obj.NetworkInterfaceId
@@ -1209,7 +1320,17 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 
 			networkInterfaceMap["vswitch_id"] = object["VSwitchId"]
 			networkInterfaceMap["network_interface_traffic_mode"] = object["NetworkInterfaceTrafficMode"]
+			networkInterfaceMap["queue_pair_number"] = object["QueuePairNumber"]
 			networkInterfaceMap["security_group_ids"] = object["SecurityGroupIds"].(map[string]interface{})["SecurityGroupId"]
+
+			if attachment, ok := object["Attachment"]; ok {
+				attachmentArg := attachment.(map[string]interface{})
+
+				if networkCardIndex, ok := attachmentArg["NetworkCardIndex"]; ok {
+					networkInterfaceMap["network_card_index"] = networkCardIndex
+				}
+			}
+
 			networkInterfaceMaps = append(networkInterfaceMaps, networkInterfaceMap)
 		}
 	}
@@ -1621,7 +1742,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "Operation.Conflict"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
@@ -1650,7 +1771,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
 				if err != nil {
-					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict"}) {
+					if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationConflict", "Operation.Conflict"}) {
 						wait()
 						return resource.RetryableError(err)
 					}
