@@ -443,7 +443,7 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	}
 
 	if v, ok := d.GetOk("auto_renew_period"); ok {
-		request["AutoRenewPeriod"] = convertBoolToString(v.(bool))
+		request["AutoRenewPeriod"] = convertIntergerToString(v.(int))
 	}
 
 	if v, ok := d.GetOkExists("auto_use_coupon"); ok {
