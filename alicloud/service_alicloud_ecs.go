@@ -3708,3 +3708,56 @@ func (s *EcsService) EcsElasticityAssuranceStateRefreshFunc(d *schema.ResourceDa
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
+
+func (s *EcsService) isSupportedNetworkCardIndex(instanceType string) (bool, error) {
+	var response map[string]interface{}
+	action := "DescribeInstanceTypes"
+
+	conn, err := s.client.NewEcsClient()
+	if err != nil {
+		return false, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"InstanceTypes": []string{instanceType},
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return false, WrapErrorf(err, DefaultErrorMsg, instanceType, action, AlibabaCloudSdkGoERROR)
+	}
+
+	resp, err := jsonpath.Get("$.InstanceTypes.InstanceType", response)
+	if err != nil {
+		return false, WrapErrorf(err, FailedGetAttributeMsg, instanceType, "$.InstanceTypes.InstanceType", response)
+	}
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return false, nil
+	}
+
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["InstanceTypeId"]) == instanceType {
+			if _, ok := v.(map[string]interface{})["NetworkCards"]; ok {
+				return true, nil
+			}
+		}
+	}
+
+	return false, nil
+}

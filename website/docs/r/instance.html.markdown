@@ -221,6 +221,11 @@ The following arguments are supported:
 * `launch_template_name` - (Optional, ForceNew, Available since v1.213.1) The name of the launch template.
 * `launch_template_version` - (Optional, ForceNew, Available since v1.213.1) The version of the launch template. If you set `launch_template_id` or `launch_template_name` parameter but do not set the version number of the launch template, the default template version is used.
 * `enable_jumbo_frame` - (Optional, Bool, Available since v1.223.2) Specifies whether to enable the Jumbo Frames feature for the instance. Valid values: `true`, `false`.
+* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.227.1) The communication mode of the Primary ENI. Default value: `Standard`. Valid values:
+  - `Standard`: Uses the TCP communication mode.
+  - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1)  The index of the network card for Primary ENI.
+* `queue_pair_number` - (Optional, ForceNew, Int, Available since v1.227.1) The number of queues supported by the ERI.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -273,12 +278,14 @@ The data_disks supports the following:
 
 The network_interfaces supports the following. Currently only one secondary ENI can be specified.
 
-* `network_interface_id` - (Optional, ForceNew) The ID of the secondary ENI.
-* `vswitch_id` - (Optional, ForceNew, Available since v1.223.2) The ID of the vSwitch to which to connect ENI N.
-* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.2) The communication mode of the ENI. Default value: `Standard`. Valid values:
+* `network_interface_id` - (Optional, ForceNew) The ID of the Secondary ENI.
+* `vswitch_id` - (Optional, ForceNew, Available since v1.223.2) The ID of the vSwitch to which to connect Secondary ENI N.
+* `network_interface_traffic_mode` - (Optional, ForceNew, Available since v1.223.2) The communication mode of the Secondary ENI. Default value: `Standard`. Valid values:
   - `Standard`: Uses the TCP communication mode.
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
-* `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign ENI N.
+* `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1)  The index of the network card for Secondary ENI.
+* `queue_pair_number` - (Optional, ForceNew, Int, Available since v1.227.1) The number of queues supported by the ERI.
+* `security_group_ids` - (Optional, ForceNew, List, Available since v1.223.2) The ID of security group N to which to assign Secondary ENI N.
 
 ### `maintenance_time`
 
@@ -297,7 +304,7 @@ The following attributes are exported:
 * `memory` - The memory size of the instance. Unit: MiB.
 * `os_type` - The type of the operating system of the instance.
 * `os_name` - The name of the operating system of the instance.
-* `network_interface_id` - The ID of the ENI.
+* `network_interface_id` - The ID of the Primary ENI.
 * `system_disk_id` - (Available since v1.210.0) The ID of system disk.
 * `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - The group number of the instance in a deployment set when the deployment set is use.
