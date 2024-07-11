@@ -59,7 +59,7 @@ func dataSourceAlicloudCenTransitRouterServiceRead(d *schema.ResourceData, meta 
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"USER_NOT_OPEN_TR_SERVICE"}) {
+		if IsExpectedErrors(err, []string{"USER_NOT_OPEN_TR_SERVICE", "Forbbiden.TransitRouterServiceNotOpen"}) {
 			action = "OpenTransitRouterService"
 			request["ClientToken"] = buildClientToken(action)
 			err = resource.Retry(3*time.Minute, func() *resource.RetryError {
