@@ -1346,6 +1346,8 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 					"zone_id":           "${data.alicloud_kvstore_zones.default.zones[0].id}",
 					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 					"secondary_zone_id": "${data.alicloud_kvstore_zones.default.zones[1].id}",
+					"auto_renew":        "true",
+					"auto_renew_period": "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1361,8 +1363,8 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 						"vswitch_id":        CHECKSET,
 						"secondary_zone_id": CHECKSET,
 						"payment_type":      "PrePaid",
-						"auto_renew":        "false",
-						"auto_renew_period": "0",
+						"auto_renew":        "true",
+						"auto_renew_period": "1",
 					}),
 				),
 			},
@@ -1371,17 +1373,6 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_renew": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_renew":        "true",
-						"auto_renew_period": "1",
-					}),
-				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
