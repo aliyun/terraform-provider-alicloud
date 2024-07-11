@@ -544,7 +544,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_virtual_border_routers":           dataSourceAlicloudExpressConnectVirtualBorderRouters(),
 			"alicloud_imm_projects":                                     dataSourceAlicloudImmProjects(),
 			"alicloud_click_house_db_clusters":                          dataSourceAlicloudClickHouseDbClusters(),
-			"alicloud_direct_mail_domains":                              dataSourceAlicloudDirectMailDomains(),
+			"alicloud_direct_mail_domains":                              dataSourceAliCloudDirectMailDomains(),
 			"alicloud_bastionhost_host_groups":                          dataSourceAlicloudBastionhostHostGroups(),
 			"alicloud_vpc_dhcp_options_sets":                            dataSourceAlicloudVpcDhcpOptionsSets(),
 			"alicloud_alb_health_check_templates":                       dataSourceAlicloudAlbHealthCheckTemplates(),
