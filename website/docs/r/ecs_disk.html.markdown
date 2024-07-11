@@ -74,6 +74,7 @@ The following arguments are supported:
 * `name` - (Optional, Computed, Deprecated from v1.122.0+) Field `name` has been deprecated from provider version 1.122.0. New field `disk_name` instead.
 * `payment_type` - (Optional) Payment method for disk. Valid values: `PayAsYouGo`, `Subscription`. Default to `PayAsYouGo`. If you want to change the disk payment type, the `instance_id` is required.
 * `performance_level` - (Optional) Specifies the performance level of an ESSD when you create the ESSD. Valid values:                                                       
+    * `PL0`: A single ESSD delivers up to 10,000 random read/write IOPS.
     * `PL1`: A single ESSD delivers up to 50,000 random read/write IOPS.
     * `PL2`: A single ESSD delivers up to 100,000 random read/write IOPS.
     * `PL3`: A single ESSD delivers up to 1,000,000 random read/write IOPS.
