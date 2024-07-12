@@ -608,7 +608,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 				instancePatternInfosMap["BurstablePerformance"] = burstablePerformance
 			}
 			instancePatternInfosMap["Memory"] = strconv.FormatFloat(item["memory"].(float64), 'f', 2, 64)
-			instancePatternInfosMap["MaxPrice"] = strconv.FormatFloat(item["max_price"].(float64), 'f', 2, 64)
+			if item["max_price"].(float64) != 0 {
+				instancePatternInfosMap["MaxPrice"] = strconv.FormatFloat(item["max_price"].(float64), 'f', 2, 64)
+			}
 			instancePatternInfosMap["Cores"] = item["cores"].(int)
 			instancePatternInfosMap["Architectures"] = item["architectures"]
 			instancePatternInfosMap["ExcludedInstanceTypes"] = item["excluded_instance_types"]
@@ -886,23 +888,25 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("instance_pattern_info") {
 		v, ok := d.GetOk("instance_pattern_info")
 		if ok {
-			instancePatternInfos := make([]ess.ModifyScalingConfigurationInstancePatternInfo, 0)
+			instancePatternInfos := make([]map[string]interface{}, 0)
 			for _, e := range v.(*schema.Set).List() {
 				pack := e.(map[string]interface{})
-				i := pack["excluded_instance_types"]
-				arr := toStringArray(i)
-				j := pack["architectures"]
-				arr1 := toStringArray(j)
-				l := ess.ModifyScalingConfigurationInstancePatternInfo{
-					InstanceFamilyLevel:  pack["instance_family_level"].(string),
-					Memory:               strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
-					MaxPrice:             strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64),
-					Cores:                strconv.Itoa(pack["cores"].(int)),
-					BurstablePerformance: pack["burstable_performance"].(string),
-					ExcludedInstanceType: &arr,
-					Architecture:         &arr1,
+				excludedInstancezTypesFormat := pack["excluded_instance_types"]
+				excludedInstancezTypes := toStringArray(excludedInstancezTypesFormat)
+				architecturesFormat := pack["architectures"]
+				architectures := toStringArray(architecturesFormat)
+				instancePatternInfo := map[string]interface{}{
+					"InstanceFamilyLevel":  pack["instance_family_level"].(string),
+					"Memory":               strconv.FormatFloat(pack["memory"].(float64), 'f', 2, 64),
+					"Cores":                strconv.Itoa(pack["cores"].(int)),
+					"BurstablePerformance": pack["burstable_performance"].(string),
+					"ExcludedInstanceType": &excludedInstancezTypes,
+					"Architecture":         &architectures,
 				}
-				instancePatternInfos = append(instancePatternInfos, l)
+				if pack["max_price"].(float64) != 0 {
+					instancePatternInfo["MaxPrice"] = strconv.FormatFloat(pack["max_price"].(float64), 'f', 2, 64)
+				}
+				instancePatternInfos = append(instancePatternInfos, instancePatternInfo)
 			}
 			request["InstancePatternInfo"] = instancePatternInfos
 		}
@@ -1199,17 +1203,18 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 				j := r["Architectures"].(map[string]interface{})
 				arr1 = toStringArray(j["Architecture"])
 			}
-
-			f, _ := r["MaxPrice"].(json.Number).Float64()
-			maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
 			l := map[string]interface{}{
 				"instance_family_level":   r["InstanceFamilyLevel"],
 				"memory":                  r["Memory"],
 				"cores":                   r["Cores"],
-				"max_price":               maxPrice,
 				"excluded_instance_types": &arr,
 				"architectures":           &arr1,
 				"burstable_performance":   r["BurstablePerformance"],
+			}
+			if r["MaxPrice"] != nil {
+				f, _ := r["MaxPrice"].(json.Number).Float64()
+				maxPrice, _ := strconv.ParseFloat(strconv.FormatFloat(f, 'f', 2, 64), 64)
+				l["max_price"] = maxPrice
 			}
 			result = append(result, l)
 		}

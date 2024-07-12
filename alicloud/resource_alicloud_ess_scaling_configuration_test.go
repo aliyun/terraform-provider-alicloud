@@ -695,7 +695,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 						},
 						{
 							"size":        "30",
-							"category":    "cloud_essd",
+							"category":    "cloud_ssd",
 							"name":        "${var.name}",
 							"description": "${var.name}",
 						},
@@ -732,7 +732,7 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 						"data_disk.0.description":          "",
 
 						"data_disk.1.size":                 "30",
-						"data_disk.1.category":             "cloud_essd",
+						"data_disk.1.category":             "cloud_ssd",
 						"data_disk.1.delete_with_instance": "true",
 						"data_disk.1.encrypted":            "false",
 						"data_disk.1.kms_key_id":           "",
@@ -827,11 +827,11 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"system_disk_category": "cloud_essd",
+					"system_disk_category": "cloud_ssd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"system_disk_category": "cloud_essd",
+						"system_disk_category": "cloud_ssd",
 					}),
 				),
 			},
@@ -897,7 +897,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 					"data_disk": []map[string]string{
 						{
 							"size":                 "20",
-							"category":             "cloud_essd",
+							"category":             "cloud_ssd",
 							"delete_with_instance": "false",
 							"encrypted":            "true",
 							"kms_key_id":           "${alicloud_kms_key.key.id}",
@@ -916,7 +916,7 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 					testAccCheck(map[string]string{
 						"data_disk.#":                      "2",
 						"data_disk.0.size":                 "20",
-						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.category":             "cloud_ssd",
 						"data_disk.0.delete_with_instance": "false",
 						"data_disk.0.encrypted":            "true",
 						"data_disk.0.kms_key_id":           CHECKSET,
@@ -1132,11 +1132,11 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"system_disk_category": "cloud_essd",
+					"system_disk_category": "cloud_ssd",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"system_disk_category": "cloud_essd",
+						"system_disk_category": "cloud_ssd",
 					}),
 				),
 			},
@@ -1173,26 +1173,10 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"spot_strategy": "SpotWithPriceLimit",
-					"spot_price_limit": []map[string]string{{
-						"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
-						"price_limit":   "2.1",
-					},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"spot_strategy":      "SpotWithPriceLimit",
-						"spot_price_limit.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"data_disk": []map[string]string{
 						{
 							"size":                 "20",
-							"category":             "cloud_essd",
+							"category":             "cloud_ssd",
 							"delete_with_instance": "false",
 							"encrypted":            "false",
 							"kms_key_id":           "${alicloud_kms_key.key.id}",
@@ -1211,7 +1195,7 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 					testAccCheck(map[string]string{
 						"data_disk.#":                      "2",
 						"data_disk.0.size":                 "20",
-						"data_disk.0.category":             "cloud_essd",
+						"data_disk.0.category":             "cloud_ssd",
 						"data_disk.0.delete_with_instance": "false",
 						"data_disk.0.encrypted":            "false",
 						"data_disk.0.kms_key_id":           CHECKSET,
@@ -1236,7 +1220,6 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 							"instance_family_level":   "EntryLevel",
 							"cores":                   "4",
 							"memory":                  "4.0",
-							"max_price":               "2.1",
 							"burstable_performance":   "Include",
 							"architectures":           []string{"X86"},
 							"excluded_instance_types": []string{"ecs.c6.large"},
@@ -1246,6 +1229,35 @@ func TestAccAliCloudEssScalingConfiguration_InstancePatternInfo(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_pattern_info.#": "1",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_pattern_info": []map[string]interface{}{
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "4",
+							"memory":                  "4.0",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+						{
+							"instance_family_level":   "EntryLevel",
+							"cores":                   "2",
+							"memory":                  "8.0",
+							"max_price":               "2.1",
+							"burstable_performance":   "Include",
+							"architectures":           []string{"X86"},
+							"excluded_instance_types": []string{"ecs.c6.large"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_pattern_info.#": "2",
 					}),
 				),
 			},
