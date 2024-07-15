@@ -266,6 +266,85 @@ func TestAccAlicloudApigatewayApi_basic(t *testing.T) {
 	})
 }
 
+func TestAccAlicloudApigatewayApi_post(t *testing.T) {
+	var api *cloudapi.DescribeApiResponse
+	resourceId := "alicloud_api_gateway_api.default"
+	ra := resourceAttrInit(resourceId, apiGatewayApiMap)
+	serviceFunc := func() interface{} {
+		return &CloudApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &api, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf_testAccApiGatewayApi_%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceApigatewayApiConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":              "${alicloud_api_gateway_group.default.name}",
+					"group_id":          "${alicloud_api_gateway_group.default.id}",
+					"description":       "tf_testAcc_api description",
+					"auth_type":         "APP",
+					"force_nonce_check": "true",
+					"request_config": []map[string]string{{
+						"protocol":    "HTTP",
+						"method":      "POST",
+						"path":        "/test/path",
+						"mode":        "MAPPING",
+						"body_format": "FORM",
+					}},
+					"service_type": "HTTP",
+					"http_service_config": []map[string]string{{
+						"address":               "http://apigateway-backend.alicloudapi.com:8080",
+						"method":                "POST",
+						"path":                  "/web/cloudapi",
+						"timeout":               "20",
+						"aone_name":             "cloudapi-openapi",
+						"content_type_category": "DEFAULT",
+						"content_type_value":    "application/x-www-form-urlencoded; charset=UTF-8",
+					}},
+					"request_parameters": []map[string]string{{
+						"name":         "testparam",
+						"type":         "STRING",
+						"required":     "OPTIONAL",
+						"in":           "QUERY",
+						"in_service":   "QUERY",
+						"name_service": "testparams",
+					}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                                        name,
+						"force_nonce_check":                           "true",
+						"request_config.0.protocol":                   "HTTP",
+						"request_config.0.method":                     "POST",
+						"request_config.0.path":                       "/test/path",
+						"request_config.0.mode":                       "MAPPING",
+						"request_config.0.body_format":                "FORM",
+						"http_service_config.0.address":               "http://apigateway-backend.alicloudapi.com:8080",
+						"http_service_config.0.method":                "POST",
+						"http_service_config.0.path":                  "/web/cloudapi",
+						"http_service_config.0.timeout":               "20",
+						"http_service_config.0.aone_name":             "cloudapi-openapi",
+						"http_service_config.0.content_type_category": "DEFAULT",
+						"http_service_config.0.content_type_value":    "application/x-www-form-urlencoded; charset=UTF-8",
+					}),
+				),
+			},
+		},
+	})
+}
+
 func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 	var api *cloudapi.DescribeApiResponse
 	resourceId := "alicloud_api_gateway_api.default"
@@ -302,11 +381,12 @@ func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 					}},
 					"service_type": "HTTP-VPC",
 					"http_vpc_service_config": []map[string]string{{
-						"name":      "${alicloud_api_gateway_vpc_access.default.name}",
-						"method":    "GET",
-						"path":      "/web/cloudapi/vpc",
-						"timeout":   "20",
-						"aone_name": "cloudapi-openapi",
+						"name":       "${alicloud_api_gateway_vpc_access.default.name}",
+						"method":     "GET",
+						"path":       "/web/cloudapi/vpc",
+						"timeout":    "20",
+						"aone_name":  "cloudapi-openapi",
+						"vpc_scheme": "https",
 					}},
 					"request_parameters": []map[string]string{{
 						"name":         "testparam",
@@ -319,12 +399,13 @@ func TestAccAlicloudApigatewayApi_vpc(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                                name,
-						"http_vpc_service_config.0.name":      name,
-						"http_vpc_service_config.0.method":    "GET",
-						"http_vpc_service_config.0.path":      "/web/cloudapi/vpc",
-						"http_vpc_service_config.0.timeout":   "20",
-						"http_vpc_service_config.0.aone_name": "cloudapi-openapi",
+						"name":                                 name,
+						"http_vpc_service_config.0.name":       name,
+						"http_vpc_service_config.0.method":     "GET",
+						"http_vpc_service_config.0.path":       "/web/cloudapi/vpc",
+						"http_vpc_service_config.0.timeout":    "20",
+						"http_vpc_service_config.0.aone_name":  "cloudapi-openapi",
+						"http_vpc_service_config.0.vpc_scheme": "https",
 					}),
 				),
 			},
