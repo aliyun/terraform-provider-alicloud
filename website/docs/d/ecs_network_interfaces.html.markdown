@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ecs Network Interfaces to the user.
 ---
 
-# alicloud\_ecs\_network\_interfaces
+# alicloud_ecs_network_interfaces
 
 This data source provides the Ecs Network Interfaces of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.123.1+.
+-> **NOTE:** Available since v1.123.1.
 
 ## Example Usage
 
@@ -19,8 +19,7 @@ Basic Usage
 
 ```terraform
 data "alicloud_ecs_network_interfaces" "example" {
-  ids        = ["eni-abcd1234"]
-  name_regex = "tf-testAcc"
+  name_regex = "eni-ipv6"
 }
 
 output "first_ecs_network_interface_id" {
@@ -49,7 +48,7 @@ The following arguments are supported:
 * `vswitch_id` - (Optional, ForceNew) The vswitch id.
 * `tags` - (Optional) A map of tags assigned to ENIs.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -67,7 +66,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `owner_id` - The ID of the account to which the ENIC belongs.
     * `primary_ip_address` - The primary private IP address of the ENI. 
     * `private_ip` - The primary private IP address of the ENI.
-    * `private_ip_address` - A list of secondary private IP address that is assigned to the ENI.
+    * `private_ip_addresses` - A list of secondary private IP address that is assigned to the ENI.
     * `private_ips` - A list of secondary private IP address that is assigned to the ENI.
     * `queue_number` - Number of network card queues.
     * `resource_group_id` - The resource group id.
@@ -77,11 +76,10 @@ The following attributes are exported in addition to the arguments listed above:
     * `service_id` - The service id.
     * `status` - The status of the ENI.
     * `tags` - The tags.
-        * `tag_key` - The tagKey.
-        * `tag_value` - The tagValue.
     * `type` - The type of the ENI.
     * `vpc_id` - The Vpc Id.
     * `vswitch_id` - The vswitch id.
     * `zone_id` - The zone id.
     * `associated_public_ip` - The EIP associated with the secondary private IP address of the ENI.  **NOTE:** Available in v1.163.0+.
       * `public_ip_address` - The EIP of the ENI.
+    * `ipv6_sets` - A list of IPv6 addresses that is assigned to the ENI.  **NOTE:** Available since v1.228.0.
