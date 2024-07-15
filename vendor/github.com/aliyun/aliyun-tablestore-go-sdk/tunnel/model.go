@@ -108,6 +108,7 @@ type ReadRecordResponse struct {
 	NextToken     string
 	Size          int
 	RecordCount   int
+	MayMoreRecord *bool
 	ResponseInfo
 }
 

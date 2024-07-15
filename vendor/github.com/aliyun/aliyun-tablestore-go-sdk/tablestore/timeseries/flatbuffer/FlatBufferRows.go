@@ -17,11 +17,19 @@ func GetRootAsFlatBufferRows(buf []byte, offset flatbuffers.UOffsetT) *FlatBuffe
 	return x
 }
 
+func FinishFlatBufferRowsBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsFlatBufferRows(buf []byte, offset flatbuffers.UOffsetT) *FlatBufferRows {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &FlatBufferRows{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedFlatBufferRowsBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *FlatBufferRows) Init(buf []byte, i flatbuffers.UOffsetT) {

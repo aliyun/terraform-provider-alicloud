@@ -10,19 +10,19 @@ type ScanQuery interface {
 }
 
 type scanQuery struct {
-	Query		Query
-	Limit		*int32
-	AliveTime	*int32	//in seconds, 60s by default
-	Token		[]byte
-	CurrentParallelID	*int32
-	MaxParallel			*int32
+	Query             Query
+	Limit             *int32
+	AliveTime         *int32 //in seconds, 60s by default
+	Token             []byte
+	CurrentParallelID *int32
+	MaxParallel       *int32
 }
 
 func NewScanQuery() *scanQuery {
 	return &scanQuery{}
 }
 
-func (s *scanQuery) SetQuery(query Query)  *scanQuery {
+func (s *scanQuery) SetQuery(query Query) *scanQuery {
 	s.Query = query
 	return s
 }

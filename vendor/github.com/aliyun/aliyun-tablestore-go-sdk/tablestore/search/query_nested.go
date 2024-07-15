@@ -16,11 +16,45 @@ const (
 	ScoreMode_Min   ScoreModeType = 5
 )
 
+type InnerHits struct {
+	Offset    *int32
+	Limit     *int32
+	Sort      *Sort
+	Highlight *Highlight
+}
+
+func (innerHits *InnerHits) ProtoBuffer() (pbInnerHits *otsprotocol.InnerHits, err error) {
+	pbInnerHits = &otsprotocol.InnerHits{}
+	
+	if innerHits.Offset != nil {
+		pbInnerHits.Offset = proto.Int32(*innerHits.Offset)
+	}
+	
+	if innerHits.Limit != nil {
+		pbInnerHits.Limit = proto.Int32(*innerHits.Limit)
+	}
+	
+	if innerHits.Sort != nil {
+		if pbInnerHits.Sort, err = innerHits.Sort.ProtoBuffer(); err != nil {
+			return
+		}
+	}
+	
+	if innerHits.Highlight != nil {
+		if pbInnerHits.Highlight, err = innerHits.Highlight.ProtoBuffer(); err != nil {
+			return
+		}
+	}
+	
+	return
+}
+
 type NestedQuery struct {
 	Path      string
 	Query     Query `json:"-"`
 	ScoreMode ScoreModeType
-
+	InnerHits *InnerHits
+	
 	// for json marshal and unmarshal
 	QueryAlias queryAlias `json:"Query"`
 }
@@ -74,6 +108,11 @@ func (q *NestedQuery) Serialize() ([]byte, error) {
 		query.ScoreMode = otsprotocol.ScoreMode_SCORE_MODE_MIN.Enum()
 	case ScoreMode_Total:
 		query.ScoreMode = otsprotocol.ScoreMode_SCORE_MODE_TOTAL.Enum()
+	}
+	if q.InnerHits != nil {
+		if query.InnerHits, err = q.InnerHits.ProtoBuffer(); err != nil {
+			return nil, err
+		}
 	}
 	data, err := proto.Marshal(query)
 	return data, err

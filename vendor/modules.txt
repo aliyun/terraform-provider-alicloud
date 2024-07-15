@@ -189,7 +189,7 @@ github.com/aliyun/aliyun-mns-go-sdk
 # github.com/aliyun/aliyun-oss-go-sdk v2.2.9+incompatible
 ## explicit
 github.com/aliyun/aliyun-oss-go-sdk/oss
-# github.com/aliyun/aliyun-tablestore-go-sdk v1.7.6
+# github.com/aliyun/aliyun-tablestore-go-sdk v1.7.16
 ## explicit; go 1.13
 github.com/aliyun/aliyun-tablestore-go-sdk/common
 github.com/aliyun/aliyun-tablestore-go-sdk/tablestore
@@ -363,7 +363,7 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/golang/snappy v0.0.4
 ## explicit
 github.com/golang/snappy
-# github.com/google/flatbuffers v1.11.0
+# github.com/google/flatbuffers v23.5.26+incompatible
 ## explicit
 github.com/google/flatbuffers/go
 # github.com/google/go-cmp v0.6.0

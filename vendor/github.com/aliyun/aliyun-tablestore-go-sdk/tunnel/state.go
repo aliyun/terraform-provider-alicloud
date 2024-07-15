@@ -8,11 +8,12 @@ import (
 )
 
 type BatchGetStatusReq struct {
-	callbackCh chan map[string]*protocol.Channel
+	callbackCh chan *sync.Map
 }
 
 func NewBatchGetStatusReq() *BatchGetStatusReq {
-	return &BatchGetStatusReq{callbackCh: make(chan map[string]*protocol.Channel, 1)}
+	return &BatchGetStatusReq{
+		callbackCh: make(chan *sync.Map, 1)}
 }
 
 type TunnelStateMachine struct {
@@ -31,7 +32,7 @@ type TunnelStateMachine struct {
 	api *TunnelApi
 
 	channelConn     map[string]ChannelConn
-	currentChannels map[string]*protocol.Channel
+	currentChannels *sync.Map
 
 	lg *zap.Logger
 }
@@ -48,7 +49,7 @@ func NewTunnelStateMachine(tunnelId, clientId string, dialer ChannelDialer, fact
 		clientId:            clientId,
 		api:                 api,
 		channelConn:         make(map[string]ChannelConn),
-		currentChannels:     make(map[string]*protocol.Channel),
+		currentChannels:     new(sync.Map),
 		lg:                  lg,
 	}
 	stateMachine.wg.Add(1)
@@ -75,12 +76,12 @@ func (s *TunnelStateMachine) BatchGetStatus(req *BatchGetStatusReq) ([]*protocol
 	select {
 	case s.batchGetStatusCh <- req:
 		ret := <-req.callbackCh
-		channels := make([]*protocol.Channel, len(ret))
-		i := 0
-		for _, channel := range ret {
-			channels[i] = channel
-			i++
-		}
+		length := getSyncMapLength(ret)
+		channels := make([]*protocol.Channel, 0, length)
+		ret.Range(func(cid, pbChannel interface{}) bool {
+			channels = append(channels, pbChannel.(*protocol.Channel))
+			return true
+		})
 		return channels, nil
 	case <-s.closeCh:
 		return nil, errors.New("state machine is closed")
@@ -128,18 +129,19 @@ func (s *TunnelStateMachine) bgLoop() {
 
 func (s *TunnelStateMachine) doUpdateStatus(channel *protocol.Channel) {
 	cid := channel.GetChannelId()
-	curChannel, ok := s.currentChannels[cid]
+	loadChannel, ok := s.currentChannels.Load(cid)
 	if !ok {
 		s.lg.Info("redundant channel", zap.String("channelId", cid),
 			zap.String("status", protocol.ChannelStatus_name[int32(channel.GetStatus())]))
 		return
 	}
+	curChannel := loadChannel.(*protocol.Channel)
 	if curChannel.GetVersion() >= channel.GetVersion() {
 		s.lg.Info("expired channel version", zap.String("channelId", cid),
 			zap.Int64("current version", curChannel.GetVersion()), zap.Int64("old version", channel.GetVersion()))
 		return
 	}
-	s.currentChannels[cid] = channel
+	s.currentChannels.Store(cid, channel)
 	s.lg.Info("update channel", zap.String("channelId", cid),
 		zap.String("status", protocol.ChannelStatus_name[int32(channel.GetStatus())]))
 	if conn, ok := s.channelConn[cid]; ok {
@@ -152,8 +154,10 @@ func (s *TunnelStateMachine) doUpdateStatus(channel *protocol.Channel) {
 
 func (s *TunnelStateMachine) doBatchUpdateStatus(batchChannels []*protocol.Channel) {
 	s.currentChannels = validateChannels(batchChannels, s.currentChannels)
-	// update
-	for cid, channel := range s.currentChannels {
+	//update
+	s.currentChannels.Range(func(channelId, pbChannel interface{}) bool {
+		cid := channelId.(string)
+		channel := pbChannel.(*protocol.Channel)
 		conn, ok := s.channelConn[cid]
 		if !ok {
 			token, sequenceNumber, err := s.api.GetCheckpoint(s.tunnelId, s.clientId, cid)
@@ -177,11 +181,12 @@ func (s *TunnelStateMachine) doBatchUpdateStatus(batchChannels []*protocol.Chann
 			s.channelConn[cid] = conn
 		}
 		go conn.NotifyStatus(ToChannelStatus(channel))
-	}
-	// clean
+		return true
+	})
+	//clean
 	for cid, conn := range s.channelConn {
 		cid, conn := cid, conn
-		if _, ok := s.currentChannels[cid]; !ok {
+		if _, ok := s.currentChannels.Load(cid); !ok {
 			s.lg.Info("redundant channel conn", zap.String("channelId", cid))
 			if !conn.Closed() {
 				go conn.Close()
@@ -189,21 +194,31 @@ func (s *TunnelStateMachine) doBatchUpdateStatus(batchChannels []*protocol.Chann
 			delete(s.channelConn, cid)
 		}
 	}
+
 }
 
-func validateChannels(newChans []*protocol.Channel, currentChans map[string]*protocol.Channel) map[string]*protocol.Channel {
-	updateChannels := make(map[string]*protocol.Channel)
+func validateChannels(newChans []*protocol.Channel, currentChans *sync.Map) *sync.Map {
+	updateChannels := new(sync.Map)
 	for _, newChannel := range newChans {
 		id := newChannel.GetChannelId()
-		if oldChannel, ok := currentChans[id]; ok {
-			if newChannel.GetVersion() >= oldChannel.GetVersion() {
-				updateChannels[id] = newChannel
+		if oldChannel, ok := currentChans.Load(id); ok {
+			if newChannel.GetVersion() >= oldChannel.(*protocol.Channel).GetVersion() {
+				updateChannels.Store(id, newChannel)
 			} else {
-				updateChannels[id] = oldChannel
+				updateChannels.Store(id, oldChannel)
 			}
 		} else {
-			updateChannels[id] = newChannel
+			updateChannels.Store(id, newChannel)
 		}
 	}
 	return updateChannels
+}
+
+func getSyncMapLength(m *sync.Map) int {
+	length := 0
+	m.Range(func(cid, pbChannel interface{}) bool {
+		length++
+		return true
+	})
+	return length
 }

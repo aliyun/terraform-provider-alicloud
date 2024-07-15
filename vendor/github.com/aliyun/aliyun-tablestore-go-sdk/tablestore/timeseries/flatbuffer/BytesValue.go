@@ -17,11 +17,19 @@ func GetRootAsBytesValue(buf []byte, offset flatbuffers.UOffsetT) *BytesValue {
 	return x
 }
 
+func FinishBytesValueBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsBytesValue(buf []byte, offset flatbuffers.UOffsetT) *BytesValue {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &BytesValue{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedBytesValueBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *BytesValue) Init(buf []byte, i flatbuffers.UOffsetT) {

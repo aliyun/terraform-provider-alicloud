@@ -12,28 +12,29 @@ type SearchQuery interface {
 }
 
 type queryAlias struct {
-	Name string
+	Name  string
 	Query Query
 }
 
 type aggregationAlias struct {
-	Name string
+	Name        string
 	Aggregation Aggregation
 }
 
 type searchQuery struct {
-	Offset        int32
-	Limit         int32
+	Offset        *int32
+	Limit         *int32
 	Query         Query `json:"-"`
+	Highlight     *Highlight
 	Collapse      *Collapse
 	Sort          *Sort
 	GetTotalCount bool
 	Token         []byte
 	Aggregations  []Aggregation `json:"-"`
-	GroupBys      []GroupBy `json:"-"`
+	GroupBys      []GroupBy     `json:"-"`
 
 	// for json marshal and unmarshal
-	QueryAlias    queryAlias `json:"Query"`
+	QueryAlias       queryAlias         `json:"Query"`
 	AggregationAlias []aggregationAlias `json:"Aggregations"`
 }
 
@@ -161,20 +162,18 @@ func (q *aggregationAlias) UnmarshalJSON(data []byte) (err error) {
 }
 
 func NewSearchQuery() *searchQuery {
-	return &searchQuery {
-		Offset:        -1,
-		Limit:         -1,
+	return &searchQuery{
 		GetTotalCount: false,
 	}
 }
 
 func (s *searchQuery) SetOffset(offset int32) *searchQuery {
-	s.Offset = offset
+	s.Offset = &offset
 	return s
 }
 
 func (s *searchQuery) SetLimit(limit int32) *searchQuery {
-	s.Limit = limit
+	s.Limit = &limit
 	return s
 }
 
@@ -183,84 +182,88 @@ func (s *searchQuery) SetQuery(query Query) *searchQuery {
 	return s
 }
 
+func (s *searchQuery) SetHighlight(highlight *Highlight) *searchQuery {
+	s.Highlight = highlight
+	return s
+}
+
 func NewAvgAggregation(name string, fieldName string) *AvgAggregation {
-	return &AvgAggregation {
+	return &AvgAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewDistinctCountAggregation(name string, fieldName string) *DistinctCountAggregation {
-	return &DistinctCountAggregation {
+	return &DistinctCountAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewMaxAggregation(name string, fieldName string) *MaxAggregation {
-	return &MaxAggregation {
+	return &MaxAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewMinAggregation(name string, fieldName string) *MinAggregation {
-	return &MinAggregation {
+	return &MinAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewSumAggregation(name string, fieldName string) *SumAggregation {
-	return &SumAggregation {
+	return &SumAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewCountAggregation(name string, fieldName string) *CountAggregation {
-	return &CountAggregation {
+	return &CountAggregation{
 		AggName: name,
-		Field: fieldName,
+		Field:   fieldName,
 	}
 }
 
 func NewTopRowsAggregation(name string) *TopRowsAggregation {
-	return &TopRowsAggregation {
+	return &TopRowsAggregation{
 		AggName: name,
 	}
 }
 
 func NewPercentilesAggregation(name string, filedName string) *PercentilesAggregation {
-	return &PercentilesAggregation {
+	return &PercentilesAggregation{
 		AggName: name,
-		Field: 	 filedName,
+		Field:   filedName,
 	}
 }
 
-//
 func NewGroupByField(name string, fieldName string) *GroupByField {
-	return &GroupByField {
+	return &GroupByField{
 		AggName: name,
 		Field:   fieldName,
 	}
 }
 
 func NewGroupByRange(name string, fieldName string) *GroupByRange {
-	return &GroupByRange {
+	return &GroupByRange{
 		AggName: name,
 		Field:   fieldName,
 	}
 }
 
 func NewGroupByFilter(name string) *GroupByFilter {
-	return &GroupByFilter {
+	return &GroupByFilter{
 		AggName: name,
 	}
 }
 
 func NewGroupByGeoDistance(name string, fieldName string, origin GeoPoint) *GroupByGeoDistance {
-	return &GroupByGeoDistance {
+	return &GroupByGeoDistance{
 		AggName: name,
 		Field:   fieldName,
 		Origin:  origin,
@@ -271,6 +274,26 @@ func NewGroupByHistogram(name string, filedName string) *GroupByHistogram {
 	return &GroupByHistogram{
 		GroupByName: name,
 		Field:       filedName,
+	}
+}
+
+func NewGroupByDateHistogram(name string, filedName string) *GroupByDateHistogram {
+	return &GroupByDateHistogram{
+		GroupByName: name,
+		Field:       filedName,
+	}
+}
+
+func NewGroupByGeoGrid(name string, fieldName string) *GroupByGeoGrid {
+	return &GroupByGeoGrid{
+		GroupByName: name,
+		Field:       fieldName,
+	}
+}
+
+func NewGroupByComposite(groupByName string) *GroupByComposite {
+	return &GroupByComposite{
+		GroupByName: groupByName,
 	}
 }
 
@@ -311,11 +334,11 @@ func (s *searchQuery) SetToken(token []byte) *searchQuery {
 
 func (s *searchQuery) Serialize() ([]byte, error) {
 	searchQuery := &otsprotocol.SearchQuery{}
-	if s.Offset >= 0 {
-		searchQuery.Offset = &s.Offset
+	if s.Offset != nil {
+		searchQuery.Offset = s.Offset
 	}
-	if s.Limit >= 0 {
-		searchQuery.Limit = &s.Limit
+	if s.Limit != nil {
+		searchQuery.Limit = s.Limit
 	}
 	if s.Query != nil {
 		pbQuery, err := s.Query.ProtoBuffer()
@@ -323,6 +346,13 @@ func (s *searchQuery) Serialize() ([]byte, error) {
 			return nil, err
 		}
 		searchQuery.Query = pbQuery
+	}
+	if s.Highlight != nil {
+		if pbHighlight, err := s.Highlight.ProtoBuffer(); err != nil {
+			return nil, err
+		} else {
+			searchQuery.Highlight = pbHighlight
+		}
 	}
 	if s.Collapse != nil {
 		pbCollapse, err := s.Collapse.ProtoBuffer()

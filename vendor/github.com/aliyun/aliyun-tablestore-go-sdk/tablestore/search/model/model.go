@@ -449,3 +449,111 @@ type ComputeSplitsRequest struct {
 	TableName                string
 	searchIndexSplitsOptions *SearchIndexSplitsOptions
 }
+
+type DateTimeValue struct {
+	Value *int32
+	Unit  *DateTimeUnit
+}
+
+type DateTimeUnit int32
+
+const (
+	DateTimeUnit_YEAR         DateTimeUnit = 1
+	DateTimeUnit_QUARTER_YEAR DateTimeUnit = 2
+	DateTimeUnit_MONTH        DateTimeUnit = 3
+	DateTimeUnit_WEEK         DateTimeUnit = 4
+	DateTimeUnit_DAY          DateTimeUnit = 5
+	DateTimeUnit_HOUR         DateTimeUnit = 6
+	DateTimeUnit_MINUTE       DateTimeUnit = 7
+	DateTimeUnit_SECOND       DateTimeUnit = 8
+)
+
+func (d DateTimeUnit) Enum() *DateTimeUnit {
+	p := new(DateTimeUnit)
+	*p = d
+	return p
+}
+
+func (d *DateTimeUnit) ProtoBuffer() *otsprotocol.DateTimeUnit {
+	if d == nil {
+		return nil
+	}
+	switch *d {
+	case DateTimeUnit_YEAR:
+		return otsprotocol.DateTimeUnit_YEAR.Enum()
+	case DateTimeUnit_QUARTER_YEAR:
+		return otsprotocol.DateTimeUnit_QUARTER_YEAR.Enum()
+	case DateTimeUnit_MONTH:
+		return otsprotocol.DateTimeUnit_MONTH.Enum()
+	case DateTimeUnit_WEEK:
+		return otsprotocol.DateTimeUnit_WEEK.Enum()
+	case DateTimeUnit_DAY:
+		return otsprotocol.DateTimeUnit_DAY.Enum()
+	case DateTimeUnit_HOUR:
+		return otsprotocol.DateTimeUnit_HOUR.Enum()
+	case DateTimeUnit_MINUTE:
+		return otsprotocol.DateTimeUnit_MINUTE.Enum()
+	case DateTimeUnit_SECOND:
+		return otsprotocol.DateTimeUnit_SECOND.Enum()
+	default:
+		return nil
+	}
+}
+
+func (d *DateTimeValue) ProtoBuffer() *otsprotocol.DateTimeValue {
+	dateTimeValue := &otsprotocol.DateTimeValue{}
+	dateTimeValue.Unit = d.Unit.ProtoBuffer()
+	dateTimeValue.Value = d.Value
+	return dateTimeValue
+}
+
+type GeoHashPrecision int32
+
+const (
+	GHP_5009KM_4992KM_1 GeoHashPrecision = 1
+	GHP_1252KM_624KM_2  GeoHashPrecision = 2
+	GHP_156KM_156KM_3   GeoHashPrecision = 3
+	GHP_39KM_19KM_4     GeoHashPrecision = 4
+	GHP_4900M_4900M_5   GeoHashPrecision = 5
+	GHP_1200M_609M_6    GeoHashPrecision = 6
+	GHP_152M_152M_7     GeoHashPrecision = 7
+	GHP_38M_19M_8       GeoHashPrecision = 8
+	GHP_480CM_480CM_9   GeoHashPrecision = 9
+	GHP_120CM_595MM_10  GeoHashPrecision = 10
+	GHP_149MM_149MM_11  GeoHashPrecision = 11
+	GHP_37MM_19MM_12    GeoHashPrecision = 12
+)
+
+func (d *GeoHashPrecision) ProtoBuffer() *otsprotocol.GeoHashPrecision {
+	if d == nil {
+		return nil
+	}
+	switch *d {
+	case GHP_5009KM_4992KM_1:
+		return otsprotocol.GeoHashPrecision_GHP_5009KM_4992KM_1.Enum()
+	case GHP_1252KM_624KM_2:
+		return otsprotocol.GeoHashPrecision_GHP_1252KM_624KM_2.Enum()
+	case GHP_156KM_156KM_3:
+		return otsprotocol.GeoHashPrecision_GHP_156KM_156KM_3.Enum()
+	case GHP_39KM_19KM_4:
+		return otsprotocol.GeoHashPrecision_GHP_39KM_19KM_4.Enum()
+	case GHP_4900M_4900M_5:
+		return otsprotocol.GeoHashPrecision_GHP_4900M_4900M_5.Enum()
+	case GHP_1200M_609M_6:
+		return otsprotocol.GeoHashPrecision_GHP_1200M_609M_6.Enum()
+	case GHP_152M_152M_7:
+		return otsprotocol.GeoHashPrecision_GHP_152M_152M_7.Enum()
+	case GHP_38M_19M_8:
+		return otsprotocol.GeoHashPrecision_GHP_38M_19M_8.Enum()
+	case GHP_480CM_480CM_9:
+		return otsprotocol.GeoHashPrecision_GHP_480CM_480CM_9.Enum()
+	case GHP_120CM_595MM_10:
+		return otsprotocol.GeoHashPrecision_GHP_120CM_595MM_10.Enum()
+	case GHP_149MM_149MM_11:
+		return otsprotocol.GeoHashPrecision_GHP_149MM_149MM_11.Enum()
+	case GHP_37MM_19MM_12:
+		return otsprotocol.GeoHashPrecision_GHP_37MM_19MM_12.Enum()
+	default:
+		return nil
+	}
+}

@@ -1,7 +1,7 @@
 package search
 
 type DistinctCountAggregationResult struct {
-	Name string
+	Name  string
 	Value int64
 }
 

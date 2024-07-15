@@ -3,23 +3,25 @@
 package dataprotocol
 
 type DataType = int8
+
 const (
-	DataTypeNONE DataType = 0
-	DataTypeLONG DataType = 1
-	DataTypeBOOLEAN DataType = 2
-	DataTypeDOUBLE DataType = 3
-	DataTypeSTRING DataType = 4
-	DataTypeBINARY DataType = 5
+	DataTypeNONE       DataType = 0
+	DataTypeLONG       DataType = 1
+	DataTypeBOOLEAN    DataType = 2
+	DataTypeDOUBLE     DataType = 3
+	DataTypeSTRING     DataType = 4
+	DataTypeBINARY     DataType = 5
 	DataTypeSTRING_RLE DataType = 6
+	DataTypeCOMPLEX    DataType = 7
 )
 
 var EnumNamesDataType = map[DataType]string{
-	DataTypeNONE:"NONE",
-	DataTypeLONG:"LONG",
-	DataTypeBOOLEAN:"BOOLEAN",
-	DataTypeDOUBLE:"DOUBLE",
-	DataTypeSTRING:"STRING",
-	DataTypeBINARY:"BINARY",
-	DataTypeSTRING_RLE:"STRING_RLE",
+	DataTypeNONE:       "NONE",
+	DataTypeLONG:       "LONG",
+	DataTypeBOOLEAN:    "BOOLEAN",
+	DataTypeDOUBLE:     "DOUBLE",
+	DataTypeSTRING:     "STRING",
+	DataTypeBINARY:     "BINARY",
+	DataTypeSTRING_RLE: "STRING_RLE",
+	DataTypeCOMPLEX:    "COMPLEX",
 }
-
