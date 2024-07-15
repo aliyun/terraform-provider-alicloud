@@ -2,10 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"testing"
 )
 
 func TestAccAliCloudRamLoginProfile_basic0(t *testing.T) {
@@ -51,11 +52,11 @@ func TestAccAliCloudRamLoginProfile_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"mfa_bind_required": "true",
+					"mfa_bind_required": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"mfa_bind_required": "true",
+						"mfa_bind_required": "false",
 					}),
 				),
 			},
@@ -71,11 +72,11 @@ func TestAccAliCloudRamLoginProfile_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"mfa_bind_required": "false",
+					"mfa_bind_required": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"mfa_bind_required": "false",
+						"mfa_bind_required": "true",
 					}),
 				),
 			},
