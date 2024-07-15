@@ -10,7 +10,7 @@ type PercentilesAggregationItem struct {
 }
 
 type PercentilesAggregationResult struct {
-	Name                    string
+	Name                        string
 	PercentilesAggregationItems []PercentilesAggregationItem
 }
 

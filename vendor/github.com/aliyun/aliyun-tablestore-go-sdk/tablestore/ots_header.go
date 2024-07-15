@@ -10,19 +10,26 @@ import (
 )
 
 const (
-	xOtsDate                  = "x-ots-date"
-	xOtsApiversion            = "x-ots-apiversion"
-	xOtsAccesskeyid           = "x-ots-accesskeyid"
-	xOtsContentmd5            = "x-ots-contentmd5"
-	xOtsHeaderStsToken        = "x-ots-ststoken"
-	xOtsHeaderChargeAdmin     = "x-ots-charge-for-admin"
-	xOtsSignature             = "x-ots-signature"
-	xOtsRequestCompressType   = "x-ots-request-compress-type"
-	xOtsRequestCompressSize   = "x-ots-request-compress-size"
-	xOtsResponseCompressTye   = "x-ots-response-compress-type"
-	xOtsHeaderTunnelType      = "x-ots-tunnel-type"
-	xOtsHeaderPlayerAccountId = "x-ots-playeraccountid"
-	xOtsPrefix                = "x-ots"
+	xOtsDate                    = "x-ots-date"
+	xOtsApiversion              = "x-ots-apiversion"
+	xOtsAccesskeyid             = "x-ots-accesskeyid"
+	xOtsContentmd5              = "x-ots-contentmd5"
+	xOtsHeaderStsToken          = "x-ots-ststoken"
+	xOtsHeaderChargeAdmin       = "x-ots-charge-for-admin"
+	xOtsSignature               = "x-ots-signature"
+	xOtsRequestCompressType     = "x-ots-request-compress-type"
+	xOtsRequestCompressSize     = "x-ots-request-compress-size"
+	xOtsResponseCompressTye     = "x-ots-response-compress-type"
+	xOtsHeaderSDKTraceID        = "x-ots-sdk-traceid"
+	xOtsHeaderRequestPriority   = "x-ots-request-priority"
+	xOtsHeaderRequestTag        = "x-ots-request-tag"
+	xOtsHeaderSourceIp          = "x-ots-sourceip"
+	xOtsHeaderIsSecureTransport = "x-ots-issecuretransport"
+	xOtsHeaderTunnelType        = "x-ots-tunnel-type"
+	xOtsHeaderPlayerAccountId   = "x-ots-playeraccountid"
+	XOtsHeaderAdminTaskType     = "x-ots-admin-task-type"
+	XOtsHeaderAdminTargetUserId = "x-ots-admin-target-userid"
+	xOtsPrefix                  = "x-ots"
 )
 
 type otsHeader struct {
@@ -53,6 +60,13 @@ func createOtsHeaders(accessKey string) *otsHeaders {
 		&otsHeader{name: xOtsHeaderChargeAdmin, must: false},
 		&otsHeader{name: xOtsHeaderTunnelType, must: false},
 		&otsHeader{name: xOtsHeaderPlayerAccountId, must: false},
+		&otsHeader{name: XOtsHeaderAdminTaskType, must: false},
+		&otsHeader{name: XOtsHeaderAdminTargetUserId, must: false},
+		&otsHeader{name: xOtsHeaderSDKTraceID, must: false},
+		&otsHeader{name: xOtsHeaderRequestPriority, must: false},
+		&otsHeader{name: xOtsHeaderRequestTag, must: false},
+		&otsHeader{name: xOtsHeaderSourceIp, must: false},
+		&otsHeader{name: xOtsHeaderIsSecureTransport, must: false},
 	}
 
 	sort.Sort(h)

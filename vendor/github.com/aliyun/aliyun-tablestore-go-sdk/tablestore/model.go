@@ -1,6 +1,8 @@
 package tablestore
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,11 +32,14 @@ type internalClient struct {
 	random     *rand.Rand
 	mu         *sync.Mutex
 
-	externalHeader      map[string]string
-	CustomizedRetryFunc CustomizedRetryNotMatterActions
+	externalHeader                                        map[string]string
+	CustomizedRetryFunc                                   CustomizedRetryNotMatterActions
+	KeepDefaultRetryStrategyWhileUsingCustomizedRetryFunc bool
 
 	timeseriesConfiguration *TimeseriesConfiguration
 	credentialsProvider     common.CredentialsProvider
+
+	RetryNotify RetryNotify
 }
 
 const initMapLen int = 8
@@ -77,11 +82,14 @@ type HTTPTimeout struct {
 }
 
 type TableStoreConfig struct {
-	RetryTimes         uint
-	MaxRetryTime       time.Duration
-	HTTPTimeout        HTTPTimeout
-	MaxIdleConnections int
-	Transport          http.RoundTripper
+	RetryTimes           uint
+	MaxRetryTime         time.Duration
+	HTTPTimeout          HTTPTimeout
+	MaxIdleConnections   int
+	IdleConnTimeout      time.Duration
+	Transport            http.RoundTripper
+	DefaultRetryInterval time.Duration
+	MaxRetryInterval     time.Duration
 }
 
 func NewDefaultTableStoreConfig() *TableStoreConfig {
@@ -89,10 +97,14 @@ func NewDefaultTableStoreConfig() *TableStoreConfig {
 		ConnectionTimeout: time.Second * 15,
 		RequestTimeout:    time.Second * 30}
 	config := &TableStoreConfig{
-		RetryTimes:         10,
-		HTTPTimeout:        *httpTimeout,
-		MaxRetryTime:       time.Second * 5,
-		MaxIdleConnections: 2000}
+		RetryTimes:           10,
+		HTTPTimeout:          *httpTimeout,
+		MaxRetryTime:         time.Second * 5,
+		MaxIdleConnections:   2000,
+		IdleConnTimeout:      time.Second * 25,
+		DefaultRetryInterval: time.Millisecond * DefaultRetryInterval,
+		MaxRetryInterval:     time.Millisecond * MaxRetryInterval,
+	}
 	return config
 }
 
@@ -103,17 +115,21 @@ type CreateTableRequest struct {
 	StreamSpec         *StreamSpecification
 	IndexMetas         []*IndexMeta
 	SSESpecification   *SSESpecification
+	EnableLocalTxn     *bool
+	ExtraRequestInfo
 }
 
 type CreateIndexRequest struct {
 	MainTableName   string
 	IndexMeta       *IndexMeta
 	IncludeBaseData bool
+	ExtraRequestInfo
 }
 
 type DeleteIndexRequest struct {
 	MainTableName string
 	IndexName     string
+	ExtraRequestInfo
 }
 
 type ResponseInfo struct {
@@ -169,10 +185,12 @@ type ListTableResponse struct {
 
 type DeleteTableRequest struct {
 	TableName string
+	ExtraRequestInfo
 }
 
 type DescribeTableRequest struct {
 	TableName string
+	ExtraRequestInfo
 }
 
 type DescribeTableResponse struct {
@@ -190,6 +208,7 @@ type UpdateTableRequest struct {
 	TableOption        *TableOption
 	ReservedThroughput *ReservedThroughput
 	StreamSpec         *StreamSpecification
+	ExtraRequestInfo
 }
 
 type UpdateTableResponse struct {
@@ -202,11 +221,13 @@ type UpdateTableResponse struct {
 type AddDefinedColumnRequest struct {
 	TableName      string
 	DefinedColumns []*DefinedColumnSchema
+	ExtraRequestInfo
 }
 
 type DeleteDefinedColumnRequest struct {
 	TableName      string
 	DefinedColumns []string
+	ExtraRequestInfo
 }
 
 type AddDefinedColumnResponse struct {
@@ -462,6 +483,7 @@ type PutRowChange struct {
 
 type PutRowRequest struct {
 	PutRowChange *PutRowChange
+	ExtraRequestInfo
 }
 
 type DeleteRowChange struct {
@@ -473,6 +495,7 @@ type DeleteRowChange struct {
 
 type DeleteRowRequest struct {
 	DeleteRowChange *DeleteRowChange
+	ExtraRequestInfo
 }
 
 type SingleRowQueryCriteria struct {
@@ -499,6 +522,7 @@ type UpdateRowChange struct {
 
 type UpdateRowRequest struct {
 	UpdateRowChange *UpdateRowChange
+	ExtraRequestInfo
 }
 
 func (rowQueryCriteria *SingleRowQueryCriteria) AddColumnToGet(columnName string) {
@@ -531,6 +555,7 @@ func (rowQueryCriteria *MultiRowQueryCriteria) AddRow(pk *PrimaryKey) {
 
 type GetRowRequest struct {
 	SingleRowQueryCriteria *SingleRowQueryCriteria
+	ExtraRequestInfo
 }
 
 type MultiRowQueryCriteria struct {
@@ -546,6 +571,7 @@ type MultiRowQueryCriteria struct {
 
 type BatchGetRowRequest struct {
 	MultiRowQueryCriteria []*MultiRowQueryCriteria
+	ExtraRequestInfo
 }
 
 type ColumnMap struct {
@@ -588,11 +614,12 @@ type BatchGetRowResponse struct {
 	ResponseInfo
 }
 
-//IsAtomic设置是否为批量原子写
-//如果设置了批量原子写，需要保证写入到同一张表格中的分区键相同，否则会写入失败
+// IsAtomic设置是否为批量原子写
+// 如果设置了批量原子写，需要保证写入到同一张表格中的分区键相同，否则会写入失败
 type BatchWriteRowRequest struct {
 	RowChangesGroupByTable map[string][]RowChange
 	IsAtomic               bool
+	ExtraRequestInfo
 }
 
 type BatchWriteRowResponse struct {
@@ -607,6 +634,39 @@ const (
 	BACKWARD Direction = 1
 )
 
+type DataBlockType int
+
+const (
+	PlainBuffer DataBlockType = iota
+	SimpleRowMatrix
+)
+
+func parseProtocolDataBlockType(pbType otsprotocol.DataBlockType) (DataBlockType, error) {
+	switch pbType {
+	case otsprotocol.DataBlockType_DBT_PLAIN_BUFFER:
+		return PlainBuffer, nil
+	case otsprotocol.DataBlockType_DBT_SIMPLE_ROW_MATRIX:
+		return SimpleRowMatrix, nil
+	default:
+		return DataBlockType(-1), fmt.Errorf("unknown DataBlockType %d", pbType)
+	}
+}
+
+type CompressType int
+
+const (
+	None CompressType = iota
+)
+
+func parseProtocolCompressType(pbType otsprotocol.CompressType) (CompressType, error) {
+	switch pbType {
+	case otsprotocol.CompressType_CPT_NONE:
+		return None, nil
+	default:
+		return CompressType(-1), fmt.Errorf("unknow CompressType %d", pbType)
+	}
+}
+
 type RangeRowQueryCriteria struct {
 	TableName       string
 	StartPrimaryKey *PrimaryKey
@@ -620,10 +680,21 @@ type RangeRowQueryCriteria struct {
 	StartColumn     *string
 	EndColumn       *string
 	TransactionId   *string
+
+	// DataBlockType指定对服务器端返回的数据编码格式，未设置相当于DataBlockType.PLAIN_BUFFER.
+	DataBlockType DataBlockType
+
+	// 当columnsToGet不为空，且不包含所有主键列时，ReturnSpecifiedPkOnly为false时会返回全部主键列,
+	// 若为true，则只返回columnsToGet中指定的主键列.
+	ReturnSpecifiedPkOnly bool
+
+	// CompressType指定服务端返回的数据的压缩类型，未设置相当于CompressType.NONE.
+	CompressType CompressType
 }
 
 type GetRangeRequest struct {
 	RangeRowQueryCriteria *RangeRowQueryCriteria
+	ExtraRequestInfo
 }
 
 type Row struct {
@@ -635,11 +706,20 @@ type GetRangeResponse struct {
 	Rows                 []*Row
 	ConsumedCapacityUnit *ConsumedCapacityUnit
 	NextStartPrimaryKey  *PrimaryKey
+	DataBlockType        DataBlockType
+	CompressType         CompressType
 	ResponseInfo
 }
 
 type SQLQueryRequest struct {
-	Query string
+	Query       string
+	SearchToken *string
+	ExtraRequestInfo
+}
+
+func (s *SQLQueryRequest) SetSearchToken(searchToken *string) *SQLQueryRequest {
+	s.SearchToken = searchToken
+	return s
 }
 
 type SearchConsumedCU struct {
@@ -663,11 +743,13 @@ type SQLQueryResponse struct {
 	StmtType         SQLStatementType
 	PayloadVersion   SQLPayloadVersion
 	SQLQueryConsumed *SQLQueryConsumed
+	NextSearchToken  *string
 	ResponseInfo
 }
 
 type ListStreamRequest struct {
 	TableName *string
+	ExtraRequestInfo
 }
 
 type Stream struct {
@@ -699,6 +781,7 @@ type DescribeStreamRequest struct {
 	StreamId              *StreamId // required
 	InclusiveStartShardId *ShardId  // optional
 	ShardLimit            *int32    // optional
+	ExtraRequestInfo
 }
 
 type DescribeStreamResponse struct {
@@ -717,6 +800,7 @@ type GetShardIteratorRequest struct {
 	ShardId   *ShardId  // required
 	Timestamp *int64
 	Token     *string
+	ExtraRequestInfo
 }
 
 type GetShardIteratorResponse struct {
@@ -728,11 +812,15 @@ type GetShardIteratorResponse struct {
 type GetStreamRecordRequest struct {
 	ShardIterator *ShardIterator // required
 	Limit         *int32         // optional. max records which will reside in response
+	TableName     *string
+	ExtraRequestInfo
 }
 
 type GetStreamRecordResponse struct {
 	Records           []*StreamRecord
 	NextShardIterator *ShardIterator // optional. an indicator to be used to read more records in this shard
+	CapacityUnit      *ConsumedCapacityUnit
+	MayMoreRecord     *bool
 	ResponseInfo
 }
 
@@ -741,6 +829,7 @@ type ComputeSplitPointsBySizeRequest struct {
 	SplitSize           int64
 	SplitSizeUnitInByte *int64
 	SplitPointLimit     *int32
+	ExtraRequestInfo
 }
 
 type ComputeSplitPointsBySizeResponse struct {
@@ -866,6 +955,7 @@ type IndexMeta struct {
 	Primarykey     []string
 	DefinedColumns []string
 	IndexType      IndexType
+	IndexSyncPhase *SyncPhase
 }
 
 type DefinedColumnSchema struct {
@@ -912,6 +1002,7 @@ const (
 type StartLocalTransactionRequest struct {
 	PrimaryKey *PrimaryKey
 	TableName  string
+	ExtraRequestInfo
 }
 
 type StartLocalTransactionResponse struct {
@@ -921,6 +1012,7 @@ type StartLocalTransactionResponse struct {
 
 type CommitTransactionRequest struct {
 	TransactionId *string
+	ExtraRequestInfo
 }
 
 type CommitTransactionResponse struct {
@@ -929,6 +1021,7 @@ type CommitTransactionResponse struct {
 
 type AbortTransactionRequest struct {
 	TransactionId *string
+	ExtraRequestInfo
 }
 
 type AbortTransactionResponse struct {
@@ -943,6 +1036,7 @@ type SearchIndexSplitsOptions struct {
 type ComputeSplitsRequest struct {
 	TableName                string
 	searchIndexSplitsOptions *SearchIndexSplitsOptions
+	ExtraRequestInfo
 }
 
 type ComputeSplitsResponse struct {
@@ -967,6 +1061,9 @@ type TimeseriesClient struct {
 }
 
 func (timeseriesClient *TimeseriesClient) SetTimeseriesMetaCache(timeseriesMetaCache *lruCache.Cache) {
+	if timeseriesClient.timeseriesMetaCache != nil {
+		timeseriesClient.timeseriesMetaCache.Purge()
+	}
 	timeseriesClient.timeseriesMetaCache = timeseriesMetaCache
 }
 
@@ -995,6 +1092,8 @@ func (timeseriesTableOptions *TimeseriesTableOptions) GetTimeToLive() int64 {
 type TimeseriesTableMeta struct {
 	timeseriesTableName    string
 	timeseriesTableOptions *TimeseriesTableOptions
+	timeseriesKeys         []string
+	fieldPrimaryKeys       []*PrimaryKeySchema
 }
 
 func NewTimeseriesTableMeta(timeseriesTableName string) *TimeseriesTableMeta {
@@ -1019,12 +1118,37 @@ func (timeseriesTableMeta *TimeseriesTableMeta) GetTimeseriesTableOPtions() *Tim
 	return timeseriesTableMeta.timeseriesTableOptions
 }
 
+func (timeseriesTableMeta *TimeseriesTableMeta) AddTimeseriesKey(name string) {
+	timeseriesTableMeta.timeseriesKeys = append(timeseriesTableMeta.timeseriesKeys, name)
+}
+
+func (timeseriesTableMeta *TimeseriesTableMeta) GetTimeseriesKeys() []string {
+	return timeseriesTableMeta.timeseriesKeys
+}
+
+func (timeseriesTableMeta *TimeseriesTableMeta) AddFieldPrimaryKey(name string, primaryKeyType PrimaryKeyType) {
+	timeseriesTableMeta.fieldPrimaryKeys = append(timeseriesTableMeta.fieldPrimaryKeys, &PrimaryKeySchema{
+		Name: &name,
+		Type: &primaryKeyType,
+	})
+}
+
+func (timeseriesTableMeta *TimeseriesTableMeta) GetFieldPrimaryKeys() []*PrimaryKeySchema {
+	return timeseriesTableMeta.fieldPrimaryKeys
+}
+
 type CreateTimeseriesTableRequest struct {
-	timeseriesTableMeta *TimeseriesTableMeta
+	timeseriesTableMeta   *TimeseriesTableMeta
+	analyticalStores      []*TimeseriesAnalyticalStore
+	enableAnalyticalStore bool
+	lastpointIndexNames   []string
+	ExtraRequestInfo
 }
 
 func NewCreateTimeseriesTableRequest() *CreateTimeseriesTableRequest {
-	return &CreateTimeseriesTableRequest{}
+	return &CreateTimeseriesTableRequest{
+		enableAnalyticalStore: true,
+	}
 }
 
 func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) SetTimeseriesTableMeta(timeseriesTableMeta *TimeseriesTableMeta) {
@@ -1035,6 +1159,30 @@ func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) GetTimeseriesT
 	return createTimeseriesTableRequest.timeseriesTableMeta
 }
 
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) SetAnalyticalStores(analyticalStores []*TimeseriesAnalyticalStore) {
+	createTimeseriesTableRequest.analyticalStores = analyticalStores
+}
+
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) GetAnalyticalStores() []*TimeseriesAnalyticalStore {
+	return createTimeseriesTableRequest.analyticalStores
+}
+
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) SetEnableAnalyticalStore(enableAnalyticalStore bool) {
+	createTimeseriesTableRequest.enableAnalyticalStore = enableAnalyticalStore
+}
+
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) GetEnableAnalyticalStore() bool {
+	return createTimeseriesTableRequest.enableAnalyticalStore
+}
+
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) SetLastpointIndexNames(lastpointIndexNames []string) {
+	createTimeseriesTableRequest.lastpointIndexNames = lastpointIndexNames
+}
+
+func (createTimeseriesTableRequest *CreateTimeseriesTableRequest) GetLastpointIndexNames() []string {
+	return createTimeseriesTableRequest.lastpointIndexNames
+}
+
 type CreateTimeseriesTableResponse struct {
 	ResponseInfo
 }
@@ -1042,6 +1190,7 @@ type CreateTimeseriesTableResponse struct {
 type PutTimeseriesDataRequest struct {
 	timeseriesTableName string
 	rows                []*TimeseriesRow
+	ExtraRequestInfo
 }
 
 func NewPutTimeseriesDataRequest(timeseriesTableName string) *PutTimeseriesDataRequest {
@@ -1098,37 +1247,6 @@ func (timeseriesRow *TimeseriesRow) GetFieldsMap() map[string]*ColumnValue {
 	return timeseriesRow.fields
 }
 
-func (timeseriesRow *TimeseriesRow) GetFieldsSlice() []string {
-	n := len(timeseriesRow.GetFieldsSlice())
-	key := make([]string, 0, n)
-	for field_key, _ := range timeseriesRow.GetFieldsMap() {
-		key = append(key, field_key)
-	}
-	sort.Strings(key)
-	for i := 0; i < len(key); i++ {
-		field_value := timeseriesRow.GetFieldsMap()[key[i]]
-		switch field_value.Type {
-		case ColumnType_STRING:
-			key[i] = key[i] + "=" + field_value.Value.(string)
-			break
-		case ColumnType_INTEGER:
-			key[i] = key[i] + "=" + strconv.Itoa(int(field_value.Value.(int64)))
-			break
-		case ColumnType_BOOLEAN:
-			key[i] = key[i] + "=" + fmt.Sprintf("%v", field_value.Value.(bool))
-			break
-		case ColumnType_DOUBLE:
-			key[i] = key[i] + "=" + fmt.Sprintf("%v", field_value.Value.(float64))
-			break
-		case ColumnType_BINARY:
-			key[i] = key[i] + "=" + fmt.Sprintf("%v", field_value.Value.([]byte))
-		default:
-			panic("Unknow field Value type")
-		}
-	}
-	return key
-}
-
 func (timeseriesRow *TimeseriesRow) AddField(fieldName string, fieldValue *ColumnValue) {
 	if fieldValue == nil {
 		return
@@ -1163,7 +1281,6 @@ type TimeseriesKey struct {
 	measurement string
 	source      string
 	tags        map[string]string
-	tagsString  *string
 }
 
 func NewTimeseriesKey() *TimeseriesKey {
@@ -1174,7 +1291,6 @@ func NewTimeseriesKey() *TimeseriesKey {
 
 func (timeseriesKey *TimeseriesKey) AddTag(tagName string, tagValue string) {
 	timeseriesKey.tags[tagName] = tagValue
-	timeseriesKey.tagsString = nil
 }
 
 func (timeseriesKey *TimeseriesKey) AddTags(tagsMap map[string]string) {
@@ -1184,7 +1300,6 @@ func (timeseriesKey *TimeseriesKey) AddTags(tagsMap map[string]string) {
 	for tagName, tagValue := range tagsMap {
 		timeseriesKey.tags[tagName] = tagValue
 	}
-	timeseriesKey.tagsString = nil
 }
 
 func (timeseriesKey *TimeseriesKey) GetTags() map[string]string {
@@ -1193,31 +1308,37 @@ func (timeseriesKey *TimeseriesKey) GetTags() map[string]string {
 
 func (timeseriesKey *TimeseriesKey) buildTimeseriesMetaKey(timeseriesTableName string) (string, error) {
 	var capacity int
-	var err error
+	var keys []string
 	capacity += len(timeseriesTableName)
 	capacity += len(timeseriesKey.measurement)
 	capacity += len(timeseriesKey.source)
-	if timeseriesKey.tagsString == nil {
-		timeseriesKey.tagsString = new(string)
-		if *timeseriesKey.tagsString, err = BuildTagString(timeseriesKey.tags); err != nil {
+	capacity += 4
+	for key, value := range timeseriesKey.tags {
+		capacity += len(value)
+		capacity += 2
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	buf := bytes.NewBuffer(nil)
+	buf.Grow(capacity)
+	buf.WriteString(timeseriesTableName)
+	if err := binary.Write(buf, binary.LittleEndian, int16(len(timeseriesKey.measurement))); err != nil {
+		return "", err
+	}
+	buf.WriteString(timeseriesKey.measurement)
+	if err := binary.Write(buf, binary.LittleEndian, int16(len(timeseriesKey.source))); err != nil {
+		return "", err
+	}
+	buf.WriteString(timeseriesKey.source)
+	for _, key := range keys {
+		value := timeseriesKey.tags[key]
+		if err := binary.Write(buf, binary.LittleEndian, int16(len(value))); err != nil {
 			return "", err
 		}
+		buf.WriteString(value)
 	}
-	capacity += len(*timeseriesKey.tagsString)
-	capacity += 3
-
-	sb := strings.Builder{}
-	sb.Grow(capacity)
-
-	sb.WriteString(timeseriesTableName)
-	sb.WriteString("\t")
-	sb.WriteString(timeseriesKey.measurement)
-	sb.WriteString("\t")
-	sb.WriteString(timeseriesKey.source)
-	sb.WriteString("\t")
-	sb.WriteString(*timeseriesKey.tagsString)
-
-	return sb.String(), nil
+	return buf.String(), nil
 }
 
 func (timeseriesKey *TimeseriesKey) SetMeasurementName(measurementName string) {
@@ -1251,6 +1372,11 @@ func (putTimeseriesDataResponse *PutTimeseriesDataResponse) GetFailedRowResults(
 	return putTimeseriesDataResponse.failedRowResults
 }
 
+type FieldToGet struct {
+	Name string
+	Type ColumnType
+}
+
 type GetTimeseriesDataRequest struct {
 	timeseriesTableName string
 	timeseriesKey       *TimeseriesKey
@@ -1258,6 +1384,9 @@ type GetTimeseriesDataRequest struct {
 	endTimeInUs         int64
 	nextToken           []byte
 	limit               int32
+	backward            bool
+	fieldsToGet         []*FieldToGet
+	ExtraRequestInfo
 }
 
 func NewGetTimeseriesDataRequest(timeseriesTableName string) *GetTimeseriesDataRequest {
@@ -1316,6 +1445,26 @@ func (getDataRequest *GetTimeseriesDataRequest) GetLimit() int32 {
 	return getDataRequest.limit
 }
 
+func (getDataRequest *GetTimeseriesDataRequest) SetBackward(backward bool) {
+	getDataRequest.backward = backward
+}
+
+func (getDataRequest *GetTimeseriesDataRequest) GetBackward() bool {
+	return getDataRequest.backward
+}
+
+func (getDataRequest *GetTimeseriesDataRequest) AddFieldToGet(field *FieldToGet) {
+	getDataRequest.fieldsToGet = append(getDataRequest.fieldsToGet, field)
+}
+
+func (getDataRequest *GetTimeseriesDataRequest) SetFieldsToGet(fields []*FieldToGet) {
+	getDataRequest.fieldsToGet = fields
+}
+
+func (getDataRequest *GetTimeseriesDataRequest) GetFieldsToGet() []*FieldToGet {
+	return getDataRequest.fieldsToGet
+}
+
 type GetTimeseriesDataResponse struct {
 	rows      []*TimeseriesRow
 	nextToken []byte
@@ -1332,6 +1481,7 @@ func (getTimeseriesDataResp *GetTimeseriesDataResponse) GetNextToken() []byte {
 
 type DescribeTimeseriesTableRequest struct {
 	timeseriesTableName string
+	ExtraRequestInfo
 }
 
 func NewDescribeTimeseriesTableRequset(timeseriesTableName string) *DescribeTimeseriesTableRequest {
@@ -1350,6 +1500,8 @@ func (describeTimeseriesReq *DescribeTimeseriesTableRequest) GetTimeseriesTableN
 
 type DescribeTimeseriesTableResponse struct {
 	timeseriesTableMeta *TimeseriesTableMeta
+	analyticalStores    []TimeseriesAnalyticalStore
+	lastpointIndexNames []string
 	ResponseInfo
 }
 
@@ -1357,7 +1509,16 @@ func (describeTimeseriesTableResp *DescribeTimeseriesTableResponse) GetTimeserie
 	return describeTimeseriesTableResp.timeseriesTableMeta
 }
 
+func (describeTimeseriesTableResp *DescribeTimeseriesTableResponse) GetAnalyticalStores() []TimeseriesAnalyticalStore {
+	return describeTimeseriesTableResp.analyticalStores
+}
+
+func (describeTimeseriesTableResp *DescribeTimeseriesTableResponse) GetLastpointIndexNames() []string {
+	return describeTimeseriesTableResp.lastpointIndexNames
+}
+
 type ListTimeseriesTableRequest struct {
+	ExtraRequestInfo
 }
 
 func NewListTimeseriesTableRequest() *ListTimeseriesTableRequest {
@@ -1383,6 +1544,7 @@ func (listTimeseriesTableResponse *ListTimeseriesTableResponse) GetTimeseriesTab
 
 type DeleteTimeseriesTableRequest struct {
 	timeseriesTableName string
+	ExtraRequestInfo
 }
 
 func NewDeleteTimeseriesTableRequest(timeseriesTableName string) *DeleteTimeseriesTableRequest {
@@ -1406,6 +1568,7 @@ type DeleteTimeseriesTableResponse struct {
 type UpdateTimeseriesMetaRequest struct {
 	timeseriesTableName string
 	metas               []*TimeseriesMeta
+	ExtraRequestInfo
 }
 
 func NewUpdateTimeseriesMetaRequest(timeseriesTableName string) *UpdateTimeseriesMetaRequest {
@@ -1442,6 +1605,7 @@ func (updateTimeseriesMetaResponse *UpdateTimeseriesMetaResponse) GetFailedRowRe
 type DeleteTimeseriesMetaRequest struct {
 	timeseriesTableName string
 	keys                []*TimeseriesKey
+	ExtraRequestInfo
 }
 
 func NewDeleteTimeseriesMetaRequest(timeseriesTableName string) *DeleteTimeseriesMetaRequest {
@@ -1481,6 +1645,7 @@ type QueryTimeseriesMetaRequest struct {
 	getTotalHits        bool
 	nextToken           []byte
 	limit               int32
+	ExtraRequestInfo
 }
 
 func NewQueryTimeseriesMetaRequest(timeseriesTableName string) *QueryTimeseriesMetaRequest {
@@ -2145,6 +2310,7 @@ func (queryTimeseriesMetaResponse *QueryTimeseriesMetaResponse) GetNextToken() [
 type UpdateTimeseriesTableRequest struct {
 	timeseriesTableName    string
 	timeseriesTableOptions *TimeseriesTableOptions
+	ExtraRequestInfo
 }
 
 func NewUpdateTimeseriesTableRequest(timeseriesTableName string) *UpdateTimeseriesTableRequest {
@@ -2170,5 +2336,222 @@ func (updateTimeseriesTableReq *UpdateTimeseriesTableRequest) GetTimeseriesTable
 }
 
 type UpdateTimeseriesTableResponse struct {
+	ResponseInfo
+}
+
+type TimeseriesAnalyticalStore struct {
+	StoreName  string
+	TimeToLive *int32
+	SyncOption *AnalyticalStoreSyncType
+}
+
+func NewTimeseriesAnalyticalStore(analyticalStoreName string) *TimeseriesAnalyticalStore {
+	return &TimeseriesAnalyticalStore{
+		StoreName: analyticalStoreName,
+	}
+}
+
+func (analyticalStore *TimeseriesAnalyticalStore) SetTimeToLive(timeToLive int32) {
+	analyticalStore.TimeToLive = &timeToLive
+}
+
+func (analyticalStore *TimeseriesAnalyticalStore) SetSyncOption(syncOption AnalyticalStoreSyncType) {
+	analyticalStore.SyncOption = &syncOption
+}
+
+type AnalyticalStoreSyncType int32
+
+func (analyticalStoreSyncType AnalyticalStoreSyncType) String() string {
+	switch analyticalStoreSyncType {
+	case SYNC_TYPE_FULL:
+		return "SYNC_TYPE_FULL"
+	case SYNC_TYPE_INCR:
+		return "SYNC_TYPE_INCR"
+	default:
+		return "UNKNOWN"
+	}
+}
+
+const (
+	SYNC_TYPE_FULL AnalyticalStoreSyncType = 1
+	SYNC_TYPE_INCR AnalyticalStoreSyncType = 2
+)
+
+type AnalyticalStoreSyncStat struct {
+	SyncPhase            AnalyticalStoreSyncType
+	CurrentSyncTimestamp int64
+}
+
+type AnalyticalStoreStorageSize struct {
+	Size      int64
+	Timestamp int64
+}
+
+type CreateTimeseriesAnalyticalStoreRequest struct {
+	timeseriesTableName string
+	analyticalStore     *TimeseriesAnalyticalStore
+	ExtraRequestInfo
+}
+
+func NewCreateTimeseriesAnalyticalStoreRequest(timeseriesTableName string, analyticalStore *TimeseriesAnalyticalStore) *CreateTimeseriesAnalyticalStoreRequest {
+	return &CreateTimeseriesAnalyticalStoreRequest{
+		timeseriesTableName: timeseriesTableName,
+		analyticalStore:     analyticalStore,
+	}
+}
+
+type CreateTimeseriesAnalyticalStoreResponse struct {
+	ResponseInfo
+}
+
+type DeleteTimeseriesAnalyticalStoreRequest struct {
+	timeseriesTableName string
+	analyticalStoreName string
+	dropMappingTable    bool
+	ExtraRequestInfo
+}
+
+func NewDeleteTimeseriesAnalyticalStoreRequest(timeseriesTableName string, analyticalStoreName string) *DeleteTimeseriesAnalyticalStoreRequest {
+	return &DeleteTimeseriesAnalyticalStoreRequest{
+		timeseriesTableName: timeseriesTableName,
+		analyticalStoreName: analyticalStoreName,
+	}
+}
+
+func (deleteTimeseriesAnalyticalStoreRequest *DeleteTimeseriesAnalyticalStoreRequest) SetDropMappingTable(dropMappingTable bool) {
+	deleteTimeseriesAnalyticalStoreRequest.dropMappingTable = dropMappingTable
+}
+
+type DeleteTimeseriesAnalyticalStoreResponse struct {
+	ResponseInfo
+}
+
+type DescribeTimeseriesAnalyticalStoreRequest struct {
+	timeseriesTableName string
+	analyticalStoreName string
+	ExtraRequestInfo
+}
+
+func NewDescribeTimeseriesAnalyticalStoreRequest(timeseriesTableName string, analyticalStoreName string) *DescribeTimeseriesAnalyticalStoreRequest {
+	return &DescribeTimeseriesAnalyticalStoreRequest{
+		timeseriesTableName: timeseriesTableName,
+		analyticalStoreName: analyticalStoreName,
+	}
+}
+
+type DescribeTimeseriesAnalyticalStoreResponse struct {
+	ResponseInfo
+	AnalyticalStore *TimeseriesAnalyticalStore
+	SyncStat        *AnalyticalStoreSyncStat
+	StorageSize     *AnalyticalStoreStorageSize
+}
+
+type UpdateTimeseriesAnalyticalStoreRequest struct {
+	timeseriesTableName string
+	analyticalStore     *TimeseriesAnalyticalStore
+	ExtraRequestInfo
+}
+
+func NewUpdateTimeseriesAnalyticalStoreRequest(timeseriesTableName string, analyticalStore *TimeseriesAnalyticalStore) *UpdateTimeseriesAnalyticalStoreRequest {
+	return &UpdateTimeseriesAnalyticalStoreRequest{
+		timeseriesTableName: timeseriesTableName,
+		analyticalStore:     analyticalStore,
+	}
+}
+
+type UpdateTimeseriesAnalyticalStoreResponse struct {
+	ResponseInfo
+}
+
+type ExtraRequestInfo struct {
+	userTraceID      *string
+	requestExtension *RequestExtension
+}
+
+func (ex *ExtraRequestInfo) SetTraceID(traceID string) {
+	ex.userTraceID = &traceID
+}
+
+func (ex *ExtraRequestInfo) SetRequestExtension(requestExtension RequestExtension) {
+	ex.requestExtension = &requestExtension
+}
+
+type Priority int
+
+const (
+	LOW Priority = iota
+	NORMAL
+	HIGH
+)
+
+type RequestExtension struct {
+	priority *Priority
+	tag      *string
+}
+
+func (re *RequestExtension) SetPriority(priority Priority) {
+	re.priority = &priority
+}
+
+func (re *RequestExtension) SetTag(tag string) {
+	re.tag = &tag
+}
+
+type CreateTimeseriesLastpointIndexRequest struct {
+	timeseriesTableName     string
+	lastpointIndexTableName string
+	includeBaseData         bool
+	ExtraRequestInfo
+}
+
+func NewCreateTimeseriesLastpointIndexRequest(
+	timeseriesTableName string,
+	lastpointIndexTableName string,
+	includeBaseData bool) *CreateTimeseriesLastpointIndexRequest {
+	return &CreateTimeseriesLastpointIndexRequest{
+		timeseriesTableName:     timeseriesTableName,
+		lastpointIndexTableName: lastpointIndexTableName,
+		includeBaseData:         includeBaseData,
+	}
+}
+
+func (req *CreateTimeseriesLastpointIndexRequest) GetTimeseriesTableName() string {
+	return req.timeseriesTableName
+}
+
+func (req *CreateTimeseriesLastpointIndexRequest) GetLastpointIndexTableName() string {
+	return req.lastpointIndexTableName
+}
+
+func (req *CreateTimeseriesLastpointIndexRequest) GetIncludeBaseData() bool {
+	return req.includeBaseData
+}
+
+type CreateTimeseriesLastpointIndexResponse struct {
+	ResponseInfo
+}
+
+type DeleteTimeseriesLastpointIndexRequest struct {
+	timeseriesTableName     string
+	lastpointIndexTableName string
+	ExtraRequestInfo
+}
+
+func NewDeleteTimeseriesLastpointIndexRequest(timeseriesTableName string, lastpointIndexTableName string) *DeleteTimeseriesLastpointIndexRequest {
+	return &DeleteTimeseriesLastpointIndexRequest{
+		timeseriesTableName:     timeseriesTableName,
+		lastpointIndexTableName: lastpointIndexTableName,
+	}
+}
+
+func (req *DeleteTimeseriesLastpointIndexRequest) GetTimeseriesTableName() string {
+	return req.timeseriesTableName
+}
+
+func (req *DeleteTimeseriesLastpointIndexRequest) GetLastpointIndexTableName() string {
+	return req.lastpointIndexTableName
+}
+
+type DeleteTimeseriesLastpointIndexResponse struct {
 	ResponseInfo
 }

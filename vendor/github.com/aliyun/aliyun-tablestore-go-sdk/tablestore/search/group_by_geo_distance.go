@@ -8,12 +8,12 @@ import (
 type GroupByGeoDistance struct {
 	AggName string
 
-	Field 			string
-	Origin			GeoPoint
-	RangeList		[]Range
+	Field     string
+	Origin    GeoPoint
+	RangeList []Range
 
-	SubAggList			[]Aggregation
-	SubGroupByList		[]GroupBy
+	SubAggList     []Aggregation
+	SubGroupByList []GroupBy
 }
 
 func (g *GroupByGeoDistance) GetName() string {
@@ -79,7 +79,6 @@ func (g *GroupByGeoDistance) SubAggregation(subAggregation Aggregation) *GroupBy
 	return g
 }
 
-
 func (g *GroupByGeoDistance) SubGroupBys(subGroupBys ...GroupBy) *GroupByGeoDistance {
 	g.SubGroupByList = subGroupBys
 	return g
@@ -108,6 +107,6 @@ func (g *GroupByGeoDistance) CenterPoint(latitude float64, longitude float64) *G
 //append a Range[from, to)
 func (g *GroupByGeoDistance) Range(fromInclusive float64, toExclusive float64) *GroupByGeoDistance {
 	g.RangeList = append(g.RangeList,
-		Range { from: fromInclusive, to: toExclusive})
+		Range{from: fromInclusive, to: toExclusive})
 	return g
 }

@@ -17,6 +17,7 @@ func (f *FieldValueFactor) ProtoBuffer() (*otsprotocol.FieldValueFactor, error) 
 	return pb, nil
 }
 
+// Deprecated 请使用 FunctionsScoreQuery 代替
 type FunctionScoreQuery struct {
 	Query            Query `json:"-"`
 	FieldValueFactor *FieldValueFactor

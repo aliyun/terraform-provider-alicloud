@@ -1,16 +1,16 @@
 package search
 
 type GroupByRangeResultItem struct {
-	RowCount        int64
-	From			float64
-	To				float64
+	RowCount int64
+	From     float64
+	To       float64
 
 	SubAggregations AggregationResults
 	SubGroupBys     GroupByResults
 }
 
 type GroupByRangeResult struct {
-	Name string
+	Name  string
 	Items []GroupByRangeResultItem
 }
 

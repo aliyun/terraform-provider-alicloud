@@ -13,9 +13,9 @@ type CredentialsProvider interface {
 }
 
 type DefaultCredentials struct {
-	AccessKeyID string
+	AccessKeyID     string
 	AccessKeySecret string
-	SecurityToken string
+	SecurityToken   string
 }
 
 func (defCre *DefaultCredentials) GetAccessKeyID() string {
@@ -31,9 +31,9 @@ func (defCre *DefaultCredentials) GetSecurityToken() string {
 }
 
 type DefaultCredentialsProvider struct {
-	AccessKeyID string
+	AccessKeyID     string
 	AccessKeySecret string
-	SecurityToken string
+	SecurityToken   string
 }
 
 func (defBuild *DefaultCredentialsProvider) GetCredentials() Credentials {

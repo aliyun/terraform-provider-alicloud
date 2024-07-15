@@ -17,11 +17,19 @@ func GetRootAsFlatBufferRowInGroup(buf []byte, offset flatbuffers.UOffsetT) *Fla
 	return x
 }
 
+func FinishFlatBufferRowInGroupBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.Finish(offset)
+}
+
 func GetSizePrefixedRootAsFlatBufferRowInGroup(buf []byte, offset flatbuffers.UOffsetT) *FlatBufferRowInGroup {
 	n := flatbuffers.GetUOffsetT(buf[offset+flatbuffers.SizeUint32:])
 	x := &FlatBufferRowInGroup{}
 	x.Init(buf, n+offset+flatbuffers.SizeUint32)
 	return x
+}
+
+func FinishSizePrefixedFlatBufferRowInGroupBuffer(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) {
+	builder.FinishSizePrefixed(offset)
 }
 
 func (rcv *FlatBufferRowInGroup) Init(buf []byte, i flatbuffers.UOffsetT) {
@@ -86,8 +94,28 @@ func (rcv *FlatBufferRowInGroup) MutateMetaCacheUpdateTime(n uint32) bool {
 	return rcv._tab.MutateUint32Slot(12, n)
 }
 
+func (rcv *FlatBufferRowInGroup) TagList(obj *Tag, j int) bool {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	if o != 0 {
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
+	}
+	return false
+}
+
+func (rcv *FlatBufferRowInGroup) TagListLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
+	}
+	return 0
+}
+
 func FlatBufferRowInGroupStart(builder *flatbuffers.Builder) {
-	builder.StartObject(5)
+	builder.StartObject(6)
 }
 func FlatBufferRowInGroupAddDataSource(builder *flatbuffers.Builder, dataSource flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(dataSource), 0)
@@ -103,6 +131,12 @@ func FlatBufferRowInGroupAddFieldValues(builder *flatbuffers.Builder, fieldValue
 }
 func FlatBufferRowInGroupAddMetaCacheUpdateTime(builder *flatbuffers.Builder, metaCacheUpdateTime uint32) {
 	builder.PrependUint32Slot(4, metaCacheUpdateTime, 0)
+}
+func FlatBufferRowInGroupAddTagList(builder *flatbuffers.Builder, tagList flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(5, flatbuffers.UOffsetT(tagList), 0)
+}
+func FlatBufferRowInGroupStartTagListVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(4, numElems, 4)
 }
 func FlatBufferRowInGroupEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

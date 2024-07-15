@@ -8,7 +8,7 @@ type GroupByFieldResultItem struct {
 }
 
 type GroupByFieldResult struct {
-	Name string
+	Name  string
 	Items []GroupByFieldResultItem
 }
 

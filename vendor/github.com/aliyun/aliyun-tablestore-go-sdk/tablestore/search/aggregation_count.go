@@ -6,8 +6,8 @@ import (
 )
 
 type CountAggregation struct {
-	AggName		string
-	Field		string
+	AggName string
+	Field   string
 }
 
 func (a *CountAggregation) GetName() string {

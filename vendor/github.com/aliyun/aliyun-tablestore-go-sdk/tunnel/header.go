@@ -17,20 +17,22 @@ var (
 )
 
 const (
-	xOtsDate                = "x-ots-date"
-	xOtsApiversion          = "x-ots-apiversion"
-	xOtsAccesskeyid         = "x-ots-accesskeyid"
-	xOtsContentmd5          = "x-ots-contentmd5"
-	xOtsHeaderStsToken      = "x-ots-ststoken"
-	xOtsSignature           = "x-ots-signature"
-	xOtsInstanceName        = "x-ots-instancename"
-	xOtsRequestId           = "x-ots-requestid"
-	xOtsRequestCompressType = "x-ots-request-compress-type"
-	xOtsRequestCompressSize = "x-ots-request-compress-size"
-	xOtsResponseCompressTye = "x-ots-response-compress-type"
-	xOtsHeaderTraceID       = "x-ots-trace-id"
-	xOtsHeaderTunnelType    = "x-ots-tunnel-type"
-	xOtsPrefix              = "x-ots"
+	xOtsDate                    = "x-ots-date"
+	xOtsApiversion              = "x-ots-apiversion"
+	xOtsAccesskeyid             = "x-ots-accesskeyid"
+	xOtsContentmd5              = "x-ots-contentmd5"
+	xOtsHeaderStsToken          = "x-ots-ststoken"
+	xOtsSignature               = "x-ots-signature"
+	xOtsInstanceName            = "x-ots-instancename"
+	xOtsRequestId               = "x-ots-requestid"
+	xOtsRequestCompressType     = "x-ots-request-compress-type"
+	xOtsRequestCompressSize     = "x-ots-request-compress-size"
+	xOtsResponseCompressTye     = "x-ots-response-compress-type"
+	xOtsHeaderTraceID           = "x-ots-trace-id"
+	xOtsHeaderTunnelType        = "x-ots-tunnel-type"
+	xOtsHeaderSourceIp          = "x-ots-sourceip"
+	xOtsHeaderIsSecureTransport = "x-ots-issecuretransport"
+	xOtsPrefix                  = "x-ots"
 )
 
 type otsHeader struct {
@@ -60,6 +62,8 @@ func createOtsHeaders(accessKey string) *otsHeaders {
 		&otsHeader{name: xOtsHeaderStsToken, must: false},
 		&otsHeader{name: xOtsHeaderTraceID, must: false},
 		&otsHeader{name: xOtsHeaderTunnelType, must: false},
+		&otsHeader{name: xOtsHeaderSourceIp, must: false},
+		&otsHeader{name: xOtsHeaderIsSecureTransport, must: false},
 	}
 
 	sort.Sort(h)

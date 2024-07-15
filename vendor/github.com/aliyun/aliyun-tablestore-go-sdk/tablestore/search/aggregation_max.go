@@ -6,9 +6,9 @@ import (
 )
 
 type MaxAggregation struct {
-	AggName			string
-	Field			string
-	MissingValue 	interface{}
+	AggName      string
+	Field        string
+	MissingValue interface{}
 }
 
 func (a *MaxAggregation) GetName() string {

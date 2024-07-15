@@ -4,6 +4,7 @@ import (
 	"fmt"
 	lruCache "github.com/hashicorp/golang-lru"
 	"reflect"
+	"sort"
 
 	Fieldvalues "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/timeseries/flatbuffer"
 	flatbuffers "github.com/google/flatbuffers/go"
@@ -12,32 +13,30 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-
-func BuildFlatbufferRows(rows []*TimeseriesRow , timeseriesTableName string , timeseriesMetaCache *lruCache.Cache) ([]byte , error) {
+func BuildFlatbufferRows(rows []*TimeseriesRow, timeseriesTableName string, timeseriesMetaCache *lruCache.Cache) ([]byte, error) {
 	rowsNum := len(rows)
-	rowGroupOffs := make([]flatbuffers.UOffsetT , rowsNum)
+	rowGroupOffs := make([]flatbuffers.UOffsetT, rowsNum)
 	fbb := flatbuffers.NewBuilder(1024)
 
 	var err error
 	for i := 0; i < rowsNum; i++ {
-		rowGroupOffs[i] , err = buildTimeseriesRowToRowGroupOffset(rows[i] , fbb , timeseriesTableName , timeseriesMetaCache)
+		rowGroupOffs[i], err = buildTimeseriesRowToRowGroupOffset(rows[i], fbb, timeseriesTableName, timeseriesMetaCache)
 		if err != nil {
-			return nil , fmt.Errorf("BuildFlatbufferRows failed! ")
+			return nil, fmt.Errorf("BuildFlatbufferRows failed! ")
 		}
 	}
 
-	rowsVectorOffset := createRowGroupsVector(fbb , rowGroupOffs)
-	rowsOffset := createFlatBufferRows(fbb , rowsVectorOffset)
+	rowsVectorOffset := createRowGroupsVector(fbb, rowGroupOffs)
+	rowsOffset := createFlatBufferRows(fbb, rowsVectorOffset)
 
 	fbb.Finish(rowsOffset)
-	return fbb.FinishedBytes() , nil
+	return fbb.FinishedBytes(), nil
 }
 
-
-func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Builder , timeseriesTableName string , timeseriesMetaCache *lruCache.Cache) (flatbuffers.UOffsetT , error) {
+func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow, fbb *flatbuffers.Builder, timeseriesTableName string, timeseriesMetaCache *lruCache.Cache) (flatbuffers.UOffsetT, error) {
 	fieldCount := len(row.fields)
 	fieldValueTypes := make([]Fieldvalues.DataType, fieldCount)
-	fieldNameOffs := make([]flatbuffers.UOffsetT , fieldCount)
+	fieldNameOffs := make([]flatbuffers.UOffsetT, fieldCount)
 
 	var idx int = 0
 	var doubleValueCount int = 0
@@ -46,46 +45,46 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	var binaryValueCount int = 0
 	var stringValueCount int = 0
 
-	field_keys , field_values := SortedMapColumnValue(row.fields)
+	field_keys, field_values := SortedMapColumnValue(row.fields)
 	for i := 0; i < fieldCount; i++ {
 		fieldNameOffs[i] = fbb.CreateString(field_keys[i])
 		switch field_values[i].Type {
 		case ColumnType_INTEGER:
-			fieldValueTypes[i] = Fieldvalues.DataTypeLONG		// LONG
+			fieldValueTypes[i] = Fieldvalues.DataTypeLONG // LONG
 			longValueCount++
 			break
 		case ColumnType_BOOLEAN:
-			fieldValueTypes[i] = Fieldvalues.DataTypeBOOLEAN		// BOOLEAN
+			fieldValueTypes[i] = Fieldvalues.DataTypeBOOLEAN // BOOLEAN
 			boolValueCount++
 			break
 		case ColumnType_DOUBLE:
-			fieldValueTypes[i] = Fieldvalues.DataTypeDOUBLE		// DOUBLE
+			fieldValueTypes[i] = Fieldvalues.DataTypeDOUBLE // DOUBLE
 			doubleValueCount++
 			break
 		case ColumnType_STRING:
-			fieldValueTypes[i] = Fieldvalues.DataTypeSTRING		// STRING
+			fieldValueTypes[i] = Fieldvalues.DataTypeSTRING // STRING
 			stringValueCount++
 			break
 		case ColumnType_BINARY:
-			fieldValueTypes[i] = Fieldvalues.DataTypeBINARY		// BINARY
+			fieldValueTypes[i] = Fieldvalues.DataTypeBINARY // BINARY
 			binaryValueCount++
 			break
 		default:
-			return 0 , fmt.Errorf("Err ColumnType : %v" , field_values[i].Type)
+			return 0, fmt.Errorf("Err ColumnType : %v", field_values[i].Type)
 		}
 	}
 
-	longValues := make([]int64 , longValueCount)
-	boolValues := make([]bool , boolValueCount)
-	doubleValues := make([]float64 , doubleValueCount)
-	strValueOffs := make([]flatbuffers.UOffsetT , stringValueCount)
-	binaryValueOffs := make([]flatbuffers.UOffsetT , binaryValueCount)
+	longValues := make([]int64, longValueCount)
+	boolValues := make([]bool, boolValueCount)
+	doubleValues := make([]float64, doubleValueCount)
+	strValueOffs := make([]flatbuffers.UOffsetT, stringValueCount)
+	binaryValueOffs := make([]flatbuffers.UOffsetT, binaryValueCount)
 
 	doubleValueCount = 0
-	longValueCount  = 0
-	boolValueCount  = 0
-	stringValueCount  = 0
-	binaryValueCount  = 0
+	longValueCount = 0
+	boolValueCount = 0
+	stringValueCount = 0
+	binaryValueCount = 0
 
 	for i := 0; i < fieldCount; i++ {
 		switch field_values[i].Type {
@@ -113,11 +112,11 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 			stringValueCount++
 			break
 		case ColumnType_BINARY:
-			binaryValueOffs[binaryValueCount] = CreateBytesValue(fbb , CreateBytesValueVector(fbb , field_values[i].Value.([]byte)))
+			binaryValueOffs[binaryValueCount] = CreateBytesValue(fbb, CreateBytesValueVector(fbb, field_values[i].Value.([]byte)))
 			binaryValueCount++
 			break
 		default:
-			return 0 , fmt.Errorf("Err ColumnType : %v" , field_values[idx].Type)
+			return 0, fmt.Errorf("Err ColumnType : %v", field_values[idx].Type)
 		}
 	}
 
@@ -129,7 +128,7 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	fieldValueOff := flatbuffers.UOffsetT(0)
 
 	if longValueCount != 0 {
-		fbb.StartVector(8 , longValueCount , 8)
+		fbb.StartVector(8, longValueCount, 8)
 		for i := longValueCount - 1; i >= 0; i-- {
 			fbb.PrependInt64(longValues[i])
 		}
@@ -137,7 +136,7 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	}
 
 	if boolValueCount != 0 {
-		fbb.StartVector(1 , boolValueCount , 1 )
+		fbb.StartVector(1, boolValueCount, 1)
 		for i := boolValueCount - 1; i >= 0; i-- {
 			fbb.PrependBool(boolValues[i])
 		}
@@ -145,7 +144,7 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	}
 
 	if doubleValueCount != 0 {
-		fbb.StartVector(8 , doubleValueCount , 8)
+		fbb.StartVector(8, doubleValueCount, 8)
 		for i := doubleValueCount - 1; i >= 0; i-- {
 			fbb.PrependFloat64(doubleValues[i])
 		}
@@ -153,7 +152,7 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	}
 
 	if stringValueCount != 0 {
-		fbb.StartVector(4 , stringValueCount , 4)
+		fbb.StartVector(4, stringValueCount, 4)
 		for i := stringValueCount - 1; i >= 0; i-- {
 			fbb.PrependUOffsetT(strValueOffs[i])
 		}
@@ -161,7 +160,7 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	}
 
 	if binaryValueCount != 0 {
-		fbb.StartVector(4 , binaryValueCount , 4)
+		fbb.StartVector(4, binaryValueCount, 4)
 		for i := binaryValueCount - 1; i >= 0; i-- {
 			fbb.PrependUOffsetT(flatbuffers.UOffsetT(binaryValueOffs[i]))
 		}
@@ -169,11 +168,11 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 	}
 
 	fbb.StartObject(5)
-	Fieldvalues.FieldValuesAddBinaryValues(fbb , binary_valuesOffset)
-	Fieldvalues.FieldValuesAddStringValues(fbb , string_valuesOffset)
-	Fieldvalues.FieldValuesAddDoubleValues(fbb , double_valuesOffset)
-	Fieldvalues.FieldValuesAddBoolValues(fbb , bool_valuesOffset)
-	Fieldvalues.FieldValuesAddLongValues(fbb , long_valuesOffset)
+	Fieldvalues.FieldValuesAddBinaryValues(fbb, binary_valuesOffset)
+	Fieldvalues.FieldValuesAddStringValues(fbb, string_valuesOffset)
+	Fieldvalues.FieldValuesAddDoubleValues(fbb, double_valuesOffset)
+	Fieldvalues.FieldValuesAddBoolValues(fbb, bool_valuesOffset)
+	Fieldvalues.FieldValuesAddLongValues(fbb, long_valuesOffset)
 	fieldValueOff = Fieldvalues.FieldValuesEnd(fbb)
 
 	var source_keyOffset flatbuffers.UOffsetT
@@ -183,111 +182,123 @@ func buildTimeseriesRowToRowGroupOffset(row *TimeseriesRow , fbb *flatbuffers.Bu
 		source_keyOffset = fbb.CreateString(row.timeseriesKey.source)
 	}
 
-	var tags_Offset flatbuffers.UOffsetT
+	var tagListOffs []flatbuffers.UOffsetT
 	var err error
-
-	if row.timeseriesKey.tagsString == nil {
-		row.timeseriesKey.tagsString = new(string)
-		if *row.timeseriesKey.tagsString , err = BuildTagString(row.timeseriesKey.tags); err != nil {
-			return 0 , fmt.Errorf("Build tags string failed with error: %s" , err)
-		}
+	var names []string
+	for name := range row.timeseriesKey.tags {
+		names = append(names, name)
 	}
-	tags_Offset = fbb.CreateString(*row.timeseriesKey.tagsString)
+	sort.Strings(names)
+	for _, name := range names {
+		nameOffset := fbb.CreateString(name)
+		valueOffset := fbb.CreateString(row.timeseriesKey.tags[name])
+		Fieldvalues.TagStart(fbb)
+		Fieldvalues.TagAddName(fbb, nameOffset)
+		Fieldvalues.TagAddValue(fbb, valueOffset)
+		tagListOffs = append(tagListOffs, Fieldvalues.TagEnd(fbb))
+	}
+	tagListVecOff := createTagListVector(fbb, tagListOffs)
 
-	rowInGroupOffs := make([]flatbuffers.UOffsetT , 1)
+	rowInGroupOffs := make([]flatbuffers.UOffsetT, 1)
 	if row.timeseriesMetaKey == nil {
 		row.timeseriesMetaKey = new(string)
-		if *row.timeseriesMetaKey , err = row.timeseriesKey.buildTimeseriesMetaKey(timeseriesTableName); err != nil {
-			return 0 , fmt.Errorf("Build meta key failed with error: %s" , err)
+		if *row.timeseriesMetaKey, err = row.timeseriesKey.buildTimeseriesMetaKey(timeseriesTableName); err != nil {
+			return 0, fmt.Errorf("Build meta key failed with error: %s", err)
 		}
 	}
 
-	updateTimeInSec , ok := timeseriesMetaCache.Get(*row.timeseriesMetaKey)
+	updateTimeInSec, ok := timeseriesMetaCache.Get(*row.timeseriesMetaKey)
 	var updateTime uint32
 	if ok {
 		updateTime = updateTimeInSec.(uint32)
 	}
 
 	Fieldvalues.FlatBufferRowInGroupStart(fbb)
-	Fieldvalues.FlatBufferRowInGroupAddTime(fbb , row.timeInUs)
-	Fieldvalues.FlatBufferRowInGroupAddMetaCacheUpdateTime(fbb , updateTime)
-	Fieldvalues.FlatBufferRowInGroupAddFieldValues(fbb , fieldValueOff)
-	Fieldvalues.FlatBufferRowInGroupAddTags(fbb , tags_Offset)
-	Fieldvalues.FlatBufferRowInGroupAddDataSource(fbb , source_keyOffset)
+	Fieldvalues.FlatBufferRowInGroupAddTime(fbb, row.timeInUs)
+	Fieldvalues.FlatBufferRowInGroupAddMetaCacheUpdateTime(fbb, updateTime)
+	Fieldvalues.FlatBufferRowInGroupAddFieldValues(fbb, fieldValueOff)
+	Fieldvalues.FlatBufferRowInGroupAddTagList(fbb, tagListVecOff)
+	Fieldvalues.FlatBufferRowInGroupAddDataSource(fbb, source_keyOffset)
 	rowInGroupOffs[0] = Fieldvalues.FlatBufferRowInGroupEnd(fbb)
 
 	measurement_namesOffset := fbb.CreateString(row.timeseriesKey.measurement)
-	field_namesOffset := createFieldNamesVector(fbb , fieldNameOffs)
-	field_typesOffset := createFieldTypesVector(fbb , fieldValueTypes)
-	rowsOffset := createRowsVector(fbb , rowInGroupOffs)
+	field_namesOffset := createFieldNamesVector(fbb, fieldNameOffs)
+	field_typesOffset := createFieldTypesVector(fbb, fieldValueTypes)
+	rowsOffset := createRowsVector(fbb, rowInGroupOffs)
 
 	Fieldvalues.FlatBufferRowGroupStart(fbb)
-	Fieldvalues.FlatBufferRowGroupAddRows(fbb , rowsOffset)
-	Fieldvalues.FlatBufferRowGroupAddFieldTypes(fbb , field_typesOffset)
-	Fieldvalues.FlatBufferRowGroupAddFieldNames(fbb , field_namesOffset)
-	Fieldvalues.FlatBufferRowGroupAddMeasurementName(fbb ,measurement_namesOffset )
+	Fieldvalues.FlatBufferRowGroupAddRows(fbb, rowsOffset)
+	Fieldvalues.FlatBufferRowGroupAddFieldTypes(fbb, field_typesOffset)
+	Fieldvalues.FlatBufferRowGroupAddFieldNames(fbb, field_namesOffset)
+	Fieldvalues.FlatBufferRowGroupAddMeasurementName(fbb, measurement_namesOffset)
 
-	return  Fieldvalues.FlatBufferRowGroupEnd(fbb) , nil
+	return Fieldvalues.FlatBufferRowGroupEnd(fbb), nil
 }
 
-
-func CreateBytesValue(builder *flatbuffers.Builder , offset flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+func CreateBytesValue(builder *flatbuffers.Builder, offset flatbuffers.UOffsetT) flatbuffers.UOffsetT {
 	builder.StartObject(1)
-	Fieldvalues.BytesValueAddValue(builder , offset)
+	Fieldvalues.BytesValueAddValue(builder, offset)
 	return Fieldvalues.BytesValueEnd(builder)
 }
 
-func CreateBytesValueVector(builder *flatbuffers.Builder , data []byte) flatbuffers.UOffsetT {
-	builder.StartVector(1 , len(data) , 1)
+func CreateBytesValueVector(builder *flatbuffers.Builder, data []byte) flatbuffers.UOffsetT {
+	builder.StartVector(1, len(data), 1)
 	for i := len(data) - 1; i >= 0; i-- {
 		builder.PlaceByte(data[i])
 	}
 	return builder.EndVector(len(data))
 }
 
-func createTagNamesVector(builder *flatbuffers.Builder , tagNameOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	builder.StartVector(4 , len(tagNameOffs) , 4)
-	for i := len(tagNameOffs) - 1; i >= 0; i-- {
-		builder.PrependUOffsetT(tagNameOffs[i])
-	}
-	return builder.EndVector(len(tagNameOffs))
-}
-
-
-func createTagValuesVector(builder *flatbuffers.Builder , data []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	builder.StartVector(4 , len(data) , 4)
+func createTagListVector(builder *flatbuffers.Builder, data []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(data), 4)
 	for i := len(data) - 1; i >= 0; i-- {
 		builder.PrependUOffsetT(data[i])
 	}
 	return builder.EndVector(len(data))
 }
 
-func createRowsVector(builder *flatbuffers.Builder , rowInGroupOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	builder.StartVector(4 , len(rowInGroupOffs) , 4)
+func createTagNamesVector(builder *flatbuffers.Builder, tagNameOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(tagNameOffs), 4)
+	for i := len(tagNameOffs) - 1; i >= 0; i-- {
+		builder.PrependUOffsetT(tagNameOffs[i])
+	}
+	return builder.EndVector(len(tagNameOffs))
+}
+
+func createTagValuesVector(builder *flatbuffers.Builder, data []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(data), 4)
+	for i := len(data) - 1; i >= 0; i-- {
+		builder.PrependUOffsetT(data[i])
+	}
+	return builder.EndVector(len(data))
+}
+
+func createRowsVector(builder *flatbuffers.Builder, rowInGroupOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(rowInGroupOffs), 4)
 	for i := len(rowInGroupOffs) - 1; i >= 0; i-- {
 		builder.PrependUOffsetT(rowInGroupOffs[i])
 	}
 	return builder.EndVector(len(rowInGroupOffs))
 }
 
-func createFieldTypesVector(builder *flatbuffers.Builder , data []Fieldvalues.DataType) flatbuffers.UOffsetT {
-	builder.StartVector(1 , len(data) , 1)
+func createFieldTypesVector(builder *flatbuffers.Builder, data []Fieldvalues.DataType) flatbuffers.UOffsetT {
+	builder.StartVector(1, len(data), 1)
 	for i := len(data) - 1; i >= 0; i-- {
 		builder.PrependInt8(int8(data[i]))
 	}
 	return builder.EndVector(len(data))
 }
 
-func createFieldNamesVector(builder *flatbuffers.Builder , fieldNameOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	builder.StartVector(4 , len(fieldNameOffs), 4)
+func createFieldNamesVector(builder *flatbuffers.Builder, fieldNameOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(fieldNameOffs), 4)
 	for i := len(fieldNameOffs) - 1; i >= 0; i-- {
 		builder.PrependUOffsetT(fieldNameOffs[i])
 	}
 	return builder.EndVector(len(fieldNameOffs))
 }
 
-func createRowGroupsVector(builder *flatbuffers.Builder , rowGroupOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
-	builder.StartVector(4 , len(rowGroupOffs) , 4)
+func createRowGroupsVector(builder *flatbuffers.Builder, rowGroupOffs []flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+	builder.StartVector(4, len(rowGroupOffs), 4)
 	for i := len(rowGroupOffs) - 1; i >= 0; i-- {
 		builder.PrependUOffsetT(rowGroupOffs[i])
 	}
@@ -295,26 +306,22 @@ func createRowGroupsVector(builder *flatbuffers.Builder , rowGroupOffs []flatbuf
 	return builder.EndVector(len(rowGroupOffs))
 }
 
-func createFlatBufferRows(builder *flatbuffers.Builder , row_groupsOffset flatbuffers.UOffsetT) flatbuffers.UOffsetT {
+func createFlatBufferRows(builder *flatbuffers.Builder, row_groupsOffset flatbuffers.UOffsetT) flatbuffers.UOffsetT {
 	Fieldvalues.FlatBufferRowsStart(builder)
-	Fieldvalues.FlatBufferRowsAddRowGroups(builder , row_groupsOffset)
+	Fieldvalues.FlatBufferRowsAddRowGroups(builder, row_groupsOffset)
 	return Fieldvalues.FlatBufferRowsEnd(builder)
 }
 
-func buildTimeseriesKey(curTimeseriesKey *TimeseriesKey) (*otsprotocol.TimeseriesKey , error) {
+func buildTimeseriesKey(curTimeseriesKey *TimeseriesKey) (*otsprotocol.TimeseriesKey, error) {
 	var err error
 	timeseriesKey := new(otsprotocol.TimeseriesKey)
-	if curTimeseriesKey.tagsString == nil {
-		curTimeseriesKey.tagsString = new(string)
-		if *curTimeseriesKey.tagsString , err = BuildTagString(curTimeseriesKey.tags); err != nil {
-			return nil , err
-		}
+	if timeseriesKey.TagList, err = BuildTags(curTimeseriesKey.tags); err != nil {
+		return nil, err
 	}
-	timeseriesKey.Tags = curTimeseriesKey.tagsString
 	timeseriesKey.Source = proto.String(curTimeseriesKey.source)
 	timeseriesKey.Measurement = proto.String(curTimeseriesKey.measurement)
 
-	return timeseriesKey , nil
+	return timeseriesKey, nil
 }
 
 func buildProtocolBufferRows(rows []*TimeseriesRow, timeseriesTableName string, timeseriesMetaCache *lruCache.Cache) ([]byte, error) {
@@ -322,12 +329,9 @@ func buildProtocolBufferRows(rows []*TimeseriesRow, timeseriesTableName string, 
 	pbRows.Rows = make([]*otsprotocol.TimeseriesRow, len(rows))
 	for i, row := range rows {
 		// build tag string
-		var err error
-		if row.timeseriesKey.tagsString == nil {
-			row.timeseriesKey.tagsString = new(string)
-			if *row.timeseriesKey.tagsString, err = BuildTagString(row.timeseriesKey.tags); err != nil {
-				return nil, fmt.Errorf("Build tags string failed with error: %s", err)
-			}
+		tagsPB, err := BuildTags(row.timeseriesKey.tags)
+		if err != nil {
+			return nil, fmt.Errorf("Build tags string failed with error: %s", err)
 		}
 		// build meta key
 		if row.timeseriesMetaKey == nil {
@@ -374,7 +378,7 @@ func buildProtocolBufferRows(rows []*TimeseriesRow, timeseriesTableName string, 
 			TimeseriesKey: &otsprotocol.TimeseriesKey{
 				Measurement: proto.String(row.GetTimeseriesKey().measurement),
 				Source:      proto.String(row.GetTimeseriesKey().GetDataSource()),
-				Tags:        row.timeseriesKey.tagsString,
+				TagList:     tagsPB,
 			},
 			Time:                proto.Int64(row.timeInUs),
 			Fields:              fields,
