@@ -229,6 +229,11 @@ func dataSourceAlicloudEcsNetworkInterfaces() *schema.Resource {
 								},
 							},
 						},
+						"ipv6_sets": {
+							Type:     schema.TypeList,
+							Computed: true,
+							Elem:     &schema.Schema{Type: schema.TypeString},
+						},
 					},
 				},
 			},
@@ -416,6 +421,20 @@ func dataSourceAlicloudEcsNetworkInterfacesRead(d *schema.ResourceData, meta int
 			associatedPublicIps = append(associatedPublicIps, associatedPublicIp)
 		}
 		mapping["associated_public_ip"] = associatedPublicIps
+
+		if ipv6SetsRaw, ok := object["Ipv6Sets"].(map[string]interface{}); ok {
+			if ipv6Sets, ok := ipv6SetsRaw["Ipv6Set"].([]interface{}); ok {
+				if len(ipv6Sets) > 0 {
+					allObject := []interface{}{}
+					for _, v := range ipv6Sets {
+						if vv, ok := v.(map[string]interface{})["Ipv6Address"].(string); ok {
+							allObject = append(allObject, vv)
+						}
+					}
+					mapping["ipv6_sets"] = allObject
+				}
+			}
+		}
 
 		ids = append(ids, fmt.Sprint(object["NetworkInterfaceId"]))
 		names = append(names, object["NetworkInterfaceName"])
