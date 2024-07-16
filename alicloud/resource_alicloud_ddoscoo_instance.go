@@ -74,11 +74,10 @@ func resourceAliCloudDdoscooInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"coop"}, false),
 			},
 			"product_plan": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"0", "1", "2", "3"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"address_type": {
 				Type:         schema.TypeString,
