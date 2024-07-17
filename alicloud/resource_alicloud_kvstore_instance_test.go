@@ -373,6 +373,31 @@ func TestAccAliCloudKVStoreRedisInstance_vpctest(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "PrePaid",
+					"period":            "1",
+					"auto_renew":        "true",
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "PrePaid",
+						"auto_renew":        "true",
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.master.small.default",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -462,6 +487,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"instance_type":    "Redis",
 					"engine_version":   "6.0",
 					"shard_count":      "2",
+					"payment_type":     "PostPaid",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -478,6 +504,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"instance_type":     "Redis",
 						"engine_version":    "6.0",
 						"shard_count":       "2",
+						"payment_type":      "PostPaid",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "acceptance test",
@@ -676,6 +703,31 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "PrePaid",
+					"period":            "1",
+					"auto_renew":        "true",
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "PrePaid",
+						"auto_renew":        "true",
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
 					}),
 				),
 			},
@@ -950,6 +1002,31 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"period":               "1",
+					"auto_renew":           "true",
+					"auto_renew_period":    "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
+						"auto_renew":           "true",
+						"auto_renew_period":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.shard.small.ce",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -1036,6 +1113,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 					"engine_version":        "7.0",
 					"read_only_count":       "1",
 					"slave_read_only_count": "1",
+					"instance_charge_type":  "PostPaid",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -1053,6 +1131,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 						"engine_version":        "7.0",
 						"read_only_count":       "1",
 						"slave_read_only_count": "1",
+						"instance_charge_type":  "PostPaid",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.For":              "acceptance test",
@@ -1248,6 +1327,31 @@ func TestAccAliCloudKVStoreRedisInstance_7_0_with_proxy_class(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"period":               "1",
+					"auto_renew":           "true",
+					"auto_renew_period":    "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
+						"auto_renew":           "true",
+						"auto_renew_period":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"instance_class":              "redis.shard.with.proxy.small.ce",
 					"instance_release_protection": "false",
 					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
@@ -1328,7 +1432,7 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		//CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -1392,6 +1496,41 @@ func TestAccAliCloudKVStoreRedisInstance_prepaid(t *testing.T) {
 					testAccCheck(map[string]string{
 						"auto_renew":        "false",
 						"auto_renew_period": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "PrePaid",
+					"period":            "1",
+					"auto_renew":        "true",
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "PrePaid",
+						"auto_renew":        "true",
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PostPaid",
 					}),
 				),
 			},
@@ -1636,13 +1775,16 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":    "redis.amber.master.small.multithread",
-					"db_instance_name":  name,
-					"instance_type":     "Redis",
-					"engine_version":    "5.0",
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
-					"zone_id":           "${data.alicloud_kvstore_zones.default.zones.0.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"instance_class":       "redis.amber.master.small.multithread",
+					"db_instance_name":     name,
+					"instance_type":        "Redis",
+					"engine_version":       "5.0",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+					"zone_id":              "${data.alicloud_kvstore_zones.default.zones.0.id}",
+					"vswitch_id":           "${data.alicloud_vswitches.default.ids.0}",
+					"instance_charge_type": "PrePaid",
+					"period":               "1",
+					"is_auto_upgrade_open": "1",
 					//"shard_count":       "2",
 					"tags": map[string]string{
 						"Created": "TF",
@@ -1651,17 +1793,93 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":    "redis.amber.master.small.multithread",
-						"db_instance_name":  name,
-						"instance_type":     "Redis",
-						"engine_version":    "5.0",
-						"resource_group_id": CHECKSET,
-						"zone_id":           CHECKSET,
-						"vswitch_id":        CHECKSET,
+						"instance_class":       "redis.amber.master.small.multithread",
+						"db_instance_name":     name,
+						"instance_type":        "Redis",
+						"engine_version":       "5.0",
+						"resource_group_id":    CHECKSET,
+						"zone_id":              CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"instance_charge_type": "PrePaid",
+						"period":               "1",
+						"is_auto_upgrade_open": "1",
 						//"shard_count":       "2",
 						"tags.%":       "2",
 						"tags.Created": "TF",
 						"tags.For":     "acceptance test",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":        "true",
+						"auto_renew_period": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew_period": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"auto_renew": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"auto_renew":        "false",
+						"auto_renew_period": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PrePaid",
+					"period":               "1",
+					"auto_renew":           "true",
+					"auto_renew_period":    "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PrePaid",
+						"auto_renew":           "true",
+						"auto_renew_period":    "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
 					}),
 				),
 			},
@@ -1949,6 +2167,12 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 				),
 			},
 			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "auto_use_coupon", "backup_id", "business_info", "coupon_no", "dedicated_host_group_id", "effective_time", "force_upgrade", "global_instance", "global_instance_id", "order_type", "password", "period", "restore_time", "src_db_instance_id", "enable_public", "security_ip_group_attribute", "enable_backup_log"},
+			},
+			{
 				Config: testAccConfig(map[string]interface{}{
 					"ssl_enable": "Enable",
 				}),
@@ -2111,6 +2335,26 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_cluster(t *testing.T
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_release_protection": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"is_auto_upgrade_open": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"is_auto_upgrade_open": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"is_auto_upgrade_open": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"is_auto_upgrade_open": "0",
 					}),
 				),
 			},

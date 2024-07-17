@@ -420,6 +420,11 @@ func resourceAliCloudKvstoreInstance() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"is_auto_upgrade_open": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -778,6 +783,13 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 		d.Set("role_arn", encryptionKeyObject["RoleArn"])
 	}
 
+	engineVersionObject, err := r_kvstoreService.DescribeKvStoreEngineVersion(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("is_auto_upgrade_open", engineVersionObject["IsAutoUpgradeOpen"])
+
 	return nil
 }
 
@@ -790,42 +802,6 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 	}
 	var response map[string]interface{}
 	d.Partial(true)
-
-	if d.HasChange("payment_type") {
-		object, err := r_kvstoreService.DescribeKvstoreInstance(d.Id())
-		if err != nil {
-			return WrapError(err)
-		}
-		target := d.Get("payment_type").(string)
-		if fmt.Sprint(object["ChargeType"]) != target {
-			if target == "PrePaid" {
-				request := r_kvstore.CreateTransformToPrePaidRequest()
-				request.InstanceId = d.Id()
-				if v, ok := d.GetOk("period"); ok {
-					if v, err := strconv.Atoi(v.(string)); err == nil {
-						request.Period = requests.NewInteger(v)
-					} else {
-						return WrapError(err)
-					}
-				}
-				if v, ok := d.GetOk("auto_renew"); ok {
-					request.AutoPay = requests.NewBoolean(v.(bool))
-				}
-				raw, err := client.WithRKvstoreClient(func(r_kvstoreClient *r_kvstore.Client) (interface{}, error) {
-					return r_kvstoreClient.TransformToPrePaid(request)
-				})
-				addDebug(request.GetActionName(), raw)
-				if err != nil {
-					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
-				}
-				stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, r_kvstoreService.KvstoreInstanceStateRefreshFunc(d.Id(), []string{}))
-				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, d.Id())
-				}
-			}
-			d.SetPartial("payment_type")
-		}
-	}
 
 	if d.HasChange("tags") {
 		if err := r_kvstoreService.SetResourceTags(d, "INSTANCE"); err != nil {
@@ -890,7 +866,83 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 		d.SetPartial("security_group_id")
 	}
+
 	update := false
+	transformInstanceChargeTypeReq := map[string]interface{}{
+		"AutoPay":    true,
+		"InstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("payment_type") {
+		update = true
+
+		if v, ok := d.GetOk("payment_type"); ok {
+			transformInstanceChargeTypeReq["ChargeType"] = v
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("instance_charge_type") {
+		update = true
+
+		if v, ok := d.GetOk("instance_charge_type"); ok {
+			transformInstanceChargeTypeReq["ChargeType"] = v
+		}
+	}
+
+	if v, ok := d.GetOk("period"); ok {
+		transformInstanceChargeTypeReq["Period"] = v
+	}
+
+	if v, ok := d.GetOkExists("auto_renew"); ok {
+		transformInstanceChargeTypeReq["AutoRenew"] = convertBoolToString(v.(bool))
+	}
+
+	if v, ok := d.GetOkExists("auto_renew_period"); ok {
+		transformInstanceChargeTypeReq["AutoRenewPeriod"] = v
+	}
+
+	if update {
+		action := "TransformInstanceChargeType"
+		conn, err := client.NewRedisClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, transformInstanceChargeTypeReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, transformInstanceChargeTypeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		instanceStatusConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "InstanceStatus"))
+		if _, err := instanceStatusConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"true"}, d.Timeout(schema.TimeoutUpdate), 10*time.Second, r_kvstoreService.KvstoreInstanceAttributeRefreshFunc(d.Id(), "IsOrderCompleted"))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("payment_type")
+		d.SetPartial("instance_charge_type")
+	}
+
+	update = false
 	request := r_kvstore.CreateModifyInstanceAutoRenewalAttributeRequest()
 	request.DBInstanceId = d.Id()
 	if !d.IsNewResource() && d.HasChange("auto_renew") {
@@ -1012,10 +1064,13 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("availability_zone")
-		d.SetPartial("zone_id")
+
 		d.SetPartial("vswitch_id")
+		d.SetPartial("zone_id")
+		d.SetPartial("availability_zone")
+		d.SetPartial("secondary_zone_id")
 	}
+
 	update = false
 	modifyBackupPolicyReq := r_kvstore.CreateModifyBackupPolicyRequest()
 	modifyBackupPolicyReq.InstanceId = d.Id()
@@ -1587,6 +1642,48 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		d.SetPartial("slave_read_only_count")
+	}
+
+	update = false
+	modifyDBInstanceAutoUpgradeReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	if d.HasChange("is_auto_upgrade_open") {
+		update = true
+	}
+	if v, ok := d.GetOk("is_auto_upgrade_open"); ok {
+		modifyDBInstanceAutoUpgradeReq["Value"] = v
+	}
+
+	if update {
+		action := "ModifyDBInstanceAutoUpgrade"
+		conn, err := client.NewRedisClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyDBInstanceAutoUpgradeReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceAutoUpgradeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("is_auto_upgrade_open")
 	}
 
 	d.Partial(false)
