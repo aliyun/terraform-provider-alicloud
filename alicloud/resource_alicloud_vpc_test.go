@@ -468,21 +468,37 @@ func TestAccAliCloudVPC_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"enable_ipv6":       "true",
-					"vpc_name":          name,
-					"description":       name,
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"dry_run":           "false",
-					"user_cidrs":        []string{"106.11.62.0/24"},
+					"enable_ipv6":                    "true",
+					"vpc_name":                       name,
+					"description":                    name,
+					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"dry_run":                        "false",
+					"system_route_table_name":        name,
+					"system_route_table_description": name,
+					"user_cidrs":                     []string{"106.11.62.0/24"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"enable_ipv6":       "true",
-						"vpc_name":          name,
-						"description":       name,
-						"resource_group_id": CHECKSET,
-						"dry_run":           "false",
-						"user_cidrs.#":      "1",
+						"enable_ipv6":                    "true",
+						"vpc_name":                       name,
+						"description":                    name,
+						"system_route_table_name":        name,
+						"system_route_table_description": name,
+						"resource_group_id":              CHECKSET,
+						"dry_run":                        "false",
+						"user_cidrs.#":                   "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_route_table_name":        name + "_update",
+					"system_route_table_description": name + "_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"system_route_table_name":        name + "_update",
+						"system_route_table_description": name + "_update",
 					}),
 				),
 			},
@@ -553,6 +569,126 @@ func TestAccAliCloudVPC_basic2(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPC_isNotDefault(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpc")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.VpcIpv6SupportRegions)
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":       "true",
+					"is_default":        "false",
+					"name":              name,
+					"description":       name,
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"dry_run":           "false",
+					"user_cidrs":        []string{"106.11.62.0/24"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ipv6":       "true",
+						"name":              name,
+						"description":       name,
+						"resource_group_id": CHECKSET,
+						"dry_run":           "false",
+						"user_cidrs.#":      "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "is_default"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVPC_isDefault(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc.default"
+	ra := resourceAttrInit(resourceId, AlicloudVpcMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpc")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sVpc%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ipv6":       "true",
+					"is_default":        "true",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"dry_run":           "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ipv6":       "true",
+						"resource_group_id": CHECKSET,
+						"dry_run":           "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "-update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "enable_ipv6", "is_default"},
 			},
 		},
 	})
