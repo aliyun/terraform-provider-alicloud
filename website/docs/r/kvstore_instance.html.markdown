@@ -21,15 +21,19 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
-data "alicloud_kvstore_zones" "default" {}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
+}
+
+data "alicloud_kvstore_zones" "default" {
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
@@ -63,17 +67,20 @@ Launching a PrePaid instance
 variable "name" {
   default = "tf-example-prepaid"
 }
-data "alicloud_kvstore_zones" "default" {
-  instance_charge_type = "PrePaid"
-}
+
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  instance_charge_type = "PrePaid"
 }
 
 // PrePaid instance can not deleted and there suggests using an existing vpc and vswitch, like default vpc.
 data "alicloud_vpcs" "default" {
   is_default = true
 }
+
 data "alicloud_vswitches" "default" {
   zone_id = data.alicloud_kvstore_zones.default.zones.0.id
   vpc_id  = data.alicloud_vpcs.default.ids.0
@@ -110,12 +117,12 @@ variable "name" {
   default = "tf-example-with-connection"
 }
 
-data "alicloud_kvstore_zones" "default" {
-  product_type = "OnECS"
-}
-
 data "alicloud_resource_manager_resource_groups" "default" {
   status = "OK"
+}
+
+data "alicloud_kvstore_zones" "default" {
+  product_type = "OnECS"
 }
 
 resource "alicloud_vpc" "default" {
@@ -241,6 +248,9 @@ The following arguments are supported:
 * `read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the primary zone. Valid values: `1` to `9`.
 * `slave_read_only_count` - (Optional, Int, Available since v1.226.0) The number of read replicas in the secondary zone. **NOTE:**: When you create a multi-zone read/write splitting instance, you must specify both `secondary_zone_id` and `slave_read_only_count`.
 -> **NOTE:** The sum of `read_only_count` and `slave_read_only_count` cannot be greater than `9`.
+* `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
+  - `1`: Enables automatic minor version update.
+  - `0`: Disables automatic minor version update.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 * `modify_mode`- (Removed since v1.216.0) The method of modifying the whitelist. **NOTE:** Field `modify_mode` has been removed from provider version 1.216.0.
 
