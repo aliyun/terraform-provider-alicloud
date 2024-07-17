@@ -349,6 +349,11 @@ func resourceAliCloudInstance() *schema.Resource {
 				Computed: true, //add this schema cause subnet_id not used enter parameter, will different, so will be ForceNew
 				Removed:  "Field 'subnet_id' has been removed from version 1.210.0",
 			},
+			"vpc_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -1178,7 +1183,9 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	} else {
 		d.Set("public_ip", "")
 	}
+
 	d.Set("subnet_id", instance.VpcAttributes.VSwitchId)
+	d.Set("vpc_id", instance.VpcAttributes.VpcId)
 	d.Set("vswitch_id", instance.VpcAttributes.VSwitchId)
 	d.Set("spot_duration", instance.SpotDuration)
 	d.Set("http_tokens", instance.MetadataOptions.HttpTokens)
@@ -1410,6 +1417,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			d.SetPartial("tags")
 		}
 	}
+
 	if !d.IsNewResource() && d.HasChange("resource_group_id") {
 		action := "JoinResourceGroup"
 		request := map[string]interface{}{
@@ -1432,7 +1440,7 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 		d.SetPartial("volume_tags")
 	}
 
-	if d.HasChange("security_groups") {
+	if !d.IsNewResource() && !d.HasChange("vpc_id") && d.HasChange("security_groups") {
 		if !d.IsNewResource() || d.Get("vswitch_id").(string) == "" {
 			o, n := d.GetChange("security_groups")
 			os := o.(*schema.Set)
@@ -1441,14 +1449,15 @@ func resourceAliCloudInstanceUpdate(d *schema.ResourceData, meta interface{}) er
 			rl := expandStringList(os.Difference(ns).List())
 			al := expandStringList(ns.Difference(os).List())
 
-			if len(al) > 0 {
-				err := ecsService.JoinSecurityGroups(d.Id(), al)
+			if len(rl) > 0 {
+				err := ecsService.LeaveSecurityGroups(d.Id(), rl)
 				if err != nil {
 					return WrapError(err)
 				}
 			}
-			if len(rl) > 0 {
-				err := ecsService.LeaveSecurityGroups(d.Id(), rl)
+
+			if len(al) > 0 {
+				err := ecsService.JoinSecurityGroups(d.Id(), al)
 				if err != nil {
 					return WrapError(err)
 				}
@@ -2342,6 +2351,21 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		update = true
 	}
 
+	if d.HasChange("vpc_id") {
+		update = true
+
+		if v, ok := d.GetOk("vpc_id"); ok {
+			request.VpcId = v.(string)
+		}
+
+		if v, ok := d.GetOk("security_groups"); ok {
+			securityGroupIds := expandStringList(v.(*schema.Set).List())
+			if len(securityGroupIds) > 0 {
+				request.SecurityGroupId = &securityGroupIds
+			}
+		}
+	}
+
 	if !run {
 		return update, nil
 	}
@@ -2370,10 +2394,14 @@ func modifyVpcAttribute(d *schema.ResourceData, meta interface{}, run bool) (boo
 		if err := ecsService.WaitForVpcAttributesChanged(d.Id(), request.VSwitchId, request.PrivateIpAddress); err != nil {
 			return update, WrapError(err)
 		}
+
 		d.SetPartial("vswitch_id")
 		d.SetPartial("subnet_id")
 		d.SetPartial("private_ip")
+		d.SetPartial("vpc_id")
+		d.SetPartial("security_groups")
 	}
+
 	return update, nil
 }
 
