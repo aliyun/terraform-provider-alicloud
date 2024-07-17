@@ -23,21 +23,26 @@ Basic Usage
 provider "alicloud" {
   region = "cn-beijing"
 }
+
 variable "name" {
   default = "tf-example"
 }
 
-data "alicloud_eci_zones" "default" {}
+data "alicloud_eci_zones" "default" {
+}
+
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.0.0.0/8"
 }
+
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.1.0.0/16"
   vpc_id       = alicloud_vpc.default.id
   zone_id      = data.alicloud_eci_zones.default.zones.0.zone_ids.0
 }
+
 resource "alicloud_security_group" "default" {
   name   = var.name
   vpc_id = alicloud_vpc.default.id
@@ -55,7 +60,6 @@ resource "alicloud_eci_container_group" "default" {
     Created = "TF",
     For     = "example",
   }
-
   containers {
     image             = "registry.cn-beijing.aliyuncs.com/eci_open/nginx:alpine"
     name              = "nginx"
@@ -139,7 +143,7 @@ The following arguments are supported:
 * `init_containers` - (Optional, Set) The list of initContainers. See [`init_containers`](#init_containers) below.
 * `dns_config` - (Optional, Set) The structure of dnsConfig. See [`dns_config`](#dns_config) below.
 * `eci_security_context` - (Deprecated since 1.215.0, Optional, ForceNew, Set) The security context of the container group. See [`eci_security_context`](#eci_security_context) below.
-* `security_context` - (Optional, ForceNew, Set, Available since 1.215.0) The security context of the container group. See [`security_context`](#security_context) below.
+* `security_context` - (Optional, ForceNew, Set, Available since v1.215.0) The security context of the container group. See [`security_context`](#security_context) below.
 * `host_aliases` - (Optional, ForceNew, Set) HostAliases. See [`host_aliases`](#host_aliases) below.
 * `volumes` - (Optional, Set) The list of volumes. See [`volumes`](#volumes) below.
 * `image_registry_credential` - (Optional, Set, Available since v1.141.0) The image registry credential. See [`image_registry_credential`](#image_registry_credential) below.
@@ -147,9 +151,9 @@ The following arguments are supported:
 * `tags` - (Optional) A mapping of tags to assign to the resource.
   - Key: It can be up to 64 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It cannot be a null string.
   - Value: It can be up to 128 characters in length. It cannot begin with "aliyun", "acs:", "http://", or "https://". It can be a null string.
-* `termination_grace_period_seconds` - (Optional, ForceNew, Int, Available since 1.216.0) The buffer time during which the program handles operations before the program stops. Unit: seconds.
-* `spot_strategy` - (Optional, ForceNew, Available since 1.216.0) Filter the results by ECI spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
-* `spot_price_limit` - (Optional, ForceNew, Available since 1.216.0) The maximum hourly price of the ECI spot instance.
+* `termination_grace_period_seconds` - (Optional, ForceNew, Int, Available since v1.216.0) The buffer time during which the program handles operations before the program stops. Unit: seconds.
+* `spot_strategy` - (Optional, ForceNew, Available since v1.216.0) Filter the results by ECI spot type. Valid values: `NoSpot`, `SpotWithPriceLimit` and `SpotAsPriceGo`. Default to `NoSpot`.
+* `spot_price_limit` - (Optional, ForceNew, Available since v1.216.0) The maximum hourly price of the ECI spot instance.
 
 ### `acr_registry_info`
 
@@ -291,13 +295,13 @@ The volume_mounts supports the following:
 
 The security_context supports the following:
 
-* `capability` - (Optional, Available since 1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#init_containers-security_context-capability) below.
-* `run_as_user` - (Optional, Long, Available since 1.215.0) The ID of the user who runs the container.
+* `capability` - (Optional, Available since v1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#init_containers-security_context-capability) below.
+* `run_as_user` - (Optional, Long, Available since v1.215.0) The ID of the user who runs the container.
 
 ### `init_containers-security_context-capability`
 
 The capability supports the following:
-* `add` - (Optional, List, Available since 1.215.0) The permissions that you want to grant to the processes in the containers.
+* `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
 
 
 ### `containers`
@@ -362,6 +366,8 @@ The liveness_probe supports the following:
 * `tcp_socket` - (Optional, Set) Health check using TCP socket method. See [`tcp_socket`](#containers-liveness_probe-tcp_socket) below.
 * `http_get` - (Optional, Set) Health check using HTTP request method. See [`http_get`](#containers-liveness_probe-http_get) below.
 
+-> **NOTE:** When you configure `liveness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+
 ### `containers-liveness_probe-exec`
 
 The exec supports the following:
@@ -395,6 +401,8 @@ The readiness_probe supports the following:
 * `tcp_socket` - (Optional) Health check using TCP socket method. See [`tcp_socket`](#containers-readiness_probe-tcp_socket) below.
 * `http_get` - (Optional) Health check using HTTP request method. See [`http_get`](#containers-readiness_probe-http_get) below.
 
+-> **NOTE:** When you configure `readiness_probe`, you can select only one of the `exec`, `tcp_socket`, `http_get`.
+
 ### `containers-readiness_probe-exec`
 
 The exec supports the following:
@@ -419,14 +427,14 @@ The http_get supports the following:
 
 The security_context supports the following:
 
-* `capability` - (Optional, Available since 1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#containers-security_context-capability) below.
-* `run_as_user` - (Optional, Long, Available since 1.215.0) The ID of the user who runs the container.
-* `privileged` - (Optional, Bool, ForceNew, Available since 1.225.1) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
+* `capability` - (Optional, Available since v1.215.0) The permissions that you want to grant to the processes in the containers. See [`capability`](#containers-security_context-capability) below.
+* `run_as_user` - (Optional, Long, Available since v1.215.0) The ID of the user who runs the container.
+* `privileged` - (Optional, Bool, ForceNew, Available since v1.225.1) Specifies whether to give extended privileges to this container. Default value: `false`. Valid values: `true` and `false`.
 
 ### `containers-security_context-capability`
 
 The capability supports the following:
-* `add` - (Optional, List, Available since 1.215.0) The permissions that you want to grant to the processes in the containers.
+* `add` - (Optional, List, Available since v1.215.0) The permissions that you want to grant to the processes in the containers.
 
 ## Attributes Reference
 
