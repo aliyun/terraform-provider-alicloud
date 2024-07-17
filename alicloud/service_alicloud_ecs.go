@@ -1098,8 +1098,10 @@ func (s *EcsService) WaitForVpcAttributesChanged(instanceId, vswitchId, privateI
 			return WrapError(err)
 		}
 
-		if len(privateIp) > 0 && instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
-			continue
+		if len(privateIp) > 0 && len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
+			if instance.VpcAttributes.PrivateIpAddress.IpAddress[0] != privateIp {
+				continue
+			}
 		}
 
 		if len(vswitchId) > 0 && instance.VpcAttributes.VSwitchId != vswitchId {
