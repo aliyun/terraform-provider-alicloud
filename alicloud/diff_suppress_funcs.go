@@ -269,13 +269,26 @@ func PostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData
 }
 
 func redisPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	return strings.ToLower(d.Get("payment_type").(string)) == "postpaid"
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PrePaid" {
+		return false
+	}
+
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" {
+		return false
+	}
+
+	return true
 }
 
 func redisPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if strings.ToLower(d.Get("payment_type").(string)) == "prepaid" && d.Get("auto_renew").(bool) {
+	if v, ok := d.GetOk("payment_type"); ok && v.(string) == "PrePaid" && d.Get("auto_renew").(bool) {
 		return false
 	}
+
+	if v, ok := d.GetOk("instance_charge_type"); ok && v.(string) == "PrePaid" && d.Get("auto_renew").(bool) {
+		return false
+	}
+
 	return true
 }
 
