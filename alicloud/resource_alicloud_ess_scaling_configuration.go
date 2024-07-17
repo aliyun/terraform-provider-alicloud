@@ -129,10 +129,20 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				}, false),
 			},
 			"system_disk_category": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Default:      DiskCloudEfficiency,
-				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+				Type:          schema.TypeString,
+				Optional:      true,
+				Computed:      true,
+				ValidateFunc:  StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
+				ConflictsWith: []string{"system_disk_categories"},
+			},
+			"system_disk_categories": {
+				Type:          schema.TypeSet,
+				Optional:      true,
+				Computed:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				MinItems:      1,
+				MaxItems:      4,
+				ConflictsWith: []string{"system_disk_category"},
 			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
@@ -472,6 +482,14 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request["SystemDisk.Category"] = d.Get("system_disk_category")
 	}
 
+	if v, ok := d.GetOk("system_disk_categories"); ok {
+		count := 1
+		for _, value := range v.(*schema.Set).List() {
+			request[fmt.Sprintf("SystemDiskCategories.%d", count)] = value
+			count++
+		}
+	}
+
 	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
 		request["InternetMaxBandwidthIn"] = d.Get("internet_max_bandwidth_in")
 	}
@@ -729,6 +747,17 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("system_disk_category") {
 		request["SystemDisk.Category"] = d.Get("system_disk_category")
+		update = true
+	}
+
+	if d.HasChange("system_disk_categories") {
+		if v, ok := d.GetOk("system_disk_categories"); ok {
+			count := 1
+			for _, value := range v.(*schema.Set).List() {
+				request[fmt.Sprintf("SystemDiskCategories.%d", count)] = value
+				count++
+			}
+		}
 		update = true
 	}
 
@@ -1065,12 +1094,21 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
+	var systemDiskCategories []string
+	if response["SystemDiskCategories"] != nil && len(response["SystemDiskCategories"].(map[string]interface{})["SystemDiskCategory"].([]interface{})) > 0 {
+		for _, v := range response["SystemDiskCategories"].(map[string]interface{})["SystemDiskCategory"].([]interface{}) {
+			systemDiskCategories = append(systemDiskCategories, v.(string))
+		}
+	}
+
 	d.Set("scaling_group_id", response["ScalingGroupId"])
 	d.Set("image_id", response["ImageId"])
 	d.Set("image_name", response["ImageName"])
 	d.Set("scaling_configuration_name", response["ScalingConfigurationName"])
 	d.Set("internet_charge_type", response["InternetChargeType"])
 	d.Set("system_disk_category", response["SystemDiskCategory"])
+	d.Set("system_disk_categories", systemDiskCategories)
+
 	d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
 	d.Set("internet_max_bandwidth_out", response["InternetMaxBandwidthOut"])
 
