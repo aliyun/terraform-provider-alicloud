@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/slb"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,57 +21,55 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"load_balancer_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-
 			"name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Default:  "tf-server-group",
 			},
-
+			"tags": tagsSchema(),
+			"delete_protection_validation": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
+			},
 			"servers": {
 				Type:       schema.TypeSet,
 				Optional:   true,
 				Computed:   true, // The Computed can not be removed and it used to meet scenario when using alicloud_ess_scalinggroup_vserver_groups
-				Deprecated: "Field 'servers' has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource 'alicloud_slb_server_group_server_attachment'.",
+				Deprecated: "Field `servers` has been deprecated from provider version 1.163.0 and it will be removed in the future version. Please use the new resource `alicloud_slb_server_group_server_attachment`.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"server_ids": {
-							Type:     schema.TypeList,
-							Required: true,
-							Elem:     &schema.Schema{Type: schema.TypeString},
-							MinItems: 1,
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							Default:      string(ECS),
+							ValidateFunc: StringInSlice([]string{"ecs", "eni"}, false),
 						},
 						"port": {
 							Type:         schema.TypeInt,
 							Required:     true,
-							ValidateFunc: validation.IntBetween(1, 65535),
+							ValidateFunc: IntBetween(1, 65535),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Optional:     true,
 							Default:      100,
-							ValidateFunc: validation.IntBetween(0, 100),
+							ValidateFunc: IntBetween(0, 100),
 						},
-						"type": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							Default:      string(ECS),
-							ValidateFunc: validation.StringInSlice([]string{"eni", "ecs"}, false),
+						"server_ids": {
+							Type:     schema.TypeList,
+							Required: true,
+							MinItems: 1,
+							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 					},
 				},
-			},
-			"delete_protection_validation": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
 			},
 		},
 	}
@@ -81,20 +77,45 @@ func resourceAliyunSlbServerGroup() *schema.Resource {
 
 func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+
 	request := slb.CreateCreateVServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.LoadBalancerId = d.Get("load_balancer_id").(string)
+
 	if v, ok := d.GetOk("name"); ok {
 		request.VServerGroupName = v.(string)
 	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		var slbServerGroupTags []slb.CreateVServerGroupTag
+		tagsMap, ok := v.(map[string]interface{})
+		if ok {
+			for key, value := range tagsMap {
+				if value != nil {
+					if v, ok := value.(string); ok {
+						slbServerGroupTags = append(slbServerGroupTags, slb.CreateVServerGroupTag{
+							Key:   key,
+							Value: v,
+						})
+					}
+				}
+			}
+		}
+
+		request.Tag = &slbServerGroupTags
+	}
+
 	raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 		return slbClient.CreateVServerGroup(request)
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_slb_server_group", request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 	response, _ := raw.(*slb.CreateVServerGroupResponse)
+
 	d.SetId(response.VServerGroupId)
 
 	return resourceAliyunSlbServerGroupUpdate(d, meta)
@@ -103,18 +124,25 @@ func resourceAliyunSlbServerGroupCreate(d *schema.ResourceData, meta interface{}
 func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	slbService := SlbService{client}
-	object, err := slbService.DescribeSlbServerGroup(d.Id())
 
+	object, err := slbService.DescribeSlbServerGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
-	d.Set("name", object.VServerGroupName)
 	d.Set("load_balancer_id", object.LoadBalancerId)
+	d.Set("name", object.VServerGroupName)
+
+	listTagResourcesObject, err := slbService.ListTagResources(d.Id(), "vservergroup")
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("tags", tagsToMap(listTagResourcesObject))
 
 	servers := make([]map[string]interface{}, 0)
 	portAndWeight := make(map[string][]string)
@@ -156,8 +184,17 @@ func resourceAliyunSlbServerGroupRead(d *schema.ResourceData, meta interface{}) 
 
 func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
+	slbService := SlbService{client}
 	d.Partial(true)
+
+	if !d.IsNewResource() && d.HasChange("tags") {
+		if err := slbService.SetResourceTags(d, "vservergroup"); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("tags")
+	}
+
 	var removeserverSet, addServerSet, updateServerSet *schema.Set
 	serverUpdate := false
 	step := 20
@@ -256,14 +293,18 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			}
 		}
 	}
+
 	name := d.Get("name").(string)
 	nameUpdate := false
+
 	if d.HasChange("name") {
 		nameUpdate = true
 	}
+
 	if d.HasChange("servers") {
 		serverUpdate = true
 	}
+
 	if serverUpdate || nameUpdate {
 		request := slb.CreateSetVServerGroupAttributeRequest()
 		request.RegionId = client.RegionId
@@ -311,13 +352,16 @@ func resourceAliyunSlbServerGroupUpdate(d *schema.ResourceData, meta interface{}
 			raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 				return slbClient.SetVServerGroupAttribute(request)
 			})
+			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 			}
-			addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 			d.SetPartial("name")
 		}
 	}
+
 	d.Partial(false)
 
 	return resourceAliyunSlbServerGroupRead(d, meta)
@@ -331,11 +375,12 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 		lbId := d.Get("load_balancer_id").(string)
 		lbInstance, err := slbService.DescribeSlb(lbId)
 		if err != nil {
-			if NotFoundError(err) {
+			if !d.IsNewResource() && NotFoundError(err) {
 				return nil
 			}
 			return WrapError(err)
 		}
+
 		if lbInstance.DeleteProtection == "on" {
 			return WrapError(fmt.Errorf("Current VServerGroup's SLB Instance %s has enabled DeleteProtection. Please set delete_protection_validation to false to delete the group.", lbId))
 		}
@@ -344,6 +389,7 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 	request := slb.CreateDeleteVServerGroupRequest()
 	request.RegionId = client.RegionId
 	request.VServerGroupId = d.Id()
+
 	err := resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err := client.WithSlbClient(func(slbClient *slb.Client) (interface{}, error) {
 			return slbClient.DeleteVServerGroup(request)
@@ -357,11 +403,13 @@ func resourceAliyunSlbServerGroupDelete(d *schema.ResourceData, meta interface{}
 		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 		return nil
 	})
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"The specified VServerGroupId does not exist", "InvalidParameter"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	return WrapError(slbService.WaitForSlbServerGroup(d.Id(), Deleted, DefaultTimeoutMedium))
 }
