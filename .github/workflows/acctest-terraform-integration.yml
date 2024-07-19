@@ -87,7 +87,7 @@ jobs:
   IntegrationTest:
     if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
     runs-on: ubuntu-latest
-    needs: DocsExampleTest
+    # needs: DocsExampleTest
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
