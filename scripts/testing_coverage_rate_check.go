@@ -134,8 +134,8 @@ func getSchemaAttr(isResource bool, schema map[string]*schema.Schema,
 	getSchemaAttributes("", schemaAttributes, schema)
 
 	for key, value := range schemaAttributes {
-		// "dry_run" or removed
-		if key == "dry_run" {
+		// "dry_run" or deperacated
+		if key == "dry_run" || value.Deprecated != "" {
 			continue
 		}
 		(*schemaAllSet).Add(key)

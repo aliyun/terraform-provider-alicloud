@@ -242,7 +242,8 @@ for fileName in ${changeFiles[@]}; do
           # double check
           planResult=$({ terraform -chdir=${exampleFileName} plan; } >${exampleTerraformDoubleCheckTmpLog})
           haveDiff=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "No changes")
-          if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
+          haveDeprecated=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep -i "deprecated")
+          if [[ $planResult -ne 0 || ${haveDiff} == "" || ${haveDeprecated} != "" ]]; then
             failed=true
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
             diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
@@ -256,7 +257,7 @@ for fileName in ${changeFiles[@]}; do
             haveDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "0 to add, 0 to change, 0 to destroy")
             if [[ $planResult -ne 0 || ${haveDiff} == "" ]]; then
               # TODO: skip it before fixing most resource type import issue
-              # failed=true
+              failed=true
               cat ${exampleTerraformImportCheckTmpLog} | tee -a ${docsExampleTestRunLog}
               importDiff=$(cat ${exampleTerraformImportCheckTmpLog} | grep "to import,")
               echo -e "\033[31m - import diff check: fail.\033[0m ${importDiff}" | tee -a ${docsExampleTestRunResultLog}
@@ -265,7 +266,7 @@ for fileName in ${changeFiles[@]}; do
               { terraform -chdir=${exampleFileName} apply tf.tfplan; } 2>${exampleTerraformImportCheckErrorTmpLog} >>${docsExampleTestRunLog}
               if [ $? -ne 0 ]; then
                 # TODO: skip it before fixing most resource type import issue
-                # failed=true
+                failed=true
                 cat ${exampleTerraformImportCheckErrorTmpLog} | tee -a ${docsExampleTestRunLog}
                 sdkError=$(cat ${exampleTerraformImportCheckErrorTmpLog} | grep "ERROR]:")
                 if [[ ${sdkError} == "" ]]; then
