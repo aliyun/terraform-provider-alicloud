@@ -386,7 +386,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"proxy_type": {
 				Type:             schema.TypeString,
 				Optional:         true,
-				ValidateFunc:     StringInSlice([]string{"OFF", "EXCLUSIVE", "GENERAL"}, false),
+				ValidateFunc:     StringInSlice([]string{"EXCLUSIVE", "GENERAL"}, false),
 				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
 			},
 			"proxy_class": {
@@ -395,7 +395,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"polar.maxscale.g2.medium.c", "polar.maxscale.g2.large.c",
 					"polar.maxscale.g2.xlarge.c", "polar.maxscale.g2.2xlarge.c", "polar.maxscale.g2.3xlarge.c",
 					"polar.maxscale.g2.4xlarge.c", "polar.maxscale.g2.8xlarge.c"}, false),
-				DiffSuppressFunc: polardbProxyTypeDiffSuppressFunc,
+				DiffSuppressFunc: polardbProxyClassDiffSuppressFunc,
 			},
 			"loose_polar_log_bin": {
 				Type:             schema.TypeString,
