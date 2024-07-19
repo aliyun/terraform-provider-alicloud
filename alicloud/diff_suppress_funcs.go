@@ -364,8 +364,15 @@ func polardbServrelessTypeDiffSuppressFunc(k, old, new string, d *schema.Resourc
 	return true
 }
 
-func polardbProxyTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+func polardbProxyClassDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("creation_category"); ok && v.(string) == "SENormal" {
+		return false
+	}
+	return true
+}
+
+func polardbProxyTypeDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	if d.Get("creation_category").(string) == "SENormal" || d.Get("creation_category").(string) == "Normal" {
 		return false
 	}
 	return true
