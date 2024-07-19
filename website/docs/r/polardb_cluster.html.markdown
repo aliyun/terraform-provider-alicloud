@@ -183,10 +183,10 @@ The following arguments are supported:
 -> **NOTE:** The starting time range is any time point within the next 24 hours. For example, the current time is 2021-01-14T09:00:00Z, and the allowed start time range for filling in here is 2021-01-14T09:00:00Z~2021-01-15T09:00:00Z. If this parameter is left blank, the kernel version upgrade task will be executed immediately by default.
 * `planned_end_time` - (Optional, Available since v1.208.1) The latest time to start executing the target scheduled task. The format is YYYY-MM-DDThh: mm: ssZ (UTC).
 -> **NOTE:** The latest time must be 30 minutes or more later than the start time. If PlannedStartTime is set but this parameter is not specified, the latest time to execute the target task defaults to the start time+30 minutes. For example, when the PlannedStartTime is set to 2021-01-14T09:00:00Z and this parameter is left blank, the target task will start executing at the latest on 2021-01-14T09:30:00Z.
-* `proxy_type` - (Optional, Available since 1.210.0) The type of PolarProxy. Default value: `OFF`. Valid values are `OFF`, `EXCLUSIVE` `GENERAL`.
-  -> **NOTE:** This parameter is valid only for standard clusters.
-* `proxy_class` - (Optional, Available since 1.210.0) The specifications of the Standard Edition PolarProxy. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1) `ProxyType`
-  -> **NOTE:** This parameter is valid only for standard clusters.
+* `proxy_type` - (Optional, Available since 1.210.0) The type of PolarProxy. Valid values are `EXCLUSIVE` `GENERAL`.
+  -> **NOTE:** This parameter is valid for both standard and enterprise clusters.
+* `proxy_class` - (Optional, Available since 1.210.0) The specifications of the Standard Edition PolarProxy. Available parameters can refer to the latest docs [CreateDBCluster](https://www.alibabacloud.com/help/en/polardb/latest/createdbcluster-1)
+  -> **NOTE:** This parameter is valid only for standard edition clusters.
 * `loose_polar_log_bin` - (Optional, Computed, Available since 1.210.0) Enable the Binlog function. Default value: `OFF`. Valid values are `OFF`, `ON`.
   -> **NOTE:** This parameter is valid only MySQL Engine supports.
 * `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: `1`. Valid values are `1`, `2`.
