@@ -105,12 +105,14 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Optional: true,
 			},
 			"cpu_options_core": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
 			},
 			"cpu_options_threads_per_core": {
-				Type:     schema.TypeInt,
-				Optional: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntAtLeast(1),
 			},
 			"active_deadline_seconds": {
 				Type:         schema.TypeInt,
@@ -671,8 +673,12 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	request["TerminationGracePeriodSeconds"] = d.Get("termination_grace_period_seconds")
 	request["AutoMatchImageCache"] = d.Get("auto_match_image_cache")
 	request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
-	request["CpuOptionsCore"] = d.Get("cpu_options_core")
-	request["CpuOptionsThreadsPerCore"] = d.Get("cpu_options_threads_per_core")
+	if v, ok := d.GetOkExists("cpu_options_core"); ok {
+		request["CpuOptionsCore"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOkExists("cpu_options_threads_per_core"); ok {
+		request["CpuOptionsThreadsPerCore"] = requests.NewInteger(v.(int))
+	}
 	request["EphemeralStorage"] = d.Get("ephemeral_storage")
 	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
 
@@ -1328,12 +1334,20 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		request["Ipv6AddressCount"] = d.Get("ipv6_address_count")
 	}
 	if d.HasChange("cpu_options_core") {
-		update = true
-		request["CpuOptionsCore"] = d.Get("cpu_options_core")
+		if v, ok := d.GetOkExists("cpu_options_core"); ok {
+			if v != 0 {
+				update = true
+				request["CpuOptionsCore"] = v
+			}
+		}
 	}
 	if d.HasChange("cpu_options_threads_per_core") {
-		update = true
-		request["CpuOptionsThreadsPerCore"] = d.Get("cpu_options_threads_per_core")
+		if v, ok := d.GetOkExists("cpu_options_threads_per_core"); ok {
+			if v != 0 {
+				update = true
+				request["CpuOptionsThreadsPerCore"] = v
+			}
+		}
 	}
 	if d.HasChange("active_deadline_seconds") {
 		update = true
