@@ -1019,6 +1019,12 @@ func incrementalWait(firstDuration time.Duration, increaseDuration time.Duration
 // If auto renew, the period computed from computePeriodByUnit will be changed
 // This method used to compute a period accourding to current period and unit
 func computePeriodByUnit(createTime, endTime interface{}, currentPeriod int, periodUnit string) (int, error) {
+	if createTime == nil {
+		return 0, WrapError(fmt.Errorf("createTime should not be nil"))
+	}
+	if endTime == nil {
+		return 0, WrapError(fmt.Errorf("endTime should not be nil"))
+	}
 	var createTimeStr, endTimeStr string
 	switch value := createTime.(type) {
 	case int64:
