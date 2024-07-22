@@ -31,6 +31,7 @@ func CreateClient(accessKey, secretKey, accountId, fcRegion string) (_result *fc
 func _getIdleFunction(client *fc_open20210406.Client, serviceName string) (_functionName string, _err error) {
 	listFunctionsHeaders := &fc_open20210406.ListFunctionsHeaders{}
 	listFunctionsRequest := &fc_open20210406.ListFunctionsRequest{}
+	listFunctionsRequest.Limit = tea.Int32(20)
 	runtime := &util.RuntimeOptions{}
 	functionNames := make([]string, 0)
 	nextToken := ""
