@@ -33,14 +33,34 @@ func _getIdleFunction(client *fc_open20210406.Client, serviceName string) (_func
 	listFunctionsRequest := &fc_open20210406.ListFunctionsRequest{}
 	runtime := &util.RuntimeOptions{}
 	functionNames := make([]string, 0)
-	_response, _err := client.ListFunctionsWithOptions(tea.String(serviceName), listFunctionsRequest, listFunctionsHeaders, runtime)
-	if _err != nil {
-		return "", _err
-	}
-	for _, fc := range _response.Body.Functions {
-		functionNames = append(functionNames, *fc.FunctionName)
-	}
+	nextToken := ""
 
+	for {
+		if nextToken != "" {
+			listFunctionsRequest.NextToken = &nextToken
+		}
+		_response, _err := client.ListFunctionsWithOptions(tea.String(serviceName), listFunctionsRequest, listFunctionsHeaders, runtime)
+		if _err != nil {
+			return "", _err
+		}
+
+		if _response.Body.Functions == nil || len(_response.Body.Functions) < 1 {
+			break
+		}
+
+		for _, fc := range _response.Body.Functions {
+			functionNames = append(functionNames, *fc.FunctionName)
+		}
+
+		nextToken = ""
+		if _response.Body.NextToken != nil {
+			nextToken = *_response.Body.NextToken
+		}
+
+		if nextToken == "" {
+			break
+		}
+	}
 	for _, functionName := range functionNames {
 		listStatefulAsyncInvocationsHeaders := &fc_open20210406.ListStatefulAsyncInvocationsHeaders{}
 		listStatefulAsyncInvocationsRequest := &fc_open20210406.ListStatefulAsyncInvocationsRequest{}
