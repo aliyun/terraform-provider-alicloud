@@ -143,7 +143,7 @@ func resourceAliCloudVpcVpc() *schema.Resource {
 			"router_table_id": {
 				Type:       schema.TypeString,
 				Computed:   true,
-				Deprecated: "Field 'router_table_id' has been deprecated since provider version 1.228.0. New field 'route_table_id' instead.",
+				Deprecated: "Field 'router_table_id' has been deprecated since provider version 1.221.0. New field 'route_table_id' instead.",
 			},
 		},
 	}
