@@ -12,9 +12,11 @@ Provides a Max Compute Project resource.
 
 MaxCompute project .
 
-For information about Max Compute Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/).
+For information about Max Compute Project and how to use it, see [What is Project](https://www.alibabacloud.com/help/en/maxcompute/).
 
--> **NOTE:** Available since v1.228.0.
+-> **NOTE:** Available since v1.77.0.
+
+-> **NOTE:** Field `name`, `specification_type`, `order_type` has been removed from provider version 1.227.1.
 
 ## Example Usage
 
