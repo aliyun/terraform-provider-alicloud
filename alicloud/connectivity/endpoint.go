@@ -170,6 +170,7 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductCode = map[string]string{
 	"tablestore": "tablestore.%s.aliyuncs.com",
+	"bssopenapi": BssOpenAPIEndpointDomestic,
 }
 
 // NOTE: The productCode must be lower.
@@ -183,7 +184,10 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 
 	// Secondly, load endpoint from known rules
 	if endpointFmt, ok := irregularProductCode[productCode]; ok {
-		client.config.Endpoints.Store(productCode, fmt.Sprintf(endpointFmt, client.RegionId))
+		if strings.Contains(endpointFmt, "%s") {
+			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
+		}
+		client.config.Endpoints.Store(productCode, endpointFmt)
 		return nil
 	}
 
