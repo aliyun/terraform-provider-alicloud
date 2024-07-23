@@ -69,7 +69,7 @@ The following arguments are supported:
 * `load_balancer_id` - (Required, ForceNew) The ID of the Server Load Balancer (SLB) instance.
 * `name` - (Optional) The name of the vServer group. Default value: `tf-server-group`.
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. Default value: `false`. If `delete_protection_validation` is set to `true`, this resource will not be deleted when its SLB instance enabled DeleteProtection.
-* `tags` - (Optional, Available since v1.228.0) A mapping of tags to assign to the resource.
+* `tags` - (Optional, Available since v1.227.1) A mapping of tags to assign to the resource.
 * `servers` - (Deprecated since v1.163.0) The list of backend servers to be added. See [`servers`](#servers) below.
 -> **NOTE:** Field `servers` has been deprecated from provider version 1.163.0, and it will be removed in the future version. Please use the new resource `alicloud_slb_server_group_server_attachment`.
 
