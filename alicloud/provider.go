@@ -1264,7 +1264,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_k8s_cluster":                                      resourceAlicloudEdasK8sCluster(),
 			"alicloud_oos_execution":                                         resourceAlicloudOosExecution(),
 			"alicloud_resource_manager_policy_attachment":                    resourceAlicloudResourceManagerPolicyAttachment(),
-			"alicloud_dcdn_domain":                                           resourceAlicloudDcdnDomain(),
+			"alicloud_dcdn_domain":                                           resourceAliCloudDcdnDomain(),
 			"alicloud_mse_cluster":                                           resourceAlicloudMseCluster(),
 			"alicloud_actiontrail_trail":                                     resourceAlicloudActiontrailTrail(),
 			"alicloud_actiontrail":                                           resourceAlicloudActiontrailTrail(),
