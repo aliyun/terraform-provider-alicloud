@@ -14,10 +14,10 @@ import (
 
 func resourceAliCloudVpcPublicIpAddressPool() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcPublicIpAddressPoolCreate,
-		Read:   resourceAlicloudVpcPublicIpAddressPoolRead,
-		Update: resourceAlicloudVpcPublicIpAddressPoolUpdate,
-		Delete: resourceAlicloudVpcPublicIpAddressPoolDelete,
+		Create: resourceAliCloudVpcPublicIpAddressPoolCreate,
+		Read:   resourceAliCloudVpcPublicIpAddressPoolRead,
+		Update: resourceAliCloudVpcPublicIpAddressPoolUpdate,
+		Delete: resourceAliCloudVpcPublicIpAddressPoolDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -27,6 +27,13 @@ func resourceAliCloudVpcPublicIpAddressPool() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"biz_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Default", "CloudBox"}, false),
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -58,6 +65,12 @@ func resourceAliCloudVpcPublicIpAddressPool() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"security_protection_types": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -75,41 +88,57 @@ func resourceAliCloudVpcPublicIpAddressPool() *schema.Resource {
 	}
 }
 
-func resourceAlicloudVpcPublicIpAddressPoolCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPublicIpAddressPoolCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
 	action := "CreatePublicIpAddressPool"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	if v, ok := d.GetOk("isp"); ok {
 		request["Isp"] = v
 	}
-
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-
 	if v, ok := d.GetOk("public_ip_address_pool_name"); ok {
 		request["Name"] = v
 	}
-
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
 
+	if v, ok := d.GetOk("biz_type"); ok {
+		request["BizType"] = v
+	}
+	if v, ok := d.GetOk("zones"); ok {
+		zonesMaps := v.([]interface{})
+		request["Zones"] = zonesMaps
+	}
+
+	if v, ok := d.GetOk("security_protection_types"); ok {
+		securityProtectionTypesMaps := v.([]interface{})
+		request["SecurityProtectionTypes"] = securityProtectionTypesMaps
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationConflict", "IncorrectStatus", "SystemBusy", "ServiceUnavailable", "OperationFailed.LastTokenProcessing", "LastTokenProcessing"}) || NeedRetry(err) {
 				wait()
@@ -128,15 +157,15 @@ func resourceAlicloudVpcPublicIpAddressPoolCreate(d *schema.ResourceData, meta i
 	d.SetId(fmt.Sprint(response["PulbicIpAddressPoolId"]))
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 0, vpcServiceV2.VpcPublicIpAddressPoolStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"Created"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcServiceV2.VpcPublicIpAddressPoolStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudVpcPublicIpAddressPoolUpdate(d, meta)
+	return resourceAliCloudVpcPublicIpAddressPoolRead(d, meta)
 }
 
-func resourceAlicloudVpcPublicIpAddressPoolRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPublicIpAddressPoolRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcServiceV2 := VpcServiceV2{client}
 
@@ -150,61 +179,91 @@ func resourceAlicloudVpcPublicIpAddressPoolRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreationTime"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("ip_address_remaining", objectRaw["IpAddressRemaining"])
-	d.Set("isp", objectRaw["Isp"])
-	d.Set("public_ip_address_pool_name", objectRaw["Name"])
-	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	d.Set("status", objectRaw["Status"])
-	d.Set("total_ip_num", objectRaw["TotalIpNum"])
-	d.Set("used_ip_num", objectRaw["UsedIpNum"])
-	d.Set("public_ip_address_pool_id", objectRaw["PublicIpAddressPoolId"])
-	d.Set("region_id", objectRaw["RegionId"])
+	if objectRaw["BizType"] != nil {
+		d.Set("biz_type", objectRaw["BizType"])
+	}
+	if objectRaw["CreationTime"] != nil {
+		d.Set("create_time", objectRaw["CreationTime"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["IpAddressRemaining"] != nil {
+		d.Set("ip_address_remaining", objectRaw["IpAddressRemaining"])
+	}
+	if objectRaw["Isp"] != nil {
+		d.Set("isp", objectRaw["Isp"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("public_ip_address_pool_name", objectRaw["Name"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["TotalIpNum"] != nil {
+		d.Set("total_ip_num", objectRaw["TotalIpNum"])
+	}
+	if objectRaw["UsedIpNum"] != nil {
+		d.Set("used_ip_num", objectRaw["UsedIpNum"])
+	}
+	if objectRaw["PublicIpAddressPoolId"] != nil {
+		d.Set("public_ip_address_pool_id", objectRaw["PublicIpAddressPoolId"])
+	}
+
+	securityProtectionTypes1Raw := make([]interface{}, 0)
+	if objectRaw["SecurityProtectionTypes"] != nil {
+		securityProtectionTypes1Raw = objectRaw["SecurityProtectionTypes"].([]interface{})
+	}
+
+	d.Set("security_protection_types", securityProtectionTypes1Raw)
 	tagsMaps := objectRaw["Tags"]
 	d.Set("tags", tagsToMap(tagsMaps))
+	zones1Raw := make([]interface{}, 0)
+	if objectRaw["Zones"] != nil {
+		zones1Raw = objectRaw["Zones"].([]interface{})
+	}
+
+	d.Set("zones", zones1Raw)
 
 	return nil
 }
 
-func resourceAlicloudVpcPublicIpAddressPoolUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPublicIpAddressPoolUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
-	update = false
 	action := "UpdatePublicIpAddressPoolAttribute"
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["PublicIpAddressPoolId"] = d.Id()
-	request["RegionId"] = client.RegionId
+	query = make(map[string]interface{})
+	query["PublicIpAddressPoolId"] = d.Id()
+	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-
-	if !d.IsNewResource() && d.HasChange("description") {
+	if d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			request["Description"] = v
-		}
+		request["Description"] = d.Get("description")
 	}
 
-	if !d.IsNewResource() && d.HasChange("public_ip_address_pool_name") {
+	if d.HasChange("public_ip_address_pool_name") {
 		update = true
-		if v, ok := d.GetOk("public_ip_address_pool_name"); ok {
-			request["Name"] = v
-		}
+		request["Name"] = d.Get("public_ip_address_pool_name")
 	}
 
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			request["ClientToken"] = buildClientToken(action)
-
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -218,8 +277,6 @@ func resourceAlicloudVpcPublicIpAddressPoolUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("description")
-		d.SetPartial("public_ip_address_pool_name")
 	}
 	update = false
 	action = "MoveResourceGroup"
@@ -228,23 +285,21 @@ func resourceAlicloudVpcPublicIpAddressPoolUpdate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["ResourceId"] = d.Id()
-	request["RegionId"] = client.RegionId
-
-	if !d.IsNewResource() && d.HasChange("resource_group_id") {
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
+	query["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
-		if v, ok := d.GetOk("resource_group_id"); ok {
-			request["NewResourceGroupId"] = v
-		}
+		request["NewResourceGroupId"] = d.Get("resource_group_id")
 	}
 
 	request["ResourceType"] = "PUBLICIPADDRESSPOOL"
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -258,43 +313,40 @@ func resourceAlicloudVpcPublicIpAddressPoolUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("resource_group_id")
 	}
 
-	update = false
 	if d.HasChange("tags") {
-		update = true
 		vpcServiceV2 := VpcServiceV2{client}
 		if err := vpcServiceV2.SetResourceTags(d, "PUBLICIPADDRESSPOOL"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	d.Partial(false)
-	return resourceAlicloudVpcPublicIpAddressPoolRead(d, meta)
+	return resourceAliCloudVpcPublicIpAddressPoolRead(d, meta)
 }
 
-func resourceAlicloudVpcPublicIpAddressPoolDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPublicIpAddressPoolDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-
 	action := "DeletePublicIpAddressPool"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewVpcClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-
-	request["PublicIpAddressPoolId"] = d.Id()
-	request["RegionId"] = client.RegionId
+	query["PublicIpAddressPoolId"] = d.Id()
+	query["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
@@ -313,9 +365,10 @@ func resourceAlicloudVpcPublicIpAddressPoolDelete(d *schema.ResourceData, meta i
 	}
 
 	vpcServiceV2 := VpcServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 0, vpcServiceV2.VpcPublicIpAddressPoolStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcServiceV2.VpcPublicIpAddressPoolStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
