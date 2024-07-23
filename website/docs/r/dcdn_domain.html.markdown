@@ -2,22 +2,21 @@
 subcategory: "DCDN"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_dcdn_domain"
-sidebar_current: "docs-alicloud-dcdn-domain"
 description: |-
-  Provides an Alicloud DCDN Domain resource.
+  Provides a Alicloud DCDN Domain resource.
 ---
 
 # alicloud_dcdn_domain
 
-You can use DCDN to improve the overall performance of your website and accelerate content delivery to improve user experience. For information about Alicloud DCDN Domain and how to use it, see [What is Resource Alicloud DCDN Domain](https://www.alibabacloud.com/help/en/doc-detail/130628.htm).
+Provides a DCDN Domain resource.
+
+Full station accelerated domain name.
+
+For information about DCDN Domain and how to use it, see [What is Domain](https://www.alibabacloud.com/help/en/doc-detail/130628.htm).
 
 -> **NOTE:** Available since v1.94.0.
 
--> **NOTE:** You must activate the Dynamic Route for CDN (DCDN) service before you create an accelerated domain.
-
--> **NOTE:** Make sure that you have obtained an Internet content provider (ICP) filling for the accelerated domain.
-
--> **NOTE:** If the origin content is not saved on Alibaba Cloud, the content must be reviewed by Alibaba Cloud. The review will be completed by the next working day after you submit the application.
+-> **NOTE:** Field `force_set`, `security_token` has been removed from provider version 1.227.1.
 
 ## Example Usage
 
@@ -44,58 +43,85 @@ resource "alicloud_dcdn_domain" "example" {
   }
 }
 ```
+
 ## Argument Reference
 
 The following arguments are supported:
+* `cert_id` - (Optional) The certificate ID. This parameter is required and valid only when `CertType` is set to `cas`. If you specify this parameter, an existing certificate is used. 
+* `cert_name` - (Optional) The name of the new certificate. You can specify only one certificate name. This parameter is optional and valid only when `CertType` is set to `upload`. 
+* `cert_region` - (Optional, Available since v1.227.1) The region of the SSL certificate. This parameter takes effect only when `CertType` is set to `cas`. Default value: **cn-hangzhou**. Valid values: **cn-hangzhou** and **ap-southeast-1**. 
+* `cert_type` - (Optional) The certificate type.
+  * `upload`: a user-uploaded SSL certificate.
+  * `cas`: a certificate that is acquired through Certificate Management Service.
 
-* `cert_name` - (Optional) Indicates the name of the certificate if the HTTPS protocol is enabled.
-* `cert_type` - (Optional) The type of the certificate. Valid values:
-    `free`: a free certificate.
-    `cas`: a certificate purchased from Alibaba Cloud SSL Certificates Service.
-    `upload`: a user uploaded certificate.
-* `check_url` - (Optional, ForceNew) The URL that is used to test the accessibility of the origin.
-* `domain_name` - (Required, ForceNew) The name of the accelerated domain.
-* `force_set` - (Optional) Specifies whether to check the certificate name for duplicates. If you set the value to 1, the system does not perform the check and overwrites the information of the existing certificate with the same name.
-* `resource_group_id` - (Optional) The ID of the resource group.
-* `ssl_protocol` - (Optional) Indicates whether the SSL certificate is enabled. Valid values: `on` enabled, `off` disabled.
-* `ssl_pri` - (Optional) The private key. Specify this parameter only if you enable the SSL certificate.
-* `ssl_pub` - (Optional) Indicates the public key of the certificate if the HTTPS protocol is enabled.
-* `scope` - (Optional) The acceleration region.
-* `sources` - (Required) The origin information. See [`sources`](#sources) below.
-* `status` - (Optional) The status of DCDN Domain. Valid values: `online`, `offline`. Default to `online`.
-* `top_level_domain` - (Optional) The top-level domain name.
-* `security_token` - (Optional) The top-level domain name.
-* `tags` - (Optional, Available since v1.204.1) A mapping of tags to assign to the resource.
+-> **NOTE:**  If the value of the `cert_type` parameter is `cas`, the `ssl_pri` parameter is not required.
+
+* `check_url` - (Optional) The URL that is used for health checks. 
+* `domain_name` - (Required, ForceNew) The accelerated domain name. You can specify multiple domain names and separate them with commas (,). You can specify up to 500 domain names in each request. The query results of multiple domain names are aggregated. If you do not specify this parameter, data of all accelerated domain names under your account is queried. 
+* `env` - (Optional, Available since v1.227.1) Specifies whether the certificate is issued in canary releases. If you set this parameter to `staging`, the certificate is issued in canary releases. If you do not specify this parameter or set this parameter to other values, the certificate is officially issued. 
+* `function_type` - (Optional, ForceNew, Available since v1.227.1) Computing service type. Valid values:
+  - `routine`
+  - `image`
+  - `cloudFunction`
+
+* `resource_group_id` - (Optional, Computed) The ID of the resource group. If you do not specify a value for this parameter, the system automatically assigns the ID of the default resource group. 
+* `scene` - (Optional, ForceNew, Available since v1.227.1) The Acceleration scen. Supported:
+  - `apiscene`: API acceleration.
+  - `webservicescene`: accelerate website business.
+  - `staticscene`: video and graphic acceleration.
+  - (Empty): no scene.
+* `scope` - (Optional) The region where the acceleration service is deployed. Valid values:
+  - `domestic`: Chinese mainland
+  - `overseas`: global (excluding mainland China)
+  - `global`: global
+
+* `sources` - (Optional) Source  See [`sources`](#sources) below.
+* `ssl_pri` - (Optional) The private key. Specify the private key only if you want to enable the SSL certificate. 
+* `ssl_protocol` - (Optional) Specifies whether to enable the SSL certificate. Valid values:
+  - `on`
+  - `off`
+
+* `ssl_pub` - (Optional) The content of the SSL certificate. Specify the content of the SSL certificate only if you want to enable the SSL certificate. 
+* `status` - (Optional, Computed) The status of the domain name. Valid values:
+  - `online`: enabled
+  - `offline`: disabled
+  - `configuring`: configuring
+  - `configure_failed`: configuration failed
+  - `checking`: reviewing
+  - `check_failed`: review failed
+
+* `tags` - (Optional, ForceNew, Map, Available since v1.204.1) The tag of the resource
+* `top_level_domain` - (Optional) The top-level domain. 
 
 ### `sources`
 
 The sources supports the following:
-
-* `content` - (Required) The origin address.
-* `type` - (Required) The type of the origin. Valid values:
-    `ipaddr`: The origin is configured using an IP address.
-    `domain`: The origin is configured using a domain name.
-    `oss`: The origin is configured using the Internet domain name of an Alibaba Cloud Object Storage Service (OSS) bucket.
-* `port` - (Optional) The port number. Valid values: `443` and `80`. Default to `80`.
-* `priority` - (Optional) The priority of the origin if multiple origins are specified. Default to `20`.
+* `content` - (Optional) The address of the source station.
+* `port` - (Optional, Computed) The port number. Valid values: `443` and `80`. Default to `80`.
+* `priority` - (Optional, Computed) The priority of the origin if multiple origins are specified. Default to `20`.
+* `type` - (Optional) The type of the origin. Valid values:
+  - `ipaddr`: The origin is configured using an IP address.
+  - `domain`: The origin is configured using a domain name.
+  - `oss`: The origin is configured using the Internet domain name of an Alibaba Cloud Object Storage Service (OSS) bucket.
 * `weight` - (Optional) The weight of the origin if multiple origins are specified. Default to `10`.
 
 ## Attributes Reference
 
-* `id` -The id of the DCDN Domain. It is the same as its domain name.
-* `cname` (Available in 1.198.0+)- The canonical name (CNAME) of the accelerated domain.
+The following attributes are exported:
+* `id` - The ID of the resource supplied above.
+* `cname` - The CNAME domain name corresponding to the accelerated domain name.
+* `create_time` - The time when the accelerated domain name was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 10 mins) Used when create DCDN domain instance. 
-* `update` - (Defaults to 10 mins) Used when update DCDN domain instance. 
-* `delete` - (Defaults to 5 mins) Used when delete DCDN domain instance. 
+* `create` - (Defaults to 30 mins) Used when create the Domain.
+* `delete` - (Defaults to 30 mins) Used when delete the Domain.
+* `update` - (Defaults to 30 mins) Used when update the Domain.
 
 ## Import
 
-DCDN Domain can be imported using the id or DCDN Domain name, e.g.
+DCDN Domain can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_dcdn_domain.example <id>
