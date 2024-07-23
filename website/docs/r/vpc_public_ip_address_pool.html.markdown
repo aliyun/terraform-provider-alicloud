@@ -2,16 +2,17 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_public_ip_address_pool"
-sidebar_current: "docs-alicloud-resource-vpc-public-ip-address-pool"
 description: |-
-  Provides a Alicloud Vpc Public Ip Address Pool resource.
+  Provides a Alicloud VPC Public Ip Address Pool resource.
 ---
 
 # alicloud_vpc_public_ip_address_pool
 
-Provides a Vpc Public Ip Address Pool resource.
+Provides a VPC Public Ip Address Pool resource.
 
-For information about Vpc Public Ip Address Pool and how to use it, see [What is Public Ip Address Pool](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/createpublicipaddresspool).
+
+
+For information about VPC Public Ip Address Pool and how to use it, see [What is Public Ip Address Pool](https://www.alibabacloud.com/help/en/virtual-private-cloud/latest/createpublicipaddresspool).
 
 -> **NOTE:** Available since v1.186.0.
 
@@ -37,19 +38,21 @@ resource "alicloud_vpc_public_ip_address_pool" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `biz_type` - (Optional, ForceNew, Computed) The name of the VPC Public IP address pool.
 * `description` - (Optional) Description.
-* `isp` - (ForceNew, Optional) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`. Default Value: `BGP`.
+* `isp` - (Optional, ForceNew, Computed) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`. Default Value: `BGP`.
 * `public_ip_address_pool_name` - (Optional) The name of the VPC Public IP address pool.
-* `resource_group_id` - (Optional) The resource group ID of the VPC Public IP address pool.
+* `resource_group_id` - (Optional, Computed) The resource group ID of the VPC Public IP address pool.
+* `security_protection_types` - (Optional, ForceNew, Available since v1.228.0) Security protection level.
+  - If the configuration is empty, the default value is DDoS protection (Basic edition).
+  - `AntiDDoS_Enhanced` indicates DDoS protection (enhanced version).
 * `tags` - (Optional, Map) The tags of PrefixList.
-
-
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.
-* `create_time` - The creation time of the resource.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The creation time of the resource
 * `ip_address_remaining` - Whether there is a free IP address.
 * `public_ip_address_pool_id` - The resource ID in terraform of VPC Public Ip Address Pool.
 * `status` - The status of the VPC Public IP address pool.
@@ -65,7 +68,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Vpc Public Ip Address Pool can be imported using the id, e.g.
+VPC Public Ip Address Pool can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_vpc_public_ip_address_pool.example <id>

@@ -122,7 +122,7 @@ func testSweepVpcPublicIpAddressPool(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVpcPublicIpAddressPool_basic0(t *testing.T) {
+func TestAccAliCloudVpcPublicIpAddressPool_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_public_ip_address_pool.default"
 	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolMap)
@@ -147,12 +147,71 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic0(t *testing.T) {
 					"public_ip_address_pool_name": name,
 					"isp":                         "BGP_PRO",
 					"description":                 name,
+					"biz_type":                    "Default",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"public_ip_address_pool_name": name,
 						"isp":                         "BGP_PRO",
 						"description":                 name,
+						"biz_type":                    "Default",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_ip_address_pool_name": name + "-update",
+					"description":                 name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_ip_address_pool_name": name + "-update",
+						"description":                 name + "-update",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudVpcPublicIpAddressPool_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_vpc_public_ip_address_pool.default"
+	ra := resourceAttrInit(resourceId, resourceAlicloudVpcPublicIpAddressPoolMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeVpcPublicIpAddressPool")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sVpcPublicIpAddressPool-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAlicloudVpcPublicIpAddressPoolBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-northeast-2"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"public_ip_address_pool_name": name,
+					"description":                 name,
+					"biz_type":                    "Default",
+					"security_protection_types":   []string{"AntiDDoS_Enhanced"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"public_ip_address_pool_name": name,
+						"description":                 name,
+						"biz_type":                    "Default",
 					}),
 				),
 			},
@@ -185,6 +244,10 @@ func resourceAlicloudVpcPublicIpAddressPoolBasicDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
 	default = "%s"
+}
+
+data "alicloud_zones" "default" {
+	available_resource_creation= "VSwitch"
 }
 `, name)
 }
@@ -264,7 +327,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcPublicIpAddressPoolCreate(dInit, rawClient)
+	err = resourceAliCloudVpcPublicIpAddressPoolCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -287,7 +350,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolCreate(dInit, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -314,7 +377,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcPublicIpAddressPoolUpdate(dExisted, rawClient)
+	err = resourceAliCloudVpcPublicIpAddressPoolUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -363,7 +426,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolUpdate(dExisted, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -407,7 +470,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolRead(dExisted, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -426,7 +489,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudVpcPublicIpAddressPoolDelete(dExisted, rawClient)
+	err = resourceAliCloudVpcPublicIpAddressPoolDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -454,7 +517,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudVpcPublicIpAddressPoolDelete(dExisted, rawClient)
+		err := resourceAliCloudVpcPublicIpAddressPoolDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -465,9 +528,7 @@ func TestUnitAlicloudVpcPublicIpAddressPool(t *testing.T) {
 	}
 }
 
-// Test Vpc PublicIpAddressPool. >>> Resource test cases, automatically generated.
-// Case 2534
-func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
+func TestAccAliCloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_public_ip_address_pool.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcPublicIpAddressPoolMap2534)
@@ -477,7 +538,7 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sVpcPublicIpAddressPool%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%svpcpublicipaddresspool%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudVpcPublicIpAddressPoolBasicDependence2534)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -489,12 +550,10 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"isp":                         "BGP",
 					"public_ip_address_pool_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"isp":                         "BGP",
 						"public_ip_address_pool_name": name,
 					}),
 				),
@@ -516,16 +575,6 @@ func TestAccAlicloudVpcPublicIpAddressPool_basic2534(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"public_ip_address_pool_name": name + "_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"public_ip_address_pool_name": name + "_update",
 					}),
 				),
 			},
@@ -639,5 +688,3 @@ data "alicloud_resource_manager_resource_groups" "default" {}
 
 `, name)
 }
-
-// Test Vpc PublicIpAddressPool. <<< Resource test cases, automatically generated.
