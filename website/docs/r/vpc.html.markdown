@@ -85,7 +85,7 @@ The following arguments are supported:
 
 The following arguments will be discarded. Please use new fields as soon as possible:
 * `name` - (Deprecated since v1.119.0). Field 'name' has been deprecated from provider version 1.119.0. New field 'vpc_name' instead.
-* `router_table_id` - (Deprecated since v1.228.0). Field 'router_table_id' has been deprecated from provider version 1.228.0. New field 'route_table_id' instead.
+* `router_table_id` - (Deprecated since v1.227.1). Field 'router_table_id' has been deprecated from provider version 1.227.1. New field 'route_table_id' instead.
 
 ## Attributes Reference
 
