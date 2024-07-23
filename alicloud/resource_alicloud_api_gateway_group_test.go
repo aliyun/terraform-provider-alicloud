@@ -130,6 +130,7 @@ func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}",
 					"description": "${var.description}",
+					"base_path":   "${var.base_path}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -164,13 +165,25 @@ func TestAccAliCloudApigatewayGroup_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"base_path": "${var.base_path}_u",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"base_path": "/test_by_tf_u",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}",
 					"description": "${var.description}",
+					"base_path":   "${var.base_path}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        name,
 						"description": "tf_testAcc api gateway description",
+						"base_path":   "/test_by_tf",
 					}),
 				),
 			},
@@ -210,12 +223,14 @@ func TestAccAliCloudApigatewayGroup_basic01(t *testing.T) {
 					"name":        "${var.name}",
 					"description": "${var.description}",
 					"instance_id": "api-shared-vpc-001",
+					"base_path":   "${var.base_path}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":        name,
 						"description": "tf_testAcc api gateway description",
 						"instance_id": "api-shared-vpc-001",
+						"base_path":   "/test_by_tf",
 					}),
 				),
 			},
@@ -254,6 +269,7 @@ func TestAccAliCloudApigatewayGroup_multi(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"name":        "${var.name}${count.index}",
 					"description": "${var.description}",
+					"base_path":   "${var.base_path}",
 					"count":       "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -272,6 +288,10 @@ func resourceApigatewayGroupConfigDependence(name string) string {
 	variable "description" {
 	  default = "tf_testAcc api gateway description"
 	}
+
+	variable "base_path" {
+      default = "/test_by_tf"
+    }
 	`, name)
 }
 
