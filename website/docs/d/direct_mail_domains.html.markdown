@@ -64,7 +64,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `id` - The ID of the Domain.
   * `domain_id` - The ID of the domain name.
   * `domain_name` - The domain name.
-  * `domain_record` - (Available since v1.228.0) The value of the Domain record.
+  * `domain_record` - (Available since v1.227.1) The value of the Domain record.
   * `domain_type` - The type of the domain. **Note:** `domain_type` takes effect only if `enable_details` is set to `true`.
   * `cname_auth_status` - Indicates whether your ownership of the domain is verified.
   * `cname_confirm_status` - Indicates whether the CNAME record is successfully verified. **Note:** `cname_confirm_status` takes effect only if `enable_details` is set to `true`.
@@ -75,17 +75,17 @@ The following attributes are exported in addition to the arguments listed above:
   * `spf_auth_status` - Indicates whether the SPF record is successfully verified.
   * `spf_record` - The SPF verification record provided by the Direct Mail console. **Note:** `spf_record` takes effect only if `enable_details` is set to `true`.
   * `default_domain` - The default domain name. **Note:** `default_domain` takes effect only if `enable_details` is set to `true`.
-  * `host_record` - (Available since v1.228.0) The value of the host record. **Note:** `host_record` takes effect only if `enable_details` is set to `true`.
+  * `host_record` - (Available since v1.227.1) The value of the host record. **Note:** `host_record` takes effect only if `enable_details` is set to `true`.
   * `dns_mx` - The MX record value resolved through public DNS. **Note:** `dns_mx` takes effect only if `enable_details` is set to `true`.
   * `dns_txt` - The TXT record value resolved through public DNS. **Note:** `dns_txt` takes effect only if `enable_details` is set to `true`.
   * `dns_spf` - The SPF record value resolved through public DNS. **Note:** `dns_spf` takes effect only if `enable_details` is set to `true`.
-  * `dns_dmarc` - (Available since v1.228.0) The DMARC record value resolved through public DNS. **Note:** `dns_dmarc` takes effect only if `enable_details` is set to `true`.
-  * `dkim_auth_status` - (Available since v1.228.0) The DKIM validation flag. **Note:** `dkim_auth_status` takes effect only if `enable_details` is set to `true`.
-  * `dkim_rr` - (Available since v1.228.0) The DKIM Host Record. **Note:** `dkim_rr` takes effect only if `enable_details` is set to `true`.
-  * `dkim_public_key` - (Available since v1.228.0) The DKIM public key. **Note:** `dkim_public_key` takes effect only if `enable_details` is set to `true`.
-  * `dmarc_auth_status` - (Available since v1.228.0) The DMARC validation flag. **Note:** `dmarc_auth_status` takes effect only if `enable_details` is set to `true`.
-  * `dmarc_record` - (Available since v1.228.0) The DMARC record. **Note:** `dmarc_record` takes effect only if `enable_details` is set to `true`.
-  * `dmarc_host_record` - (Available since v1.228.0) The DMARC Host Record. **Note:** `dmarc_host_record` takes effect only if `enable_details` is set to `true`.
+  * `dns_dmarc` - (Available since v1.227.1) The DMARC record value resolved through public DNS. **Note:** `dns_dmarc` takes effect only if `enable_details` is set to `true`.
+  * `dkim_auth_status` - (Available since v1.227.1) The DKIM validation flag. **Note:** `dkim_auth_status` takes effect only if `enable_details` is set to `true`.
+  * `dkim_rr` - (Available since v1.227.1) The DKIM Host Record. **Note:** `dkim_rr` takes effect only if `enable_details` is set to `true`.
+  * `dkim_public_key` - (Available since v1.227.1) The DKIM public key. **Note:** `dkim_public_key` takes effect only if `enable_details` is set to `true`.
+  * `dmarc_auth_status` - (Available since v1.227.1) The DMARC validation flag. **Note:** `dmarc_auth_status` takes effect only if `enable_details` is set to `true`.
+  * `dmarc_record` - (Available since v1.227.1) The DMARC record. **Note:** `dmarc_record` takes effect only if `enable_details` is set to `true`.
+  * `dmarc_host_record` - (Available since v1.227.1) The DMARC Host Record. **Note:** `dmarc_host_record` takes effect only if `enable_details` is set to `true`.
   * `tl_domain_name` - The primary domain name. **Note:** `tl_domain_name` takes effect only if `enable_details` is set to `true`.
   * `tracef_record` - The CNAME verification record provided by the Direct Mail console. **Note:** `tracef_record` takes effect only if `enable_details` is set to `true`.
   * `status` - The status of the domain name.

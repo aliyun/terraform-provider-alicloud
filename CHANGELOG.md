@@ -1,4 +1,32 @@
-## 1.228.0 (Unreleased)
+## 1.227.1 (Unreleased)
+
+ENHANCEMENTS:
+
+- resource/alicloud_cloud_firewall_control_policy_order: Improved alicloud_cloud_firewall_control_policy_order testcase. [GH-7440]
+- resource/alicloud_ecs_disk: Adds valid value PL0 for argument performance_level. [GH-7442]
+- resource/alicloud_instance: Added the field network_interface_traffic_mode, network_card_index, queue_pair_number, network_interfaces.network_card_index, network_interfaces.queue_pair_number. [GH-7445]
+- resource/alicloud_dcdn_domain: add new attribute cert_region, env, function_type, scene. [GH-7451]
+- resource/alicloud_maxcompute_project: remove attribute order_type. [GH-7453]
+- resource/alicloud_ddoscoo_instance: Removed the product_plan enums limitation. [GH-7457]
+- resource/alicloud_vpc: add new attribute is_default, system_route_table_description, system_route_table_name. [GH-7459]
+- resource/alicloud_instance: Added the field vpc_id; Fixed the update bug in field security_groups. [GH-7461]
+- resource/alicloud_slb_server_group: Added the field tags. [GH-7465]
+- resource/alicloud_polardb_cluster: upd proxy parameters. [GH-7467]
+- resource/alicloud_vpc_public_ip_address_pool: add new attribute biz_type, security_protection_types. [GH-7473]
+- data-source/alicloud_direct_mail_domains: Added the field domain_record, host_record, dns_dmarc, dkim_auth_status, dkim_rr, dkim_public_key, dmarc_auth_status, dmarc_record, dmarc_host_record. [GH-7448]
+- docs: fix link in rdc_organization. [GH-7458]
+- docs: Improved the document eci_container_group. [GH-7462]
+- docs: improve description for maxcompute project. [GH-7478]
+
+BUG FIXES:
+
+- provider: Fixed nil pointer panic while computePeriodByUnit. [GH-7474]
+- resource/alicloud_ess_scaling_group: Fixed weighted_capacity and spot_price_limit is null. [GH-7418]
+- resource/alicloud_kvstore_instance: Fixed the panic error caused by auto_renew_period. [GH-7446]
+- resource/alicloud_ess_eci_scaling_configuration: Fix cpu_options_core and cpu_options_threads_per_core is zero. [GH-7469]
+- resource/alicloud_amqp_instance: fix bug while creating instance use a domestic account in ap-southeast-1. [GH-7476]
+- data-source/alicloud_cen_transit_router_service: Fixes the error Forbbiden.TransitRouterServiceNotOpen. [GH-7443]
+
 ## 1.227.0 (July 10, 2024)
 
 - **New Resource:** `alicloud_ens_nat_gateway` ([#7425](https://github.com/aliyun/terraform-provider-alicloud/issues/7425))

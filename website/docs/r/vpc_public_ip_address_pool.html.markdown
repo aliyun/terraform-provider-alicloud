@@ -43,7 +43,7 @@ The following arguments are supported:
 * `isp` - (Optional, ForceNew, Computed) The Internet service provider. Valid values: `BGP`, `BGP_PRO`, `ChinaTelecom`, `ChinaUnicom`, `ChinaMobile`, `ChinaTelecom_L2`, `ChinaUnicom_L2`, `ChinaMobile_L2`, `BGP_FinanceCloud`. Default Value: `BGP`.
 * `public_ip_address_pool_name` - (Optional) The name of the VPC Public IP address pool.
 * `resource_group_id` - (Optional, Computed) The resource group ID of the VPC Public IP address pool.
-* `security_protection_types` - (Optional, ForceNew, Available since v1.228.0) Security protection level.
+* `security_protection_types` - (Optional, ForceNew, Available since v1.227.1) Security protection level.
   - If the configuration is empty, the default value is DDoS protection (Basic edition).
   - `AntiDDoS_Enhanced` indicates DDoS protection (enhanced version).
 * `tags` - (Optional, Map) The tags of PrefixList.
