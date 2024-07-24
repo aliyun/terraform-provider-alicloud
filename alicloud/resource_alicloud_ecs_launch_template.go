@@ -120,7 +120,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 			"instance_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:]{1,127}$`), `It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, periods (.), colons (:), underscores (_), and hyphens (-).`)),
+				ValidateFunc: validation.All(StringDoesNotMatch(regexp.MustCompile(`(^http://.*)|(^https://.*)`), "It cannot begin with \"http://\", \"https://\"."), StringMatch(regexp.MustCompile(`^[a-zA-Z\p{Han}][a-zA-Z\p{Han}_0-9\-\.\:\,\[\]]{1,127}$`), `It must begin with an English or a Chinese character. It can contain A-Z, a-z, Chinese characters, numbers, colons (:), underscores (_), periods (.), commas (,), brackets ([]), and hyphens (-).`)),
 			},
 			"instance_type": {
 				Type:         schema.TypeString,

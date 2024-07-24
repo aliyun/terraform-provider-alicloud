@@ -130,7 +130,7 @@ The following arguments are supported:
 * `host_name` - (Optional) Instance host name.It cannot start or end with a period (.) or a hyphen (-) and it cannot have two or more consecutive periods (.) or hyphens (-).For Windows: The host name can be [2, 15] characters in length. It can contain A-Z, a-z, numbers, periods (.), and hyphens (-). It cannot only contain numbers. For other operating systems: The host name can be [2, 64] characters in length. It can be segments separated by periods (.). It can contain A-Z, a-z, numbers, and hyphens (-).
 * `image_id` - (Optional) The Image ID.
 * `image_owner_alias` - (Optional) Mirror source. Valid values: `system`, `self`, `others`, `marketplace`, `""`. Default to: `""`.
-* `instance_name` - (Optional) The name of the instance. The name must be 2 to 128 characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), and hyphens (-).
+* `instance_name` - (Optional) The name of the instance. The name must be `2` to `128` characters in length. It must start with a letter and cannot start with http:// or https://. It can contain letters, digits, colons (:), underscores (_), periods (.), commas (,), brackets ([]), and hyphens (-).
 * `instance_charge_type` - (Optional) Billing methods. Valid values: `PostPaid`, `PrePaid`.
 * `instance_type` - (Optional) Instance type. For more information, call resource_alicloud_instances to obtain the latest instance type list.
 * `internet_charge_type` - (Optional) Internet bandwidth billing method. Valid values: `PayByTraffic`, `PayByBandwidth`.
