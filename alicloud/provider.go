@@ -1402,7 +1402,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pair":                                          resourceAlicloudEnsKeyPair(),
 			"alicloud_sae_application":                                       resourceAliCloudSaeApplication(),
 			"alicloud_alb_rule":                                              resourceAliCloudAlbRule(),
-			"alicloud_cms_metric_rule_template":                              resourceAlicloudCmsMetricRuleTemplate(),
+			"alicloud_cms_metric_rule_template":                              resourceAliCloudCmsMetricRuleTemplate(),
 			"alicloud_iot_device_group":                                      resourceAlicloudIotDeviceGroup(),
 			"alicloud_express_connect_virtual_border_router":                 resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                           resourceAlicloudImmProject(),

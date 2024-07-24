@@ -565,14 +565,17 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 
 func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeMetricRuleTemplateAttribute"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeMetricRuleTemplateAttribute"
+
 	request := map[string]interface{}{
 		"TemplateId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -588,20 +591,25 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MetricRuleTemplate", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:MetricRuleTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	v, err := jsonpath.Get("$.Resource", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resource", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 

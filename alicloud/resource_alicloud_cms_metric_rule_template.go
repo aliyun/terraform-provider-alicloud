@@ -9,28 +9,80 @@ import (
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
+func resourceAliCloudCmsMetricRuleTemplate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsMetricRuleTemplateCreate,
-		Read:   resourceAlicloudCmsMetricRuleTemplateRead,
-		Update: resourceAlicloudCmsMetricRuleTemplateUpdate,
-		Delete: resourceAlicloudCmsMetricRuleTemplateDelete,
+		Create: resourceAliCloudCmsMetricRuleTemplateCreate,
+		Read:   resourceAliCloudCmsMetricRuleTemplateRead,
+		Update: resourceAliCloudCmsMetricRuleTemplateUpdate,
+		Delete: resourceAliCloudCmsMetricRuleTemplateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
+			"metric_rule_template_name": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"apply_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"notify_level": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"silence_time": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 86400),
+			},
+			"webhook": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"enable_start_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"enable_end_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"alert_templates": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
+						"rule_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"metric_name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"namespace": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
 						"category": {
-							Type:         schema.TypeString,
-							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"ecs", "rds", "ads", "slb", "vpc", "apigateway", "cdn", "cs", "dcdn", "ddos", "eip", "elasticsearch", "emr", "ess", "hbase", "iot_edge", "kvstore_sharding", "kvstore_splitrw", "kvstore_standard", "memcache", "mns", "mongodb", "mongodb_cluster", "mongodb_sharding", "mq_topic", "ocs", "opensearch", "oss", "polardb", "petadata", "scdn", "sharebandwidthpackages", "sls", "vpn"}, false),
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"webhook": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"escalations": {
 							Type:     schema.TypeSet,
@@ -47,7 +99,7 @@ func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
 												"comparison_operator": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
+													ValidateFunc: StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
 												},
 												"statistics": {
 													Type:     schema.TypeString,
@@ -73,7 +125,7 @@ func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
 												"comparison_operator": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
+													ValidateFunc: StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
 												},
 												"statistics": {
 													Type:     schema.TypeString,
@@ -99,7 +151,7 @@ func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
 												"comparison_operator": {
 													Type:         schema.TypeString,
 													Optional:     true,
-													ValidateFunc: validation.StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
+													ValidateFunc: StringInSlice([]string{"GreaterThanOrEqualToThreshold", "GreaterThanThreshold", "LessThanOrEqualToThreshold", "LessThanThreshold", "NotEqualToThreshold", "GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek", "LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod"}, false),
 												},
 												"statistics": {
 													Type:     schema.TypeString,
@@ -119,73 +171,18 @@ func resourceAlicloudCmsMetricRuleTemplate() *schema.Resource {
 								},
 							},
 						},
-						"metric_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"namespace": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"rule_name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"webhook": {
-							Type:     schema.TypeString,
-							Optional: true,
-						},
 					},
 				},
 			},
-			"apply_mode": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"enable_end_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"enable_start_time": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"group_id": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"metric_rule_template_name": {
-				Type:     schema.TypeString,
-				Required: true,
-				ForceNew: true,
-			},
-			"notify_level": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"rest_version": {
-				Optional: true,
 				Type:     schema.TypeString,
 				Computed: true,
-			},
-			"silence_time": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntBetween(0, 86400),
-			},
-			"webhook": {
-				Type:     schema.TypeString,
-				Optional: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateMetricRuleTemplate"
@@ -194,67 +191,120 @@ func resourceAlicloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["Name"] = d.Get("metric_rule_template_name")
+
+	if v, ok := d.GetOk("description"); ok {
+		request["Description"] = v
+	}
+
 	if v, ok := d.GetOk("alert_templates"); ok {
 		alertTemplatesMaps := make([]map[string]interface{}, 0)
 		for _, alertTemplates := range v.(*schema.Set).List() {
-			alertTemplatesArg := alertTemplates.(map[string]interface{})
 			alertTemplatesMap := map[string]interface{}{}
-			alertTemplatesMap["Category"] = alertTemplatesArg["category"]
-			if escalationsMaps, ok := alertTemplatesArg["escalations"]; ok {
-				escalationsMap := map[string]interface{}{}
-				for _, escalationsArg := range escalationsMaps.(*schema.Set).List() {
-					if criticalMaps, ok := escalationsArg.(map[string]interface{})["critical"]; ok {
-						requestCriticalArg := map[string]interface{}{}
-						for _, criticalMap := range criticalMaps.(*schema.Set).List() {
-							criticalArg := criticalMap.(map[string]interface{})
-							requestCriticalArg["ComparisonOperator"] = criticalArg["comparison_operator"]
-							requestCriticalArg["Statistics"] = criticalArg["statistics"]
-							requestCriticalArg["Threshold"] = criticalArg["threshold"]
-							requestCriticalArg["Times"] = criticalArg["times"]
-						}
-						escalationsMap["Critical"] = requestCriticalArg
-					}
-					if infoMaps, ok := escalationsArg.(map[string]interface{})["info"]; ok {
-						requestInfoArg := map[string]interface{}{}
-						for _, infoMap := range infoMaps.(*schema.Set).List() {
-							infoArg := infoMap.(map[string]interface{})
-							requestInfoArg["ComparisonOperator"] = infoArg["comparison_operator"]
-							requestInfoArg["Statistics"] = infoArg["statistics"]
-							requestInfoArg["Threshold"] = infoArg["threshold"]
-							requestInfoArg["Times"] = infoArg["times"]
-						}
-						escalationsMap["Info"] = requestInfoArg
-					}
-					if warnMaps, ok := escalationsArg.(map[string]interface{})["warn"]; ok {
-						requestWarnArg := map[string]interface{}{}
-						for _, warnMap := range warnMaps.(*schema.Set).List() {
-							warnArg := warnMap.(map[string]interface{})
-							requestWarnArg["ComparisonOperator"] = warnArg["comparison_operator"]
-							requestWarnArg["Statistics"] = warnArg["statistics"]
-							requestWarnArg["Threshold"] = warnArg["threshold"]
-							requestWarnArg["Times"] = warnArg["times"]
-						}
-						escalationsMap["Warn"] = requestWarnArg
-					}
-				}
-				alertTemplatesMap["Escalations"] = escalationsMap
-			}
+			alertTemplatesArg := alertTemplates.(map[string]interface{})
+
+			alertTemplatesMap["RuleName"] = alertTemplatesArg["rule_name"]
 			alertTemplatesMap["MetricName"] = alertTemplatesArg["metric_name"]
 			alertTemplatesMap["Namespace"] = alertTemplatesArg["namespace"]
-			alertTemplatesMap["RuleName"] = alertTemplatesArg["rule_name"]
+			alertTemplatesMap["Category"] = alertTemplatesArg["category"]
 			alertTemplatesMap["Webhook"] = alertTemplatesArg["webhook"]
+
+			if escalations, ok := alertTemplatesArg["escalations"]; ok {
+				escalationsMap := map[string]interface{}{}
+				for _, escalationsList := range escalations.(*schema.Set).List() {
+					escalationsArg := escalationsList.(map[string]interface{})
+
+					if critical, ok := escalationsArg["critical"]; ok {
+						criticalMap := map[string]interface{}{}
+						for _, criticalList := range critical.(*schema.Set).List() {
+							criticalArg := criticalList.(map[string]interface{})
+
+							if comparisonOperator, ok := criticalArg["comparison_operator"]; ok {
+								criticalMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := criticalArg["statistics"]; ok {
+								criticalMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := criticalArg["threshold"]; ok {
+								criticalMap["Threshold"] = threshold
+							}
+
+							if times, ok := criticalArg["times"]; ok {
+								criticalMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Critical"] = criticalMap
+					}
+
+					if info, ok := escalationsArg["info"]; ok {
+						infoMap := map[string]interface{}{}
+						for _, infoList := range info.(*schema.Set).List() {
+							infoArg := infoList.(map[string]interface{})
+
+							if comparisonOperator, ok := infoArg["comparison_operator"]; ok {
+								infoMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := infoArg["statistics"]; ok {
+								infoMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := infoArg["threshold"]; ok {
+								infoMap["Threshold"] = threshold
+							}
+
+							if times, ok := infoArg["times"]; ok {
+								infoMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Info"] = infoMap
+					}
+
+					if warn, ok := escalationsArg["warn"]; ok {
+						warnMap := map[string]interface{}{}
+						for _, warnList := range warn.(*schema.Set).List() {
+							warnArg := warnList.(map[string]interface{})
+
+							if comparisonOperator, ok := warnArg["comparison_operator"]; ok {
+								warnMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := warnArg["statistics"]; ok {
+								warnMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := warnArg["threshold"]; ok {
+								warnMap["Threshold"] = threshold
+							}
+
+							if times, ok := warnArg["times"]; ok {
+								warnMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Warn"] = warnMap
+					}
+				}
+
+				alertTemplatesMap["Escalations"] = escalationsMap
+			}
+
 			alertTemplatesMaps = append(alertTemplatesMaps, alertTemplatesMap)
 		}
 
 		request["AlertTemplates"] = alertTemplatesMaps
 	}
-	if v, ok := d.GetOk("description"); ok {
-		request["Description"] = v
-	}
-	request["Name"] = d.Get("metric_rule_template_name")
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -265,231 +315,298 @@ func resourceAlicloudCmsMetricRuleTemplateCreate(d *schema.ResourceData, meta in
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_metric_rule_template", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	return resourceAlicloudCmsMetricRuleTemplateUpdate(d, meta)
+	return resourceAliCloudCmsMetricRuleTemplateUpdate(d, meta)
 }
-func resourceAlicloudCmsMetricRuleTemplateRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsMetricRuleTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
+
 	object, err := cmsService.DescribeCmsMetricRuleTemplate(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cms_metric_rule_template cmsService.DescribeCmsMetricRuleTemplate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	if alertTemplatesMap, ok := object["AlertTemplates"].(map[string]interface{}); ok && alertTemplatesMap != nil {
-		if alertTemplateList, ok := alertTemplatesMap["AlertTemplate"]; ok && alertTemplateList != nil {
-			alertTemplatesMaps := make([]map[string]interface{}, 0)
-			for _, alertTemplateListItem := range alertTemplateList.([]interface{}) {
-				if alertTemplateListItemMap, ok := alertTemplateListItem.(map[string]interface{}); ok {
-					alertTempArg := make(map[string]interface{}, 0)
-					alertTempArg["category"] = alertTemplateListItemMap["Category"]
-					alertTempArg["metric_name"] = alertTemplateListItemMap["MetricName"]
-					alertTempArg["namespace"] = alertTemplateListItemMap["Namespace"]
-					alertTempArg["rule_name"] = alertTemplateListItemMap["RuleName"]
-					alertTempArg["webhook"] = alertTemplateListItemMap["Webhook"]
+
+	d.Set("metric_rule_template_name", object["Name"])
+	d.Set("description", object["Description"])
+	d.Set("rest_version", object["RestVersion"])
+
+	if alertTemplates, ok := object["AlertTemplates"]; ok {
+		if alertTemplateList, ok := alertTemplates.(map[string]interface{})["AlertTemplate"]; ok {
+			alertTemplateMaps := make([]map[string]interface{}, 0)
+			for _, alertTemplate := range alertTemplateList.([]interface{}) {
+				alertTemplateArg := alertTemplate.(map[string]interface{})
+				alertTemplateMap := map[string]interface{}{}
+
+				if ruleName, ok := alertTemplateArg["RuleName"]; ok {
+					alertTemplateMap["rule_name"] = ruleName
+				}
+
+				if metricName, ok := alertTemplateArg["MetricName"]; ok {
+					alertTemplateMap["metric_name"] = metricName
+				}
+
+				if namespace, ok := alertTemplateArg["Namespace"]; ok {
+					alertTemplateMap["namespace"] = namespace
+				}
+
+				if category, ok := alertTemplateArg["Category"]; ok {
+					alertTemplateMap["category"] = category
+				}
+
+				if webhook, ok := alertTemplateArg["Webhook"]; ok {
+					alertTemplateMap["webhook"] = webhook
+				}
+
+				if escalations, ok := alertTemplateArg["Escalations"]; ok {
 					escalationsMaps := make([]map[string]interface{}, 0)
-					escalationsMap := map[string]interface{}{}
-					if EscalationsMap, ok := alertTemplateListItemMap["Escalations"].(map[string]interface{}); ok && len(EscalationsMap) > 0 {
-						EscalationsArg := EscalationsMap
+					escalationsArg := escalations.(map[string]interface{})
+					escalationsMap := make(map[string]interface{})
 
-						if criticalMap, ok := EscalationsArg["Critical"].(map[string]interface{}); ok && len(criticalMap) > 0 {
-							criticalMaps := make([]map[string]interface{}, 0)
-							criticalArg := map[string]interface{}{}
-							criticalArg["comparison_operator"] = criticalMap["ComparisonOperator"]
-							criticalArg["statistics"] = criticalMap["Statistics"]
-							criticalArg["threshold"] = criticalMap["Threshold"]
-							criticalArg["times"] = criticalMap["Times"]
-							criticalMaps = append(criticalMaps, criticalArg)
-							escalationsMap["critical"] = criticalMaps
+					if critical, ok := escalationsArg["Critical"]; ok && len(critical.(map[string]interface{})) > 0 {
+						criticalMaps := make([]map[string]interface{}, 0)
+						criticalArg := critical.(map[string]interface{})
+						criticalMap := map[string]interface{}{}
+
+						if comparisonOperator, ok := criticalArg["ComparisonOperator"]; ok {
+							criticalMap["comparison_operator"] = comparisonOperator
 						}
 
-						if infoMap, ok := EscalationsArg["Info"].(map[string]interface{}); ok && len(infoMap) > 0 {
-							infoMaps := make([]map[string]interface{}, 0)
-							infoArg := map[string]interface{}{}
-							infoArg["comparison_operator"] = infoMap["ComparisonOperator"]
-							infoArg["statistics"] = infoMap["Statistics"]
-							infoArg["threshold"] = infoMap["Threshold"]
-							infoArg["times"] = infoMap["Times"]
-							infoMaps = append(infoMaps, infoArg)
-							escalationsMap["info"] = infoMaps
+						if statistics, ok := criticalArg["Statistics"]; ok {
+							criticalMap["statistics"] = statistics
 						}
 
-						if warnMap, ok := EscalationsArg["Warn"].(map[string]interface{}); ok && len(warnMap) > 0 {
-							warnMaps := make([]map[string]interface{}, 0)
-							warnArg := make(map[string]interface{}, 0)
-							warnArg["comparison_operator"] = warnMap["ComparisonOperator"]
-							warnArg["statistics"] = warnMap["Statistics"]
-							warnArg["threshold"] = warnMap["Threshold"]
-							warnArg["times"] = warnMap["Times"]
-							warnMaps = append(warnMaps, warnArg)
-							escalationsMap["warn"] = warnMaps
+						if threshold, ok := criticalArg["Threshold"]; ok {
+							criticalMap["threshold"] = threshold
 						}
+
+						if times, ok := criticalArg["Times"]; ok {
+							criticalMap["times"] = times
+						}
+
+						criticalMaps = append(criticalMaps, criticalMap)
+
+						escalationsMap["critical"] = criticalMaps
 					}
+
+					if info, ok := escalationsArg["Info"]; ok && len(info.(map[string]interface{})) > 0 {
+						infoMaps := make([]map[string]interface{}, 0)
+						infoArg := info.(map[string]interface{})
+						infoMap := map[string]interface{}{}
+
+						if comparisonOperator, ok := infoArg["ComparisonOperator"]; ok {
+							infoMap["comparison_operator"] = comparisonOperator
+						}
+
+						if statistics, ok := infoArg["Statistics"]; ok {
+							infoMap["statistics"] = statistics
+						}
+
+						if threshold, ok := infoArg["Threshold"]; ok {
+							infoMap["threshold"] = threshold
+						}
+
+						if times, ok := infoArg["Times"]; ok {
+							infoMap["times"] = times
+						}
+
+						infoMaps = append(infoMaps, infoMap)
+
+						escalationsMap["info"] = infoMaps
+					}
+
+					if warn, ok := escalationsArg["Warn"]; ok && len(warn.(map[string]interface{})) > 0 {
+						warnMaps := make([]map[string]interface{}, 0)
+						warnArg := warn.(map[string]interface{})
+						warnMap := map[string]interface{}{}
+
+						if comparisonOperator, ok := warnArg["ComparisonOperator"]; ok {
+							warnMap["comparison_operator"] = comparisonOperator
+						}
+
+						if statistics, ok := warnArg["Statistics"]; ok {
+							warnMap["statistics"] = statistics
+						}
+
+						if threshold, ok := warnArg["Threshold"]; ok {
+							warnMap["threshold"] = threshold
+						}
+
+						if times, ok := warnArg["Times"]; ok {
+							warnMap["times"] = times
+						}
+
+						warnMaps = append(warnMaps, warnMap)
+
+						escalationsMap["warn"] = warnMaps
+					}
+
 					escalationsMaps = append(escalationsMaps, escalationsMap)
 
-					alertTempArg["escalations"] = escalationsMaps
-					alertTemplatesMaps = append(alertTemplatesMaps, alertTempArg)
+					alertTemplateMap["escalations"] = escalationsMaps
 				}
+
+				alertTemplateMaps = append(alertTemplateMaps, alertTemplateMap)
 			}
-			d.Set("alert_templates", alertTemplatesMaps)
+
+			d.Set("alert_templates", alertTemplateMaps)
 		}
 	}
-	d.Set("description", object["Description"])
-	d.Set("metric_rule_template_name", object["Name"])
-	d.Set("rest_version", object["RestVersion"])
+
 	return nil
 }
-func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewCmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
 	d.Partial(true)
 
 	update := false
-	request := map[string]interface{}{
-		"TemplateIds": d.Id(),
-	}
-	if d.HasChange("group_id") {
-		update = true
-	}
-	if v, ok := d.GetOk("group_id"); ok {
-		request["GroupId"] = v
-	}
-	if update {
-		if v, ok := d.GetOk("apply_mode"); ok {
-			request["ApplyMode"] = v
-		}
-		if v, ok := d.GetOk("enable_end_time"); ok {
-			request["EnableEndTime"] = v
-		}
-		if v, ok := d.GetOk("enable_start_time"); ok {
-			request["EnableStartTime"] = v
-		}
-		if v, ok := d.GetOk("notify_level"); ok {
-			request["NotifyLevel"] = v
-		}
-		if v, ok := d.GetOk("silence_time"); ok {
-			request["SilenceTime"] = v
-		}
-		if v, ok := d.GetOk("webhook"); ok {
-			request["Webhook"] = v
-		}
-		action := "ApplyMetricRuleTemplate"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		addDebug(action, response, request)
-		if err != nil {
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		if fmt.Sprint(response["Success"]) == "false" {
-			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
-		}
-		d.SetPartial("group_id")
-	}
-	update = false
 	modifyMetricRuleTemplateReq := map[string]interface{}{
-		"TemplateId": d.Id(),
+		"TemplateId":  d.Id(),
+		"RestVersion": d.Get("rest_version"),
 	}
 
-	if v, ok := d.GetOk("rest_version"); ok {
-		modifyMetricRuleTemplateReq["RestVersion"] = v
-	}
-	if !d.IsNewResource() && d.HasChange("alert_templates") {
-		update = true
-		if v, ok := d.GetOk("alert_templates"); ok {
-			alertTemplatesMaps := make([]map[string]interface{}, 0)
-			for _, alertTemplates := range v.(*schema.Set).List() {
-				alertTemplatesArg := alertTemplates.(map[string]interface{})
-				alertTemplatesMap := map[string]interface{}{}
-				alertTemplatesMap["Category"] = alertTemplatesArg["category"]
-				if escalationsMaps, ok := alertTemplatesArg["escalations"]; ok {
-					escalationsMap := map[string]interface{}{}
-					for _, escalationsArg := range escalationsMaps.(*schema.Set).List() {
-						if criticalMaps, ok := escalationsArg.(map[string]interface{})["critical"]; ok {
-							requestCriticalArg := map[string]interface{}{}
-							for _, criticalMap := range criticalMaps.(*schema.Set).List() {
-								criticalArg := criticalMap.(map[string]interface{})
-								requestCriticalArg["ComparisonOperator"] = criticalArg["comparison_operator"]
-								requestCriticalArg["Statistics"] = criticalArg["statistics"]
-								requestCriticalArg["Threshold"] = criticalArg["threshold"]
-								requestCriticalArg["Times"] = criticalArg["times"]
-							}
-							escalationsMap["Critical"] = requestCriticalArg
-						}
-						if infoMaps, ok := escalationsArg.(map[string]interface{})["info"]; ok {
-							requestInfoArg := map[string]interface{}{}
-							for _, infoMap := range infoMaps.(*schema.Set).List() {
-								infoArg := infoMap.(map[string]interface{})
-								requestInfoArg["ComparisonOperator"] = infoArg["comparison_operator"]
-								requestInfoArg["Statistics"] = infoArg["statistics"]
-								requestInfoArg["Threshold"] = infoArg["threshold"]
-								requestInfoArg["Times"] = infoArg["times"]
-							}
-							escalationsMap["Info"] = requestInfoArg
-						}
-						if warnMaps, ok := escalationsArg.(map[string]interface{})["warn"]; ok {
-							requestWarnArg := map[string]interface{}{}
-							for _, warnMap := range warnMaps.(*schema.Set).List() {
-								warnArg := warnMap.(map[string]interface{})
-								requestWarnArg["ComparisonOperator"] = warnArg["comparison_operator"]
-								requestWarnArg["Statistics"] = warnArg["statistics"]
-								requestWarnArg["Threshold"] = warnArg["threshold"]
-								requestWarnArg["Times"] = warnArg["times"]
-							}
-							escalationsMap["Warn"] = requestWarnArg
-						}
-					}
-					alertTemplatesMap["Escalations"] = escalationsMap
-				}
-				alertTemplatesMap["MetricName"] = alertTemplatesArg["metric_name"]
-				alertTemplatesMap["Namespace"] = alertTemplatesArg["namespace"]
-				alertTemplatesMap["RuleName"] = alertTemplatesArg["rule_name"]
-				alertTemplatesMap["Webhook"] = alertTemplatesArg["webhook"]
-				alertTemplatesMaps = append(alertTemplatesMaps, alertTemplatesMap)
-			}
-			modifyMetricRuleTemplateReq["AlertTemplates"] = alertTemplatesMaps
-		}
-	}
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
-		if v, ok := d.GetOk("description"); ok {
-			modifyMetricRuleTemplateReq["Description"] = v
-		}
 	}
-	if !d.IsNewResource() && d.HasChange("metric_rule_template_name") {
+	if v, ok := d.GetOk("description"); ok {
+		modifyMetricRuleTemplateReq["Description"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("alert_templates") {
 		update = true
-		modifyMetricRuleTemplateReq["Name"] = d.Get("metric_rule_template_name")
 	}
+	if v, ok := d.GetOk("alert_templates"); ok {
+		alertTemplatesMaps := make([]map[string]interface{}, 0)
+		for _, alertTemplates := range v.(*schema.Set).List() {
+			alertTemplatesMap := map[string]interface{}{}
+			alertTemplatesArg := alertTemplates.(map[string]interface{})
+
+			alertTemplatesMap["RuleName"] = alertTemplatesArg["rule_name"]
+			alertTemplatesMap["MetricName"] = alertTemplatesArg["metric_name"]
+			alertTemplatesMap["Namespace"] = alertTemplatesArg["namespace"]
+			alertTemplatesMap["Category"] = alertTemplatesArg["category"]
+			alertTemplatesMap["Webhook"] = alertTemplatesArg["webhook"]
+
+			if escalations, ok := alertTemplatesArg["escalations"]; ok {
+				escalationsMap := map[string]interface{}{}
+				for _, escalationsList := range escalations.(*schema.Set).List() {
+					escalationsArg := escalationsList.(map[string]interface{})
+
+					if critical, ok := escalationsArg["critical"]; ok {
+						criticalMap := map[string]interface{}{}
+						for _, criticalList := range critical.(*schema.Set).List() {
+							criticalArg := criticalList.(map[string]interface{})
+
+							if comparisonOperator, ok := criticalArg["comparison_operator"]; ok {
+								criticalMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := criticalArg["statistics"]; ok {
+								criticalMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := criticalArg["threshold"]; ok {
+								criticalMap["Threshold"] = threshold
+							}
+
+							if times, ok := criticalArg["times"]; ok {
+								criticalMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Critical"] = criticalMap
+					}
+
+					if info, ok := escalationsArg["info"]; ok {
+						infoMap := map[string]interface{}{}
+						for _, infoList := range info.(*schema.Set).List() {
+							infoArg := infoList.(map[string]interface{})
+
+							if comparisonOperator, ok := infoArg["comparison_operator"]; ok {
+								infoMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := infoArg["statistics"]; ok {
+								infoMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := infoArg["threshold"]; ok {
+								infoMap["Threshold"] = threshold
+							}
+
+							if times, ok := infoArg["times"]; ok {
+								infoMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Info"] = infoMap
+					}
+
+					if warn, ok := escalationsArg["warn"]; ok {
+						warnMap := map[string]interface{}{}
+						for _, warnList := range warn.(*schema.Set).List() {
+							warnArg := warnList.(map[string]interface{})
+
+							if comparisonOperator, ok := warnArg["comparison_operator"]; ok {
+								warnMap["ComparisonOperator"] = comparisonOperator
+							}
+
+							if statistics, ok := warnArg["statistics"]; ok {
+								warnMap["Statistics"] = statistics
+							}
+
+							if threshold, ok := warnArg["threshold"]; ok {
+								warnMap["Threshold"] = threshold
+							}
+
+							if times, ok := warnArg["times"]; ok {
+								warnMap["Times"] = times
+							}
+						}
+
+						escalationsMap["Warn"] = warnMap
+					}
+				}
+
+				alertTemplatesMap["Escalations"] = escalationsMap
+			}
+
+			alertTemplatesMaps = append(alertTemplatesMaps, alertTemplatesMap)
+		}
+
+		modifyMetricRuleTemplateReq["AlertTemplates"] = alertTemplatesMaps
+	}
+
 	if update {
 		action := "ModifyMetricRuleTemplate"
+		conn, err := client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, modifyMetricRuleTemplateReq, &util.RuntimeOptions{})
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, modifyMetricRuleTemplateReq, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -500,21 +617,120 @@ func resourceAlicloudCmsMetricRuleTemplateUpdate(d *schema.ResourceData, meta in
 			return nil
 		})
 		addDebug(action, response, modifyMetricRuleTemplateReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Success"]) == "false" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		d.SetPartial("rest_version")
-		d.SetPartial("alert_templates")
-		d.SetPartial("description")
+
 		d.SetPartial("metric_rule_template_name")
+		d.SetPartial("description")
+		d.SetPartial("alert_templates")
 	}
+
+	update = false
+	applyMetricRuleTemplateReq := map[string]interface{}{
+		"TemplateIds": d.Id(),
+	}
+
+	if d.HasChange("group_id") {
+		update = true
+	}
+	if v, ok := d.GetOk("group_id"); ok {
+		applyMetricRuleTemplateReq["GroupId"] = v
+	}
+
+	if d.HasChange("apply_mode") {
+		update = true
+	}
+	if v, ok := d.GetOk("apply_mode"); ok {
+		applyMetricRuleTemplateReq["ApplyMode"] = v
+	}
+
+	if d.HasChange("notify_level") {
+		update = true
+	}
+	if v, ok := d.GetOk("notify_level"); ok {
+		applyMetricRuleTemplateReq["NotifyLevel"] = v
+	}
+
+	if d.HasChange("silence_time") {
+		update = true
+	}
+	if v, ok := d.GetOkExists("silence_time"); ok {
+		applyMetricRuleTemplateReq["SilenceTime"] = v
+	}
+
+	if d.HasChange("webhook") {
+		update = true
+	}
+	if v, ok := d.GetOk("webhook"); ok {
+		applyMetricRuleTemplateReq["Webhook"] = v
+	}
+
+	if d.HasChange("enable_start_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("enable_start_time"); ok {
+		applyMetricRuleTemplateReq["EnableStartTime"] = v
+	}
+
+	if d.HasChange("enable_end_time") {
+		update = true
+	}
+	if v, ok := d.GetOk("enable_end_time"); ok {
+		applyMetricRuleTemplateReq["EnableEndTime"] = v
+	}
+
+	if update {
+		action := "ApplyMetricRuleTemplate"
+		conn, err := client.NewCmsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, applyMetricRuleTemplateReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, applyMetricRuleTemplateReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+		}
+
+		d.SetPartial("group_id")
+		d.SetPartial("apply_mode")
+		d.SetPartial("notify_level")
+		d.SetPartial("silence_time")
+		d.SetPartial("webhook")
+		d.SetPartial("enable_start_time")
+		d.SetPartial("enable_end_time")
+	}
+
 	d.Partial(false)
-	return resourceAlicloudCmsMetricRuleTemplateRead(d, meta)
+
+	return resourceAliCloudCmsMetricRuleTemplateRead(d, meta)
 }
-func resourceAlicloudCmsMetricRuleTemplateDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsMetricRuleTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteMetricRuleTemplate"
 	var response map[string]interface{}
@@ -522,13 +738,16 @@ func resourceAlicloudCmsMetricRuleTemplateDelete(d *schema.ResourceData, meta in
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"TemplateId": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -539,14 +758,17 @@ func resourceAlicloudCmsMetricRuleTemplateDelete(d *schema.ResourceData, meta in
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	if IsExpectedErrorCodes(fmt.Sprint(response["Code"]), []string{"ResourceNotFound"}) {
-		return nil
-	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	return nil
 }
