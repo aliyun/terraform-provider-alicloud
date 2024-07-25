@@ -1776,7 +1776,7 @@ func TestAccAliCloudEssScalingGroup_tags(t *testing.T) {
 
 }
 
-func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
+func TestAccAliCloudEssScalingGroup_healthCheckTypes(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
@@ -1832,11 +1832,13 @@ func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
 					"scaling_group_name": "${var.name}",
 					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
-					"health_check_type":  "LOAD_BALANCER",
+					"health_check_type":  REMOVEKEY,
+					"health_check_types": []string{"ECS"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_type": "LOAD_BALANCER",
+						"health_check_type":    REMOVEKEY,
+						"health_check_types.#": "1",
 					}),
 				),
 			},
@@ -1848,11 +1850,11 @@ func TestAccAliCloudEssScalingGroup_healthCheckType(t *testing.T) {
 					"scaling_group_name": "${var.name}",
 					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
-					"health_check_type":  "ECS",
+					"health_check_types": []string{"ECS", "LOAD_BALANCER"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_type": "ECS",
+						"health_check_types.#": "2",
 					}),
 				),
 			},
@@ -2031,6 +2033,116 @@ func TestAccAliCloudEssScalingGroup_eci(t *testing.T) {
 					testAccCheck(map[string]string{
 						"max_size": "0",
 					}),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssScalingGroup_eciInstance(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "0",
+		"max_size":           "4",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":      "1",
+		"removal_policies.#": "2",
+		"group_type":         "ECI",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupInstance)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"group_type":         "ECI",
+					"instance_id":        "${alicloud_eci_container_group.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
+				),
+			},
+		},
+	})
+
+}
+
+func TestAccAliCloudEssScalingGroup_ecsInstance(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 999999)
+	var v ess.ScalingGroup
+	resourceId := "alicloud_ess_scaling_group.default"
+
+	basicMap := map[string]string{
+		"min_size":           "0",
+		"max_size":           "4",
+		"default_cooldown":   "20",
+		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
+		"vswitch_ids.#":      "1",
+		"removal_policies.#": "2",
+		"group_type":         "ECI",
+	}
+
+	ra := resourceAttrInit(resourceId, basicMap)
+	rc := resourceCheckInit(resourceId, &v, func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	})
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingGroupInstance)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckEssScalingGroupDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"min_size":           "0",
+					"max_size":           "4",
+					"default_cooldown":   "20",
+					"scaling_group_name": "${var.name}",
+					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
+					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
+					"group_type":         "ECI",
+					"instance_id":        "${alicloud_instance.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(nil),
 				),
 			},
 		},
@@ -2327,6 +2439,109 @@ func resourceEssScalingGroupRdsDependence(name string) string {
   		instance_storage = "10"
   		vswitch_id       = "${alicloud_vswitch.default.id}"
   		instance_name    = var.name
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingGroupInstance(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+
+    resource "alicloud_vswitch" "tmpVs" {
+  		vpc_id = "${alicloud_vpc.default.id}"
+  		cidr_block = "172.16.1.0/24"
+  		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+  		name = "${var.name}-bar"
+	}
+	
+	resource "alicloud_instance" "default" {
+		image_id = "${data.alicloud_images.default.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		security_groups = ["${alicloud_security_group.default1.id}"]
+		internet_charge_type = "PayByTraffic"
+		internet_max_bandwidth_out = "10"
+		instance_charge_type = "PostPaid"
+		system_disk_category = "cloud_efficiency"
+		vswitch_id = "${alicloud_vswitch.tmpVs.id}"
+		instance_name = "${var.name}"
+	}
+	
+	resource "alicloud_eci_container_group" "default" {
+	  container_group_name = "test"
+	  cpu                  = 8.0
+	  memory               = 16.0
+	  restart_policy       = "OnFailure"
+	  security_group_id    = alicloud_security_group.default1.id
+	  vswitch_id           = alicloud_vswitch.tmpVs.id
+	  auto_create_eip      = true
+	  tags = {
+		Created = "TF",
+		For     = "example",
+	  }
+	  containers {
+		image             = "registry.cn-beijing.aliyuncs.com/eci_open/nginx:alpine"
+		name              = "nginx"
+		working_dir       = "/tmp/nginx"
+		image_pull_policy = "IfNotPresent"
+		commands          = ["/bin/sh", "-c", "sleep 9999"]
+		volume_mounts {
+		  mount_path = "/tmp/example"
+		  read_only  = false
+		  name       = "empty1"
+		}
+		ports {
+		  port     = 80
+		  protocol = "TCP"
+		}
+		environment_vars {
+		  key   = "name"
+		  value = "nginx"
+		}
+		liveness_probe {
+		  period_seconds        = "5"
+		  initial_delay_seconds = "5"
+		  success_threshold     = "1"
+		  failure_threshold     = "3"
+		  timeout_seconds       = "1"
+		  exec {
+			commands = ["cat /tmp/healthy"]
+		  }
+		}
+		readiness_probe {
+		  period_seconds        = "5"
+		  initial_delay_seconds = "5"
+		  success_threshold     = "1"
+		  failure_threshold     = "3"
+		  timeout_seconds       = "1"
+		  exec {
+			commands = ["cat /tmp/healthy"]
+		  }
+		}
+	  }
+	  init_containers {
+		name              = "init-busybox"
+		image             = "registry.cn-beijing.aliyuncs.com/eci_open/busybox:1.30"
+		image_pull_policy = "IfNotPresent"
+		commands          = ["echo"]
+		args              = ["hello initcontainer"]
+	  }
+	  volumes {
+		name = "empty1"
+		type = "EmptyDirVolume"
+	  }
+	  volumes {
+		name = "empty2"
+		type = "EmptyDirVolume"
+	  }
+	}
+	
+
+	resource "alicloud_security_group" "default1" {
+  		name   = var.name
+  		vpc_id = "${alicloud_vpc.default.id}"
 	}`, EcsInstanceCommonTestCase, name)
 }
 
