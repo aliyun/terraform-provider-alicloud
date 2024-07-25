@@ -31,7 +31,7 @@ variable "data_node_disk_encrypted" {
 }
 
 variable "es_version" {
-  default = "6.3_with_X-Pack"
+  default = "7.16_with_X-Pack"
 }
 
 variable "vswitch_id" {
@@ -81,4 +81,40 @@ variable "setting_config" {
     "xpack.security.audit.outputs": "index",
     "xpack.watcher.enabled": "false"
   }
+}
+
+variable "warm_node_amount" {
+  default = "3"
+}
+
+variable "warm_node_spec" {
+  default = "elasticsearch.sn2ne.large"
+}
+
+variable "warm_node_disk_size" {
+  default = "500"
+}
+
+variable "warm_node_disk_type" {
+  default = "cloud_efficiency"
+}
+
+variable "warm_node_disk_encrypted" {
+  default = false
+}
+
+variable "kibana_node_spec" {
+  default = "elasticsearch.sn1ne.large"
+}
+
+variable "kibana_private_security_group_id" {
+  default = "sg-xxxx your security group"
+}
+
+variable "enable_kibana_private_network" {
+  default = false
+}
+
+variable "enable_kibana_public_network" {
+  default = true
 }

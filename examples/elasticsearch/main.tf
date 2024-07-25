@@ -15,5 +15,13 @@ resource "alicloud_elasticsearch_instance" "instance" {
   client_node_spec         = var.client_node_spec
   protocol                 = var.protocol
   setting_config           = var.setting_config
+  warm_node_spec            = var.warm_node_spec
+  warm_node_amount          = var.warm_node_amount
+  warm_node_disk_size       = var.warm_node_disk_size
+  warm_node_disk_type       = var.warm_node_disk_type
+  kibana_node_spec          = var.kibana_node_spec,
+  enable_kibana_private_network = var.enable_kibana_private_network
+  enable_kibana_public_network  = var.enable_kibana_public_network
+  kibana_private_security_group_id = var.kibana_private_security_group_id
 }
 
