@@ -1364,7 +1364,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contact":                                    resourceAlicloudArmsAlertContact(),
 			"alicloud_event_bridge_slr":                                      resourceAlicloudEventBridgeServiceLinkedRole(),
 			"alicloud_event_bridge_rule":                                     resourceAliCloudEventBridgeRule(),
-			"alicloud_cloud_firewall_control_policy":                         resourceAlicloudCloudFirewallControlPolicy(),
+			"alicloud_cloud_firewall_control_policy":                         resourceAliCloudCloudFirewallControlPolicy(),
 			"alicloud_sae_namespace":                                         resourceAlicloudSaeNamespace(),
 			"alicloud_sae_config_map":                                        resourceAlicloudSaeConfigMap(),
 			"alicloud_alb_security_policy":                                   resourceAlicloudAlbSecurityPolicy(),
