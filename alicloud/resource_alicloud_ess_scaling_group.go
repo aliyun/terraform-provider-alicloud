@@ -47,10 +47,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Optional: true,
 			},
 			"health_check_type": {
-				Type:         schema.TypeString,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER"}, false),
-				Optional:     true,
+				Type:          schema.TypeString,
+				Computed:      true,
+				ValidateFunc:  StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER", "ECI"}, false),
+				Optional:      true,
+				ConflictsWith: []string{"health_check_types"},
 			},
 			"scaling_policy": {
 				Type:         schema.TypeString,
@@ -73,6 +74,17 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.7.1, and new field 'vswitch_ids' can replace it.",
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"health_check_types": {
+				Type:          schema.TypeList,
+				Optional:      true,
+				Elem:          &schema.Schema{Type: schema.TypeString},
+				ConflictsWith: []string{"health_check_type"},
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeSet,
@@ -315,7 +327,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("spot_allocation_strategy", object["SpotAllocationStrategy"])
 	d.Set("on_demand_base_capacity", object["OnDemandBaseCapacity"])
 	d.Set("on_demand_percentage_above_base_capacity", object["OnDemandPercentageAboveBaseCapacity"])
-	d.Set("spot_instance_pools", object["SpotInstancePools"])
+	if object["SpotInstancePools"] != nil {
+		d.Set("spot_instance_pools", object["SpotInstancePools"])
+	}
 	d.Set("spot_instance_remedy", object["SpotInstanceRemedy"])
 	d.Set("group_deletion_protection", object["GroupDeletionProtection"])
 	var polices []string
@@ -345,6 +359,13 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	if object["VSwitchIds"] != nil && len(object["VSwitchIds"].(map[string]interface{})["VSwitchId"].([]interface{})) > 0 {
 		for _, v := range object["VSwitchIds"].(map[string]interface{})["VSwitchId"].([]interface{}) {
 			vswitchIds = append(vswitchIds, v.(string))
+		}
+	}
+
+	var healthCheckTypes []string
+	if object["HealthCheckTypes"] != nil && len(object["HealthCheckTypes"].(map[string]interface{})["HealthCheckType"].([]interface{})) > 0 {
+		for _, v := range object["HealthCheckTypes"].(map[string]interface{})["HealthCheckType"].([]interface{}) {
+			healthCheckTypes = append(healthCheckTypes, v.(string))
 		}
 	}
 
@@ -404,6 +425,9 @@ func resourceAliyunEssScalingGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("launch_template_version", object["LaunchTemplateVersion"])
 	d.Set("group_type", object["GroupType"])
 	d.Set("health_check_type", object["HealthCheckType"])
+	if object["HealthCheckType"] == nil {
+		d.Set("health_check_types", healthCheckTypes)
+	}
 	d.Set("scaling_policy", object["ScalingPolicy"])
 
 	listTagResourcesObject, err := essService.ListTagResources(d.Id(), client)
@@ -482,6 +506,11 @@ func resourceAliyunEssScalingGroupUpdate(d *schema.ResourceData, meta interface{
 	if d.HasChange("vswitch_ids") {
 		vSwitchIds := expandStringList(d.Get("vswitch_ids").(*schema.Set).List())
 		request["VSwitchIds"] = &vSwitchIds
+	}
+
+	if d.HasChange("health_check_types") {
+		healthCheckTypes := expandStringList(d.Get("health_check_types").([]interface{}))
+		request["HealthCheckTypes"] = &healthCheckTypes
 	}
 
 	if d.HasChange("removal_policies") {
@@ -659,6 +688,14 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 		count := 1
 		for _, value := range v.(*schema.Set).List() {
 			request[fmt.Sprintf("VSwitchIds.%d", count)] = value
+			count++
+		}
+	}
+
+	if v, ok := d.GetOk("health_check_types"); ok {
+		count := 1
+		for _, value := range v.(*schema.Set).List() {
+			request[fmt.Sprintf("HealthCheckTypes.%d", count)] = value
 			count++
 		}
 	}
