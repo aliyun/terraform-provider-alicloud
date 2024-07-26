@@ -26,6 +26,16 @@ variable "name" {
   default = "tf-example"
 }
 
+variable "region" {
+  default = "cn-beijing"
+}
+
+provider "alicloud" {
+  access_key = "your ak"
+  secret_key = "your sk"
+  region = var.region
+}
+
 data "alicloud_elasticsearch_zones" "default" {}
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
@@ -45,7 +55,7 @@ resource "alicloud_elasticsearch_instance" "default" {
   version                          = "7.10_with_X-Pack"
   instance_charge_type             = "PostPaid"
   data_node_amount                 = "2"
-  data_node_spec                   = "elasticsearch.sn2ne.large"
+  data_node_spec                   = "elasticsearch.sn2ne.large.new"
   data_node_disk_size              = "20"
   data_node_disk_type              = "cloud_ssd"
   kibana_node_spec                 = "elasticsearch.sn2ne.large"
