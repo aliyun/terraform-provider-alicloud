@@ -499,7 +499,7 @@ func (s *CsClient) DescribeCsKubernetesAddon(id string) (*Component, error) {
 
 	addonInstance, err := s.DescribeCsKubernetesAddonInstance(clusterId, addonName)
 	if err != nil {
-		if NotFoundError(err) {
+		if IsExpectedErrors(err, []string{"AddonNotFound", "ErrorClusterNotFound"}) || NotFoundError(err) {
 			return nil, WrapErrorf(Error(GetNotFoundMessage("alicloud_cs_kubernetes_addon", id)), ResourceNotfound)
 		}
 		return nil, err
