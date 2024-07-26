@@ -1,3 +1,15 @@
+variable "access_key" {
+  default = "your ak"
+}
+
+variable "secret_key" {
+  default = "your sk"
+}
+
+variable "region" {
+  default = "cn-beijing"
+}
+
 variable "instance_charge_type" {
   default = "PostPaid"
 }
@@ -11,7 +23,7 @@ variable "period" {
 }
 
 variable "data_node_spec" {
-  default = "elasticsearch.sn2ne.large"
+  default = "elasticsearch.sn2ne.large.new"
 }
 
 variable "data_node_amount" {
@@ -34,10 +46,6 @@ variable "es_version" {
   default = "7.16_with_X-Pack"
 }
 
-variable "vswitch_id" {
-  default = "switch id"
-}
-
 variable "password" {
   default = "MTest12345"
 }
@@ -53,7 +61,11 @@ variable "kibana_whitelist" {
 }
 
 variable "master_node_spec" {
-  default = "elasticsearch.sn2ne.xlarge"
+  default = "elasticsearch.sn2ne.xlarge.new"
+}
+
+variable "master_node_disk_type" {
+  default = "cloud_ssd"
 }
 
 variable "zone_count" {
@@ -105,14 +117,6 @@ variable "warm_node_disk_encrypted" {
 
 variable "kibana_node_spec" {
   default = "elasticsearch.sn1ne.large"
-}
-
-variable "kibana_private_security_group_id" {
-  default = "sg-xxxx your security group"
-}
-
-variable "enable_kibana_private_network" {
-  default = false
 }
 
 variable "enable_kibana_public_network" {
