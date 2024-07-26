@@ -54,7 +54,7 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 		return nil
 	})
 	if err != nil {
-		if IsExpectedErrors(err, []string{"ErrorNodePoolNotFound"}) {
+		if IsExpectedErrors(err, []string{"ErrorNodePoolNotFound", "ErrorClusterNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Nodepool", id)), NotFoundMsg, response)
 		}
 		addDebug(action, response, request)
