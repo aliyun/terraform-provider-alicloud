@@ -15,8 +15,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-const DataNodeSpec = "elasticsearch.sn1ne.large"
-const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large"
+const DataNodeSpec = "elasticsearch.sn1ne.large.new"
+const DataNodeSpecForUpdate = "elasticsearch.sn2ne.large.new"
 
 const DataNodeAmount = "2"
 const DataNodeAmountForUpdate = "3"
@@ -34,8 +34,8 @@ const DataNodeDiskPerformanceLevel2 = "PL2"
 const DataNodeAmountForMultiZone = "4"
 const DefaultZoneAmount = "2"
 
-const MasterNodeSpec = "elasticsearch.sn1ne.large"
-const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.large"
+const MasterNodeSpec = "elasticsearch.sn1ne.large.new"
+const MasterNodeSpecForUpdate = "elasticsearch.sn2ne.large.new"
 
 const MasterNodeDiskType = "cloud_ssd"
 const MasterNodeEssdDiskType = "cloud_essd"
@@ -765,7 +765,6 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"\"action.auto_create_index\"":         "+.*,-*",
 						"\"action.destructive_requires_name\"": "false",
 						"\"xpack.security.audit.enabled\"":     "true",
-						"\"xpack.watcher.enabled\"":            "false",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -773,7 +772,6 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"setting_config.action.auto_create_index":         "+.*,-*",
 						"setting_config.action.destructive_requires_name": "false",
 						"setting_config.xpack.security.audit.enabled":     "true",
-						"setting_config.xpack.watcher.enabled":            "false",
 					}),
 				),
 			},
