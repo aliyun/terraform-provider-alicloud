@@ -1,5 +1,5 @@
 ---
-subcategory: "MaxCompute"
+subcategory: "Max Compute"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_maxcompute_service"
 sidebar_current: "docs-alicloud-datasource-maxcompute-service"
