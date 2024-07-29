@@ -53,9 +53,9 @@ jobs:
       resource: gh
     - get: terraform
       resource: terraform
-  - <<: *run-example
-  - <<: *timer
   - <<: *run
+  - <<: *timer
+  - <<: *run-example
 
 - name: pull-request-integration-test-comment
   plan:
@@ -72,9 +72,9 @@ jobs:
       resource: gh
     - get: terraform
       resource: terraform
-  - <<: *run-example
-  - <<: *timer
   - <<: *run
+  - <<: *timer
+  - <<: *run-example
 
 resources:
 
@@ -104,7 +104,7 @@ resources:
     review_states: ["commented"]
     when: latest
     comments: ["^approved$"]
-    commenter_association: ["owner"]
+    commenter_association: ["owner", "member"]
 
 - name: gh
   type: file-url

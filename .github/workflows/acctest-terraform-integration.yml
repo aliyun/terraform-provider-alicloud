@@ -6,9 +6,77 @@ on:
       - alicloud/*.go
 
 jobs:
+  IntegrationTest:
+    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.x'
+      - uses: ReeganExE/github-action-job-id@v1.0
+        with:
+          expose-name: true
+      - uses: jwalton/gh-find-current-pr@v1
+        id: findPr
+        with:
+          # Can be "open", "closed", or "all".  Defaults to "open".
+          state: open
+      - uses: actions/checkout@v3
+        with:
+          # Checkout as many commits as needed for the diff
+          fetch-depth: 2
+      - name: Integration Test Check
+        run: |
+          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
+          diffFiles=$(git diff --name-only HEAD^ HEAD)
+          noNeedRun=true
+          for fileName in ${diffFiles[@]};
+          do
+              if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
+                  if [[ ${fileName} != *?_test.go ]]; then
+                      fileName=(${fileName//\.go/_test\.go })
+                      # echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
+                      # continue
+                  fi
+                  echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
+                  noNeedRun=false
+                  # fileName=(${fileName//\.go/_test\.go })
+                  if [[ $(grep -c "func TestAcc.*" ${fileName}) -lt 1 ]]; then
+                    echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $fileName, continue..."
+                    continue
+                  fi
+                  checkFuncs=$(grep "func TestAcc.*" ${fileName})
+                  echo -e "found the test funcs:\n${checkFuncs}\n"
+                  funcs=(${checkFuncs//"(t *testing.T) {"/ })
+                  for func in ${funcs[@]};
+                  do
+                    if [[ ${func} != "TestAcc"* ]]; then
+                      continue
+                    fi
+                    DiffFuncNames=$DiffFuncNames";"${func}
+                  done
+              fi
+          done
+
+          if [[ "${noNeedRun}" = "false" && ${DiffFuncNames} == "" ]]; then
+              echo -e "\n\033[33m[WARNING]\033[0m missing integration test cases, please add them. \033[0m"
+              exit 1
+          fi
+          if [[ "${noNeedRun}" = "true"  ]]; then
+              echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test. \033[0m"
+              exit 0
+          fi
+          IN=$GH_JOB_IntegrationTest_HTML_URL
+          arrIN=(${IN//actions/ })
+          ossObjectPath="github-actions"${arrIN[1]}
+          go run scripts/integration_check.go ${ossObjectPath}
+
   DocsExampleTest:
     if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
     runs-on: ubuntu-latest
+    needs: IntegrationTest
     steps:
       - uses: actions/checkout@v3
       - name: Setup Go
@@ -83,71 +151,3 @@ jobs:
           arrIN=(${IN//actions/ })
           ossObjectPath="github-actions"${arrIN[1]}
           go run scripts/docs_example_check.go ${ossObjectPath}
-
-  IntegrationTest:
-    if: github.event.review.state == 'approved' || github.event.review.body == 'approved'
-    runs-on: ubuntu-latest
-    # needs: DocsExampleTest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20.x'
-      - uses: ReeganExE/github-action-job-id@v1.0
-        with:
-          expose-name: true
-      - uses: jwalton/gh-find-current-pr@v1
-        id: findPr
-        with:
-          # Can be "open", "closed", or "all".  Defaults to "open".
-          state: open
-      - uses: actions/checkout@v3
-        with:
-          # Checkout as many commits as needed for the diff
-          fetch-depth: 2
-      - name: Integration Test Check
-        run: |
-          # diffFiles=$(git diff --name-only HEAD^ HEAD | grep "^alicloud/" | grep ".go$" | grep -v "_test.go$")
-          diffFiles=$(git diff --name-only HEAD^ HEAD)
-          noNeedRun=true
-          for fileName in ${diffFiles[@]};
-          do
-              if [[ ${fileName} == "alicloud/resource_alicloud"* || ${fileName} == "alicloud/data_source_alicloud"* ]];then
-                  if [[ ${fileName} != *?_test.go ]]; then
-                      fileName=(${fileName//\.go/_test\.go })
-                      # echo -e "\033[33m[SKIPPED]\033[0m skipping the file $fileName, continue..."
-                      # continue
-                  fi
-                  echo -e "\n\033[37mchecking diff file $fileName ... \033[0m"
-                  noNeedRun=false
-                  # fileName=(${fileName//\.go/_test\.go })
-                  if [[ $(grep -c "func TestAcc.*" ${fileName}) -lt 1 ]]; then
-                    echo -e "\033[33m[WARNING]\033[0m missing the acceptance test cases in the file $fileName, continue..."
-                    continue
-                  fi
-                  checkFuncs=$(grep "func TestAcc.*" ${fileName})
-                  echo -e "found the test funcs:\n${checkFuncs}\n"
-                  funcs=(${checkFuncs//"(t *testing.T) {"/ })
-                  for func in ${funcs[@]};
-                  do
-                    if [[ ${func} != "TestAcc"* ]]; then
-                      continue
-                    fi
-                    DiffFuncNames=$DiffFuncNames";"${func}
-                  done
-              fi
-          done
-
-          if [[ "${noNeedRun}" = "false" && ${DiffFuncNames} == "" ]]; then
-              echo -e "\n\033[33m[WARNING]\033[0m missing integration test cases, please add them. \033[0m"
-              exit 1
-          fi
-          if [[ "${noNeedRun}" = "true"  ]]; then
-              echo -e "\n\033[33m[WARNING]\033[0m the pr is no need to run integration test. \033[0m"
-              exit 0
-          fi
-          IN=$GH_JOB_IntegrationTest_HTML_URL
-          arrIN=(${IN//actions/ })
-          ossObjectPath="github-actions"${arrIN[1]}
-          go run scripts/integration_check.go ${ossObjectPath}
