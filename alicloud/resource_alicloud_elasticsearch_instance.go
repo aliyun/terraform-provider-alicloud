@@ -154,6 +154,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"data_node_disk_type": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"data_node_disk_encrypted": {

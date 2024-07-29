@@ -33,7 +33,7 @@ variable "region" {
 provider "alicloud" {
   access_key = "your ak"
   secret_key = "your sk"
-  region = var.region
+  region     = var.region
 }
 
 data "alicloud_elasticsearch_zones" "default" {}
