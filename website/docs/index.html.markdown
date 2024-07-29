@@ -461,3 +461,73 @@ The `assume_role_with_oidc` configuration block supports the following arguments
 ## Testing
 
 Credentials must be provided via the `ALICLOUD_ACCESS_KEY`, `ALICLOUD_SECRET_KEY` and `ALICLOUD_REGION` environment variables in order to run acceptance tests.
+
+
+## Enable
+
+Before using some of the products for the first time, you need to enable the services firstly. The AliCloud Provider offers automated enablement of the following resources. 
+
+| Service Name          |
+|----------------------------------------|
+| alicloud_event_bridge_service          |
+| alicloud_fnf_service                   |
+| alicloud_pvtz_service                  |
+| alicloud_api_gateway_service           |
+| alicloud_cdn_service                   |
+| alicloud_cen_transit_router_service    |
+| alicloud_cloud_storage_gateway_service |
+| alicloud_ack_service                   |
+| alicloud_dcdn_service                  |
+| alicloud_data_works_service            |
+| alicloud_fc_service                    | 
+| alicloud_iot_service                   | 
+| alicloud_kms_service                   |  
+| alicloud_log_service                   | 
+| alicloud_nas_service                   | 
+| alicloud_oss_service                   | 
+| alicloud_privatelink_service           |
+| alicloud_ons_service                   |  
+| alicloud_ots_service                   |  
+| alicloud_cr_service                    | 
+| alicloud_sae_service                   | 
+| alicloud_datahub_service               |  
+| alicloud_edas_service                  |
+| alicloud_cloud_sso_service             |
+| alicloud_hbr_service                   |
+| alicloud_vpc_flow_log_service          |
+| alicloud_vpc_traffic_mirror_service    |
+| alicloud_vs_service                    |
+
+
+
+Usage:
+
+```terraform
+# Open kms service
+data "alicloud_kms_service" "open" {
+  enable = "On"
+}
+
+# Open fc service
+data "alicloud_fc_service" "open" {
+  enable = "On"
+}
+```
+
+You can also use the module [terraform-alicloud-enable](https://registry.terraform.io/modules/terraform-alicloud-modules/enable/alicloud/latest) to enable the above services.
+
+Uasge:
+
+
+```terraform
+# Open the Event Bridge Service, Private Zone and Container Registry Service. Note: For the Container Registry Service, The initial password, if not configured, will be set to 1111aaaa.
+module "example" {
+  source = "terraform-alicloud-modules/enable/alicloud"
+  services = tomap({
+    alicloud_event_bridge_service = "On"
+    alicloud_pvtz_service         = "On"
+    alicloud_cr_service           = "On"
+  })
+  cr_pwd = "your_cr_pwd"
+}
+```
