@@ -60,6 +60,7 @@ func resourceAliCloudExpressConnectBgpPeer() *schema.Resource {
 			"peer_ip_address": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
