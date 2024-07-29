@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -35,6 +37,7 @@ func init() {
 	testAccProviders = map[string]terraform.ResourceProvider{
 		"alicloud": testAccProvider,
 	}
+	setStsCredential()
 }
 
 func TestProvider(t *testing.T) {
@@ -410,6 +413,39 @@ func testAccPreCheckWithResourceManagerHandshakesSetting(t *testing.T) {
 	if v := strings.TrimSpace(os.Getenv("INVITED_ALICLOUD_ACCOUNT_ID")); v == "" {
 		t.Skipf("Skipping the test case with there is no \"INVITED_ALICLOUD_ACCOUNT_ID\" setting")
 		t.Skipped()
+	}
+}
+
+func setStsCredential() {
+	// 创建OSSClient实例。
+	client, err := oss.New("https://oss-cn-zhangjiakou.aliyuncs.com", os.Getenv("ALICLOUD_ACCESS_KEY"), os.Getenv("ALICLOUD_SECRET_KEY"))
+	if err != nil {
+		return
+	}
+
+	bucket, err := client.Bucket("terraform-alicloud-provider-ct")
+	if err != nil {
+		return
+	}
+
+	// 下载文件到流。
+	body, err := bucket.GetObject("sts/credential.json")
+	if err != nil {
+		return
+	}
+	// 数据读取完成后，获取的流必须关闭，否则会造成连接泄漏，导致请求无连接可用，程序无法正常工作。
+	defer body.Close()
+
+	data, err := ioutil.ReadAll(body)
+	if err != nil {
+		return
+	}
+	var credential map[string]interface{}
+	err = json.Unmarshal(data, &credential)
+	if credential != nil && len(credential) > 0 {
+		os.Setenv("ALICLOUD_ACCESS_KEY", credential["Credentials"].(map[string]interface{})["AccessKeyId"].(string))
+		os.Setenv("ALICLOUD_SECRET_KEY", credential["Credentials"].(map[string]interface{})["AccessKeySecret"].(string))
+		os.Setenv("ALICLOUD_SECURITY_TOKEN", credential["Credentials"].(map[string]interface{})["SecurityToken"].(string))
 	}
 }
 
