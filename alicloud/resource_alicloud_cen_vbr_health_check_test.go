@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCenVbrHealthCheck_basic(t *testing.T) {
+func TestAccAliCloudCenVbrHealthCheck_basic(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v cbn.VbrHealthCheck
 	resourceId := "alicloud_cen_vbr_health_check.default"
@@ -120,7 +120,7 @@ func TestAccAlicloudCenVbrHealthCheck_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudCenVbrHealthCheck_basic1(t *testing.T) {
+func TestAccAliCloudCenVbrHealthCheck_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v cbn.VbrHealthCheck
 	resourceId := "alicloud_cen_vbr_health_check.default"

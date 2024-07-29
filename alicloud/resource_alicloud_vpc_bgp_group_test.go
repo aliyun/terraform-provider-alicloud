@@ -121,7 +121,7 @@ func testSweepVpcBgpGroup(region string) error {
 	return nil
 }
 
-func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
+func TestAccAliCloudVPCBgpGroup_basic0(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"
@@ -232,7 +232,7 @@ func TestAccAlicloudVPCBgpGroup_basic0(t *testing.T) {
 		},
 	})
 }
-func TestAccAlicloudVPCBgpGroup_basic1(t *testing.T) {
+func TestAccAliCloudVPCBgpGroup_basic1(t *testing.T) {
 	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_bgp_group.default"

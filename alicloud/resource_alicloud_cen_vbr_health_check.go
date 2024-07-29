@@ -40,6 +40,7 @@ func resourceAlicloudCenVbrHealthCheck() *schema.Resource {
 			"health_check_source_ip": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"health_check_target_ip": {
 				Type:     schema.TypeString,
