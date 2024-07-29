@@ -26,6 +26,16 @@ variable "name" {
   default = "tf-example"
 }
 
+variable "region" {
+  default = "cn-beijing"
+}
+
+provider "alicloud" {
+  access_key = "your ak"
+  secret_key = "your sk"
+  region = var.region
+}
+
 data "alicloud_elasticsearch_zones" "default" {}
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
@@ -45,7 +55,7 @@ resource "alicloud_elasticsearch_instance" "default" {
   version                          = "7.10_with_X-Pack"
   instance_charge_type             = "PostPaid"
   data_node_amount                 = "2"
-  data_node_spec                   = "elasticsearch.sn2ne.large"
+  data_node_spec                   = "elasticsearch.sn2ne.large.new"
   data_node_disk_size              = "20"
   data_node_disk_type              = "cloud_ssd"
   kibana_node_spec                 = "elasticsearch.sn2ne.large"
@@ -81,13 +91,13 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive) The password of the instance. The password can be 8 to 30 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (`!@#$%^&*()_+-=`).
 * `kms_encrypted_password` - (Optional, Available since 1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available since 1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack`, `6.7_with_X-Pack`, `6.8_with_X-Pack`, `7.4_with_X-Pack` and `7.7_with_X-Pack`.
+* `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack`, `6.7_with_X-Pack`, `6.8_with_X-Pack`, `7.4_with_X-Pack` , `7.7_with_X-Pack`, `7.10_with_X-Pack`, `7.16_with_X-Pack`, `8.5_with_X-Pack`, `8.9_with_X-Pack`, `8.13_with_X-Pack`.
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `public_whitelist` - (Optional) Set the instance's IP whitelist in internet network.
 * `enable_public` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can enable public network access。
 * `kibana_whitelist` - (Optional) Set the Kibana's IP whitelist in internet network.
 * `enable_kibana_public_network` - (Optional, Available since v1.87.0) Bool, default to true. When it set to false, the instance can enable kibana public network access。
-* `kibana_private_whitelist` - (Optional, Available since v1.87.0) Set the Kibana's IP whitelist in private network.
+* `kibana_private_whitelist` - (Optional, Available since v1.87.0) Set the Kibana's IP whitelist in private network, This option has been abandoned on newly created instance, please use `kibana_private_security_group_id` instead
 * `enable_kibana_private_network` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can close kibana private network access。
 * `master_node_spec` - (Optional) The dedicated master node spec. If specified, dedicated master node will be created.
 * `master_node_disk_type` - (Optional, Available since 1.208.1) The single master node storage space. Valid values are `PrePaid`, `PostPaid`.
@@ -111,6 +121,13 @@ The following arguments are supported:
 * `kibana_domain` - (Computed, Available since 1.197.0) Kibana console domain (Internet access supported).
 * `kibana_port` - (Computed, Available since 1.197.0) Kibana console port.
 * `status` - (Computed, Available since 1.197.0) The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.
+* `warm_node_spec` - (Optional) The warm node specifications of the Elasticsearch instance.
+* `warm_node_amount` - (Optional) The Elasticsearch cluster's warm node quantity, between 3 and 50.
+* `warm_node_disk_size` - (Optional) The single warm node storage space, should between 500 and 20480
+* `warm_node_disk_type` - (Optional) The warm node disk type. Supported values:  cloud_efficiency.
+* `warm_node_disk_encrypted` - (Optional, ForceNew) If encrypt the warm node disk. Valid values are `true`, `false`. Default to `false`.
+* `kibana_private_security_group_id` - (Optional) the security group id associated with Kibana private network, this param is required when `enable_kibana_private_network` set true, and the security group id should in the same VPC as `vswitch_id`
+
 
 ## Timeouts
 

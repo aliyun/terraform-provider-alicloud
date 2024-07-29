@@ -1,3 +1,15 @@
+variable "access_key" {
+  default = "your ak"
+}
+
+variable "secret_key" {
+  default = "your sk"
+}
+
+variable "region" {
+  default = "cn-beijing"
+}
+
 variable "instance_charge_type" {
   default = "PostPaid"
 }
@@ -11,7 +23,7 @@ variable "period" {
 }
 
 variable "data_node_spec" {
-  default = "elasticsearch.sn2ne.large"
+  default = "elasticsearch.sn2ne.large.new"
 }
 
 variable "data_node_amount" {
@@ -31,11 +43,7 @@ variable "data_node_disk_encrypted" {
 }
 
 variable "es_version" {
-  default = "6.3_with_X-Pack"
-}
-
-variable "vswitch_id" {
-  default = "switch id"
+  default = "7.16_with_X-Pack"
 }
 
 variable "password" {
@@ -53,7 +61,11 @@ variable "kibana_whitelist" {
 }
 
 variable "master_node_spec" {
-  default = "elasticsearch.sn2ne.xlarge"
+  default = "elasticsearch.sn2ne.xlarge.new"
+}
+
+variable "master_node_disk_type" {
+  default = "cloud_ssd"
 }
 
 variable "zone_count" {
@@ -77,8 +89,34 @@ variable "setting_config" {
   default = {
     "action.auto_create_index": "+.*,-*",
     "action.destructive_requires_name": "true",
-    "xpack.security.audit.enabled": "true",
-    "xpack.security.audit.outputs": "index",
-    "xpack.watcher.enabled": "false"
+    "xpack.security.audit.enabled": "true"
   }
+}
+
+variable "warm_node_amount" {
+  default = "3"
+}
+
+variable "warm_node_spec" {
+  default = "elasticsearch.sn2ne.large"
+}
+
+variable "warm_node_disk_size" {
+  default = "500"
+}
+
+variable "warm_node_disk_type" {
+  default = "cloud_efficiency"
+}
+
+variable "warm_node_disk_encrypted" {
+  default = false
+}
+
+variable "kibana_node_spec" {
+  default = "elasticsearch.sn1ne.large"
+}
+
+variable "enable_kibana_public_network" {
+  default = true
 }
