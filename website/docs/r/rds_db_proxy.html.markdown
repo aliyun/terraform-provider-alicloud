@@ -97,6 +97,10 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew)The ID of the vSwitch that is associated with the specified VPC.
 * `db_proxy_connection_prefix` - (Optional)The new prefix of the proxy endpoint. Enter a prefix.
 * `db_proxy_connect_string_port` - (Optional)The port number that is associated with the proxy endpoint.
+* `db_proxy_instance_type` - (Optional) Database proxy instance type.
+  - common: universal proxy.
+  - exclusive: Exclusive proxy (default).
+  
 * `effective_time` - (Optional)When modifying the number of proxy instances,The time when you want to apply the new database proxy settings.Valid values:
   - Immediate: ApsaraDB RDS immediately applies the new settings.
   - MaintainTime: ApsaraDB RDS applies the new settings during the maintenance window that you specified. For more information, see Modify the maintenance window.
