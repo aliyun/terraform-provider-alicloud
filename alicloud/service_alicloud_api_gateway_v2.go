@@ -303,6 +303,79 @@ func (s *ApiGatewayServiceV2) DescribeApiGatewayAccessControlList(id string) (ob
 	return response, nil
 }
 
+func (s *ApiGatewayServiceV2) DescribeApiGatewayAclEntryAttachmentAttribute(id string) (object map[string]interface{}, err error) {
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	client := s.client
+	var response map[string]interface{}
+	action := "DescribeAccessControlListAttribute"
+	conn, err := client.NewApigatewayClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request := map[string]interface{}{
+		"AclId": parts[0],
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-07-14"), StringPointer("AK"), nil, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvokeSlbApiFail"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	aclEntries, err := jsonpath.Get("$.AclEntrys.AclEntry", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AclEntrys.AclEntry", response)
+	}
+	if len(aclEntries.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundWithResponse, response)
+	}
+	for _, v := range aclEntries.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["AclEntryIp"]) == parts[1] {
+			return v.(map[string]interface{}), nil
+		}
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("AclEntryAttachment", id)), NotFoundWithResponse, response)
+}
+
+func (s *ApiGatewayServiceV2) DescribeApiGatewayInstanceAclAttachmentAttribute(id string) (object map[string]interface{}, err error) {
+	parts, err := ParseResourceIds(id)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	instanceID := parts[0]
+	response, err := s.DescribeApiGatewayInstance(instanceID)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	if _, ok := response["AclId"].(string); !ok {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("InstanceAclAttachment", id)), NotFoundMsg, response)
+	}
+	return response, nil
+}
+
 func (s *ApiGatewayServiceV2) ApiGatewayAccessControlListStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeApiGatewayAccessControlList(id)

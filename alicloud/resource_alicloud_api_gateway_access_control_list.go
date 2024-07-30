@@ -33,12 +33,14 @@ func resourceAliCloudApiGatewayAccessControlList() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "Access control list name"),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_-]+$"), "Access control list name"),
 			},
 			"acl_entrys": {
-				Type:      schema.TypeSet,
-				Optional:  true,
-				Sensitive: true,
+				Type:       schema.TypeSet,
+				Optional:   true,
+				Sensitive:  true,
+				Computed:   true,
+				Deprecated: "Field 'acl_entrys' has been deprecated from provider version v1.228.0, and it will be removed in the future version. Please use the new resource 'alicloud_api_gateway_acl_entry_attachment'.",
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"acl_entry_comment": {
