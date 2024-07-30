@@ -863,6 +863,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_aligreen_image_lib":                                   resourceAliCloudAligreenImageLib(),
+			"alicloud_aligreen_biz_type":                                    resourceAliCloudAligreenBizType(),
+			"alicloud_aligreen_callback":                                    resourceAliCloudAligreenCallback(),
+			"alicloud_aligreen_audit_callback":                              resourceAliCloudAligreenAuditCallback(),
 			"alicloud_gpdb_streaming_data_source":                           resourceAliCloudGpdbStreamingDataSource(),
 			"alicloud_gpdb_streaming_data_service":                          resourceAliCloudGpdbStreamingDataService(),
 			"alicloud_gpdb_external_data_service":                           resourceAliCloudGpdbExternalDataService(),
