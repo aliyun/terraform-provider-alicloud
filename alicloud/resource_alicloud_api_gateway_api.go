@@ -111,6 +111,16 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"content_type_category": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"content_type_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -140,6 +150,20 @@ func resourceAliyunApigatewayApi() *schema.Resource {
 						"aone_name": {
 							Type:     schema.TypeString,
 							Optional: true,
+						},
+						"vpc_scheme": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"content_type_category": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"content_type_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 					},
 				},
@@ -422,6 +446,9 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		vpcServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
 		vpcServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
 		vpcServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
+		vpcServiceConfig["vpc_scheme"] = object.ServiceConfig.VpcConfig.VpcScheme
+		vpcServiceConfig["content_type_category"] = object.ServiceConfig.ContentTypeCatagory
+		vpcServiceConfig["content_type_value"] = object.ServiceConfig.ContentTypeValue
 		if err := d.Set("http_vpc_service_config", []map[string]interface{}{vpcServiceConfig}); err != nil {
 			return WrapError(err)
 		}
@@ -450,6 +477,8 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		httpServiceConfig["method"] = object.ServiceConfig.ServiceHttpMethod
 		httpServiceConfig["timeout"] = object.ServiceConfig.ServiceTimeout
 		httpServiceConfig["aone_name"] = object.ServiceConfig.AoneAppName
+		httpServiceConfig["content_type_category"] = object.ServiceConfig.ContentTypeCatagory
+		httpServiceConfig["content_type_value"] = object.ServiceConfig.ContentTypeValue
 		if err := d.Set("http_service_config", []map[string]interface{}{httpServiceConfig}); err != nil {
 			return WrapError(err)
 		}
@@ -507,6 +536,7 @@ func resourceAliyunApigatewayApiRead(d *schema.ResourceData, meta interface{}) e
 		param["name"] = systemParam.ParameterName
 		param["in"] = systemParam.Location
 		param["name_service"] = systemParam.ServiceParameterName
+		SystemParams = append(SystemParams, param)
 	}
 	d.Set("system_parameters", SystemParams)
 
@@ -526,7 +556,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 
 	d.Partial(true)
 
-	if d.HasChange("name") || d.HasChange("description") || d.HasChange("auth_type") {
+	if d.HasChanges("name", "description", "auth_type") {
 		update = true
 	}
 	request.ApiName = d.Get("name").(string)
@@ -551,7 +581,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request.RequestConfig = paramConfig
 
-	if d.HasChange("service_type") || d.HasChange("http_service_config") || d.HasChange("http_vpc_service_config") || d.HasChange("mock_service_config") {
+	if d.HasChanges("service_type", "http_service_config", "http_vpc_service_config", "mock_service_config", "fc_service_config") {
 		update = true
 	}
 	serviceConfig, err := serviceConfigToJsonStr(d)
@@ -560,7 +590,7 @@ func resourceAliyunApigatewayApiUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request.ServiceConfig = serviceConfig
 
-	if d.HasChange("request_parameters") || d.HasChange("constant_parameters") || d.HasChange("system_parameters") {
+	if d.HasChanges("request_parameters", "constant_parameters", "system_parameters") {
 		update = true
 	}
 	rps, sps, spm, err := setParameters(d)
@@ -742,6 +772,12 @@ func getHttpServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	if v, ok := config["aone_name"]; ok {
 		serviceConfig.AoneName = v.(string)
 	}
+	if v, ok := config["content_type_category"]; ok {
+		serviceConfig.ContentTypeCategory = v.(string)
+	}
+	if v, ok := config["content_type_value"]; ok {
+		serviceConfig.ContentTypeValue = v.(string)
+	}
 	configStr, err := json.Marshal(serviceConfig)
 
 	return configStr, WrapError(err)
@@ -768,6 +804,15 @@ func getHttpVpcServiceConfig(d *schema.ResourceData) ([]byte, error) {
 	serviceConfig.ContentTypeCategory = "CLIENT"
 	if v, ok := config["aone_name"]; ok {
 		serviceConfig.AoneName = v.(string)
+	}
+	if v, ok := config["vpc_scheme"]; ok {
+		serviceConfig.VpcConfig.VpcScheme = v.(string)
+	}
+	if v, ok := config["content_type_category"]; ok {
+		serviceConfig.ContentTypeCategory = v.(string)
+	}
+	if v, ok := config["content_type_value"]; ok {
+		serviceConfig.ContentTypeValue = v.(string)
 	}
 	configStr, err := json.Marshal(serviceConfig)
 
@@ -941,7 +986,7 @@ func setConstantParameters(d *schema.ResourceData, requestParameters []ApiGatewa
 			requestParam.ApiParameterName = name
 			requestParam.In = in
 			requestParam.Type = "String"
-			if description, ok := request["description"]; !ok {
+			if description, ok := request["description"]; ok {
 				requestParam.Description = description.(string)
 			}
 			requestParam.DefualtValue = value

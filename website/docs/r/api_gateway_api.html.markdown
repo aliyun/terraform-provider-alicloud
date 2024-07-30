@@ -29,6 +29,7 @@ provider "alicloud" {
 resource "alicloud_api_gateway_group" "example" {
   name        = "tf-example"
   description = "tf-example"
+  base_path   = "/"
 }
 
 resource "alicloud_api_gateway_api" "example" {
@@ -109,6 +110,8 @@ The http_service_config mapping supports the following:
 * `method` - (Required) The http method of backend service.
 * `timeout` - (Required) Backend service time-out time; unit: millisecond.
 * `aone_name` - (Optional) The name of aone.
+* `content_type_category` - (Optional, Available since v1.228.0) The content type category of backend service which supports values of 'DEFAULT','CUSTOM' and 'CLIENT'.
+* `content_type_value` - (Optional, Available since v1.228.0) The content type value of backend service.
 
 ### `http_vpc_service_config`
 
@@ -119,6 +122,9 @@ The http_vpc_service_config mapping supports the following:
 * `method` - (Required) The http method of backend service.
 * `timeout` - (Required) Backend service time-out time. Unit: millisecond.
 * `aone_name` - (Optional) The name of aone.
+* `vpc_scheme` - (Optional, Available since v1.228.0) The vpc scheme of backend service which supports values of `HTTP` and `HTTPS`.
+* `content_type_category` - (Optional, Available since v1.228.0) The content type category of backend service which supports values of 'DEFAULT','CUSTOM' and 'CLIENT'.
+* `content_type_value` - (Optional, Available since v1.228.0) The content type value of backend service.
 
 ### `fc_service_config`
 

@@ -41,6 +41,11 @@ func resourceAliyunApigatewayGroup() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"base_path": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -52,6 +57,7 @@ func resourceAliyunApigatewayGroupCreate(d *schema.ResourceData, meta interface{
 	request.RegionId = client.RegionId
 	request.GroupName = d.Get("name").(string)
 	request.Description = d.Get("description").(string)
+	request.BasePath = d.Get("base_path").(string)
 	if v, ok := d.GetOk("instance_id"); ok {
 		request.InstanceId = v.(string)
 	}
@@ -93,6 +99,7 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 	d.Set("sub_domain", apiGroup.SubDomain)
 	d.Set("vpc_domain", apiGroup.VpcDomain)
 	d.Set("instance_id", apiGroup.InstanceId)
+	d.Set("base_path", apiGroup.BasePath)
 
 	return nil
 }
@@ -100,11 +107,12 @@ func resourceAliyunApigatewayGroupRead(d *schema.ResourceData, meta interface{})
 func resourceAliyunApigatewayGroupUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	if d.HasChange("name") || d.HasChange("description") {
+	if d.HasChanges("name", "description", "base_path") {
 		request := cloudapi.CreateModifyApiGroupRequest()
 		request.RegionId = client.RegionId
 		request.Description = d.Get("description").(string)
 		request.GroupName = d.Get("name").(string)
+		request.BasePath = d.Get("base_path").(string)
 		request.GroupId = d.Id()
 		raw, err := client.WithCloudApiClient(func(cloudApiClient *cloudapi.Client) (interface{}, error) {
 			return cloudApiClient.ModifyApiGroup(request)
