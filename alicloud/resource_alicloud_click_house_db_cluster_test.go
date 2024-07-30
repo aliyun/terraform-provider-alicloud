@@ -93,6 +93,7 @@ func testSweepClickhouseDbCLuster(region string) error {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -107,7 +108,6 @@ func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -191,6 +191,7 @@ func TestAccAliCloudClickHouseDBCluster_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -205,7 +206,6 @@ func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -289,6 +289,7 @@ func TestAccAliCloudClickHouseDBCluster_basic1(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -303,7 +304,6 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -371,6 +371,7 @@ func TestAccAliCloudClickHouseDBCluster_basic2(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -385,7 +386,6 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -431,6 +431,7 @@ func TestAccAliCloudClickHouseDBCluster_basic3(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -445,7 +446,6 @@ func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -489,6 +489,7 @@ func TestAccAliCloudClickHouseDBCluster_VpcId(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -503,7 +504,6 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -571,6 +571,7 @@ func TestAccAliCloudClickHouseDBCluster_ClusterVersion(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -585,7 +586,6 @@ func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -659,6 +659,7 @@ func TestAccAliCloudClickHouseDBCluster_UpdateClusterInplace(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
@@ -673,7 +674,6 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.ClickHouseSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -739,6 +739,73 @@ func TestAccAliCloudClickHouseDBCluster_AutoRenew(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudClickHouseDBCluster_multiZone(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	var v map[string]interface{}
+	resourceId := "alicloud_click_house_db_cluster.default"
+	ra := resourceAttrInit(resourceId, AliCloudClickHouseDBClusterMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ClickhouseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeClickHouseDbCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sclickhousedbcluster%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudClickHouseDBClusterBasicDependence3)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_cluster_version":      "23.8",
+					"category":                "HighAvailability",
+					"db_cluster_class":        "C8",
+					"db_cluster_network_type": "vpc",
+					"db_node_group_count":     "1",
+					"payment_type":            "PayAsYouGo",
+					"db_node_storage":         "100",
+					"storage_type":            "cloud_essd",
+					"vswitch_id":              "${alicloud_vswitch.default_1.id}",
+					"multi_zone_vswitch_list": []map[string]interface{}{
+						{
+							"zone_id":    "cn-hangzhou-h",
+							"vswitch_id": "${alicloud_vswitch.default_2.id}",
+						},
+						{
+							"zone_id":    "cn-hangzhou-i",
+							"vswitch_id": "${alicloud_vswitch.default_3.id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_cluster_version":        "23.8",
+						"category":                  "HighAvailability",
+						"db_cluster_class":          "C8",
+						"db_cluster_network_type":   "vpc",
+						"db_node_group_count":       "1",
+						"payment_type":              "PayAsYouGo",
+						"db_node_storage":           "100",
+						"storage_type":              "cloud_essd",
+						"vswitch_id":                CHECKSET,
+						"multi_zone_vswitch_list.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
 var AliCloudClickHouseDBClusterMap0 = map[string]string{
 	"db_cluster_version":      CHECKSET,
 	"category":                CHECKSET,
@@ -796,3 +863,38 @@ func AliCloudClickHouseDBClusterBasicDependence1(name string) string {
 	}
 `, name)
 }
+
+func AliCloudClickHouseDBClusterBasicDependence3(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default_1" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = "cn-hangzhou-k"
+	}
+
+	resource "alicloud_vswitch" "default_2" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.193.0/24"
+  		zone_id      = "cn-hangzhou-h"
+	}
+
+	resource "alicloud_vswitch" "default_3" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.194.0/24"
+  		zone_id      = "cn-hangzhou-i"
+	}
+`, name)
+}
+
