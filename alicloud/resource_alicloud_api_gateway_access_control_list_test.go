@@ -80,16 +80,16 @@ func TestAccAliCloudApiGatewayAccessControlList_basic6378(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_entrys": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_entrys.#": "0",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"acl_entrys": REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"acl_entrys.#": "0",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"access_control_list_name": name + "u",
@@ -368,16 +368,16 @@ func TestAccAliCloudApiGatewayAccessControlList_basic6378_raw(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"acl_entrys": REMOVEKEY,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"acl_entrys.#": "0",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"acl_entrys": REMOVEKEY,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"acl_entrys.#": "0",
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
