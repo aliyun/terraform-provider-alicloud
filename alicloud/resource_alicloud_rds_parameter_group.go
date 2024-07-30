@@ -123,7 +123,6 @@ func resourceAlicloudRdsParameterGroupRead(d *schema.ResourceData, meta interfac
 		}
 		return WrapError(err)
 	}
-	d.Set("engine", object["Engine"])
 	d.Set("engine_version", object["EngineVersion"])
 	if v, ok := object["ParamDetail"].(map[string]interface{})["ParameterDetail"].([]interface{}); ok {
 		parameterDetail := make([]map[string]interface{}, 0)
