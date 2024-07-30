@@ -1418,7 +1418,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_job_monitor_rule":                                  resourceAlicloudDtsJobMonitorRule(),
 			"alicloud_database_gateway_gateway":                              resourceAlicloudDatabaseGatewayGateway(),
 			"alicloud_bastionhost_host":                                      resourceAlicloudBastionhostHost(),
-			"alicloud_amqp_binding":                                          resourceAlicloudAmqpBinding(),
+			"alicloud_amqp_binding":                                          resourceAliCloudAmqpBinding(),
 			"alicloud_slb_tls_cipher_policy":                                 resourceAlicloudSlbTlsCipherPolicy(),
 			"alicloud_cloud_sso_directory":                                   resourceAlicloudCloudSsoDirectory(),
 			"alicloud_bastionhost_host_account":                              resourceAlicloudBastionhostHostAccount(),

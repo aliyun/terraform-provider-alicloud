@@ -278,24 +278,26 @@ func (s *AmqpOpenService) AmqpInstanceStateRefreshFunc(id string, failStates []s
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
-
 func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListBindings"
+
 	conn, err := s.client.NewOnsproxyClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListBindings"
+
 	parts, err := ParseResourceId(id, 4)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"InstanceId":  parts[0],
 		"VirtualHost": parts[1],
-		"MaxResults":  100,
+		"MaxResults":  PageSizeLarge,
 	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -313,18 +315,22 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.Data.Bindings", response)
+
+		resp, err := jsonpath.Get("$.Data.Bindings", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.Bindings", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Amqp:Binding", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
-			if fmt.Sprint(v.(map[string]interface{})["SourceExchange"]) == parts[2] {
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["SourceExchange"]) == parts[2] && fmt.Sprint(v.(map[string]interface{})["DestinationName"]) == parts[3] {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
@@ -336,9 +342,11 @@ func (s *AmqpOpenService) DescribeAmqpBinding(id string) (object map[string]inte
 			break
 		}
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Amqp:Binding", id)), NotFoundWithResponse, response)
 	}
+
 	return
 }
 
