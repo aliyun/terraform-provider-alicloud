@@ -40,7 +40,7 @@ The following arguments are supported:
 * `comment` - (Optional, ForceNew) Project description information. The length is 1 to 256 English or Chinese characters. The default value is blank.
 * `default_quota` - (Optional, ForceNew) Used to implement computing resource allocation. If the calculation Quota is not specified, the default Quota resource will be consumed by jobs initiated by the project. For more information about computing resource usage, see [Computing Resource Usage](https://www.alibabacloud.com/help/en/maxcompute/user-guide/use-of-computing-resources).
 * `ip_white_list` - (Optional) IP whitelist See [`ip_white_list`](#ip_white_list) below.
-* `is_logical` - (Optional) Logical deletion, value: (ture/flase) ture: In this case, the project status will be changed to 'DELETING' and completely deleted after 14 days. flase: immediately deleted, that is, completely deleted, permanently unrecoverable. 
+* `is_logical` - (Optional) Logical deletion, value: (true/false) true: In this case, the project status will be changed to 'DELETING' and completely deleted after 14 days. false: immediately deleted, that is, completely deleted, permanently unrecoverable. 
 * `product_type` - (Optional) Quota payment type, support `PayAsYouGo`, `Subscription`, `Dev`.
 * `project_name` - (Optional, ForceNew, Computed) The name begins with a letter, containing letters, digits, and underscores (_). It can be 3 to 28 characters in length and is globally unique.
 * `properties` - (Optional) Project base attributes See [`properties`](#properties) below.
