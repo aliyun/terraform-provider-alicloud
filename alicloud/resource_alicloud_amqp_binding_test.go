@@ -21,54 +21,46 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudAmqpBinding_all_EXCHANGE(t *testing.T) {
-
+func TestAccAliCloudAmqpBinding_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudAmqpBindingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeAmqpBinding")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingConfigDependence)
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-%s-AmqpBinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpBindingBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
-					"argument":          "x-match:all",
-					"binding_key":       "${alicloud_amqp_exchange.default2.exchange_name}",
+					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
+					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
+					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
+					"destination_name":  name,
 					"binding_type":      "EXCHANGE",
-					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
+					"binding_key":       "${alicloud_amqp_exchange.key.exchange_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-						"argument":          "x-match:all",
-						"binding_key":       name + "-2",
+						"virtual_host_name": CHECKSET,
+						"source_exchange":   CHECKSET,
+						"destination_name":  name,
 						"binding_type":      "EXCHANGE",
-						"destination_name":  name,
-						"source_exchange":   name,
+						"binding_key":       CHECKSET,
 					}),
 				),
 			},
-
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -78,111 +70,48 @@ func TestAccAlicloudAmqpBinding_all_EXCHANGE(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAmqpBinding_all_QUEUE(t *testing.T) {
-
+func TestAccAliCloudAmqpBinding_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudAmqpBindingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeAmqpBinding")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingConfigDependence)
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-%s-AmqpBinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpBindingBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
-					"argument":          "x-match:all",
-					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
-					"binding_type":      "QUEUE",
+					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
+					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
+					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
 					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-						"argument":          "x-match:all",
-						"binding_key":       name,
-						"binding_type":      "QUEUE",
-						"destination_name":  name,
-						"source_exchange":   name,
-					}),
-				),
-			},
-
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func TestAccAlicloudAmqpBinding_any_EXCHANGE(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
+					"binding_type":      "EXCHANGE",
+					"binding_key":       "${alicloud_amqp_exchange.key.exchange_name}",
 					"argument":          "x-match:any",
-					"binding_key":       "${alicloud_amqp_exchange.default2.exchange_name}",
-					"binding_type":      "EXCHANGE",
-					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-						"argument":          "x-match:any",
-						"binding_key":       name + "-2",
-						"binding_type":      "EXCHANGE",
+						"virtual_host_name": CHECKSET,
+						"source_exchange":   CHECKSET,
 						"destination_name":  name,
-						"source_exchange":   name,
+						"binding_type":      "EXCHANGE",
+						"binding_key":       CHECKSET,
+						"argument":          "x-match:any",
 					}),
 				),
 			},
-
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -192,54 +121,97 @@ func TestAccAlicloudAmqpBinding_any_EXCHANGE(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAmqpBinding_any_QUEUE(t *testing.T) {
-
+func TestAccAliCloudAmqpBinding_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudAmqpBindingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	}, "DescribeAmqpBinding")
 	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingConfigDependence)
-
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-%s-AmqpBinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpBindingBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
-		// module name
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
+					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
+					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
+					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
+					"destination_name":  name,
+					"binding_type":      "QUEUE",
+					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":       CHECKSET,
+						"virtual_host_name": CHECKSET,
+						"source_exchange":   CHECKSET,
+						"destination_name":  name,
+						"binding_type":      "QUEUE",
+						"binding_key":       CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAmqpBinding_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_amqp_binding.default"
+	ra := resourceAttrInit(resourceId, AliCloudAmqpBindingMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAmqpBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc-%s-AmqpBinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAmqpBindingBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":       "${alicloud_amqp_exchange.source.instance_id}",
+					"virtual_host_name": "${alicloud_amqp_exchange.source.virtual_host_name}",
+					"source_exchange":   "${alicloud_amqp_exchange.source.exchange_name}",
+					"destination_name":  name,
+					"binding_type":      "QUEUE",
+					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
 					"argument":          "x-match:any",
-					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
-					"binding_type":      "QUEUE",
-					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
+						"virtual_host_name": CHECKSET,
+						"source_exchange":   CHECKSET,
+						"destination_name":  name,
+						"binding_type":      "QUEUE",
+						"binding_key":       CHECKSET,
 						"argument":          "x-match:any",
-						"binding_key":       name,
-						"binding_type":      "QUEUE",
-						"destination_name":  name,
-						"source_exchange":   name,
 					}),
 				),
 			},
-
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
@@ -249,195 +221,53 @@ func TestAccAlicloudAmqpBinding_any_QUEUE(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudAmqpBinding_empty_EXCHANGE(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingTopicConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
-					"binding_key":       "${alicloud_amqp_exchange.default2.exchange_name}",
-					"binding_type":      "EXCHANGE",
-					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-						"argument":          "",
-						"binding_key":       name + "-2",
-						"binding_type":      "EXCHANGE",
-						"destination_name":  name,
-						"source_exchange":   name,
-					}),
-				),
-			},
-
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
+var AliCloudAmqpBindingMap0 = map[string]string{
+	"argument": CHECKSET,
 }
 
-func TestAccAlicloudAmqpBinding_empty_QUEUE(t *testing.T) {
-
-	var v map[string]interface{}
-	resourceId := "alicloud_amqp_binding.default"
-	ra := resourceAttrInit(resourceId, AmqpBindingBasicMap)
-	serviceFunc := func() interface{} {
-		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInit(resourceId, &v, serviceFunc)
-	rac := resourceAttrCheckInit(rc, ra)
-
-	rand := acctest.RandInt()
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc-AmqpBindingbasic%v", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceAmqpBindingTopicConfigDependence)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		// module name
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"instance_id":       "${alicloud_amqp_exchange.default.instance_id}",
-					"virtual_host_name": "${alicloud_amqp_exchange.default.virtual_host_name}",
-					"binding_key":       "${alicloud_amqp_queue.default.queue_name}",
-					"binding_type":      "QUEUE",
-					"destination_name":  name,
-					"source_exchange":   "${alicloud_amqp_exchange.default.exchange_name}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_id":       CHECKSET,
-						"virtual_host_name": name,
-						"argument":          "",
-						"binding_key":       name,
-						"binding_type":      "QUEUE",
-						"destination_name":  name,
-						"source_exchange":   name,
-					}),
-				),
-			},
-
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-		},
-	})
-}
-
-func resourceAmqpBindingConfigDependence(name string) string {
+func AliCloudAmqpBindingBasicDependence0(name string) string {
 	return fmt.Sprintf(`
-		variable "name" {
- 			default = "%v"
-		}
-		data "alicloud_amqp_instances" "default" {
-			status = "SERVING"
-		}
-		resource "alicloud_amqp_virtual_host" "default" {
-		  instance_id       = data.alicloud_amqp_instances.default.ids.0
-		  virtual_host_name = var.name
-		}
-		resource "alicloud_amqp_exchange" "default" {
-			instance_id = alicloud_amqp_virtual_host.default.instance_id
-			virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-			auto_delete_state = true
-			exchange_name = var.name
-			exchange_type = "HEADERS"
-			internal = false
-		}
-		resource "alicloud_amqp_exchange" "default2" {
-			instance_id = alicloud_amqp_virtual_host.default.instance_id
-			virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-			auto_delete_state = true
-			exchange_name = "${var.name}-2"
-			exchange_type = "HEADERS"
-			internal = false
-		}
-		resource "alicloud_amqp_queue" "default" {
-		  instance_id = alicloud_amqp_virtual_host.default.instance_id
-          virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-		  queue_name = var.name
-		  auto_delete_state = true
-		}
-		`, name)
+	variable "name" {
+  		default = "%v"
+	}
+
+	data "alicloud_amqp_instances" "default" {
+  		status = "SERVING"
+	}
+
+	resource "alicloud_amqp_virtual_host" "default" {
+  		instance_id       = data.alicloud_amqp_instances.default.ids.0
+  		virtual_host_name = var.name
+	}
+
+	resource "alicloud_amqp_exchange" "source" {
+  		instance_id       = alicloud_amqp_virtual_host.default.instance_id
+  		virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+  		exchange_name     = var.name
+  		exchange_type     = "HEADERS"
+  		auto_delete_state = true
+  		internal          = false
+	}
+
+	resource "alicloud_amqp_exchange" "key" {
+  		instance_id       = alicloud_amqp_virtual_host.default.instance_id
+  		virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+  		exchange_name     = "${var.name}-key"
+  		exchange_type     = "HEADERS"
+  		auto_delete_state = true
+  		internal          = false
+	}
+
+	resource "alicloud_amqp_queue" "default" {
+  		instance_id       = alicloud_amqp_virtual_host.default.instance_id
+  		virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
+  		queue_name        = var.name
+  		auto_delete_state = true
+	}
+`, name)
 }
 
-func resourceAmqpBindingTopicConfigDependence(name string) string {
-	return fmt.Sprintf(`
-		variable "name" {
- 			default = "%v"
-		}
-		data "alicloud_amqp_instances" "default" {
-			status = "SERVING"
-		}
-		resource "alicloud_amqp_virtual_host" "default" {
-		  instance_id       = data.alicloud_amqp_instances.default.ids.0
-		  virtual_host_name = var.name
-		}
-		resource "alicloud_amqp_exchange" "default" {
-			instance_id = alicloud_amqp_virtual_host.default.instance_id
-			virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-			auto_delete_state = true
-			exchange_name = var.name
-			exchange_type = "TOPIC"
-			internal = false
-		}
-		resource "alicloud_amqp_exchange" "default2" {
-			instance_id = alicloud_amqp_virtual_host.default.instance_id
-			virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-			auto_delete_state = true
-			exchange_name = "${var.name}-2"
-			exchange_type = "TOPIC"
-			internal = false
-		}
-		resource "alicloud_amqp_queue" "default" {
-		  instance_id = alicloud_amqp_virtual_host.default.instance_id
-          virtual_host_name = alicloud_amqp_virtual_host.default.virtual_host_name
-		  queue_name = var.name
-		  auto_delete_state = true
-		}
-		`, name)
-}
-
-var AmqpBindingBasicMap = map[string]string{}
-
-func TestUnitAlicloudAmqpBinding(t *testing.T) {
+func TestUnitAliCloudAmqpBinding(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_amqp_binding"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_amqp_binding"].Schema).Data(nil, nil)
@@ -527,7 +357,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpBindingCreate(d, rawClient)
+		err := resourceAliCloudAmqpBindingCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -544,7 +374,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingCreate(d, rawClient)
+		err := resourceAliCloudAmqpBindingCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -561,7 +391,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingCreate(dCreate, rawClient)
+		err := resourceAliCloudAmqpBindingCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -579,7 +409,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAmqpBindingDelete(d, rawClient)
+		err := resourceAliCloudAmqpBindingDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -596,7 +426,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingDelete(d, rawClient)
+		err := resourceAliCloudAmqpBindingDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -613,7 +443,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingDelete(d, rawClient)
+		err := resourceAliCloudAmqpBindingDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -630,7 +460,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingRead(d, rawClient)
+		err := resourceAliCloudAmqpBindingRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -646,7 +476,7 @@ func TestUnitAlicloudAmqpBinding(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAmqpBindingRead(d, rawClient)
+		err := resourceAliCloudAmqpBindingRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
