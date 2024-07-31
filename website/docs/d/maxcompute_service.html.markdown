@@ -1,5 +1,5 @@
 ---
-subcategory: "MaxCompute"
+subcategory: "Max Compute"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_maxcompute_service"
 sidebar_current: "docs-alicloud-datasource-maxcompute-service"
@@ -16,6 +16,8 @@ Using this data source can open Maxcompute service automatically. If the service
 For information about Maxcompute and how to use it, see [What is Maxcompute](https://www.alibabacloud.com/help/en/product/27797.htm).
 
 -> **NOTE:** Available in v1.117.0+
+
+~> **NOTE:** This datasource has been deprecated since provider version v1.228.0.
 
 ## Example Usage
 
