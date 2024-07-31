@@ -819,7 +819,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_product_as_end_users":             dataSourceAlicloudServiceCatalogProductAsEndUsers(),
 			"alicloud_service_catalog_product_versions":                 dataSourceAlicloudServiceCatalogProductVersions(),
 			"alicloud_service_catalog_launch_options":                   dataSourceAlicloudServiceCatalogLaunchOptions(),
-			"alicloud_maxcompute_projects":                              dataSourceAlicloudMaxcomputeProjects(),
+			"alicloud_maxcompute_projects":                              dataSourceAliCloudMaxComputeProjects(),
 			"alicloud_ebs_dedicated_block_storage_clusters":             dataSourceAlicloudEbsDedicatedBlockStorageClusters(),
 			"alicloud_ecs_elasticity_assurances":                        dataSourceAlicloudEcsElasticityAssurances(),
 			"alicloud_express_connect_grant_rule_to_cens":               dataSourceAlicloudExpressConnectGrantRuleToCens(),
