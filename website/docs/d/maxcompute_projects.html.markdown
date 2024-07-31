@@ -1,5 +1,5 @@
 ---
-subcategory: "MaxCompute"
+subcategory: "Max Compute"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_maxcompute_projects"
 sidebar_current: "docs-alicloud-datasource-maxcompute-projects"
@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Max Compute Project available to the user.[What is Project](https://help.aliyun.com/document_detail/473479.html)
 
--> **NOTE:** Available in 1.196.0+
+-> **NOTE:** Available since v.1.196.0.
 
 ## Example Usage
 
