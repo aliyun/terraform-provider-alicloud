@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsAccount_basic(t *testing.T) {
+func TestAccAliCloudRdsAccount_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_account.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsAccountMap0)
@@ -106,7 +106,7 @@ func TestAccAlicloudRdsAccount_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsAccount_basic1(t *testing.T) {
+func TestAccAliCloudRdsAccount_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_account.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsAccountMap0)
@@ -155,7 +155,7 @@ func TestAccAlicloudRdsAccount_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsAccount_basic2(t *testing.T) {
+func TestAccAliCloudRdsAccount_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_account.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsAccountMap0)
@@ -206,7 +206,7 @@ func TestAccAlicloudRdsAccount_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsAccount_normal(t *testing.T) {
+func TestAccAliCloudRdsAccount_normal(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_account.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -279,7 +279,7 @@ func TestAccAlicloudRdsAccount_normal(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsAccount_super(t *testing.T) {
+func TestAccAliCloudRdsAccount_super(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_account.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -411,8 +411,7 @@ resource "alicloud_security_group" "default" {
 resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
- 	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+ 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name

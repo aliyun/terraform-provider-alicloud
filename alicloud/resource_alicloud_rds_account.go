@@ -91,11 +91,11 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 				ConflictsWith: []string{"account_type"},
 			},
 			"db_instance_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				Computed:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"instance_id"},
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ExactlyOneOf: []string{"db_instance_id", "instance_id"},
 			},
 			"instance_id": {
 				Type:          schema.TypeString,
