@@ -869,6 +869,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_aligreen_audit_callback":                              resourceAliCloudAligreenAuditCallback(),
 			"alicloud_fc3_custom_domain":                                    resourceAliCloudFc3CustomDomain(),
 			"alicloud_fc3_function":                                         resourceAliCloudFc3Function(),
+			"alicloud_cloud_firewall_vpc_cen_tr_firewall":                   resourceAliCloudCloudFirewallVpcCenTrFirewall(),
 			"alicloud_gpdb_streaming_data_source":                           resourceAliCloudGpdbStreamingDataSource(),
 			"alicloud_gpdb_streaming_data_service":                          resourceAliCloudGpdbStreamingDataService(),
 			"alicloud_gpdb_external_data_service":                           resourceAliCloudGpdbExternalDataService(),
