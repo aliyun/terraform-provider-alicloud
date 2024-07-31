@@ -2,16 +2,17 @@
 subcategory: "Cloud Config (Config)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_config_delivery"
-sidebar_current: "docs-alicloud-resource-config-delivery"
 description: |-
-  Provides a Alicloud Cloud Config Delivery resource.
+  Provides a Alicloud Config Delivery resource.
 ---
 
 # alicloud_config_delivery
 
-Provides a Cloud Config Delivery resource.
+Provides a Config Delivery resource.
 
-For information about Cloud Config Delivery and how to use it, see [What is Delivery](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createconfigdeliverychannel).
+Delivery channel of current account.
+
+For information about Config Delivery and how to use it, see [What is Delivery](https://www.alibabacloud.com/help/en/cloud-config/latest/api-config-2020-09-07-createconfigdeliverychannel).
 
 -> **NOTE:** Available since v1.171.0.
 
@@ -29,18 +30,18 @@ data "alicloud_regions" "this" {
 }
 
 resource "alicloud_log_project" "default" {
-  name = var.name
+  project_name = var.name
 }
 resource "alicloud_log_store" "default" {
-  name    = var.name
-  project = alicloud_log_project.default.name
+  logstore_name = var.name
+  project_name  = alicloud_log_project.default.project_name
 }
 
 resource "alicloud_config_delivery" "default" {
   configuration_item_change_notification = true
   non_compliant_notification             = true
   delivery_channel_name                  = var.name
-  delivery_channel_target_arn            = "acs:log:${data.alicloud_regions.this.ids.0}:${data.alicloud_account.this.id}:project/${alicloud_log_project.default.name}/logstore/${alicloud_log_store.default.name}"
+  delivery_channel_target_arn            = "acs:log:${data.alicloud_regions.this.ids.0}:${data.alicloud_account.this.id}:project/${alicloud_log_project.default.project_name}/logstore/${alicloud_log_store.default.logstore_name}"
   delivery_channel_type                  = "SLS"
   description                            = var.name
 }
@@ -49,40 +50,56 @@ resource "alicloud_config_delivery" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `configuration_item_change_notification` - (Optional) Indicates whether the specified destination receives resource change logs. If the value of this parameter is true, Cloud Config delivers the resource change logs to OSS, Log Service, or MNS when the configurations of the resources change. Valid values:  
+  - true: The specified destination receives resource change logs.  
+  - false: The specified destination does not receive resource change logs.  
+* `configuration_snapshot` - (Optional) Indicates whether the specified destination receives scheduled resource snapshots. Cloud Config delivers scheduled resource snapshots at 04:00Z and 16:00Z to OSS, MNS, or Log Service every day. The time is displayed in UTC. Valid values:  
+  - true: The specified destination receives scheduled resource snapshots.  
+  - false: The specified destination does not receive scheduled resource snapshots.  
+* `delivery_channel_condition` - (Optional) The rule that is attached to the delivery channel.  
 
-* `configuration_item_change_notification` - (Optional) Open or close delivery configuration change history. true: open, false: close.
-* `configuration_snapshot` - (Optional) Open or close timed snapshot of shipping resources. **NOTE:** The attribute is valid when the attribute `delivery_channel_type` is `OSS`.
-* `delivery_channel_condition` - (Optional) The rule attached to the delivery method. Please refer to api [CreateConfigDeliveryChannel](https://help.aliyun.com/document_detail/429798.html) for example format. **NOTE:** The attribute is valid when the attribute `delivery_channel_type` is `MNS`.
-* `delivery_channel_name` - (Optional) The name of the delivery method.
-* `delivery_channel_target_arn` - (Required) The ARN of the delivery destination. The value must be in one of the following formats:
-  * `acs:oss:{RegionId}:{Aliuid}:{bucketName}`: if your delivery destination is an Object Storage Service (OSS) bucket. 
-  * `acs:mns:{RegionId}:{Aliuid}:/topics/{topicName}`: if your delivery destination is a Message Service (MNS) topic. 
-  * `acs:log:{RegionId}:{Aliuid}:project/{projectName}/logstore/{logstoreName}`: if your delivery destination is a Log Service Logstore.
-* `delivery_channel_type` - (Required, ForceNew) The type of the delivery method. Valid values: `OSS`: Object Storage, `MNS`: Message Service, `SLS`: Log Service.
-* `description` - (Optional) The description of the delivery method.
-* `non_compliant_notification` - (Optional) Open or close non-compliance events of delivery resources. **NOTE:** The attribute is valid when the attribute `delivery_channel_type` is `SLS` or `MNS`.
-* `oversized_data_oss_target_arn` - (Optional) The oss ARN of the delivery channel when the value data oversized limit. 
-  * The value must be in one of the following formats: `acs:oss:{RegionId}:{accountId}:{bucketName}`, if your delivery destination is an Object Storage Service (OSS) bucket.
-  * Only delivery channels `SLS` and `MNS` are supported. The delivery channel limit for Log Service SLS is 1 MB, and the delivery channel limit for Message Service MNS is 64 KB.
-* `status` - (Optional) The status of the delivery method. Valid values: `0`: The delivery method is disabled. `1`: The delivery destination is enabled. This is the default value.
+  This parameter is available when you deliver data of all types to MNS or deliver snapshots to Log Service.  
+
+  If you specify the risk level or resource types for subscription events, this is as follows:  
+
+  The lowest risk level of the events to which you want to subscribe is in the following format: {"filterType":"RuleRiskLevel","value":"1","multiple":false}, The value field indicates the risk level of the events to which you want to subscribe. Valid values: 1, 2, and 3. The value 1 indicates the high risk level, the value 2 indicates the medium risk level, and the value 3 indicates the low risk level.
+
+  The setting of the resource types of the events to which you want to subscribe is in the following format: {"filterType":"ResourceType","values":["ACS::ACK::Cluster","ACS::ActionTrail::Trail","ACS::CBWP::CommonBandwidthPackage"],"multiple":true}, The values field indicates the resource types of the events to which you want to subscribe. The value of the field is a JSON array. 
+
+  Examples:[{"filterType":"ResourceType","values":["ACS::ActionTrail::Trail","ACS::CBWP::CommonBandwidthPackage","ACS::CDN::Domain","ACS::CEN::CenBandwidthPackage","ACS::CEN::CenInstance","ACS::CEN::Flowlog","ACS::DdosCoo::Instance"],"multiple":true}].  
+* `delivery_channel_name` - (Optional) The name of the delivery channel.
+* `delivery_channel_target_arn` - (Required) The ARN of the delivery destination.  
+  - If the value of the DeliveryChannelType parameter is OSS, the value of this parameter is the ARN of the destination OSS bucket.  
+  - If the value of the DeliveryChannelType parameter is MNS, the value of this parameter is the ARN of the destination MNS topic.  
+  - If the value of the DeliveryChannelType parameter is SLS, the value of this parameter is the ARN of the destination Log Service Logstore.  
+* `delivery_channel_type` - (Required, ForceNew) The type of the delivery channel. Valid values:  
+  - OSS: Object Storage Service (OSS)  
+  - MNS: Message Service (MNS)  
+  - SLS: Log Service  
+* `description` - (Optional) The description of the delivery channel.
+* `non_compliant_notification` - (Optional) Indicates whether the specified destination receives resource non-compliance events. If the value of this parameter is true, Cloud Config delivers resource non-compliance events to Log Service or MNS when resources are evaluated as non-compliant. Valid values:  
+  - true: The specified destination receives resource non-compliance events.  
+  - false: The specified destination does not receive resource non-compliance events.  
+* `oversized_data_oss_target_arn` - (Optional) The oss ARN of the delivery channel when the value data oversized limit.  The value must be in one of the following formats:  acs:oss:{RegionId}:{Aliuid}:{bucketName} if your delivery destination is an Object Storage Service (OSS) bucket. 
+* `status` - (Optional, Computed) The status of the delivery channel. Valid values:  
+  - 0: The delivery channel is disabled.  
+  - 1: The delivery channel is enabled.  
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of Delivery.
+* `id` - The ID of the resource supplied above.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 1 mins) Used when create the Config Delivery Channel.
-* `update` - (Defaults to 1 mins) Used when update the Config Delivery Channel.
-* `delete` - (Defaults to 1 mins) Used when update the Config Delivery Channel.
+* `create` - (Defaults to 5 mins) Used when create the Delivery.
+* `delete` - (Defaults to 5 mins) Used when delete the Delivery.
+* `update` - (Defaults to 5 mins) Used when update the Delivery.
 
 ## Import
 
-Cloud Config Delivery can be imported using the id, e.g.
+Config Delivery can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_config_delivery.example <id>

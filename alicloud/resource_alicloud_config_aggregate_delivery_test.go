@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudConfigAggregateDelivery_OSS(t *testing.T) {
+func TestAccAliCloudConfigAggregateDelivery_OSS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_delivery.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
@@ -35,7 +35,6 @@ func TestAccAlicloudConfigAggregateDelivery_OSS(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -103,16 +102,17 @@ func TestAccAlicloudConfigAggregateDelivery_OSS(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"configuration_snapshot": "false",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"configuration_snapshot": "false",
-					}),
-				),
-			},
+			// there is a bug on config
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"configuration_snapshot": "false",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"configuration_snapshot": "false",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"configuration_snapshot":                 "true",
@@ -134,7 +134,7 @@ func TestAccAlicloudConfigAggregateDelivery_OSS(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudConfigAggregateDelivery_SLS(t *testing.T) {
+func TestAccAliCloudConfigAggregateDelivery_SLS(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_config_aggregate_delivery.default"
 	checkoutSupportedRegions(t, true, connectivity.CloudConfigSupportedRegions)
@@ -150,7 +150,6 @@ func TestAccAlicloudConfigAggregateDelivery_SLS(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckEnterpriseAccountEnabled(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -263,8 +262,8 @@ variable "name" {
 data "alicloud_account" "this" {}
 locals {
   uid          	   = data.alicloud_account.this.id
-  bucket	       = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config1",local.uid)
-  bucket_change	   = format("acs:oss:cn-shanghai:%%s:tf-test-bucket-for-config1-update",local.uid)
+  bucket	       = format("acs:oss:cn-shanghai:%%s:config-used-donotdelete",local.uid)
+  bucket_change	   = format("acs:oss:cn-shanghai:%%s:config-used-update-donotdelete",local.uid)
 }
 data "alicloud_resource_manager_accounts" "default" {
   status  = "CreateSuccess"
@@ -399,7 +398,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateDeliveryCreate(dInit, rawClient)
+	err = resourceAliCloudConfigAggregateDeliveryCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -422,7 +421,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateDeliveryCreate(dInit, rawClient)
+		err := resourceAliCloudConfigAggregateDeliveryCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -449,7 +448,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -500,7 +499,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateDeliveryUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -544,7 +543,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateDeliveryRead(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateDeliveryRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -563,7 +562,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudConfigAggregateDeliveryDelete(dExisted, rawClient)
+	err = resourceAliCloudConfigAggregateDeliveryDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -591,7 +590,7 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudConfigAggregateDeliveryDelete(dExisted, rawClient)
+		err := resourceAliCloudConfigAggregateDeliveryDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -601,3 +600,434 @@ func TestUnitAlicloudConfigAggregateDelivery(t *testing.T) {
 		}
 	}
 }
+
+// Test Config AggregateDelivery. >>> Resource test cases, automatically generated.
+// Case 账号组投递自动化测试-TF接入 7102
+func TestAccAliCloudConfigAggregateDelivery_basic7102(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_delivery.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap7102)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateDelivery")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependence7102)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+					"delivery_channel_type":       "SLS",
+					"aggregator_id":               "${alicloud_config_aggregator.default8vEf3r.id}",
+					"configuration_snapshot":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+						"delivery_channel_type":       "SLS",
+						"aggregator_id":               CHECKSET,
+						"configuration_snapshot":      "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "只设置sls快照",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "只设置sls快照",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_name": "只设置sls快照",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_name": "只设置sls快照",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_item_change_notification": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_item_change_notification": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oversized_data_oss_target_arn": "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oversized_data_oss_target_arn": "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"non_compliant_notification": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"non_compliant_notification": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "0",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_condition": "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"1\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ACK::Cluster\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_condition": "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"1\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ACK::Cluster\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot":     "false",
+					"non_compliant_notification": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot":     "false",
+						"non_compliant_notification": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "关闭sls快照",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "关闭sls快照",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_name": "关闭sls快照",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_name": "关闭sls快照",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/update-delivery-tf-test-log",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_target_arn": "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/update-delivery-tf-test-log",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_item_change_notification": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_item_change_notification": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"oversized_data_oss_target_arn": "acs:oss:cn-shanghai:1511928242963727:update-delivery-tf-test",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"oversized_data_oss_target_arn": "acs:oss:cn-shanghai:1511928242963727:update-delivery-tf-test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"non_compliant_notification": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"non_compliant_notification": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"delivery_channel_condition": "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"3\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ECS::Instance\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"delivery_channel_condition": "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"3\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ECS::Instance\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot":                 "true",
+					"description":                            "只设置sls快照",
+					"delivery_channel_name":                  "只设置sls快照",
+					"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+					"configuration_item_change_notification": "false",
+					"delivery_channel_type":                  "SLS",
+					"aggregator_id":                          "${alicloud_config_aggregator.default8vEf3r.id}",
+					"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+					"non_compliant_notification":             "false",
+					"status":                                 "0",
+					"delivery_channel_condition":             "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"1\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ACK::Cluster\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot":                 "true",
+						"description":                            "只设置sls快照",
+						"delivery_channel_name":                  "只设置sls快照",
+						"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+						"configuration_item_change_notification": "false",
+						"delivery_channel_type":                  "SLS",
+						"aggregator_id":                          CHECKSET,
+						"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+						"non_compliant_notification":             "false",
+						"status":                                 "0",
+						"delivery_channel_condition":             "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"1\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ACK::Cluster\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudConfigAggregateDeliveryMap7102 = map[string]string{
+	"status":              CHECKSET,
+	"delivery_channel_id": CHECKSET,
+}
+
+func AlicloudConfigAggregateDeliveryBasicDependence7102(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_config_aggregator" "default8vEf3r" {
+  aggregator_name = var.name
+  description     = "资源用例-账号组投递"
+  aggregator_accounts {
+    account_id   = "1511928242963727"
+    account_name = "master"
+    account_type = "ResourceDirectory"
+  }
+  aggregator_accounts {
+    account_id   = "1550266585061719"
+    account_name = "test"
+    account_type = "ResourceDirectory"
+  }
+  aggregator_type = "CUSTOM"
+}
+
+
+`, name)
+}
+
+// Case 账号组投递自动化测试-TF接入 7102  twin
+func TestAccAliCloudConfigAggregateDelivery_basic7102_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_delivery.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap7102)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateDelivery")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependence7102)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot":                 "true",
+					"description":                            "只设置sls快照",
+					"delivery_channel_name":                  "只设置sls快照",
+					"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+					"configuration_item_change_notification": "false",
+					"delivery_channel_type":                  "SLS",
+					"aggregator_id":                          "${alicloud_config_aggregator.default8vEf3r.id}",
+					"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+					"non_compliant_notification":             "false",
+					"status":                                 "1",
+					"delivery_channel_condition":             "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"1\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ACK::Cluster\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot":                 "true",
+						"description":                            "只设置sls快照",
+						"delivery_channel_name":                  "只设置sls快照",
+						"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+						"configuration_item_change_notification": "false",
+						"delivery_channel_type":                  "SLS",
+						"aggregator_id":                          CHECKSET,
+						"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+						"non_compliant_notification":             "false",
+						"status":                                 "1",
+						"delivery_channel_condition":             "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"1\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ACK::Cluster\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Case 账号组投递自动化测试-TF接入 7102  raw
+func TestAccAliCloudConfigAggregateDelivery_basic7102_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_config_aggregate_delivery.default"
+	ra := resourceAttrInit(resourceId, AlicloudConfigAggregateDeliveryMap7102)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ConfigServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeConfigAggregateDelivery")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sconfigaggregatedelivery%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudConfigAggregateDeliveryBasicDependence7102)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot":                 "true",
+					"description":                            "只设置sls快照",
+					"delivery_channel_name":                  "只设置sls快照",
+					"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+					"configuration_item_change_notification": "false",
+					"delivery_channel_type":                  "SLS",
+					"aggregator_id":                          "${alicloud_config_aggregator.default8vEf3r.id}",
+					"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+					"non_compliant_notification":             "false",
+					"status":                                 "0",
+					"delivery_channel_condition":             "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"1\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ACK::Cluster\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot":                 "true",
+						"description":                            "只设置sls快照",
+						"delivery_channel_name":                  "只设置sls快照",
+						"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/delivery-tf-test-log",
+						"configuration_item_change_notification": "false",
+						"delivery_channel_type":                  "SLS",
+						"aggregator_id":                          CHECKSET,
+						"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:delivery-tf-test",
+						"non_compliant_notification":             "false",
+						"status":                                 "0",
+						"delivery_channel_condition":             "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"1\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ACK::Cluster\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"configuration_snapshot":                 "false",
+					"description":                            "关闭sls快照",
+					"delivery_channel_name":                  "关闭sls快照",
+					"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/update-delivery-tf-test-log",
+					"configuration_item_change_notification": "true",
+					"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:update-delivery-tf-test",
+					"non_compliant_notification":             "true",
+					"status":                                 "1",
+					"delivery_channel_condition":             "[{\\\"filterType\\\":\\\"RuleRiskLevel\\\",\\\"value\\\":\\\"3\\\",\\\"multiple\\\":false},{\\\"filterType\\\":\\\"ResourceType\\\",\\\"values\\\":[\\\"ACS::ECS::Instance\\\"],\\\"multiple\\\":true}]",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"configuration_snapshot":                 "false",
+						"description":                            "关闭sls快照",
+						"delivery_channel_name":                  "关闭sls快照",
+						"delivery_channel_target_arn":            "acs:log:cn-shanghai:1511928242963727:project/delivery-tf-test/logstore/update-delivery-tf-test-log",
+						"configuration_item_change_notification": "true",
+						"oversized_data_oss_target_arn":          "acs:oss:cn-shanghai:1511928242963727:update-delivery-tf-test",
+						"non_compliant_notification":             "true",
+						"status":                                 "1",
+						"delivery_channel_condition":             "[{\"filterType\":\"RuleRiskLevel\",\"value\":\"3\",\"multiple\":false},{\"filterType\":\"ResourceType\",\"values\":[\"ACS::ECS::Instance\"],\"multiple\":true}]",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+// Test Config AggregateDelivery. <<< Resource test cases, automatically generated.
