@@ -2,10 +2,9 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"strings"
 	"testing"
-
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
@@ -16,17 +15,6 @@ func TestAccAlicloudMaxComputeProjectDataSource(t *testing.T) {
 
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_maxcompute_project.default.id}"]`,
-			"name_regex": `"${var.name}"`,
-		}),
-		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
-			"ids":        `["${alicloud_maxcompute_project.default.id}"]`,
-			"name_regex": `"${var.name}_fake"`,
-		}),
-	}
-
-	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_maxcompute_project.default.id}"]`,
 		}),
 		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
@@ -34,13 +22,32 @@ func TestAccAlicloudMaxComputeProjectDataSource(t *testing.T) {
 		}),
 	}
 
-	MaxComputeProjectCheckInfo.dataSourceTestCheck(t, rand, idsConf, allConf)
+	nameConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+			"name_regex": `"${var.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+			"name_regex": `"${var.name}_fake"`,
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_maxcompute_project.default.id}"]`,
+			"name_regex": `"${var.name}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudMaxComputeProjectSourceConfig(rand, map[string]string{
+			"ids":        `["${alicloud_maxcompute_project.default.id}_fake"]`,
+			"name_regex": `"${var.name}_fake"`,
+		}),
+	}
+
+	MaxComputeProjectCheckInfo.dataSourceTestCheck(t, rand, idsConf, nameConf, allConf)
 }
 
 var existMaxComputeProjectMapFunc = func(rand int) map[string]string {
 	return map[string]string{
 		"projects.#":                       "1",
-		"projects.0.id":                    CHECKSET,
 		"projects.0.comment":               CHECKSET,
 		"projects.0.default_quota":         CHECKSET,
 		"projects.0.owner":                 CHECKSET,
