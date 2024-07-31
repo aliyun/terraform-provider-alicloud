@@ -92,6 +92,7 @@ func resourceAlicloudRdsAccount() *schema.Resource {
 			},
 			"db_instance_id": {
 				Type:          schema.TypeString,
+				Required:      true,
 				Optional:      true,
 				Computed:      true,
 				ForceNew:      true,
