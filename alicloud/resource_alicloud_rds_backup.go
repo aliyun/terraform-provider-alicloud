@@ -29,6 +29,7 @@ func resourceAlicloudRdsBackup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"backup_strategy": {
 				Type:     schema.TypeString,
@@ -38,6 +39,7 @@ func resourceAlicloudRdsBackup() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
+				ForceNew: true,
 			},
 			"db_instance_id": {
 				Type:     schema.TypeString,
