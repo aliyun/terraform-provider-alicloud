@@ -66,9 +66,14 @@ resource "alicloud_db_readonly_instance" "example" {
   vswitch_id            = alicloud_vswitch.example.id
 }
 
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_db_read_write_splitting_connection" "example" {
   instance_id       = alicloud_db_readonly_instance.example.master_db_instance_id
-  connection_prefix = "example-con-123"
+  connection_prefix = "example-con-${random_integer.default.result}"
   distribution_type = "Standard"
 }
 ```

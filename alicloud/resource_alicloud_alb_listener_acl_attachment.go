@@ -161,7 +161,7 @@ func resourceAliCloudAlbListenerAclAttachmentDelete(d *schema.ResourceData, meta
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"LockFailed", "ResourceInConfiguring.Listener", "IncorrectStatus.Listener"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"LockFailed", "ResourceInConfiguring.Listener", "IncorrectStatus.Listener", "IncorrectStatus.Acl"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

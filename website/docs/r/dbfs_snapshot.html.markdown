@@ -36,7 +36,7 @@ data "alicloud_instance_types" "example" {
 }
 data "alicloud_images" "example" {
   instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
-  name_regex    = "^aliyun_2_1903_x64_20G_alibase_20231221.vhd"
+  name_regex    = "^aliyun_2_1903_x64_20G_alibase_20240628.vhd"
   owners        = "system"
 }
 
