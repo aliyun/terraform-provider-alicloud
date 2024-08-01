@@ -20,45 +20,47 @@ For information about Cloud Monitor Service Dynamic Tag Group and how to use it,
 Basic Usage
 
 ```terraform
-resource "alicloud_cms_alarm_contact_group" "default" {
-  alarm_contact_group_name = "example_value"
-  describe                 = "example_value"
-  enable_subscribed        = true
+variable "name" {
+  default = "terraform-example"
 }
+
+resource "alicloud_cms_alarm_contact_group" "default" {
+  alarm_contact_group_name = var.name
+}
+
 resource "alicloud_cms_dynamic_tag_group" "default" {
+  tag_key            = var.name
   contact_group_list = [alicloud_cms_alarm_contact_group.default.id]
-  tag_key            = "your_tag_key"
   match_express {
-    tag_value                = "your_tag_value"
+    tag_value                = var.name
     tag_value_match_function = "all"
   }
 }
-
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
 
-* `contact_group_list` - (Required, ForceNew) Alarm contact group. The value range of N is 1~100. The alarm notification of the application group is sent to the alarm contact in the alarm contact group.
-* `match_express` - (Required, ForceNew) The label generates a matching expression that applies the grouping. See [`match_express`](#match_express) below. 
-* `match_express_filter_relation` - (Optional, ForceNew) The relationship between conditional expressions. Valid values: `and`, `or`.
-* `tag_key` - (Required, ForceNew) The tag key of the tag.
-* `template_id_list` - (Optional, ForceNew) Alarm template ID list.
+* `tag_key` - (Required, ForceNew) The tag keys of the cloud resources.
+* `match_express_filter_relation` - (Optional, ForceNew) The relationship between the conditional expressions for the tag values of the cloud resources. Valid values: `and`, `or`.
+* `contact_group_list` - (Required, ForceNew, List) The alert contact groups. The alert notifications of the application group are sent to the alert contacts that belong to the specified alert contact groups.
+* `template_id_list` - (Optional, ForceNew, List) The IDs of the alert templates.
+* `match_express` - (Required, ForceNew, Set) The conditional expressions used to create an application group based on the tag. See [`match_express`](#match_express) below.
 
 ### `match_express`
 
 The match_express supports the following: 
 
-* `tag_value` - (Required, ForceNew) The tag value. The Tag value must be used in conjunction with the tag value matching method TagValueMatchFunction.
-* `tag_value_match_function` - (Required, ForceNew) Matching method of tag value. Valid values: `all`, `startWith`,`endWith`,`contains`,`notContains`,`equals`.
+* `tag_value` - (Required, ForceNew) The tag values of the cloud resources.
+* `tag_value_match_function` - (Required, ForceNew) The method that is used to match the tag values of the cloud resources. Valid values: `all`, `startWith`, `endWith`, `contains`, `notContains`, `equals`.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Dynamic Tag Group.
-* `status` - The status of the resource. Valid values: `RUNNING`, `FINISH`.
+* `status` - The status of the Dynamic Tag Group.
 
 ## Import
 
