@@ -22,7 +22,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "terraform_example"
+  default = "terraform"
 }
 
 provider "alicloud" {
@@ -39,7 +39,7 @@ resource "alicloud_aligreen_image_lib" "default" {
   enable         = true
   scene          = "PORN"
   image_lib_name = var.name
-  biz_types      = ["example_007"]
+  biz_types      = [alicloud_aligreen_biz_type.defaultUalunB.biz_type_name]
 }
 ```
 
