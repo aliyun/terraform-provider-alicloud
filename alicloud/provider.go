@@ -1484,7 +1484,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv6_gateway":                                      resourceAliCloudVpcIpv6Gateway(),
 			"alicloud_vpc_ipv6_egress_rule":                                  resourceAliCloudVpcIpv6EgressRule(),
 			"alicloud_hbr_server_backup_plan":                                resourceAlicloudHbrServerBackupPlan(),
-			"alicloud_cms_dynamic_tag_group":                                 resourceAlicloudCmsDynamicTagGroup(),
+			"alicloud_cms_dynamic_tag_group":                                 resourceAliCloudCmsDynamicTagGroup(),
 			"alicloud_ecd_network_package":                                   resourceAlicloudEcdNetworkPackage(),
 			"alicloud_cloud_storage_gateway_gateway_smb_user":                resourceAlicloudCloudStorageGatewayGatewaySmbUser(),
 			"alicloud_vpc_ipv6_internet_bandwidth":                           resourceAliCloudVpcIpv6InternetBandwidth(),
