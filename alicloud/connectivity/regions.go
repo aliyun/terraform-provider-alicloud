@@ -156,7 +156,9 @@ var EcpSupportRegions = []Region{Hangzhou, Shanghai, Beijing, Shenzhen}
 var SddpSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1}
 var DfsSupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Beijing, HeYuan, ChengDu, APSouthEast5, USEast1, RusWest1}
 var EventBridgeSupportRegions = []Region{Hangzhou, Zhangjiakou, Shanghai, Shenzhen, Beijing, HeYuan, ChengDu, Huhehaote, Hongkong, EUCentral1, USWest1, USEast1}
-var AlbSupportRegions = []Region{Hangzhou, Shanghai, Qingdao, Zhangjiakou, Beijing, WuLanChaBu, Shenzhen, ChengDu, Hongkong, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APNorthEast1, EUCentral1, USEast1, APSouth1}
+var AlbSupportRegions = []Region{Shanghai}
+
+// var AlbSupportRegions = []Region{Hangzhou, Shanghai, Qingdao, Zhangjiakou, Beijing, WuLanChaBu, Shenzhen, ChengDu, Hongkong, APSouthEast1, APSouthEast2, APSouthEast3, APSouthEast5, APNorthEast1, EUCentral1, USEast1, APSouth1}
 var IMMSupportRegions = []Region{Hangzhou, Zhangjiakou, APSouthEast1, Shenzhen, Beijing, Shanghai}
 var CenTRSupportRegions = []Region{EUCentral1, APSouthEast1, Hangzhou, Shanghai, Beijing, Shenzhen, Hongkong, APSouthEast1, USEast1, APSouth1}
 var VbrSupportRegions = []Region{Hangzhou}
