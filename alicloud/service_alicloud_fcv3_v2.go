@@ -10,13 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-type Fc3ServiceV2 struct {
+type Fcv3ServiceV2 struct {
 	client *connectivity.AliyunClient
 }
 
-// DescribeFc3Function <<< Encapsulated get interface for Fc3 Function.
+// DescribeFcv3Function <<< Encapsulated get interface for Fcv3 Function.
 
-func (s *Fc3ServiceV2) DescribeFc3Function(id string) (object map[string]interface{}, err error) {
+func (s *Fcv3ServiceV2) DescribeFcv3Function(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -58,9 +58,9 @@ func (s *Fc3ServiceV2) DescribeFc3Function(id string) (object map[string]interfa
 	return response["body"].(map[string]interface{}), nil
 }
 
-func (s *Fc3ServiceV2) Fc3FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3FunctionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeFc3Function(id)
+		object, err := s.DescribeFcv3Function(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -80,11 +80,11 @@ func (s *Fc3ServiceV2) Fc3FunctionStateRefreshFunc(id string, field string, fail
 	}
 }
 
-// DescribeFc3Function >>> Encapsulated.
+// DescribeFcv3Function >>> Encapsulated.
 
-// DescribeFc3CustomDomain <<< Encapsulated get interface for Fc3 CustomDomain.
+// DescribeFcv3CustomDomain <<< Encapsulated get interface for Fcv3 CustomDomain.
 
-func (s *Fc3ServiceV2) DescribeFc3CustomDomain(id string) (object map[string]interface{}, err error) {
+func (s *Fcv3ServiceV2) DescribeFcv3CustomDomain(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -126,9 +126,9 @@ func (s *Fc3ServiceV2) DescribeFc3CustomDomain(id string) (object map[string]int
 	return response["body"].(map[string]interface{}), nil
 }
 
-func (s *Fc3ServiceV2) Fc3CustomDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+func (s *Fcv3ServiceV2) Fcv3CustomDomainStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeFc3CustomDomain(id)
+		object, err := s.DescribeFcv3CustomDomain(id)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
@@ -148,4 +148,4 @@ func (s *Fc3ServiceV2) Fc3CustomDomainStateRefreshFunc(id string, field string, 
 	}
 }
 
-// DescribeFc3CustomDomain >>> Encapsulated.
+// DescribeFcv3CustomDomain >>> Encapsulated.

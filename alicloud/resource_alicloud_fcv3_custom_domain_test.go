@@ -60,13 +60,13 @@ variable "function_name2" {
 }
 
 // Case TestCustomDomain_Waf 6974  raw
-func TestAccAliCloudFc3CustomDomain_basic6974_raw(t *testing.T) {
+func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_custom_domain.default"
+	resourceId := "alicloud_fcv3_custom_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap6974)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3CustomDomain")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-6ew9.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
@@ -328,13 +328,13 @@ func TestAccAliCloudFc3CustomDomain_basic6974_raw(t *testing.T) {
 }
 
 // Case TestCustomDomain_Base 7241  raw
-func TestAccAliCloudFc3CustomDomain_basic7241_raw(t *testing.T) {
+func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_custom_domain.default"
+	resourceId := "alicloud_fcv3_custom_domain.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3CustomDomainMap7241)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3CustomDomain")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("flask-6ew9.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)

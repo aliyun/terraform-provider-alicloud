@@ -1,19 +1,21 @@
 ---
-subcategory: "FC3"
+subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_fc3_custom_domain"
+page_title: "Alicloud: alicloud_fcv3_custom_domain"
 description: |-
-  Provides a Alicloud FC3 Custom Domain resource.
+  Provides a Alicloud FCV3 Custom Domain resource.
 ---
 
-# alicloud_fc3_custom_domain
+# alicloud_fcv3_custom_domain
 
-Provides a FC3 Custom Domain resource.
+Provides a FCV3 Custom Domain resource.
 
 Custom Domain names allow users to access FC functions through custom domain names, providing convenience for building Web services using function compute.
 You can bind a custom domain name to Function Compute and set different paths to different functions of different services.
 
-For information about FC3 Custom Domain and how to use it, see [What is Custom Domain](https://www.alibabacloud.com/help/en/).
+For information about FCV3 Custom Domain and how to use it, see [What is Custom Domain](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-getcustomdomain).
+
+~> **NOTE:** This content is a technical preview, and should not be relied on in a production environment.
 
 -> **NOTE:** Available since v1.228.0.
 
@@ -105,7 +107,7 @@ DrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=
 EOF
 }
 
-resource "alicloud_fc3_custom_domain" "default" {
+resource "alicloud_fcv3_custom_domain" "default" {
   custom_domain_name = "flask-6ew9.fcv3.1511928242963727.cn-shanghai.fc.devsapp.net"
   route_config {
     routes {
@@ -300,8 +302,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-FC3 Custom Domain can be imported using the id, e.g.
+FCV3 Custom Domain can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_fc3_custom_domain.example <id>
+$ terraform import alicloud_fcv3_custom_domain.example <id>
 ```

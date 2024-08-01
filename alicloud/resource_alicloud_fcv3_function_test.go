@@ -423,13 +423,13 @@ resource "alicloud_oss_bucket_object" "default" {
 }
 
 // Case TestNativeRuntimePython_Full 6916  raw
-func TestAccAliCloudFc3Function_basic6916_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6916)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -652,13 +652,13 @@ func TestAccAliCloudFc3Function_basic6916_raw(t *testing.T) {
 }
 
 // Case TestCustomContainer_GPU 6950  raw
-func TestAccAliCloudFc3Function_basic6950_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6950)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -810,13 +810,13 @@ func TestAccAliCloudFc3Function_basic6950_raw(t *testing.T) {
 }
 
 // Case TestCustomRuntime_Full 6917  raw
-func TestAccAliCloudFc3Function_basic6917_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6917_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6917)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -1035,13 +1035,13 @@ func TestAccAliCloudFc3Function_basic6917_raw(t *testing.T) {
 }
 
 // Case TestNativeRuntimePython_OSSMount 6927  raw
-func TestAccAliCloudFc3Function_basic6927_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6927_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6927)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -1182,13 +1182,13 @@ func TestAccAliCloudFc3Function_basic6927_raw(t *testing.T) {
 }
 
 // Case TestCustomContainer_Base 6936  raw
-func TestAccAliCloudFc3Function_basic6936_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6936_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6936)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -1334,13 +1334,13 @@ func TestAccAliCloudFc3Function_basic6936_raw(t *testing.T) {
 }
 
 // Case TestNativeRuntimePython_Base 6895  raw
-func TestAccAliCloudFc3Function_basic6895_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6895_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6895)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(0, 9999999)
@@ -1445,13 +1445,13 @@ func TestAccAliCloudFc3Function_basic6895_raw(t *testing.T) {
 }
 
 // Case TestNativeRuntimePython_VPC 6938  raw
-func TestAccAliCloudFc3Function_basic6938_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic6938_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap6938)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
@@ -1590,13 +1590,13 @@ func TestAccAliCloudFc3Function_basic6938_raw(t *testing.T) {
 }
 
 // Case TestNativeRuntimePython_Nas 7025  raw
-func TestAccAliCloudFc3Function_basic7025_raw(t *testing.T) {
+func TestAccAliCloudFcv3Function_basic7025_raw(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_fc3_function.default"
+	resourceId := "alicloud_fcv3_function.default"
 	ra := resourceAttrInit(resourceId, AlicloudFc3FunctionMap7025)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &Fc3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeFc3Function")
+		return &Fcv3ServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeFcv3Function")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
