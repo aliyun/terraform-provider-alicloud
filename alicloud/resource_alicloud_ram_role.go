@@ -256,9 +256,9 @@ func resourceAlicloudRamRoleDelete(d *schema.ResourceData, meta interface{}) err
 			for _, v := range response.Policies.Policy {
 				request := ram.CreateDetachPolicyFromRoleRequest()
 				request.RegionId = client.RegionId
-				request.RoleName = v.PolicyName
-				request.PolicyType = v.PolicyType
 				request.RoleName = d.Id()
+				request.PolicyName = v.PolicyName
+				request.PolicyType = v.PolicyType
 
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
