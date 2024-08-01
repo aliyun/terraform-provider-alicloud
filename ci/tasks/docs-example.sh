@@ -246,6 +246,9 @@ for fileName in ${changeFiles[@]}; do
           if [[ $planResult -ne 0 || ${haveDiff} == "" || ${haveDeprecated} != "" ]]; then
             failed=true
             cat ${exampleTerraformDoubleCheckTmpLog} | tee -a ${docsExampleTestRunLog}
+            if [[ ${haveDeprecated} != "" ]];then
+              echo -e "\033[31m - deprecated attributes check: fail.\033[0m" | tee -a ${docsExampleTestRunResultLog}
+            fi
             diffs=$(cat ${exampleTerraformDoubleCheckTmpLog} | grep "to add,")
             echo -e "\033[31m - apply diff check: fail.\033[0m ${diffs} " | tee -a ${docsExampleTestRunResultLog}
           else
