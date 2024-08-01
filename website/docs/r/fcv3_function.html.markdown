@@ -1,18 +1,18 @@
 ---
-subcategory: "FC3"
+subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_fc3_function"
+page_title: "Alicloud: alicloud_fcv3_function"
 description: |-
-  Provides a Alicloud FC3 Function resource.
+  Provides a Alicloud FCV3 Function resource.
 ---
 
-# alicloud_fc3_function
+# alicloud_fcv3_function
 
-Provides a FC3 Function resource.
+Provides a FCV3 Function resource.
 
 The resource scheduling and running of Function Compute is based on functions. The FC function consists of function code and function configuration.
 
-For information about FC3 Function and how to use it, see [What is Function](https://www.alibabacloud.com/help/en/).
+For information about FCV3 Function and how to use it, see [What is Function](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-getfunction).
 
 -> **NOTE:** Available since v1.228.0.
 
@@ -38,11 +38,11 @@ resource "alicloud_oss_bucket" "default" {
 
 resource "alicloud_oss_bucket_object" "default" {
   bucket  = alicloud_oss_bucket.default.bucket
-  key     = "fc3Py39.zip"
+  key     = "FCV3Py39.zip"
   content = "print('hello')"
 }
 
-resource "alicloud_fc3_function" "default" {
+resource "alicloud_fcv3_function" "default" {
   description = "Create"
   memory_size = "512"
   layers = [
@@ -285,8 +285,8 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-FC3 Function can be imported using the id, e.g.
+FCV3 Function can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_fc3_function.example <id>
+$ terraform import alicloud_fcv3_function.example <id>
 ```

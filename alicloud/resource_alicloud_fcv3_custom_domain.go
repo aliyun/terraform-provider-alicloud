@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudFc3CustomDomain() *schema.Resource {
+func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFc3CustomDomainCreate,
-		Read:   resourceAliCloudFc3CustomDomainRead,
-		Update: resourceAliCloudFc3CustomDomainUpdate,
-		Delete: resourceAliCloudFc3CustomDomainDelete,
+		Create: resourceAliCloudFcv3CustomDomainCreate,
+		Read:   resourceAliCloudFcv3CustomDomainRead,
+		Update: resourceAliCloudFcv3CustomDomainUpdate,
+		Delete: resourceAliCloudFcv3CustomDomainDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -220,7 +220,7 @@ func resourceAliCloudFc3CustomDomain() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFc3CustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -409,23 +409,23 @@ func resourceAliCloudFc3CustomDomainCreate(d *schema.ResourceData, meta interfac
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc3_custom_domain", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_custom_domain", action, AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.body.domainName", response)
 	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudFc3CustomDomainRead(d, meta)
+	return resourceAliCloudFcv3CustomDomainRead(d, meta)
 }
 
-func resourceAliCloudFc3CustomDomainRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fc3ServiceV2 := Fc3ServiceV2{client}
+	fcv3ServiceV2 := Fcv3ServiceV2{client}
 
-	objectRaw, err := fc3ServiceV2.DescribeFc3CustomDomain(d.Id())
+	objectRaw, err := fcv3ServiceV2.DescribeFcv3CustomDomain(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fc3_custom_domain DescribeFc3CustomDomain Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_fcv3_custom_domain DescribeFcv3CustomDomain Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -604,7 +604,7 @@ func resourceAliCloudFc3CustomDomainRead(d *schema.ResourceData, meta interface{
 	return nil
 }
 
-func resourceAliCloudFc3CustomDomainUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -817,10 +817,10 @@ func resourceAliCloudFc3CustomDomainUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	return resourceAliCloudFc3CustomDomainRead(d, meta)
+	return resourceAliCloudFcv3CustomDomainRead(d, meta)
 }
 
-func resourceAliCloudFc3CustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	domainName := d.Id()

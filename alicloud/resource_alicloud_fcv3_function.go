@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudFc3Function() *schema.Resource {
+func resourceAliCloudFcv3Function() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudFc3FunctionCreate,
-		Read:   resourceAliCloudFc3FunctionRead,
-		Update: resourceAliCloudFc3FunctionUpdate,
-		Delete: resourceAliCloudFc3FunctionDelete,
+		Create: resourceAliCloudFcv3FunctionCreate,
+		Read:   resourceAliCloudFcv3FunctionRead,
+		Update: resourceAliCloudFcv3FunctionUpdate,
+		Delete: resourceAliCloudFcv3FunctionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -526,7 +526,7 @@ func resourceAliCloudFc3Function() *schema.Resource {
 	}
 }
 
-func resourceAliCloudFc3FunctionCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
@@ -839,23 +839,23 @@ func resourceAliCloudFc3FunctionCreate(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fc3_function", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_function", action, AlibabaCloudSdkGoERROR)
 	}
 
 	id, _ := jsonpath.Get("$.body.functionName", response)
 	d.SetId(fmt.Sprint(id))
 
-	return resourceAliCloudFc3FunctionUpdate(d, meta)
+	return resourceAliCloudFcv3FunctionUpdate(d, meta)
 }
 
-func resourceAliCloudFc3FunctionRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3FunctionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	fc3ServiceV2 := Fc3ServiceV2{client}
+	fcv3ServiceV2 := Fcv3ServiceV2{client}
 
-	objectRaw, err := fc3ServiceV2.DescribeFc3Function(d.Id())
+	objectRaw, err := fcv3ServiceV2.DescribeFcv3Function(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_fc3_function DescribeFc3Function Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_fcv3_function DescribeFcv3Function Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -1209,7 +1209,7 @@ func resourceAliCloudFc3FunctionRead(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func resourceAliCloudFc3FunctionUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -1661,10 +1661,10 @@ func resourceAliCloudFc3FunctionUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	return resourceAliCloudFc3FunctionRead(d, meta)
+	return resourceAliCloudFcv3FunctionRead(d, meta)
 }
 
-func resourceAliCloudFc3FunctionDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 	functionName := d.Id()
