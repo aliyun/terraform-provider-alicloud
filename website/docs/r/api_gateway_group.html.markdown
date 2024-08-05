@@ -25,6 +25,7 @@ Basic Usage
 resource "alicloud_api_gateway_group" "default" {
   name        = "tf_example"
   description = "tf_example"
+  base_path   = "/"
 }
 ```
 ## Argument Reference
@@ -34,6 +35,7 @@ The following arguments are supported:
 * `name` - (Required) The name of the api gateway group. Defaults to null.
 * `description` - (Optional) The description of the api gateway group. Defaults to null.
 * `instance_id` - (Optional, ForceNew, Available in 1.179.0+)	The id of the api gateway.
+* `base_path` - (Optional, Computed, Available since v1.228.0) The base path of the api gateway group. Defaults to `/`.
 
 ## Attributes Reference
 

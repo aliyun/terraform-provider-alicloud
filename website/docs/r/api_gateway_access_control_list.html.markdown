@@ -35,14 +35,9 @@ resource "alicloud_api_gateway_instance" "defaultxywS8c" {
   payment_type  = "PayAsYouGo"
 }
 
-
 resource "alicloud_api_gateway_access_control_list" "default" {
   access_control_list_name = var.name
-  acl_entrys {
-    acl_entry_ip      = "128.0.0.1/32"
-    acl_entry_comment = "example comment"
-  }
-  address_ip_version = "ipv4"
+  address_ip_version       = "ipv4"
 }
 ```
 
@@ -50,7 +45,8 @@ resource "alicloud_api_gateway_access_control_list" "default" {
 
 The following arguments are supported:
 * `access_control_list_name` - (Required, ForceNew) Access control list name.
-* `acl_entrys` - (Optional) Information list of access control policies. You can add at most 50 IP addresses or CIDR blocks to an ACL in each call. If the IP address or CIDR block that you want to add to an ACL already exists, the IP address or CIDR block is not added. The entries that you add must be CIDR blocks. See [`acl_entrys`](#acl_entrys) below.
+* `acl_entrys` - (Optional, Deprecated from v1.228.0) Information list of access control policies. You can add at most 50 IP addresses or CIDR blocks to an ACL in each call. If the IP address or CIDR block that you want to add to an ACL already exists, the IP address or CIDR block is not added. The entries that you add must be CIDR blocks. See [`acl_entrys`](#acl_entrys) below.
+**NOTE:** Field 'acl_entrys' has been deprecated from provider version 1.228.0, and it will be removed in the future version. Please use the new resource 'alicloud_api_gateway_acl_entry_attachment'.
 * `address_ip_version` - (Optional, ForceNew, Computed) The IP version. Valid values: ipv4 and ipv6.
 
 ### `acl_entrys`

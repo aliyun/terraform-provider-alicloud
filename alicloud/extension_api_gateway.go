@@ -22,7 +22,8 @@ type ApiGatewayFunctionComputeConfig struct {
 }
 
 type ApiGatewayVpcConfig struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	VpcScheme string `json:"vpcScheme"`
 }
 
 type ApiGatewayServiceConfig struct {

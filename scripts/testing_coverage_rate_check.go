@@ -48,6 +48,7 @@ func main() {
 	diff, _ := diffparser.Parse(string(byt))
 	resourceNameMap := make(map[string]struct{})
 	for _, file := range diff.Files {
+		isNameCorrect = true
 		resourceName := ""
 		isResource := true
 		fileType := "resource"

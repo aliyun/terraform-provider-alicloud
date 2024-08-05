@@ -20,12 +20,22 @@ For information about Click House DBCluster and how to use it, see [What is DBCl
 Basic Usage
 
 ```terraform
+variable "region" {
+  default = "cn-hangzhou"
+}
+
 variable "name" {
   default = "tf-example"
 }
-data "alicloud_click_house_regions" "default" {
-  current = true
+
+provider "alicloud" {
+  region = var.region
 }
+
+data "alicloud_click_house_regions" "default" {
+  region_id = var.region
+}
+
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
   cidr_block = "10.4.0.0/16"
@@ -39,13 +49,13 @@ resource "alicloud_vswitch" "default" {
 }
 
 resource "alicloud_click_house_db_cluster" "default" {
-  db_cluster_version      = "22.8.5.29"
+  db_cluster_version      = "23.8"
   category                = "Basic"
   db_cluster_class        = "S8"
   db_cluster_network_type = "vpc"
   db_node_group_count     = "1"
   payment_type            = "PayAsYouGo"
-  db_node_storage         = "500"
+  db_node_storage         = "100"
   storage_type            = "cloud_essd"
   vswitch_id              = alicloud_vswitch.default.id
   vpc_id                  = alicloud_vpc.default.id
@@ -78,6 +88,8 @@ The following arguments are supported:
 * `db_cluster_access_white_list` - (Optional, Available since v1.145.0) The db cluster access white list. See [`db_cluster_access_white_list`](#db_cluster_access_white_list) below.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The id of the VPC.
 * `zone_id` - (Optional, ForceNew, Available since v1.185.0) The zone ID of the instance.
+* `multi_zone_vswitch_list` - (Optional, ForceNew, Available since v1.228.0) The zone IDs and 
+corresponding vswitch IDs and zone IDs of multi-zone setup. if set, a multi-zone DBCluster will be created. Currently only support 2 available zones, primary zone not included. See [`multi_zone_vswitch_list`](#multi_zone_vswitch_list) below.
 
 ### `db_cluster_access_white_list`
 
@@ -86,6 +98,13 @@ The db_cluster_access_white_list supports the following:
 * `db_cluster_ip_array_attribute` - (Optional, Removed) Field `db_cluster_ip_array_attribute` has been removed from provider.
 * `db_cluster_ip_array_name` - (Optional) Whitelist group name.
 * `security_ip_list` - (Optional) The IP address list under the whitelist group.
+
+### `multi_zone_vswitch_list`
+
+The multi_zone_vswitch_list supports the following:
+* `zone_id` - (Optional, ForceNew, Available since v1.228.0) The zone ID of the vswitch.
+* `vswitch_id` - (Required, ForceNew, Available since v1.228.0) The ID of the vswitch.
+
 
 ## Attributes Reference
 

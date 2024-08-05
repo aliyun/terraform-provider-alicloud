@@ -30,10 +30,11 @@ func init() {
 			F:    testSweepCmsDynamicTagGroup,
 		})
 }
+
 func testSweepCmsDynamicTagGroup(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -110,21 +111,19 @@ func testSweepCmsDynamicTagGroup(region string) error {
 
 func TestAccAliCloudCmsDynamicTagGroup_basic0(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.CmsDynamicTagGroupSupportRegions)
 	resourceId := "alicloud_cms_dynamic_tag_group.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudMonitorServiceDynamicTagGroupMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsDynamicTagGroupMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCmsDynamicTagGroup")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceDynamicTagGroupBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%sCmsDynamicTagGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsDynamicTagGroupBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -132,63 +131,124 @@ func TestAccAliCloudCmsDynamicTagGroup_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"contact_group_list": []string{"${alicloud_cms_alarm_contact_group.default.id}", "${alicloud_cms_alarm_contact_group.default0.id}"},
-					"tag_key":            "appgroup",
+					"tag_key":            name,
+					"contact_group_list": "${alicloud_cms_alarm_contact_group.default.*.id}",
 					"match_express": []map[string]interface{}{
 						{
-							"tag_value":                "landingzone",
+							"tag_value":                name + "all",
 							"tag_value_match_function": "all",
+						},
+						{
+							"tag_value":                name + "startWith",
+							"tag_value_match_function": "startWith",
+						},
+						{
+							"tag_value":                name + "endWith",
+							"tag_value_match_function": "endWith",
 						},
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"contact_group_list.#": "2",
-						"tag_key":              "appgroup",
-						"match_express.#":      "1",
+						"tag_key":              name,
+						"contact_group_list.#": "6",
+						"match_express.#":      "3",
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"contact_group_list"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudCloudMonitorServiceDynamicTagGroupMap0 = map[string]string{
-	"match_express.#":               CHECKSET,
-	"status":                        CHECKSET,
-	"contact_group_list.#":          CHECKSET,
-	"tag_key":                       CHECKSET,
+func TestAccAliCloudCmsDynamicTagGroup_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_dynamic_tag_group.default"
+	ra := resourceAttrInit(resourceId, AliCloudCmsDynamicTagGroupMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsDynamicTagGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sCmsDynamicTagGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsDynamicTagGroupBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tag_key":                       name,
+					"match_express_filter_relation": "or",
+					"contact_group_list":            "${alicloud_cms_alarm_contact_group.default.*.id}",
+					"template_id_list":              "${alicloud_cms_metric_rule_template.default.*.id}",
+					"match_express": []map[string]interface{}{
+						{
+							"tag_value":                name + "contains",
+							"tag_value_match_function": "contains",
+						},
+						{
+							"tag_value":                name + "notContains",
+							"tag_value_match_function": "notContains",
+						},
+						{
+							"tag_value":                name + "equals",
+							"tag_value_match_function": "equals",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tag_key":                       name,
+						"match_express_filter_relation": "or",
+						"contact_group_list.#":          "6",
+						"template_id_list.#":            "6",
+						"match_express.#":               "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudCmsDynamicTagGroupMap0 = map[string]string{
 	"match_express_filter_relation": CHECKSET,
-	// "template_id_list.#":            CHECKSET,
+	"status":                        CHECKSET,
 }
 
-func AlicloudCloudMonitorServiceDynamicTagGroupBasicDependence0(name string) string {
+func AliCloudCmsDynamicTagGroupBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-resource "alicloud_cms_alarm_contact_group" "default" {
-	alarm_contact_group_name = "${var.name}-1"
-	describe                 = "For Test"
-	enable_subscribed        = true
-}
+	resource "alicloud_cms_alarm_contact_group" "default" {
+  		count                    = 6
+  		alarm_contact_group_name = "${var.name}-${count.index}"
+	}
 
-resource "alicloud_cms_alarm_contact_group" "default0" {
-	alarm_contact_group_name = "${var.name}-0"
-	describe                 = "For Test"
-	enable_subscribed        = true
-}
-
+	resource "alicloud_cms_metric_rule_template" "default" {
+  		count                     = 6
+  		metric_rule_template_name = "${var.name}-${count.index}"
+	}
 `, name)
 }
 
-func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
+func TestUnitAliCloudCmsDynamicTagGroup(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_dynamic_tag_group"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_dynamic_tag_group"].Schema).Data(nil, nil)
@@ -274,7 +334,7 @@ func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsDynamicTagGroupCreate(dInit, rawClient)
+	err = resourceAliCloudCmsDynamicTagGroupCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -300,7 +360,7 @@ func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsDynamicTagGroupCreate(dInit, rawClient)
+		err := resourceAliCloudCmsDynamicTagGroupCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -339,7 +399,7 @@ func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsDynamicTagGroupRead(dExisted, rawClient)
+		err := resourceAliCloudCmsDynamicTagGroupRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -358,7 +418,7 @@ func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsDynamicTagGroupDelete(dExisted, rawClient)
+	err = resourceAliCloudCmsDynamicTagGroupDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -382,7 +442,7 @@ func TestUnitAlicloudCmsDynamicTagGroup(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsDynamicTagGroupDelete(dExisted, rawClient)
+		err := resourceAliCloudCmsDynamicTagGroupDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

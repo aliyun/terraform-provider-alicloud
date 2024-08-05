@@ -21,10 +21,6 @@ For information about CBWP Common Bandwidth Package and how to use it, see [What
 Basic Usage
 
 ```terraform
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
-
 variable "name" {
   default = "terraform-example"
 }

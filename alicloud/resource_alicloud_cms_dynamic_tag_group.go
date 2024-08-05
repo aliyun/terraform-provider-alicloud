@@ -11,25 +11,37 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudCmsDynamicTagGroup() *schema.Resource {
+func resourceAliCloudCmsDynamicTagGroup() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCmsDynamicTagGroupCreate,
-		Read:   resourceAlicloudCmsDynamicTagGroupRead,
-		Delete: resourceAlicloudCmsDynamicTagGroupDelete,
+		Create: resourceAliCloudCmsDynamicTagGroupCreate,
+		Read:   resourceAliCloudCmsDynamicTagGroupRead,
+		Delete: resourceAliCloudCmsDynamicTagGroupDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"contact_group_list": {
-				Type:     schema.TypeList,
-				Required: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
-			},
 			"tag_key": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"match_express_filter_relation": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"contact_group_list": {
+				Type:     schema.TypeList,
+				Required: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+			},
+			"template_id_list": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"match_express": {
 				Type:     schema.TypeSet,
@@ -50,18 +62,6 @@ func resourceAlicloudCmsDynamicTagGroup() *schema.Resource {
 					},
 				},
 			},
-			"match_express_filter_relation": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
-			},
-			"template_id_list": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				ForceNew: true,
-			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -70,8 +70,9 @@ func resourceAlicloudCmsDynamicTagGroup() *schema.Resource {
 	}
 }
 
-func resourceAlicloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 	var response map[string]interface{}
 	action := "CreateDynamicTagGroup"
 	request := make(map[string]interface{})
@@ -79,26 +80,38 @@ func resourceAlicloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta inter
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["TagRegionId"] = client.RegionId
+	request["TagKey"] = d.Get("tag_key")
 	request["ContactGroupList"] = d.Get("contact_group_list")
 
-	if v, ok := d.GetOk("match_express"); ok {
-		for matchExpressPtr, matchExpress := range v.(*schema.Set).List() {
-			matchExpressArg := matchExpress.(map[string]interface{})
-			request["MatchExpress."+fmt.Sprint(matchExpressPtr+1)+".TagValue"] = matchExpressArg["tag_value"]
-			request["MatchExpress."+fmt.Sprint(matchExpressPtr+1)+".TagValueMatchFunction"] = matchExpressArg["tag_value_match_function"]
-		}
-	}
 	if v, ok := d.GetOk("match_express_filter_relation"); ok {
 		request["MatchExpressFilterRelation"] = v
 	}
-	request["TagRegionId"] = client.RegionId
-	request["TagKey"] = d.Get("tag_key")
+
 	if v, ok := d.GetOk("template_id_list"); ok {
 		request["TemplateIdList"] = v
 	}
+
+	matchExpress := d.Get("match_express")
+	matchExpressMaps := make([]map[string]interface{}, 0)
+	for _, matchExpressList := range matchExpress.(*schema.Set).List() {
+		matchExpressMap := map[string]interface{}{}
+		matchExpressArg := matchExpressList.(map[string]interface{})
+
+		matchExpressMap["TagValue"] = matchExpressArg["tag_value"]
+		matchExpressMap["TagValueMatchFunction"] = matchExpressArg["tag_value_match_function"]
+
+		matchExpressMaps = append(matchExpressMaps, matchExpressMap)
+	}
+
+	request["MatchExpress"] = matchExpressMaps
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -109,72 +122,102 @@ func resourceAlicloudCmsDynamicTagGroupCreate(d *schema.ResourceData, meta inter
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cms_dynamic_tag_group", action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
 	d.SetId(fmt.Sprint(response["Id"]))
 
-	cmsService := CmsService{client}
 	stateConf := BuildStateConf([]string{}, []string{"FINISH"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, cmsService.CmsDynamicTagGroupStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCmsDynamicTagGroupRead(d, meta)
+	return resourceAliCloudCmsDynamicTagGroupRead(d, meta)
 }
 
-func resourceAlicloudCmsDynamicTagGroupRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCmsDynamicTagGroupRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	cmsService := CmsService{client}
+
 	object, err := cmsService.DescribeCmsDynamicTagGroup(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_cms_dynamic_tag_group cmsService.DescribeCmsDynamicTagGroup Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("status", object["Status"])
-	d.Set("match_express_filter_relation", object["MatchExpressFilterRelation"])
-
-	d.Set("template_id_list", object["TemplateIdList"])
-
-	if matchExpressMap, ok := object["MatchExpress"]; ok && matchExpressMap != nil {
-		resourceData := make([]map[string]interface{}, 0)
-		for _, matchExpressListItem := range matchExpressMap.(map[string]interface{}) {
-			for _, val := range matchExpressListItem.([]interface{}) {
-				matchExpressObject := make(map[string]interface{}, 0)
-				matchExpressObject["tag_value"] = val.(map[string]interface{})["TagValue"]
-				matchExpressObject["tag_value_match_function"] = val.(map[string]interface{})["TagValueMatchFunction"]
-				resourceData = append(resourceData, matchExpressObject)
-			}
-		}
-		d.Set("match_express", resourceData)
-	}
 
 	d.Set("tag_key", object["TagKey"])
+	d.Set("match_express_filter_relation", object["MatchExpressFilterRelation"])
+
+	if contactGroupList, ok := object["ContactGroupList"]; ok {
+		if contactGroupLists, ok := contactGroupList.(map[string]interface{})["ContactGroupList"]; ok {
+
+			d.Set("contact_group_list", contactGroupLists.([]interface{}))
+		}
+	}
+
+	if templateIdList, ok := object["TemplateIdList"]; ok {
+		if templateIdLists, ok := templateIdList.(map[string]interface{})["TemplateIdList"]; ok {
+
+			d.Set("template_id_list", templateIdLists.([]interface{}))
+		}
+	}
+
+	if matchExpress, ok := object["MatchExpress"]; ok {
+		if matchExpressList, ok := matchExpress.(map[string]interface{})["MatchExpress"]; ok {
+			matchExpressMaps := make([]map[string]interface{}, 0)
+			for _, matchExpresses := range matchExpressList.([]interface{}) {
+				matchExpressArg := matchExpresses.(map[string]interface{})
+				matchExpressMap := map[string]interface{}{}
+
+				if tagValue, ok := matchExpressArg["TagValue"]; ok {
+					matchExpressMap["tag_value"] = tagValue
+				}
+
+				if tagValueMatchFunction, ok := matchExpressArg["TagValueMatchFunction"]; ok {
+					matchExpressMap["tag_value_match_function"] = tagValueMatchFunction
+				}
+
+				matchExpressMaps = append(matchExpressMaps, matchExpressMap)
+			}
+
+			d.Set("match_express", matchExpressMaps)
+		}
+	}
+
+	d.Set("status", object["Status"])
+
 	return nil
 }
-func resourceAlicloudCmsDynamicTagGroupDelete(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudCmsDynamicTagGroupDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cmsService := CmsService{client}
 	action := "DeleteDynamicTagGroup"
 	var response map[string]interface{}
 	conn, err := client.NewCmsClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"DynamicTagRuleId": d.Id(),
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -185,11 +228,22 @@ func resourceAlicloudCmsDynamicTagGroupDelete(d *schema.ResourceData, meta inter
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, cmsService.CmsDynamicTagGroupStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
 	return nil
 }

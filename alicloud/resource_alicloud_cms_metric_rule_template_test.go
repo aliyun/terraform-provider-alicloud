@@ -35,7 +35,7 @@ func init() {
 func testSweepCmsMetricRuleTemplate(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -111,10 +111,10 @@ func testSweepCmsMetricRuleTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
+func TestAccAliCloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_metric_rule_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudMonitorServiceMetricRuleTemplateMap0)
+	ra := resourceAttrInit(resourceId, AliCloudCmsMetricRuleTemplateMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCmsMetricRuleTemplate")
@@ -122,11 +122,10 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%scloudmonitorservicemetricruletemplate%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudMonitorServiceMetricRuleTemplateBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsMetricRuleTemplateBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -134,14 +133,32 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":               "${var.name}",
-					"metric_rule_template_name": "${var.name}",
+					"metric_rule_template_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_rule_template_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"alert_templates": []map[string]interface{}{
 						{
-							"category":    "ecs",
+							"rule_name":   name,
 							"metric_name": "cpu_total",
 							"namespace":   "acs_ecs_dashboard",
-							"rule_name":   "tf_testAcc_new",
+							"category":    "ecs",
 							"escalations": []map[string]interface{}{
 								{
 									"critical": []map[string]interface{}{
@@ -149,6 +166,36 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 											"comparison_operator": "GreaterThanThreshold",
 											"statistics":          "Average",
 											"threshold":           "90",
+											"times":               "1",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"alert_templates.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"alert_templates": []map[string]interface{}{
+						{
+							"rule_name":   name,
+							"metric_name": "cpu_total",
+							"namespace":   "acs_ecs_dashboard",
+							"category":    "ecs",
+							"webhook":     "https://www.aliyun.com",
+							"escalations": []map[string]interface{}{
+								{
+									"info": []map[string]interface{}{
+										{
+											"comparison_operator": "GreaterThanOrEqualToThreshold",
+											"statistics":          "Minimum",
+											"threshold":           "20",
 											"times":               "3",
 										},
 									},
@@ -159,9 +206,7 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":               name,
-						"metric_rule_template_name": name,
-						"alert_templates.#":         "1",
+						"alert_templates.#": "1",
 					}),
 				),
 			},
@@ -169,33 +214,18 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"alert_templates": []map[string]interface{}{
 						{
-							"category":    "ecs",
+							"rule_name":   name,
 							"metric_name": "cpu_total",
 							"namespace":   "acs_ecs_dashboard",
-							"rule_name":   "tf_testAcc_update",
+							"category":    "ecs",
+							"webhook":     "https://www.aliyun.com",
 							"escalations": []map[string]interface{}{
 								{
-									"critical": []map[string]interface{}{
-										{
-											"comparison_operator": "GreaterThanThreshold",
-											"statistics":          "Average",
-											"threshold":           "80",
-											"times":               "5",
-										},
-									},
-									"info": []map[string]interface{}{
-										{
-											"comparison_operator": "GreaterThanThreshold",
-											"statistics":          "Average",
-											"threshold":           "80",
-											"times":               "5",
-										},
-									},
 									"warn": []map[string]interface{}{
 										{
-											"comparison_operator": "GreaterThanThreshold",
+											"comparison_operator": "LessThanOrEqualToThreshold",
 											"statistics":          "Average",
-											"threshold":           "80",
+											"threshold":           "30",
 											"times":               "5",
 										},
 									},
@@ -212,78 +242,47 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "${var.name}_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"group_id":          "${local.group_id}",
-					"silence_time":      "8640",
-					"enable_start_time": "00",
-					"enable_end_time":   "23",
-					"notify_level":      "4",
-					"apply_mode":        "GROUP_INSTANCE_FIRST",
-					"webhook":           "https://www.aliyun.com",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"alert_templates": []map[string]interface{}{
 						{
-							"category":    "ecs",
+							"rule_name":   name,
 							"metric_name": "cpu_total",
 							"namespace":   "acs_ecs_dashboard",
-							"rule_name":   "tf_testAcc_update",
+							"category":    "ecs",
+							"webhook":     "https://www.aliyun.com",
 							"escalations": []map[string]interface{}{
 								{
 									"critical": []map[string]interface{}{
 										{
-											"comparison_operator": "GreaterThanThreshold",
+											"comparison_operator": "GreaterThanOrEqualToThreshold",
 											"statistics":          "Average",
 											"threshold":           "90",
-											"times":               "3",
+											"times":               "1",
 										},
 									},
 									"info": []map[string]interface{}{
 										{
-											"comparison_operator": "GreaterThanThreshold",
-											"statistics":          "Average",
-											"threshold":           "90",
+											"comparison_operator": "GreaterThanOrEqualToThreshold",
+											"statistics":          "Minimum",
+											"threshold":           "20",
 											"times":               "3",
 										},
 									},
 									"warn": []map[string]interface{}{
 										{
-											"comparison_operator": "GreaterThanThreshold",
+											"comparison_operator": "LessThanOrEqualToThreshold",
 											"statistics":          "Average",
-											"threshold":           "90",
-											"times":               "3",
+											"threshold":           "30",
+											"times":               "5",
 										},
 									},
 								},
 							},
 						},
 					},
-					"description":               "${var.name}",
-					"group_id":                  "${local.group_id}",
-					"metric_rule_template_name": "${var.name}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"alert_templates.#":         "1",
-						"description":               name,
-						"group_id":                  CHECKSET,
-						"metric_rule_template_name": name,
+						"alert_templates.#": "1",
 					}),
 				),
 			},
@@ -291,60 +290,123 @@ func TestAccAlicloudCmsMetricRuleTemplate_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"apply_mode", "notify_level", "enable_end_time", "silence_time", "enable_start_time", "group_id", "webhook"},
+				ImportStateVerifyIgnore: []string{"group_id", "apply_mode", "notify_level", "silence_time", "webhook", "enable_start_time", "enable_end_time"},
 			},
 		},
 	})
 }
 
-var AlicloudCloudMonitorServiceMetricRuleTemplateMap0 = map[string]string{
-	"alert_templates.#": CHECKSET,
+func TestAccAliCloudCmsMetricRuleTemplate_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_metric_rule_template.default"
+	ra := resourceAttrInit(resourceId, AliCloudCmsMetricRuleTemplateMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCmsMetricRuleTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scloudmonitorservicemetricruletemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsMetricRuleTemplateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"metric_rule_template_name": name,
+					"description":               name,
+					"group_id":                  "${alicloud_cms_monitor_group.default.id}",
+					"apply_mode":                "GROUP_INSTANCE_FIRST",
+					"notify_level":              "2",
+					"silence_time":              "80000",
+					"webhook":                   "https://www.aliyun.com",
+					"enable_start_time":         "00",
+					"enable_end_time":           "23",
+					"alert_templates": []map[string]interface{}{
+						{
+							"rule_name":   name,
+							"metric_name": "cpu_total",
+							"namespace":   "acs_ecs_dashboard",
+							"category":    "ecs",
+							"webhook":     "https://www.aliyun.com",
+							"escalations": []map[string]interface{}{
+								{
+									"critical": []map[string]interface{}{
+										{
+											"comparison_operator": "GreaterThanOrEqualToThreshold",
+											"statistics":          "Average",
+											"threshold":           "90",
+											"times":               "1",
+										},
+									},
+									"info": []map[string]interface{}{
+										{
+											"comparison_operator": "GreaterThanOrEqualToThreshold",
+											"statistics":          "Minimum",
+											"threshold":           "20",
+											"times":               "3",
+										},
+									},
+									"warn": []map[string]interface{}{
+										{
+											"comparison_operator": "LessThanOrEqualToThreshold",
+											"statistics":          "Average",
+											"threshold":           "30",
+											"times":               "5",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_rule_template_name": name,
+						"description":               name,
+						"alert_templates.#":         "1",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"group_id", "apply_mode", "notify_level", "silence_time", "webhook", "enable_start_time", "enable_end_time"},
+			},
+		},
+	})
 }
 
-func AlicloudCloudMonitorServiceMetricRuleTemplateBasicDependence0(name string) string {
+var AliCloudCmsMetricRuleTemplateMap0 = map[string]string{
+	"rest_version": CHECKSET,
+}
+
+func AliCloudCmsMetricRuleTemplateBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+	variable "name" {
+  		default = "%s"
+	}
+
+	resource "alicloud_cms_alarm_contact_group" "default" {
+  		alarm_contact_group_name = var.name
+  		describe                 = "tf-testacc"
+  		contacts                 = ["test1", "test2", "test3"]
+	}
+
+	resource "alicloud_cms_monitor_group" "default" {
+  		monitor_group_name = var.name
+  		contact_groups     = [alicloud_cms_alarm_contact_group.default.id]
+	}
+`, name)
 }
 
-data "alicloud_vpcs" "default"{
-	name_regex = "default-NODELETING"
-}
-data "alicloud_slb_zones" "default" {
-	available_slb_address_type = "vpc"
-}
-
-data "alicloud_vswitches" "default" {
-	vpc_id  = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_slb_zones.default.zones.0.id
-}
-
-resource "alicloud_slb_load_balancer" "default" {
-  load_balancer_name = var.name
-  load_balancer_spec = "slb.s2.small"
-  vswitch_id = data.alicloud_vswitches.default.ids[0]
-}
-resource "alicloud_cms_monitor_group" "default" {
-monitor_group_name = var.name
-}
-resource "alicloud_cms_monitor_group_instances" "default" {
-  group_id = alicloud_cms_monitor_group.default.id
-  instances {
-    instance_id = alicloud_slb_load_balancer.default.id
-    instance_name = alicloud_slb_load_balancer.default.name
-    region_id = "%s"
-    category = "slb"
-  }
-}
-
-locals {
- group_id = alicloud_cms_monitor_group_instances.default.id
-}
-
-`, name, defaultRegionToTest)
-}
-
-func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
+func TestUnitAliCloudCmsMetricRuleTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_cms_metric_rule_template"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_cms_metric_rule_template"].Schema).Data(nil, nil)
@@ -479,7 +541,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsMetricRuleTemplateCreate(dInit, rawClient)
+	err = resourceAliCloudCmsMetricRuleTemplateCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -513,7 +575,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsMetricRuleTemplateCreate(dInit, rawClient)
+		err := resourceAliCloudCmsMetricRuleTemplateCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -540,7 +602,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
+	err = resourceAliCloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ApplyMetricRuleTemplate
@@ -588,7 +650,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
+		err := resourceAliCloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -711,7 +773,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
+		err := resourceAliCloudCmsMetricRuleTemplateUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -748,7 +810,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsMetricRuleTemplateRead(dExisted, rawClient)
+		err := resourceAliCloudCmsMetricRuleTemplateRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -767,7 +829,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCmsMetricRuleTemplateDelete(dExisted, rawClient)
+	err = resourceAliCloudCmsMetricRuleTemplateDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -792,7 +854,7 @@ func TestUnitAlicloudCmsMetricRuleTemplate(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCmsMetricRuleTemplateDelete(dExisted, rawClient)
+		err := resourceAliCloudCmsMetricRuleTemplateDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

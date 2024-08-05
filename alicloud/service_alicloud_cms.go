@@ -565,14 +565,17 @@ func (s *CmsService) DescribeCmsMonitorGroupInstances(id string) (object []map[s
 
 func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeMetricRuleTemplateAttribute"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeMetricRuleTemplateAttribute"
+
 	request := map[string]interface{}{
 		"TemplateId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -588,35 +591,44 @@ func (s *CmsService) DescribeCmsMetricRuleTemplate(id string) (object map[string
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
-			return nil, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService:MetricRuleTemplate", id)), NotFoundMsg, ProviderERROR)
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:MetricRuleTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	if fmt.Sprint(response["Success"]) == "false" {
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	v, err := jsonpath.Get("$.Resource", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Resource", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
 func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeDynamicTagRuleList"
+
 	conn, err := s.client.NewCmsClient()
 	if err != nil {
-		return nil, WrapError(err)
+		return object, WrapError(err)
 	}
-	action := "DescribeDynamicTagRuleList"
+
 	request := map[string]interface{}{
-		"TagRegionId": s.client.RegionId,
-		"PageSize":    PageSizeLarge,
-		"PageNumber":  1,
+		"TagRegionId":      s.client.RegionId,
+		"DynamicTagRuleId": id,
+		"PageSize":         PageSizeLarge,
+		"PageNumber":       1,
 	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -634,34 +646,43 @@ func (s *CmsService) DescribeCmsDynamicTagGroup(id string) (object map[string]in
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Success"]) == "false" {
 			return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
-		v, err := jsonpath.Get("$.TagGroupList.TagGroup", response)
+
+		resp, err := jsonpath.Get("$.TagGroupList.TagGroup", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagGroupList.TagGroup", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cms:DynamicTagGroup", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
+
+		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["DynamicTagRuleId"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CloudMonitorService", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cms:DynamicTagGroup", id)), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
 
 func (s *CmsService) DescribeCmsNamespace(id string) (object map[string]interface{}, err error) {
@@ -1072,6 +1093,7 @@ func (s *CmsService) CmsDynamicTagGroupStateRefreshFunc(id string, failStates []
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }

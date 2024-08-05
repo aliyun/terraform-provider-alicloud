@@ -31,31 +31,31 @@ func Provider() terraform.ResourceProvider {
 			"access_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCESS_KEY", os.Getenv("ALIBABACLOUD_ACCESS_KEY_ID")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCESS_KEY", "ALIBABA_CLOUD_ACCESS_KEY_ID", "ALIBABACLOUD_ACCESS_KEY_ID"}, nil),
 				Description: descriptions["access_key"],
 			},
 			"secret_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECRET_KEY", os.Getenv("ALIBABACLOUD_ACCESS_KEY_SECRET")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SECRET_KEY", "ALIBABA_CLOUD_ACCESS_KEY_SECRET", "ALIBABACLOUD_ACCESS_KEY_SECRET"}, nil),
 				Description: descriptions["secret_key"],
 			},
 			"security_token": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TOKEN", os.Getenv("ALIBABACLOUD_SECURITY_TOKEN")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SECURITY_TOKEN", "ALIBABA_CLOUD_SECURITY_TOKEN", "ALIBABACLOUD_SECURITY_TOKEN"}, nil),
 				Description: descriptions["security_token"],
 			},
 			"ecs_role_name": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ECS_ROLE_NAME", os.Getenv("ALICLOUD_ECS_ROLE_NAME")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ECS_ROLE_NAME", "ALIBABA_CLOUD_ECS_METADATA"}, nil),
 				Description: descriptions["ecs_role_name"],
 			},
 			"region": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_REGION", os.Getenv("ALICLOUD_REGION")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_REGION", "ALIBABA_CLOUD_REGION"}, nil),
 				Description: descriptions["region"],
 			},
 			"ots_instance_name": {
@@ -76,7 +76,7 @@ func Provider() terraform.ResourceProvider {
 			"account_id": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ACCOUNT_ID", os.Getenv("ALICLOUD_ACCOUNT_ID")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_ID", "ALIBABA_CLOUD_ACCOUNT_ID"}, nil),
 				Description: descriptions["account_id"],
 			},
 			"assume_role":           assumeRoleSchema(),
@@ -92,13 +92,13 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: descriptions["shared_credentials_file"],
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SHARED_CREDENTIALS_FILE", ""),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SHARED_CREDENTIALS_FILE", "ALIBABA_CLOUD_CREDENTIALS_FILE"}, nil),
 			},
 			"profile": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: descriptions["profile"],
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_PROFILE", ""),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_PROFILE", "ALIBABA_CLOUD_PROFILE"}, nil),
 			},
 			"skip_region_validation": {
 				Type:        schema.TypeBool,
@@ -135,25 +135,25 @@ func Provider() terraform.ResourceProvider {
 			"source_ip": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SOURCE_IP", os.Getenv("ALICLOUD_SOURCE_IP")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SOURCE_IP", "ALIBABA_CLOUD_SOURCE_IP"}, nil),
 				Description: descriptions["source_ip"],
 			},
 			"security_transport": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURITY_TRANSPORT", os.Getenv("ALICLOUD_SECURITY_TRANSPORT")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SECURITY_TRANSPORT", "ALIBABA_CLOUD_SECURITY_TRANSPORT"}, nil),
 				//Deprecated:  "It has been deprecated from version 1.136.0 and using new field secure_transport instead.",
 			},
 			"secure_transport": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_SECURE_TRANSPORT", os.Getenv("ALICLOUD_SECURE_TRANSPORT")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_SECURE_TRANSPORT", "ALIBABA_CLOUD_SECURE_TRANSPORT"}, nil),
 				Description: descriptions["secure_transport"],
 			},
 			"credentials_uri": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_CREDENTIALS_URI", os.Getenv("ALICLOUD_CREDENTIALS_URI")),
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_CREDENTIALS_URI", "ALIBABA_CLOUD_CREDENTIALS_URI"}, nil),
 				Description: descriptions["credentials_uri"],
 			},
 			"max_retry_timeout": {
@@ -819,7 +819,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_product_as_end_users":             dataSourceAlicloudServiceCatalogProductAsEndUsers(),
 			"alicloud_service_catalog_product_versions":                 dataSourceAlicloudServiceCatalogProductVersions(),
 			"alicloud_service_catalog_launch_options":                   dataSourceAlicloudServiceCatalogLaunchOptions(),
-			"alicloud_maxcompute_projects":                              dataSourceAlicloudMaxcomputeProjects(),
+			"alicloud_maxcompute_projects":                              dataSourceAliCloudMaxComputeProjects(),
 			"alicloud_ebs_dedicated_block_storage_clusters":             dataSourceAlicloudEbsDedicatedBlockStorageClusters(),
 			"alicloud_ecs_elasticity_assurances":                        dataSourceAlicloudEcsElasticityAssurances(),
 			"alicloud_express_connect_grant_rule_to_cens":               dataSourceAlicloudExpressConnectGrantRuleToCens(),
@@ -863,6 +863,15 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_fcv3_custom_domain":                                   resourceAliCloudFcv3CustomDomain(),
+			"alicloud_fcv3_function":                                        resourceAliCloudFcv3Function(),
+			"alicloud_aligreen_oss_stock_task":                              resourceAliCloudAligreenOssStockTask(),
+			"alicloud_aligreen_keyword_lib":                                 resourceAliCloudAligreenKeywordLib(),
+			"alicloud_aligreen_image_lib":                                   resourceAliCloudAligreenImageLib(),
+			"alicloud_aligreen_biz_type":                                    resourceAliCloudAligreenBizType(),
+			"alicloud_aligreen_callback":                                    resourceAliCloudAligreenCallback(),
+			"alicloud_aligreen_audit_callback":                              resourceAliCloudAligreenAuditCallback(),
+			"alicloud_cloud_firewall_vpc_cen_tr_firewall":                   resourceAliCloudCloudFirewallVpcCenTrFirewall(),
 			"alicloud_gpdb_streaming_data_source":                           resourceAliCloudGpdbStreamingDataSource(),
 			"alicloud_gpdb_streaming_data_service":                          resourceAliCloudGpdbStreamingDataService(),
 			"alicloud_gpdb_external_data_service":                           resourceAliCloudGpdbExternalDataService(),
@@ -892,6 +901,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_express_connect_traffic_qos":                          resourceAliCloudExpressConnectTrafficQos(),
 			"alicloud_nas_access_point":                                     resourceAliCloudNasAccessPoint(),
 			"alicloud_api_gateway_access_control_list":                      resourceAliCloudApiGatewayAccessControlList(),
+			"alicloud_api_gateway_acl_entry_attachment":                     resourceAliCloudApiGatewayAclEntryAttachment(),
+			"alicloud_api_gateway_instance_acl_attachment":                  resourceAliCloudApiGatewayInstanceAclAttachment(),
 			"alicloud_cloud_firewall_nat_firewall_control_policy":           resourceAliCloudCloudFirewallNatFirewallControlPolicy(),
 			"alicloud_sls_alert":                                            resourceAliCloudSlsAlert(),
 			"alicloud_oss_bucket_cors":                                      resourceAliCloudOssBucketCors(),
@@ -1358,7 +1369,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_alert_contact":                                    resourceAlicloudArmsAlertContact(),
 			"alicloud_event_bridge_slr":                                      resourceAlicloudEventBridgeServiceLinkedRole(),
 			"alicloud_event_bridge_rule":                                     resourceAliCloudEventBridgeRule(),
-			"alicloud_cloud_firewall_control_policy":                         resourceAlicloudCloudFirewallControlPolicy(),
+			"alicloud_cloud_firewall_control_policy":                         resourceAliCloudCloudFirewallControlPolicy(),
 			"alicloud_sae_namespace":                                         resourceAlicloudSaeNamespace(),
 			"alicloud_sae_config_map":                                        resourceAlicloudSaeConfigMap(),
 			"alicloud_alb_security_policy":                                   resourceAlicloudAlbSecurityPolicy(),
@@ -1396,7 +1407,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ens_key_pair":                                          resourceAlicloudEnsKeyPair(),
 			"alicloud_sae_application":                                       resourceAliCloudSaeApplication(),
 			"alicloud_alb_rule":                                              resourceAliCloudAlbRule(),
-			"alicloud_cms_metric_rule_template":                              resourceAlicloudCmsMetricRuleTemplate(),
+			"alicloud_cms_metric_rule_template":                              resourceAliCloudCmsMetricRuleTemplate(),
 			"alicloud_iot_device_group":                                      resourceAlicloudIotDeviceGroup(),
 			"alicloud_express_connect_virtual_border_router":                 resourceAlicloudExpressConnectVirtualBorderRouter(),
 			"alicloud_imm_project":                                           resourceAlicloudImmProject(),
@@ -1412,7 +1423,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dts_job_monitor_rule":                                  resourceAlicloudDtsJobMonitorRule(),
 			"alicloud_database_gateway_gateway":                              resourceAlicloudDatabaseGatewayGateway(),
 			"alicloud_bastionhost_host":                                      resourceAlicloudBastionhostHost(),
-			"alicloud_amqp_binding":                                          resourceAlicloudAmqpBinding(),
+			"alicloud_amqp_binding":                                          resourceAliCloudAmqpBinding(),
 			"alicloud_slb_tls_cipher_policy":                                 resourceAlicloudSlbTlsCipherPolicy(),
 			"alicloud_cloud_sso_directory":                                   resourceAlicloudCloudSsoDirectory(),
 			"alicloud_bastionhost_host_account":                              resourceAlicloudBastionhostHostAccount(),
@@ -1475,7 +1486,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_ipv6_gateway":                                      resourceAliCloudVpcIpv6Gateway(),
 			"alicloud_vpc_ipv6_egress_rule":                                  resourceAliCloudVpcIpv6EgressRule(),
 			"alicloud_hbr_server_backup_plan":                                resourceAlicloudHbrServerBackupPlan(),
-			"alicloud_cms_dynamic_tag_group":                                 resourceAlicloudCmsDynamicTagGroup(),
+			"alicloud_cms_dynamic_tag_group":                                 resourceAliCloudCmsDynamicTagGroup(),
 			"alicloud_ecd_network_package":                                   resourceAlicloudEcdNetworkPackage(),
 			"alicloud_cloud_storage_gateway_gateway_smb_user":                resourceAlicloudCloudStorageGatewayGatewaySmbUser(),
 			"alicloud_vpc_ipv6_internet_bandwidth":                           resourceAliCloudVpcIpv6InternetBandwidth(),
@@ -1583,10 +1594,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ddos_basic_defense_threshold":                          resourceAlicloudDdosBasicDefenseThreshold(),
 			"alicloud_ecd_snapshot":                                          resourceAlicloudEcdSnapshot(),
 			"alicloud_ecd_bundle":                                            resourceAlicloudEcdBundle(),
-			"alicloud_config_delivery":                                       resourceAlicloudConfigDelivery(),
+			"alicloud_config_delivery":                                       resourceAliCloudConfigDelivery(),
 			"alicloud_cms_namespace":                                         resourceAliCloudCmsNamespace(),
 			"alicloud_cms_sls_group":                                         resourceAlicloudCmsSlsGroup(),
-			"alicloud_config_aggregate_delivery":                             resourceAlicloudConfigAggregateDelivery(),
+			"alicloud_config_aggregate_delivery":                             resourceAliCloudConfigAggregateDelivery(),
 			"alicloud_edas_namespace":                                        resourceAlicloudEdasNamespace(),
 			"alicloud_schedulerx_namespace":                                  resourceAlicloudSchedulerxNamespace(),
 			"alicloud_ehpc_cluster":                                          resourceAlicloudEhpcCluster(),
@@ -1991,8 +2002,8 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.CassandraEndpoint = strings.TrimSpace(endpoints["cassandra"].(string))
 	}
 
-	if ots_instance_name, ok := d.GetOk("ots_instance_name"); ok && ots_instance_name.(string) != "" {
-		config.OtsInstanceName = strings.TrimSpace(ots_instance_name.(string))
+	if otsInstanceName, ok := d.GetOk("ots_instance_name"); ok && otsInstanceName.(string) != "" {
+		config.OtsInstanceName = strings.TrimSpace(otsInstanceName.(string))
 	}
 
 	if logEndpoint, ok := d.GetOk("log_endpoint"); ok && logEndpoint.(string) != "" {
@@ -2380,13 +2391,13 @@ func assumeRoleSchema() *schema.Schema {
 					Type:        schema.TypeString,
 					Required:    true,
 					Description: descriptions["assume_role_role_arn"],
-					DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ASSUME_ROLE_ARN", ""),
+					DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ASSUME_ROLE_ARN", "ALIBABA_CLOUD_ROLE_ARN"}, nil),
 				},
 				"session_name": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Description: descriptions["assume_role_session_name"],
-					DefaultFunc: schema.EnvDefaultFunc("ALICLOUD_ASSUME_ROLE_SESSION_NAME", ""),
+					DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ASSUME_ROLE_SESSION_NAME", "ALIBABA_CLOUD_ROLE_SESSION_NAME"}, nil),
 				},
 				"policy": {
 					Type:        schema.TypeString,
@@ -3481,7 +3492,7 @@ func getConfigFromProfile(d *schema.ResourceData, ProfileKey string) (interface{
 			return nil, nil
 		}
 		current := d.Get("profile").(string)
-		// Set CredsFilename, expanding home directory
+		// Set Credentials filename, expanding home directory
 		profilePath, err := homedir.Expand(d.Get("shared_credentials_file").(string))
 		if err != nil {
 			return nil, WrapError(err)

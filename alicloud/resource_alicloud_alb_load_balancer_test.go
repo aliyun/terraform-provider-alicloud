@@ -100,22 +100,21 @@ func testSweepAlbLoadBalancer(region string) error {
 	return nil
 }
 
-func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
+func TestAccAliCloudAlbLoadBalancer_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAlbLoadBalancerMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbLoadBalancer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%salb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbLoadBalancerBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -123,12 +122,10 @@ func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                 "${local.vpc_id}",
-					"address_type":           "Internet",
-					"address_allocated_mode": "Fixed",
-					"load_balancer_name":     "${var.name}",
 					"load_balancer_edition":  "Basic",
-					"bandwidth_package_id":   "${alicloud_common_bandwidth_package.default.id}",
+					"address_type":           "Internet",
+					"vpc_id":                 "${alicloud_vpc.default.id}",
+					"address_allocated_mode": "Fixed",
 					"load_balancer_billing_config": []map[string]interface{}{
 						{
 							"pay_type": "PayAsYouGo",
@@ -136,28 +133,23 @@ func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 					},
 					"zone_mappings": []map[string]interface{}{
 						{
-							"vswitch_id": "${local.vswitch_id_1}",
-							"zone_id":    "${local.zone_id_1}",
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
 						},
 						{
-							"vswitch_id": "${local.vswitch_id_2}",
-							"zone_id":    "${local.zone_id_2}",
+							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
+							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
 						},
 					},
-					"address_ip_version": "Ipv4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":                         CHECKSET,
-						"bandwidth_package_id":           CHECKSET,
-						"address_type":                   "Internet",
-						"address_allocated_mode":         "Fixed",
-						"load_balancer_name":             name,
 						"load_balancer_edition":          "Basic",
+						"address_type":                   "Internet",
+						"vpc_id":                         CHECKSET,
+						"address_allocated_mode":         "Fixed",
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
-						"dns_name":                       CHECKSET,
-						"address_ip_version":             "Ipv4",
 					}),
 				),
 			},
@@ -173,11 +165,80 @@ func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name": name + "Update",
+					"address_type": "Intranet",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name": name + "Update",
+						"address_type": "Intranet",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_enabled": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection_enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection_enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"modification_protection_config": []map[string]interface{}{
+						{
+							"status": "ConsoleProtection",
+							"reason": name,
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"modification_protection_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"modification_protection_config": []map[string]interface{}{
+						{
+							"status": "NonProtection",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"modification_protection_config.#": "1",
 					}),
 				),
 			},
@@ -185,8 +246,23 @@ func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"access_log_config": []map[string]interface{}{
 						{
-							"log_project": "${local.log_project}",
-							"log_store":   "${local.log_store}",
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_config": []map[string]interface{}{
+						{
+							"log_project": "${alicloud_log_store.update.project}",
+							"log_store":   "${alicloud_log_store.update.name}",
 						},
 					},
 				}),
@@ -208,204 +284,170 @@ func TestAccAliCloudALBLoadBalancer_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "",
+					"access_log_config": []map[string]interface{}{
+						{
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"access_log_config.#": "1",
+					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_c.id}",
+							"zone_id":    "${alicloud_vswitch.zone_c.zone_id}",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"resource_group_id": CHECKSET,
+						"zone_mappings.#": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"tags": map[string]string{
-						"Created": "TF1",
-						"For":     "Test1",
+						"Created": "TF",
+						"For":     "LoadBalancer",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
-						"tags.Created": "TF1",
-						"tags.For":     "Test1",
+						"tags.Created": "TF",
+						"tags.For":     "LoadBalancer",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"deletion_protection_enabled": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"deletion_protection_enabled": "true",
-					}),
-				),
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
+		},
+	})
+}
+
+func TestAccAliCloudAlbLoadBalancer_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_load_balancer.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlbLoadBalancerMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbLoadBalancer")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbLoadBalancerBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_edition":       "Basic",
+					"address_type":                "Internet",
+					"vpc_id":                      "${alicloud_vpc.default.id}",
+					"address_allocated_mode":      "Fixed",
+					"address_ip_version":          "IPv4",
+					"bandwidth_package_id":        "${alicloud_common_bandwidth_package.default.id}",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"load_balancer_name":          name,
+					"deletion_protection_enabled": "false",
+					"load_balancer_billing_config": []map[string]interface{}{
+						{
+							"pay_type": "PayAsYouGo",
+						},
+					},
 					"modification_protection_config": []map[string]interface{}{
 						{
 							"status": "ConsoleProtection",
-							"reason": "TF_Test123.-",
+							"reason": name,
 						},
 					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"modification_protection_config.#": "1",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name":          name,
-					"deletion_protection_enabled": "false",
-					"modification_protection_config": []map[string]interface{}{
+					"access_log_config": []map[string]interface{}{
 						{
-							"status": "NonProtection",
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
+							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
 						},
 					},
 					"tags": map[string]string{
-						"Created": "TF2",
-						"For":     "Test2",
+						"Created": "TF",
+						"For":     "LoadBalancer",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name":               name,
-						"deletion_protection_enabled":      "false",
-						"modification_protection_config.#": "1",
-						"tags.%":                           "2",
-						"tags.Created":                     "TF2",
-						"tags.For":                         "Test2",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
-			},
-		},
-	})
-}
-
-func TestAccAliCloudALBLoadBalancer_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbLoadBalancer")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                 "${local.vpc_id}",
-					"address_type":           "Internet",
-					"address_allocated_mode": "Fixed",
-					"load_balancer_name":     "${var.name}",
-					"load_balancer_edition":  "Basic",
-					"load_balancer_billing_config": []map[string]interface{}{
-						{
-							"pay_type": "PayAsYouGo",
-						},
-					},
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${local.vswitch_id_1}",
-							"zone_id":    "${local.zone_id_1}",
-							//"allocation_id": "${alicloud_eip_address.default1.id}",
-							//"eip_type":      "Common",
-						},
-						{
-							"vswitch_id": "${local.vswitch_id_2}",
-							"zone_id":    "${local.zone_id_2}",
-							//"allocation_id": "${alicloud_eip_address.default2.id}",
-							//"eip_type":      "Common",
-						},
-					},
-					"deletion_protection_enabled": "false",
-					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"modification_protection_config": []map[string]interface{}{
-						{
-							"status": "ConsoleProtection",
-							"reason": "TF_Test123.-",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_id":                           CHECKSET,
-						"address_type":                     "Internet",
-						"address_allocated_mode":           "Fixed",
-						"load_balancer_name":               name,
 						"load_balancer_edition":            "Basic",
-						"load_balancer_billing_config.#":   "1",
-						"zone_mappings.#":                  "2",
-						"deletion_protection_enabled":      "false",
+						"address_type":                     "Internet",
+						"vpc_id":                           CHECKSET,
+						"address_allocated_mode":           "Fixed",
+						"address_ip_version":               "IPv4",
+						"bandwidth_package_id":             CHECKSET,
 						"resource_group_id":                CHECKSET,
+						"load_balancer_name":               name,
+						"deletion_protection_enabled":      "false",
+						"load_balancer_billing_config.#":   "1",
 						"modification_protection_config.#": "1",
+						"access_log_config.#":              "1",
+						"zone_mappings.#":                  "2",
+						"tags.%":                           "2",
+						"tags.Created":                     "TF",
+						"tags.For":                         "LoadBalancer",
 					}),
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"address_type": "Intranet",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"address_type": "Intranet",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
+func TestAccAliCloudAlbLoadBalancer_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAlbLoadBalancerMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbLoadBalancer")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence2)
+	name := fmt.Sprintf("tf-testacc%salb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbLoadBalancerBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -413,12 +455,11 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                 "${local.vpc_id}",
-					"address_type":           "Internet",
-					"address_allocated_mode": "Fixed",
-					"load_balancer_name":     "${var.name}",
 					"load_balancer_edition":  "Basic",
-					"bandwidth_package_id":   "${alicloud_common_bandwidth_package.default.id}",
+					"address_type":           "Internet",
+					"vpc_id":                 "${alicloud_vpc_ipv6_gateway.default.vpc_id}",
+					"address_allocated_mode": "Fixed",
+					"address_ip_version":     "DualStack",
 					"load_balancer_billing_config": []map[string]interface{}{
 						{
 							"pay_type": "PayAsYouGo",
@@ -426,28 +467,24 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 					},
 					"zone_mappings": []map[string]interface{}{
 						{
-							"vswitch_id": "${local.vswitch_id_1}",
-							"zone_id":    "${local.zone_id_1}",
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
 						},
 						{
-							"vswitch_id": "${local.vswitch_id_2}",
-							"zone_id":    "${local.zone_id_2}",
+							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
+							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
 						},
 					},
-					"address_ip_version": "DualStack",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"vpc_id":                         CHECKSET,
-						"bandwidth_package_id":           CHECKSET,
-						"address_type":                   "Internet",
-						"address_allocated_mode":         "Fixed",
-						"load_balancer_name":             name,
 						"load_balancer_edition":          "Basic",
+						"address_type":                   "Internet",
+						"vpc_id":                         CHECKSET,
+						"address_allocated_mode":         "Fixed",
+						"address_ip_version":             "DualStack",
 						"load_balancer_billing_config.#": "1",
 						"zone_mappings.#":                "2",
-						"dns_name":                       CHECKSET,
-						"address_ip_version":             "DualStack",
 					}),
 				),
 			},
@@ -463,32 +500,37 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name": name + "Update",
+					"address_type": "Intranet",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name": name + "Update",
+						"address_type": "Intranet",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"access_log_config": []map[string]interface{}{
-						{
-							"log_project": "${local.log_project}",
-							"log_store":   "${local.log_store}",
-						},
-					},
+					"ipv6_address_type": "Internet",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_log_config.#": "1",
+						"ipv6_address_type": "Internet",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"ipv6_address_type": "Intranet",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ipv6_address_type": "Intranet",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -498,16 +540,11 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"tags": map[string]string{
-						"Created": "TF1",
-						"For":     "Test1",
-					},
+					"load_balancer_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"tags.%":       "2",
-						"tags.Created": "TF1",
-						"tags.For":     "Test1",
+						"load_balancer_name": name,
 					}),
 				),
 			},
@@ -523,41 +560,11 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_type": "Internet",
+					"deletion_protection_enabled": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ipv6_address_type": "Internet",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_type": "Intranet",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_type": "Intranet",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_type": "Internet",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_type": "Internet",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"ipv6_address_type": "Intranet",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"ipv6_address_type": "Intranet",
+						"deletion_protection_enabled": "false",
 					}),
 				),
 			},
@@ -566,7 +573,7 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 					"modification_protection_config": []map[string]interface{}{
 						{
 							"status": "ConsoleProtection",
-							"reason": "TF_Test123.-",
+							"reason": name,
 						},
 					},
 				}),
@@ -578,267 +585,15 @@ func TestAccAliCloudALBLoadBalancer_basic2(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"load_balancer_name":          name,
-					"deletion_protection_enabled": "false",
 					"modification_protection_config": []map[string]interface{}{
 						{
 							"status": "NonProtection",
 						},
 					},
-					"tags": map[string]string{
-						"Created": "TF2",
-						"For":     "Test2",
-					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"load_balancer_name":               name,
-						"deletion_protection_enabled":      "false",
 						"modification_protection_config.#": "1",
-						"tags.%":                           "2",
-						"tags.Created":                     "TF2",
-						"tags.For":                         "Test2",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
-			},
-		},
-	})
-}
-
-var AlicloudALBLoadBalancerMap0 = map[string]string{}
-
-func AlicloudALBLoadBalancerBasicDependence0(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-data "alicloud_alb_zones" "default"{}
-
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = alicloud_vpc.default.vpc_name
-}
-
-resource "alicloud_vswitch" "vswitch_1" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 2)
-  zone_id =  data.alicloud_alb_zones.default.zones.0.id
-  vswitch_name              = var.name
-}
-
-resource "alicloud_vswitch" "vswitch_2" {
-  vpc_id            = alicloud_vpc.default.id
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 4)
-  zone_id = data.alicloud_alb_zones.default.zones.1.id
-  vswitch_name              = var.name
-}
-
-resource "alicloud_log_project" "default" {
-  name        = var.name
-  description = "created by terraform"
-}
-
-resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
-  shard_count           = 3
-  auto_split            = true
-  max_split_shard_count = 60
-  append_meta           = true
-}
-
-resource "alicloud_eip_address" "default1" {
-  depends_on           = [alicloud_vswitch.vswitch_1]
-  isp                  = "BGP"
-  internet_charge_type = "PayByBandwidth"
-  payment_type         = "PayAsYouGo"
-}
-
-resource "alicloud_eip_address" "default2" {
-  depends_on           = [alicloud_vswitch.vswitch_2]
-  isp                  = "BGP"
-  internet_charge_type = "PayByBandwidth"
-  payment_type         = "PayAsYouGo"
-}
-
-resource "alicloud_common_bandwidth_package" "default" {
-  bandwidth              = "1000"
-  internet_charge_type   = "PayByBandwidth"
-  bandwidth_package_name = "test-common-bandwidth-package"
-  description            = "test-common-bandwidth-package"
-}
-
-locals {
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id_1 =  data.alicloud_alb_zones.default.zones.0.id
- vswitch_id_1 =  concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
- zone_id_2 =  data.alicloud_alb_zones.default.zones.1.id
- vswitch_id_2 =  concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
- log_project = alicloud_log_project.default.name
- log_store =   alicloud_log_store.default.name
-}
-
-data "alicloud_resource_manager_resource_groups" "default" {}
-`, name)
-}
-
-func AlicloudALBLoadBalancerBasicDependence2(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-  default = "%s"
-}
-data "alicloud_alb_zones" "default" {}
-
-resource "alicloud_vpc" "default" {
-  vpc_name    = var.name
-  cidr_block  = "172.16.0.0/12"
-  enable_ipv6 = "true"
-}
-
-data "alicloud_vpcs" "default" {
-  name_regex = alicloud_vpc.default.vpc_name
-}
-
-resource "alicloud_vswitch" "vswitch_1" {
-  vpc_id               = alicloud_vpc.default.id
-  cidr_block           = "172.16.0.0/21"
-  zone_id              = data.alicloud_alb_zones.default.zones.0.id
-  vswitch_name         = var.name
-  ipv6_cidr_block_mask = "22"
-}
-
-resource "alicloud_vswitch" "vswitch_2" {
-  vpc_id               = alicloud_vpc.default.id
-  cidr_block           = "172.18.0.0/24"
-  zone_id              = data.alicloud_alb_zones.default.zones.1.id
-  vswitch_name         = var.name
-  ipv6_cidr_block_mask = "25"
-}
-
-resource "alicloud_log_project" "default" {
-  name        = var.name
-  description = "created by terraform"
-}
-
-resource "alicloud_log_store" "default" {
-  project               = alicloud_log_project.default.name
-  name                  = var.name
-  shard_count           = 3
-  auto_split            = true
-  max_split_shard_count = 60
-  append_meta           = true
-}
-
-resource "alicloud_eip_address" "default1" {
-  depends_on           = [alicloud_vswitch.vswitch_1]
-  address_name         = var.name
-  isp                  = "BGP"
-  internet_charge_type = "PayByBandwidth"
-  payment_type         = "PayAsYouGo"
-}
-
-resource "alicloud_eip_address" "default2" {
-  depends_on           = [alicloud_vswitch.vswitch_2]
-  address_name         = "tf-testacc-eip"
-  isp                  = "BGP"
-  internet_charge_type = "PayByBandwidth"
-  payment_type         = "PayAsYouGo"
-}
-
-resource "alicloud_common_bandwidth_package" "default" {
-  bandwidth              = "1000"
-  internet_charge_type   = "PayByBandwidth"
-  bandwidth_package_name = "test-common-bandwidth-package"
-  description            = "test-common-bandwidth-package"
-}
-
-resource "alicloud_vpc_ipv6_gateway" "default" {
-  depends_on        = [alicloud_common_bandwidth_package.default]
-  ipv6_gateway_name = var.name
-  vpc_id            = alicloud_vpc.default.id
-}
-
-locals {
-  vpc_id       = alicloud_vpc_ipv6_gateway.default.vpc_id
-  zone_id_1    = data.alicloud_alb_zones.default.zones.0.id
-  vswitch_id_1 = concat(alicloud_vswitch.vswitch_1.*.id, [""])[0]
-  zone_id_2    = data.alicloud_alb_zones.default.zones.1.id
-  vswitch_id_2 = concat(alicloud_vswitch.vswitch_2.*.id, [""])[0]
-  log_project  = alicloud_log_project.default.name
-  log_store    = alicloud_log_store.default.name
-}
-data "alicloud_resource_manager_resource_groups" "default" {}
-`, name)
-}
-
-func TestAccAliCloudALBLoadBalancer_basic3(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_alb_load_balancer.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBLoadBalancerMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAlbLoadBalancer")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%salbloadbalancer%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBLoadBalancerBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"vpc_id":                 "${local.vpc_id}",
-					"address_type":           "Internet",
-					"address_allocated_mode": "Fixed",
-					"load_balancer_name":     "${var.name}",
-					"load_balancer_edition":  "Basic",
-					"bandwidth_package_id":   "${alicloud_common_bandwidth_package.default.id}",
-					"load_balancer_billing_config": []map[string]interface{}{
-						{
-							"pay_type": "PayAsYouGo",
-						},
-					},
-					"zone_mappings": []map[string]interface{}{
-						{
-							"vswitch_id": "${local.vswitch_id_1}",
-							"zone_id":    "${local.zone_id_1}",
-						},
-						{
-							"vswitch_id": "${local.vswitch_id_2}",
-							"zone_id":    "${local.zone_id_2}",
-						},
-					},
-					"address_ip_version": "Ipv4",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"vpc_id":                         CHECKSET,
-						"bandwidth_package_id":           CHECKSET,
-						"address_type":                   "Internet",
-						"address_allocated_mode":         "Fixed",
-						"load_balancer_name":             name,
-						"load_balancer_edition":          "Basic",
-						"load_balancer_billing_config.#": "1",
-						"zone_mappings.#":                "2",
-						"dns_name":                       CHECKSET,
-						"address_ip_version":             "Ipv4",
 					}),
 				),
 			},
@@ -846,8 +601,23 @@ func TestAccAliCloudALBLoadBalancer_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"access_log_config": []map[string]interface{}{
 						{
-							"log_project": "${local.log_project}",
-							"log_store":   "${local.log_store}",
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_config": []map[string]interface{}{
+						{
+							"log_project": "${alicloud_log_store.update.project}",
+							"log_store":   "${alicloud_log_store.update.name}",
 						},
 					},
 				}),
@@ -861,14 +631,313 @@ func TestAccAliCloudALBLoadBalancer_basic3(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"access_log_config": REMOVEKEY,
 				}),
-				Check: resource.ComposeTestCheckFunc(),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_config.#": "0",
+					}),
+				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run", "deletion_protection_enabled"},
+				Config: testAccConfig(map[string]interface{}{
+					"access_log_config": []map[string]interface{}{
+						{
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_log_config.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_c.id}",
+							"zone_id":    "${alicloud_vswitch.zone_c.zone_id}",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "LoadBalancer",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "LoadBalancer",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
+}
+
+func TestAccAliCloudAlbLoadBalancer_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_load_balancer.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlbLoadBalancerMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbLoadBalancer")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salb%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbLoadBalancerBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"load_balancer_edition":       "Basic",
+					"address_type":                "Internet",
+					"vpc_id":                      "${alicloud_vpc_ipv6_gateway.default.vpc_id}",
+					"address_allocated_mode":      "Fixed",
+					"address_ip_version":          "DualStack",
+					"ipv6_address_type":           "Internet",
+					"bandwidth_package_id":        "${alicloud_common_bandwidth_package.default.id}",
+					"resource_group_id":           "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"load_balancer_name":          name,
+					"deletion_protection_enabled": "false",
+					"load_balancer_billing_config": []map[string]interface{}{
+						{
+							"pay_type": "PayAsYouGo",
+						},
+					},
+					"modification_protection_config": []map[string]interface{}{
+						{
+							"status": "ConsoleProtection",
+							"reason": name,
+						},
+					},
+					"access_log_config": []map[string]interface{}{
+						{
+							"log_project": "${alicloud_log_store.default.project}",
+							"log_store":   "${alicloud_log_store.default.name}",
+						},
+					},
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_a.id}",
+							"zone_id":    "${alicloud_vswitch.zone_a.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.zone_b.id}",
+							"zone_id":    "${alicloud_vswitch.zone_b.zone_id}",
+						},
+					},
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "LoadBalancer",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"load_balancer_edition":            "Basic",
+						"address_type":                     "Internet",
+						"vpc_id":                           CHECKSET,
+						"address_allocated_mode":           "Fixed",
+						"address_ip_version":               "DualStack",
+						"ipv6_address_type":                "Internet",
+						"bandwidth_package_id":             CHECKSET,
+						"resource_group_id":                CHECKSET,
+						"load_balancer_name":               name,
+						"deletion_protection_enabled":      "false",
+						"load_balancer_billing_config.#":   "1",
+						"modification_protection_config.#": "1",
+						"access_log_config.#":              "1",
+						"zone_mappings.#":                  "2",
+						"tags.%":                           "2",
+						"tags.Created":                     "TF",
+						"tags.For":                         "LoadBalancer",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+var AliCloudAlbLoadBalancerMap0 = map[string]string{
+	"address_ip_version": CHECKSET,
+	"resource_group_id":  CHECKSET,
+	"dns_name":           CHECKSET,
+	"status":             CHECKSET,
+	"create_time":        CHECKSET,
+}
+
+var AliCloudAlbLoadBalancerMap1 = map[string]string{
+	"address_ip_version": CHECKSET,
+	"ipv6_address_type":  CHECKSET,
+	"resource_group_id":  CHECKSET,
+	"dns_name":           CHECKSET,
+	"status":             CHECKSET,
+	"create_time":        CHECKSET,
+}
+
+func AliCloudAlbLoadBalancerBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_alb_zones" "default" {
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "zone_a" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.0.0/18"
+  		zone_id      = data.alicloud_alb_zones.default.zones.0.id
+	}
+
+	resource "alicloud_vswitch" "zone_b" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.128.0/18"
+  		zone_id      = data.alicloud_alb_zones.default.zones.1.id
+	}
+
+	resource "alicloud_vswitch" "zone_c" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/18"
+  		zone_id      = data.alicloud_alb_zones.default.zones.2.id
+	}
+
+	resource "alicloud_common_bandwidth_package" "default" {
+  		bandwidth            = 1000
+  		internet_charge_type = "PayByBandwidth"
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name = var.name
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project = alicloud_log_project.default.name
+  		name    = var.name
+	}
+
+	resource "alicloud_log_project" "update" {
+  		name = "${var.name}-update"
+	}
+
+	resource "alicloud_log_store" "update" {
+  		project = alicloud_log_project.update.name
+  		name    = "${var.name}-update"
+	}
+`, name)
+}
+
+func AliCloudAlbLoadBalancerBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+
+	data "alicloud_alb_zones" "default" {
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name    = var.name
+  		cidr_block  = "192.168.0.0/16"
+  		enable_ipv6 = "true"
+	}
+
+	resource "alicloud_vswitch" "zone_a" {
+  		vswitch_name         = var.name
+  		vpc_id               = alicloud_vpc.default.id
+  		cidr_block           = "192.168.0.0/18"
+  		zone_id              = data.alicloud_alb_zones.default.zones.0.id
+  		ipv6_cidr_block_mask = "6"
+	}
+
+	resource "alicloud_vswitch" "zone_b" {
+  		vswitch_name         = var.name
+  		vpc_id               = alicloud_vpc.default.id
+  		cidr_block           = "192.168.128.0/18"
+  		zone_id              = data.alicloud_alb_zones.default.zones.1.id
+  		ipv6_cidr_block_mask = "8"
+	}
+
+	resource "alicloud_vswitch" "zone_c" {
+  		vswitch_name         = var.name
+  		vpc_id               = alicloud_vpc.default.id
+  		cidr_block           = "192.168.192.0/18"
+  		zone_id              = data.alicloud_alb_zones.default.zones.2.id
+  		ipv6_cidr_block_mask = "18"
+	}
+
+	resource "alicloud_vpc_ipv6_gateway" "default" {
+  		ipv6_gateway_name = var.name
+  		vpc_id            = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_common_bandwidth_package" "default" {
+  		bandwidth            = 1000
+  		internet_charge_type = "PayByBandwidth"
+	}
+
+	resource "alicloud_log_project" "default" {
+  		name = var.name
+	}
+
+	resource "alicloud_log_store" "default" {
+  		project = alicloud_log_project.default.name
+  		name    = var.name
+	}
+
+	resource "alicloud_log_project" "update" {
+  		name = "${var.name}-update"
+	}
+
+	resource "alicloud_log_store" "update" {
+  		project = alicloud_log_project.update.name
+  		name    = "${var.name}-update"
+	}
+`, name)
 }

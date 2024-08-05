@@ -154,36 +154,39 @@ variable "name" {
 }
 
 data "alicloud_zones" "default" {
-    available_resource_creation= "VSwitch"
+  available_resource_creation = "VSwitch"
 }
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
+  cidr_block = "192.168.0.0/16"
 }
 data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id      = data.alicloud_zones.default.zones.0.id
+  vpc_id     = data.alicloud_vpcs.default.ids.0
+  zone_id    = data.alicloud_zones.default.zones.0.id
+  cidr_block = "192.168.64.0/24"
 }
 
 resource "alicloud_security_group" "default" {
-    name = var.name
-    vpc_id = data.alicloud_vpcs.default.ids.0
+  name   = var.name
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
-data "alicloud_resource_manager_resource_groups" "default"{
-	status = "OK"
+data "alicloud_resource_manager_resource_groups" "default" {
+  status = "OK"
 }
 
 resource "alicloud_ecs_network_interface" "default" {
-    network_interface_name = var.name
-    vswitch_id = data.alicloud_vswitches.default.ids.0
-    security_group_ids = [alicloud_security_group.default.id]
-	description = "Basic test"
-	primary_ip_address = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)
-	tags = {
-		Created = "TF",
-		For =    "Test",
-	}
-	resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
+  network_interface_name = var.name
+  vswitch_id             = data.alicloud_vswitches.default.ids.0
+  security_group_ids     = [alicloud_security_group.default.id]
+  description            = "Basic test"
+  primary_ip_address     = cidrhost(data.alicloud_vswitches.default.vswitches.0.cidr_block, 100)
+  ipv6_address_count     = 1
+  tags = {
+    Created = "TF",
+    For     = "Test",
+  }
+  resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 
 `, name)

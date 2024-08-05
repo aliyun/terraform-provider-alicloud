@@ -108,26 +108,23 @@ func (s *AlbServiceV2) AlbListenerAclAttachmentStateRefreshFunc(id string, field
 // DescribeAlbLoadBalancer <<< Encapsulated get interface for Alb LoadBalancer.
 
 func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]interface{}, err error) {
-
-	client := s.client
-	var request map[string]interface{}
 	var response map[string]interface{}
-	var query map[string]interface{}
 	action := "GetLoadBalancerAttribute"
-	conn, err := client.NewAlbClient()
+
+	conn, err := s.client.NewAlbClient()
 	if err != nil {
 		return object, WrapError(err)
 	}
-	request = make(map[string]interface{})
-	query = make(map[string]interface{})
-	query["LoadBalancerId"] = id
+
+	request := map[string]interface{}{
+		"LoadBalancerId": id,
+	}
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -135,13 +132,13 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.LoadBalancer"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("LoadBalancer", id)), NotFoundMsg, response)
+			return object, WrapErrorf(Error(GetNotFoundMessage("Alb:LoadBalancer", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
@@ -151,7 +148,9 @@ func (s *AlbServiceV2) DescribeAlbLoadBalancer(id string) (object map[string]int
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
 
-	return v.(map[string]interface{}), nil
+	object = v.(map[string]interface{})
+
+	return object, nil
 }
 
 func (s *AlbServiceV2) AlbLoadBalancerListAsynJobs(id, jobId string) (object map[string]interface{}, err error) {
@@ -238,6 +237,7 @@ func (s *AlbServiceV2) AlbLoadBalancerStateRefreshFunc(id string, field string, 
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
 			}
 		}
+
 		return object, currentStatus, nil
 	}
 }

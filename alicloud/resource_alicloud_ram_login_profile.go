@@ -39,7 +39,7 @@ func resourceAliCloudRamLoginProfile() *schema.Resource {
 			"mfa_bind_required": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Default:  false,
+				Computed: true,
 			},
 		},
 	}
