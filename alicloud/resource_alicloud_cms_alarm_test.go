@@ -693,6 +693,341 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 					"project":        "acs_ecs_dashboard",
 					"metric":         "disk_writebytes",
 					"contact_groups": []string{"${alicloud_cms_monitor_group.default.id}"},
+					"composite_expression": []map[string]interface{}{
+						{
+							"level":                "CRITICAL",
+							"times":                "1",
+							"expression_raw":       "$Average > 50",
+							"expression_list_join": "&&",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                   name,
+						"project":                "acs_ecs_dashboard",
+						"metric":                 "disk_writebytes",
+						"contact_groups.#":       "1",
+						"composite_expression.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name": name + "update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name": name + "update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"contact_groups": []string{"${alicloud_cms_monitor_group.update.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"contact_groups.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"metric_dimensions": `[{\"instanceId\":\"` + "${alicloud_instance.default.id}" + `\"},{\"device\":\"/dev/vda1\"}]`,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"metric_dimensions": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"effective_interval": "06:00-20:00",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective_interval": "06:00-20:00",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"period": "900",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"period": "900",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"silence_time": "300",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"silence_time": "300",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"webhook": "https://www.aliyun.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"webhook": "https://www.aliyun.com",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enabled": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enabled": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Alarm",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Alarm",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"targets": []map[string]interface{}{
+						{
+							"target_id":   "1",
+							"json_params": `{\"a\":\"b\"}`,
+							"level":       "Warn",
+							"arn":         "acs:openapi:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":cms/DescribeMetricList/2019-01-01/testrole",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"targets.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"composite_expression": []map[string]interface{}{
+						{
+							"level":                "CRITICAL",
+							"times":                "2",
+							"expression_raw":       "$Average > 60",
+							"expression_list_join": "||",
+							"expression_list": []map[string]interface{}{
+								{
+									"metric_name":         "cpu_total",
+									"comparison_operator": ">",
+									"statistics":          "Maximum",
+									"threshold":           "50",
+									"period":              "2",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"composite_expression.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"composite_expression": []map[string]interface{}{
+						{
+							"level":                "WARN",
+							"times":                "6",
+							"expression_raw":       "$Average > 80",
+							"expression_list_join": "&&",
+							"expression_list": []map[string]interface{}{
+								{
+									"metric_name":         "disk_writebytes",
+									"comparison_operator": "!=",
+									"statistics":          "Minimum",
+									"threshold":           "60",
+									"period":              "6",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"composite_expression.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"composite_expression": []map[string]interface{}{
+						{
+							"level":                "INFO",
+							"times":                "2",
+							"expression_raw":       "$Average > 50",
+							"expression_list_join": "||",
+							"expression_list": []map[string]interface{}{
+								{
+									"metric_name":         "cpu_total",
+									"comparison_operator": "LessThanYesterday",
+									"statistics":          "Average",
+									"threshold":           "80",
+									"period":              "8",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"composite_expression.#": "1",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_alarm.default"
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlarm")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":               name,
+					"project":            "acs_ecs_dashboard",
+					"metric":             "disk_writebytes",
+					"contact_groups":     []string{"${alicloud_cms_monitor_group.default.id}"},
+					"metric_dimensions":  `[{\"instanceId\":\"` + "${alicloud_instance.default.id}" + `\"},{\"device\":\"/dev/vda1\"}]`,
+					"effective_interval": "06:00-20:00",
+					"period":             "900",
+					"silence_time":       "300",
+					"webhook":            "https://www.aliyun.com",
+					"enabled":            "true",
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Alarm",
+					},
+					"targets": []map[string]interface{}{
+						{
+							"target_id":   "1",
+							"json_params": `{\"a\":\"b\"}`,
+							"level":       "Warn",
+							"arn":         "acs:openapi:" + os.Getenv("ALICLOUD_REGION") + ":" + os.Getenv("ALICLOUD_ACCOUNT_ID") + ":cms/DescribeMetricList/2019-01-01/testrole",
+						},
+					},
+					"composite_expression": []map[string]interface{}{
+						{
+							"level":                "CRITICAL",
+							"times":                "1",
+							"expression_raw":       "$Average > 50",
+							"expression_list_join": "&&",
+							"expression_list": []map[string]interface{}{
+								{
+									"metric_name":         "cpu_total",
+									"comparison_operator": ">",
+									"statistics":          "Maximum",
+									"threshold":           "50",
+									"period":              "2",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":                   name,
+						"project":                "acs_ecs_dashboard",
+						"metric":                 "disk_writebytes",
+						"contact_groups.#":       "1",
+						"metric_dimensions":      CHECKSET,
+						"effective_interval":     "06:00-20:00",
+						"period":                 "900",
+						"silence_time":           "300",
+						"webhook":                "https://www.aliyun.com",
+						"enabled":                "true",
+						"targets.#":              "1",
+						"composite_expression.#": "1",
+						"tags.%":                 "2",
+						"tags.Created":           "TF",
+						"tags.For":               "Alarm",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCmsAlarm_basic3(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cms_alarm.default"
+	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CmsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlarm")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%s-rule-name%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCmsAlarmBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":           name,
+					"project":        "acs_ecs_dashboard",
+					"metric":         "disk_writebytes",
+					"contact_groups": []string{"${alicloud_cms_monitor_group.default.id}"},
 					"escalations_critical": []map[string]interface{}{
 						{
 							"comparison_operator": "LessThanYesterday",
@@ -892,7 +1227,7 @@ func TestAccAliCloudCmsAlarm_basic2(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
+func TestAccAliCloudCmsAlarm_basic3_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cms_alarm.default"
 	ra := resourceAttrInit(resourceId, AliCloudCmsAlarmMap0)

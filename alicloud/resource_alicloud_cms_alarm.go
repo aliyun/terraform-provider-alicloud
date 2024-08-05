@@ -243,6 +243,66 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 					},
 				},
 			},
+			"composite_expression": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"level": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"CRITICAL", "WARN", "INFO"}, false),
+						},
+						"times": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"expression_raw": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"expression_list_join": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"&&", "||"}, false),
+						},
+						"expression_list": {
+							Type:     schema.TypeList,
+							Optional: true,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"metric_name": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"comparison_operator": {
+										Type:     schema.TypeString,
+										Optional: true,
+										ValidateFunc: StringInSlice([]string{
+											MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+											"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
+											"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
+										}, false),
+									},
+									"statistics": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"threshold": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"period": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -381,24 +441,6 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 		}
 	}
 
-	dims := make([]map[string]interface{}, 0)
-	if fmt.Sprint(object["Resources"]) != "" {
-		if err := json.Unmarshal([]byte(object["Resources"].(string)), &dims); err != nil {
-			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
-		}
-	}
-
-	dimensionList := make(map[string]interface{}, 0)
-	for _, raw := range dims {
-		for k, v := range raw {
-			if dimensionListValue, ok := dimensionList[k]; ok {
-				dimensionList[k] = fmt.Sprint(dimensionListValue.(string), ",", v.(string))
-			} else {
-				dimensionList[k] = v
-			}
-		}
-	}
-
 	if v, ok := object["Prometheus"]; ok {
 		if prometheus, ok := v.(map[string]interface{}); ok && len(prometheus) > 0 {
 
@@ -431,6 +473,86 @@ func resourceAliCloudCmsAlarmRead(d *schema.ResourceData, meta interface{}) erro
 
 			if err := d.Set("prometheus", prometheusList); err != nil {
 				return WrapError(err)
+			}
+		}
+	}
+
+	if compositeExpression, ok := object["CompositeExpression"]; ok {
+		compositeExpressionMaps := make([]map[string]interface{}, 0)
+		compositeExpressionArg := compositeExpression.(map[string]interface{})
+		compositeExpressionMap := make(map[string]interface{})
+
+		if level, ok := compositeExpressionArg["Level"]; ok {
+			compositeExpressionMap["level"] = level
+		}
+
+		if times, ok := compositeExpressionArg["Times"]; ok {
+			compositeExpressionMap["times"] = times
+		}
+
+		if expressionRaw, ok := compositeExpressionArg["ExpressionRaw"]; ok {
+			compositeExpressionMap["expression_raw"] = expressionRaw
+		}
+
+		if expressionListJoin, ok := compositeExpressionArg["ExpressionListJoin"]; ok {
+			compositeExpressionMap["expression_list_join"] = expressionListJoin
+		}
+
+		if expressionList, ok := compositeExpressionArg["ExpressionList"]; ok {
+			if expressionLists, ok := expressionList.(map[string]interface{})["ExpressionList"]; ok {
+				expressionListMaps := make([]map[string]interface{}, 0)
+				for _, v := range expressionLists.([]interface{}) {
+					expressionListArg := v.(map[string]interface{})
+					expressionListMap := map[string]interface{}{}
+
+					if metricName, ok := expressionListArg["MetricName"]; ok {
+						expressionListMap["metric_name"] = metricName
+					}
+
+					if comparisonOperator, ok := expressionListArg["ComparisonOperator"]; ok {
+						expressionListMap["comparison_operator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
+					}
+
+					if statistics, ok := expressionListArg["Statistics"]; ok {
+						expressionListMap["statistics"] = statistics
+					}
+
+					if threshold, ok := expressionListArg["Threshold"]; ok {
+						expressionListMap["threshold"] = threshold
+					}
+
+					if period, ok := expressionListArg["Period"]; ok {
+						expressionListMap["period"] = period
+					}
+
+					expressionListMaps = append(expressionListMaps, expressionListMap)
+				}
+
+				compositeExpressionMap["expression_list"] = expressionListMaps
+			}
+		}
+
+		if len(compositeExpressionMap) > 0 {
+			compositeExpressionMaps = append(compositeExpressionMaps, compositeExpressionMap)
+		}
+
+		d.Set("composite_expression", compositeExpressionMaps)
+	}
+
+	dims := make([]map[string]interface{}, 0)
+	if fmt.Sprint(object["Resources"]) != "" {
+		if err := json.Unmarshal([]byte(object["Resources"].(string)), &dims); err != nil {
+			return fmt.Errorf("Unmarshaling Dimensions got an error: %#v.", err)
+		}
+	}
+
+	dimensionList := make(map[string]interface{}, 0)
+	for _, raw := range dims {
+		for k, v := range raw {
+			if dimensionListValue, ok := dimensionList[k]; ok {
+				dimensionList[k] = fmt.Sprint(dimensionListValue.(string), ",", v.(string))
+			} else {
+				dimensionList[k] = v
 			}
 		}
 	}
@@ -636,6 +758,68 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 		request["Prometheus"], _ = convertMaptoJsonString(prometheusMap)
 	}
 
+	if v, ok := d.GetOk("composite_expression"); ok {
+		compositeExpressionMap := map[string]interface{}{}
+		for _, compositeExpression := range v.([]interface{}) {
+			compositeExpressionArg := compositeExpression.(map[string]interface{})
+
+			if level, ok := compositeExpressionArg["level"]; ok {
+				compositeExpressionMap["Level"] = level
+			}
+
+			if times, ok := compositeExpressionArg["times"]; ok {
+				compositeExpressionMap["Times"] = times
+			}
+
+			if expressionRaw, ok := compositeExpressionArg["expression_raw"]; ok {
+				compositeExpressionMap["ExpressionRaw"] = expressionRaw
+			}
+
+			if expressionListJoin, ok := compositeExpressionArg["expression_list_join"]; ok {
+				compositeExpressionMap["ExpressionListJoin"] = expressionListJoin
+			}
+
+			if expressionList, ok := compositeExpressionArg["expression_list"]; ok {
+				expressionListMaps := make([]map[string]interface{}, 0)
+				for _, expressionListArgList := range expressionList.([]interface{}) {
+					expressionListMap := map[string]interface{}{}
+					expressionListArg := expressionListArgList.(map[string]interface{})
+
+					if metricName, ok := expressionListArg["metric_name"]; ok {
+						expressionListMap["MetricName"] = metricName
+					}
+
+					if comparisonOperator, ok := expressionListArg["comparison_operator"]; ok {
+						expressionListMap["ComparisonOperator"] = convertCmsAlarmComparisonOperator(fmt.Sprint(comparisonOperator))
+					}
+
+					if statistics, ok := expressionListArg["statistics"]; ok {
+						expressionListMap["Statistics"] = statistics
+					}
+
+					if threshold, ok := expressionListArg["threshold"]; ok {
+						expressionListMap["Threshold"] = threshold
+					}
+
+					if period, ok := expressionListArg["period"]; ok {
+						expressionListMap["Period"] = period
+					}
+
+					expressionListMaps = append(expressionListMaps, expressionListMap)
+				}
+
+				compositeExpressionMap["ExpressionList"] = expressionListMaps
+			}
+		}
+
+		compositeExpressionJson, err := convertMaptoJsonString(compositeExpressionMap)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["CompositeExpression"] = compositeExpressionJson
+	}
+
 	if v, ok := d.GetOk("tags"); ok {
 		tags := make([]map[string]interface{}, 0)
 		for key, value := range v.(map[string]interface{}) {
@@ -679,6 +863,7 @@ func resourceAliCloudCmsAlarmUpdate(d *schema.ResourceData, meta interface{}) er
 	d.SetPartial("escalations_info")
 	d.SetPartial("escalations_warn")
 	d.SetPartial("prometheus")
+	d.SetPartial("composite_expression")
 	d.SetPartial("tags")
 	d.SetPartial("dimensions")
 	d.SetPartial("start_time")

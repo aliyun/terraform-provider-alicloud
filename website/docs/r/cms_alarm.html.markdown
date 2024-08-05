@@ -103,8 +103,8 @@ The following arguments are supported:
 * `metric` - (Required, ForceNew) The name of the metric, such as `CPUUtilization` and `networkin_rate`. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
 * `contact_groups` - (Required, List) List contact groups of the alarm rule, which must have been created on the console.
 * `metric_dimensions` - (Optional, Available since v1.173.0) Map of the resources associated with the alarm rule, such as "instanceId", "device" and "port". Each key's value is a string, and it uses comma to split multiple items. For more information, see [Metrics Reference](https://www.alibabacloud.com/help/doc-detail/28619.htm).
-* `effective_interval` - (Optional, Available since v1.50.0) The interval of effecting alarm rule. It format as "hh:mm-hh:mm", like "0:00-4:00". Default to "00:00-23:59".
-* `period` - (Optional, Int) Index query cycle, which must be consistent with that defined for metrics. Default to 300, in seconds.
+* `effective_interval` - (Optional, Available since v1.50.0) The interval of effecting alarm rule. It format as "hh:mm-hh:mm", like "0:00-4:00". Default value: `00:00-23:59`.
+* `period` - (Optional, Int) The statistical period of the metric. Unit: seconds. Default value: `300`.
 * `silence_time` - (Optional, Int) Notification silence period in the alarm state, in seconds. Default value: `86400`. Valid value range: [300, 86400].
 * `webhook`- (Optional, Available since v1.46.0) The webhook that should be called when the alarm is triggered. Currently, only http protocol is supported. Default is empty string.
 * `enabled` - (Optional, Bool) Whether to enable alarm rule. Default value: `true`.
@@ -113,6 +113,7 @@ The following arguments are supported:
 * `escalations_warn` - (Optional, Set, Available since v1.94.0) A configuration of critical warn. See [`escalations_warn`](#escalations_warn) below.
 * `prometheus` - (Optional, Set, Available since v1.179.0) The Prometheus alert rule. See [`prometheus`](#prometheus) below. **Note:** This parameter is required only when you create a Prometheus alert rule for Hybrid Cloud Monitoring.
 * `targets` - (Optional, Set, Available since v1.216.0) The information about the resource for which alerts are triggered. See [`targets`](#targets) below.
+* `composite_expression` - (Optional, Set, Available since v1.228.0) The trigger conditions for multiple metrics. See [`composite_expression`](#composite_expression) below.
 * `tags` - (Optional, Available since v1.180.0) A mapping of tags to assign to the resource.
 * `dimensions` - (Optional, Map, Deprecated since v1.173.0) Field `dimensions` has been deprecated from provider version 1.173.0. New field `metric_dimensions` instead.
 * `start_time` - (Optional, Int, Deprecated since v1.50.0) Field `start_time` has been deprecated from provider version 1.50.0. New field `effective_interval` instead.
@@ -158,7 +159,7 @@ The prometheus supports the following:
 
 * `prom_ql` - (Optional) The PromQL query statement. **Note:** The data obtained by using the PromQL query statement is the monitoring data. You must include the alert threshold in this statement.
 * `level` - (Optional) The level of the alert. Valid values: `Critical`, `Warn`, `Info`.
-* `times` - (Optional) The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
+* `times` - (Optional, Int) The number of consecutive triggers. If the number of times that the metric values meet the trigger conditions reaches the value of this parameter, CloudMonitor sends alert notifications.
 * `annotations` - (Optional, Map) The annotations of the Prometheus alert rule. When a Prometheus alert is triggered, the system renders the annotated keys and values to help you understand the metrics and alert rule.
 
 ### `targets`
@@ -171,6 +172,26 @@ The targets supports the following:
 * `arn` - (Optional) ARN uniquely identifies the resource that the alert targets.
 -> **NOTE:** The targets attribute is used to specify where notifications or actions should be directed when an alarm condition is met. This attribute corresponds to what is referred to as the "Push Channel" in the Alibaba Cloud console.
 -> **NOTE:** Currently, the Alibaba Cloud Resource Name (ARN) of the resource. To use, please [submit an application](https://www.alibabacloud.com/help/en/cloudmonitor/latest/describemetricruletargets).
+
+### `composite_expression`
+
+The composite_expression supports the following:
+
+* `level` - (Optional) The level of the alert. Valid values: `CRITICAL`, `WARN`, `INFO`.
+* `times` - (Optional, Int) The number of consecutive triggers.
+* `expression_raw` - (Optional) The trigger conditions that are created by using expressions.
+* `expression_list_join` - (Optional) The relationship between the trigger conditions for multiple metrics. Valid values: `&&`, `||`.
+* `expression_list` - (Optional, Set) The trigger conditions that are created in standard mode. See [`expression_list`](#composite_expression-expression_list) below.
+
+### `composite_expression-expression_list`
+
+The expression_list supports the following:
+
+* `metric_name` - (Optional) The metric that is used to monitor the cloud service.
+* `comparison_operator` - (Optional) The operator that is used to compare the metric value with the threshold. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+* `statistics` - (Optional) The statistical method of the metric.
+* `threshold` - (Optional) The alert threshold.
+* `period` - (Optional) The aggregation period of the metric. Unit: seconds.
 
 ## Attributes Reference
 
