@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 	"log"
 	"regexp"
 	"strings"
@@ -226,7 +225,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"warm_node_amount": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(2, 50),
+				ValidateFunc: IntBetween(2, 50),
 			},
 
 			"warm_node_spec": {
@@ -237,7 +236,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"warm_node_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: validation.IntBetween(500, 20480),
+				ValidateFunc: IntBetween(500, 20480),
 			},
 
 			"warm_node_disk_type": {
@@ -250,7 +249,6 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
-				Default:  false,
 			},
 
 			"protocol": {
@@ -513,7 +511,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 	instance, err := elasticsearchService.DescribeElasticsearchInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			d.SetId("")
 			return nil
 		}
@@ -603,7 +601,8 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	}
 
 	// modify pvl kibana private security group, update security group only
-	if d.HasChange("kibana_private_security_group_id") && !d.HasChange("enable_kibana_private_network") && archType == "public" && d.Get("enable_kibana_private_network").(bool) == true {
+	kibanaSecurityGroupChanged := d.HasChange("kibana_private_security_group_id") && !d.HasChange("enable_kibana_private_network") && archType == "public" && d.Get("enable_kibana_private_network").(bool) == true
+	if kibanaSecurityGroupChanged {
 		content := make(map[string]interface{})
 		var securityGroups []string
 		securityGroups = append(securityGroups, d.Get("kibana_private_security_group_id").(string))

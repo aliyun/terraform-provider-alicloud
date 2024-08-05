@@ -768,6 +768,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 					"zone_count":                       "1",
 					"enable_public":                    "true",
 					"enable_kibana_private_network":    "false",
+					"enable_kibana_public_network":     "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -784,6 +785,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 						"zone_count":                       "1",
 						"enable_public":                    "true",
 						"enable_kibana_private_network":    "false",
+						"enable_kibana_public_network":     "true",
 					}),
 				),
 			},
@@ -793,9 +795,21 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
+					"enable_kibana_public_network": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_public_network": "true",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_whitelist": []string{"192.0.0.1/32", "127.0.0.1/32"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -803,6 +817,7 @@ func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 					}),
 				),
 			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"public_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
@@ -899,7 +914,7 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"description":                      name,
 					"vswitch_id":                       "${local.vswitch_id}",
-					"version":                          Version77,
+					"version":                          "5.5.3_with_X-Pack",
 					"password":                         "Yourpassword1234",
 					"data_node_spec":                   DataNodeSpec,
 					"data_node_amount":                 DataNodeAmount,
@@ -909,13 +924,13 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 					"kibana_node_spec":                 KibanaSpec,
 					"instance_charge_type":             string(PostPaid),
 					"zone_count":                       "1",
-					"enable_public":                    "true",
+					"enable_public":                    "false",
 					"enable_kibana_private_network":    "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"description":                      name,
-						"version":                          Version77,
+						"version":                          "5.5.3_with_X-Pack",
 						"password":                         "Yourpassword1234",
 						"data_node_spec":                   DataNodeSpec,
 						"data_node_amount":                 DataNodeAmount,
@@ -925,17 +940,12 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 						"kibana_node_spec":                 KibanaSpec,
 						"instance_charge_type":             string(PostPaid),
 						"zone_count":                       "1",
-						"enable_public":                    "true",
+						"enable_public":                    "false",
 						"enable_kibana_private_network":    "true",
 					}),
 				),
 			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"password"},
-			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
@@ -945,6 +955,23 @@ func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
 						"kibana_private_whitelist.#": "2",
 					}),
 				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_whitelist": []string{"192.168.0.0", "127.0.0.1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						//"kibana_whitelist.#": "3",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"password"},
 			},
 		},
 	})

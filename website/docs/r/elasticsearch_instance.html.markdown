@@ -84,7 +84,7 @@ The following arguments are supported:
 * `data_node_disk_size` - (Required) The single data node storage space.
   - `cloud_ssd`: An SSD disk, supports a maximum of 2048 GiB (2 TB).
   - `cloud_efficiency` An ultra disk, supports a maximum of 5120 GiB (5 TB). If the data to be stored is larger than 2048 GiB, an ultra disk can only support the following data sizes (GiB): [`2560`, `3072`, `3584`, `4096`, `4608`, `5120`].
-* `data_node_disk_type` - (Required) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
+* `data_node_disk_type` - (Required, ForceNew) The data node disk type. Supported values: cloud_ssd, cloud_efficiency.
 * `data_node_disk_encrypted` - (Optional, ForceNew, Available since 1.86.0) If encrypt the data node disk. Valid values are `true`, `false`. Default to `false`.
 * `data_node_disk_performance_level` - (Optional, Available since 1.208.1) Cloud disk performance level. Valid values are `PL0`, `PL1`, `PL2`, `PL3`. The `data_node_disk_type` muse be `cloud_essd`.
 * `vswitch_id` - (Required, ForceNew) The ID of VSwitch.
