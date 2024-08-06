@@ -83,5 +83,5 @@ The following attributes are exported in addition to the arguments listed above:
       * `connection_string` - Connection instance string.
       * `port` - Intranet connection port.
       * `vpc_id` - ID of the VPC the instance belongs to.
-      * `vswitch_id` - ID of the VSwitch the cluster belongs to.
+      * `vswitch_id` - ID of the vSwitch the cluster belongs to.
       * `ip_address` - The ip address of connection string.

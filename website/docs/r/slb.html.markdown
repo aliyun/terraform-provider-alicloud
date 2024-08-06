@@ -79,7 +79,7 @@ Terraform will autogenerate a name beginning with `tf-lb`.
   Before version 1.10.1, the valid values are "paybybandwidth" and "paybytraffic".
 * `bandwidth` - (Optional) Valid
   value is between 1 and 1000, If argument "internet_charge_type" is "paybytraffic", then this value will be ignore.
-* `vswitch_id` - (Optional, ForceNew) The VSwitch ID to launch in. If `address_type` is internet, it will be ignore.
+* `vswitch_id` - (Optional, ForceNew) The vSwitch ID to launch in. If `address_type` is internet, it will be ignore.
 * `specification` - (Optional, Deprecated from v1.123.1) The specification of the Server Load Balancer instance. Default to empty string indicating it is "Shared-Performance" instance.
  Launching "[Performance-guaranteed](https://www.alibabacloud.com/help/en/slb/product-overview/announcements-and-updates)" instance, it is must be specified and it valid values are: "slb.s1.small", "slb.s2.small", "slb.s2.medium",
  "slb.s3.small", "slb.s3.medium", "slb.s3.large" and "slb.s4.large".

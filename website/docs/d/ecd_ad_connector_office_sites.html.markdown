@@ -60,7 +60,7 @@ The following attributes are exported in addition to the arguments listed above:
 		* `ad_connector_address` - AD Connector across Zones, Its Connection Addresses.
 		* `connector_status` - AD Connector of the State. Possible Values: Creating: in the Creation of. Connecting: Connection. Requires the User to Your Own Ad Configured on the Domain to Which. Running: Run. Expired: If You Are out-of-Date. CONNECT_ERROR: Connection Error.
 		* `network_interface_id` - AD Connector Mount of the Card ID.
-		* `vswitch_id` - AD Connector in the Network Corresponding to the ID of the VSwitch in.
+		* `vswitch_id` - AD Connector in the Network Corresponding to the ID of the vSwitch in.
 	* `bandwidth` - The Internet Bandwidth Peak. Possible Values: 0~200. If This Field Is Set to 0, Indicates That There Is No Open Internet Access.
 	* `cen_id` - Cloud Enterprise Network Instance Id.
 	* `cidr_block` - Workspace Corresponds to the Security Office Network of IPv4 Segment.

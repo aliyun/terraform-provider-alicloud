@@ -55,6 +55,6 @@ The following attributes are exported in addition to the arguments listed above:
     * `availability_zone` - The ID of the availability zone where the ECS instance is located.
     * `instance_id` - The ID of the ECS instance.
     * `instance_name` - The name of the ECS instance.
-    * `vswitch_id` - The ID of the VSwitch attached to the ECS instance.
+    * `vswitch_id` - The ID of the vSwitch attached to the ECS instance.
     * `public_ip` - The public IP address or EIP of the ECS instance.
     * `private_ip` - The private IP address of the ECS instance.

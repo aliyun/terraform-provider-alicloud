@@ -37,7 +37,7 @@ The following arguments are supported:
 * `name_regex` - (Optional) A regex string to filter results by SLB name.
 * `network_type` - (Optional) Network type of the SLBs. Valid values: `vpc` and `classic`.
 * `vpc_id` - (Optional) ID of the VPC linked to the SLBs.
-* `vswitch_id` - (Optional) ID of the VSwitch linked to the SLBs.
+* `vswitch_id` - (Optional) ID of the vSwitch linked to the SLBs.
 * `address` - (Optional) Service address of the SLBs.
 * `tags` - (Optional) A map of tags assigned to the SLB instances. The `tags` can have a maximum of 5 tag. It must be in the format:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
@@ -99,5 +99,5 @@ The following attributes are exported in addition to the arguments listed above:
     * `load_balancer_spec` - The specification of the SLB.
     * `status` - SLB current status. Possible values: `inactive`, `active` and `locked`.
     * `tags` - The tags of the SLB.
-    * `vswitch_id` - ID of the VSwitch the SLB belongs to.
+    * `vswitch_id` - ID of the vSwitch the SLB belongs to.
     * `vpc_id` - ID of the VPC the SLB belongs to.

@@ -109,10 +109,10 @@ The following attributes are exported:
   * `ssl_connections` - Total count of ssl vpn connections.
   * `network_type` - The network type of the VPN gateway.
   * `auto_propagate` - Whether to automatically propagate BGP routes to the VPC. Valid values: `true`, `false`.
-  * `disaster_recovery_vswitch_id` - - The ID of the backup VSwitch to which the VPN gateway is attached.
+  * `disaster_recovery_vswitch_id` - - The ID of the backup vSwitch to which the VPN gateway is attached.
   * `disaster_recovery_internet_ip` - The backup public IP address of the VPN gateway. The second IP address assigned by the system to create an IPsec-VPN connection. This parameter is returned only when the VPN gateway supports the dual-tunnel mode.
   * `vpn_type` - - The VPN gateway type. Value:  Normal (default): Normal type. NationalStandard: National Secret type.
   * `tags` - The Tag of.
   * `ssl_vpn_internet_ip` - The IP address of the SSL-VPN connection. This parameter is returned only when the VPN gateway is a public VPN gateway and supports only the single-tunnel mode. In addition, the VPN gateway must have the SSL-VPN feature enabled.
-  * `vswitch_id` - - The ID of the VSwitch to which the VPN gateway is attached.
+  * `vswitch_id` - - The ID of the vSwitch to which the VPN gateway is attached.
   * `resource_group_id` - The ID of the resource group.

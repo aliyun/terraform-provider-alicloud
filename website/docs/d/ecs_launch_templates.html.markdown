@@ -81,7 +81,7 @@ The following attributes are exported in addition to the arguments listed above:
 		* `name` - The ENI name.
 		* `primary_ip` - The primary private IP address of the ENI.
 		* `security_group_id` - The security group ID must be one in the same VPC.
-		* `vswitch_id` - The VSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
+		* `vswitch_id` - The vSwitch ID for ENI. The instance must be in the same zone of the same VPC network as the ENI, but they may belong to different VSwitches.
 	* `network_type` - Network type of the instance.
 	* `password_inherit` - Whether to use the password preset by the mirror.
 	* `period` - The subscription period of the instance.
