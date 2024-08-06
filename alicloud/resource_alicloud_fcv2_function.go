@@ -1021,7 +1021,7 @@ func resourceAliCloudFcv2FunctionDelete(d *schema.ResourceData, meta interface{}
 		response, err = conn.DoRequest(StringPointer("2021-04-06"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &util.RuntimeOptions{})
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ConcurrentUpdateError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
