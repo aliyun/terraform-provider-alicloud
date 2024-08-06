@@ -1916,7 +1916,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.EciEndpoint = strings.TrimSpace(endpoints["eci"].(string))
 		config.OosEndpoint = strings.TrimSpace(endpoints["oos"].(string))
 		config.DcdnEndpoint = strings.TrimSpace(endpoints["dcdn"].(string))
-		config.MseEndpoint = strings.TrimSpace(endpoints["mse"].(string))
+		config.Endpoints.Store("mse", strings.TrimSpace(endpoints["mse"].(string)))
 		config.ConfigEndpoint = strings.TrimSpace(endpoints["config"].(string))
 		config.RKvstoreEndpoint = strings.TrimSpace(endpoints["r_kvstore"].(string))
 		config.FnfEndpoint = strings.TrimSpace(endpoints["fnf"].(string))

@@ -165,10 +165,11 @@ func loadEndpoint(region string, serviceCode ServiceCode) string {
 	return ""
 }
 
-// irregularProductCode specially records those product codes that
-// cannot be parsed out by the location service.
+// regularProductCode specially records those product codes that
+// cannot be parsed out by the location service or have been confirmed to be regional endpoints.
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
-var irregularProductCode = map[string]string{
+var regularProductCode = map[string]string{
+	"mse":        "mse.%s.aliyuncs.com",
 	"tablestore": "tablestore.%s.aliyuncs.com",
 	"bssopenapi": BssOpenAPIEndpointDomestic,
 }
@@ -183,7 +184,7 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	}
 
 	// Secondly, load endpoint from known rules
-	if endpointFmt, ok := irregularProductCode[productCode]; ok {
+	if endpointFmt, ok := regularProductCode[productCode]; ok {
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
