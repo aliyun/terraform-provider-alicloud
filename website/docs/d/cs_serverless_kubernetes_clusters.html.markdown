@@ -49,7 +49,7 @@ The following attributes are exported in addition to the arguments listed above:
 * `clusters` - A list of matched Kubernetes clusters. Each element contains the following attributes:
   * `id` - The ID of the container cluster.
   * `name` - The name of the container cluster.
-  * `vswitch_id` - The ID of VSwitch where the current cluster is located.
+  * `vswitch_id` - The ID of vSwitch where the current cluster is located.
   * `vpc_id` - The ID of VPC where the current cluster is located.
   * `security_group_id` - The ID of security group where the current cluster  is located.
   * `nat_gateway_id` - The ID of nat gateway used to launch kubernetes cluster.

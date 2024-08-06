@@ -84,7 +84,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `cluster_type` - The type of the cluster.
   * `cluster_name` - The name of the cluster.
   * `vpc_id` - The ID of the VPC.
-  * `vswitch_id` - The ID of the VSwitch.
+  * `vswitch_id` - The ID of the vSwitch.
   * `security_group_id` - The ID of the security group.
   * `sub_clusters_json` - The child instance json string of the globalView instance.
   * `grafana_instance_id` - The ID of the Grafana workspace.

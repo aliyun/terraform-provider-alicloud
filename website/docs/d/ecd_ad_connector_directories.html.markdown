@@ -58,11 +58,11 @@ The following attributes are exported in addition to the arguments listed above:
   * `sub_domain_name` - The Enterprise already has a fully qualified domain name (FQDN) of an AD subdomain, with both a host name and a domain name.
   * `trust_password` - The trust password.
   * `vpc_id` - The ID of the vpc.
-  * `vswitch_ids` - List of VSwitch IDs in the directory.
+  * `vswitch_ids` - List of vSwitch IDs in the directory.
   * `ad_connectors` - The AD connectors.
     * `ad_connector_address` - The address of AD connector.
     * `connector_status` - The status of connector.
     * `network_interface_id` - The ID of the network interface.
-    * `vswitch_id` - The ID of VSwitch.
+    * `vswitch_id` - The ID of vSwitch.
     * `trust_key` - The AD Connector control trust password.
     * `specification` - The AD Connector specifications.

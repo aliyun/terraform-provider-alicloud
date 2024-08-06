@@ -45,6 +45,6 @@ The following attributes are exported in addition to the arguments listed above:
 	* `eni_ip` - IP address of the terminal node network card.
 	* `id` - The ID of the Vpc Endpoint Zone.
 	* `status` - The Status of Vpc Endpoint Zone..
-	* `vswitch_id` - The VSwitch id.
+	* `vswitch_id` - The vSwitch id.
 	* `zone_domain` - The Zone Domain.
 	* `zone_id` - The Zone Id.

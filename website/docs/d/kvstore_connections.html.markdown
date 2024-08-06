@@ -48,4 +48,4 @@ The following attributes are exported in addition to the arguments listed above:
   * `upgradeable` - The remaining validity period of the endpoint of the classic network.
   * `vpc_id` - The ID of the VPC where the instance is deployed.
   * `vpc_instance_id` - The ID of the instance. It is returned only when the value of the DBInstanceNetType parameter is 2 (indicating VPC).
-  * `vswitch_id` - The ID of the VSwitch.
+  * `vswitch_id` - The ID of the vSwitch.

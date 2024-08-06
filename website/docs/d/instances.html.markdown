@@ -37,7 +37,7 @@ The following arguments are supported:
 * `image_id` - (Optional) The image ID of some ECS instance used.
 * `status` - (Optional) Instance status. Valid values: "Creating", "Starting", "Running", "Stopping" and "Stopped". If undefined, all statuses are considered.
 * `vpc_id` - (Optional) ID of the VPC linked to the instances.
-* `vswitch_id` - (Optional) ID of the VSwitch linked to the instances.
+* `vswitch_id` - (Optional) ID of the vSwitch linked to the instances.
 * `availability_zone` - (Optional) Availability zone where instances are located.
 * `resource_group_id` - (Optional, ForceNew, Available in 1.57.0+) The ID of resource group which the instance belongs.
 * `ram_role_name` - (Optional, ForceNew, Available in 1.69.0+) The RAM role name which the instance attaches.
@@ -69,7 +69,7 @@ The following attributes are exported in addition to the arguments listed above:
   * `description` - Instance description.
   * `instance_type` - Instance type.
   * `vpc_id` - ID of the VPC the instance belongs to.
-  * `vswitch_id` - ID of the VSwitch the instance belongs to.
+  * `vswitch_id` - ID of the vSwitch the instance belongs to.
   * `image_id` - Image ID the instance is using.
   * `private_ip` - Instance private IP address.
   * `public_ip` - Instance public IP address.

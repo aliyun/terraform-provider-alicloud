@@ -52,7 +52,7 @@ The following attributes are exported in addition to the arguments listed above:
 		* `ad_connector_address` - The address of AD connector.
 		* `connector_status` - The status of connector.
 		* `network_interface_id` - The ID of the network interface.
-		* `vswitch_id` - The ID of VSwitch.
+		* `vswitch_id` - The ID of vSwitch.
 	* `create_time` - The CreateTime of resource.
 	* `custom_security_group_id` - The id of the custom security group.
 	* `desktop_access_type` - The desktop access type.
@@ -82,4 +82,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `sub_domain_name` - The Name of the sub-domain.
 	* `trust_password` - The trust password.
 	* `vpc_id` - The ID of the vpc.
-	* `vswitch_ids` - List of VSwitch IDs in the directory.
+	* `vswitch_ids` - List of vSwitch IDs in the directory.

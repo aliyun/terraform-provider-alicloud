@@ -50,7 +50,7 @@ The following attributes are exported in addition to the arguments listed above:
     * `logstore` - Log Service store name.
   * `vpc_config` - A list of one element containing information about accessible VPC resources. It contains the following attributes:
     * `vpc_id` - Associated VPC ID.
-    * `vswitch_ids` - Associated VSwitch IDs.
+    * `vswitch_ids` - Associated vSwitch IDs.
     * `security_group_id` - Associated security group ID.
   * `nas_config` - A list of one element about the nas configuration.
     * `user_id` - The user id of the NAS file system.
