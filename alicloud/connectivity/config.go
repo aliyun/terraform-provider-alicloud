@@ -111,7 +111,6 @@ type Config struct {
 	EciEndpoint                 string
 	OosEndpoint                 string
 	DcdnEndpoint                string
-	MseEndpoint                 string
 	ActiontrailEndpoint         string
 	ConfigEndpoint              string
 	FnfEndpoint                 string

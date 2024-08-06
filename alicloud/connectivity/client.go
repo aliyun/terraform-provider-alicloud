@@ -2611,7 +2611,7 @@ func (client *AliyunClient) NewActiontrailClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewMseClient() (*rpc.Client, error) {
 	productCode := "mse"
 	endpoint := ""
-	if _, exist := client.config.Endpoints.Load(productCode); !exist {
+	if v, exist := client.config.Endpoints.Load(productCode); !exist || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
 			return nil, err
 		}
