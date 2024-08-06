@@ -865,6 +865,10 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"alicloud_governance_account":                                   resourceAliCloudGovernanceAccount(),
+			"alicloud_fcv3_trigger":                                         resourceAliCloudFcv3Trigger(),
+			"alicloud_fcv3_concurrency_config":                              resourceAliCloudFcv3ConcurrencyConfig(),
+			"alicloud_fcv3_async_invoke_config":                             resourceAliCloudFcv3AsyncInvokeConfig(),
+			"alicloud_fcv3_alias":                                           resourceAliCloudFcv3Alias(),
 			"alicloud_fcv3_custom_domain":                                   resourceAliCloudFcv3CustomDomain(),
 			"alicloud_fcv3_function":                                        resourceAliCloudFcv3Function(),
 			"alicloud_aligreen_oss_stock_task":                              resourceAliCloudAligreenOssStockTask(),
