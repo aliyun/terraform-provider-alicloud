@@ -226,6 +226,10 @@ func AliCloudCloudMonitorServiceNamespaceBasicDependence0(name string) string {
 	variable "name" {
     	default = "%s"
 	}
+
+	data "alicloud_cloud_monitor_service_enterprise_service" "current" {
+	  enable = "On"
+	}
 `, name)
 }
 

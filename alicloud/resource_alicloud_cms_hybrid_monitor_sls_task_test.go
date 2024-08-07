@@ -223,6 +223,10 @@ variable "name" {
 }
 data "alicloud_account" "this" {}
 
+data "alicloud_cloud_monitor_service_enterprise_service" "current" {
+  enable = "On"
+}
+
 resource "alicloud_cms_sls_group" "default" {
 	sls_group_config {
 		sls_user_id = data.alicloud_account.this.id
