@@ -1,5 +1,5 @@
 ---
-subcategory: "Function Compute Service V2 (FCV2)"
+subcategory: "Function Compute Service (FC)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fcv2_function"
 description: |-
