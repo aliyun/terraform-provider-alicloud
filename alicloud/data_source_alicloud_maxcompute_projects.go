@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -302,6 +301,8 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
+
+	maxComputeServiceV2 := MaxComputeServiceV2{client}
 	for _, objectRaw := range objects {
 		mapping := map[string]interface{}{}
 
@@ -313,11 +314,14 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		mapping["type"] = objectRaw["type"]
 		mapping["project_name"] = objectRaw["name"]
 
+		objectDetail, _ := maxComputeServiceV2.DescribeMaxComputeProject(objectRaw["name"].(string))
+		objectRaw, _ := jsonpath.Get("$.data", objectDetail)
+
 		ipWhiteListMaps := make([]map[string]interface{}, 0)
 		ipWhiteListMap := make(map[string]interface{})
 		ipWhiteList2Raw := make(map[string]interface{})
-		if objectRaw["ipWhiteList"] != nil {
-			ipWhiteList2Raw = objectRaw["ipWhiteList"].(map[string]interface{})
+		if objectRaw.(map[string]interface{})["ipWhiteList"] != nil {
+			ipWhiteList2Raw = objectRaw.(map[string]interface{})["ipWhiteList"].(map[string]interface{})
 		}
 		if len(ipWhiteList2Raw) > 0 {
 			ipWhiteListMap["ip_list"] = ipWhiteList2Raw["ipList"]
@@ -329,8 +333,8 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		propertiesMaps := make([]map[string]interface{}, 0)
 		propertiesMap := make(map[string]interface{})
 		properties2Raw := make(map[string]interface{})
-		if objectRaw["properties"] != nil {
-			properties2Raw = objectRaw["properties"].(map[string]interface{})
+		if objectRaw.(map[string]interface{})["properties"] != nil {
+			properties2Raw = objectRaw.(map[string]interface{})["properties"].(map[string]interface{})
 		}
 		if len(properties2Raw) > 0 {
 			propertiesMap["allow_full_scan"] = properties2Raw["allowFullScan"]
@@ -373,8 +377,8 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		securityPropertiesMaps := make([]map[string]interface{}, 0)
 		securityPropertiesMap := make(map[string]interface{})
 		securityProperties2Raw := make(map[string]interface{})
-		if objectRaw["securityProperties"] != nil {
-			securityProperties2Raw = objectRaw["securityProperties"].(map[string]interface{})
+		if objectRaw.(map[string]interface{})["securityProperties"] != nil {
+			securityProperties2Raw = objectRaw.(map[string]interface{})["securityProperties"].(map[string]interface{})
 		}
 		if len(securityProperties2Raw) > 0 {
 			securityPropertiesMap["enable_download_privilege"] = securityProperties2Raw["enableDownloadPrivilege"]
@@ -401,8 +405,8 @@ func dataSourceAliCloudMaxComputeProjectRead(d *schema.ResourceData, meta interf
 		}
 		mapping["security_properties"] = securityPropertiesMaps
 
-		ids = append(ids, fmt.Sprint(mapping["name"]))
-		names = append(names, objectRaw["name"])
+		ids = append(ids, fmt.Sprint(mapping["project_name"]))
+		names = append(names, fmt.Sprint(mapping["project_name"]))
 		s = append(s, mapping)
 	}
 
