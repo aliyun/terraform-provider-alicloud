@@ -894,6 +894,11 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	if v, ok := d.GetOk("log_backup_frequency"); ok {
 		logBackupFrequency = v.(string)
 	}
+
+	backupPriority := 2
+	if v, ok := d.GetOk("backup_priority"); ok {
+		backupPriority = v.(int)
+	}
 	compressType := ""
 	if v, ok := d.GetOk("compress_type"); ok {
 		compressType = v.(string)
@@ -927,6 +932,18 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 	if v, ok := d.GetOk("backup_interval"); ok {
 		backupInterval = v.(string)
 	}
+	enableIncrementDataBackup := false
+	if v, ok := d.GetOk("enable_increment_data_backup"); ok {
+		enableIncrementDataBackup = v.(bool)
+	}
+	backupMethod := "Physical"
+	if v, ok := d.GetOk("backup_method"); ok {
+		backupMethod = v.(string)
+	}
+	logBackupLocalRetentionNumber := 60
+	if v, ok := d.GetOk("log_backup_local_retention_number"); ok {
+		logBackupLocalRetentionNumber = v.(int)
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	instance, err := s.DescribeDBInstance(d.Id())
@@ -951,6 +968,13 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 			"ReleasedKeepPolicy":    releasedKeepPolicy,
 			"Category":              category,
 		}
+		if instance["Engine"] == "SQLServer" && instance["Category"] == "AlwaysOn" {
+			request["BackupPriority"] = backupPriority
+		}
+		if instance["Engine"] == "SQLServer" && instance["DBInstanceStorageType"] != "local_ssd" {
+			request["EnableIncrementDataBackup"] = enableIncrementDataBackup
+			request["BackupMethod"] = backupMethod
+		}
 		if instance["Engine"] == "SQLServer" && logBackupFrequency == "LogInterval" {
 			request["LogBackupFrequency"] = logBackupFrequency
 		}
@@ -962,6 +986,7 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		if (instance["Engine"] == "MySQL" || instance["Engine"] == "PostgreSQL") && instance["DBInstanceStorageType"] != "local_ssd" {
 			request["BackupInterval"] = backupInterval
 		}
+
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -980,15 +1005,16 @@ func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData,
 		}
 		action := "ModifyBackupPolicy"
 		request := map[string]interface{}{
-			"RegionId":                 s.client.RegionId,
-			"DBInstanceId":             d.Id(),
-			"EnableBackupLog":          enableBackupLog,
-			"LocalLogRetentionHours":   localLogRetentionHours,
-			"LocalLogRetentionSpace":   localLogRetentionSpace,
-			"HighSpaceUsageProtection": highSpaceUsageProtection,
-			"BackupPolicyMode":         "LogBackupPolicy",
-			"LogBackupRetentionPeriod": logBackupRetentionPeriod,
-			"SourceIp":                 s.client.SourceIp,
+			"RegionId":                      s.client.RegionId,
+			"DBInstanceId":                  d.Id(),
+			"EnableBackupLog":               enableBackupLog,
+			"LocalLogRetentionHours":        localLogRetentionHours,
+			"LocalLogRetentionSpace":        localLogRetentionSpace,
+			"HighSpaceUsageProtection":      highSpaceUsageProtection,
+			"BackupPolicyMode":              "LogBackupPolicy",
+			"LogBackupRetentionPeriod":      logBackupRetentionPeriod,
+			"LogBackupLocalRetentionNumber": logBackupLocalRetentionNumber,
+			"SourceIp":                      s.client.SourceIp,
 		}
 		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-08-15"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
