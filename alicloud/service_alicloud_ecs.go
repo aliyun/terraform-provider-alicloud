@@ -2482,45 +2482,69 @@ func (s *EcsService) DescribeEcsPrefixList(id string) (object map[string]interfa
 
 func (s *EcsService) DescribeEcsStorageCapacityUnit(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeStorageCapacityUnits"
+
 	conn, err := s.client.NewEcsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeStorageCapacityUnits"
+
 	request := map[string]interface{}{
 		"RegionId":              s.client.RegionId,
-		"StorageCapacityUnitId": id,
+		"StorageCapacityUnitId": []string{id},
+		"PageSize":              PageSizeLarge,
+		"PageNumber":            1,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.StorageCapacityUnits.StorageCapacityUnit", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.StorageCapacityUnits.StorageCapacityUnit", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
-	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["StorageCapacityUnitId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ECS", id)), NotFoundWithResponse, response)
+
+		resp, err := jsonpath.Get("$.StorageCapacityUnits.StorageCapacityUnit", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.StorageCapacityUnits.StorageCapacityUnit", response)
 		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Ecs:StorageCapacityUnit", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["StorageCapacityUnitId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Ecs:StorageCapacityUnit", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
@@ -2540,6 +2564,7 @@ func (s *EcsService) EcsStorageCapacityUnitStateRefreshFunc(id string, failState
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
