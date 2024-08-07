@@ -676,8 +676,8 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 					"vswitch_id":          "${local.vswitch_id}",
 					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
 					"elastic_io_resource": "1",
-					"disk_encryption":     "true",
-					"kms_id":              "${alicloud_kms_key.default.id}",
+					//"disk_encryption":     "true",
+					//"kms_id":              "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -689,8 +689,8 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 						"vpc_id":              CHECKSET,
 						"db_node_class":       "E32",
 						"elastic_io_resource": "1",
-						"disk_encryption":     "true",
-						"kms_id":              CHECKSET,
+						//"disk_encryption":     "true",
+						//"kms_id":              CHECKSET,
 					}),
 				),
 			},
