@@ -33,13 +33,13 @@ func resourceAlicloudCrEESyncRule() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 30),
+				ValidateFunc: validation.StringLenBetween(2, 120),
 			},
 			"repo_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 64),
+				ValidateFunc: validation.StringLenBetween(2, 120),
 			},
 			"target_region_id": {
 				Type:     schema.TypeString,
