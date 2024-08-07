@@ -78,14 +78,48 @@ func testAccCheckAlicloudMaxComputeProjectSourceConfig(rand int, attrMap map[str
 	}
 	config := fmt.Sprintf(`
 variable "name" {
-	default = "tf_testaccmp%d"
+	default = "tf_testaccmaxcp%d"
 }
 
 resource "alicloud_maxcompute_project" "default" {
+  status = "AVAILABLE"
+  ip_white_list {
+    ip_list     = "10.0.0.0/8"
+    vpc_ip_list = "10.0.0.0/8"
+  }
+
+  security_properties {
+    project_protection {
+      protected        = "true"
+      exception_policy = "{\"Version\":\"1\",\"Statement\":[{\"Action\":[\"odps:*\"],\"Resource\":[\"acs:odps:*:projects/ludong/tables/*\"],\"Effect\":\"Allow\",\"Principal\":[\"ALIYUN$ludong@aliyun.com\"]}]}"
+    }
+
+    using_acl                            = "false"
+    using_policy                         = "false"
+    object_creator_has_access_permission = "false"
+    object_creator_has_grant_permission  = "false"
+    label_security                       = "false"
+    enable_download_privilege            = "false"
+  }
+
+  tags = {
+    For     = "Test"
+    Created = "TF-CI"
+  }
   default_quota = "默认后付费Quota"
   project_name  = var.name
-  comment       = var.name
-  product_type  = "PayAsYouGo"
+  comment       = "terraform测试项目"
+  properties {
+    type_system      = "2"
+    sql_metering_max = "10240"
+    encryption {
+      key       = "f58d854d-7bc0-4a6e-9205-160e10ffedec"
+      enable    = "true"
+      algorithm = "AESCTR"
+    }
+
+  }
+
 }
 
 data "alicloud_maxcompute_projects" "default" {
