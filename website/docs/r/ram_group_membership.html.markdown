@@ -52,6 +52,10 @@ The following arguments are supported:
 * `group_name` - (Required, ForceNew) Name of the RAM group. This name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphen "-", and must not begin with a hyphen.
 * `user_names` - (Required) Set of user name which will be added to group. Each name can have a string of 1 to 64 characters, must contain only alphanumeric characters or hyphens, such as "-",".","_", and must not begin with a hyphen.
 
+-> **NOTE:** Before version 1.225.0, when you deleted the resource, **all users under the current group were removed at the same time**; 
+
+-> **NOTE:** Since version 1.225.1, removing the current resource will only delete the users declared in the template. **Whi**.
+
 ## Attributes Reference
 
 The following attributes are exported:
