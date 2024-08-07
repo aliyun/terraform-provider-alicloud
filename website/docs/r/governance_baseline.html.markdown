@@ -68,9 +68,11 @@ resource "alicloud_governance_baseline" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `baseline_items` - (Optional) List of baseline items. See [`baseline_items`](#baseline_items) below.
-* `baseline_name` - (Optional) Baseline Name
-* `description` - (Optional) Baseline Description
+* `baseline_items` - (Optional) List of baseline items.
+
+  You can invoke [ListAccountFactoryBaselineItems](https://next.api.aliyun.com/document/governance/2021-01-20/ListAccountFactoryBaselineItems) to get a list of account factory baseline items supported by the Cloud Governance Center. See [`baseline_items`](#baseline_items) below.
+* `baseline_name` - (Optional) Baseline Name.
+* `description` - (Optional) Baseline Description.
 
 ### `baseline_items`
 
