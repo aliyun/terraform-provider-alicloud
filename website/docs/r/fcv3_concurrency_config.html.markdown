@@ -3,16 +3,16 @@ subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fcv3_concurrency_config"
 description: |-
-  Provides a Alicloud FC3 Concurrency Config resource.
+  Provides a Alicloud FCV3 Concurrency Config resource.
 ---
 
 # alicloud_fcv3_concurrency_config
 
-Provides a FC3 Concurrency Config resource.
+Provides a FCV3 Concurrency Config resource.
 
 Function concurrency configuration.
 
-For information about FC3 Concurrency Config and how to use it, see [What is Concurrency Config](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-putconcurrencyconfig).
+For information about FCV3 Concurrency Config and how to use it, see [What is Concurrency Config](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-putconcurrencyconfig).
 
 -> **NOTE:** Available since v1.228.0.
 
@@ -70,7 +70,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-FC3 Concurrency Config can be imported using the id, e.g.
+FCV3 Concurrency Config can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_concurrency_config.example <id>

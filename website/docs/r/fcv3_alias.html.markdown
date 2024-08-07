@@ -3,16 +3,16 @@ subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fcv3_alias"
 description: |-
-  Provides a Alicloud FC3 Alias resource.
+  Provides a Alicloud FCV3 Alias resource.
 ---
 
 # alicloud_fcv3_alias
 
-Provides a FC3 Alias resource.
+Provides a FCV3 Alias resource.
 
 Alias for functions.
 
-For information about FC3 Alias and how to use it, see [What is Alias](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-createalias).
+For information about FCV3 Alias and how to use it, see [What is Alias](https://www.alibabacloud.com/help/en/functioncompute/developer-reference/api-fc-2023-03-30-createalias).
 
 -> **NOTE:** Available since v1.228.0.
 
@@ -69,7 +69,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-FC3 Alias can be imported using the id, e.g.
+FCV3 Alias can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_alias.example <function_name>:<alias_name>
