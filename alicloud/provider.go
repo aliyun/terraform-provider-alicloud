@@ -54,7 +54,7 @@ func Provider() terraform.ResourceProvider {
 			},
 			"region": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_REGION", "ALIBABA_CLOUD_REGION"}, nil),
 				Description: descriptions["region"],
 			},
@@ -1761,25 +1761,27 @@ var providerConfig map[string]interface{}
 
 func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{}, error) {
 	log.Println("using terraform version:", p.TerraformVersion)
-	var getProviderConfig = func(str string, key string) string {
-		if str == "" {
-			value, err := getConfigFromProfile(d, key)
-			if err == nil && value != nil {
-				str = value.(string)
+	var getProviderConfig = func(schemaKey string, profileKey string) string {
+		if schemaKey != "" {
+			if v, ok := d.GetOk(schemaKey); ok && v != nil && v.(string) != "" {
+				return v.(string)
 			}
 		}
-		return str
+		if v, err := getConfigFromProfile(d, profileKey); err == nil && v != nil {
+			return v.(string)
+		}
+		return ""
 	}
 
-	accessKey := getProviderConfig(d.Get("access_key").(string), "access_key_id")
-	secretKey := getProviderConfig(d.Get("secret_key").(string), "access_key_secret")
-	region := getProviderConfig(d.Get("region").(string), "region_id")
+	accessKey := getProviderConfig("access_key", "access_key_id")
+	secretKey := getProviderConfig("secret_key", "access_key_secret")
+	region := getProviderConfig("region", "region_id")
 	if region == "" {
 		region = DEFAULT_REGION
 	}
-	securityToken := getProviderConfig(d.Get("security_token").(string), "sts_token")
+	securityToken := getProviderConfig("security_token", "sts_token")
 
-	ecsRoleName := getProviderConfig(d.Get("ecs_role_name").(string), "ram_role_name")
+	ecsRoleName := getProviderConfig("ecs_role_name", "ram_role_name")
 
 	if accessKey == "" || secretKey == "" {
 		if v, ok := d.GetOk("credentials_uri"); ok && v.(string) != "" {
