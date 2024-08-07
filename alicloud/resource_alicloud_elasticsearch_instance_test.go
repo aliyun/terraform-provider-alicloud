@@ -155,7 +155,7 @@ func testSweepElasticsearch(region string) error {
 	return nil
 }
 
-func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -260,6 +260,22 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "Yourpassword1235",
+					"kms_encryption_context": map[string]interface{}{
+                           "key1": "value1",
+                           "key2": "value2",
+                    },
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kms_encrypted_password": "Yourpassword1235",
+						"kms_encryption_context.key1": "value1",
+						"kms_encryption_context.key2": "value2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"description": name[:len(name)-1],
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -272,7 +288,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"data_node_spec":                   DataNodeSpecForUpdate,
 					"data_node_amount":                 DataNodeAmountForUpdate,
-					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_type":              DataNodeSsdDiskType,
 					"data_node_disk_size":              DataNodeDiskForEssdUpdate,
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel2,
 				}),
@@ -280,7 +296,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"data_node_spec":                   DataNodeSpecForUpdate,
 						"data_node_amount":                 DataNodeAmountForUpdate,
-						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_type":              DataNodeSsdDiskType,
 						"data_node_disk_size":              DataNodeDiskForEssdUpdate,
 						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel2,
 					}),
@@ -344,7 +360,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -410,7 +426,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -476,7 +492,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -531,7 +547,7 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -646,11 +662,21 @@ func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 					}),
 				),
 			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_charge_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_charge_type": "PostPaid",
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -694,6 +720,7 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 					"zone_count":                       "1",
 					"enable_public":                    "true",
 					"enable_kibana_private_network":    "true",
+					"enable_kibana_public_network":     "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -710,6 +737,7 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"zone_count":                       "1",
 						"enable_public":                    "true",
 						"enable_kibana_private_network":    "true",
+						"enable_kibana_public_network":     "true",
 					}),
 				),
 			},
@@ -774,6 +802,20 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"setting_config.action.destructive_requires_name": "false",
 						"setting_config.xpack.security.audit.enabled":     "true",
 						"setting_config.xpack.watcher.enabled":            "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_public":                "false",
+					"enable_kibana_private_network":"false",
+					"enable_kibana_public_network": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public":                "false",
+						"enable_kibana_private_network":"false",
+						"enable_kibana_public_network": "false",
 					}),
 				),
 			},

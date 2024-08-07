@@ -13,6 +13,8 @@ Provides an Elasticsearch instance resource. It contains data nodes, dedicated m
 
 -> **NOTE:** Only one operation is supported in a request. So if `data_node_spec` and `data_node_disk_size` are both changed, system will respond error.
 
+-> **NOTE:** Kibana private network configuration is not supported at the time of instance creation. it is only supported after the instance has been created, by calling the relevant API operations.
+
 -> **NOTE:** At present, `version` can not be modified once instance has been created.
 
 -> **NOTE:** Available since v1.30.0.
@@ -67,7 +69,7 @@ You can resume managing the subscription Elasticsearch instance via the AlibabaC
 The following arguments are supported:
 
 * `description` - (Optional, Computed) The description of instance. It a string of 0 to 30 characters.
-* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`. Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`. But, updating from `PostPaid` to `PrePaid` is not supported.
+* `instance_charge_type` - (Optional) Valid values are `PrePaid`, `PostPaid`. Default to `PostPaid`. From version 1.69.0, the Elasticsearch cluster allows you to update your instance_charge_ype from `PostPaid` to `PrePaid`, the following attributes are required: `period`. But, updating from `PrePaid` to `PostPaid` is not supported.
 * `period` - (Optional) The duration that you will buy Elasticsearch instance (in month). It is valid when instance_charge_type is `PrePaid`. Valid values: [1~9], 12, 24, 36. Default to 1. From version 1.69.2, when to modify this value, the resource can renewal a `PrePaid` instance.
 * `data_node_amount` - (Required) The Elasticsearch cluster's data node quantity, between 2 and 50.
 * `data_node_spec` - (Required) The data node specifications of the Elasticsearch instance.
@@ -81,7 +83,7 @@ The following arguments are supported:
 * `password` - (Optional, Sensitive) The password of the instance. The password can be 8 to 30 characters in length and must contain three of the following conditions: uppercase letters, lowercase letters, numbers, and special characters (`!@#$%^&*()_+-=`).
 * `kms_encrypted_password` - (Optional, Available since 1.57.1) An KMS encrypts password used to an instance. If the `password` is filled in, this field will be ignored, but you have to specify one of `password` and `kms_encrypted_password` fields.
 * `kms_encryption_context` - (Optional, MapString, Available since 1.57.1) An KMS encryption context used to decrypt `kms_encrypted_password` before creating or updating instance with `kms_encrypted_password`. See [Encryption Context](https://www.alibabacloud.com/help/doc-detail/42975.htm). It is valid when `kms_encrypted_password` is set.
-* `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack`, `6.7_with_X-Pack`, `6.8_with_X-Pack`, `7.4_with_X-Pack` and `7.7_with_X-Pack`.
+* `version` - (Required, ForceNew) Elasticsearch version. Supported values: `5.5.3_with_X-Pack`, `6.3_with_X-Pack`, `6.7_with_X-Pack`, `6.8_with_X-Pack`, `7.4_with_X-Pack` , `7.7_with_X-Pack`.The versions listed above may not include all versions supported by Elasticsearch instances. The actual supported versions can be viewed by calling the API [GetRegionConfiguration](https://www.alibabacloud.com/help/doc-detail/254099.html).
 * `private_whitelist` - (Optional) Set the instance's IP whitelist in VPC network.
 * `public_whitelist` - (Optional) Set the instance's IP whitelist in internet network.
 * `enable_public` - (Optional, Available since v1.87.0) Bool, default to false. When it set to true, the instance can enable public network access。
