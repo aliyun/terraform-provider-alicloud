@@ -3,16 +3,16 @@ subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_fcv3_trigger"
 description: |-
-  Provides a Alicloud FC3 Trigger resource.
+  Provides a Alicloud FCV3 Trigger resource.
 ---
 
 # alicloud_fcv3_trigger
 
-Provides a FC3 Trigger resource.
+Provides a FCV3 Trigger resource.
 
 A trigger is a way of triggering the execution of a function. In the event-driven computing model, the event source is the producer of the event, the function is the handler of the event, and the trigger provides a centralized and unified way to manage different event sources. In the event source, when the event occurs, if the rules defined by the trigger are met,.
 
-For information about FC3 Trigger and how to use it, see [What is Trigger](https://www.alibabacloud.com/help/en/).
+For information about FCV3 Trigger and how to use it, see [What is Trigger](https://www.alibabacloud.com/help/en/functioncompute/api-fc-2023-03-30-createtrigger).
 
 -> **NOTE:** Available since v1.228.0.
 
@@ -95,7 +95,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-FC3 Trigger can be imported using the id, e.g.
+FCV3 Trigger can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_fcv3_trigger.example <function_name>:<trigger_name>
