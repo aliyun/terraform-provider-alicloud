@@ -1,17 +1,17 @@
 ---
 subcategory: "E-MapReduce (EMR)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_emrv2_clusters"
-sidebar_current: "docs-alicloud-datasource-emrv2-clusters"
+page_title: "Alicloud: alicloud_emrv2_cluster_instances"
+sidebar_current: "docs-alicloud-datasource-emr-cluster-instances"
 description: |-
-  Provides a list of Emr Clusters to the user based on EMR's new version OpenAPI.
+  Provides a list of Emr Cluster ecs instances to the user based on EMR's new version OpenAPI.
 ---
 
-# alicloud_emrv2_clusters
+# alicloud_emrv2_cluster_instances
 
-This data source provides the Emr Clusters of the current Alibaba Cloud user.
+This data source provides the Emr Cluster ecs instances of the current Alibaba Cloud user.
 
--> **NOTE:** Available since v1.199.0.
+-> **NOTE:** Available since v1.228.0.
 
 ## Example Usage
 
@@ -156,16 +156,16 @@ resource "alicloud_emrv2_cluster" "default" {
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
 }
 
-data "alicloud_emrv2_clusters" "ids" {}
-output "emrv2_clusters_id_1" {
-  value = data.alicloud_emrv2_clusters.ids.clusters.0.id
+data "alicloud_emrv2_cluster_instances" "ids" {}
+output "emrv2_cluster_instances_id_1" {
+  value = data.alicloud_emrv2_cluster_instances.ids.instances.0.instance_id
 }
 
-data "alicloud_emrv2_clusters" "nameRegex" {
-  name_regex = alicloud_emr_cluster.default.name
+data "alicloud_emrv2_cluster_instances" "nodeGroupNames" {
+  node_group_names = ["emr-core"]
 }
-output "emrv2_clusters_id_2" {
-  value = data.alicloud_emrv2_clusters.nameRegex.clusters.0.id
+output "emrv2_cluster_instances_id_2" {
+  value = data.alicloud_emrv2_cluster_instances.nodeGroupNames.instances.0.instance_id
 }
 
 ```
@@ -174,37 +174,33 @@ output "emrv2_clusters_id_2" {
 
 The following arguments are supported:
 
-* `ids` - (Optional, ForceNew, Computed)  A list of Cluster IDs.
-* `name_regex` - (Optional, ForceNew) A regex string to filter results by Cluster name.
-* `cluster_name` - (Optional, ForceNew) The cluster name.
-* `resource_group_id` - (Optional, ForceNew) The Resource Group ID.
-* `cluster_types` - (Optional, ForceNew) The cluster types.
-* `cluster_states` - (Optional, ForceNew) The cluster states.
-* `payment_types` - (Optional, ForceNew) The cluster payment types.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
+* `ids` - (Optional, ForceNew)  A list of Cluster IDs.
+* `cluster_id` - (Optional, ForceNew) The emr cluster ID.
+* `node_group_names` - (Optional, ForceNew) The cluster node group names.
+* `instance_states` - (Optional, ForceNew) The cluster ecs instance states.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `next_token` - (Optional) The next token is used to list clusters for next page.
-* `max_results` - (Optional) The max results is used to list clusters for next page.
+* `next_token` - (Optional) The next token is used to list emr cluster ecs instances for next page.
+* `max_results` - (Optional) The max results is used to list emr cluster ecs instances for next page.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `names` - A list of Cluster names.
-* `ids` - A list of Cluster IDS.
-* `clusters` - A list of Emr Clusters. Each element contains the following attributes:
-	* `cluster_id` - The first ID of the resource.
-	* `cluster_name` - The name of the emr cluster.
-	* `cluster_type` - The type of the emr cluster.
-	* `cluster_state` - The state of the emr cluster.
-	* `payment_type` - The payment type of the emr cluster.
+* `names` - A list of Cluster ecs instance names.
+* `ids` - A list of Cluster ecs instance IDS.
+* `instances` - A list of Emr Cluster ecs instances. Each element contains the following attributes:
+	* `instance_id` - The emr cluster ecs instance ID.
+	* `instance_name` - The emr cluster ecs instance name.
+	* `instance_type` - The emr cluster ecs instance type.
+	* `instance_state` - The emr cluster ecs instance state.
+	* `node_group_id` - The emr cluster node group ID.
+	* `node_group_type` - The emr cluster node group type.
+	* `zone_id` - The emr cluster node group zone ID.
+	* `public_ip` - The emr cluster ecs instance public ip.
+	* `private_ip` - The emr cluster ecs instance private ip.
+	* `auto_renew` - The emr cluster node group whether auto renew when payment type is 'Subscription'.
+	* `auto_renew_duration_unit` - The emr cluster node group auto renew duration unit when payment type is 'Subscription'.
+	* `auto_renew_duration` - The emr cluster node group auto renew duration when payment type is 'Subscription'.
 	* `create_time` - The creation time of the resource.
-	* `ready_time` - The ready time of the resource.
 	* `expire_time` - The expire time of the resource.
-	* `end_time` - The end time of the resource.
-	* `release_version` - The release version of the resource.
-	* `resource_group_id` - The resource group id of the resource.
-	* `state_change_reason` - The cluster state change reason.
-	* `tags` - A mapping of tags to assign to the resource.
-	* `emr_default_role` - The ecs default role belongs to this emr cluster.
-* `total_count` - The total count of list clusters.
+* `total_count` - The total count of list emr cluster ecs instances.
