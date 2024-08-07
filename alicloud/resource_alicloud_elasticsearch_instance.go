@@ -277,20 +277,6 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				DiffSuppressFunc: elasticsearchEnableKibanaPublicDiffSuppressFunc,
 			},
 
-			"enable_kibana_private_network": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
-			},
-
-			"kibana_private_whitelist": {
-				Type:             schema.TypeSet,
-				Optional:         true,
-				Elem:             &schema.Schema{Type: schema.TypeString},
-				Computed:         true,
-				DiffSuppressFunc: elasticsearchEnableKibanaPrivateDiffSuppressFunc,
-			},
-
 			"zone_count": {
 				Type:         schema.TypeInt,
 				ForceNew:     true,
@@ -402,10 +388,6 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 		d.Set("kibana_domain", object["kibanaDomain"])
 		d.Set("kibana_port", object["kibanaPort"])
 	}
-
-	d.Set("enable_kibana_private_network", object["enableKibanaPrivateNetwork"])
-	kibanaPrivateIPWhitelist := object["kibanaPrivateIPWhitelist"].([]interface{})
-	d.Set("kibana_private_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(kibanaPrivateIPWhitelist), d.Get("kibana_private_whitelist").(*schema.Set)))
 
 	// Data node configuration
 	d.Set("data_node_amount", object["nodeAmount"])
@@ -531,30 +513,6 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		}
 
 		d.SetPartial("kibana_whitelist")
-	}
-
-	if d.HasChange("enable_kibana_private_network") {
-		content := make(map[string]interface{})
-		content["networkType"] = string(PRIVATE)
-		content["nodeType"] = string(KIBANA)
-		content["actionType"] = elasticsearchService.getActionType(d.Get("enable_kibana_private_network").(bool))
-		if err := elasticsearchService.TriggerNetwork(d, content, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("enable_kibana_private_network")
-	}
-
-	if d.HasChange("kibana_private_whitelist") {
-		content := make(map[string]interface{})
-		content["networkType"] = string(PRIVATE)
-		content["nodeType"] = string(KIBANA)
-		content["whiteIpList"] = d.Get("kibana_private_whitelist").(*schema.Set).List()
-		if err := elasticsearchService.ModifyWhiteIps(d, content, meta); err != nil {
-			return WrapError(err)
-		}
-
-		d.SetPartial("kibana_private_whitelist")
 	}
 
 	if d.HasChange("tags") {
