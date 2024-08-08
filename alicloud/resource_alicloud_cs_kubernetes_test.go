@@ -351,6 +351,16 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"version": "1.28.9-aliyun.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": "1.28.9-aliyun.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"delete_options": []map[string]interface{}{
 						{
 							"delete_mode":   "delete",
@@ -474,16 +484,6 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"version": "1.28.9-aliyun.1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"version": "1.28.9-aliyun.1",
-					}),
-				),
-			},
-			{
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
@@ -564,6 +564,9 @@ resource "alicloud_db_instance" "default" {
 
 resource "alicloud_key_pair" "default" {
   key_pair_name = var.name
+  timeouts {
+    delete = "15m"
+  }
 }
 
 resource "alicloud_security_group" "default" {
@@ -581,6 +584,18 @@ resource "alicloud_ecs_auto_snapshot_policy" "default" {
   repeat_weekdays = ["1", "2", "3"]
   retention_days  = -1
   time_points     = ["1", "22", "23"]
+}
+
+resource "alicloud_cs_kubernetes_node_pool" "default" {
+  cluster_id                    = alicloud_cs_kubernetes.default.id
+  name                          = var.name
+  vswitch_ids                   = [local.vswitch_id]
+  instance_types                = [data.alicloud_instance_types.default.instance_types.0.id]
+  password                      = "Test12345"
+  system_disk_size              = 50
+  system_disk_category          = "cloud_essd"
+  system_disk_performance_level = "PL0"
+  desired_size                  = 2
 }
 `, name)
 }
