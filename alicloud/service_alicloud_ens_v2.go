@@ -424,8 +424,8 @@ func (s *EnsServiceV2) DescribeEnsLoadBalancer(id string) (object map[string]int
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
