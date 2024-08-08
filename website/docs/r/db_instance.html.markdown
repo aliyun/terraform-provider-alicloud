@@ -798,7 +798,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 * `create` - (Defaults to 50 mins) Used when creating the db instance (until it reaches the initial `Running` status).
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
-* `delete` - (Defaults to 20 mins) Used when terminating the db instance.
+* `delete` - (Defaults to 30 mins) Used when terminating the db instance.
 
 -> **NOTE:** If the current instance is an instance of SqlServer _std_ha Standard Edition, you are advised to set the Timeouts time to 100 minutes when releasing the instance.
 ## Import
