@@ -68,6 +68,12 @@ func resourceAlicloudRdsDBProxy() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Standard", "Custom"}, false),
 			},
+			"db_proxy_instance_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: validation.StringInSlice([]string{"common", "exclusive"}, false),
+			},
 			"read_only_instance_weight": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -174,6 +180,9 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 	v, ok := d.GetOk("instance_network_type")
 	if ok && v.(string) != "" {
 		request["InstanceNetworkType"] = v
+	}
+	if v, ok := d.GetOk("db_proxy_instance_type"); ok {
+		request["DBProxyInstanceType"] = v
 	}
 	vpcId, ok := d.GetOk("vpc_id")
 	if ok && vpcId.(string) != "" {
