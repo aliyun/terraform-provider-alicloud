@@ -18,19 +18,62 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMongoDBShardingNetworkPrivateAddress_basic0(t *testing.T) {
+func TestAccAliCloudMongoDBShardingNetworkPrivateAddress_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mongodb_sharding_network_private_address.default"
-	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBShardingNetworkPrivateAddressMap0)
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingNetworkPrivateAddressMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeMongodbShardingNetworkPrivateAddress")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smongodbshardingnetworkprivateaddress%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%sMongoDBShardingNetworkPrivateAddress%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingNetworkPrivateAddressBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_instance_id": "${alicloud_mongodb_sharding_instance.default.id}",
+					"node_id":        "${alicloud_mongodb_sharding_instance.default.shard_list.0.node_id}",
+					"zone_id":        "${alicloud_mongodb_sharding_instance.default.zone_id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_instance_id": CHECKSET,
+						"node_id":        CHECKSET,
+						"zone_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"account_name", "account_password"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMongoDBShardingNetworkPrivateAddress_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mongodb_sharding_network_private_address.default"
+	ra := resourceAttrInit(resourceId, AliCloudMongoDBShardingNetworkPrivateAddressMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMongodbShardingNetworkPrivateAddress")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sMongoDBShardingNetworkPrivateAddress%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudMongoDBShardingNetworkPrivateAddressBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -43,14 +86,15 @@ func TestAccAlicloudMongoDBShardingNetworkPrivateAddress_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_instance_id":   "${alicloud_mongodb_sharding_instance.default.id}",
 					"node_id":          "${alicloud_mongodb_sharding_instance.default.shard_list.0.node_id}",
-					"account_name":     "tf_test",
 					"zone_id":          "${alicloud_mongodb_sharding_instance.default.zone_id}",
-					"account_password": "YourPassword+12345",
+					"account_name":     "tf_test",
+					"account_password": "YourPassword123!",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"db_instance_id": CHECKSET,
 						"node_id":        CHECKSET,
+						"zone_id":        CHECKSET,
 					}),
 				),
 			},
@@ -58,63 +102,17 @@ func TestAccAlicloudMongoDBShardingNetworkPrivateAddress_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "account_name", "zone_id"},
-			},
-		},
-	})
-}
-func TestAccAlicloudMongoDBShardingNetworkPrivateAddress_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_mongodb_sharding_network_private_address.default"
-	checkoutSupportedRegions(t, true, connectivity.MongoDBSupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMongoDBShardingNetworkPrivateAddressMap0)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &MongoDBService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMongodbShardingNetworkPrivateAddress")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%smongodbshardingnetworkprivateaddress%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_instance_id":   "${alicloud_mongodb_sharding_instance.default.id}",
-					"node_id":          "${alicloud_mongodb_sharding_instance.default.config_server_list.0.node_id}",
-					"account_name":     "tf_test",
-					"zone_id":          "${alicloud_mongodb_sharding_instance.default.zone_id}",
-					"account_password": "YourPassword+12345",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_instance_id": CHECKSET,
-						"node_id":        CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_password", "account_name", "zone_id"},
+				ImportStateVerifyIgnore: []string{"account_name", "account_password"},
 			},
 		},
 	})
 }
 
-var AlicloudMongoDBShardingNetworkPrivateAddressMap0 = map[string]string{
-	"db_instance_id": CHECKSET,
-	"node_id":        CHECKSET,
+var AliCloudMongoDBShardingNetworkPrivateAddressMap0 = map[string]string{
+	"network_address.#": CHECKSET,
 }
 
-func AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) string {
+func AliCloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
 	variable "name" {
   		default = "%s"
@@ -122,16 +120,16 @@ func AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) s
 
 	data "alicloud_mongodb_zones" "default" {
 	}
-
+	
 	data "alicloud_vpcs" "default" {
   		name_regex = "^default-NODELETING$"
 	}
-
+	
 	data "alicloud_vswitches" "default" {
   		vpc_id  = data.alicloud_vpcs.default.ids.0
   		zone_id = data.alicloud_mongodb_zones.default.zones.0.id
 	}
-
+	
 	resource "alicloud_mongodb_sharding_instance" "default" {
   		zone_id        = data.alicloud_mongodb_zones.default.zones.0.id
   		vswitch_id     = data.alicloud_vswitches.default.ids[0]
@@ -155,7 +153,7 @@ func AlicloudMongoDBShardingNetworkPrivateAddressBasicDependence0(name string) s
 `, name)
 }
 
-func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
+func TestUnitAliCloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_private_address"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_mongodb_sharding_network_private_address"].Schema).Data(nil, nil)
@@ -270,7 +268,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -287,7 +285,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -304,7 +302,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(dCreate, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -320,7 +318,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -333,7 +331,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressUpdate(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressUpdate(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -348,13 +346,13 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
 	t.Run("DeleteParseResourceIdAbnormal", func(t *testing.T) {
 		d.SetId("db_instance_id")
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
 		d.SetId("db_instance_id:node_id")
 		assert.NotNil(t, err)
 	})
@@ -372,7 +370,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -387,7 +385,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(dCreate, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -403,7 +401,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -420,13 +418,13 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
 	t.Run("ReadParseResourceIdAbnormal", func(t *testing.T) {
 		d.SetId("db_instance_id")
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
 		d.SetId("db_instance_id:node_id")
 		assert.NotNil(t, err)
 	})
@@ -441,7 +439,7 @@ func TestUnitAlicloudMongodbShardingNetworkPrivateAddress(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
+		err := resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})

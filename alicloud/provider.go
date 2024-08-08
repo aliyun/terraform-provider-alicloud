@@ -1574,7 +1574,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dbfs_service_linked_role":                              resourceAlicloudDbfsServiceLinkedRole(),
 			"alicloud_resource_manager_service_linked_role":                  resourceAliCloudResourceManagerServiceLinkedRole(),
 			"alicloud_rds_service_linked_role":                               resourceAlicloudRdsServiceLinkedRole(),
-			"alicloud_mongodb_sharding_network_private_address":              resourceAlicloudMongodbShardingNetworkPrivateAddress(),
+			"alicloud_mongodb_sharding_network_private_address":              resourceAliCloudMongodbShardingNetworkPrivateAddress(),
 			"alicloud_ecp_instance":                                          resourceAlicloudEcpInstance(),
 			"alicloud_dcdn_ipa_domain":                                       resourceAlicloudDcdnIpaDomain(),
 			"alicloud_sddp_data_limit":                                       resourceAlicloudSddpDataLimit(),

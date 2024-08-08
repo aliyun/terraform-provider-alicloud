@@ -1437,20 +1437,24 @@ func (s *MongoDBService) MongodbShardingNetworkPublicAddressStateRefreshFunc(id,
 
 func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeShardingNetworkAddress"
+
 	conn, err := s.client.NewDdsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeShardingNetworkAddress"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"DBInstanceId": parts[0],
 		"NodeId":       parts[1],
 	}
+
+	idExist := false
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -1466,33 +1470,39 @@ func (s *MongoDBService) DescribeMongodbShardingNetworkPrivateAddress(id string)
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDBInstanceId.NotFound"}) {
-			return object, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
-	v, err := jsonpath.Get("$.NetworkAddresses.NetworkAddress", response)
+
+	resp, err := jsonpath.Get("$.NetworkAddresses.NetworkAddress", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.NetworkAddresses.NetworkAddress", response)
 	}
-	exist := false
-	var networkAddress = make([]map[string]interface{}, 0)
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
-	} else {
-		for _, item := range v.([]interface{}) {
-			if item.(map[string]interface{})["NetworkType"].(string) != "Public" {
-				exist = true
-				networkAddress = append(networkAddress, item.(map[string]interface{}))
-			}
-		}
-		if !exist {
-			return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB", id)), NotFoundWithResponse, response)
+
+	if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundWithResponse, response)
+	}
+
+	object = make(map[string]interface{}, 0)
+	networkAddressMaps := make([]map[string]interface{}, 0)
+	for _, v := range resp.([]interface{}) {
+		if fmt.Sprint(v.(map[string]interface{})["NodeId"]) == parts[1] && fmt.Sprint(v.(map[string]interface{})["NetworkType"]) != "Public" {
+			idExist = true
+			object["NodeId"] = fmt.Sprint(v.(map[string]interface{})["NodeId"])
+			networkAddressMaps = append(networkAddressMaps, v.(map[string]interface{}))
 		}
 	}
-	object = make(map[string]interface{}, 0)
-	object["NetworkAddress"] = networkAddress
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MongoDB:ShardingNetworkPrivateAddress", id)), NotFoundWithResponse, response)
+	}
+
+	object["NetworkAddress"] = networkAddressMaps
+
 	return object, nil
 }
 

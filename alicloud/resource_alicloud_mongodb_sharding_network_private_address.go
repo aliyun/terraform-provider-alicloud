@@ -6,76 +6,57 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMongodbShardingNetworkPrivateAddress() *schema.Resource {
+func resourceAliCloudMongodbShardingNetworkPrivateAddress() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMongodbShardingNetworkPrivateAddressCreate,
-		Read:   resourceAlicloudMongodbShardingNetworkPrivateAddressRead,
-		Update: resourceAlicloudMongodbShardingNetworkPrivateAddressUpdate,
-		Delete: resourceAlicloudMongodbShardingNetworkPrivateAddressDelete,
+		Create: resourceAliCloudMongodbShardingNetworkPrivateAddressCreate,
+		Read:   resourceAliCloudMongodbShardingNetworkPrivateAddressRead,
+		Update: resourceAliCloudMongodbShardingNetworkPrivateAddressUpdate,
+		Delete: resourceAliCloudMongodbShardingNetworkPrivateAddressDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"account_name": {
+			"db_instance_id": {
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
+				ForceNew: true,
+			},
+			"node_id": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"zone_id": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"account_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"account_password": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Sensitive:    true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[\w!@#$%^&*()_+=]{6,32}$`), "The account password must be 6 to 32 characters in length, and can contain letters, digits, and special characters（!@#$%^&*()_+-=)."),
-			},
-			"db_instance_id": {
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"node_id": {
-				Type:     schema.TypeString,
-				Required: true,
+				ValidateFunc: StringMatch(regexp.MustCompile(`^[\w!@#$%^&*()_+=]{6,32}$`), "The account password must be 6 to 32 characters in length, and can contain letters, digits, and special characters（!@#$%^&*()_+-=)."),
 			},
 			"network_address": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"expired_time": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"ip_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"network_address": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"network_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"node_id": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
 						"node_type": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"port": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -91,6 +72,26 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddress() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"network_type": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"network_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"ip_address": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"port": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expired_time": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -98,8 +99,9 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddress() *schema.Resource {
 	}
 }
 
-func resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudMongodbShardingNetworkPrivateAddressCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	ddsService := MongoDBService{client}
 	var response map[string]interface{}
 	action := "AllocateNodePrivateNetworkAddress"
 	request := make(map[string]interface{})
@@ -107,19 +109,24 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d *schema.Resour
 	if err != nil {
 		return WrapError(err)
 	}
+
+	request["DBInstanceId"] = d.Get("db_instance_id")
+	request["NodeId"] = d.Get("node_id")
+	request["ZoneId"] = d.Get("zone_id")
+
 	if v, ok := d.GetOk("account_name"); ok {
 		request["AccountName"] = v
 	}
+
 	if v, ok := d.GetOk("account_password"); ok {
 		request["AccountPassword"] = v
 	}
-	request["DBInstanceId"] = d.Get("db_instance_id")
-	request["NodeId"] = d.Get("node_id")
-	request["RegionId"] = client.RegionId
-	request["ZoneId"] = d.Get("zone_id")
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -130,80 +137,133 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressCreate(d *schema.Resour
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mongodb_sharding_network_private_address", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", request["NodeId"]))
-	ddsService := MongoDBService{client}
+	d.SetId(fmt.Sprintf("%v:%v", request["DBInstanceId"], request["NodeId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(request["DBInstanceId"]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
 
-	return resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, meta)
+	return resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d, meta)
 }
-func resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	MongoDBService := MongoDBService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
+	ddsService := MongoDBService{client}
+
+	object, err := ddsService.DescribeMongodbShardingNetworkPrivateAddress(d.Id())
 	if err != nil {
-		return WrapError(err)
-	}
-	object, err := MongoDBService.DescribeMongodbShardingNetworkPrivateAddress(d.Id())
-	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_mongodb_sharding_network_private_address MongoDBService.DescribeMongodbShardingNetworkPrivateAddress Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("db_instance_id", parts[0])
-	d.Set("node_id", parts[1])
-	s := make([]map[string]interface{}, 0)
-	for _, item := range object["NetworkAddress"].([]map[string]interface{}) {
-		mapping := map[string]interface{}{
-			"expired_time":    item["ExpiredTime"],
-			"ip_address":      item["IPAddress"],
-			"network_address": item["NetworkAddress"],
-			"network_type":    item["NetworkType"],
-			"node_type":       item["NodeType"],
-			"port":            item["Port"],
-			"role":            item["Role"],
-			"vpc_id":          item["VPCId"],
-			"vswitch_id":      item["VswitchId"],
-			"node_id":         item["NodeId"],
-		}
-		s = append(s, mapping)
-	}
-	d.Set("network_address", s)
-	return nil
-}
-func resourceAlicloudMongodbShardingNetworkPrivateAddressUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudMongodbShardingNetworkPrivateAddressRead(d, meta)
-}
-func resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*connectivity.AliyunClient)
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
+
+	d.Set("db_instance_id", parts[0])
+	d.Set("node_id", object["NodeId"])
+
+	networkAddressMaps := make([]map[string]interface{}, 0)
+	for _, networkAddressArg := range object["NetworkAddress"].([]map[string]interface{}) {
+		networkAddressMap := map[string]interface{}{}
+
+		if nodeId, ok := networkAddressArg["NodeId"]; ok {
+			networkAddressMap["node_id"] = nodeId
+		}
+
+		if nodeType, ok := networkAddressArg["NodeType"]; ok {
+			networkAddressMap["node_type"] = nodeType
+		}
+
+		if role, ok := networkAddressArg["Role"]; ok {
+			networkAddressMap["role"] = role
+		}
+
+		if vpcId, ok := networkAddressArg["VPCId"]; ok {
+			networkAddressMap["vpc_id"] = vpcId
+		}
+
+		if vswitchId, ok := networkAddressArg["VswitchId"]; ok {
+			networkAddressMap["vswitch_id"] = vswitchId
+		}
+
+		if networkType, ok := networkAddressArg["NetworkType"]; ok {
+			networkAddressMap["network_type"] = networkType
+		}
+
+		if networkAddress, ok := networkAddressArg["NetworkAddress"]; ok {
+			networkAddressMap["network_address"] = networkAddress
+		}
+
+		if ipAddress, ok := networkAddressArg["IPAddress"]; ok {
+			networkAddressMap["ip_address"] = ipAddress
+		}
+
+		if port, ok := networkAddressArg["Port"]; ok {
+			networkAddressMap["port"] = port
+		}
+
+		if expiredTime, ok := networkAddressArg["ExpiredTime"]; ok {
+			networkAddressMap["expired_time"] = expiredTime
+		}
+
+		networkAddressMaps = append(networkAddressMaps, networkAddressMap)
+	}
+
+	d.Set("network_address", networkAddressMaps)
+
+	shardingInstanceObject, err := ddsService.DescribeMongoDBShardingInstance(parts[0])
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("zone_id", shardingInstanceObject["ZoneId"])
+
+	return nil
+}
+
+func resourceAliCloudMongodbShardingNetworkPrivateAddressUpdate(d *schema.ResourceData, meta interface{}) error {
+	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
+	return resourceAliCloudMongodbShardingNetworkPrivateAddressRead(d, meta)
+}
+
+func resourceAliCloudMongodbShardingNetworkPrivateAddressDelete(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	ddsService := MongoDBService{client}
 	action := "ReleaseNodePrivateNetworkAddress"
 	var response map[string]interface{}
+
 	conn, err := client.NewDdsClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
+	parts, err := ParseResourceId(d.Id(), 2)
+	if err != nil {
+		return WrapError(err)
+	}
+
 	request := map[string]interface{}{
 		"DBInstanceId": parts[0],
 		"NodeId":       parts[1],
 	}
 
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"OperationDenied.DBInstanceStatus"}) || NeedRetry(err) {
 				wait()
@@ -214,16 +274,18 @@ func resourceAlicloudMongodbShardingNetworkPrivateAddressDelete(d *schema.Resour
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidStatus.NotFound"}) {
+		if IsExpectedErrors(err, []string{"InvalidStatus.NotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	ddsService := MongoDBService{client}
+
 	stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, ddsService.RdsMongodbDBInstanceStateRefreshFunc(fmt.Sprint(parts[0]), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapError(err)
 	}
+
 	return nil
 }
