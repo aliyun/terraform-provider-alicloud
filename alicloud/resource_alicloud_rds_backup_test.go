@@ -377,6 +377,7 @@ resource "alicloud_db_instance" "default" {
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
+  category                 = "AlwaysOn"
 }
 
 resource "alicloud_db_database" "default" {
