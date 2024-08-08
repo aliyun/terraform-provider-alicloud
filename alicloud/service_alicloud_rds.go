@@ -837,7 +837,6 @@ func (s *RdsService) ReleaseDBPublicConnection(instanceId, connection string) er
 
 func (s *RdsService) ModifyDBBackupPolicy(d *schema.ResourceData, updateForData, updateForLog bool) error {
 	enableBackupLog := "1"
-
 	backupPeriod := ""
 	if v, ok := d.GetOk("preferred_backup_period"); ok && v.(*schema.Set).Len() > 0 {
 		periodList := expandStringList(v.(*schema.Set).List())
