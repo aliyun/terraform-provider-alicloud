@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsBackup_MySQL(t *testing.T) {
+func TestAccAliCloudRdsBackup_MySQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_backup.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsBackupMap0)
@@ -110,6 +110,11 @@ locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
 }
 
+resource "alicloud_resource_manager_resource_group" "default" {
+	resource_group_name = var.name
+	display_name        = var.name
+}
+
 resource "alicloud_db_instance" "default" {
   engine                   = "MySQL"
   engine_version           = "8.0"
@@ -127,7 +132,7 @@ resource "alicloud_db_database" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsBackup_PostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsBackup_PostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_backup.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsBackupMap0)
@@ -227,7 +232,7 @@ resource "alicloud_db_instance" "default" {
 `, name)
 }
 
-func TestAccAlicloudRdsBackup_SQLServer(t *testing.T) {
+func TestAccAliCloudRdsBackup_SQLServer(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_backup.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsBackupMap0)
@@ -272,7 +277,7 @@ func TestAccAlicloudRdsBackup_SQLServer(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsBackup_SQLServer1(t *testing.T) {
+func TestAccAliCloudRdsBackup_SQLServer1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_rds_backup.default"
 	ra := resourceAttrInit(resourceId, AlicloudRdsBackupMap0)
@@ -372,6 +377,7 @@ resource "alicloud_db_instance" "default" {
   instance_storage         = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id               = local.vswitch_id
   instance_name            = var.name
+  category                 = "AlwaysOn"
 }
 
 resource "alicloud_db_database" "default" {

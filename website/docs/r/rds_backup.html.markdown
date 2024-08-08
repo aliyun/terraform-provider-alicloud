@@ -38,11 +38,11 @@ resource "alicloud_rds_backup" "example" {
 
 The following arguments are supported:
 
-* `backup_method` - (Optional) The type of backup that you want to perform. Default value: `Physical`. Valid values: `Logical`, `Physical` and `Snapshot`.
+* `backup_method` - (Optional, ForceNew) The type of backup that you want to perform. Default value: `Physical`. Valid values: `Logical`, `Physical` and `Snapshot`.
 * `backup_strategy` - (Optional) The policy that you want to use for the backup task. Valid values:
   * **db**: specifies to perform a database-level backup.
   * **instance**: specifies to perform an instance-level backup.
-* `backup_type` - (Optional) The method that you want to use for the backup task. Default value: `Auto`. Valid values:
+* `backup_type` - (Optional, ForceNew) The method that you want to use for the backup task. Default value: `Auto`. Valid values:
   * **Auto**: specifies to automatically perform a full or incremental backup.
   * **FullBackup**: specifies to perform a full backup.
 * `db_instance_id` - (Required, ForceNew) The db instance id.
