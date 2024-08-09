@@ -96,8 +96,16 @@ The following arguments are supported:
 * `spec_type` - (Optional) The spec type of the instance. Support two type, "normal": normal version instance, "professional": professional version instance. Default is normal. When modify this value, it only support adjust from normal to professional. Note only pre paid type instance support professional specific type.
 * `vswitch_id` - (Required, ForceNew) The ID of attaching vswitch to instance.
 * `security_group` - (Optional, ForceNew, Available since v1.93.0) The ID of security group for this instance. If the security group is empty, system will create a default one.
-* `service_version` - (Optional, Available since v1.112.0) The kafka openSource version for this instance. Only 0.10.2 or 2.2.0 is allowed, default is 0.10.2.
-* `config` - (Optional, Available since v1.112.0) The basic config for this instance. The input should be json type, only the following key allowed: enable.acl, enable.vpc_sasl_ssl, kafka.log.retention.hours, kafka.message.max.bytes.
+* `service_version` - (Optional, Available since v1.112.0) The version of the ApsaraMQ for Kafka instance. Default value: `2.2.0`. Valid values: `2.2.0`, `2.6.2`.
+* `config` - (Optional, Available since v1.112.0) The initial configurations of the ApsaraMQ for Kafka instance. The values must be valid JSON strings. The `config` supports the following parameters:
+  * `enable.vpc_sasl_ssl`: Specifies whether to enable VPC transmission encryption. Default value: `false`. Valid values:
+    - `true`: Enables VPC transmission encryption. If you enable VPC transmission encryption, you must also enable access control list (ACL).
+    - `false`: Disables VPC transmission encryption. This is the default value.
+  * `enable.acl`: Specifies whether to enable ACL. Default value: `false`. Valid values:
+    - `true`: Enables the ACL feature.
+    - `false`: Disables the ACL feature.
+  * `kafka.log.retention.hours`: The maximum message retention period when the disk capacity is sufficient. Unit: hours. Default value: `72`. Valid values: `24` to `480`.
+  * `kafka.message.max.bytes`: The maximum size of a message that can be sent and received by ApsaraMQ for Kafka. Unit: bytes. Default value: `1048576`. Valid values: `1048576` to `10485760`.
 * `kms_key_id` - (Optional, ForceNew, Available since v1.180.0) The ID of the key that is used to encrypt data on standard SSDs in the region of the instance.
 * `tags` - (Optional, Available since v1.63.0) A mapping of tags to assign to the resource.
 * `vpc_id` - (Optional, ForceNew, Available since v1.185.0) The VPC ID of the instance.
