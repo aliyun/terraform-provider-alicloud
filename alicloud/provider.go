@@ -551,6 +551,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_health_check_templates":                       dataSourceAlicloudAlbHealthCheckTemplates(),
 			"alicloud_cdn_real_time_log_deliveries":                     dataSourceAlicloudCdnRealTimeLogDeliveries(),
 			"alicloud_click_house_accounts":                             dataSourceAlicloudClickHouseAccounts(),
+			"alicloud_selectdb_db_clusters":                             dataSourceAlicloudSelectDBDbClusters(),
+			"alicloud_selectdb_db_instances":                            dataSourceAlicloudSelectDBDbInstances(),
 			"alicloud_direct_mail_mail_addresses":                       dataSourceAlicloudDirectMailMailAddresses(),
 			"alicloud_database_gateway_gateways":                        dataSourceAlicloudDatabaseGatewayGateways(),
 			"alicloud_bastionhost_hosts":                                dataSourceAlicloudBastionhostHosts(),
@@ -1426,6 +1428,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_alb_health_check_template":                             resourceAlicloudAlbHealthCheckTemplate(),
 			"alicloud_cdn_real_time_log_delivery":                            resourceAlicloudCdnRealTimeLogDelivery(),
 			"alicloud_click_house_account":                                   resourceAlicloudClickHouseAccount(),
+			"alicloud_selectdb_db_cluster":                                   resourceAlicloudSelectDBDbCluster(),
+			"alicloud_selectdb_db_instance":                                  resourceAlicloudSelectDBDbInstance(),
 			"alicloud_bastionhost_user_attachment":                           resourceAlicloudBastionhostUserAttachment(),
 			"alicloud_direct_mail_mail_address":                              resourceAlicloudDirectMailMailAddress(),
 			"alicloud_dts_job_monitor_rule":                                  resourceAlicloudDtsJobMonitorRule(),
@@ -1962,6 +1966,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		config.IotEndpoint = strings.TrimSpace(endpoints["iot"].(string))
 		config.ImmEndpoint = strings.TrimSpace(endpoints["imm"].(string))
 		config.ClickhouseEndpoint = strings.TrimSpace(endpoints["clickhouse"].(string))
+		config.SelectDBEndpoint = strings.TrimSpace(endpoints["selectdb"].(string))
 		config.DtsEndpoint = strings.TrimSpace(endpoints["dts"].(string))
 		config.DgEndpoint = strings.TrimSpace(endpoints["dg"].(string))
 		config.CloudssoEndpoint = strings.TrimSpace(endpoints["cloudsso"].(string))
@@ -2305,6 +2310,8 @@ func init() {
 		"imm_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom imm endpoints.",
 
 		"clickhouse_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom clickhouse endpoints.",
+
+		"selectdb_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom selectdb endpoints.",
 
 		"dts_endpoint": "Use this to override the default endpoint URL constructed from the `region`. It's typically used to connect to custom dts endpoints.",
 
@@ -2799,6 +2806,12 @@ func endpointsSchema() *schema.Schema {
 					Optional:    true,
 					Default:     "",
 					Description: descriptions["clickhouse_endpoint"],
+				},
+				"selectdb": {
+					Type:        schema.TypeString,
+					Optional:    true,
+					Default:     "",
+					Description: descriptions["selectdb_endpoint"],
 				},
 
 				"alidfs": {
@@ -3450,6 +3463,7 @@ func endpointsToHash(v interface{}) int {
 	buf.WriteString(fmt.Sprintf("%s-", m["iot"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["imm"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["clickhouse"].(string)))
+	buf.WriteString(fmt.Sprintf("%s-", m["selectdb"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dts"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["dg"].(string)))
 	buf.WriteString(fmt.Sprintf("%s-", m["cloudsso"].(string)))
