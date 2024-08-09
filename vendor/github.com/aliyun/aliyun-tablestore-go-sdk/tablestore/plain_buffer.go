@@ -40,6 +40,7 @@ const (
 	VT_STRING  = 0x3
 
 	//public final static byte VT_NULL = 0x6;
+	VT_NULL           = 0x6
 	VT_BLOB           = 0x7
 	VT_INF_MIN        = 0x9
 	VT_INF_MAX        = 0xa
@@ -105,7 +106,7 @@ func writeRawByte(w io.Writer, value byte) {
 	w.Write([]byte{byte(value)})
 }*/
 
-func writeRawLittleEndian32(w io.Writer, value int32) {
+func WriteRawLittleEndian32(w io.Writer, value int32) {
 	w.Write([]byte{byte((value) & 0xFF)})
 	w.Write([]byte{byte((value >> 8) & 0xFF)})
 	w.Write([]byte{byte((value >> 16) & 0xFF)})
@@ -140,7 +141,7 @@ func writeBytes(w io.Writer, value []byte) {
 }
 
 func writeHeader(w io.Writer) {
-	writeRawLittleEndian32(w, HEADER)
+	WriteRawLittleEndian32(w, HEADER)
 }
 
 func writeTag(w io.Writer, tag byte) {
@@ -149,7 +150,7 @@ func writeTag(w io.Writer, tag byte) {
 
 func writeCellName(w io.Writer, name []byte) {
 	writeTag(w, TAG_CELL_NAME)
-	writeRawLittleEndian32(w, int32(len(name)))
+	WriteRawLittleEndian32(w, int32(len(name)))
 	writeBytes(w, name)
 }
 
@@ -161,6 +162,7 @@ type PlainBufferCell struct {
 	ignoreValue      bool
 	hasCellTimestamp bool
 	hasCellType      bool
+	isInfMax         bool
 }
 
 func (cell *PlainBufferCell) writeCell(w io.Writer) {
@@ -299,7 +301,7 @@ func readBytes(r *bytes.Reader, size int32) []byte {
 	return v
 }
 
-func readCellValue(r *bytes.Reader) *ColumnValue {
+func ReadCellValue(r *bytes.Reader) (colValue *ColumnValue, isInfMax bool) {
 	value := new(ColumnValue)
 	readRawLittleEndian32(r)
 	tp := readRawByte(r)
@@ -319,8 +321,10 @@ func readCellValue(r *bytes.Reader) *ColumnValue {
 	case VT_BLOB:
 		value.Type = ColumnType_BINARY
 		value.Value = []byte(readBytes(r, readRawLittleEndian32(r)))
+	case VT_INF_MAX:
+		return nil, true
 	}
-	return value
+	return value, false
 }
 
 func readCell(r *bytes.Reader) *PlainBufferCell {
@@ -334,7 +338,7 @@ func readCell(r *bytes.Reader) *PlainBufferCell {
 	tag = readTag(r)
 
 	if tag == TAG_CELL_VALUE {
-		cell.cellValue = readCellValue(r)
+		cell.cellValue, cell.isInfMax = ReadCellValue(r)
 		tag = readTag(r)
 	}
 	if tag == TAG_CELL_TYPE {

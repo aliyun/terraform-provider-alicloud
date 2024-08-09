@@ -10,11 +10,11 @@ type GroupByField struct {
 	AggName string
 
 	Field   string
-	Sz    *int32
+	Sz      *int32
 	Sorters []GroupBySorter
 
-	SubAggList			[]Aggregation
-	SubGroupByList		[]GroupBy
+	SubAggList     []Aggregation
+	SubGroupByList []GroupBy
 }
 
 func (g *GroupByField) GetName() string {
@@ -85,7 +85,6 @@ func (g *GroupByField) SubAggregation(subAggregation Aggregation) *GroupByField 
 	g.SubAggList = append(g.SubAggList, subAggregation)
 	return g
 }
-
 
 func (g *GroupByField) SubGroupBys(subGroupBys ...GroupBy) *GroupByField {
 	g.SubGroupByList = subGroupBys

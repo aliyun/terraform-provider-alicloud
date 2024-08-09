@@ -6,9 +6,9 @@ import (
 )
 
 type DistinctCountAggregation struct {
-	AggName			string
-	Field			string
-	MissingValue 	interface{}
+	AggName      string
+	Field        string
+	MissingValue interface{}
 }
 
 func (a *DistinctCountAggregation) GetName() string {

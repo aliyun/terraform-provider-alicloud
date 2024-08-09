@@ -518,10 +518,11 @@ func (api *TunnelApi) ReadRecords(req *ReadRecordRequest) (*ReadRecordResponse, 
 	}
 	records := readRecordsResponse.GetRecords()
 	response := &ReadRecordResponse{
-		NextToken:    *readRecordsResponse.NextToken,
-		Size:         size,
-		RecordCount:  len(records),
-		ResponseInfo: ResponseInfo{traceId},
+		NextToken:     *readRecordsResponse.NextToken,
+		Size:          size,
+		RecordCount:   len(records),
+		MayMoreRecord: readRecordsResponse.MayMoreRecord,
+		ResponseInfo:  ResponseInfo{traceId},
 	}
 
 	if req.NeedBinaryRecord {

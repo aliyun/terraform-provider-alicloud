@@ -17,6 +17,15 @@ enum PrimaryKeyOption {
     AUTO_INCREMENT = 1;
 }
 
+enum DataBlockType {
+    DBT_PLAIN_BUFFER = 0;
+    DBT_SIMPLE_ROW_MATRIX = 1;
+}
+
+enum CompressType {
+    CPT_NONE = 0;
+}
+
 message PrimaryKeySchema {
     required string name = 1;
     required PrimaryKeyType type = 2;
@@ -148,6 +157,7 @@ message CreateTableRequest {
     optional StreamSpecification stream_spec = 5;
     optional SSESpecification sse_spec = 6;
     repeated IndexMeta index_metas = 7;
+    optional bool enable_local_txn = 8;
 }
 
 message CreateTableResponse {
@@ -443,6 +453,9 @@ message GetRangeRequest {
     optional string end_column = 12;
     optional bytes token = 13;
     optional string transaction_id = 14;
+    optional DataBlockType data_block_type_hint = 15 [default = DBT_PLAIN_BUFFER];
+    optional bool return_entire_primary_keys = 16 [default = true];
+    optional CompressType compress_type_hint = 17 [default = CPT_NONE];
 }
 
 message GetRangeResponse {
@@ -450,6 +463,8 @@ message GetRangeResponse {
     required bytes rows = 2; // encoded as InplaceRowChangeSet
     optional bytes next_start_primary_key = 3; // 若为空，则代表数据全部读取完毕. encoded as InplaceRowChangeSet, but only has primary key
     optional bytes next_token = 4;
+    optional DataBlockType data_block_type = 5;
+    optional CompressType compress_type = 6;
 }
 /* ###################################################################################################### */
 /* #############################################  Stream  ############################################# */
@@ -510,6 +525,7 @@ message GetShardIteratorResponse {
 message GetStreamRecordRequest {
     required string shard_iterator = 1;
     optional int32 limit = 2;
+    optional string table_name = 3;
 }
 
 enum ActionType {
@@ -526,6 +542,8 @@ message GetStreamRecordResponse {
     }
     repeated StreamRecord stream_records = 1;
     optional string next_shard_iterator = 2;
+    optional ConsumedCapacity consumed = 3;
+    optional bool may_more_record = 4;
 }
 
 /* +++++ ComputeSplitPointsBySize  +++++ */
@@ -592,12 +610,19 @@ enum IndexType {
     IT_LOCAL_INDEX = 1;
 }
 
+enum IndexSyncPhase {
+    ISP_INVALID = 0;
+    ISP_FULL = 1;
+    ISP_INCR = 2;
+}
+
 message IndexMeta {
     required string name = 1;
     repeated string primary_key = 2;
     repeated string defined_column = 3;
     required IndexUpdateMode index_update_mode = 4;
     required IndexType index_type = 5;
+    optional IndexSyncPhase index_sync_phase = 6;
 }
 
 message CreateIndexRequest {
@@ -692,6 +717,8 @@ enum SQLStatementType {
 message SQLQueryRequest {
     required string query = 1;
     optional SQLPayloadVersion version = 2;
+    optional int64 sql_version = 3;
+    optional string search_token = 5;
 }
 
 message TableConsumedCapacity {
@@ -714,4 +741,5 @@ message SQLQueryResponse {
     optional SQLPayloadVersion version = 3;
     optional SQLStatementType type = 4;
     repeated SearchConsumedCapacity search_consumes = 5;
+    optional string next_search_token = 8;
 }

@@ -1468,8 +1468,14 @@ func (client *AliyunClient) WithTableStoreClient(instanceName string, do func(*t
 		if !strings.HasPrefix(endpoint, "https") && !strings.HasPrefix(endpoint, "http") {
 			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
-
-		tableStoreClient = tablestore.NewClientWithConfig(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, tablestore.NewDefaultTableStoreConfig())
+		externalHeaders := make(map[string]string)
+		if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
+			externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
+		}
+		if client.config.SourceIp != "" {
+			externalHeaders["x-ots-sourceip"] = client.config.SourceIp
+		}
+		tableStoreClient = tablestore.NewClientWithExternalHeader(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, tablestore.NewDefaultTableStoreConfig(), externalHeaders)
 		client.tablestoreconnByInstanceName[instanceName] = tableStoreClient
 	}
 
@@ -1494,7 +1500,14 @@ func (client *AliyunClient) WithTableStoreTunnelClient(instanceName string, do f
 			endpoint = fmt.Sprintf("https://%s", endpoint)
 		}
 
-		tunnelClient = otsTunnel.NewTunnelClientWithToken(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, otsTunnel.DefaultTunnelConfig)
+		externalHeaders := make(map[string]string)
+		if client.config.SecureTransport == "false" || client.config.SecureTransport == "true" {
+			externalHeaders["x-ots-issecuretransport"] = client.config.SecureTransport
+		}
+		if client.config.SourceIp != "" {
+			externalHeaders["x-ots-sourceip"] = client.config.SourceIp
+		}
+		tunnelClient = otsTunnel.NewTunnelClientWithConfigAndExternalHeader(endpoint, instanceName, client.config.AccessKey, client.config.SecretKey, client.config.SecurityToken, otsTunnel.DefaultTunnelConfig, externalHeaders)
 		client.otsTunnelConnByInstanceName[instanceName] = tunnelClient
 	}
 

@@ -59,8 +59,21 @@ func (rcv *SQLResponseColumn) ColumnValue(obj *ColumnValues) *ColumnValues {
 	return nil
 }
 
+func (rcv *SQLResponseColumn) ColumnComplexTypeInfo(obj *ComplexColumnTypeInfo) *ComplexColumnTypeInfo {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
+	if o != 0 {
+		x := rcv._tab.Indirect(o + rcv._tab.Pos)
+		if obj == nil {
+			obj = new(ComplexColumnTypeInfo)
+		}
+		obj.Init(rcv._tab.Bytes, x)
+		return obj
+	}
+	return nil
+}
+
 func SQLResponseColumnStart(builder *flatbuffers.Builder) {
-	builder.StartObject(3)
+	builder.StartObject(4)
 }
 func SQLResponseColumnAddColumnName(builder *flatbuffers.Builder, columnName flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(columnName), 0)
@@ -70,6 +83,9 @@ func SQLResponseColumnAddColumnType(builder *flatbuffers.Builder, columnType int
 }
 func SQLResponseColumnAddColumnValue(builder *flatbuffers.Builder, columnValue flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(columnValue), 0)
+}
+func SQLResponseColumnAddColumnComplexTypeInfo(builder *flatbuffers.Builder, columnComplexTypeInfo flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(columnComplexTypeInfo), 0)
 }
 func SQLResponseColumnEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

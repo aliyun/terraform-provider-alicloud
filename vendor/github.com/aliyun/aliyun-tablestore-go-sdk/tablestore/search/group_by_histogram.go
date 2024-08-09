@@ -11,7 +11,7 @@ type GroupByHistogram struct {
 	GroupByName string
 
 	Field       string
-	Interval   	interface{}
+	Interval    interface{}
 	Missing     interface{}
 	MinDocCount *int64
 	FieldRange  model.FiledRange

@@ -7,7 +7,7 @@ type GroupByFilterResultItem struct {
 }
 
 type GroupByFilterResult struct {
-	Name string
+	Name  string
 	Items []GroupByFilterResultItem
 }
 

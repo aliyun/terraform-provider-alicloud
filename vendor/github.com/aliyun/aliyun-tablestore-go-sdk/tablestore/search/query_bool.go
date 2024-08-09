@@ -14,10 +14,10 @@ type BoolQuery struct {
 	MinimumShouldMatch *int32
 
 	// for json marshal and unmarshal
-	MustQueriesAlias   []queryAlias `json:"MustQueries"`
-	MustNotQueriesAlias[]queryAlias `json:"MustNotQueries"`
-	FilterQueriesAlias []queryAlias `json:"FilterQueries"`
-	ShouldQueriesAlias []queryAlias `json:"ShouldQueries"`
+	MustQueriesAlias    []queryAlias `json:"MustQueries"`
+	MustNotQueriesAlias []queryAlias `json:"MustNotQueries"`
+	FilterQueriesAlias  []queryAlias `json:"FilterQueries"`
+	ShouldQueriesAlias  []queryAlias `json:"ShouldQueries"`
 }
 
 func (q *BoolQuery) MarshalJSON() ([]byte, error) {
@@ -27,7 +27,7 @@ func (q *BoolQuery) MarshalJSON() ([]byte, error) {
 		mqs := make([]queryAlias, 0)
 		for _, tq := range q.MustQueries {
 			mqs = append(mqs, queryAlias{
-				Name: tq.Type().String(),
+				Name:  tq.Type().String(),
 				Query: tq,
 			})
 		}
@@ -39,7 +39,7 @@ func (q *BoolQuery) MarshalJSON() ([]byte, error) {
 		mqs := make([]queryAlias, 0)
 		for _, tq := range q.MustNotQueries {
 			mqs = append(mqs, queryAlias{
-				Name: tq.Type().String(),
+				Name:  tq.Type().String(),
 				Query: tq,
 			})
 		}
@@ -51,7 +51,7 @@ func (q *BoolQuery) MarshalJSON() ([]byte, error) {
 		mqs := make([]queryAlias, 0)
 		for _, tq := range q.FilterQueries {
 			mqs = append(mqs, queryAlias{
-				Name: tq.Type().String(),
+				Name:  tq.Type().String(),
 				Query: tq,
 			})
 		}
@@ -63,7 +63,7 @@ func (q *BoolQuery) MarshalJSON() ([]byte, error) {
 		mqs := make([]queryAlias, 0)
 		for _, tq := range q.ShouldQueries {
 			mqs = append(mqs, queryAlias{
-				Name: tq.Type().String(),
+				Name:  tq.Type().String(),
 				Query: tq,
 			})
 		}
@@ -167,7 +167,7 @@ func (q *BoolQuery) Serialize() ([]byte, error) {
 		}
 		query.ShouldQueries = pbShouldQs
 	}
-	if (q.MinimumShouldMatch != nil) {
+	if q.MinimumShouldMatch != nil {
 		query.MinimumShouldMatch = q.MinimumShouldMatch
 	}
 	data, err := proto.Marshal(query)

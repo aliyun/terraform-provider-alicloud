@@ -6,9 +6,9 @@ import (
 )
 
 type AvgAggregation struct {
-	AggName			string
-	Field			string
-	MissingValue 	interface{}
+	AggName      string
+	Field        string
+	MissingValue interface{}
 }
 
 func (a *AvgAggregation) GetName() string {

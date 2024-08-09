@@ -18,7 +18,7 @@ const (
 	AggregationSumType           AggregationType = 5
 	AggregationCountType         AggregationType = 6
 	AggregationTopRowsType       AggregationType = 7
-	AggregationPercentilesType	 AggregationType = 8
+	AggregationPercentilesType   AggregationType = 8
 )
 
 func (a AggregationType) Enum() *AggregationType {

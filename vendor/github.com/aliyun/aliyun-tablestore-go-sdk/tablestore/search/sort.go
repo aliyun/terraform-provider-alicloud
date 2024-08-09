@@ -11,26 +11,30 @@ type Sorter interface {
 }
 
 type Sort struct {
-	Sorters []Sorter
+	Sorters                []Sorter
+	DisableDefaultPkSorter *bool
 }
 
 func (s *Sort) ProtoBuffer() (*otsprotocol.Sort, error) {
 	pbSort := &otsprotocol.Sort{}
-	pbSortors := make([]*otsprotocol.Sorter, 0)
+	pbSorters := make([]*otsprotocol.Sorter, 0)
 	for _, fs := range s.Sorters {
 		pbFs, err := fs.ProtoBuffer()
 		if err != nil {
 			return nil, err
 		}
-		pbSortors = append(pbSortors, pbFs)
+		pbSorters = append(pbSorters, pbFs)
 	}
-	pbSort.Sorter = pbSortors
+	if s.DisableDefaultPkSorter != nil {
+		pbSort.DisableDefaultPkSorter = s.DisableDefaultPkSorter
+	}
+	pbSort.Sorter = pbSorters
 	return pbSort, nil
 }
 
 func (s *Sort) MarshalJSON() ([]byte, error) {
 	type SorterInJson struct {
-		Name string
+		Name   string
 		Sorter Sorter
 	}
 
@@ -47,6 +51,8 @@ func (s *Sort) MarshalJSON() ([]byte, error) {
 			sorterName = "ScoreSort"
 		case *FieldSort:
 			sorterName = "FieldSort"
+		case *DocSort:
+			sorterName = "DocSort"
 		default:
 			return nil, errors.New("Unknown sort type.")
 		}
@@ -59,6 +65,7 @@ func (s *Sort) MarshalJSON() ([]byte, error) {
 	}
 
 	sorters["Sorters"] = data
+	sorters["DisableDefaultPkSorter"] = s.DisableDefaultPkSorter
 	return json.Marshal(sorters)
 }
 
@@ -78,6 +85,14 @@ func (r *Sort) UnmarshalJSON(data []byte) (err error) {
 	err = json.Unmarshal(sortersRawMessage, &sorters)
 	if err != nil {
 		return
+	}
+
+	var disableDefaultPkSorter *bool
+	if disable, ok1 := rawData["DisableDefaultPkSorter"]; ok1 {
+		err = json.Unmarshal(disable, &disableDefaultPkSorter)
+		if err != nil {
+			return
+		}
 	}
 
 	r.Sorters = make([]Sorter, 0)
@@ -111,11 +126,16 @@ func (r *Sort) UnmarshalJSON(data []byte) (err error) {
 			s := &FieldSort{}
 			err = json.Unmarshal(sorterRawMessage, s)
 			r.Sorters = append(r.Sorters, s)
+		case "DocSort":
+			s := &DocSort{}
+			err = json.Unmarshal(sorterRawMessage, s)
+			r.Sorters = append(r.Sorters, s)
 		default:
 			err = errors.New("Unknown sorter type: " + string(sorterName))
 			return
 		}
 	}
+	r.DisableDefaultPkSorter = disableDefaultPkSorter
 
 	return
 }

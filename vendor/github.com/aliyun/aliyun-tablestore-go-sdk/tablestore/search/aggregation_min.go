@@ -6,9 +6,9 @@ import (
 )
 
 type MinAggregation struct {
-	AggName		string
-	Field	string
-	MissingValue 	interface{}
+	AggName      string
+	Field        string
+	MissingValue interface{}
 }
 
 func (a *MinAggregation) GetName() string {

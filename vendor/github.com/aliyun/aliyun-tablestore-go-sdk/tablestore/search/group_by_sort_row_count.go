@@ -3,7 +3,7 @@ package search
 import "github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/otsprotocol"
 
 type RowCountGroupBySort struct {
-	Order		*SortOrder
+	Order *SortOrder
 }
 
 func (s *RowCountGroupBySort) ProtoBuffer() (*otsprotocol.GroupBySorter, error) {

@@ -27,6 +27,8 @@ const (
 	QueryType_GeoPolygonQuery     QueryType = 14
 	QueryType_TermsQuery          QueryType = 15
 	QueryType_ExistsQuery         QueryType = 16
+	QueryType_KnnVectorQuery      QueryType = 17
+	QueryType_FunctionsScoreQuery QueryType = 18
 )
 
 func (q QueryType) String() string {
@@ -63,6 +65,10 @@ func (q QueryType) String() string {
 		return "TermsQuery"
 	case QueryType_ExistsQuery:
 		return "ExistsQuery"
+	case QueryType_KnnVectorQuery:
+		return "KnnVectorQuery"
+	case QueryType_FunctionsScoreQuery:
+		return "FunctionsScoreQuery"
 	}
 
 	return ""
@@ -135,6 +141,14 @@ func UnmarshalQuery(name string, data json.RawMessage) (Query, error) {
 		q := &ExistsQuery{}
 		err = json.Unmarshal(data, q)
 		return q, err
+	case "KnnVectorQuery":
+		q := &KnnVectorQuery{}
+		err = json.Unmarshal(data, q)
+		return q, err
+	case "FunctionsScoreQuery":
+		q := &FunctionsScoreQuery{}
+		err = json.Unmarshal(data, q)
+		return q, err
 	}
 
 	return nil, errors.New(fmt.Sprintf("Unknown query type: %s.", name))
@@ -174,6 +188,10 @@ func ToQueryType(q string) QueryType {
 		return QueryType_TermsQuery
 	case "ExistsQuery":
 		return QueryType_ExistsQuery
+	case "KnnVectorQuery":
+		return QueryType_KnnVectorQuery
+	case "FunctionsScoreQuery":
+		return QueryType_FunctionsScoreQuery
 	}
 
 	return QueryType_None
@@ -220,6 +238,10 @@ func (q QueryType) ToPB() *otsprotocol.QueryType {
 		return otsprotocol.QueryType_TERMS_QUERY.Enum()
 	case QueryType_ExistsQuery:
 		return otsprotocol.QueryType_EXISTS_QUERY.Enum()
+	case QueryType_KnnVectorQuery:
+		return otsprotocol.QueryType_KNN_VECTOR_QUERY.Enum()
+	case QueryType_FunctionsScoreQuery:
+		return otsprotocol.QueryType_FUNCTIONS_SCORE_QUERY.Enum()
 	default:
 		panic("unexpected")
 	}

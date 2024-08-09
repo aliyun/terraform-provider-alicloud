@@ -99,6 +99,7 @@ type CreateDeliveryTaskRequest struct {
 	TaskName   string
 	TaskType   TaskType
 	TaskConfig *OSSTaskConfig
+	ExtraRequestInfo
 }
 
 type CreateDeliveryTaskResponse struct {
@@ -136,6 +137,7 @@ func toTaskPbConfig(config *OSSTaskConfig) *otsprotocol.OSSTaskConfig {
 type DeleteDeliveryTaskRequest struct {
 	TableName string
 	TaskName  string
+	ExtraRequestInfo
 }
 
 type DeleteDeliveryTaskResponse struct {
@@ -144,6 +146,7 @@ type DeleteDeliveryTaskResponse struct {
 
 type ListDeliveryTaskRequest struct {
 	TableName string
+	ExtraRequestInfo
 }
 
 type DeliveryTaskInfo struct {
@@ -160,6 +163,7 @@ type ListDeliveryTaskResponse struct {
 type DescribeDeliveryTaskRequest struct {
 	TableName string
 	TaskName  string
+	ExtraRequestInfo
 }
 
 type DescribeDeliveryTaskResponse struct {

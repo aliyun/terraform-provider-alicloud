@@ -4,7 +4,7 @@ type TimeseriesConfiguration struct {
 	metaCacheMaxDataSize int
 }
 
-func NewTimeseriesConfiguration()*TimeseriesConfiguration {
+func NewTimeseriesConfiguration() *TimeseriesConfiguration {
 	return &TimeseriesConfiguration{
 		metaCacheMaxDataSize: 64 * 1024 * 1024,
 	}

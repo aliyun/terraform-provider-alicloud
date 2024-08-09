@@ -3,8 +3,8 @@ package search
 import "math"
 
 type MaxAggregationResult struct {
-	Name string
-	Value float64	//-inf means missing value
+	Name  string
+	Value float64 //-inf means missing value
 }
 
 func (a *MaxAggregationResult) GetName() string {

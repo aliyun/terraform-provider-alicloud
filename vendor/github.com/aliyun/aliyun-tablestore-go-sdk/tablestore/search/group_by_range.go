@@ -8,11 +8,11 @@ import (
 type GroupByRange struct {
 	AggName string
 
-	Field 		string
-	RangeList	[]Range
+	Field     string
+	RangeList []Range
 
-	SubAggList			[]Aggregation
-	SubGroupByList		[]GroupBy
+	SubAggList     []Aggregation
+	SubGroupByList []GroupBy
 }
 
 func (g *GroupByRange) GetName() string {
@@ -72,7 +72,6 @@ func (g *GroupByRange) SubAggregation(subAggregation Aggregation) *GroupByRange 
 	return g
 }
 
-
 func (g *GroupByRange) SubGroupBys(subGroupBys ...GroupBy) *GroupByRange {
 	g.SubGroupByList = subGroupBys
 	return g
@@ -96,6 +95,6 @@ func (g *GroupByRange) FieldName(fieldName string) *GroupByRange {
 //append a Range[from, to)
 func (g *GroupByRange) Range(fromInclusive float64, toExclusive float64) *GroupByRange {
 	g.RangeList = append(g.RangeList,
-		Range { from: fromInclusive, to: toExclusive})
+		Range{from: fromInclusive, to: toExclusive})
 	return g
 }

@@ -21,6 +21,7 @@ type ChannelProcessor interface {
 	Shutdown()
 	Error() bool
 	Finished() bool
+	SetFinished(bool)
 	CommitToken(token string) error
 }
 
@@ -183,7 +184,7 @@ func (p *defaultProcessor) Process(records []*Record, binaryRecords []byte, reco
 		}
 	}
 	if nextToken == FinishTag {
-		p.finished.Store(true)
+		p.SetFinished(true)
 		p.Shutdown()
 	}
 	return nil
@@ -255,6 +256,10 @@ func (p *defaultProcessor) cpLoop() {
 			return
 		}
 	}
+}
+
+func (p *defaultProcessor) SetFinished(isFinished bool) {
+	p.finished.Store(isFinished)
 }
 
 func (p *defaultProcessor) CommitToken(token string) error {
