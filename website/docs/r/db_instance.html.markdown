@@ -497,6 +497,7 @@ The following arguments are supported:
   > - SQLServer: [ 2016_std_sl、2017_std_sl、2019_std_sl ]
   > - PostgreSQL: [ 14.0 ]
   > - MariaDB does not support creating serverless instances.
+* `target_major_version` - (Optional, ForceNew, Available since v1.227.1) The major engine version of the new instance. The value of this parameter must be the major engine version on which an upgrade check is performed.
 * `instance_type` - (Required) DB Instance type. For details, see [Instance type table](https://www.alibabacloud.com/help/doc-detail/26312.htm).
   - To create a serverless instance, please pass the following values:
   - MySQL basic: mysql.n2.serverless.1c
