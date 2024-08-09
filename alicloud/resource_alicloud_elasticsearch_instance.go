@@ -153,6 +153,7 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 			"data_node_disk_type": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 
 			"data_node_disk_encrypted": {
@@ -220,6 +221,36 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Optional: true,
 			},
 
+			// warm node configuration
+			"warm_node_amount": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(2, 50),
+			},
+
+			"warm_node_spec": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+
+			"warm_node_disk_size": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(500, 20480),
+			},
+
+			"warm_node_disk_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"cloud_efficiency"}, false),
+			},
+
+			"warm_node_disk_encrypted": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+
 			"protocol": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -281,6 +312,12 @@ func resourceAlicloudElasticsearch() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Default:  false,
+			},
+
+			//When open Kibana private network for a new architecture instance, this field is mandatory
+			"kibana_private_security_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 
 			"kibana_private_whitelist": {
@@ -377,6 +414,7 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 		}
 		return WrapError(err)
 	}
+	archType := object["archType"].(string)
 
 	d.Set("description", object["description"])
 	d.Set("status", object["status"])
@@ -405,6 +443,20 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 
 	d.Set("enable_kibana_private_network", object["enableKibanaPrivateNetwork"])
 	kibanaPrivateIPWhitelist := object["kibanaPrivateIPWhitelist"].([]interface{})
+	if archType == "public" && object["enableKibanaPrivateNetwork"].(bool) == true {
+		pvlInfoResult, err := elasticsearchService.getKibanaPvlNetworkInfo(d.Id())
+		if err != nil {
+			return WrapErrorf(err, "get kibana pvl info error %s", d.Id())
+		}
+		pvlInfoArr := pvlInfoResult.([]interface{})
+		if len(pvlInfoArr) == 0 {
+			return WrapErrorf(err, "get kibana pvl info empty %s", d.Id())
+		}
+		pvlInfo := pvlInfoArr[0]
+		securityGroupId := pvlInfo.(map[string]interface{})["securityGroups"].([]interface{})[0]
+		d.Set("kibana_private_security_group_id", securityGroupId)
+	}
+
 	d.Set("kibana_private_whitelist", filterWhitelist(convertArrayInterfaceToArrayString(kibanaPrivateIPWhitelist), d.Get("kibana_private_whitelist").(*schema.Set)))
 
 	// Data node configuration
@@ -419,6 +471,13 @@ func resourceAlicloudElasticsearchRead(d *schema.ResourceData, meta interface{})
 	// Client node configuration
 	d.Set("client_node_amount", object["clientNodeConfiguration"].(map[string]interface{})["amount"])
 	d.Set("client_node_spec", object["clientNodeConfiguration"].(map[string]interface{})["spec"])
+	//Warm node configuration
+	d.Set("warm_node_amount", object["warmNodeConfiguration"].(map[string]interface{})["amount"])
+	d.Set("warm_node_spec", object["warmNodeConfiguration"].(map[string]interface{})["spec"])
+	d.Set("warm_node_disk_size", object["warmNodeConfiguration"].(map[string]interface{})["disk"])
+	d.Set("warm_node_disk_type", object["warmNodeConfiguration"].(map[string]interface{})["diskType"])
+	d.Set("warm_node_disk_encrypted", object["warmNodeConfiguration"].(map[string]interface{})["diskEncryption"])
+
 	// Kibana node configuration
 	d.Set("kibana_node_spec", object["kibanaConfiguration"].(map[string]interface{})["spec"])
 	// Protocol: HTTP/HTTPS
@@ -464,6 +523,17 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 	d.Partial(true)
 	stateConf := BuildStateConf([]string{"activating"}, []string{"active"}, d.Timeout(schema.TimeoutUpdate), 20*time.Second, elasticsearchService.ElasticsearchStateRefreshFunc(d.Id(), []string{"inactive"}))
 	stateConf.PollInterval = 5 * time.Second
+
+	instance, err := elasticsearchService.DescribeElasticsearchInstance(d.Id())
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	archType := instance["archType"].(string)
 
 	if d.HasChange("description") {
 		if err := updateDescription(d, meta); err != nil {
@@ -533,7 +603,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("kibana_whitelist")
 	}
 
-	if d.HasChange("enable_kibana_private_network") {
+	if d.HasChange("enable_kibana_private_network") && archType != "public" {
 		content := make(map[string]interface{})
 		content["networkType"] = string(PRIVATE)
 		content["nodeType"] = string(KIBANA)
@@ -542,6 +612,49 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 			return WrapError(err)
 		}
 
+		d.SetPartial("enable_kibana_private_network")
+	}
+
+	// modify pvl kibana private security group, update security group only
+	kibanaSecurityGroupChanged := d.HasChange("kibana_private_security_group_id") && !d.HasChange("enable_kibana_private_network") && archType == "public" && d.Get("enable_kibana_private_network").(bool) == true
+	if kibanaSecurityGroupChanged {
+		content := make(map[string]interface{})
+		var securityGroups []string
+		securityGroups = append(securityGroups, d.Get("kibana_private_security_group_id").(string))
+		content["securityGroups"] = securityGroups
+		if err := elasticsearchService.updateKibanaPrivatePvlNetwork(d, content, meta); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("kibana_private_security_group_id")
+	}
+
+	// open pvl kibana private
+	if d.HasChange("enable_kibana_private_network") && archType == "public" && d.Get("enable_kibana_private_network").(bool) == true {
+		content := make(map[string]interface{})
+		content["endpointName"] = d.Id() + "-kibana-endpoint"
+		var securityGroups []string
+		securityGroups = append(securityGroups, d.Get("kibana_private_security_group_id").(string))
+		content["securityGroups"] = securityGroups
+
+		vSwitchIdsZone := [1]map[string]string{
+			{
+				"vswitchId": instance["networkConfig"].(map[string]interface{})["vswitchId"].(string),
+				"zoneId":    instance["networkConfig"].(map[string]interface{})["vsArea"].(string),
+			},
+		}
+		content["vSwitchIdsZone"] = vSwitchIdsZone
+		content["vpcId"] = instance["networkConfig"].(map[string]interface{})["vpcId"].(string)
+		if err := elasticsearchService.enableKibanaPrivatePvlNetwork(d, content, meta); err != nil {
+			return WrapError(err)
+		}
+		d.SetPartial("enable_kibana_private_network")
+	}
+	//close kibana pvl private network
+	if d.HasChange("enable_kibana_private_network") && archType == "public" && d.Get("enable_kibana_private_network").(bool) == false {
+		content := make(map[string]interface{})
+		if err := elasticsearchService.disableKibanaPrivatePvlNetwork(d, content, meta); err != nil {
+			return WrapError(err)
+		}
 		d.SetPartial("enable_kibana_private_network")
 	}
 
@@ -671,7 +784,7 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 		d.SetPartial("data_node_amount")
 	}
 
-	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_type") || d.HasChange("data_node_disk_performance_level") {
+	if d.HasChange("data_node_spec") || d.HasChange("data_node_disk_size") || d.HasChange("data_node_disk_performance_level") {
 
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
@@ -727,6 +840,16 @@ func resourceAlicloudElasticsearchUpdate(d *schema.ResourceData, meta interface{
 
 		d.SetPartial("client_node_spec")
 		d.SetPartial("client_node_amount")
+	}
+
+	if d.HasChanges("warm_node_spec", "warm_node_amount", "warm_node_disk_size") {
+		if err := updateWarmNode(d, meta); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("warm_node_spec")
+		d.SetPartial("warm_node_amount")
+		d.SetPartial("warm_node_disk_size")
 	}
 
 	if d.HasChange("password") || d.HasChange("kms_encrypted_password") {
@@ -895,6 +1018,18 @@ func buildElasticsearchCreateRequestBody(d *schema.ResourceData, meta interface{
 		kibanaNode["amount"] = 1
 		content["haveKibana"] = true
 		content["kibanaConfiguration"] = kibanaNode
+	}
+
+	// Warm node configuration
+	if d.Get("warm_node_spec") != nil && d.Get("warm_node_spec") != "" && nil != d.Get("warm_node_amount") && d.Get("warm_node_amount").(int) > 0 && nil != d.Get("warm_node_disk_size") && d.Get("warm_node_disk_size").(int) > 0 {
+		warmNode := make(map[string]interface{})
+		warmNode["spec"] = d.Get("warm_node_spec")
+		warmNode["amount"] = d.Get("warm_node_amount")
+		warmNode["disk"] = d.Get("warm_node_disk_size")
+		warmNode["diskType"] = d.Get("warm_node_disk_type")
+		warmNode["diskEncryption"] = d.Get("warm_node_disk_encrypted")
+		content["warmNode"] = true
+		content["warmNodeConfiguration"] = warmNode
 	}
 
 	// Network configuration

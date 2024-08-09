@@ -49,12 +49,22 @@ const ClientNodeAmountForUpdate = "3"
 const KibanaSpec = "elasticsearch.sn1ne.large"
 const KibanaSpecForUpdate = "elasticsearch.sn2ne.large"
 
+const WarmNodeSpec = "elasticsearch.sn1ne.large"
+const WarmNodeSpecUpdate = "elasticsearch.sn1ne.xlarge"
+const WarmNodeAmount = "3"
+const WarmNodeAmountUpdate = "4"
+const WarmNodeDiskSize = "500"
+const WarmNodeDiskSizeUpdate = "500"
+const WarmNodeDiskType = "cloud_efficiency"
+
 const AutoRenewal = "AutoRenewal"
 const NotRenewal = "NotRenewal"
 const ManualRenewal = "ManualRenewal"
 
 const Version55 = "5.5.3_with_X-Pack"
 const Version716 = "7.16.2_with_X-Pack"
+
+const Version77 = "7.7.1_with_X-Pack"
 
 func init() {
 	resource.AddTestSweepers("alicloud_elasticsearch_instance", &resource.Sweeper{
@@ -155,7 +165,7 @@ func testSweepElasticsearch(region string) error {
 	return nil
 }
 
-func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_basic(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -199,6 +209,15 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					"kibana_node_spec":                 KibanaSpec,
 					"instance_charge_type":             string(PostPaid),
 					"zone_count":                       "1",
+					"resource_group_id":                "${local.resource_group_id}",
+					"enable_kibana_public_network":     "true",
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${local.security_group}",
+					"warm_node_amount":                 WarmNodeAmount,
+					"warm_node_disk_size":              WarmNodeDiskSize,
+					"warm_node_disk_encrypted":         "false",
+					"warm_node_spec":                   WarmNodeSpec,
+					"warm_node_disk_type":              WarmNodeDiskType,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -212,6 +231,15 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 						"kibana_node_spec":                 KibanaSpec,
 						"instance_charge_type":             string(PostPaid),
 						"zone_count":                       "1",
+						"resource_group_id":                CHECKSET,
+						"enable_kibana_public_network":     "true",
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
+						"warm_node_amount":                 WarmNodeAmount,
+						"warm_node_disk_size":              WarmNodeDiskSize,
+						"warm_node_disk_encrypted":         "false",
+						"warm_node_spec":                   WarmNodeSpec,
+						"warm_node_disk_type":              WarmNodeDiskType,
 					}),
 				),
 			},
@@ -248,6 +276,50 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 					}),
 				),
 			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"warm_node_amount":         WarmNodeAmountUpdate,
+					"warm_node_disk_size":      WarmNodeDiskSizeUpdate,
+					"warm_node_disk_encrypted": "false",
+					"warm_node_spec":           WarmNodeSpecUpdate,
+					"warm_node_disk_type":      WarmNodeDiskType,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"warm_node_amount":         WarmNodeAmountUpdate,
+						"warm_node_disk_size":      WarmNodeDiskSizeUpdate,
+						"warm_node_disk_encrypted": "false",
+						"warm_node_spec":           WarmNodeSpecUpdate,
+						"warm_node_disk_type":      WarmNodeDiskType,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network": "false",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${local.security_group}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
+					}),
+				),
+			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"password": "Yourpassword1235",
@@ -344,7 +416,7 @@ func TestAccAlicloudElasticsearchInstance_basic(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_version(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -396,6 +468,7 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 					}),
 				),
 			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"version": "8.5_with_X-Pack",
@@ -406,11 +479,30 @@ func TestAccAlicloudElasticsearchInstance_version(t *testing.T) {
 					}),
 				),
 			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"warm_node_amount":         WarmNodeAmount,
+					"warm_node_disk_size":      WarmNodeDiskSize,
+					"warm_node_disk_encrypted": "false",
+					"warm_node_spec":           WarmNodeSpec,
+					"warm_node_disk_type":      WarmNodeDiskType,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"warm_node_amount":         WarmNodeAmount,
+						"warm_node_disk_size":      WarmNodeDiskSize,
+						"warm_node_disk_encrypted": "false",
+						"warm_node_spec":           WarmNodeSpec,
+						"warm_node_disk_type":      WarmNodeDiskType,
+					}),
+				),
+			},
 		},
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_multizone(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -429,7 +521,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	if len(name) > 30 {
 		name = name[:30]
 	}
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependenceKms)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -442,10 +534,13 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":                      name,
-					"vswitch_id":                       "${local.vswitch_id}",
-					"version":                          Version716,
-					"password":                         "Yourpassword1234",
+					"description":            name,
+					"vswitch_id":             "${local.vswitch_id}",
+					"version":                Version716,
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.default.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name,
+					},
 					"data_node_spec":                   DataNodeSpec,
 					"data_node_amount":                 DataNodeAmountForMultiZone,
 					"data_node_disk_size":              DataNodeDisk,
@@ -453,6 +548,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"master_node_spec":                 MasterNodeSpec,
 					"master_node_disk_type":            MasterNodeEssdDiskType,
+					"kibana_node_spec":                 KibanaSpec,
 					"instance_charge_type":             string(PostPaid),
 					"zone_count":                       DefaultZoneAmount,
 				}),
@@ -467,8 +563,23 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 						"master_node_spec":                 MasterNodeSpec,
 						"master_node_disk_type":            MasterNodeEssdDiskType,
+						"kibana_node_spec":                 KibanaSpec,
 						"instance_charge_type":             string(PostPaid),
 						"zone_count":                       DefaultZoneAmount,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kms_encrypted_password": "${alicloud_kms_ciphertext.update.ciphertext_blob}",
+					"kms_encryption_context": map[string]string{
+						"name": name + "update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kms_encrypted_password":   CHECKSET,
+						"kms_encryption_context.%": "1",
 					}),
 				),
 			},
@@ -476,7 +587,7 @@ func TestAccAlicloudElasticsearchInstance_multizone(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -518,6 +629,7 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 					"data_node_disk_type":              DataNodeEssdDiskType,
 					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
 					"data_node_disk_encrypted":         "true",
+					"kibana_node_spec":                 KibanaSpec,
 					"instance_charge_type":             string(PostPaid),
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -531,7 +643,7 @@ func TestAccAlicloudElasticsearchInstance_encrypt_disk(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -636,13 +748,24 @@ func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 					}),
 				),
 			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"renew_status": NotRenewal,
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"renew_status": NotRenewal,
+			//		}),
+			//	),
+			//},
+			// pre paid to post paid
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"renew_status": NotRenewal,
+					"instance_charge_type": string(PostPaid),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"renew_status": NotRenewal,
+						"instance_charge_type": string(PostPaid),
 					}),
 				),
 			},
@@ -650,7 +773,7 @@ func TestAccAlicloudElasticsearchInstance_prepaid_autorenew(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
+func TestAccAliCloudElasticsearchInstance_network(t *testing.T) {
 	var instance *elasticsearch.DescribeInstanceResponse
 
 	resourceId := "alicloud_elasticsearch_instance.default"
@@ -693,7 +816,8 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 					"instance_charge_type":             string(PostPaid),
 					"zone_count":                       "1",
 					"enable_public":                    "true",
-					"enable_kibana_private_network":    "true",
+					"enable_kibana_private_network":    "false",
+					"enable_kibana_public_network":     "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -709,7 +833,8 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"instance_charge_type":             string(PostPaid),
 						"zone_count":                       "1",
 						"enable_public":                    "true",
-						"enable_kibana_private_network":    "true",
+						"enable_kibana_private_network":    "false",
+						"enable_kibana_public_network":     "true",
 					}),
 				),
 			},
@@ -719,9 +844,21 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"password"},
 			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"kibana_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
+					"enable_kibana_public_network": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_public_network": "true",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_whitelist": []string{"192.0.0.1/32", "127.0.0.1/32"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -729,16 +866,7 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"kibana_private_whitelist.#": "2",
-					}),
-				),
-			},
+
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"public_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
@@ -765,7 +893,6 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"\"action.auto_create_index\"":         "+.*,-*",
 						"\"action.destructive_requires_name\"": "false",
 						"\"xpack.security.audit.enabled\"":     "true",
-						"\"xpack.watcher.enabled\"":            "false",
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -773,7 +900,121 @@ func TestAccAlicloudElasticsearchInstance_network(t *testing.T) {
 						"setting_config.action.auto_create_index":         "+.*,-*",
 						"setting_config.action.destructive_requires_name": "false",
 						"setting_config.xpack.security.audit.enabled":     "true",
-						"setting_config.xpack.watcher.enabled":            "false",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_private_network":    "true",
+					"kibana_private_security_group_id": "${local.security_group}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_private_network":    "true",
+						"kibana_private_security_group_id": CHECKSET,
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_public": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_public": "false",
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccAliCloudElasticsearchInstance_onecs(t *testing.T) {
+	var instance *elasticsearch.DescribeInstanceResponse
+
+	resourceId := "alicloud_elasticsearch_instance.default"
+	ra := resourceAttrInit(resourceId, elasticsearchNetworkMap)
+
+	serviceFunc := func() interface{} {
+		return &ElasticsearchService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &instance, serviceFunc)
+
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testAccES%s%d", defaultRegionToTest, rand)
+	if len(name) > 30 {
+		name = name[:30]
+	}
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceElasticsearchInstanceConfigDependence)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description":                      name,
+					"vswitch_id":                       "${local.vswitch_id}",
+					"version":                          "5.5.3_with_X-Pack",
+					"password":                         "Yourpassword1234",
+					"data_node_spec":                   DataNodeSpec,
+					"data_node_amount":                 DataNodeAmount,
+					"data_node_disk_size":              DataNodeDisk,
+					"data_node_disk_type":              DataNodeEssdDiskType,
+					"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+					"kibana_node_spec":                 KibanaSpec,
+					"instance_charge_type":             string(PostPaid),
+					"zone_count":                       "1",
+					"enable_public":                    "false",
+					"enable_kibana_private_network":    "true",
+					"enable_kibana_public_network":     "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description":                      name,
+						"version":                          "5.5.3_with_X-Pack",
+						"password":                         "Yourpassword1234",
+						"data_node_spec":                   DataNodeSpec,
+						"data_node_amount":                 DataNodeAmount,
+						"data_node_disk_size":              DataNodeDisk,
+						"data_node_disk_type":              DataNodeEssdDiskType,
+						"data_node_disk_performance_level": DataNodeDiskPerformanceLevel1,
+						"kibana_node_spec":                 KibanaSpec,
+						"instance_charge_type":             string(PostPaid),
+						"zone_count":                       "1",
+						"enable_public":                    "false",
+						"enable_kibana_private_network":    "true",
+						"enable_kibana_public_network":     "true",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"kibana_private_whitelist": []string{"192.168.0.0/24", "127.0.0.1/32"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"kibana_private_whitelist.#": "2",
+					}),
+				),
+			},
+
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_kibana_public_network": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_kibana_public_network": "false",
 					}),
 				),
 			},
@@ -805,5 +1046,37 @@ func resourceElasticsearchInstanceConfigDependence(name string) string {
 	variable "name" {
 		default = "%s"
 	}
+	`, ElasticsearchInstanceCommonTestCase, name)
+}
+
+func resourceElasticsearchInstanceConfigDependenceKms(name string) string {
+	return fmt.Sprintf(`
+    %s
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_kms_key" "default" {
+  		description            = var.name
+  		status                 = "Enabled"
+  		pending_window_in_days = 7
+	}
+
+	resource "alicloud_kms_ciphertext" "default" {
+  		key_id    = alicloud_kms_key.default.id
+  		plaintext = "YourPassword1234!"
+  		encryption_context = {
+    		"name" = var.name
+  		}
+	}
+
+	resource "alicloud_kms_ciphertext" "update" {
+  		key_id    = alicloud_kms_key.default.id
+  		plaintext = "YourPassword1234!update"
+  		encryption_context = {
+    		"name" = "${var.name}update"
+  		}
+	}
+	
 	`, ElasticsearchInstanceCommonTestCase, name)
 }
