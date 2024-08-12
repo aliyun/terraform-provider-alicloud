@@ -1,4 +1,5 @@
-## 1.228.0 (Unreleased)
+## 1.229.0 (Unreleased)
+## 1.228.0 (August 12, 2024)
 
 - **New Resource:** `alicloud_aligreen_audit_callback` ([#7500](https://github.com/aliyun/terraform-provider-alicloud/issues/7500))
 - **New Resource:** `alicloud_aligreen_biz_type` ([#7500](https://github.com/aliyun/terraform-provider-alicloud/issues/7500))
