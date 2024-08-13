@@ -1768,3 +1768,1201 @@ func AlicloudServiceMeshServiceMeshBasicDependence6(name string) string {
 	}
 `, name)
 }
+
+// Test ServiceMesh ServiceMesh. >>> Resource test cases, automatically generated.
+// Case Terraform_online_new 4755
+func TestAccAliCloudServiceMeshServiceMesh_basic4755(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap4755)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServiceMeshServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicemeshservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence4755)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": name,
+					"version":           "${var.istio-version}",
+					"cluster_spec":      "enterprise",
+					"mesh_config": []map[string]interface{}{
+						{
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"request_memory": "256Mi",
+									"log_level":      "info",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "false",
+									"trace_sampling": "0",
+								},
+							},
+							"customized_zipkin": "false",
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"auto_injection_policy_enabled": "true",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled":            "false",
+											"exclude_namespaces": "excluded,istio-system,kube-system",
+										},
+									},
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"request_memory": "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"telemetry": "false",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"url":     "https://invalid-url",
+								},
+							},
+							"tracing":            "false",
+							"enable_locality_lb": "false",
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"include_ip_ranges": "*",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "256Mi",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+						},
+					},
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${var.vpc-id}",
+							"vswitche_list": []string{
+								"${var.vsw-id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"edition":               "Pro",
+					"customized_prometheus": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"version":               CHECKSET,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"customized_prometheus": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"pilot": []map[string]interface{}{
+								{
+									"trace_sampling": "50",
+									"http10_enabled": "true",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"limit_memory":                  "512Mi",
+									"request_cpu":                   "512Mi",
+									"request_memory":                "512Mi",
+									"enable_namespaces_by_default":  "true",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "512Mi",
+								},
+							},
+							"include_ip_ranges": "172.1.1.2/32",
+							"opa": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"log_level":      "warn",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+									"enabled":        "true",
+								},
+							},
+							"telemetry":               "true",
+							"outbound_traffic_policy": "REGISTRY_ONLY",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"url":     "https://some-kiali.url",
+								},
+							},
+							"tracing":            "true",
+							"enable_locality_lb": "true",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"cluster_domain": "512Mi",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+								},
+							},
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+							"customized_zipkin": "true",
+						},
+					},
+					"customized_prometheus": "true",
+					"prometheus_url":        "https://out.prometheus.url",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customized_prometheus": "true",
+						"prometheus_url":        "https://out.prometheus.url",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"exclude_namespaces": "another,istio-system,kube-system",
+											"enabled":            "true",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "${var.istio-version-2}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "${var.istio-version}",
+					"mesh_config": []map[string]interface{}{
+						{
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"request_memory": "256Mi",
+									"log_level":      "info",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "false",
+									"trace_sampling": "0",
+								},
+							},
+							"customized_zipkin": "false",
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"auto_injection_policy_enabled": "true",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled":            "false",
+											"exclude_namespaces": "excluded,istio-system,kube-system",
+										},
+									},
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"request_memory": "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"telemetry": "false",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"url":     "https://invalid-url",
+								},
+							},
+							"tracing":            "false",
+							"enable_locality_lb": "false",
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"include_ip_ranges": "*",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "256Mi",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+						},
+					},
+					"customized_prometheus": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version":               CHECKSET,
+						"customized_prometheus": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"pilot": []map[string]interface{}{
+								{
+									"trace_sampling": "50",
+									"http10_enabled": "true",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"limit_memory":                  "512Mi",
+									"request_cpu":                   "512Mi",
+									"request_memory":                "512Mi",
+									"enable_namespaces_by_default":  "true",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "512Mi",
+								},
+							},
+							"include_ip_ranges": "172.1.1.2/32",
+							"opa": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"log_level":      "warn",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+									"enabled":        "true",
+								},
+							},
+							"telemetry":               "true",
+							"outbound_traffic_policy": "REGISTRY_ONLY",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"url":     "https://some-kiali.url",
+								},
+							},
+							"tracing":            "true",
+							"enable_locality_lb": "true",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"cluster_domain": "512Mi",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+								},
+							},
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+							"customized_zipkin": "true",
+						},
+					},
+					"customized_prometheus": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customized_prometheus": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+var AlicloudServiceMeshServiceMeshMap4755 = map[string]string{
+	"mesh_config.#":         CHECKSET,
+	"kubeconfig":            CHECKSET,
+	"status":                CHECKSET,
+	"create_time":           CHECKSET,
+	"load_balancer.#":       CHECKSET,
+	"cluster_spec":          CHECKSET,
+	"extra_configuration.#": CHECKSET,
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence4755(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "cluster-1" {
+  default = "c9962195a41814399ba2b022283a9f2b2"
+}
+
+variable "cluster-2" {
+  default = "c503428fdd3c6400585c35c4eaa1a6dba"
+}
+
+variable "vsw-id" {
+  default = "vsw-bp1k8z9x1z9m5bx4p7tcc"
+}
+
+variable "istio-version" {
+  default = "v1.17.2.27-g854e3b73-aliyun"
+}
+
+variable "vpc-id" {
+  default = "vpc-bp1imspdu1ikr5j4jslkv"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+variable "cluster-3" {
+  default = "cb926fe87f31d4fefa577dbf4108202ae"
+}
+
+variable "istio-version-2" {
+  default = "v1.18.0.117-g0febec19-aliyun("
+}
+
+
+`, name)
+}
+
+// Case Terraform_online 4586
+func TestAccAliCloudServiceMeshServiceMesh_basic4586(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap4586)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServiceMeshServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicemeshservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence4586)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": name,
+					"version":           "${var.istio-version}",
+					"cluster_spec":      "enterprise",
+					"mesh_config": []map[string]interface{}{
+						{
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"request_memory": "256Mi",
+									"log_level":      "info",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "false",
+									"trace_sampling": "0",
+								},
+							},
+							"customized_zipkin": "false",
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"auto_injection_policy_enabled": "true",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled":            "false",
+											"exclude_namespaces": "excluded,istio-system,kube-system",
+										},
+									},
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"request_memory": "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"telemetry": "false",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"url":     "https://invalid-url",
+								},
+							},
+							"tracing":            "false",
+							"enable_locality_lb": "false",
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"include_ip_ranges": "*",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "256Mi",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+						},
+					},
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${var.vpc-id}",
+							"vswitche_list": []string{
+								"${var.vsw-id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"edition":               "Pro",
+					"customized_prometheus": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"version":               CHECKSET,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"customized_prometheus": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"pilot": []map[string]interface{}{
+								{
+									"trace_sampling": "50",
+									"http10_enabled": "true",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"limit_memory":                  "512Mi",
+									"request_cpu":                   "512Mi",
+									"request_memory":                "512Mi",
+									"enable_namespaces_by_default":  "true",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "512Mi",
+								},
+							},
+							"include_ip_ranges": "172.1.1.2/32",
+							"opa": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"log_level":      "warn",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+									"enabled":        "true",
+								},
+							},
+							"telemetry":               "true",
+							"outbound_traffic_policy": "REGISTRY_ONLY",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"url":     "https://some-kiali.url",
+								},
+							},
+							"tracing":            "true",
+							"enable_locality_lb": "true",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"cluster_domain": "512Mi",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+								},
+							},
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+							"customized_zipkin": "true",
+						},
+					},
+					"customized_prometheus": "true",
+					"prometheus_url":        "https://out.prometheus.url",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customized_prometheus": "true",
+						"prometheus_url":        "https://out.prometheus.url",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"exclude_namespaces": "another,istio-system,kube-system",
+											"enabled":            "true",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "${var.istio-version-2}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+var AlicloudServiceMeshServiceMeshMap4586 = map[string]string{
+	"mesh_config.#":         CHECKSET,
+	"kubeconfig":            CHECKSET,
+	"status":                CHECKSET,
+	"create_time":           CHECKSET,
+	"load_balancer.#":       CHECKSET,
+	"cluster_spec":          CHECKSET,
+	"extra_configuration.#": CHECKSET,
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence4586(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "cluster-1" {
+  default = "c812c50970fb34e92b1b557a33e205e5d"
+}
+
+variable "cluster-2" {
+  default = "ced1f5de824f74967b472813616916eb5"
+}
+
+variable "vsw-id" {
+  default = "vsw-bp1k8z9x1z9m5bx4p7tcc"
+}
+
+variable "istio-version" {
+  default = "v1.17.2.27-g854e3b73-aliyun"
+}
+
+variable "vpc-id" {
+  default = "vpc-bp1imspdu1ikr5j4jslkv"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+variable "cluster-3" {
+  default = "cb926fe87f31d4fefa577dbf4108202ae"
+}
+
+variable "istio-version-2" {
+  default = "v1.18.0.114-g105fcfd0-aliyun"
+}
+
+
+`, name)
+}
+
+// Case Tag_pre 4521
+func TestAccAliCloudServiceMeshServiceMesh_basic4521(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap4521)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServiceMeshServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicemeshservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence4521)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"audit": []map[string]interface{}{
+								{
+									"project": "mesh-log-{meshId}",
+								},
+							},
+							"telemetry":          "false",
+							"tracing":            "false",
+							"enable_locality_lb": "false",
+						},
+					},
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${var.vpc-id}",
+							"vswitche_list": []string{
+								"${var.vsw-id}"},
+						},
+					},
+					"version":           "v1.17.2.40-gca3a4011-aliyun",
+					"service_mesh_name": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version":           "v1.17.2.40-gca3a4011-aliyun",
+						"service_mesh_name": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"audit": []map[string]interface{}{
+								{
+									"project": "mesh-log-{meshId}",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"audit": []map[string]interface{}{
+								{
+									"project": "mesh-log-{meshId}",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+var AlicloudServiceMeshServiceMeshMap4521 = map[string]string{
+	"mesh_config.#":         CHECKSET,
+	"kubeconfig":            CHECKSET,
+	"status":                CHECKSET,
+	"create_time":           CHECKSET,
+	"load_balancer.#":       CHECKSET,
+	"cluster_spec":          CHECKSET,
+	"extra_configuration.#": CHECKSET,
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence4521(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "vsw-id" {
+  default = "vsw-bp1k8z9x1z9m5bx4p7tcc"
+}
+
+variable "vpc-id" {
+  default = "vpc-bp1imspdu1ikr5j4jslkv"
+}
+
+
+`, name)
+}
+
+// Case Terraform_pre 4560
+func TestAccAliCloudServiceMeshServiceMesh_basic4560(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap4560)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServiceMeshServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sservicemeshservicemesh%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence4560)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": name,
+					"version":           "${var.istio-version}",
+					"cluster_spec":      "enterprise",
+					"mesh_config": []map[string]interface{}{
+						{
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"request_memory": "256Mi",
+									"log_level":      "info",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "false",
+									"trace_sampling": "0",
+								},
+							},
+							"customized_zipkin": "false",
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"auto_injection_policy_enabled": "true",
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"enabled":            "false",
+											"exclude_namespaces": "excluded,istio-system,kube-system",
+										},
+									},
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"request_memory": "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+							"telemetry": "false",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"url":     "https://invalid-url",
+								},
+							},
+							"tracing":            "false",
+							"enable_locality_lb": "false",
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"include_ip_ranges": "*",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "256Mi",
+									"limit_memory":   "256Mi",
+									"request_cpu":    "256Mi",
+									"limit_cpu":      "256Mi",
+								},
+							},
+						},
+					},
+					"network": []map[string]interface{}{
+						{
+							"vpc_id": "${var.vpc-id}",
+							"vswitche_list": []string{
+								"${var.vsw-id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip":      "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"edition":               "Pro",
+					"customized_prometheus": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"version":               CHECKSET,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"customized_prometheus": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"pilot": []map[string]interface{}{
+								{
+									"trace_sampling": "50",
+									"http10_enabled": "true",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"limit_memory":                  "512Mi",
+									"request_cpu":                   "512Mi",
+									"request_memory":                "512Mi",
+									"enable_namespaces_by_default":  "true",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "512Mi",
+								},
+							},
+							"include_ip_ranges": "172.1.1.2/32",
+							"opa": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"log_level":      "warn",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+									"enabled":        "true",
+								},
+							},
+							"telemetry":               "true",
+							"outbound_traffic_policy": "REGISTRY_ONLY",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"url":     "https://some-kiali.url",
+								},
+							},
+							"tracing":            "true",
+							"enable_locality_lb": "true",
+							"proxy": []map[string]interface{}{
+								{
+									"request_memory": "512Mi",
+									"cluster_domain": "512Mi",
+									"limit_memory":   "512Mi",
+									"request_cpu":    "512Mi",
+									"limit_cpu":      "512Mi",
+								},
+							},
+							"prometheus": []map[string]interface{}{
+								{
+									"use_external": "true",
+								},
+							},
+							"access_log": []map[string]interface{}{
+								{
+									"enabled": "true",
+								},
+							},
+							"customized_zipkin": "true",
+						},
+					},
+					"customized_prometheus": "true",
+					"prometheus_url":        "https://out.prometheus.url",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"customized_prometheus": "true",
+						"prometheus_url":        "https://out.prometheus.url",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"init_cni_configuration": []map[string]interface{}{
+										{
+											"exclude_namespaces": "another,istio-system,kube-system",
+											"enabled":            "true",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"version": "${var.istio-version-2}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"version": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+var AlicloudServiceMeshServiceMeshMap4560 = map[string]string{
+	"mesh_config.#":         CHECKSET,
+	"kubeconfig":            CHECKSET,
+	"status":                CHECKSET,
+	"create_time":           CHECKSET,
+	"load_balancer.#":       CHECKSET,
+	"cluster_spec":          CHECKSET,
+	"extra_configuration.#": CHECKSET,
+}
+
+func AlicloudServiceMeshServiceMeshBasicDependence4560(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+variable "cluster-1" {
+  default = "c812c50970fb34e92b1b557a33e205e5d"
+}
+
+variable "cluster-2" {
+  default = "ced1f5de824f74967b472813616916eb5"
+}
+
+variable "vsw-id" {
+  default = "vsw-bp1k8z9x1z9m5bx4p7tcc"
+}
+
+variable "istio-version" {
+  default = "v1.17.2.27-g854e3b73-aliyun"
+}
+
+variable "vpc-id" {
+  default = "vpc-bp1imspdu1ikr5j4jslkv"
+}
+
+variable "region" {
+  default = "cn-hangzhou"
+}
+
+variable "cluster-3" {
+  default = "cb926fe87f31d4fefa577dbf4108202ae"
+}
+
+variable "istio-version-2" {
+  default = "v1.18.0.114-g105fcfd0-aliyun"
+}
+
+
+`, name)
+}
+
+// Test ServiceMesh ServiceMesh. <<< Resource test cases, automatically generated.
