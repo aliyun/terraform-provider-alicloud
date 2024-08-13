@@ -78,7 +78,8 @@ The following arguments are supported:
   - Custom storage space.
   - 10-GB increments.
 * `storage_engine` (Optional, ForceNew) The storage engine of the instance. Default value: `WiredTiger`. Valid values: `WiredTiger`, `RocksDB`.
-* `storage_type` - (Optional, ForceNew, Available since v1.199.0) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `local_ssd`.
+* `storage_type` - (Optional, Available since v1.199.0) The storage type of the instance. Valid values: `cloud_essd1`, `cloud_essd2`, `cloud_essd3`, `cloud_auto`, `local_ssd`. **NOTE:** From version 1.229.0, `storage_type` can be modified. However, `storage_type` can only be modified to `cloud_auto`.
+* `provisioned_iops` - (Optional, Int, Available since v1.229.0) The provisioned IOPS. Valid values: `0` to `50000`.
 * `vpc_id` - (Optional, ForceNew, Available since v1.161.0) The ID of the VPC. -> **NOTE:** `vpc_id` is valid only when `network_type` is set to `VPC`.
 * `vswitch_id` - (Optional, ForceNew) The virtual switch ID to launch DB instances in one VPC.
 * `zone_id` - (Optional, ForceNew) The Zone to launch the DB instance. it supports multiple zone.
