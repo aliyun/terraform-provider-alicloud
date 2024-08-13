@@ -111,12 +111,12 @@ The following arguments are supported:
 * `kibana_domain` - (Computed, Available since 1.197.0) Kibana console domain (Internet access supported).
 * `kibana_port` - (Computed, Available since 1.197.0) Kibana console port.
 * `status` - (Computed, Available since 1.197.0) The Elasticsearch instance status. Includes `active`, `activating`, `inactive`. Some operations are denied when status is not `active`.
-* `warm_node_spec` - (Optional, Available since v.1.228.0) The warm node specifications of the Elasticsearch instance.
-* `warm_node_amount` - (Optional, Available since v.1.228.0) The Elasticsearch cluster's warm node quantity, between 3 and 50.
-* `warm_node_disk_size` - (Optional, Available since v.1.228.0) The single warm node storage space, should between 500 and 20480
-* `warm_node_disk_type` - (Optional, Available since v.1.228.0) The warm node disk type. Supported values:  cloud_efficiency.
-* `warm_node_disk_encrypted` - (Optional, ForceNew, Available since v.1.228.0) If encrypt the warm node disk. Valid values are `true`, `false`. Default to `false`.
-* `kibana_private_security_group_id` - (Optional, Available since v.1.228.0) the security group id associated with Kibana private network, this param is required when `enable_kibana_private_network` set true, and the security group id should in the same VPC as `vswitch_id`
+* `warm_node_spec` - (Optional, Available since v.1.229.0) The warm node specifications of the Elasticsearch instance.
+* `warm_node_amount` - (Optional, Available since v.1.229.0) The Elasticsearch cluster's warm node quantity, between 3 and 50.
+* `warm_node_disk_size` - (Optional, Available since v.1.229.0) The single warm node storage space, should between 500 and 20480
+* `warm_node_disk_type` - (Optional, Available since v.1.229.0) The warm node disk type. Supported values:  cloud_efficiency.
+* `warm_node_disk_encrypted` - (Optional, ForceNew, Available since v.1.229.0) If encrypt the warm node disk. Valid values are `true`, `false`. Default to `false`.
+* `kibana_private_security_group_id` - (Optional, Available since v.1.229.0) the security group id associated with Kibana private network, this param is required when `enable_kibana_private_network` set true, and the security group id should in the same VPC as `vswitch_id`
 
 
 ## Timeouts
