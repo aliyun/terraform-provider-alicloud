@@ -44,9 +44,12 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"cloud_essd1", "cloud_essd2", "cloud_essd3", "local_ssd"}, false),
+				ValidateFunc: StringInSlice([]string{"cloud_essd1", "cloud_essd2", "cloud_essd3", "cloud_auto", "local_ssd"}, false),
+			},
+			"provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
 			},
 			"protocol_type": {
 				Type:         schema.TypeString,
@@ -149,10 +152,9 @@ func resourceAliCloudMongoDBShardingInstance() *schema.Resource {
 				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"tde_status": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"enabled"}, false),
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("engine_version").(string) < "4.0"
 				},
@@ -294,6 +296,10 @@ func resourceAliCloudMongoDBShardingInstanceCreate(d *schema.ResourceData, meta 
 
 	if v, ok := d.GetOk("storage_type"); ok {
 		request["StorageType"] = v
+	}
+
+	if v, ok := d.GetOkExists("provisioned_iops"); ok {
+		request["ProvisionedIops"] = v
 	}
 
 	if v, ok := d.GetOk("protocol_type"); ok {
@@ -478,6 +484,7 @@ func resourceAliCloudMongoDBShardingInstanceRead(d *schema.ResourceData, meta in
 	d.Set("engine_version", object["EngineVersion"])
 	d.Set("storage_engine", object["StorageEngine"])
 	d.Set("storage_type", object["StorageType"])
+	d.Set("provisioned_iops", formatInt(object["ProvisionedIops"]))
 	d.Set("protocol_type", object["ProtocolType"])
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
@@ -692,6 +699,62 @@ func resourceAliCloudMongoDBShardingInstanceUpdate(d *schema.ResourceData, meta 
 		}
 
 		d.SetPartial("engine_version")
+	}
+
+	update = false
+	modifyDBInstanceDiskTypeReq := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+
+	if !d.IsNewResource() && d.HasChange("storage_type") {
+		update = true
+	}
+	if v, ok := d.GetOk("storage_type"); ok {
+		modifyDBInstanceDiskTypeReq["DbInstanceStorageType"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("provisioned_iops") {
+		update = true
+
+		if v, ok := d.GetOkExists("provisioned_iops"); ok {
+			modifyDBInstanceDiskTypeReq["ProvisionedIops"] = v
+		}
+	}
+
+	if update {
+		action := "ModifyDBInstanceDiskType"
+		conn, err := client.NewDdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-12-01"), StringPointer("AK"), nil, modifyDBInstanceDiskTypeReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBInstanceDiskTypeReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 1*time.Minute, ddsService.RdsMongodbDBShardingInstanceStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapError(err)
+		}
+
+		d.SetPartial("storage_type")
+		d.SetPartial("provisioned_iops")
 	}
 
 	update = false

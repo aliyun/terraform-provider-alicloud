@@ -246,11 +246,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Monday", "Tuesday", "Wednesday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "1",
+						"backup_period.#": "3",
 					}),
 				),
 			},
@@ -372,7 +372,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 					"account_password":     "YourPassword_123",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"backup_time":          "11:00Z-12:00Z",
-					"backup_period":        []string{"Wednesday"},
+					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
 					"tde_status":           "enabled",
 					"mongo_list": []map[string]interface{}{
 						{
@@ -415,7 +415,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic0_twin(t *testing.T) {
 						"account_password":     "YourPassword_123",
 						"resource_group_id":    CHECKSET,
 						"backup_time":          "11:00Z-12:00Z",
-						"backup_period.#":      "1",
+						"backup_period.#":      "3",
 						"tde_status":           "enabled",
 						"mongo_list.#":         "2",
 						"shard_list.#":         "2",
@@ -471,18 +471,18 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 					"shard_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.8x.large.d",
-							"node_storage": "20",
+							"node_storage": "50",
 						},
 						{
 							"node_class":        "mdb.shard.8x.xlarge.d",
-							"node_storage":      "50",
+							"node_storage":      "60",
 							"readonly_replicas": "1",
 						},
 					},
 					"config_server_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.2x.xlarge.d",
-							"node_storage": "30",
+							"node_storage": "80",
 						},
 					},
 				}),
@@ -503,6 +503,18 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"engine_version": "5.0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_type":     "cloud_auto",
+					"provisioned_iops": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_type":     "cloud_auto",
+						"provisioned_iops": "60",
 					}),
 				),
 			},
@@ -568,11 +580,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"backup_period": []string{"Wednesday"},
+					"backup_period": []string{"Monday", "Tuesday", "Wednesday"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"backup_period.#": "1",
+						"backup_period.#": "3",
 					}),
 				),
 			},
@@ -616,11 +628,11 @@ func TestAccAliCloudMongoDBShardingInstance_basic1(t *testing.T) {
 					"shard_list": []map[string]interface{}{
 						{
 							"node_class":   "mdb.shard.8x.large.d",
-							"node_storage": "20",
+							"node_storage": "60",
 						},
 						{
 							"node_class":        "mdb.shard.8x.xlarge.d",
-							"node_storage":      "60",
+							"node_storage":      "80",
 							"readonly_replicas": "1",
 						},
 						// There is an api bug that does not support to update readonly_replicas
@@ -672,7 +684,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"engine_version":       "4.4",
 					"storage_engine":       "WiredTiger",
-					"storage_type":         "cloud_essd2",
+					"storage_type":         "cloud_auto",
+					"provisioned_iops":     "2000",
 					"protocol_type":        "mongodb",
 					"vpc_id":               "${alicloud_vswitch.default.vpc_id}",
 					"vswitch_id":           "${alicloud_vswitch.default.id}",
@@ -685,7 +698,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					"account_password":     "YourPassword_123",
 					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 					"backup_time":          "11:00Z-12:00Z",
-					"backup_period":        []string{"Wednesday"},
+					"backup_period":        []string{"Monday", "Tuesday", "Wednesday"},
 					"mongo_list": []map[string]interface{}{
 						{
 							"node_class": "mdb.shard.8x.large.d",
@@ -720,7 +733,8 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 					testAccCheck(map[string]string{
 						"engine_version":       "4.4",
 						"storage_engine":       "WiredTiger",
-						"storage_type":         "cloud_essd2",
+						"storage_type":         "cloud_auto",
+						"provisioned_iops":     "2000",
 						"protocol_type":        "mongodb",
 						"vpc_id":               CHECKSET,
 						"vswitch_id":           CHECKSET,
@@ -733,7 +747,7 @@ func TestAccAliCloudMongoDBShardingInstance_basic1_twin(t *testing.T) {
 						"account_password":     "YourPassword_123",
 						"resource_group_id":    CHECKSET,
 						"backup_time":          "11:00Z-12:00Z",
-						"backup_period.#":      "1",
+						"backup_period.#":      "3",
 						"mongo_list.#":         "2",
 						"shard_list.#":         "2",
 						"config_server_list.#": "1",
