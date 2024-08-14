@@ -800,6 +800,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 * `update` - (Defaults to 30 mins) Used when updating the db instance (until it reaches the initial `Running` status).
 * `delete` - (Defaults to 20 mins) Used when terminating the db instance.
 
+-> **NOTE:** If the current instance is an instance of SqlServer _std_ha Standard Edition, you are advised to set the Timeouts time to 100 minutes when releasing the instance.
 ## Import
 
 RDS instance can be imported using the id, e.g.

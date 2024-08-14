@@ -634,14 +634,9 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 						"instance_storage":           CHECKSET,
 						"instance_name":              name,
 						"sql_collector_config_value": CHECKSET,
+						"tde_status":                 CHECKSET,
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "sql_collector_status"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -668,10 +663,9 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 			//UpgradeDBInstanceKernelVersion
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"upgrade_db_instance_kernel_version": "false",
-					"upgrade_time":                       "Immediate",
-					"switch_time":                        "2020-01-15T00:00:00Z",
-					"target_minor_version":               "rds_20201031",
+					"upgrade_time":         "Immediate",
+					"switch_time":          "2020-01-15T00:00:00Z",
+					"target_minor_version": "rds_20201031",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -710,6 +704,12 @@ func TestAccAliCloudRdsDBInstance_VpcId(t *testing.T) {
 						"vswitch_id": CHECKSET,
 					}),
 				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "force_restart", "db_is_ignore_case", "tde_status", "sql_collector_status", "role_arn"},
 			},
 		},
 	})
@@ -1853,12 +1853,6 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy"},
-			},
-			{
 				Config: testAccConfig(map[string]interface{}{
 					"deletion_protection": "false",
 				}),
@@ -2051,6 +2045,15 @@ func TestAccAliCloudRdsDBInstance_PostgreSQL_15_0_Babelfish(t *testing.T) {
 						"released_keep_policy": "None",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateVerifyIgnore: []string{"force_restart", "db_is_ignore_case", "fresh_white_list_readins", "released_keep_policy", "babelfish_config.#",
+					"client_ca_enabled", "client_crl_enabled", "db_instance_ip_array_name", "encryption_key", "security_group_id", "modify_mode", "security_ip_type",
+					"whitelist_network_type", "babelfish_config.2289427611.babelfish_enabled", "babelfish_config.2289427611.master_user_password", "babelfish_config.2289427611.master_username",
+					"babelfish_config.2289427611.migration_mode"},
 			},
 		},
 	})
@@ -3340,11 +3343,77 @@ data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
   zone_id = data.alicloud_db_zones.default.zones.0.id
 }
+resource "alicloud_ram_policy" "default" {
+  policy_name = "${var.name}"
+  policy_document = <<EOF
+	{
+	  "Statement": [
+		{
+          "Action": [
+              "kms:List*",
+              "kms:DescribeKey",
+              "kms:TagResource",
+              "kms:UntagResource"
+          ],
+          "Resource": [
+              "acs:kms:*:*:*"
+          ],
+          "Effect": "Allow"
+      	},
+      	{
+          "Action": [
+              "kms:Encrypt",
+              "kms:Decrypt",
+              "kms:GenerateDataKey"
+          ],
+          "Resource": [
+              "acs:kms:*:*:*"
+          ],
+          "Effect": "Allow",
+          "Condition": {
+              "StringEqualsIgnoreCase": {
+                  "kms:tag/acs:rds:instance-encryption": "true"
+              }
+          }
+      	}
+	  ],
+		"Version": "1"
+	}
+  EOF
+  description = "this is a policy test"
+  force = true
+}
+resource "alicloud_ram_role" "default" {
+  name = "${var.name}"
+  document = <<EOF
+	{
+	  "Statement": [
+		{
+		  "Action": "sts:AssumeRole",
+		  "Effect": "Allow",
+		  "Principal": {
+			"Service": [
+			  "rds.aliyuncs.com"
+			]
+		  }
+		}
+	  ],
+	  "Version": "1"
+	}
+  EOF
+  description = "this is a test"
+  force = true
+}
+resource "alicloud_ram_role_policy_attachment" "default" {
+  policy_name = "${alicloud_ram_policy.default.policy_name}"
+  role_name = "${alicloud_ram_role.default.name}"
+  policy_type = "${alicloud_ram_policy.default.type}"
+}
 
 resource "alicloud_kms_key" "default" {
   description = var.name
   pending_window_in_days  = 7
-  key_state               = "Enabled"
+  status               = "Enabled"
 }
 
 `, name)
@@ -3393,7 +3462,7 @@ func TestAccAliCloudRdsDBInstanceMysql_DBEncryptionKey(t *testing.T) {
 						"instance_charge_type":     CHECKSET,
 						"instance_name":            name,
 						"db_instance_storage_type": "cloud_essd",
-						"monitoring_period":        "300",
+						"monitoring_period":        CHECKSET,
 					}),
 				),
 			},
@@ -3649,7 +3718,7 @@ data "alicloud_db_zones" "default"{
 }
 
 data "alicloud_db_instance_classes" "default" {
-    zone_id = data.alicloud_db_zones.default.zones.1.id
+    zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "MySQL"
 	engine_version = "8.0"
     category = "HighAvailability"
@@ -3663,19 +3732,19 @@ data "alicloud_vpcs" "default" {
 }
 data "alicloud_vswitches" "default" {
   vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_db_zones.default.zones.1.multi_zone_ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.multi_zone_ids.0
 }
 
 resource "alicloud_vswitch" "this" {
  count = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
  vswitch_name = var.name
  vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_db_zones.default.zones.1.multi_zone_ids.0
+ zone_id = data.alicloud_db_zones.default.zones.0.multi_zone_ids.0
  cidr_block = cidrsubnet(data.alicloud_vpcs.default.vpcs.0.cidr_block, 8, 4)
 }
 locals {
   vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids.0 : concat(alicloud_vswitch.this.*.id, [""])[0]
-  zone_id = data.alicloud_db_zones.default.zones.1.multi_zone_ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.multi_zone_ids.0
 }
 
 resource "alicloud_security_group" "default" {
@@ -3757,7 +3826,7 @@ func TestAccAliCloudRdsDBInstanceMysql_general_essd(t *testing.T) {
 						"instance_charge_type":     CHECKSET,
 						"instance_name":            name,
 						"db_instance_storage_type": "general_essd",
-						"monitoring_period":        "300",
+						"monitoring_period":        CHECKSET,
 					}),
 				),
 			},

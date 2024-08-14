@@ -1840,7 +1840,7 @@ func resourceAliCloudDBInstanceRead(d *schema.ResourceData, meta interface{}) er
 		if err != nil && !IsExpectedErrors(err, DBInstanceTDEErrors) {
 			return WrapError(err)
 		}
-		d.Set("tde_Status", tdeInfo["TDEStatus"])
+		d.Set("tde_status", tdeInfo["TDEStatus"])
 	}
 	res, err := rdsService.DescribeHASwitchConfig(d.Id())
 	if err != nil {
