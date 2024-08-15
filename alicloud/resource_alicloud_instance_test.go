@@ -3792,7 +3792,107 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSInstanceNetworkInterface(t *testing.T) {
+func TestAccAliCloudECSInstanceNetworkInterface0(t *testing.T) {
+	var v ecs.Instance
+	resourceId := "alicloud_instance.default"
+	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
+	serviceFunc := func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	rand := acctest.RandIntRange(1000, 9999)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAcc%sEcsInstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceNetworkInterfaceDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.TestSalveRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_id":                       "${data.alicloud_images.default.images.0.id}",
+					"instance_type":                  "ecs.c8i.48xlarge",
+					"availability_zone":              "cn-hangzhou-k",
+					"internet_charge_type":           "PayByTraffic",
+					"vswitch_id":                     "${alicloud_vswitch.default.id}",
+					"internet_max_bandwidth_out":     "10",
+					"system_disk_category":           "cloud_essd",
+					"instance_name":                  "${var.name}",
+					"user_data":                      "I_am_user_data",
+					"security_groups":                []string{"${alicloud_security_group.default.id}"},
+					"network_interface_traffic_mode": "HighPerformance",
+					"network_card_index":             "0",
+					"queue_pair_number":              "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":                  name,
+						"internet_max_bandwidth_out":     "10",
+						"system_disk_category":           "cloud_essd",
+						"public_ip":                      CHECKSET,
+						"network_interface_traffic_mode": "HighPerformance",
+						"network_card_index":             "0",
+						"queue_pair_number":              "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vswitch_id": "${alicloud_vswitch.update.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vswitch_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"security_groups": []string{"${alicloud_security_group.default.id}"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"security_groups.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_ip": "${cidrhost(alicloud_vswitch.update.cidr_block, 100)}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"private_ip": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data": "${base64encode(\"I am the user data\")}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data": "SSBhbSB0aGUgdXNlciBkYXRh",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -3901,7 +4001,7 @@ func TestAccAliCloudECSInstanceNetworkInterface(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
+func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
@@ -3979,7 +4079,7 @@ func TestAccAliCloudECSInstanceNetworkInterface1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSInstanceNetworkInterface2(t *testing.T) {
+func TestAccAliCloudECSInstanceNetworkInterface3(t *testing.T) {
 	var v ecs.Instance
 	resourceId := "alicloud_instance.default"
 	ra := resourceAttrInit(resourceId, testAccInstanceCheckMap)
