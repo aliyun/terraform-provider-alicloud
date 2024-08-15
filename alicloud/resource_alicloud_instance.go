@@ -1038,7 +1038,9 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 
 			networkInterfacesMaps = append(networkInterfacesMaps, secondaryNetworkInterfacesMap)
 		}
+	}
 
+	if len(networkInterfacesMaps) > 0 {
 		request["NetworkInterface"] = networkInterfacesMaps
 	}
 
