@@ -1816,6 +1816,11 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		TerraformTraceId:     strings.Trim(uuid.New().String(), "-"),
 		TerraformVersion:     p.TerraformVersion,
 	}
+
+	if v := os.Getenv("ALICLOUD_TERRAFORM_TRACE"); v != "" {
+		config.TerraformTraceId = v
+	}
+
 	log.Println("alicloud provider trace id:", config.TerraformTraceId)
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)

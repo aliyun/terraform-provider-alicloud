@@ -50,6 +50,10 @@ func TestProvider_impl(t *testing.T) {
 	var _ terraform.ResourceProvider = Provider()
 }
 
+func testAccSetTerraformTraceId(resourceId string) {
+	os.Setenv("ALICLOUD_TERRAFORM_TRACE", fmt.Sprintf("%s-%s", "TerraformAccTest", resourceId))
+}
+
 func testAccPreCheck(t *testing.T) {
 	if v := os.Getenv("ALICLOUD_ACCESS_KEY"); v == "" {
 		t.Fatal("ALICLOUD_ACCESS_KEY must be set for acceptance tests")
