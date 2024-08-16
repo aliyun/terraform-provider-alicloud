@@ -898,6 +898,11 @@ func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 				if _parameterValue, err := strconv.Atoi(i.ParameterValue); err == nil {
 					d.Set(i.ParameterName, _parameterValue)
 				}
+			} else if d.Get("db_type").(string) == "MySQL" && d.Get("db_version") == "5.6" && i.ParameterName == "loose_polar_log_bin" {
+				// mysql 5.6 loose_polar_log_bin values: ON_WITH_GTID、OFF
+				if i.ParameterValue == "ON_WITH_GTID" {
+					d.Set(i.ParameterName, "ON")
+				}
 			} else {
 				d.Set(i.ParameterName, i.ParameterValue)
 			}
@@ -1386,6 +1391,14 @@ func (s *PolarDBService) PolarDBClusterStateRefreshFunc(id string, failStates []
 // Running, we should wait until parameters have expected values.
 func (s *PolarDBService) WaitForPolarDBParameter(clusterId string, timeout int, expects map[string]string) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
+	// get engine and engineVersion
+	attrbuteInfo, err := s.DescribePolarDBClusterAttribute(clusterId)
+	if err != nil {
+		return WrapError(err)
+	}
+	dbType := fmt.Sprint(attrbuteInfo.DBType)
+	db_version := fmt.Sprint(attrbuteInfo.DBVersion)
+
 	for {
 		object, err := s.DescribeParameters(clusterId)
 		if err != nil {
@@ -1394,6 +1407,12 @@ func (s *PolarDBService) WaitForPolarDBParameter(clusterId string, timeout int, 
 
 		var actuals = make(map[string]string)
 		for _, i := range object.RunningParameters.Parameter {
+			// mysql 5.6 loose_polar_log_bin values: ON_WITH_GTID、OFF
+			if dbType == "MySQL" && db_version == "5.6" && i.ParameterName == "loose_polar_log_bin" {
+				if i.ParameterValue == "ON_WITH_GTID" {
+					i.ParameterValue = "ON"
+				}
+			}
 			actuals[i.ParameterName] = i.ParameterValue
 		}
 
