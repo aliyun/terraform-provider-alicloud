@@ -187,30 +187,45 @@ func (c *CrService) DescribeCrEENamespace(id string) (*cr_ee.GetNamespaceRespons
 	if err != nil {
 		return response, WrapError(err)
 	}
+
 	request := cr_ee.CreateGetNamespaceRequest()
 	request.RegionId = c.client.RegionId
 	request.InstanceId = parts[0]
 	request.NamespaceName = parts[1]
-	action := request.GetActionName()
 
-	raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-		return creeClient.GetNamespace(request)
-	})
-	if err != nil {
-		if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+	var raw interface{}
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+			return creeClient.GetNamespace(request)
+		})
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	addDebug(action, raw, request.RpcRequest, request)
+		return nil
+	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 	response, _ = raw.(*cr_ee.GetNamespaceResponse)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NAMESPACE_NOT_EXIST"}) {
+			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Namespace", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
+		}
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+
 	if !response.GetNamespaceIsSuccess {
 		if response.Code == "NAMESPACE_NOT_EXIST" {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Namespace", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
-		return response, WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
+
 	return response, nil
 }
 
