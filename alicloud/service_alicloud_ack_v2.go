@@ -60,8 +60,9 @@ func (s *AckServiceV2) DescribeAckNodepool(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -86,7 +87,7 @@ func (s *AckServiceV2) AckNodepoolStateRefreshFunc(id string, field string, fail
 	}
 }
 
-func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
+func (s *AckServiceV2) DescribeAsyncNodepoolDescribeTaskInfo(d *schema.ResourceData, res map[string]interface{}) (object map[string]interface{}, err error) {
 	client := s.client
 	id := d.Id()
 	task_id, err := jsonpath.Get("$.body.task_id", res)
@@ -125,13 +126,14 @@ func (s *AckServiceV2) DescribeAsyncDescribeTaskInfo(d *schema.ResourceData, res
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *AckServiceV2) DescribeAsyncAckNodepoolStateRefreshFunc(d *schema.ResourceData, res map[string]interface{}, field string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
-		object, err := s.DescribeAsyncDescribeTaskInfo(d, res)
+		object, err := s.DescribeAsyncNodepoolDescribeTaskInfo(d, res)
 		if err != nil {
 			if NotFoundError(err) {
 				return object, "", nil
