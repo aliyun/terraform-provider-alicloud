@@ -118,7 +118,7 @@ func resourceAliCloudCdnDomainConfigCreate(d *schema.ResourceData, meta interfac
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -213,7 +213,7 @@ func resourceAliCloudCdnDomainConfigUpdate(d *schema.ResourceData, meta interfac
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -340,7 +340,7 @@ func resourceAliCloudCdnDomainConfigDelete(d *schema.ResourceData, meta interfac
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-05-10"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"ServiceBusy"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
