@@ -30,7 +30,7 @@ func resourceAlicloudCrEENamespace() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 30),
+				ValidateFunc: validation.StringLenBetween(2, 120),
 			},
 			"auto_create": {
 				Type:     schema.TypeBool,

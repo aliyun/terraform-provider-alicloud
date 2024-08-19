@@ -29,13 +29,13 @@ func resourceAlicloudCrEERepo() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 30),
+				ValidateFunc: validation.StringLenBetween(2, 120),
 			},
 			"name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 64),
+				ValidateFunc: validation.StringLenBetween(2, 120),
 			},
 			"summary": {
 				Type:         schema.TypeString,
