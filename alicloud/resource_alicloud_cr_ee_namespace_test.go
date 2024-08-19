@@ -17,10 +17,11 @@ func init() {
 		F:    testSweepCrEENamespace,
 	})
 }
+
 func testSweepCrEENamespace(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapError(fmt.Errorf("error getting Alicloud client: %s", err))
+		return WrapError(fmt.Errorf("error getting AliCloud client: %s", err))
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	crService := &CrService{client}
@@ -60,20 +61,18 @@ func testSweepCrEENamespace(region string) error {
 	return nil
 }
 
-func TestAccAlicloudCREENamespace_Basic(t *testing.T) {
-	var v *cr_ee.GetNamespaceResponse
+func TestAccAliCloudCREENamespace_basic0(t *testing.T) {
+	var v map[string]interface{}
 	resourceId := "alicloud_cr_ee_namespace.default"
-	ra := resourceAttrInit(resourceId, nil)
-	serviceFunc := func() interface{} {
+	ra := resourceAttrInit(resourceId, AliCloudCREENamespaceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeCrEENamespace")
+	}, "DescribeCrEENamespace")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCrEENamespaceConfigDependence)
-
+	name := fmt.Sprintf("tf-testacc-cr-namespace-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCREENamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -84,24 +83,15 @@ func TestAccAlicloudCREENamespace_Basic(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":        "${data.alicloud_cr_ee_instances.default.ids.0}",
-					"name":               name,
-					"auto_create":        "false",
-					"default_visibility": "PUBLIC",
+					"instance_id": "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"name":        name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_id":        CHECKSET,
-						"name":               name,
-						"auto_create":        "false",
-						"default_visibility": "PUBLIC",
+						"instance_id": CHECKSET,
+						"name":        name,
 					}),
 				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -115,46 +105,35 @@ func TestAccAlicloudCREENamespace_Basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"default_visibility": "PRIVATE",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"default_visibility": "PRIVATE",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"name":               name,
-					"auto_create":        "false",
 					"default_visibility": "PUBLIC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               name,
-						"auto_create":        "false",
 						"default_visibility": "PUBLIC",
 					}),
 				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCREENamespace_Multi(t *testing.T) {
-	var v *cr_ee.GetNamespaceResponse
-	resourceId := "alicloud_cr_ee_namespace.default.4"
-	ra := resourceAttrInit(resourceId, nil)
-	serviceFunc := func() interface{} {
+func TestAccAliCloudCREENamespace_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_namespace.default"
+	ra := resourceAttrInit(resourceId, AliCloudCREENamespaceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, serviceFunc, "DescribeCrEENamespace")
+	}, "DescribeCrEENamespace")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(1000000, 9999999)
-	name := fmt.Sprintf("tf-testacc-cr-ns-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceCrEENamespaceConfigDependence)
-
+	name := fmt.Sprintf("tf-testacc-cr-namespace-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCREENamespaceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -166,16 +145,62 @@ func TestAccAlicloudCREENamespace_Multi(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_id":        "${data.alicloud_cr_ee_instances.default.ids.0}",
-					"name":               name + "${count.index}",
-					"auto_create":        "false",
+					"name":               name,
+					"auto_create":        "true",
 					"default_visibility": "PUBLIC",
-					"count":              "5",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":               name + fmt.Sprint(4),
-						"auto_create":        "false",
+						"instance_id":        CHECKSET,
+						"name":               name,
+						"auto_create":        "true",
 						"default_visibility": "PUBLIC",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCREENamespace_Multi(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cr_ee_namespace.default.5"
+	ra := resourceAttrInit(resourceId, AliCloudCREENamespaceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CrService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCrEENamespace")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testacc-cr-namespace-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCREENamespaceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"count":              "6",
+					"instance_id":        "${data.alicloud_cr_ee_instances.default.ids.0}",
+					"name":               name + "-${count.index}",
+					"auto_create":        "false",
+					"default_visibility": "PRIVATE",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":        CHECKSET,
+						"name":               name + fmt.Sprint(-5),
+						"auto_create":        "false",
+						"default_visibility": "PRIVATE",
 					}),
 				),
 			},
@@ -183,11 +208,17 @@ func TestAccAlicloudCREENamespace_Multi(t *testing.T) {
 	})
 }
 
-func resourceCrEENamespaceConfigDependence(name string) string {
+var AliCloudCREENamespaceMap0 = map[string]string{
+	"default_visibility": CHECKSET,
+}
+
+func AliCloudCREENamespaceBasicDependence0(name string) string {
 	return fmt.Sprintf(`
 	variable "name" {
 		default = "%s"
 	}
-	data "alicloud_cr_ee_instances" "default" {}
+
+	data "alicloud_cr_ee_instances" "default" {
+	}
 `, name)
 }
