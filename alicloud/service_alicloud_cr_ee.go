@@ -323,16 +323,16 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 	if err != nil {
 		return response, WrapError(err)
 	}
+
 	request := cr_ee.CreateGetRepositoryRequest()
 	request.RegionId = c.client.RegionId
 	request.InstanceId = parts[0]
 	request.RepoNamespaceName = parts[1]
 	request.RepoName = parts[2]
-	action := request.GetActionName()
 
 	var raw interface{}
 	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
 		raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
 			return creeClient.GetRepository(request)
 		})
@@ -343,22 +343,24 @@ func (c *CrService) DescribeCrEERepo(id string) (*cr_ee.GetRepositoryResponse, e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, raw, request.RpcRequest, request)
-		response, _ = raw.(*cr_ee.GetRepositoryResponse)
 		return nil
 	})
+	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
+	response, _ = raw.(*cr_ee.GetRepositoryResponse)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"REPO_NOT_EXIST"}) {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Repo", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
-		return response, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	if !response.GetRepositoryIsSuccess {
 		if response.Code == "REPO_NOT_EXIST" {
-			return response, WrapErrorf(err, NotFoundMsg, AlibabaCloudSdkGoERROR)
+			return response, WrapErrorf(Error(GetNotFoundMessage("CrEE:Repo", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response.RequestId))
 		}
-		return response, WrapErrorf(fmt.Errorf("%v", response), NotFoundMsg, AlibabaCloudSdkGoERROR)
+		return response, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 
 	return response, nil
