@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -384,6 +383,8 @@ func resourceAliCloudNlbLoadBalancerRead(d *schema.ResourceData, meta interface{
 	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
 	d.Set("status", objectRaw["LoadBalancerStatus"])
 	d.Set("vpc_id", objectRaw["VpcId"])
+	d.Set("dns_name", objectRaw["DNSName"])
+	d.Set("load_balancer_business_status", objectRaw["LoadBalancerBusinessStatus"])
 
 	deletionProtectionConfigMaps := make([]map[string]interface{}, 0)
 	deletionProtectionConfigMap := make(map[string]interface{})

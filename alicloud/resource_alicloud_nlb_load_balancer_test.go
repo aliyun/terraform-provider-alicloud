@@ -394,16 +394,18 @@ func TestAccAliCloudNlbLoadBalancer_basic1(t *testing.T) {
 }
 
 var AlicloudNLBLoadBalancerMap0 = map[string]string{
-	"cross_zone_enabled": CHECKSET,
-	"load_balancer_type": CHECKSET,
-	"status":             CHECKSET,
-	"address_ip_version": CHECKSET,
-	"load_balancer_name": CHECKSET,
-	"vpc_id":             CHECKSET,
-	"zone_mappings.#":    CHECKSET,
-	"address_type":       CHECKSET,
-	"resource_group_id":  CHECKSET,
-	"tags.%":             CHECKSET,
+	"cross_zone_enabled":            CHECKSET,
+	"load_balancer_type":            CHECKSET,
+	"status":                        CHECKSET,
+	"address_ip_version":            CHECKSET,
+	"load_balancer_name":            CHECKSET,
+	"vpc_id":                        CHECKSET,
+	"zone_mappings.#":               CHECKSET,
+	"address_type":                  CHECKSET,
+	"resource_group_id":             CHECKSET,
+	"dns_name":                      CHECKSET,
+	"load_balancer_business_status": CHECKSET,
+	"tags.%":                        CHECKSET,
 }
 
 func AlicloudNLBLoadBalancerBasicDependence0(name string) string {
