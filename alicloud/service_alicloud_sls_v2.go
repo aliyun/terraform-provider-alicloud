@@ -247,7 +247,6 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var hostMap map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
@@ -260,8 +259,7 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	hostMap = make(map[string]*string)
-	hostMap["logstore"] = StringPointer(parts[1])
+	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
 	runtime := util.RuntimeOptions{}
@@ -280,22 +278,22 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var hostMap map[string]*string
 	parts := strings.Split(id, ":")
 	if len(parts) != 2 {
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
@@ -308,8 +306,7 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
-	hostMap = make(map[string]*string)
-	hostMap["logstore"] = StringPointer(parts[1])
+	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
 
 	runtime := util.RuntimeOptions{}
@@ -328,15 +325,16 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LogStoreNotExist"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("LogStore", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *SlsServiceV2) SlsLogStoreStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

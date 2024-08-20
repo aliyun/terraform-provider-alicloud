@@ -103,6 +103,10 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"infrequent_access_ttl": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"logstore_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -204,10 +208,8 @@ func resourceAliCloudSlsLogStore() *schema.Resource {
 
 func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{}) error {
 
-	client := meta.(*connectivity.AliyunClient)
-
 	if v, ok := d.GetOk("telemetry_type"); ok && v == "Metrics" {
-
+		client := meta.(*connectivity.AliyunClient)
 		projectName := d.Get("project_name").(string)
 		if v, ok := d.GetOkExists("project"); ok {
 			projectName = v.(string)
@@ -243,6 +245,8 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		return resourceAliCloudSlsLogStoreUpdate(d, meta)
 	}
 
+	client := meta.(*connectivity.AliyunClient)
+
 	action := fmt.Sprintf("/logstores")
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -263,13 +267,14 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		request["logstoreName"] = v
 	}
 
-	if v, ok := d.GetOk("shard_count"); ok {
+	request["shardCount"] = 2
+	if v, ok := d.GetOkExists("shard_count"); ok {
 		request["shardCount"] = v
 	}
-	if v, ok := d.GetOkExists("auto_split"); ok {
+	if v, ok := d.GetOk("auto_split"); ok {
 		request["autoSplit"] = v
 	}
-	if v, ok := d.GetOkExists("append_meta"); ok {
+	if v, ok := d.GetOk("append_meta"); ok {
 		request["appendMeta"] = v
 	}
 	if v, ok := d.GetOk("telemetry_type"); ok {
@@ -282,51 +287,58 @@ func resourceAliCloudSlsLogStoreCreate(d *schema.ResourceData, meta interface{})
 		request["mode"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
+
 	if v := d.Get("encrypt_conf"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].enable", d.Get("encrypt_conf"))
-		if nodeNative != "" {
-			objectDataLocalMap["enable"] = nodeNative
+		enable1, _ := jsonpath.Get("$[0].enable", d.Get("encrypt_conf"))
+		if enable1 != nil && enable1 != "" {
+			objectDataLocalMap["enable"] = enable1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].encrypt_type", d.Get("encrypt_conf"))
-		if nodeNative1 != "" {
-			objectDataLocalMap["encrypt_type"] = nodeNative1
+		encryptType, _ := jsonpath.Get("$[0].encrypt_type", d.Get("encrypt_conf"))
+		if encryptType != nil && encryptType != "" {
+			objectDataLocalMap["encrypt_type"] = encryptType
 		}
+		user_cmk_info := make(map[string]interface{})
+		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
+		if cmkKeyId != nil && cmkKeyId != "" {
+			user_cmk_info["cmk_key_id"] = cmkKeyId
+		}
+		arn1, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
+		if arn1 != nil && arn1 != "" {
+			user_cmk_info["arn"] = arn1
+		}
+		regionId, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
+		if regionId != nil && regionId != "" {
+			user_cmk_info["region_id"] = regionId
+		}
+
 		user_cmk_info_map, _ := jsonpath.Get("$[0].user_cmk_info[0]", v)
 		if !IsNil(user_cmk_info_map) {
-			user_cmk_info := make(map[string]interface{})
-			nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", d.Get("encrypt_conf"))
-			if nodeNative2 != "" {
-				user_cmk_info["cmk_key_id"] = nodeNative2
-			}
-			nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", d.Get("encrypt_conf"))
-			if nodeNative3 != "" {
-				user_cmk_info["arn"] = nodeNative3
-			}
-			nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", d.Get("encrypt_conf"))
-			if nodeNative4 != "" {
-				user_cmk_info["region_id"] = nodeNative4
-			}
 			objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		}
+
 		request["encrypt_conf"] = objectDataLocalMap
 	}
 
+	request["ttl"] = 30
 	if v, ok := d.GetOk("retention_period"); ok {
 		request["ttl"] = v
 	}
 	if v, ok := d.GetOk("max_split_shard_count"); ok {
 		request["maxSplitShard"] = v
 	}
-	if v, ok := d.GetOkExists("enable_web_tracking"); ok {
+	if v, ok := d.GetOk("enable_web_tracking"); ok {
 		request["enable_tracking"] = v
 	}
+	if v, ok := d.GetOk("infrequent_access_ttl"); ok {
+		request["infrequentAccessTTL"] = v
+	}
+
 	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.Execute(genRoaParam("CreateLogStore", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -361,17 +373,42 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("append_meta", objectRaw["appendMeta"])
-	d.Set("auto_split", objectRaw["autoSplit"])
-	d.Set("create_time", objectRaw["createTime"])
-	d.Set("enable_web_tracking", objectRaw["enable_tracking"])
-	d.Set("hot_ttl", objectRaw["hot_ttl"])
-	d.Set("max_split_shard_count", objectRaw["maxSplitShard"])
-	d.Set("mode", objectRaw["mode"])
-	d.Set("retention_period", objectRaw["ttl"])
-	d.Set("shard_count", objectRaw["shardCount"])
-	d.Set("telemetry_type", objectRaw["telemetryType"])
-	d.Set("logstore_name", objectRaw["logstoreName"])
+	if objectRaw["appendMeta"] != nil {
+		d.Set("append_meta", objectRaw["appendMeta"])
+	}
+	if objectRaw["autoSplit"] != nil {
+		d.Set("auto_split", objectRaw["autoSplit"])
+	}
+	if objectRaw["createTime"] != nil {
+		d.Set("create_time", objectRaw["createTime"])
+	}
+	if objectRaw["enable_tracking"] != nil {
+		d.Set("enable_web_tracking", objectRaw["enable_tracking"])
+	}
+	if objectRaw["hot_ttl"] != nil {
+		d.Set("hot_ttl", objectRaw["hot_ttl"])
+	}
+	if objectRaw["infrequentAccessTTL"] != nil {
+		d.Set("infrequent_access_ttl", objectRaw["infrequentAccessTTL"])
+	}
+	if objectRaw["maxSplitShard"] != nil {
+		d.Set("max_split_shard_count", objectRaw["maxSplitShard"])
+	}
+	if objectRaw["mode"] != nil {
+		d.Set("mode", objectRaw["mode"])
+	}
+	if objectRaw["ttl"] != nil {
+		d.Set("retention_period", objectRaw["ttl"])
+	}
+	if objectRaw["shardCount"] != nil {
+		d.Set("shard_count", objectRaw["shardCount"])
+	}
+	if objectRaw["telemetryType"] != nil {
+		d.Set("telemetry_type", objectRaw["telemetryType"])
+	}
+	if objectRaw["logstoreName"] != nil {
+		d.Set("logstore_name", objectRaw["logstoreName"])
+	}
 
 	encryptConfMaps := make([]map[string]interface{}, 0)
 	encryptConfMap := make(map[string]interface{})
@@ -399,14 +436,20 @@ func resourceAliCloudSlsLogStoreRead(d *schema.ResourceData, meta interface{}) e
 		encryptConfMap["user_cmk_info"] = userCmkInfoMaps
 		encryptConfMaps = append(encryptConfMaps, encryptConfMap)
 	}
-	d.Set("encrypt_conf", encryptConfMaps)
+	if objectRaw["encrypt_conf"] != nil {
+		if err := d.Set("encrypt_conf", encryptConfMaps); err != nil {
+			return err
+		}
+	}
 
 	objectRaw, err = slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 
-	d.Set("metering_mode", objectRaw["meteringMode"])
+	if objectRaw["meteringMode"] != nil {
+		d.Set("metering_mode", objectRaw["meteringMode"])
+	}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("project_name", parts[0])
@@ -459,7 +502,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	var query map[string]*string
 	var body map[string]interface{}
-	var hostMap map[string]*string
 	update := false
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
@@ -472,25 +514,33 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	query = make(map[string]*string)
 	body = make(map[string]interface{})
-	hostMap = make(map[string]*string)
+	hostMap := make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
-	hostMap["logstore"] = StringPointer(parts[1])
+
 	if !d.IsNewResource() && d.HasChange("auto_split") {
 		update = true
 	}
-	request["autoSplit"] = d.Get("auto_split")
+	if v, ok := d.GetOk("auto_split"); ok || d.HasChange("auto_split") {
+		request["autoSplit"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("append_meta") {
 		update = true
 	}
-	request["appendMeta"] = d.Get("append_meta")
+	if v, ok := d.GetOk("append_meta"); ok || d.HasChange("append_meta") {
+		request["appendMeta"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("hot_ttl") {
 		update = true
 	}
-	request["hot_ttl"] = d.Get("hot_ttl")
+	if v, ok := d.GetOk("hot_ttl"); ok || d.HasChange("hot_ttl") {
+		request["hot_ttl"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("mode") {
 		update = true
 	}
-	request["mode"] = d.Get("mode")
+	if v, ok := d.GetOk("mode"); ok || d.HasChange("mode") {
+		request["mode"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("retention_period") {
 		update = true
 	}
@@ -501,45 +551,58 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	if !d.IsNewResource() && d.HasChange("max_split_shard_count") {
 		update = true
 	}
-	if v, ok := d.GetOk("max_split_shard_count"); ok {
+	if v, ok := d.GetOk("max_split_shard_count"); ok || d.HasChange("max_split_shard_count") {
 		request["maxSplitShard"] = v
 	}
 	if !d.IsNewResource() && d.HasChange("enable_web_tracking") {
 		update = true
 	}
-	request["enable_tracking"] = d.Get("enable_web_tracking")
+	if v, ok := d.GetOk("enable_web_tracking"); ok || d.HasChange("enable_web_tracking") {
+		request["enable_tracking"] = v
+	}
 	if !d.IsNewResource() && d.HasChange("encrypt_conf") {
 		update = true
 	}
 	objectDataLocalMap := make(map[string]interface{})
-	if v := d.Get("encrypt_conf"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].enable", v)
-		if nodeNative != "" {
-			objectDataLocalMap["enable"] = nodeNative
+
+	if v := d.Get("encrypt_conf"); !IsNil(v) || d.HasChange("encrypt_conf") {
+		enable1, _ := jsonpath.Get("$[0].enable", v)
+		if enable1 != nil && (d.HasChange("encrypt_conf.0.enable") || enable1 != "") {
+			objectDataLocalMap["enable"] = enable1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].encrypt_type", v)
-		if nodeNative1 != "" {
-			objectDataLocalMap["encrypt_type"] = nodeNative1
+		encryptType, _ := jsonpath.Get("$[0].encrypt_type", v)
+		if encryptType != nil && (d.HasChange("encrypt_conf.0.encrypt_type") || encryptType != "") {
+			objectDataLocalMap["encrypt_type"] = encryptType
 		}
+		user_cmk_info := make(map[string]interface{})
+		cmkKeyId, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
+		if cmkKeyId != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.cmk_key_id") || cmkKeyId != "") {
+			user_cmk_info["cmk_key_id"] = cmkKeyId
+		}
+		arn1, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
+		if arn1 != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.arn") || arn1 != "") {
+			user_cmk_info["arn"] = arn1
+		}
+		regionId, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
+		if regionId != nil && (d.HasChange("encrypt_conf.0.user_cmk_info.0.region_id") || regionId != "") {
+			user_cmk_info["region_id"] = regionId
+		}
+
 		user_cmk_info_map, _ := jsonpath.Get("$[0].user_cmk_info[0]", v)
 		if !IsNil(user_cmk_info_map) {
-			user_cmk_info := make(map[string]interface{})
-			nodeNative2, _ := jsonpath.Get("$[0].user_cmk_info[0].cmk_key_id", v)
-			if nodeNative2 != "" {
-				user_cmk_info["cmk_key_id"] = nodeNative2
-			}
-			nodeNative3, _ := jsonpath.Get("$[0].user_cmk_info[0].arn", v)
-			if nodeNative3 != "" {
-				user_cmk_info["arn"] = nodeNative3
-			}
-			nodeNative4, _ := jsonpath.Get("$[0].user_cmk_info[0].region_id", v)
-			if nodeNative4 != "" {
-				user_cmk_info["region_id"] = nodeNative4
-			}
 			objectDataLocalMap["user_cmk_info"] = user_cmk_info
 		}
+
 		request["encrypt_conf"] = objectDataLocalMap
 	}
+
+	if !d.IsNewResource() && d.HasChange("infrequent_access_ttl") {
+		update = true
+	}
+	if v, ok := d.GetOk("infrequent_access_ttl"); ok || d.HasChange("infrequent_access_ttl") {
+		request["infrequentAccessTTL"] = v
+	}
+
 	if v, ok := d.GetOk("telemetry_type"); ok && v == "Metrics" {
 
 		projectName := d.Get("project_name").(string)
@@ -572,7 +635,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 
 		update = false
 	}
-
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -580,7 +642,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.Execute(genRoaParam("UpdateLogStore", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -608,7 +669,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 	body = make(map[string]interface{})
 	hostMap = make(map[string]*string)
 	hostMap["project"] = StringPointer(parts[0])
-	hostMap["logstore"] = StringPointer(parts[1])
 
 	slsServiceV2 := SlsServiceV2{client}
 	objectRaw, _ := slsServiceV2.DescribeGetLogStoreMeteringMode(d.Id())
@@ -616,6 +676,7 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		update = true
 	}
 	request["meteringMode"] = d.Get("metering_mode")
+
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -623,7 +684,6 @@ func resourceAliCloudSlsLogStoreUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.Execute(genRoaParam("UpdateLogStoreMeteringMode", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -658,7 +718,6 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	hostMap["logstore"] = StringPointer(parts[1])
 	hostMap["project"] = StringPointer(parts[0])
 
 	runtime := util.RuntimeOptions{}
@@ -686,7 +745,6 @@ func resourceAliCloudSlsLogStoreDelete(d *schema.ResourceData, meta interface{})
 }
 
 func buildLogStore(d *schema.ResourceData) *sls.LogStore {
-
 	logstore := &sls.LogStore{
 		Name:          d.Get("logstore_name").(string),
 		TTL:           d.Get("retention_period").(int),

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -333,7 +332,7 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -356,7 +355,7 @@ func TestAccAliCloudLogStore_metric(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -460,7 +459,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_logstoreName(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -483,7 +482,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_logstoreName(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -587,7 +586,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -610,7 +609,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -714,7 +713,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName_and_logstoreName(t
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -737,7 +736,7 @@ func TestAccAliCloudLogStore_metric_fix_bug_using_projectName_and_logstoreName(t
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -827,7 +826,7 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -857,7 +856,7 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -879,7 +878,7 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -901,7 +900,7 @@ func TestAccAliCloudLogStore_create_with_encrypt(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -989,7 +988,7 @@ func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -1011,7 +1010,7 @@ func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -1033,7 +1032,7 @@ func TestAccAliCloudLogStore_create_with_encrypt_bugfix(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -1098,7 +1097,7 @@ func TestAccAliCloudLogStore_create_with_encrypt_enable(t *testing.T) {
 								{
 									"cmk_key_id": "${alicloud_kms_key.key.id}",
 									"arn":        "acs:ram::${data.alicloud_account.default.id}:role/aliyunlogdefaultrole",
-									"region_id":  os.Getenv("ALICLOUD_REGION"),
+									"region_id":  defaultRegionToTest,
 								},
 							},
 						},
@@ -1205,10 +1204,38 @@ func resourceLogStoreConfigDependenceWithEncrypt(name string) string {
 	}
 	data "alicloud_account" "default"{
 	}
+
+	data "alicloud_vpcs" "default" {
+	  name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+	  vpc_id  = data.alicloud_vpcs.default.ids.0
+	}
+	
+	resource "alicloud_kms_instance" "default" {
+	  product_version = "3"
+	  vpc_id          = data.alicloud_vpcs.default.ids.0
+	  zone_ids = [
+		data.alicloud_vswitches.default.vswitches.0.zone_id,
+        data.alicloud_vswitches.default.vswitches.1.zone_id
+	  ]
+	  vswitch_ids = [
+		data.alicloud_vswitches.default.ids.0
+	  ]
+	  vpc_num    = "1"
+	  key_num    = "1000"
+	  secret_num = "0"
+	  spec       = "1000"
+      force_delete_without_backup = true
+      payment_type = "PayAsYouGo"
+	}
+
 	resource "alicloud_kms_key" "key" {
   		description             = "${var.name}"
   		pending_window_in_days  = "7"
   		status                  = "Enabled"
+        dkms_instance_id        = alicloud_kms_instance.default.id
 	}
 	resource "alicloud_log_project" "foo" {
 	    name = "${var.name}"
@@ -1257,9 +1284,9 @@ func testAccCheckSLSLogStoreDestroyWithProvider(s *terraform.State, provider *sc
 	return nil
 }
 
-func TestAccAliCloudSlsLogStore_basic5614(t *testing.T) {
+func TestAccAliCloudSlsLogStore_basic5614_old(t *testing.T) {
 	resourceId := "alicloud_log_store.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap5614)
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap5614_old)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -1271,7 +1298,7 @@ func TestAccAliCloudSlsLogStore_basic5614(t *testing.T) {
 	}
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence5614)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence5614_old)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1555,12 +1582,12 @@ func TestAccAliCloudSlsLogStore_basic5614(t *testing.T) {
 	})
 }
 
-var AlicloudSlsLogStoreMap5614 = map[string]string{
+var AlicloudSlsLogStoreMap5614_old = map[string]string{
 	"create_time":    CHECKSET,
 	"encrypt_conf.#": CHECKSET,
 }
 
-func AlicloudSlsLogStoreBasicDependence5614(name string) string {
+func AlicloudSlsLogStoreBasicDependence5614_old(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -1585,11 +1612,41 @@ resource "alicloud_log_project" "defaultbRFbyS" {
 
 }
 
+data "alicloud_vpcs" "default" {
+  provider   = alicloud.hz
+  name_regex = "^default-NODELETING$"
+}
+
+data "alicloud_vswitches" "default" {
+  provider   = alicloud.hz
+  vpc_id  = data.alicloud_vpcs.default.ids.0
+}
+
+resource "alicloud_kms_instance" "default" {
+  provider   = alicloud.hz
+  product_version = "3"
+  vpc_id          = data.alicloud_vpcs.default.ids.0
+  zone_ids = [
+	data.alicloud_vswitches.default.vswitches.0.zone_id,
+	data.alicloud_vswitches.default.vswitches.1.zone_id
+  ]
+  vswitch_ids = [
+	data.alicloud_vswitches.default.ids.0
+  ]
+  vpc_num    = "1"
+  key_num    = "1000"
+  secret_num = "0"
+  spec       = "1000"
+  force_delete_without_backup = true
+  payment_type = "PayAsYouGo"
+}
+
 resource "alicloud_kms_key" "default" {
   provider          = alicloud.hz
   description = "Default"
   status = "Enabled"
   pending_window_in_days = 7
+  dkms_instance_id = alicloud_kms_instance.default.id
 }
 
 resource "alicloud_ram_role" "defaultRole" {
@@ -1658,10 +1715,10 @@ resource "alicloud_ram_policy" "defaultLPolicy" {
 `, name)
 }
 
-// Case 5614  twin
-func TestAccAliCloudSlsLogStore_basic5614_twin(t *testing.T) {
+// Case 5614_old  twin
+func TestAccAliCloudSlsLogStore_basic5614_old_twin(t *testing.T) {
 	resourceId := "alicloud_log_store.default"
-	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap5614)
+	ra := resourceAttrInit(resourceId, AlicloudSlsLogStoreMap5614_old)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
@@ -1673,7 +1730,7 @@ func TestAccAliCloudSlsLogStore_basic5614_twin(t *testing.T) {
 	}
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sslslogstore%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence5614)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudSlsLogStoreBasicDependence5614_old)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1695,7 +1752,7 @@ func TestAccAliCloudSlsLogStore_basic5614_twin(t *testing.T) {
 					"append_meta":    "true",
 					"encrypt_conf": []map[string]interface{}{
 						{
-							"enable":       "true",
+							"enable":       "false",
 							"encrypt_type": "default",
 							"user_cmk_info": []map[string]interface{}{
 								{
@@ -1707,9 +1764,10 @@ func TestAccAliCloudSlsLogStore_basic5614_twin(t *testing.T) {
 						},
 					},
 					"max_split_shard_count": "6",
-					"retention_period":      "30",
+					"retention_period":      "200",
 					"enable_web_tracking":   "false",
 					"metering_mode":         "ChargeByFunction",
+					"infrequent_access_ttl": "40",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1722,69 +1780,36 @@ func TestAccAliCloudSlsLogStore_basic5614_twin(t *testing.T) {
 						"telemetry_type":        "None",
 						"append_meta":           "true",
 						"max_split_shard_count": "6",
-						"retention_period":      "30",
+						"retention_period":      "200",
 						"enable_web_tracking":   "false",
 						"metering_mode":         "ChargeByFunction",
+						"infrequent_access_ttl": "40",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"hot_ttl":     "10",
-					"auto_split":  "false",
-					"mode":        "query",
-					"append_meta": "true",
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable": "false",
-						},
-					},
-					"max_split_shard_count": "0",
-					"retention_period":      "31",
-					"enable_web_tracking":   "false",
-					"metering_mode":         "ChargeByFunction",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"hot_ttl":               "10",
-						"auto_split":            "false",
-						"mode":                  "query",
-						"append_meta":           "true",
-						"max_split_shard_count": "0",
-						"retention_period":      "31",
-						"enable_web_tracking":   "false",
-						"metering_mode":         "ChargeByFunction",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"hot_ttl":        "11",
-					"auto_split":     "true",
-					"mode":           "standard",
-					"telemetry_type": "None",
-					"append_meta":    "true",
-					"encrypt_conf": []map[string]interface{}{
-						{
-							"enable": "true",
-						},
-					},
+					"hot_ttl":               "11",
+					"auto_split":            "true",
+					"mode":                  "standard",
+					"append_meta":           "true",
 					"max_split_shard_count": "20",
-					"retention_period":      "32",
+					"retention_period":      "202",
 					"enable_web_tracking":   "true",
 					"metering_mode":         "ChargeByDataIngest",
+					"infrequent_access_ttl": "43",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"hot_ttl":               "11",
 						"auto_split":            "true",
 						"mode":                  "standard",
-						"telemetry_type":        "None",
 						"append_meta":           "true",
 						"max_split_shard_count": "20",
-						"retention_period":      "32",
+						"retention_period":      "202",
 						"enable_web_tracking":   "true",
 						"metering_mode":         "ChargeByDataIngest",
+						"infrequent_access_ttl": "43",
 					}),
 				),
 			},
