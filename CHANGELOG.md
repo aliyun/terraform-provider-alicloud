@@ -1,4 +1,29 @@
 ## 1.229.0 (Unreleased)
+
+- **New Resource:** `alicloud_selectdb_db_cluster` [GH-7537]
+- **New Resource:** `alicloud_selectdb_db_instance` [GH-7537]
+- **New Resource:** `alicloud_data_works_project` [GH-7568]
+- **New Resource:** `alicloud_selectdb_db_clusters` [GH-7537]
+- **New Resource:** `alicloud_selectdb_db_instances` [GH-7537]
+
+ENHANCEMENTS:
+
+- resource/alicloud_elasticsearch_instance: elasticsearch support warm node and kibana private network. [GH-7530]
+- resource/alicloud_rds_backup: improves the description of attributes. [GH-7552]
+- resource_alicloud_ots_table: support trust proxy header. [GH-7554]
+- resource/alicloud_mongodb_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. [GH-7559]
+- resource/alicloud_mongodb_sharding_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. [GH-7563]
+- resource/alicloud_log_store: add new attribute infrequent_access_ttl. [GH-7569]
+- docs: Improved the description of service_version and config fields in alikafka_instance. [GH-7553]
+- docs: Update elasticsearch document for warm node. [GH-7558]
+- docs: Adds a note for argument to avoid forces replacement changes. [GH-7561]
+
+BUG FIXES:
+
+- resource/alicloud_mongodb_sharding_network_private_address: Fixed the read invalid error caused by zone_id. [GH-7550]
+- resource/alicloud_instance: Fixed the create bug when only creating a primary networkInterface. [GH-7565]
+- resource/alicloud_nlb_load_balancer: fix bug while missing dns_name and load_balancer_business_status. [GH-7578]
+
 ## 1.228.0 (August 08, 2024)
 
 - **New Resource:** `alicloud_aligreen_audit_callback` ([#7500](https://github.com/aliyun/terraform-provider-alicloud/issues/7500))
