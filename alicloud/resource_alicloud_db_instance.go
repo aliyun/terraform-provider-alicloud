@@ -419,9 +419,10 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Computed: true,
 			},
 			"server_cert": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Computed:  true,
+				Sensitive: true,
 			},
 			"server_key": {
 				Type:     schema.TypeString,
@@ -433,8 +434,9 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional: true,
 			},
 			"client_ca_cert": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
 			},
 			"client_crl_enabled": {
 				Type:     schema.TypeInt,
