@@ -7,11 +7,13 @@ description: |-
   Provides a list of Brain Industrial Pid Projects to the user.
 ---
 
-# alicloud\_brain\_industrial\_pid\_projects
+# alicloud_brain_industrial_pid_projects
 
 This data source provides the Brain Industrial Pid Projects of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.113.0+.
+-> **NOTE:** Available since v1.113.0.
+
+-> **DEPRECATED:**  This data source has been deprecated from version `1.230.0`.
 
 ## Example Usage
 
@@ -38,7 +40,7 @@ The following arguments are supported:
 * `pid_organization_id` - (Optional, ForceNew) The ID of Pid Organization.
 * `pid_project_name` - (Optional, ForceNew) The name of Pid Project.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -7,11 +7,13 @@ description: |-
   Provides a Alicloud Brain Industrial Pid Loop resource.
 ---
 
-# alicloud\_brain\_industrial\_pid\_loop
+# alicloud_brain_industrial_pid_loop
 
 Provides a Brain Industrial Pid Loop resource.
 
--> **NOTE:** Available in v1.117.0+.
+-> **NOTE:** Available since v1.117.0.
+
+-> **DEPRECATED:**  This resource has been deprecated from version `1.230.0`.
 
 ## Example Usage
 
