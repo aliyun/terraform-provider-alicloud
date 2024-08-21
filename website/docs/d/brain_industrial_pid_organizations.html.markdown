@@ -11,7 +11,9 @@ description: |-
 
 This data source provides the Brain Industrial Pid Organizations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.113.0+.
+-> **NOTE:** Available since v1.113.0.
+
+-> **DEPRECATED:**  This data source has been deprecated from version `1.230.0`.
 
 ## Example Usage
 
@@ -37,7 +39,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `parent_organization_id` - (Optional, ForceNew) The parent organization id.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

@@ -11,7 +11,9 @@ description: |-
 
 This data source provides the Brain Industrial Pid Loops of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.117.0+.
+-> **NOTE:** Available since v1.117.0.
+
+-> **DEPRECATED:**  This data source has been deprecated from version `1.230.0`.
 
 ## Example Usage
 
@@ -40,7 +42,7 @@ The following arguments are supported:
 * `pid_project_id` - (Required, ForceNew) The pid project id.
 * `status` - (Optional, ForceNew) The status of Pid Loop.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
