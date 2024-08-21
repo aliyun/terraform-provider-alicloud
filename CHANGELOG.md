@@ -1,28 +1,30 @@
-## 1.229.0 (Unreleased)
+## 1.229.1 (Unreleased)
+## 1.229.0 (August 21, 2024)
 
-- **New Resource:** `alicloud_selectdb_db_cluster` [GH-7537]
-- **New Resource:** `alicloud_selectdb_db_instance` [GH-7537]
-- **New Resource:** `alicloud_data_works_project` [GH-7568]
-- **New Resource:** `alicloud_selectdb_db_clusters` [GH-7537]
-- **New Resource:** `alicloud_selectdb_db_instances` [GH-7537]
+- **New Resource:** `alicloud_selectdb_db_cluster` ([#7537](https://github.com/aliyun/terraform-provider-alicloud/issues/7537))
+- **New Resource:** `alicloud_selectdb_db_instance` ([#7537](https://github.com/aliyun/terraform-provider-alicloud/issues/7537))
+- **New Resource:** `alicloud_data_works_project` ([#7568](https://github.com/aliyun/terraform-provider-alicloud/issues/7568))
+- **New Data Source:** `alicloud_selectdb_db_clusters` ([#7537](https://github.com/aliyun/terraform-provider-alicloud/issues/7537))
+- **New Data Source:** `alicloud_selectdb_db_instances` ([#7537](https://github.com/aliyun/terraform-provider-alicloud/issues/7537))
 
 ENHANCEMENTS:
 
-- resource/alicloud_elasticsearch_instance: elasticsearch support warm node and kibana private network. [GH-7530]
-- resource/alicloud_rds_backup: improves the description of attributes. [GH-7552]
-- resource_alicloud_ots_table: support trust proxy header. [GH-7554]
-- resource/alicloud_mongodb_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. [GH-7559]
-- resource/alicloud_mongodb_sharding_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. [GH-7563]
-- resource/alicloud_log_store: add new attribute infrequent_access_ttl. [GH-7569]
-- docs: Improved the description of service_version and config fields in alikafka_instance. [GH-7553]
-- docs: Update elasticsearch document for warm node. [GH-7558]
-- docs: Adds a note for argument to avoid forces replacement changes. [GH-7561]
+- resource/alicloud_elasticsearch_instance: elasticsearch support warm node and kibana private network. ([#7530](https://github.com/aliyun/terraform-provider-alicloud/issues/7530))
+- resource/alicloud_rds_backup: improves the description of attributes. ([#7552](https://github.com/aliyun/terraform-provider-alicloud/issues/7552))
+- resource_alicloud_ots_table: support trust proxy header. ([#7554](https://github.com/aliyun/terraform-provider-alicloud/issues/7554))
+- resource/alicloud_mongodb_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. ([#7559](https://github.com/aliyun/terraform-provider-alicloud/issues/7559))
+- resource/alicloud_mongodb_sharding_instance: Added the field provisioned_iops; Supported storage_type set to cloud_auto; Removed the ForceNew for field storage_type; Supported for new action ModifyDBInstanceDiskType. ([#7563](https://github.com/aliyun/terraform-provider-alicloud/issues/7563))
+- resource/alicloud_log_store: add new attribute infrequent_access_ttl. ([#7569](https://github.com/aliyun/terraform-provider-alicloud/issues/7569))
+- resource/alicloud_cs_kubernetes_node_pool: support auto_format, file_system, mount_target for data_disks. ([#7577](https://github.com/aliyun/terraform-provider-alicloud/issues/7577))
+- docs: Improved the description of service_version and config fields in alikafka_instance. ([#7553](https://github.com/aliyun/terraform-provider-alicloud/issues/7553))
+- docs: Update elasticsearch document for warm node. ([#7558](https://github.com/aliyun/terraform-provider-alicloud/issues/7558))
+- docs: Adds a note for argument to avoid forces replacement changes. ([#7561](https://github.com/aliyun/terraform-provider-alicloud/issues/7561))
 
 BUG FIXES:
 
-- resource/alicloud_mongodb_sharding_network_private_address: Fixed the read invalid error caused by zone_id. [GH-7550]
-- resource/alicloud_instance: Fixed the create bug when only creating a primary networkInterface. [GH-7565]
-- resource/alicloud_nlb_load_balancer: fix bug while missing dns_name and load_balancer_business_status. [GH-7578]
+- resource/alicloud_mongodb_sharding_network_private_address: Fixed the read invalid error caused by zone_id. ([#7550](https://github.com/aliyun/terraform-provider-alicloud/issues/7550))
+- resource/alicloud_instance: Fixed the create bug when only creating a primary networkInterface. ([#7565](https://github.com/aliyun/terraform-provider-alicloud/issues/7565))
+- resource/alicloud_nlb_load_balancer: fix bug while missing dns_name and load_balancer_business_status. ([#7578](https://github.com/aliyun/terraform-provider-alicloud/issues/7578))
 
 ## 1.228.0 (August 08, 2024)
 

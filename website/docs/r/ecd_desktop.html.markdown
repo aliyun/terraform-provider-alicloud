@@ -17,6 +17,12 @@ For information about ECD Desktop and how to use it, see [What is Desktop](https
 
 ## Example Usage
 
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecd_desktop&exampleId=3ff92ccf-ee32-0331-2fef-f16f44573556f17005be&activeTab=example&provider=1.229.0" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
+
 Basic Usage
 
 ```terraform
