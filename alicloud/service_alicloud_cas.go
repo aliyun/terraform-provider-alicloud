@@ -18,15 +18,18 @@ type CasService struct {
 
 func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribeUserCertificateDetail"
+
 	conn, err := s.client.NewCasClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribeUserCertificateDetail"
+
 	request := map[string]interface{}{
 		"RegionId": s.client.RegionId,
 		"CertId":   id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -42,17 +45,22 @@ func (s *CasService) DescribeSslCertificatesServiceCertificate(id string) (objec
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	if _, idExist := response["Id"]; !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Cas.Sertificate", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cas:Certificate", id)), NotFoundWithResponse, response)
 	}
+
 	return object, nil
 }
 
