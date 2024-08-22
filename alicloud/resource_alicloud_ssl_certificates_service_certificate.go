@@ -5,8 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -23,12 +21,12 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"key": {
+			"cert": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"cert": {
+			"key": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
@@ -39,15 +37,13 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 				ForceNew:     true,
 				Computed:     true,
 				AtLeastOneOf: []string{"certificate_name", "name"},
-				ValidateFunc: validation.StringLenBetween(1, 64),
 			},
 			"name": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				Computed:     true,
-				Deprecated:   "attribute 'name' has been deprecated from provider version 1.129.0 and it will be remove in the future version. Please use the new attribute 'certificate_name' instead.",
-				ValidateFunc: validation.StringLenBetween(1, 64),
+				Type:       schema.TypeString,
+				Optional:   true,
+				ForceNew:   true,
+				Computed:   true,
+				Deprecated: "attribute 'name' has been deprecated from provider version 1.129.0 and it will be remove in the future version. Please use the new attribute 'certificate_name' instead.",
 			},
 			"lang": {
 				Type:     schema.TypeString,
@@ -66,6 +62,7 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request["Cert"] = d.Get("cert")
 	request["Key"] = d.Get("key")
 
@@ -80,9 +77,12 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -93,6 +93,7 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ssl_certificates_service_certificate", action, AlibabaCloudSdkGoERROR)
 	}
@@ -101,36 +102,45 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 
 	return resourceAliCloudSslCertificatesServiceCertificateRead(d, meta)
 }
+
 func resourceAliCloudSslCertificatesServiceCertificateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	casService := CasService{client}
+
 	object, err := casService.DescribeSslCertificatesServiceCertificate(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_ssl_certificates_service_certificate casService.DescribeSslCertificatesServiceCertificate Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("cert", object["Cert"])
+	d.Set("key", object["Key"])
 	d.Set("certificate_name", object["Name"])
 	d.Set("name", object["Name"])
-	d.Set("key", object["Key"])
+
 	return nil
 }
+
 func resourceAliCloudSslCertificatesServiceCertificateUpdate(d *schema.ResourceData, meta interface{}) error {
 	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
 	return resourceAliCloudSslCertificatesServiceCertificateRead(d, meta)
 }
+
 func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	casService := CasService{client}
 	action := "DeleteUserCertificate"
 	var response map[string]interface{}
+
 	conn, err := client.NewCasClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := map[string]interface{}{
 		"CertId": d.Id(),
 	}
@@ -138,9 +148,12 @@ func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 	if v, ok := d.GetOk("lang"); ok {
 		request["Lang"] = v
 	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -151,13 +164,15 @@ func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	casService := CasService{client}
+
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, casService.SslCertificatesServiceCertificateStateRefreshFunc(d, []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

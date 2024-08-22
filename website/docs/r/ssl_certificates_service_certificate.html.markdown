@@ -31,7 +31,7 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_ssl_certificates_service_certificate" "default" {
-  certificate_name = "tf-example-${random_integer.default.result}"
+  certificate_name = "terraform-example-${random_integer.default.result}"
   cert             = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIDeDCCAmCgAwIBAgIEN3ZT6zANBgkqhkiG9w0BAQsFADBVMQswCQYDVQQGEwJD
@@ -94,19 +94,16 @@ The following arguments are supported:
 
 * `cert` - (Required, ForceNew) Cert of the Certificate in which the Certificate will add.
 * `key` - (Required, ForceNew) Key of the Certificate in which the Certificate will add.
-* `certificate_name` - (Optional, ForceNew) Name of the Certificate. 
-  This name without suffix can have a string of 1 to 63 characters, must contain only alphanumeric characters or "-", 
-  and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. 
-  Suffix .sh and .tel are not supported.
-  **NOTE:** One of `certificate_name` and `name` must be specified.
-* `name` - (Deprecated from 1.129.0, Optional, ForceNew) It has been deprecated from version 1.129.0 and using `certificate_name` instead.
+* `certificate_name` - (Optional, ForceNew) Name of the Certificate. `certificate_name` must contain only alphanumeric characters or "-", and must not begin or end with "-", and "-" must not in the 3th and 4th character positions at the same time. Suffix .sh and .tel are not supported.
+**NOTE:** One of `certificate_name` and `name` must be specified.
+* `name` - (Optional, ForceNew, Deprecated since v1.129.0) It has been deprecated from version 1.129.0 and using `certificate_name` instead.
 * `lang` - (Optional) The lang.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The cert id.
+* `id` - The resource ID in terraform of Certificate.
 
 ## Import
 
