@@ -18,6 +18,11 @@ For information about Api Gateway Plugin attachment and how to use it, see [Atta
 -> **NOTE:** Terraform will auto build plugin attachment while it uses `alicloud_api_gateway_plugin_attachment` to build.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_api_gateway_plugin_attachment&exampleId=25739863-f177-e95c-908d-cd9ce1d804d9fdb80ee5&activeTab=example&spm=docs.r.api_gateway_plugin_attachment.0.25739863f1" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

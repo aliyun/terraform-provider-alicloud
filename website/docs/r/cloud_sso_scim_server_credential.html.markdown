@@ -19,6 +19,11 @@ For information about Cloud SSO SCIM Server Credential and how to use it, see [W
 
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_sso_scim_server_credential&exampleId=ec2683a7-924c-f9a5-509a-3100f10a75c5bd9f9fe8&activeTab=example&spm=docs.r.cloud_sso_scim_server_credential.0.ec2683a792" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

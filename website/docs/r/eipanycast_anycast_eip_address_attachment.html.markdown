@@ -18,6 +18,11 @@ For information about Eipanycast Anycast Eip Address Attachment and how to use i
 [eu-west-1-gb33-a01,cn-hongkong-am4-c04,ap-southeast-os30-a01,us-west-ot7-a01,ap-south-in73-a01,ap-southeast-my88-a01]
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=60808d6d-90eb-3d4f-6291-9cc92150dba73d9e2abf&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.0.60808d6d90" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

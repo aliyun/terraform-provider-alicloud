@@ -15,6 +15,11 @@ Provides an EDAS deploy group resource, see [What is EDAS Deploy Group](https://
 
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_edas_deploy_group&exampleId=93d4d06b-3f17-9d7e-ba91-48ce6b9ce61e950f8a8c&activeTab=example&spm=docs.r.edas_deploy_group.0.93d4d06b3f" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

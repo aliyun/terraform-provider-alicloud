@@ -16,6 +16,11 @@ For information about ROS Stack Group and how to use it, see [What is Stack Grou
 -> **NOTE:** Available in v1.107.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ros_stack_group&exampleId=63f69414-5509-07dd-bf0d-9e271f7c5cdb5bbd0242&activeTab=example&spm=docs.r.ros_stack_group.0.63f6941455" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

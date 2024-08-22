@@ -16,6 +16,11 @@ For information about CR Endpoint Acl Policy and how to use it, see [What is End
 -> **NOTE:** Available since v1.139.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cr_endpoint_acl_policy&exampleId=7a1ec6d8-477e-2a12-08a3-efda472f820168daa3b0&activeTab=example&spm=docs.r.cr_endpoint_acl_policy.0.7a1ec6d847" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

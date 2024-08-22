@@ -16,6 +16,11 @@ For information about SLB Tls Cipher Policy and how to use it, see [What is Tls 
 -> **NOTE:** Available in v1.135.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_slb_tls_cipher_policy&exampleId=3e716de4-15e8-7606-48c7-1de0162fe9474420b3df&activeTab=example&spm=docs.r.slb_tls_cipher_policy.0.3e716de415" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

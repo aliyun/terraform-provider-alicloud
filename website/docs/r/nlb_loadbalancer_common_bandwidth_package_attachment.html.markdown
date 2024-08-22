@@ -15,6 +15,11 @@ For information about NLB Loadbalancer Common Bandwidth Package Attachment and h
 -> **NOTE:** Available since v1.209.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_loadbalancer_common_bandwidth_package_attachment&exampleId=d9907c24-ad5f-ca7d-e580-c403e93ead1e01806a15&activeTab=example&spm=docs.r.nlb_loadbalancer_common_bandwidth_package_attachment.0.d9907c24ad" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

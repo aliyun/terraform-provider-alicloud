@@ -14,6 +14,11 @@ Log service data delivery management, this service provides the function of deli
 -> **NOTE:** Available in 1.187.0+
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_oss_export&exampleId=ad52eb1a-0925-9ffa-2444-c0bae975defe27f9bee8&activeTab=example&spm=docs.r.log_oss_export.0.ad52eb1a09" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

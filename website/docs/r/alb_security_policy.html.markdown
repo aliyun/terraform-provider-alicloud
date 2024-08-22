@@ -16,6 +16,11 @@ For information about ALB Security Policy and how to use it, see [What is Securi
 -> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_alb_security_policy&exampleId=bd72c280-b973-e348-4cf6-f3af2cbf9ea1f8c1dff8&activeTab=example&spm=docs.r.alb_security_policy.0.bd72c280b9" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

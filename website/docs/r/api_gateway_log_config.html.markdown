@@ -16,6 +16,11 @@ For information about Api Gateway Log Config and how to use it, see [What is Log
 -> **NOTE:** Available since v1.185.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_api_gateway_log_config&exampleId=5087d780-a384-eb1f-f937-0ec18e6dd4646168907d&activeTab=example&spm=docs.r.api_gateway_log_config.0.5087d780a3" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

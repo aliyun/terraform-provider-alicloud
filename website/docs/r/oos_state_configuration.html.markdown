@@ -16,6 +16,11 @@ For information about OOS State Configuration and how to use it, see [What is St
 -> **NOTE:** Available in v1.147.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oos_state_configuration&exampleId=de1c774c-94ec-76af-8880-80905ab5ef419df1ba72&activeTab=example&spm=docs.r.oos_state_configuration.0.de1c774c94" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

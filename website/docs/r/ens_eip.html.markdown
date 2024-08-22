@@ -15,6 +15,11 @@ For information about ENS Eip and how to use it, see [What is Eip](https://www.a
 -> **NOTE:** Available since v1.213.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ens_eip&exampleId=ea6ae65c-19f0-595e-9622-ef844d03e1fb545a64f8&activeTab=example&spm=docs.r.ens_eip.0.ea6ae65c19" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

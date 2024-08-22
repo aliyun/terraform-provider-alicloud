@@ -16,6 +16,11 @@ For information about VPN Ipsec Server and how to use it, see [What is Ipsec Ser
 -> **NOTE:** Available since v1.161.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpn_ipsec_server&exampleId=37ef967a-53f8-0fe9-8ca2-d517d282dff57818de5d&activeTab=example&spm=docs.r.vpn_ipsec_server.0.37ef967a53" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

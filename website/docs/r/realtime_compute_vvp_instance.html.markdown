@@ -15,6 +15,11 @@ For information about Realtime Compute Vvp Instance and how to use it, see [What
 -> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_realtime_compute_vvp_instance&exampleId=792066f6-d31f-1430-6938-efd5b5ea05572cbef86a&activeTab=example&spm=docs.r.realtime_compute_vvp_instance.0.792066f6d3" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

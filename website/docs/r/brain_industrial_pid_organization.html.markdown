@@ -16,6 +16,11 @@ Provides a Brain Industrial Pid Organization resource.
 -> **DEPRECATED:**  This resource has been from version `1.222.0`.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_brain_industrial_pid_organization&exampleId=be7e5997-a69b-bc7c-e157-46e9c04b8e7443d8a23d&activeTab=example&spm=docs.r.brain_industrial_pid_organization.0.be7e5997a6" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

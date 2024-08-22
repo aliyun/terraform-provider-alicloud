@@ -19,6 +19,11 @@ see [What is Meta Tag](https://www.alibabacloud.com/help/en/resource-management/
 -> **NOTE:** Meta Tag Only Support `cn-hangzhou` Region
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_tag_meta_tag&exampleId=a08885db-2c17-c64b-d934-398212575530a5fa66e1&activeTab=example&spm=docs.r.tag_meta_tag.0.a08885db2c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

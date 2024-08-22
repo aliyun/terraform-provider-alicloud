@@ -17,6 +17,11 @@ Compute Service (ECS) instances in real time in the Log Service console. [Refer 
 -> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_logtail_config&exampleId=c256a9d8-648f-9166-d2b9-ad6b88fb52a5ccebb39a&activeTab=example&spm=docs.r.logtail_config.0.c256a9d864" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about ECS Launch Template and how to use it, see [What is Launch
 -> **NOTE:** Available since v1.120.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_launch_template&exampleId=5466eb32-9bb1-6f2c-d8d0-d78c6ec2ff1525b4b0ef&activeTab=example&spm=docs.r.ecs_launch_template.0.5466eb329b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

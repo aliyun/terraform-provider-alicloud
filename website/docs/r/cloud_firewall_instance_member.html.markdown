@@ -16,6 +16,11 @@ For information about Cloud Firewall Instance Member and how to use it, see [Wha
 -> **NOTE:** Available in v1.194.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_instance_member&exampleId=3548ac26-5b3c-ab03-0909-25f42801a7ce7bd210cb&activeTab=example&spm=docs.r.cloud_firewall_instance_member.0.3548ac265b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

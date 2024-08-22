@@ -16,6 +16,11 @@ For information about Express Connect Grant Rule To Cen and how to use it, see [
 -> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_express_connect_grant_rule_to_cen&exampleId=a51ebeb2-c935-de2b-801c-bed796c4ed59886c348f&activeTab=example&spm=docs.r.express_connect_grant_rule_to_cen.0.a51ebeb2c9" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -15,6 +15,11 @@ For information about Express Connect Router Express Connect Router and how to u
 -> **NOTE:** Available since v1.224.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_express_connect_router_express_connect_router&exampleId=dd0fd8dd-7c00-81b4-75c5-2a9465c60c311b2d9f15&activeTab=example&spm=docs.r.express_connect_router_express_connect_router.0.dd0fd8dd7c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -15,6 +15,11 @@ For information about Cloud Monitor Service Hybrid Double Write and how to use i
 -> **NOTE:** Available since v1.210.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_monitor_service_hybrid_double_write&exampleId=7744a17d-acb2-4f18-83cf-9d0f88acf1bbc3655837&activeTab=example&spm=docs.r.cloud_monitor_service_hybrid_double_write.0.7744a17dac" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

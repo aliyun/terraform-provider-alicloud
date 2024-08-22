@@ -17,6 +17,11 @@ For information about Resource Manager Policy Version and how to use it, see [Wh
 -> **NOTE:** It is not recommended to use this resource management policy version, it is recommended to directly use the policy resource to manage your policy. Please refer to the link for usage [resource_manager_policy](https://www.terraform.io/docs/providers/alicloud/r/resource_manager_policy).
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_resource_manager_policy_version&exampleId=2d0bb1e5-785a-f3aa-3766-97767a31b15b19cc3967&activeTab=example&spm=docs.r.resource_manager_policy_version.0.2d0bb1e578" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about Network Attached Storage (NAS) Recycle Bin and how to use 
 -> **NOTE:** Available in v1.155.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nas_recycle_bin&exampleId=3d880a4f-bcc5-f243-1c79-905439ec95b411821d47&activeTab=example&spm=docs.r.nas_recycle_bin.0.3d880a4fbc" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

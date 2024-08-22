@@ -16,6 +16,11 @@ For information about Ehpc Cluster and how to use it, see [What is Cluster](http
 -> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ehpc_cluster&exampleId=1b7ca10e-5127-a55b-5b13-3c1843903f664ae1bd93&activeTab=example&spm=docs.r.ehpc_cluster.0.1b7ca10e51" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

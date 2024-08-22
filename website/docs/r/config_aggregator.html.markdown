@@ -16,6 +16,11 @@ For information about Cloud Config Aggregate Config Rule and how to use it, see 
 -> **NOTE:** Available since v1.124.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_config_aggregator&exampleId=b68e66a2-1930-005b-d7ad-19d3a85a2adcf6c7bb6a&activeTab=example&spm=docs.r.config_aggregator.0.b68e66a219" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

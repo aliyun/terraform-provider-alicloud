@@ -18,6 +18,11 @@ Provides an Elasticsearch instance resource. It contains data nodes, dedicated m
 -> **NOTE:** Available since v1.30.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_elasticsearch_instance&exampleId=73805ca0-8968-cf9a-4e8e-205d4afdd97b26ab1e4d&activeTab=example&spm=docs.r.elasticsearch_instance.0.73805ca089" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

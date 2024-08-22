@@ -16,6 +16,11 @@ For information about Cloud Architect Design Tools Application and how to use it
 -> **NOTE:** Available in v1.192.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bp_studio_application&exampleId=8c892a8d-2442-8ce4-72d0-7fde902dbace5557fe35&activeTab=example&spm=docs.r.bp_studio_application.0.8c892a8d24" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

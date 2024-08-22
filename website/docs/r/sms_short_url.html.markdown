@@ -16,6 +16,11 @@ For information about SMS Short Url and how to use it, see [What is Short Url](h
 -> **NOTE:** Available in v1.178.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sms_short_url&exampleId=fc3f9e23-7e93-5f5c-0732-78dbe89fa072bccdfb79&activeTab=example&spm=docs.r.sms_short_url.0.fc3f9e237e" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

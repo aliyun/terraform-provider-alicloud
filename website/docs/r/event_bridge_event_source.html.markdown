@@ -16,6 +16,11 @@ For information about Event Bridge Event Source and how to use it, see [What is 
 -> **NOTE:** Available since v1.130.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_event_bridge_event_source&exampleId=cc6d99f0-df8d-c48f-df08-84324242fee34a3aabf6&activeTab=example&spm=docs.r.event_bridge_event_source.0.cc6d99f0df" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

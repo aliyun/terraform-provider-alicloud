@@ -15,6 +15,11 @@ For information about DRDS Polardb X Instance and how to use it, see [What is Po
 -> **NOTE:** Available since v1.211.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_drds_polardbx_instance&exampleId=fbf375da-c462-25f1-a343-5a1971bc805bcf3c5f9b&activeTab=example&spm=docs.r.drds_polardbx_instance.0.fbf375dac4" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

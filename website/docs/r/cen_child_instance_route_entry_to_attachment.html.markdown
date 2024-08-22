@@ -16,6 +16,11 @@ For information about Cen Child Instance Route Entry To Attachment and how to us
 -> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_child_instance_route_entry_to_attachment&exampleId=459e1393-428d-5d0a-e3d4-8d204eaa53116709cc3b&activeTab=example&spm=docs.r.cen_child_instance_route_entry_to_attachment.0.459e139342" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

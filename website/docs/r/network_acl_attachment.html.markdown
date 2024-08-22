@@ -17,6 +17,11 @@ Note that because this resource conflicts with the `resources` attribute of `ali
 -> **NOTE:** Available in 1.44.0+. Currently, the resource are only available in Hongkong(cn-hongkong), and Indonesia(ap-southeast-1) regions.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_network_acl_attachment&exampleId=1b02aee1-6d57-a559-b24a-d5f00efd7b47c79d46e3&activeTab=example&spm=docs.r.network_acl_attachment.0.1b02aee16d" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about ECD Bundle and how to use it, see [What is Bundle](https:/
 -> **NOTE:** Available since v1.170.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecd_bundle&exampleId=39e0cefd-8564-7f4a-156d-465eb181cfbf66ace291&activeTab=example&spm=docs.r.ecd_bundle.0.39e0cefd85" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

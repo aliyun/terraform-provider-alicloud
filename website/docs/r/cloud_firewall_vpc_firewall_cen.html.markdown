@@ -16,6 +16,11 @@ For information about Cloud Firewall Vpc Firewall Cen and how to use it, see [Wh
 -> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_firewall_vpc_firewall_cen&exampleId=d0c1e272-f582-436c-ab92-39ed385cc0f2ae94a454&activeTab=example&spm=docs.r.cloud_firewall_vpc_firewall_cen.0.d0c1e272f5" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

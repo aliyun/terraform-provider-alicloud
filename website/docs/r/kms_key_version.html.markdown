@@ -14,6 +14,11 @@ Provides a Alikms Key Version resource. For information about Alikms Key Version
 -> **NOTE:** Available in v1.85.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_kms_key_version&exampleId=937ac091-4c3c-bdf4-3361-6136e5014c6f75cffdf1&activeTab=example&spm=docs.r.kms_key_version.0.937ac0914c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

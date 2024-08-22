@@ -15,6 +15,11 @@ For information about EBS Replica Group Drill and how to use it, see [What is Re
 -> **NOTE:** Available since v1.215.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ebs_replica_group_drill&exampleId=b4f5d619-a475-5796-efa2-0281eaacf6cee43c0313&activeTab=example&spm=docs.r.ebs_replica_group_drill.0.b4f5d619a4" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

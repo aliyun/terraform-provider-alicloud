@@ -17,6 +17,11 @@ For information about CBWP Common Bandwidth Package and how to use it, see [What
 -> **NOTE:** Available since v1.23.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_common_bandwidth_package&exampleId=0717d382-6add-c02a-ca9f-711341f89416202c748f&activeTab=example&spm=docs.r.common_bandwidth_package.0.0717d3826a" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

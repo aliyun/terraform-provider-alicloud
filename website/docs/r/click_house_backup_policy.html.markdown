@@ -18,6 +18,11 @@ For information about Click House Backup Policy and how to use it, see [What is 
 -> **NOTE:** Only the cloud database ClickHouse cluster version `20.3` supports data backup.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_click_house_backup_policy&exampleId=24390ded-a0ec-f029-522a-beb7e1871ea8001d9fcd&activeTab=example&spm=docs.r.click_house_backup_policy.0.24390deda0" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

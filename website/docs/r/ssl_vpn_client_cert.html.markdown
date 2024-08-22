@@ -17,6 +17,11 @@ It depends on VPN instance and SSL VPN Server.
 -> **NOTE:** Available since v1.15.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ssl_vpn_client_cert&exampleId=9ad0e038-db05-250a-1550-3a4658cd2c6ea72d2d9a&activeTab=example&spm=docs.r.ssl_vpn_client_cert.0.9ad0e038db" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

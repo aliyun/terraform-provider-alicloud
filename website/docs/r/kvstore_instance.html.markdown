@@ -14,6 +14,11 @@ Provides an ApsaraDB Redis / Memcache instance resource. A DB instance is an iso
 -> **NOTE:** Available since v1.14.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_kvstore_instance&exampleId=34a3c4a6-2047-e76c-8908-f436040a49e1fd671eac&activeTab=example&spm=docs.r.kvstore_instance.0.34a3c4a620" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

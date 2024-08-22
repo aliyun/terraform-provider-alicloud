@@ -16,6 +16,11 @@ For information about Serverless App Engine (SAE) Application and how to use it,
 -> **NOTE:** Available since v1.161.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sae_application&exampleId=e567998f-7b80-0723-0c08-0c427c7d00e4a3e17339&activeTab=example&spm=docs.r.sae_application.0.e567998f7b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

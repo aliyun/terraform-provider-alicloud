@@ -16,6 +16,11 @@ For information about DTS Migration Job and how to use it, see [What is Migratio
 -> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dts_migration_job&exampleId=ea959101-7442-6daa-8188-6eaa970d360efac93b4e&activeTab=example&spm=docs.r.dts_migration_job.0.ea95910174" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

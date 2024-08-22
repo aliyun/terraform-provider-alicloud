@@ -22,6 +22,11 @@ For information about EIP Association and how to use it, see [What is Associatio
 -> **NOTE:** Available since v1.117.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_eip_association&exampleId=b09889bb-255e-2b33-a830-8d7e1c81b76bcebf48a3&activeTab=example&spm=docs.r.eip_association.0.b09889bb25" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

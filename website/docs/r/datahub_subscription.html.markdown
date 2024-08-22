@@ -14,6 +14,11 @@ The subscription is the basic unit of resource usage in Datahub Service under Pu
 -> **NOTE:** Available since v1.19.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_datahub_subscription&exampleId=f7816e86-5c20-c083-4f5e-3d106803e28671a12572&activeTab=example&spm=docs.r.datahub_subscription.0.f7816e865c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

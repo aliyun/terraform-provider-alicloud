@@ -20,6 +20,11 @@ Provides a network acl entries resource to create ingress and egress entries.
 -> **DEPRECATED:**  This resource  has been deprecated from version `1.122.0`. Replace by `ingress_acl_entries` and `egress_acl_entries` with the resource [alicloud_network_acl](https://www.terraform.io/docs/providers/alicloud/r/network_acl).
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_network_acl_entries&exampleId=0cb0c435-f950-78f0-0ca6-cb55b7b58576a3c3942e&activeTab=example&spm=docs.r.network_acl_entries.0.0cb0c435f9" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

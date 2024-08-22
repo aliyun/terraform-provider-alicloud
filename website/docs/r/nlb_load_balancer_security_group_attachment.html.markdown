@@ -15,6 +15,11 @@ For information about Nlb Load Balancer Security Group Attachment and how to use
 -> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_load_balancer_security_group_attachment&exampleId=860fb2cb-c63d-b129-d52d-288058f23b0c82ea7e11&activeTab=example&spm=docs.r.nlb_load_balancer_security_group_attachment.0.860fb2cbc6" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -14,6 +14,11 @@ Create an alias for the master key (CMK).
 -> **NOTE:** Available since v1.77.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_kms_alias&exampleId=bb7c42c5-6bc8-0711-f7fe-492295da3043f2d20abe&activeTab=example&spm=docs.r.kms_alias.0.bb7c42c56b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

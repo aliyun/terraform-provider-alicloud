@@ -16,6 +16,11 @@ For information about Cloud Storage Gateway Gateway Logging and how to use it, s
 -> **NOTE:** Available since v1.144.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_storage_gateway_gateway_logging&exampleId=e5e959e8-2523-e013-b709-2f69b05e1b234d154336&activeTab=example&spm=docs.r.cloud_storage_gateway_gateway_logging.0.e5e959e825" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

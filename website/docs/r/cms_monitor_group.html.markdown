@@ -16,6 +16,11 @@ For information about Cloud Monitor Service Monitor Group and how to use it, see
 -> **NOTE:** Available since v1.113.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_monitor_group&exampleId=6fbe8f1f-da7d-050f-d49c-b036c8707a64af17a6e3&activeTab=example&spm=docs.r.cms_monitor_group.0.6fbe8f1fda" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

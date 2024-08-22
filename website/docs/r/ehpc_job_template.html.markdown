@@ -16,6 +16,11 @@ For information about Ehpc Job Template and how to use it, see [What is Job Temp
 -> **NOTE:** Available in v1.133.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ehpc_job_template&exampleId=1a8bbe0f-24d6-0e5f-5518-208979dbe11b845cdbb2&activeTab=example&spm=docs.r.ehpc_job_template.0.1a8bbe0f24" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

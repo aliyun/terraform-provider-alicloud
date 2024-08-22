@@ -14,6 +14,11 @@ Provides an EDAS K8s cluster resource. For information about EDAS K8s Cluster an
 -> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_edas_k8s_cluster&exampleId=c057f961-f5ce-43e7-748d-5ad1f3687623e6099d92&activeTab=example&spm=docs.r.edas_k8s_cluster.0.c057f961f5" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

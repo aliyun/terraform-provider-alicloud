@@ -16,6 +16,11 @@ For information about CDN Real Time Log Delivery and how to use it, see [What is
 -> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cdn_real_time_log_delivery&exampleId=9af0da31-cfb9-c5b8-7648-ecb0cc0c7937f9281955&activeTab=example&spm=docs.r.cdn_real_time_log_delivery.0.9af0da31cf" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

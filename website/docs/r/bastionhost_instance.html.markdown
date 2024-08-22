@@ -21,6 +21,11 @@ For information about Resource Manager Resource Directory and how to use it, see
 -> **NOTE:** In order to destroy Cloud Bastionhost instance , users are required to apply for white list first
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_instance&exampleId=2781e605-de83-d24d-2811-754044d92d63d7257b56&activeTab=example&spm=docs.r.bastionhost_instance.0.2781e605de" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

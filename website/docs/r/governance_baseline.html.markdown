@@ -17,6 +17,11 @@ For information about Governance Baseline and how to use it, see [What is Baseli
 -> **NOTE:** Available since v1.228.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_governance_baseline&exampleId=a7c11e1d-5e47-85e1-dc0b-bde58749e961fa2f945b&activeTab=example&spm=docs.r.governance_baseline.0.a7c11e1d5e" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

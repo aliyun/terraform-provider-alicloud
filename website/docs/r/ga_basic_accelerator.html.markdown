@@ -16,6 +16,11 @@ For information about Global Accelerator (GA) Basic Accelerator and how to use i
 -> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_basic_accelerator&exampleId=c51d573b-a0bd-742d-bba5-aedca8d825b93a001f70&activeTab=example&spm=docs.r.ga_basic_accelerator.0.c51d573ba0" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

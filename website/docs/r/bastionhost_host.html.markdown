@@ -16,6 +16,11 @@ For information about Bastion Host Host and how to use it, see [What is Host](ht
 -> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_host&exampleId=4ca63422-dd8c-93bf-845f-e113fe2731b3b8ed1b24&activeTab=example&spm=docs.r.bastionhost_host.0.4ca63422dd" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

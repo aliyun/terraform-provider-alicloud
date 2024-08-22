@@ -16,6 +16,11 @@ For information about Apsara Agile Live (IMP) App Template and how to use it, se
 -> **NOTE:** Available in v1.137.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_imp_app_template&exampleId=8492f261-a1a5-f553-a9c0-5b05b4eda62d5c5258cb&activeTab=example&spm=docs.r.imp_app_template.0.8492f261a1" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

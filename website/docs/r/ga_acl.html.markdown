@@ -16,6 +16,11 @@ For information about Global Accelerator (GA) Acl and how to use it, see [What i
 -> **NOTE:** Available since v1.150.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_acl&exampleId=5c33e7f0-6578-20ee-ed72-9d771e4578826154f62d&activeTab=example&spm=docs.r.ga_acl.0.5c33e7f065" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -15,6 +15,11 @@ For information about Express Connect Traffic Qos Association and how to use it,
 -> **NOTE:** Available since v1.224.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_express_connect_traffic_qos_association&exampleId=7394b46a-3ef0-7454-e7a3-34b16915c17336a89ec4&activeTab=example&spm=docs.r.express_connect_traffic_qos_association.0.7394b46a3e" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 
