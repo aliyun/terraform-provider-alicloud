@@ -18,6 +18,11 @@ For information about Sag Acl Rule and how to use it, see [What is access contro
 -> **NOTE:** Only the following regions support create Cloud Connect Network. [`cn-shanghai`, `cn-shanghai-finance-1`, `cn-hongkong`, `ap-southeast-1`, `ap-southeast-3`, `ap-southeast-5`, `ap-northeast-1`, `eu-central-1`]
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sag_acl_rule&exampleId=00a279d9-ec15-5df5-8460-6f4494fc2c03c0cc5ab8&activeTab=example&spm=docs.r.sag_acl_rule.0.00a279d9ec" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

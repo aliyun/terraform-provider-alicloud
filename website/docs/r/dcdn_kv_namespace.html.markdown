@@ -16,6 +16,11 @@ For information about Dcdn Kv Namespace and how to use it, see [What is Kv Names
 -> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dcdn_kv_namespace&exampleId=47c848a2-795c-9450-24f5-ffe0ec6b734e3430d0f0&activeTab=example&spm=docs.r.dcdn_kv_namespace.0.47c848a279" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ Provides a MNS queue resource.
 -> **DEPRECATED:**  This resource has been deprecated from version `1.188.0`. Please use new resource [message_service_queue](https://www.terraform.io/docs/providers/alicloud/r/message_service_queue).
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_mns_queue&exampleId=f9971663-00cc-a5e5-3c8c-fd0ff0e33601ae0994c2&activeTab=example&spm=docs.r.mns_queue.0.f997166300" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

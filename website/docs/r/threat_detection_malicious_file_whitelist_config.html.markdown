@@ -15,6 +15,11 @@ For information about Threat Detection Malicious File Whitelist Config and how t
 -> **NOTE:** Available since v1.214.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_threat_detection_malicious_file_whitelist_config&exampleId=8fae7ac9-a290-7ccf-e83f-0fe7b2b77946b2270f66&activeTab=example&spm=docs.r.threat_detection_malicious_file_whitelist_config.0.8fae7ac9a2" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

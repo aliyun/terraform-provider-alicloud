@@ -15,6 +15,11 @@ For information about NLB Listener Additional Certificate Attachment and how to 
 -> **NOTE:** Available since v1.209.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_listener_additional_certificate_attachment&exampleId=7f63da70-f440-ed5c-a40c-3aba03159e5da3ae88b5&activeTab=example&spm=docs.r.nlb_listener_additional_certificate_attachment.0.7f63da70f4" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

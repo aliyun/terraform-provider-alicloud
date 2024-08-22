@@ -16,6 +16,11 @@ For information about Cloud Storage Gateway Storage Bundle and how to use it, se
 -> **NOTE:** Available since v1.116.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_storage_gateway_storage_bundle&exampleId=94a65ca5-3d39-301b-ed19-6f16d51339ee9cf0492c&activeTab=example&spm=docs.r.cloud_storage_gateway_storage_bundle.0.94a65ca53d" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

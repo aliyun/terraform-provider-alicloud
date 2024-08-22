@@ -16,6 +16,11 @@ For information about Application Load Balancer (ALB) Health Check Template and 
 -> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_alb_health_check_template&exampleId=daace97f-7616-a656-2c6a-cc7099240c29fb7b8add&activeTab=example&spm=docs.r.alb_health_check_template.0.daace97f76" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

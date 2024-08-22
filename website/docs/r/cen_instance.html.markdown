@@ -16,6 +16,11 @@ For information about CEN and how to use it, see [What is Cloud Enterprise Netwo
 -> **NOTE:** Available since v1.15.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_instance&exampleId=582d1a64-5b30-168e-3f05-c804cba15fdddd9611e0&activeTab=example&spm=docs.r.cen_instance.0.582d1a645b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

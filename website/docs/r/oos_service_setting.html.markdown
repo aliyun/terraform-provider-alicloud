@@ -16,6 +16,11 @@ For information about OOS Service Setting and how to use it, see [What is Servic
 -> **NOTE:** Available in v1.147.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oos_service_setting&exampleId=37a85909-9792-9c38-bdf9-041d16092b66158e8ddb&activeTab=example&spm=docs.r.oos_service_setting.0.37a8590997" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

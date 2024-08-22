@@ -16,6 +16,11 @@ For information about Cloud Monitor Service Dynamic Tag Group and how to use it,
 -> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cms_dynamic_tag_group&exampleId=a79c7aa3-0bc8-4e94-fab4-8976e8c52dead2436476&activeTab=example&spm=docs.r.cms_dynamic_tag_group.0.a79c7aa30b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

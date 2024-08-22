@@ -15,6 +15,11 @@ For information about EBS Replica Pair Drill and how to use it, see [What is Rep
 -> **NOTE:** Available since v1.215.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ebs_replica_pair_drill&exampleId=0eaa5d39-60ab-458f-69c8-863f7a8e424fdcfb6b61&activeTab=example&spm=docs.r.ebs_replica_pair_drill.0.0eaa5d3960" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -14,6 +14,11 @@ Provides a Msc Sub Webhook resource.
 -> **NOTE:** Available since v1.141.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_msc_sub_webhook&exampleId=50c682fd-ad2a-60b7-b141-135c461765a4628f6c0e&activeTab=example&spm=docs.r.msc_sub_webhook.0.50c682fdad" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about Bastion Host Host Group and how to use it, see [What is Ho
 -> **NOTE:** Available since v1.134.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_host_group&exampleId=8a03897d-8bbb-e152-8d2b-4023f0dd9350a83b2c02&activeTab=example&spm=docs.r.bastionhost_host_group.0.8a03897d8b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

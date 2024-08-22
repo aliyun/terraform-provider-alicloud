@@ -16,6 +16,11 @@ For information about RDS Service Linked Role and how to use it, see [What is Se
 -> **NOTE:** Available since v1.189.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_rds_service_linked_role&exampleId=0a7707d6-9760-35fd-28e2-89ac134ecea66e699b4b&activeTab=example&spm=docs.r.rds_service_linked_role.0.0a7707d697" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

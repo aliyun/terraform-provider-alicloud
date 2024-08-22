@@ -15,6 +15,11 @@ Alibaba Cloud SMB protocol file storage service supports user authentication bas
 -> **NOTE:** Available in 1.186.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nas_smb_acl_attachment&exampleId=ac126602-e234-c0e4-c3d0-ae14095df14e111f001a&activeTab=example&spm=docs.r.nas_smb_acl_attachment.0.ac126602e2" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

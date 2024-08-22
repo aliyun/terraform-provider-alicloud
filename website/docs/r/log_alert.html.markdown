@@ -17,6 +17,11 @@ For information about SLS Alert and how to use it, see [SLS Alert Overview](http
 -> **NOTE:** Available in 1.78.0
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_alert&exampleId=95292d19-57da-ce57-7642-9f8788f163adb3198a22&activeTab=example&spm=docs.r.log_alert.0.95292d1957" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

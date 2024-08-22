@@ -20,6 +20,11 @@ For information about ApsaraDB for MyBase Dedicated Host Account and how to use 
 -> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-mybase/latest/notice-stop-selling-mybase-hosted-instances-from-august-31-2023) from version `1.225.1`. 
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cddc_dedicated_host_account&exampleId=4ba37a0d-c6dd-89dc-fc00-86b7cef01c63418957b3&activeTab=example&spm=docs.r.cddc_dedicated_host_account.0.4ba37a0dc6" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

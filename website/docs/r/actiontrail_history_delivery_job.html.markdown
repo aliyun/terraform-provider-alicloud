@@ -24,6 +24,11 @@ For information about Actiontrail History Delivery Job and how to use it, see [W
 
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_actiontrail_history_delivery_job&exampleId=7d41ea75-d293-4450-9a50-bb747d7fab118cd7c6e5&activeTab=example&spm=docs.r.actiontrail_history_delivery_job.0.7d41ea75d2" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

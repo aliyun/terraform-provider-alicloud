@@ -17,6 +17,11 @@ For information about Ens Nat Gateway and how to use it, see [What is Nat Gatewa
 -> **NOTE:** Available since v1.227.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ens_nat_gateway&exampleId=43c8bcc1-e0c4-65db-947f-404db031e6947b77c185&activeTab=example&spm=docs.r.ens_nat_gateway.0.43c8bcc1e0" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

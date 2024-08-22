@@ -14,6 +14,11 @@ Provides a Bastion Host Host Account Attachment resource to add list host accoun
 -> **NOTE:** Available since v1.135.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_bastionhost_host_group_account_user_group_attachment&exampleId=f719282d-408d-6f2a-3cf9-b9e119e36bfdec4a6695&activeTab=example&spm=docs.r.bastionhost_host_group_account_user_group_attachment.0.f719282d40" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

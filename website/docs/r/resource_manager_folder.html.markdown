@@ -17,6 +17,11 @@ For information about Resource Manager Foler and how to use it, see [What is Res
 -> **NOTE:** A maximum of five levels of folders can be created under the root folder.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_resource_manager_folder&exampleId=87cafec5-c4eb-0dd1-ca5d-a76fd768ef0e90677803&activeTab=example&spm=docs.r.resource_manager_folder.0.87cafec5c4" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

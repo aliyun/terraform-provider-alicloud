@@ -17,6 +17,11 @@ For information about GPDB Remote A D B Data Source and how to use it, see [What
 -> **NOTE:** Available since v1.227.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_remote_adb_data_source&exampleId=29ccb4f3-21f7-217c-d64b-6ccddea267def0bb2562&activeTab=example&spm=docs.r.gpdb_remote_adb_data_source.0.29ccb4f321" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about Application Real-Time Monitoring Service (ARMS) Integratio
 -> **NOTE:** Available since v1.203.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_integration_exporter&exampleId=db888e39-4cf1-8899-133c-7226c483a5769ec780dd&activeTab=example&spm=docs.r.arms_integration_exporter.0.db888e394c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

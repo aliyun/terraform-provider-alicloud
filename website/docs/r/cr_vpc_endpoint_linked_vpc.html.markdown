@@ -16,6 +16,11 @@ For information about CR Vpc Endpoint Linked Vpc and how to use it, see [What is
 -> **NOTE:** Available since v1.199.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cr_vpc_endpoint_linked_vpc&exampleId=3bfb01d8-fad7-5567-3c5e-03e4e32c83115d54780d&activeTab=example&spm=docs.r.cr_vpc_endpoint_linked_vpc.0.3bfb01d8fa" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

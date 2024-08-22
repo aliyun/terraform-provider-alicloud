@@ -16,6 +16,11 @@ For information about Quick BI User and how to use it, see [What is User](https:
 -> **NOTE:** Available in v1.136.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_quick_bi_user&exampleId=ea3132ca-f214-fe0a-3d36-89e29b8f913cb39c601d&activeTab=example&spm=docs.r.quick_bi_user.0.ea3132caf2" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

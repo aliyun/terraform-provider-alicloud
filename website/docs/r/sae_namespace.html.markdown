@@ -16,6 +16,11 @@ For information about SAE Namespace and how to use it, see [What is Namespace](h
 -> **NOTE:** Available since v1.129.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sae_namespace&exampleId=bf42f2c9-830c-88ef-1af2-02d842d04b68dd3509a5&activeTab=example&spm=docs.r.sae_namespace.0.bf42f2c983" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

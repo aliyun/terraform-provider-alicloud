@@ -16,6 +16,11 @@ For information about Data Works Folder and how to use it, see [What is Folder](
 -> **NOTE:** Available in v1.131.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_data_works_folder&exampleId=85c5de6b-3c82-dea2-eec1-bb74fea767d42934f637&activeTab=example&spm=docs.r.data_works_folder.0.85c5de6b3c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

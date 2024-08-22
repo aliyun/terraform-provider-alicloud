@@ -16,6 +16,11 @@ For information about Amqp Static Account and how to use it, see [What is Static
 -> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_amqp_static_account&exampleId=2902d654-7c6d-0543-8a84-fb7a6bb374d3fdc21b2c&activeTab=example&spm=docs.r.amqp_static_account.0.2902d6547c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

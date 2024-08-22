@@ -18,6 +18,11 @@ For information about Cloud SSO User and how to use it, see [What is User](https
 -> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_sso_user&exampleId=9ac7ba84-6a49-e81e-4d67-1beed262fa42a7ccbe16&activeTab=example&spm=docs.r.cloud_sso_user.0.9ac7ba846a" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

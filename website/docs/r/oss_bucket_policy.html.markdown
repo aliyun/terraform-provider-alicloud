@@ -15,6 +15,11 @@ For information about OSS Bucket Policy and how to use it, see [What is Bucket P
 -> **NOTE:** Available since v1.220.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_bucket_policy&exampleId=8b9446e6-9cc7-8b46-9c87-b16c607c0bcd0827edd3&activeTab=example&spm=docs.r.oss_bucket_policy.0.8b9446e69c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

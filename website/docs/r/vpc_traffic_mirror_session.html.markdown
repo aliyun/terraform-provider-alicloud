@@ -16,6 +16,11 @@ For information about VPC Traffic Mirror Session and how to use it, see [What is
 -> **NOTE:** Available since v1.142.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_traffic_mirror_session&exampleId=3e93056a-2e0d-89da-24c4-74e9269890ad9a069d8f&activeTab=example&spm=docs.r.vpc_traffic_mirror_session.0.3e93056a2e" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

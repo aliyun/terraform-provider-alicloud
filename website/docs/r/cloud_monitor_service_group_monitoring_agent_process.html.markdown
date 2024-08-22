@@ -15,6 +15,11 @@ For information about Cloud Monitor Service Group Monitoring Agent Process and h
 -> **NOTE:** Available since v1.212.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cloud_monitor_service_group_monitoring_agent_process&exampleId=c306705e-2514-5f60-ef62-3aec0fe7411d33f22f24&activeTab=example&spm=docs.r.cloud_monitor_service_group_monitoring_agent_process.0.c306705e25" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

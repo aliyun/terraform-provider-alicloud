@@ -16,6 +16,11 @@ For information about Alb Load Balancer Common Bandwidth Package Attachment and 
 -> **NOTE:** Available since v1.200.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_alb_load_balancer_common_bandwidth_package_attachment&exampleId=f3ebb6c7-192e-e24a-a73f-f705e591c4a566d0db00&activeTab=example&spm=docs.r.alb_load_balancer_common_bandwidth_package_attachment.0.f3ebb6c719" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -18,6 +18,11 @@ For information about Container Registry Enterprise Edition namespaces and how t
 -> **NOTE:** You need to set your registry password in Container Registry Enterprise Edition console before use this resource.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cr_ee_namespace&exampleId=84a53ef2-51c5-ee91-41dd-fc139db1c54ac4bf77fd&activeTab=example&spm=docs.r.cr_ee_namespace.0.84a53ef251" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

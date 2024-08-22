@@ -19,6 +19,11 @@ For information about Max Compute Project and how to use it, see [What is Projec
 -> **NOTE:** Field `name`, `specification_type`, `order_type` has been removed from provider version 1.227.1.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_maxcompute_project&exampleId=a07de83c-1f49-a380-178f-68bcb67b9ff370a8a067&activeTab=example&spm=docs.r.maxcompute_project.0.a07de83c1f" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

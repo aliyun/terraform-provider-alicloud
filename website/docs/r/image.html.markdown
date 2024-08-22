@@ -21,6 +21,11 @@ For information about ECS Image and how to use it, see [What is Image](https://w
 -> **NOTE:** Available since v1.64.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_image&exampleId=8d8342e8-72da-4f9c-a1aa-e5764f0cddcbad72b16e&activeTab=example&spm=docs.r.image.0.8d8342e872" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -13,6 +13,11 @@ Log Service manages all the ECS instances whose logs need to be collected by usi
  [Refer to details](https://www.alibabacloud.com/help/doc-detail/28966.htm)
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_machine_group&exampleId=0845f6fe-b667-da4e-2dfc-a51e3790e72cf3c9689b&activeTab=example&spm=docs.r.log_machine_group.0.0845f6feb6" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

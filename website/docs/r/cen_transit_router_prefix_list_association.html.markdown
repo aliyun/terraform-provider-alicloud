@@ -16,6 +16,11 @@ For information about Cloud Enterprise Network (CEN) Transit Router Prefix List 
 -> **NOTE:** Available since v1.188.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_transit_router_prefix_list_association&exampleId=046c9f09-f0e6-09f2-44f2-140f46019d0854d29165&activeTab=example&spm=docs.r.cen_transit_router_prefix_list_association.0.046c9f09f0" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

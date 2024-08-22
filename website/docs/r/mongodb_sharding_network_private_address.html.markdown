@@ -16,6 +16,11 @@ For information about MongoDB Sharding Network Private Address and how to use it
 -> **NOTE:** Available since v1.157.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_mongodb_sharding_network_private_address&exampleId=fefc11d2-8aa2-b0ef-9865-e393b93452836da95b7d&activeTab=example&spm=docs.r.mongodb_sharding_network_private_address.0.fefc11d28a" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -15,6 +15,11 @@ For information about DFS Mount Point and how to use it, see [What is Mount Poin
 -> **NOTE:** Available since v1.140.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dfs_mount_point&exampleId=d5c70177-5e6d-3340-635c-e459419f15d8e190a4d7&activeTab=example&spm=docs.r.dfs_mount_point.0.d5c701775e" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

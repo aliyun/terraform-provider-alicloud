@@ -18,6 +18,11 @@ For information about Data Security Center Instance and how to use it, see [What
 -> **NOTE:** The Data Security Center Instance is not support in the international site.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_sddp_instance&exampleId=b9554da9-7cb5-f4b2-94c6-a3f53b08d51fa7740a78&activeTab=example&spm=docs.r.sddp_instance.0.b9554da97c" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

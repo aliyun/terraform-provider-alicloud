@@ -16,6 +16,11 @@ For information about RAM User Login Profile and how to use it, see [What is Log
 -> **NOTE:** Available since v1.0.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ram_login_profile&exampleId=442ec83a-6fe5-90e2-17a2-351fa3abb6a2738d91e8&activeTab=example&spm=docs.r.ram_login_profile.0.442ec83a6f" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

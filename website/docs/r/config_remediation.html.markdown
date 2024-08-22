@@ -16,6 +16,11 @@ For information about Config Remediation and how to use it, see [What is Remedia
 -> **NOTE:** Available since v1.204.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_config_remediation&exampleId=00c7a4bf-e82c-a81a-b12d-d20e8837aaa3e4d48a0d&activeTab=example&spm=docs.r.config_remediation.0.00c7a4bfe8" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

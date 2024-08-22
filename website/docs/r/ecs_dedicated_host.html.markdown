@@ -14,6 +14,11 @@ This resouce used to create a dedicated host and store its initial version. For 
 -> **NOTE:** Available in 1.91.0+.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_dedicated_host&exampleId=dc59ca38-fd10-4e9a-85c7-290e4853308e82aa96a9&activeTab=example&spm=docs.r.ecs_dedicated_host.0.dc59ca38fd" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 Basic Usage
 
 ```terraform

@@ -16,6 +16,11 @@ For information about Global Accelerator (GA) Acl entry attachment and how to us
 -> **NOTE:** Available since v1.190.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_acl_entry_attachment&exampleId=100dd0e6-5005-4456-de38-7ec339c60e19ff0f9a6c&activeTab=example&spm=docs.r.ga_acl_entry_attachment.0.100dd0e650" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

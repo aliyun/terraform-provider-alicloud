@@ -18,6 +18,11 @@ For information about ECD Custom Property and how to use it, see [What is Custom
 -> **NOTE:** Up to 10 different attributes can be created under an alibaba cloud account. Up to 50 different attribute values can be added under an attribute.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecd_custom_property&exampleId=3db4efc6-3592-2358-c623-7557341bd10e8a65d189&activeTab=example&spm=docs.r.ecd_custom_property.0.3db4efc635" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

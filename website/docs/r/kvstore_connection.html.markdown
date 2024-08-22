@@ -14,6 +14,11 @@ Operate the public network ip of the specified resource. How to use it, see [Wha
 -> **NOTE:** Available since v1.101.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_kvstore_connection&exampleId=408f87de-5b52-789b-981b-10d598c52327a8775c2b&activeTab=example&spm=docs.r.kvstore_connection.0.408f87de5b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

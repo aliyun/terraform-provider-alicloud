@@ -16,6 +16,11 @@ For information about VPC Vbr Ha and how to use it, see [What is Vbr Ha](https:/
 -> **NOTE:** Available since v1.151.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_vbr_ha&exampleId=51a841d0-a62c-fd12-fbcc-92985eb2b611632d8845&activeTab=example&spm=docs.r.vpc_vbr_ha.0.51a841d0a6" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about Global Accelerator (GA) Basic Endpoint Group and how to us
 -> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_basic_endpoint_group&exampleId=1a0bd89d-569a-7fc8-0a7e-2ea8935e46ab52cdc787&activeTab=example&spm=docs.r.ga_basic_endpoint_group.0.1a0bd89d56" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

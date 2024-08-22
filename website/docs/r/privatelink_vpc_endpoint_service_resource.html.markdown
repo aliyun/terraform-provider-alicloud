@@ -15,6 +15,11 @@ For information about Private Link Vpc Endpoint Service Resource and how to use 
 -> **NOTE:** Available since v1.110.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_privatelink_vpc_endpoint_service_resource&exampleId=f5cf7ac8-4ff3-f926-314e-3f45599f33ee5bbbed0e&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_service_resource.0.f5cf7ac84f" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

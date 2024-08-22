@@ -15,6 +15,11 @@ For information about OOS Patch Baseline and how to use it, see [What is Patch B
 -> **NOTE:** Available since v1.146.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oos_patch_baseline&exampleId=e2afef21-97cf-661b-b70a-4fe0cdcf1aa760c34163&activeTab=example&spm=docs.r.oos_patch_baseline.0.e2afef2197" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

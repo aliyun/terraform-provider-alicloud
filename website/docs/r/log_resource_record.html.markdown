@@ -16,6 +16,11 @@ For information about SLS Resource and how to use it, see [Resource management](
 -> **NOTE:** Available since v1.162.0. log resource region should be set a main region: cn-heyuan.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_resource_record&exampleId=8cfb1650-d7b0-4eef-4a2e-26acfea8e9160043000d&activeTab=example&spm=docs.r.log_resource_record.0.8cfb1650d7" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

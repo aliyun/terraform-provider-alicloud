@@ -18,6 +18,11 @@ For information about Lindorm Instance and how to use it, see [What is Instance]
 -> **NOTE:**  The Lindorm Instance does not support updating the specifications of multiple different engines, or the number of nodes at the same time.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_lindorm_instance&exampleId=b1febc0b-25a6-0a5a-25bc-eafcccf7e2feca759298&activeTab=example&spm=docs.r.lindorm_instance.0.b1febc0b25" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

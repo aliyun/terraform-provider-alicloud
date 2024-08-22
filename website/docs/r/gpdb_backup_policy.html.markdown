@@ -15,6 +15,11 @@ For information about GPDB Backup Policy and how to use it, see [What is Backup 
 -> **NOTE:** Available since v1.211.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_backup_policy&exampleId=d89225a4-9804-6a5b-bbab-5cb3f4d6127fec6c0ef0&activeTab=example&spm=docs.r.gpdb_backup_policy.0.d89225a498" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

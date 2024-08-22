@@ -16,6 +16,11 @@ For information about Dbfs Auto Snap Shot Policy and how to use it.
 -> **NOTE:** Available since v1.202.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dbfs_auto_snap_shot_policy&exampleId=53d9bd0f-a3bd-60c8-b444-848bd4d4b7ad654b3766&activeTab=example&spm=docs.r.dbfs_auto_snap_shot_policy.0.53d9bd0fa3" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -26,6 +26,11 @@ For information about Load Balancer Virtual Backend Server Group and how to use 
 -> **NOTE:** One VPC load balancer, its virtual server group can only add the same VPC ECS instances.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_slb_server_group&exampleId=4373d1f9-7b66-0d11-0be5-e55c439b3c19f7f21ef3&activeTab=example&spm=docs.r.slb_server_group.0.4373d1f97b" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -16,6 +16,11 @@ For information about VOD Editing Project and how to use it, see [What is Editin
 -> **NOTE:** Available since v1.187.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vod_editing_project&exampleId=f0e8df38-bb3c-d8b4-c822-14eced3b4bfda1bfabf3&activeTab=example&spm=docs.r.vod_editing_project.0.f0e8df38bb" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

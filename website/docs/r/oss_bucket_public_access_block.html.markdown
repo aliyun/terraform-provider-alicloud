@@ -15,6 +15,11 @@ For information about OSS Bucket Public Access Block and how to use it, see [Wha
 -> **NOTE:** Available since v1.224.0.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_bucket_public_access_block&exampleId=d27d6567-1f37-30f8-996d-a7f223723ca6cc8c7924&activeTab=example&spm=docs.r.oss_bucket_public_access_block.0.d27d65671f" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 

@@ -18,6 +18,11 @@ For information about Cassandra Backup Plan and how to use it, see [What is Back
 -> **DEPRECATED:**  This resource has been [deprecated](https://www.alibabacloud.com/help/en/apsaradb-for-cassandra/latest/cassandra-delisting-notice) from version `1.220.0`.
 
 ## Example Usage
+<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cassandra_backup_plan&exampleId=3414856e-f38c-8a1c-9fb1-9955179ec5706d9e5b6c&activeTab=example&spm=docs.r.cassandra_backup_plan.0.3414856ef3" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
+  </a>
+</div>
 
 Basic Usage
 
