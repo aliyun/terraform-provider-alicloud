@@ -69,7 +69,7 @@ func resourceAliyunOtsInstanceAttachmentCreate(d *schema.ResourceData, meta inte
 func resourceAliyunOtsInstanceAttachmentRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	object, err := otsService.DescribeOtsInstanceAttachment(d.Id())
+	object, err := otsService.DescribeOtsInstanceAttachment(d.Id(), d.Get("vpc_name").(string))
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
@@ -87,7 +87,8 @@ func resourceAliyunOtsInstanceAttachmentRead(d *schema.ResourceData, meta interf
 func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	otsService := OtsService{client}
-	object, err := otsService.DescribeOtsInstanceAttachment(d.Id())
+	instanceVpcName := d.Get("vpc_name").(string)
+	object, err := otsService.DescribeOtsInstanceAttachment(d.Id(), instanceVpcName)
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
@@ -109,5 +110,5 @@ func resourceAliyunOtsInstanceAttachmentDelete(d *schema.ResourceData, meta inte
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
-	return WrapError(otsService.WaitForOtsInstanceVpc(d.Id(), Deleted, DefaultTimeout))
+	return WrapError(otsService.WaitForOtsInstanceVpc(d.Id(), instanceVpcName, Deleted, DefaultTimeout))
 }

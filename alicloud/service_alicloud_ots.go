@@ -3,19 +3,17 @@ package alicloud
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 
 	"github.com/aliyun/aliyun-tablestore-go-sdk/tablestore/search"
 
 	otsTunnel "github.com/aliyun/aliyun-tablestore-go-sdk/tunnel"
-
-	"time"
-
-	"fmt"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ots"
@@ -292,7 +290,7 @@ func (s *OtsService) DescribeOtsInstance(instanceName string) (inst RestOtsInsta
 	return inst, nil
 }
 
-func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo, err error) {
+func (s *OtsService) DescribeOtsInstanceAttachment(id, instanceVpcName string) (inst ots.VpcInfo, err error) {
 	request := ots.CreateListVpcInfoByInstanceRequest()
 	request.RegionId = s.client.RegionId
 	request.Method = "GET"
@@ -308,17 +306,19 @@ func (s *OtsService) DescribeOtsInstanceAttachment(id string) (inst ots.VpcInfo,
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
-	if resp.TotalCount < 1 {
-		return inst, WrapErrorf(NotFoundErr("OtsInstanceAttachment", id), NotFoundMsg, ProviderERROR)
+	for _, vpcInfo := range resp.VpcInfos.VpcInfo {
+		if vpcInfo.InstanceName == id && vpcInfo.InstanceVpcName == instanceVpcName {
+			return vpcInfo, nil
+		}
 	}
-	return resp.VpcInfos.VpcInfo[0], nil
+	return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", fmt.Sprint("%s:%s", id, instanceVpcName))), NotFoundMsg, ProviderERROR)
 }
 
-func (s *OtsService) WaitForOtsInstanceVpc(id string, status Status, timeout int) error {
+func (s *OtsService) WaitForOtsInstanceVpc(id, instanceVpcName string, status Status, timeout int) error {
 	deadline := time.Now().Add(time.Duration(timeout) * time.Second)
 
 	for {
-		object, err := s.DescribeOtsInstanceAttachment(id)
+		object, err := s.DescribeOtsInstanceAttachment(id, instanceVpcName)
 		if err != nil {
 			if NotFoundError(err) {
 				if status == Deleted {
@@ -328,13 +328,12 @@ func (s *OtsService) WaitForOtsInstanceVpc(id string, status Status, timeout int
 				return WrapError(err)
 			}
 		}
-		if object.InstanceName == id && status != Deleted {
+		if object.InstanceName == id && object.InstanceVpcName == instanceVpcName && status != Deleted {
 			return nil
 		}
 		if time.Now().After(deadline) {
 			return WrapErrorf(err, WaitTimeoutMsg, id, GetFunc(1), timeout, object.InstanceName, id, ProviderERROR)
 		}
-
 	}
 }
 
