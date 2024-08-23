@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"math"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -38,8 +39,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"gopkg.in/yaml.v2"
-
-	"math"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/denverdino/aliyungo/common"
@@ -843,6 +842,9 @@ func debugOn() bool {
 		if strings.TrimSpace(part) == "terraform" {
 			return true
 		}
+	}
+	if s := os.Getenv("TF_LOG"); s == "DEBUG" || s == "TRACE" {
+		return true
 	}
 	return false
 }

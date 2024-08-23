@@ -78,7 +78,7 @@ func resourceAliyunOtsInstanceAttachmentRead(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	// There is a bug that inst does not contain instance name and vswitch ID, so this resource does not support import function.
-	//d.Set("instance_name", inst.InstanceName)
+	d.Set("instance_name", object.InstanceName)
 	d.Set("vpc_name", object.InstanceVpcName)
 	d.Set("vpc_id", object.VpcId)
 	return nil

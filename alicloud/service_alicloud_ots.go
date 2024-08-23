@@ -307,11 +307,13 @@ func (s *OtsService) DescribeOtsInstanceAttachment(id, instanceVpcName string) (
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	resp, _ := raw.(*ots.ListVpcInfoByInstanceResponse)
 	for _, vpcInfo := range resp.VpcInfos.VpcInfo {
-		if vpcInfo.InstanceName == id && vpcInfo.InstanceVpcName == instanceVpcName {
+		if resp.InstanceName == id && vpcInfo.InstanceVpcName == instanceVpcName {
+			vpcInfo.InstanceName = resp.InstanceName
+
 			return vpcInfo, nil
 		}
 	}
-	return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", fmt.Sprint("%s:%s", id, instanceVpcName))), NotFoundMsg, ProviderERROR)
+	return inst, WrapErrorf(Error(GetNotFoundMessage("OtsInstanceAttachment", fmt.Sprintf("id(instanceName:instanceVpcName): %s:%s", id, instanceVpcName))), NotFoundMsg, ProviderERROR)
 }
 
 func (s *OtsService) WaitForOtsInstanceVpc(id, instanceVpcName string, status Status, timeout int) error {
