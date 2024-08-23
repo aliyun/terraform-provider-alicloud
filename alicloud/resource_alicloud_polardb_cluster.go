@@ -266,9 +266,16 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			"storage_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"PSL5", "PSL4", "ESSDPL1", "ESSDPL2", "ESSDPL3"}, false),
+				ValidateFunc: StringInSlice([]string{"PSL5", "PSL4", "ESSDPL0", "ESSDPL1", "ESSDPL2", "ESSDPL3", "ESSDAUTOPL"}, false),
 				Computed:     true,
 				ForceNew:     true,
+			},
+			"provisioned_iops": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: polardbStorageTypeDiffSuppressFunc,
 			},
 			"storage_pay_type": {
 				Type:         schema.TypeString,
@@ -1482,6 +1489,9 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	if clusterInfo["StorageType"] != nil {
 		d.Set("storage_type", convertPolarDBStorageTypeDescribeRequest(clusterInfo["StorageType"].(string)))
 	}
+	if clusterInfo["ProvisionedIops"] != nil {
+		d.Set("provisioned_iops", clusterInfo["ProvisionedIops"].(json.Number).String())
+	}
 	if clusterInfo["StorageSpace"] != nil {
 		resultStorageSpace, _ := clusterInfo["StorageSpace"].(json.Number).Int64()
 		var storageSpace = resultStorageSpace / 1024 / 1024 / 1024
@@ -1652,6 +1662,9 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 
 	if v, ok := d.GetOk("storage_type"); ok && v.(string) != "" {
 		request["StorageType"] = d.Get("storage_type").(string)
+	}
+	if v, ok := d.GetOk("provisioned_iops"); ok && v.(string) != "" {
+		request["ProvisionedIops"], _ = strconv.ParseInt(v.(string), 10, 64)
 	}
 	if v, ok := d.GetOk("storage_space"); ok && v.(int) != 0 {
 		request["StorageSpace"] = d.Get("storage_space").(int)
@@ -1838,12 +1851,16 @@ func convertPolarDBStorageTypeDescribeRequest(source string) string {
 		return "PSL5"
 	case "Standard":
 		return "PSL4"
+	case "essdpl0":
+		return "ESSDPL0"
 	case "essdpl1":
 		return "ESSDPL1"
 	case "essdpl2":
 		return "ESSDPL2"
 	case "essdpl3":
 		return "ESSDPL3"
+	case "essdautopl":
+		return "ESSDAUTOPL"
 	}
 	return source
 }

@@ -742,24 +742,24 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"hot_replica_mode": "ON",
-					"db_node_id":       "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"hot_replica_mode": "ON",
-						"db_node_id":       CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"hot_replica_mode": "OFF",
 					"db_node_id":       "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"hot_replica_mode": "OFF",
+						"db_node_id":       CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"hot_replica_mode": "ON",
+					"db_node_id":       "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"hot_replica_mode": "ON",
 						"db_node_id":       CHECKSET,
 					}),
 				),
@@ -1157,7 +1157,7 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.SENormalPolarDBSupportRegions)
+			testAccPreCheckWithRegions(t, false, connectivity.SENormalPolarDBSupportRegions)
 		},
 
 		// module name
@@ -1176,8 +1176,9 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 					"description":         "${var.name}",
 					"resource_group_id":   "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"creation_category":   "SENormal",
-					"storage_type":        "ESSDPL1",
-					"storage_space":       "20",
+					"storage_type":        "ESSDAUTOPL",
+					"provisioned_iops":    "1000",
+					"storage_space":       "40",
 					"db_node_num":         "2",
 					"hot_standby_cluster": "ON",
 					"storage_pay_type":    "PostPaid",
@@ -1188,8 +1189,9 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
-						"storage_type":      "ESSDPL1",
-						"storage_space":     "20",
+						"storage_type":      "ESSDAUTOPL",
+						"provisioned_iops":  "1000",
+						"storage_space":     "40",
 						"storage_pay_type":  "PostPaid",
 					}),
 				),
@@ -1202,11 +1204,11 @@ func TestAccAliCloudPolarDBClusterSENormalCreate(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"storage_space": "30",
+					"storage_space": "50",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"storage_space": "30",
+						"storage_space": "50",
 					}),
 				),
 			},
