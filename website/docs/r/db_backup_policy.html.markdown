@@ -91,22 +91,21 @@ The following arguments are supported:
   - 360: A snapshot backup is performed once every 360 minutes.
   - 480: A snapshot backup is performed once every 480 minutes.
   - 720: A snapshot backup is performed once every 720 minutes.
-* `backup_priority` - (Optional, Int, Available since v1.229.0) Specifies whether the backup settings of a secondary instance are configured. Valid values:
+* `backup_priority` - (Optional, Int, Available since v1.229.1) Specifies whether the backup settings of a secondary instance are configured. Valid values:
   - 1: secondary instance preferred
   - 2: primary instance preferred
     ->**NOTE:** This parameter is suitable only for instances that run SQL Server on RDS Cluster Edition. This parameter takes effect only when BackupMethod is set to Physical. If BackupMethod is set to Snapshot, backups are forcefully performed on the primary instance that runs SQL Server on RDS Cluster Edition.
-* `enable_increment_data_backup` - (Optional, Bool, Available since v1.229.0) Specifies whether to enable incremental backup. Valid values:
+* `enable_increment_data_backup` - (Optional, Bool, Available since v1.229.1) Specifies whether to enable incremental backup. Valid values:
   - false (default): disables the feature.
   - true: enables the feature.
     ->**NOTE:** This parameter takes effect only on instances that run SQL Server with cloud disks. This parameter takes effect only when BackupPolicyMode is set to DataBackupPolicy.
-* `log_backup_local_retention_number` - (Optional, Int, Available since v1.229.0)  The number of binary log files that you want to retain on the instance. Default value: 60. Valid values: 6 to 100.
+* `log_backup_local_retention_number` - (Optional, Int, Available since v1.229.1)  The number of binary log files that you want to retain on the instance. Default value: 60. Valid values: 6 to 100.
   ->**NOTE:** This parameter takes effect only when you set the BackupPolicyMode parameter to LogBackupPolicy. If the instance runs MySQL, you can set this parameter to -1. The value -1 specifies that an unlimited number of binary log files can be retained on the instance.
-* `backup_method` - (Optional, Available since v1.229.0)  The backup method of the instance. Valid values:
+* `backup_method` - (Optional, Available since v1.229.1)  The backup method of the instance. Valid values:
   - Physical: physical backup
   - Snapshot: snapshot backup
     ->**NOTE:** This parameter takes effect only on instances that run SQL Server with cloud disks. This parameter takes effect only when BackupPolicyMode is set to DataBackupPolicy.
 
-    
 -> **NOTE:** Currently, the SQLServer instance does not support to modify `log_backup_retention_period`.
 
 ## Attributes Reference
