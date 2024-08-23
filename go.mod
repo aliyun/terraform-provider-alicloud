@@ -1,5 +1,7 @@
 module github.com/aliyun/terraform-provider-alicloud
 
+replace github.com/aliyun/terraform-provider-alicloud => .
+
 require (
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/agiledragon/gomonkey/v2 v2.3.1

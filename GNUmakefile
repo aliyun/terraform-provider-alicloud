@@ -94,9 +94,11 @@ linuxcopy:
 	tar -xvf bin/terraform-provider-alicloud_linux-amd64.tgz && mv bin/terraform-provider-alicloud $(shell dirname `which terraform`)
 
 linux:
-	GOOS=linux GOARCH=amd64 go build -o bin/terraform-provider-alicloud
-	tar czvf bin/terraform-provider-alicloud_linux-amd64.tgz bin/terraform-provider-alicloud
-	rm -rf bin/terraform-provider-alicloud
+	mkdir -p bin/registry.local/aliyun/otsinstanceattachment/0.0.1/linux_amd64
+	GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/registry.local/aliyun/otsinstanceattachment/0.0.1/linux_amd64/terraform-provider-otsinstanceattachment_0.0.1
+	upx -9 bin/registry.local/aliyun/otsinstanceattachment/0.0.1/linux_amd64/terraform-provider-otsinstanceattachment_0.0.1
+	upx -t bin/registry.local/aliyun/otsinstanceattachment/0.0.1/linux_amd64/terraform-provider-otsinstanceattachment_0.0.1
+
 
 alpha:
 	GOOS=linux GOARCH=amd64 go build -o bin/$(RELEASE_ALPHA_NAME)
