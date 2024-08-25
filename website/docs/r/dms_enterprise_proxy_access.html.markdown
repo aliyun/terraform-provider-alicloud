@@ -16,13 +16,14 @@ For information about DMS Enterprise Proxy Access and how to use it, see [What i
 -> **NOTE:** Available since v1.195.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dms_enterprise_proxy_access&exampleId=089da019-eabf-2ab4-7ba6-16f753fba16178940e36&activeTab=example&spm=docs.r.dms_enterprise_proxy_access.0.089da019ea" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dms_enterprise_proxy_access&exampleId=089da019-eabf-2ab4-7ba6-16f753fba16178940e36&activeTab=example&spm=docs.r.dms_enterprise_proxy_access.0.089da019ea&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_dms_enterprise_users" "dms_enterprise_users_ds" {

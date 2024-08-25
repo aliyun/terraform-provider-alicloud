@@ -16,13 +16,14 @@ For information about Ebs Dedicated Block Storage Cluster and how to use it, see
 -> **NOTE:** Available in v1.195.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ebs_dedicated_block_storage_cluster&exampleId=0e7a037e-f2c8-8e6c-c467-06efa06938085d0c12a4&activeTab=example&spm=docs.r.ebs_dedicated_block_storage_cluster.0.0e7a037ef2" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ebs_dedicated_block_storage_cluster&exampleId=0e7a037e-f2c8-8e6c-c467-06efa06938085d0c12a4&activeTab=example&spm=docs.r.ebs_dedicated_block_storage_cluster.0.0e7a037ef2&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_ebs_dedicated_block_storage_cluster" "default" {

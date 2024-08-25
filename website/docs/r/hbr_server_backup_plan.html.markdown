@@ -16,13 +16,14 @@ For information about Hybrid Backup Recovery (HBR) Server Backup Plan and how to
 -> **NOTE:** Available in v1.142.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_hbr_server_backup_plan&exampleId=4c2af01f-d884-b2c5-fe19-a0e59accc44ef1665bfd&activeTab=example&spm=docs.r.hbr_server_backup_plan.0.4c2af01fd8" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_hbr_server_backup_plan&exampleId=4c2af01f-d884-b2c5-fe19-a0e59accc44ef1665bfd&activeTab=example&spm=docs.r.hbr_server_backup_plan.0.4c2af01fd8&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_zones" "example" {

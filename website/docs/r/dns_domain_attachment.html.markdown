@@ -17,6 +17,12 @@ Provides bind the domain name to the DNS instance resource.
 
 ## Example Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dns_domain_attachment&exampleId=b0483a98-4ec0-cc26-1037-df40741f6a442df66981&activeTab=example&spm=docs.r.dns_domain_attachment.0.b0483a984e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_dns_domain_attachment" "dns" {
   instance_id  = "dns-cn-mp91lyq9xxxx"

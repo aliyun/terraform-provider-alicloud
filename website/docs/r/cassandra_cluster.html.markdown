@@ -26,6 +26,12 @@ The official website mark more regions. Or you can call [DescribeRegions](https:
 
 ### Create a cassandra cluster
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cassandra_cluster&exampleId=7b0f2930-a494-5be6-a564-c86f696157fb24d49271&activeTab=example&spm=docs.r.cassandra_cluster.0.7b0f2930a4&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "alicloud_cassandra_cluster" "default" {
   cluster_name        = "cassandra-cluster-name-tf"

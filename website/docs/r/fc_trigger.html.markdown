@@ -17,13 +17,14 @@ Provides an Alicloud Function Compute Trigger resource. Based on trigger, execut
 -> **NOTE:** Available since v1.93.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=63320fe3-58da-7610-755b-746b8c5491da99a36324&activeTab=example&spm=docs.r.fc_trigger.0.63320fe358" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=63320fe3-58da-7610-755b-746b8c5491da99a36324&activeTab=example&spm=docs.r.fc_trigger.0.63320fe358&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_account" "default" {}
@@ -147,6 +148,12 @@ EOF
 
 MNS topic trigger:
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=04f4d0c3-a376-e4c2-9aab-11d153798b2d63b483eb&activeTab=example&spm=docs.r.fc_trigger.1.04f4d0c3a3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-hangzhou"
@@ -239,6 +246,12 @@ resource "alicloud_fc_trigger" "default" {
 ```
 
 CDN events trigger:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=375f343e-d966-2917-a612-3acd8a14ac40d3dd408f&activeTab=example&spm=docs.r.fc_trigger.2.375f343ed9&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -362,6 +375,12 @@ EOF
 ```
 
 EventBridge trigger:
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=aa220e34-0eee-113e-1449-1b4a9d07c8185a8662d8&activeTab=example&spm=docs.r.fc_trigger.3.aa220e340e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_account" "default" {}

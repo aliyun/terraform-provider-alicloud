@@ -17,13 +17,14 @@ Provides a Alicloud Function Compute Function resource. Function allows you to t
 -> **NOTE:** Available since v1.10.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_function&exampleId=f7fa04aa-2e1e-b26b-524a-6532a803e6e63bb5168f&activeTab=example&spm=docs.r.fc_function.0.f7fa04aa2e" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_function&exampleId=f7fa04aa-2e1e-b26b-524a-6532a803e6e63bb5168f&activeTab=example&spm=docs.r.fc_function.0.f7fa04aa2e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 provider "alicloud" {

@@ -15,6 +15,12 @@ Provides a resource to put a object(content or file) to a oss bucket.
 
 ### Uploading a file to a bucket
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_bucket_object&exampleId=4528df9d-1839-abe1-5231-5c42258abbf0130de883&activeTab=example&spm=docs.r.oss_bucket_object.0.4528df9d18&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "random_integer" "default" {
   max = 99999
@@ -34,6 +40,12 @@ resource "alicloud_oss_bucket_object" "default" {
 ```
 
 ### Uploading a content to a bucket
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_bucket_object&exampleId=3143c521-8071-9e8e-b2a2-b00a627966dfffc75d9d&activeTab=example&spm=docs.r.oss_bucket_object.1.3143c52180&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "random_integer" "default" {

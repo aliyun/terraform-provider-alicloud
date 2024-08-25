@@ -14,12 +14,13 @@ This resouce used to create a dedicated host and store its initial version. For 
 -> **NOTE:** Available in 1.91.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_dedicated_host&exampleId=dc59ca38-fd10-4e9a-85c7-290e4853308e82aa96a9&activeTab=example&spm=docs.r.ecs_dedicated_host.0.dc59ca38fd" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_dedicated_host&exampleId=dc59ca38-fd10-4e9a-85c7-290e4853308e82aa96a9&activeTab=example&spm=docs.r.ecs_dedicated_host.0.dc59ca38fd&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -37,6 +38,12 @@ resource "alicloud_ecs_dedicated_host" "default" {
 ```
 
 Create Prepaid DDH
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_dedicated_host&exampleId=1289ef43-59c7-4a3f-bbed-976fc2067df23d131e63&activeTab=example&spm=docs.r.ecs_dedicated_host.1.1289ef4359&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_ecs_dedicated_host" "example" {

@@ -19,6 +19,12 @@ For information about OSS replication and how to use it, see [What is cross-regi
 
 Set bucket replication configuration
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_oss_bucket_replication&exampleId=c97485b1-93e4-26b5-9df4-b7edbb7a6e6d8cd5aa6a&activeTab=example&spm=docs.r.oss_bucket_replication.0.c97485b193&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "random_integer" "default" {
   max = 99999

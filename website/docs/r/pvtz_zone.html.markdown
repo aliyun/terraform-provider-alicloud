@@ -16,13 +16,14 @@ Provides a Private Zone resource.
 -> **NOTE:** Available since v1.13.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_pvtz_zone&exampleId=996411e1-9008-9cba-134f-db2e142804cf4085f3e0&activeTab=example&spm=docs.r.pvtz_zone.0.996411e190" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_pvtz_zone&exampleId=996411e1-9008-9cba-134f-db2e142804cf4085f3e0&activeTab=example&spm=docs.r.pvtz_zone.0.996411e190&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_pvtz_zone" "foo" {

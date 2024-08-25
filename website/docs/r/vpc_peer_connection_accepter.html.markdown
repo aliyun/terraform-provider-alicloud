@@ -16,13 +16,14 @@ For information about Vpc Peer Connection Accepter and how to use it, see [What 
 -> **NOTE:** Available since v1.196.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_peer_connection_accepter&exampleId=8204ef10-2d10-b925-a0ac-68de784036d01a919786&activeTab=example&spm=docs.r.vpc_peer_connection_accepter.0.8204ef102d" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_peer_connection_accepter&exampleId=8204ef10-2d10-b925-a0ac-68de784036d01a919786&activeTab=example&spm=docs.r.vpc_peer_connection_accepter.0.8204ef102d&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {

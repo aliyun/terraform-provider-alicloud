@@ -16,13 +16,14 @@ Provides a key pair attachment resource to bind key pair for several ECS instanc
 -> **NOTE:** After the key pair is attached with sone instances, there instances must be rebooted to make the key pair affect.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_key_pair_attachment&exampleId=2ca370e2-96a8-b73e-56dd-dbd8d2f215f16a914218&activeTab=example&spm=docs.r.key_pair_attachment.0.2ca370e296" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_key_pair_attachment&exampleId=2ca370e2-96a8-b73e-56dd-dbd8d2f215f16a914218&activeTab=example&spm=docs.r.key_pair_attachment.0.2ca370e296&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_zones" "default" {
