@@ -27,6 +27,12 @@ For information about SSL Certificates Certificate and how to use it, see [What 
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cas_certificate&exampleId=46159319-6cf8-845e-14f9-9257a4636c7e87345c27&activeTab=example&spm=docs.r.cas_certificate.0.461593196c&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 resource "random_integer" "default" {
   min = 10000

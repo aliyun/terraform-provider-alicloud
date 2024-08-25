@@ -16,13 +16,14 @@ For information about ECS Hpc Cluster and how to use it, see [What is Hpc Cluste
 -> **NOTE:** Available in v1.116.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_hpc_cluster&exampleId=f89770ff-c9df-6eb1-a7fc-4962e10ffb0da51368ca&activeTab=example&spm=docs.r.ecs_hpc_cluster.0.f89770ffc9" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_hpc_cluster&exampleId=f89770ff-c9df-6eb1-a7fc-4962e10ffb0da51368ca&activeTab=example&spm=docs.r.ecs_hpc_cluster.0.f89770ffc9&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_ecs_hpc_cluster" "example" {

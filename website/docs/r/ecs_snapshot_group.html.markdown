@@ -16,13 +16,14 @@ For information about ECS Snapshot Group and how to use it, see [What is Snapsho
 -> **NOTE:** Available in v1.160.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_snapshot_group&exampleId=08124db5-c36f-814d-6ff3-afadc143e0dc65bfc1ed&activeTab=example&spm=docs.r.ecs_snapshot_group.0.08124db5c3" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ecs_snapshot_group&exampleId=08124db5-c36f-814d-6ff3-afadc143e0dc65bfc1ed&activeTab=example&spm=docs.r.ecs_snapshot_group.0.08124db5c3&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_zones" "default" {

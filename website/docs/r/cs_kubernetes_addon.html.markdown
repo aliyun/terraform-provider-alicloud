@@ -16,13 +16,14 @@ This resource will help you to manage addon in Kubernetes Cluster, see [What is 
 -> **NOTE:** From version 1.166.0, support specifying addon customizable configuration.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cs_kubernetes_addon&exampleId=802cb43b-0665-96ca-5356-fc6755186de00979d82d&activeTab=example&spm=docs.r.cs_kubernetes_addon.0.802cb43b06" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cs_kubernetes_addon&exampleId=802cb43b-0665-96ca-5356-fc6755186de00979d82d&activeTab=example&spm=docs.r.cs_kubernetes_addon.0.802cb43b06&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {

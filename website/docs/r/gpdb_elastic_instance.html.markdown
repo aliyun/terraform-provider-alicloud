@@ -21,6 +21,12 @@ For more detail product introduction, see [here](https://www.alibabacloud.com/he
 
 ### Create a AnalyticDB for PostgreSQL instance
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_elastic_instance&exampleId=403d5598-c5b0-7b21-0d74-804f6986b86d89833aef&activeTab=example&spm=docs.r.gpdb_elastic_instance.0.403d5598c5&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_zones" "default" {
   available_resource_creation = "Gpdb"

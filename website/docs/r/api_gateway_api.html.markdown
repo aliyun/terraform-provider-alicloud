@@ -18,13 +18,14 @@ For information about Api Gateway Api and how to use it, see [Create an API](htt
 -> **NOTE:** Terraform will auto build api while it uses `alicloud_api_gateway_api` to build api.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_api_gateway_api&exampleId=efb02e53-1ba1-7435-c04d-29fbb459a7e2e612d86a&activeTab=example&spm=docs.r.api_gateway_api.0.efb02e531b" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_api_gateway_api&exampleId=efb02e53-1ba1-7435-c04d-29fbb459a7e2e612d86a&activeTab=example&spm=docs.r.api_gateway_api.0.efb02e531b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 provider "alicloud" {

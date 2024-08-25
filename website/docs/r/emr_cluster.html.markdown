@@ -19,6 +19,12 @@ Provides a EMR Cluster resource. With this you can create, read, and release  EM
 
 #### 1. Create A Cluster
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_emr_cluster&exampleId=c3c22d08-e9bd-4724-4899-8ff9f3155a8a9577ae94&activeTab=example&spm=docs.r.emr_cluster.0.c3c22d08e9&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_emr_main_versions" "default" {}
 
@@ -159,6 +165,12 @@ Scaling down is only applicable to TASK group. If you want to scale down CORE gr
 
 As the following case, we scale up the TASK group 2 nodes by increasing host_group.node_count by 2.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_emr_cluster&exampleId=52226224-6b66-0978-797f-85e3650b55fd5ec9a28f&activeTab=example&spm=docs.r.emr_cluster.1.522262246b&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_emr_main_versions" "default" {}
 
@@ -297,6 +309,12 @@ In the case of scaling down a cluster, we need to specified the host group and t
 
 The following is an example. We scale down the cluster by decreasing the node count by 2, and specifying the scale-down instance list.
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_emr_cluster&exampleId=7ee661b9-2e6a-4502-6236-ac5b6f9f6949610764b3&activeTab=example&spm=docs.r.emr_cluster.2.7ee661b92e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_emr_main_versions" "default" {}
 
@@ -428,6 +446,12 @@ resource "alicloud_emr_cluster" "default" {
 ```
 
 #### 4. Create a emr gateway cluster
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_emr_cluster&exampleId=ee3cf2c3-ee31-eb01-59de-8f649d54f0f600447e77&activeTab=example&spm=docs.r.emr_cluster.3.ee3cf2c3ee&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_emr_main_versions" "default" {}

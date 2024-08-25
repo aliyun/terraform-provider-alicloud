@@ -15,13 +15,14 @@ Provides an EDAS instance cluster attachment resource, see [What is EDAS Instanc
 
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_edas_instance_cluster_attachment&exampleId=2f892ae6-8656-f488-10d5-806421c51d104f786c6e&activeTab=example&spm=docs.r.edas_instance_cluster_attachment.0.2f892ae686" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_edas_instance_cluster_attachment&exampleId=2f892ae6-8656-f488-10d5-806421c51d104f786c6e&activeTab=example&spm=docs.r.edas_instance_cluster_attachment.0.2f892ae686&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 variable "name" {

@@ -16,13 +16,14 @@ For information about VPC Gateway Route Table Attachment and how to use it, see 
 -> **NOTE:** Available in v1.194.0+.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_gateway_route_table_attachment&exampleId=4137772f-0504-841d-3397-66cb3a3d5196eada3fd1&activeTab=example&spm=docs.r.vpc_gateway_route_table_attachment.0.4137772f05" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_gateway_route_table_attachment&exampleId=4137772f-0504-841d-3397-66cb3a3d5196eada3fd1&activeTab=example&spm=docs.r.vpc_gateway_route_table_attachment.0.4137772f05&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_vpc" "example" {

@@ -17,6 +17,12 @@ Provides a DNS resource.
 
 ## Example Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_dns&exampleId=063bc164-a125-fcd7-f4c6-b79efb0c321933b85481&activeTab=example&spm=docs.r.dns.0.063bc164a1&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 # Add a new Domain.
 resource "alicloud_dns" "dns" {

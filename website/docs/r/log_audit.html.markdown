@@ -16,13 +16,14 @@ In addition to inheriting all SLS functions, it also enhances the real-time auto
 -> **NOTE:** Available since v1.81.0
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_audit&exampleId=771f99a8-11b2-0457-b1eb-811fa59251c3441793f0&activeTab=example&spm=docs.r.log_audit.0.771f99a811" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_audit&exampleId=771f99a8-11b2-0457-b1eb-811fa59251c3441793f0&activeTab=example&spm=docs.r.log_audit.0.771f99a811&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 data "alicloud_account" "default" {}
@@ -120,6 +121,12 @@ resource "alicloud_log_audit" "example" {
 ```
 Multiple accounts Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_audit&exampleId=4ef78322-06f0-bf07-151a-03b3bba82aa2c9eb6dfb&activeTab=example&spm=docs.r.log_audit.1.4ef7832206&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_account" "default" {}
 
@@ -137,6 +144,12 @@ resource "alicloud_log_audit" "example" {
 ```
 Resource Directory Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_audit&exampleId=52d8f305-0eaf-1a81-2b89-9c96539bff9f43d4c2ed&activeTab=example&spm=docs.r.log_audit.2.52d8f3050e&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_account" "default" {}
 
@@ -152,6 +165,12 @@ resource "alicloud_log_audit" "example" {
   resource_directory_type = "all"
 }
 ```
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_audit&exampleId=9844a14c-5cfc-9781-e1fa-03defa44c0cfba3dbae6&activeTab=example&spm=docs.r.log_audit.3.9844a14c5c&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 data "alicloud_account" "default" {}
 

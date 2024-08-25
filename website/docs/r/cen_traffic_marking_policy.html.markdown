@@ -16,13 +16,14 @@ For information about Cloud Enterprise Network (CEN) Traffic Marking Policy and 
 -> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_traffic_marking_policy&exampleId=be3b43ec-5051-f623-1c57-7ba6b0cb90ba131caf90&activeTab=example&spm=docs.r.cen_traffic_marking_policy.0.be3b43ec50" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cen_traffic_marking_policy&exampleId=be3b43ec-5051-f623-1c57-7ba6b0cb90ba131caf90&activeTab=example&spm=docs.r.cen_traffic_marking_policy.0.be3b43ec50&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_cen_instance" "example" {

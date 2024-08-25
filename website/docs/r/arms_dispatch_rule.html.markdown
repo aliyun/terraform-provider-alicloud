@@ -16,13 +16,14 @@ For information about Application Real-Time Monitoring Service (ARMS) Alert Disp
 -> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
-<div class="oics-button" style="float: right;margin: 0 0 -40px 0;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_dispatch_rule&exampleId=89aa0a33-c0da-f92e-6b08-b5208fd78cf413ea1a94&activeTab=example&spm=docs.r.arms_dispatch_rule.0.89aa0a33c0" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; margin: 32px auto; max-width: 100%;">
-  </a>
-</div>
 
 Basic Usage
+
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_arms_dispatch_rule&exampleId=89aa0a33-c0da-f92e-6b08-b5208fd78cf413ea1a94&activeTab=example&spm=docs.r.arms_dispatch_rule.0.89aa0a33c0&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
 
 ```terraform
 resource "alicloud_arms_alert_contact" "default" {
