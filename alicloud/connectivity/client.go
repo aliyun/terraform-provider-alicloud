@@ -638,6 +638,20 @@ func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.D
 	return defaultTimeout
 }
 
+func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String(client.config.Protocol),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+}
+
 func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, error)) (interface{}, error) {
 	goSdkMutex.Lock()
 	defer goSdkMutex.Unlock()
@@ -2860,6 +2874,7 @@ func (client *AliyunClient) NewQuotasClientV2() (*openapi.Client, error) {
 	}
 	openapiConfig := client.teaRpcOpenapiConfig
 	openapiConfig.Endpoint = tea.String(endpoint)
+	openapiConfig.Protocol = client.teaRpcOpenapiConfig.Protocol
 	result, err := openapi.NewClient(&openapiConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
@@ -5146,6 +5161,7 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	if _err != nil {
 		return nil, _err
 	}
+	openapiClient.Protocol = tea.String(client.config.Protocol)
 
 	return openapiClient, nil
 }

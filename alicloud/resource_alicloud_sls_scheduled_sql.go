@@ -299,7 +299,7 @@ func resourceAliCloudSlsScheduledSQLCreate(d *schema.ResourceData, meta interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("CreateScheduledSQL", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("CreateScheduledSQL", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 		if err != nil {
 			if IsExpectedErrors(err, []string{"403"}) || NeedRetry(err) {
 				wait()
@@ -533,7 +533,7 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.Execute(genRoaParam("UpdateScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+			response, err = conn.Execute(client.GenRoaParam("UpdateScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -577,7 +577,7 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(genRoaParam("EnableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+					response, err = conn.Execute(client.GenRoaParam("EnableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -611,7 +611,7 @@ func resourceAliCloudSlsScheduledSQLUpdate(d *schema.ResourceData, meta interfac
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-					response, err = conn.Execute(genRoaParam("DisableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+					response, err = conn.Execute(client.GenRoaParam("DisableScheduledSQL", "PUT", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -656,7 +656,7 @@ func resourceAliCloudSlsScheduledSQLDelete(d *schema.ResourceData, meta interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("DeleteScheduledSQL", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("DeleteScheduledSQL", "DELETE", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
