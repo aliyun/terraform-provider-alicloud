@@ -1651,19 +1651,6 @@ func InArray(target string, strArray []string) bool {
 	}
 	return false
 }
-func genRoaParam(action, method, version, path string) *openapi.Params {
-	return &openapi.Params{
-		Action:      tea.String(action),
-		Version:     tea.String(version),
-		Protocol:    tea.String("HTTPS"),
-		Pathname:    tea.String(path),
-		Method:      tea.String(method),
-		AuthType:    tea.String("AK"),
-		Style:       tea.String("ROA"),
-		ReqBodyType: tea.String("formData"),
-		BodyType:    tea.String("json"),
-	}
-}
 
 func rpcParam(action, method, version string) *openapi.Params {
 	return &openapi.Params{

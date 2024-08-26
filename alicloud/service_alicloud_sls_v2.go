@@ -39,7 +39,7 @@ func (s *SlsServiceV2) DescribeSlsProject(id string) (object map[string]interfac
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetProject", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("GetProject", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -82,7 +82,7 @@ func (s *SlsServiceV2) DescribeListTagResources(id string) (object map[string]in
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("ListTagResources", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("ListTagResources", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -168,7 +168,7 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.Execute(genRoaParam("UntagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+				response, err = conn.Execute(client.GenRoaParam("UntagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -215,7 +215,7 @@ func (s *SlsServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.Execute(genRoaParam("TagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+				response, err = conn.Execute(client.GenRoaParam("TagResources", "POST", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -266,7 +266,7 @@ func (s *SlsServiceV2) DescribeSlsLogStore(id string) (object map[string]interfa
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetLogStore", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("GetLogStore", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -313,7 +313,7 @@ func (s *SlsServiceV2) DescribeGetLogStoreMeteringMode(id string) (object map[st
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetLogStoreMeteringMode", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("GetLogStoreMeteringMode", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -387,7 +387,7 @@ func (s *SlsServiceV2) DescribeSlsAlert(id string) (object map[string]interface{
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetAlert", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("GetAlert", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -460,7 +460,7 @@ func (s *SlsServiceV2) DescribeSlsScheduledSQL(id string) (object map[string]int
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.Execute(genRoaParam("GetScheduledSQL", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+		response, err = conn.Execute(client.GenRoaParam("GetScheduledSQL", "GET", "2020-12-30", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
 
 		if err != nil {
 			if NeedRetry(err) {
