@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBDatabaseMySQL(t *testing.T) {
+func TestAccAliCloudRdsDBDatabaseMySQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -67,7 +67,7 @@ func TestAccAlicloudRdsDBDatabaseMySQL(t *testing.T) {
 
 }
 
-func TestAccAlicloudRdsDBDatabaseMySQL1(t *testing.T) {
+func TestAccAliCloudRdsDBDatabaseMySQL1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -121,7 +121,7 @@ func TestAccAlicloudRdsDBDatabaseMySQL1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabaseMySQL2(t *testing.T) {
+func TestAccAliCloudRdsDBDatabaseMySQL2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -175,7 +175,7 @@ func TestAccAlicloudRdsDBDatabaseMySQL2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabasePostgreSQL(t *testing.T) {
+func TestAccAliCloudRdsDBDatabasePostgreSQL(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -228,7 +228,7 @@ func TestAccAlicloudRdsDBDatabasePostgreSQL(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabasePostgreSQL1(t *testing.T) {
+func TestAccAliCloudRdsDBDatabasePostgreSQL1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -282,7 +282,7 @@ func TestAccAlicloudRdsDBDatabasePostgreSQL1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabasePostgreSQL2(t *testing.T) {
+func TestAccAliCloudRdsDBDatabasePostgreSQL2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -336,7 +336,7 @@ func TestAccAlicloudRdsDBDatabasePostgreSQL2(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabasePostgreSQL3(t *testing.T) {
+func TestAccAliCloudRdsDBDatabasePostgreSQL3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -391,7 +391,7 @@ func TestAccAlicloudRdsDBDatabasePostgreSQL3(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudRdsDBDatabaseSQLServer(t *testing.T) {
+func TestAccAliCloudRdsDBDatabaseSQLServer(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_db_database.default"
 
@@ -516,7 +516,7 @@ variable "name" {
 }
 data "alicloud_db_zones" "default"{
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
 	instance_charge_type = "PostPaid"
 	category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
@@ -525,7 +525,7 @@ data "alicloud_db_zones" "default"{
 data "alicloud_db_instance_classes" "default" {
     zone_id = data.alicloud_db_zones.default.zones.0.id
 	engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
     category = "HighAvailability"
  	db_instance_storage_type = "cloud_essd"
 	instance_charge_type = "PostPaid"
@@ -552,7 +552,7 @@ locals {
 
 resource "alicloud_db_instance" "default" {
     engine = "PostgreSQL"
-	engine_version = "10.0"
+	engine_version = "14.0"
  	db_instance_storage_type = "cloud_essd"
 	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
