@@ -189,7 +189,7 @@ The HTTPS Listener supports the following:
 * `idle_timeout` - (Optional, Int) The timeout period of an idle connection. Unit: seconds. Default value: `15`. Valid values: `1` to `60`.
 * `request_timeout` - (Optional, Int) The timeout period of a request. Unit: seconds. Default value: `60`. Valid values: `1` to `180`.
 * `enable_http2` - (Optional) Specifies whether to enable HTTP/2. Default value: `on`. Valid values: `on`, `off`.
-* `tls_cipher_policy` - (Optional) The Transport Layer Security (TLS) security policy. Default value: `tls_cipher_policy_1_0`. Valid values: `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`.
+* `tls_cipher_policy` - (Optional) The Transport Layer Security (TLS) security policy. Default value: `tls_cipher_policy_1_0`. Valid values: `tls_cipher_policy_1_0`, `tls_cipher_policy_1_1`, `tls_cipher_policy_1_2`, `tls_cipher_policy_1_2_strict`, `tls_cipher_policy_1_2_strict_with_1_3`. **NOTE:** From version 1.229.1, `tls_cipher_policy` can be set to `tls_cipher_policy_1_2_strict_with_1_3`.
 * `x_forwarded_for` - (Optional, Set, Available since v1.13.0) Whether to set additional HTTP Header field "X-Forwarded-For". See [`x_forwarded_for`](#x_forwarded_for) below.
 * `description` - (Optional, Available since v1.69.0) The name of the listener. The name must be 1 to 256 characters in length, and can contain letters, digits, hyphens (-), forward slashes (/), periods (.), and underscores (_).
 * `delete_protection_validation` - (Optional, Bool, Available since v1.63.0) Checking DeleteProtection of SLB instance before deleting. If true, this resource will not be deleted when its SLB instance enabled DeleteProtection. Default value: `false`.
