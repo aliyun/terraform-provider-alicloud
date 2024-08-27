@@ -40,10 +40,14 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "default" {
   bucket = "${var.name}-${random_integer.default.result}"
-  acl    = "public-read"
   tags = {
     For = "example"
   }
+}
+
+resource "alicloud_oss_bucket_acl" "name" {
+  bucket = alicloud_oss_bucket.default.bucket
+  acl    = "public-read"
 }
 
 resource "alicloud_config_rule" "default" {

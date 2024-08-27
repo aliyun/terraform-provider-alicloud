@@ -38,6 +38,10 @@ resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
 
 resource "alicloud_oss_bucket" "default" {
   bucket = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+}
+
+resource "alicloud_oss_bucket_acl" "default" {
+  bucket = alicloud_oss_bucket.default.bucket
   acl    = "public-read-write"
 }
 

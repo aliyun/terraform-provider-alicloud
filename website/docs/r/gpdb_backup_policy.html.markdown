@@ -62,9 +62,7 @@ resource "alicloud_gpdb_instance" "default" {
   zone_id               = data.alicloud_gpdb_zones.default.ids.0
   instance_network_type = "VPC"
   instance_spec         = "2C16G"
-  master_node_num       = 1
   payment_type          = "PayAsYouGo"
-  private_ip_address    = "1.1.1.1"
   seg_storage_type      = "cloud_essd"
   seg_node_num          = 4
   storage_size          = 50

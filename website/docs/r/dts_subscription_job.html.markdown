@@ -92,7 +92,7 @@ resource "alicloud_db_database" "example" {
 
 resource "alicloud_db_account_privilege" "example" {
   instance_id  = alicloud_db_instance.example.id
-  account_name = alicloud_rds_account.example.name
+  account_name = alicloud_rds_account.example.account_name
   privilege    = "ReadWrite"
   db_names     = [alicloud_db_database.example.name]
 }

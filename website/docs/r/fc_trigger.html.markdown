@@ -330,7 +330,7 @@ resource "alicloud_ram_policy" "default" {
 }
 resource "alicloud_ram_role_policy_attachment" "default" {
   role_name   = alicloud_ram_role.default.name
-  policy_name = alicloud_ram_policy.default.name
+  policy_name = alicloud_ram_policy.default.policy_name
   policy_type = "Custom"
 }
 

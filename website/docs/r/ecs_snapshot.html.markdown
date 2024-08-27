@@ -79,11 +79,11 @@ resource "alicloud_instance" "default" {
 }
 
 resource "alicloud_disk" "default" {
-  count             = "2"
-  name              = var.name
-  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  category          = "cloud_efficiency"
-  size              = "20"
+  count     = "2"
+  disk_name = var.name
+  zone_id   = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  category  = "cloud_efficiency"
+  size      = "20"
 }
 
 resource "alicloud_disk_attachment" "default" {

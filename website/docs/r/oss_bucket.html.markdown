@@ -33,6 +33,10 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-acl" {
   bucket = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-acl" {
+  bucket = alicloud_oss_bucket.bucket-acl.bucket
   acl    = "private"
 }
 ```
@@ -76,8 +80,13 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-target" {
   bucket = "example-value-${random_integer.default.result}"
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-target" {
+  bucket = alicloud_oss_bucket.bucket-target.bucket
   acl    = "public-read"
 }
+
 
 resource "alicloud_oss_bucket" "bucket-logging" {
   bucket = "example-logging-${random_integer.default.result}"
@@ -104,11 +113,15 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-referer" {
   bucket = "example-value-${random_integer.default.result}"
-  acl    = "private"
   referer_config {
     allow_empty = false
     referers    = ["http://www.aliyun.com", "https://www.aliyun.com"]
   }
+}
+
+resource "alicloud_oss_bucket_acl" "default" {
+  bucket = alicloud_oss_bucket.bucket-referer.bucket
+  acl    = "private"
 }
 ```
 
@@ -128,7 +141,6 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-lifecycle1" {
   bucket = "example-lifecycle1-${random_integer.default.result}"
-  acl    = "public-read"
 
   lifecycle_rule {
     id      = "rule-days"
@@ -150,9 +162,14 @@ resource "alicloud_oss_bucket" "bucket-lifecycle1" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-lifecycle1" {
+  bucket = alicloud_oss_bucket.bucket-lifecycle1.bucket
+  acl    = "public-read"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-lifecycle2" {
   bucket = "example-lifecycle2-${random_integer.default.result}"
-  acl    = "public-read"
 
   lifecycle_rule {
     id      = "rule-days-transition"
@@ -170,9 +187,14 @@ resource "alicloud_oss_bucket" "bucket-lifecycle2" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-lifecycle2" {
+  bucket = alicloud_oss_bucket.bucket-lifecycle2.bucket
+  acl    = "public-read"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-lifecycle3" {
   bucket = "example-lifecycle3-${random_integer.default.result}"
-  acl    = "public-read"
 
   lifecycle_rule {
     id      = "rule-days-transition"
@@ -190,9 +212,14 @@ resource "alicloud_oss_bucket" "bucket-lifecycle3" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-lifecycle3" {
+  bucket = alicloud_oss_bucket.bucket-lifecycle3.bucket
+  acl    = "public-read"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-lifecycle4" {
   bucket = "example-lifecycle4-${random_integer.default.result}"
-  acl    = "public-read"
 
   lifecycle_rule {
     id      = "rule-abort-multipart-upload"
@@ -205,9 +232,14 @@ resource "alicloud_oss_bucket" "bucket-lifecycle4" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-lifecycle4" {
+  bucket = alicloud_oss_bucket.bucket-lifecycle4.bucket
+  acl    = "public-read"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
   bucket = "example-lifecycle5-${random_integer.default.result}"
-  acl    = "private"
 
   versioning {
     status = "Enabled"
@@ -238,9 +270,14 @@ resource "alicloud_oss_bucket" "bucket-versioning-lifecycle" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-versioning-lifecycle" {
+  bucket = alicloud_oss_bucket.bucket-versioning-lifecycle.bucket
+  acl    = "private"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
   bucket = format("example-lifecycle6-%s", random_integer.default.result)
-  acl    = "private"
 
   access_monitor {
     status = "Enabled"
@@ -260,9 +297,14 @@ resource "alicloud_oss_bucket" "bucket-access-monitor-lifecycle" {
   }
 }
 
+resource "alicloud_oss_bucket_acl" "bucket-access-monitor-lifecycle" {
+  bucket = alicloud_oss_bucket.bucket-access-monitor-lifecycle.bucket
+  acl    = "private"
+}
+
+
 resource "alicloud_oss_bucket" "bucket-tag-lifecycle" {
   bucket = format("example-lifecycle7-%s", random_integer.default.result)
-  acl    = "private"
 
   lifecycle_rule {
     id      = "rule-days-transition"
@@ -278,6 +320,11 @@ resource "alicloud_oss_bucket" "bucket-tag-lifecycle" {
     Created = "TF",
     For     = "example",
   }
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-tag-lifecycle" {
+  bucket = alicloud_oss_bucket.bucket-tag-lifecycle.bucket
+  acl    = "private"
 }
 ```
 
@@ -297,7 +344,6 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-policy" {
   bucket = "example-policy-${random_integer.default.result}"
-  acl    = "private"
 
   policy = <<POLICY
   {"Statement":
@@ -308,6 +354,11 @@ resource "alicloud_oss_bucket" "bucket-policy" {
             ["acs:oss:*:*:*"]}],
    "Version":"1"}
   POLICY
+}
+
+resource "alicloud_oss_bucket_acl" "default" {
+  bucket = alicloud_oss_bucket.bucket-policy.bucket
+  acl    = "private"
 }
 ```
 
@@ -347,11 +398,15 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-sserule" {
   bucket = "terraform-example-${random_integer.default.result}"
-  acl    = "private"
 
   server_side_encryption_rule {
     sse_algorithm = "AES256"
   }
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-sserule" {
+  bucket = alicloud_oss_bucket.bucket-sserule.bucket
+  acl    = "private"
 }
 
 resource "alicloud_kms_key" "kms" {
@@ -362,12 +417,16 @@ resource "alicloud_kms_key" "kms" {
 
 resource "alicloud_oss_bucket" "bucket-kms" {
   bucket = "terraform-example-kms-${random_integer.default.result}"
-  acl    = "private"
 
   server_side_encryption_rule {
     sse_algorithm     = "KMS"
     kms_master_key_id = alicloud_kms_key.kms.id
   }
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-kms" {
+  bucket = alicloud_oss_bucket.bucket-kms.bucket
+  acl    = "private"
 }
 ```
 
@@ -387,12 +446,16 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-tags" {
   bucket = "terraform-example-${random_integer.default.result}"
-  acl    = "private"
 
   tags = {
     key1 = "value1"
     key2 = "value2"
   }
+}
+
+resource "alicloud_oss_bucket_acl" "bucket-tags" {
+  bucket = alicloud_oss_bucket.bucket-tags.bucket
+  acl    = "private"
 }
 ```
 
@@ -412,11 +475,14 @@ resource "random_integer" "default" {
 
 resource "alicloud_oss_bucket" "bucket-versioning" {
   bucket = "terraform-example-${random_integer.default.result}"
-  acl    = "private"
-
   versioning {
     status = "Enabled"
   }
+}
+
+resource "alicloud_oss_bucket_acl" "default" {
+  bucket = alicloud_oss_bucket.bucket-versioning.bucket
+  acl    = "private"
 }
 ```
 
@@ -428,7 +494,7 @@ Set bucket redundancy type
   </a>
 </div></div>
 
-```terraform0
+```terraform
 resource "random_integer" "default" {
   max = 99999
   min = 10000
@@ -450,7 +516,7 @@ Set bucket accelerate configuration
   </a>
 </div></div>
 
-```terraform1
+```terraform
 resource "random_integer" "default" {
   max = 99999
   min = 10000

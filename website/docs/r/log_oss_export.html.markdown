@@ -30,8 +30,8 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "example" {
-  name        = "terraform-example-${random_integer.default.result}"
-  description = "terraform-example"
+  project_name = "terraform-example-${random_integer.default.result}"
+  description  = "terraform-example"
   tags = {
     Created = "TF",
     For     = "example",
@@ -39,8 +39,8 @@ resource "alicloud_log_project" "example" {
 }
 
 resource "alicloud_log_store" "example" {
-  project               = alicloud_log_project.example.name
-  name                  = "example-store"
+  project_name          = alicloud_log_project.example.project_name
+  logstore_name         = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
@@ -49,8 +49,8 @@ resource "alicloud_log_store" "example" {
 }
 
 resource "alicloud_log_oss_export" "example" {
-  project_name      = alicloud_log_project.example.name
-  logstore_name     = alicloud_log_store.example.name
+  project_name      = alicloud_log_project.example.project_name
+  logstore_name     = alicloud_log_store.example.logstore_name
   export_name       = "terraform-example"
   display_name      = "terraform-example"
   bucket            = "example-bucket"

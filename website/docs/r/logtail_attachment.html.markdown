@@ -34,13 +34,13 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "example" {
-  name        = "terraform-example-${random_integer.default.result}"
-  description = "terraform-example"
+  project_name = "terraform-example-${random_integer.default.result}"
+  description  = "terraform-example"
 }
 
 resource "alicloud_log_store" "example" {
-  project               = alicloud_log_project.example.name
-  name                  = "example-store"
+  project_name          = alicloud_log_project.example.project_name
+  logstore_name         = "example-store"
   retention_period      = 3650
   shard_count           = 3
   auto_split            = true
@@ -49,8 +49,8 @@ resource "alicloud_log_store" "example" {
 }
 
 resource "alicloud_logtail_config" "example" {
-  project      = alicloud_log_project.example.name
-  logstore     = alicloud_log_store.example.name
+  project      = alicloud_log_project.example.project_name
+  logstore     = alicloud_log_store.example.logstore_name
   input_type   = "file"
   name         = "terraform-example"
   output_type  = "LogService"
@@ -69,7 +69,7 @@ resource "alicloud_logtail_config" "example" {
 }
 
 resource "alicloud_log_machine_group" "example" {
-  project       = alicloud_log_project.example.name
+  project       = alicloud_log_project.example.project_name
   name          = "terraform-example"
   identify_type = "ip"
   topic         = "terraform"
@@ -77,7 +77,7 @@ resource "alicloud_log_machine_group" "example" {
 }
 
 resource "alicloud_logtail_attachment" "example" {
-  project             = alicloud_log_project.example.name
+  project             = alicloud_log_project.example.project_name
   logtail_config_name = alicloud_logtail_config.example.name
   machine_group_name  = alicloud_log_machine_group.example.name
 }

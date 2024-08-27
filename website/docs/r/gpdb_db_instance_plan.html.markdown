@@ -58,9 +58,7 @@ resource "alicloud_gpdb_instance" "default" {
   zone_id               = data.alicloud_gpdb_zones.default.ids.0
   instance_network_type = "VPC"
   instance_spec         = "2C16G"
-  master_node_num       = 1
   payment_type          = "PayAsYouGo"
-  private_ip_address    = "1.1.1.1"
   seg_storage_type      = "cloud_essd"
   seg_node_num          = 4
   storage_size          = 50
@@ -71,13 +69,15 @@ resource "alicloud_gpdb_instance" "default" {
   }
 }
 
+resource "time_static" "example" {}
+
 resource "alicloud_gpdb_db_instance_plan" "default" {
   db_instance_plan_name = var.name
   plan_desc             = var.name
   plan_type             = "PauseResume"
   plan_schedule_type    = "Regular"
-  plan_start_date       = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "1h"))
-  plan_end_date         = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(timestamp(), "24h"))
+  plan_start_date       = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(time_static.example.rfc3339, "1h"))
+  plan_end_date         = formatdate("YYYY-MM-DD'T'hh:mm:ss'Z'", timeadd(time_static.example.rfc3339, "24h"))
   plan_config {
     resume {
       plan_cron_time = "0 0 0 1/1 * ? "
@@ -87,11 +87,6 @@ resource "alicloud_gpdb_db_instance_plan" "default" {
     }
   }
   db_instance_id = alicloud_gpdb_instance.default.id
-
-  # for test
-  lifecycle {
-    ignore_changes = [plan_start_date, plan_end_date]
-  }
 }
 ```
 

@@ -78,8 +78,8 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
 
 resource "alicloud_cloud_storage_gateway_gateway_logging" "default" {
   gateway_id   = alicloud_cloud_storage_gateway_gateway.default.id
-  sls_logstore = alicloud_log_store.default.name
-  sls_project  = alicloud_log_project.default.name
+  sls_logstore = alicloud_log_store.default.logstore_name
+  sls_project  = alicloud_log_project.default.project_name
 }
 ```
 

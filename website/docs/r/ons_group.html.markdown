@@ -40,7 +40,7 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_ons_instance" "default" {
-  name = "${var.name}-${random_integer.default.result}"
+  instance_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_ons_group" "default" {
