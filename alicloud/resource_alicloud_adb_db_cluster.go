@@ -570,6 +570,11 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("payment_type")
 		d.SetPartial("pay_type")
 	}
@@ -617,6 +622,11 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
 		}
 
 		d.SetPartial("auto_renew_period")
@@ -687,14 +697,17 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		modifyDBClusterReq["ElasticIOResource"] = d.Get("elastic_io_resource")
 	}
 
-	if d.HasChange("disk_performance_level") {
-		update = true
-		modifyDBClusterReq["DiskPerformanceLevel"] = d.Get("disk_performance_level")
+	object, err := adbService.DescribeAdbDbCluster(d.Id())
+	if err != nil {
+		return WrapError(err)
 	}
 
 	if d.HasChange("elastic_io_resource_size") {
-		update = true
-		modifyDBClusterReq["ElasticIOResourceSize"] = d.Get("elastic_io_resource_size")
+		if v, ok := d.GetOk("elastic_io_resource_size"); ok && v.(string) != object["ElasticIOResourceSize"] {
+			update = true
+
+			modifyDBClusterReq["ElasticIOResourceSize"] = v
+		}
 	}
 
 	modifyDBClusterReq["RegionId"] = client.RegionId
@@ -746,7 +759,6 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		d.SetPartial("db_node_count")
 		d.SetPartial("elastic_io_resource")
 		d.SetPartial("elastic_io_resource_size")
-		d.SetPartial("disk_performance_level")
 	}
 
 	update = false
@@ -798,6 +810,60 @@ func resourceAliCloudAdbDbClusterUpdate(d *schema.ResourceData, meta interface{}
 		}
 
 		d.SetPartial("db_node_storage")
+	}
+
+	update = false
+	modifyDBClusterReq = map[string]interface{}{
+		"DBClusterId": d.Id(),
+	}
+
+	if d.HasChange("disk_performance_level") {
+		if v, ok := d.GetOk("disk_performance_level"); ok && v.(string) != object["DiskPerformanceLevel"] {
+			update = true
+
+			modifyDBClusterReq["DiskPerformanceLevel"] = v
+		}
+	}
+
+	modifyDBClusterReq["RegionId"] = client.RegionId
+	if update {
+		if _, ok := d.GetOk("mode"); ok {
+			modifyDBClusterReq["Mode"] = d.Get("mode")
+		}
+		if _, ok := d.GetOk("modify_type"); ok {
+			modifyDBClusterReq["ModifyType"] = d.Get("modify_type")
+		}
+		action := "ModifyDBCluster"
+		conn, err := client.NewAdsClient()
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, modifyDBClusterReq, &util.RuntimeOptions{})
+			if err != nil {
+				// There is service bug and needs checking IncorrectDBInstanceState.
+				// If the bug is fixed, the IncorrectDBInstanceState checking can be removed.
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "OperationDenied.OrderProcessing"}) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifyDBClusterReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{"Preparing", "ClassChanging"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 120*time.Second, adbService.AdbDbClusterStateRefreshFunc(d.Id(), "DBClusterStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("disk_performance_level")
 	}
 
 	d.Partial(false)
