@@ -39,16 +39,16 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "defaultKIe4KV" {
-  description = "${var.name}-${random_integer.default.result}"
-  name        = "${var.name}-${random_integer.default.result}"
+  description  = "${var.name}-${random_integer.default.result}"
+  project_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_log_store" "default1LI9we" {
   hot_ttl          = "8"
   retention_period = "30"
   shard_count      = "2"
-  project          = alicloud_log_project.defaultKIe4KV.name
-  name             = "${var.name}-${random_integer.default.result}"
+  project_name     = alicloud_log_project.defaultKIe4KV.project_name
+  logstore_name    = "${var.name}-${random_integer.default.result}"
 }
 
 
@@ -66,7 +66,7 @@ resource "alicloud_sls_scheduled_sql" "default" {
     sql_type                = "searchQuery"
     dest_endpoint           = "ap-northeast-1.log.aliyuncs.com"
     dest_project            = "job-e2e-project-jj78kur-ap-southeast-1"
-    source_logstore         = alicloud_log_store.default1LI9we.name
+    source_logstore         = alicloud_log_store.default1LI9we.logstore_name
     dest_logstore           = "example-open-api02"
     role_arn                = "acs:ram::1395894005868720:role/aliyunlogetlrole"
     dest_role_arn           = "acs:ram::1395894005868720:role/aliyunlogetlrole"
@@ -80,7 +80,7 @@ resource "alicloud_sls_scheduled_sql" "default" {
     data_format             = "log2log"
   }
   scheduled_sql_name = var.name
-  project            = alicloud_log_project.defaultKIe4KV.name
+  project            = alicloud_log_project.defaultKIe4KV.project_name
 }
 ```
 

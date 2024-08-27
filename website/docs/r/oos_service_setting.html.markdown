@@ -32,11 +32,15 @@ variable "name" {
 
 resource "alicloud_oss_bucket" "default" {
   bucket = var.name
+}
+
+resource "alicloud_oss_bucket_acl" "default" {
+  bucket = alicloud_oss_bucket.default.bucket
   acl    = "public-read-write"
 }
 
 resource "alicloud_log_project" "default" {
-  name = var.name
+  project_name = var.name
 }
 
 resource "alicloud_oos_service_setting" "default" {
@@ -44,7 +48,7 @@ resource "alicloud_oos_service_setting" "default" {
   delivery_oss_key_prefix   = "path1/"
   delivery_oss_bucket_name  = alicloud_oss_bucket.default.bucket
   delivery_sls_enabled      = true
-  delivery_sls_project_name = alicloud_log_project.default.name
+  delivery_sls_project_name = alicloud_log_project.default.project_name
 }
 ```
 

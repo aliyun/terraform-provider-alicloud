@@ -51,7 +51,7 @@ resource "alicloud_log_project" "default" {
 }
 
 resource "alicloud_log_store" "default" {
-  project_name          = alicloud_log_project.default.name
+  project_name          = alicloud_log_project.default.project_name
   logstore_name         = "example-store"
   shard_count           = 3
   auto_split            = true

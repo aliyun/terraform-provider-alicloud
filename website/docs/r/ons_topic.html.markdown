@@ -41,8 +41,8 @@ resource "random_integer" "default" {
 
 
 resource "alicloud_ons_instance" "default" {
-  name   = "${var.name}-${random_integer.default.result}"
-  remark = "default_ons_instance_remark"
+  instance_name = "${var.name}-${random_integer.default.result}"
+  remark        = "default_ons_instance_remark"
 }
 
 resource "alicloud_ons_topic" "default" {

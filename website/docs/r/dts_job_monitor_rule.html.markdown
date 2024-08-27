@@ -118,13 +118,13 @@ resource "alicloud_dts_migration_job" "example" {
   source_endpoint_instance_id        = alicloud_db_account_privilege.example.0.instance_id
   source_endpoint_engine_name        = "MySQL"
   source_endpoint_region             = data.alicloud_regions.example.regions.0.id
-  source_endpoint_user_name          = alicloud_rds_account.example.0.name
+  source_endpoint_user_name          = alicloud_rds_account.example.0.account_name
   source_endpoint_password           = alicloud_rds_account.example.0.account_password
   destination_endpoint_instance_type = "RDS"
   destination_endpoint_instance_id   = alicloud_db_account_privilege.example.1.instance_id
   destination_endpoint_engine_name   = "MySQL"
   destination_endpoint_region        = data.alicloud_regions.example.regions.0.id
-  destination_endpoint_user_name     = alicloud_rds_account.example.1.name
+  destination_endpoint_user_name     = alicloud_rds_account.example.1.account_name
   destination_endpoint_password      = alicloud_rds_account.example.1.account_password
   db_list = jsonencode(
     {

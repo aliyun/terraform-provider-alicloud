@@ -43,7 +43,7 @@ resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   cidr_block   = "10.4.0.0/24"
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.0.zone_id
+  zone_id      = data.alicloud_click_house_regions.default.regions.0.zone_ids.1.zone_id
 }
 
 resource "alicloud_click_house_db_cluster" "default" {

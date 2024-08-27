@@ -100,13 +100,13 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = var.name
+  node_pool_name       = var.name
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   // define with multi-labels by defining with labels blocks
   labels {
     key   = "test1"
@@ -131,19 +131,19 @@ resource "alicloud_cs_kubernetes_node_pool" "default" {
 
 #The parameter `node_count` is deprecated from version 1.158.0. Please use the new parameter `desired_size` instead, you can update it as follows.
 resource "alicloud_cs_kubernetes_node_pool" "desired_size" {
-  name                 = "desired_size"
+  node_pool_name       = "desired_size"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   desired_size         = 0
 }
 
 # Create a managed node pool. If you need to enable maintenance window, you need to set the maintenance window in `alicloud_cs_managed_kubernetes`.
 resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
-  name                 = "maintenance"
+  node_pool_name       = "maintenance"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
@@ -151,7 +151,7 @@ resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
   system_disk_size     = 40
 
   # only key_name is supported in the management node pool
-  key_name = alicloud_key_pair.default.key_name
+  key_name = alicloud_key_pair.default.key_pair_name
 
   # you need to specify the number of nodes in the node pool, which can be zero
   desired_size = 1
@@ -186,13 +186,13 @@ resource "alicloud_cs_kubernetes_node_pool" "maintenance" {
 
 #Create a node pool with spot instance.
 resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
-  name                 = "spot_instance"
+  node_pool_name       = "spot_instance"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id, data.alicloud_instance_types.cloud_efficiency.instance_types.1.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
 
   # you need to specify the number of nodes in the node pool, which can be 0
   desired_size = 1
@@ -214,13 +214,13 @@ resource "alicloud_cs_kubernetes_node_pool" "spot_instance" {
 
 #Use Spot instances to create a node pool with auto-scaling enabled
 resource "alicloud_cs_kubernetes_node_pool" "spot_auto_scaling" {
-  name                 = "spot_auto_scaling"
+  node_pool_name       = "spot_auto_scaling"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
 
   # automatic scaling node pool configuration.
   scaling_config {
@@ -238,13 +238,13 @@ resource "alicloud_cs_kubernetes_node_pool" "spot_auto_scaling" {
 
 #Create a `PrePaid` node pool.
 resource "alicloud_cs_kubernetes_node_pool" "prepaid_node" {
-  name                 = "prepaid_node"
+  node_pool_name       = "prepaid_node"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   # use PrePaid
   instance_charge_type = "PrePaid"
   period               = 1
@@ -258,7 +258,7 @@ resource "alicloud_cs_kubernetes_node_pool" "prepaid_node" {
 
 ##Create a node pool with customized kubelet parameters
 resource "alicloud_cs_kubernetes_node_pool" "customized_kubelet" {
-  name                 = "customized_kubelet"
+  node_pool_name       = "customized_kubelet"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.default.id]
   instance_types       = [data.alicloud_instance_types.cloud_efficiency.instance_types.0.id]

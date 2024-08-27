@@ -47,7 +47,7 @@ resource "alicloud_log_project" "default" {
 }
 
 resource "alicloud_log_store" "default" {
-  project_name  = alicloud_log_project.default.name
+  project_name  = alicloud_log_project.default.project_name
   logstore_name = "example-value"
 }
 
@@ -57,8 +57,8 @@ locals {
 }
 
 resource "alicloud_log_store_index" "example" {
-  project  = alicloud_log_project.default.name
-  logstore = alicloud_log_store.default.name
+  project  = alicloud_log_project.default.project_name
+  logstore = alicloud_log_store.default.logstore_name
   full_text {
     case_sensitive = false
     token          = local.sls_default_token
@@ -257,8 +257,8 @@ resource "alicloud_fc_service" "default" {
   description = "example-value"
   role        = alicloud_ram_role.default.arn
   log_config {
-    project                 = alicloud_log_project.default.name
-    logstore                = alicloud_log_store.default.name
+    project                 = alicloud_log_project.default.project_name
+    logstore                = alicloud_log_store.default.logstore_name
     enable_instance_metrics = true
     enable_request_metrics  = true
   }

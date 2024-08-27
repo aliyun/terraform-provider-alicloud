@@ -32,7 +32,7 @@ resource "alicloud_vpc_traffic_mirror_filter" "example" {
 resource "alicloud_vpc_traffic_mirror_filter_ingress_rule" "example" {
   traffic_mirror_filter_id = alicloud_vpc_traffic_mirror_filter.example.id
   priority                 = "1"
-  rule_action              = "accept"
+  action                   = "accept"
   protocol                 = "UDP"
   destination_cidr_block   = "10.0.0.0/24"
   source_cidr_block        = "10.0.0.0/24"

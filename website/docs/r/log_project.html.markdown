@@ -32,8 +32,8 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "example" {
-  name        = "terraform-example-${random_integer.default.result}"
-  description = "terraform-example"
+  project_name = "terraform-example-${random_integer.default.result}"
+  description  = "terraform-example"
   tags = {
     Created = "TF",
     For     = "example",
@@ -57,9 +57,9 @@ resource "random_integer" "default" {
 }
 
 resource "alicloud_log_project" "example_policy" {
-  name        = "terraform-example-${random_integer.default.result}"
-  description = "terraform-example"
-  policy      = <<EOF
+  project_name = "terraform-example-${random_integer.default.result}"
+  description  = "terraform-example"
+  policy       = <<EOF
 {
   "Statement": [
     {

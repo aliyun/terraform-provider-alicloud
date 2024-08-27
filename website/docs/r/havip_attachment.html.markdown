@@ -81,7 +81,7 @@ resource "alicloud_instance" "example" {
 }
 
 resource "alicloud_havip_attachment" "example" {
-  havip_id    = alicloud_havip.example.id
+  ha_vip_id   = alicloud_havip.example.id
   instance_id = alicloud_instance.example.id
 }
 ```

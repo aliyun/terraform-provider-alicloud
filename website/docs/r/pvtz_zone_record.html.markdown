@@ -25,7 +25,7 @@ Basic Usage
 
 ```terraform
 resource "alicloud_pvtz_zone" "zone" {
-  name = "foo.test.com"
+  zone_name = "foo.test.com"
 }
 
 resource "alicloud_pvtz_zone_record" "foo" {

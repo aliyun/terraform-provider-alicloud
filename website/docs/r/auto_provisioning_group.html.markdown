@@ -58,10 +58,10 @@ resource "alicloud_auto_provisioning_group" "default" {
 }
 
 resource "alicloud_ecs_launch_template" "template" {
-  name              = var.name
-  image_id          = data.alicloud_images.default.images[0].id
-  instance_type     = "ecs.n1.tiny"
-  security_group_id = alicloud_security_group.default.id
+  launch_template_name = var.name
+  image_id             = data.alicloud_images.default.images[0].id
+  instance_type        = "ecs.n1.tiny"
+  security_group_id    = alicloud_security_group.default.id
 }
 
 resource "alicloud_security_group" "default" {

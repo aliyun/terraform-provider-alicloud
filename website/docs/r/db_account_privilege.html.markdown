@@ -70,7 +70,7 @@ resource "alicloud_db_account" "account" {
 
 resource "alicloud_db_account_privilege" "privilege" {
   instance_id  = alicloud_db_instance.instance.id
-  account_name = alicloud_db_account.account.name
+  account_name = alicloud_db_account.account.account_name
   privilege    = "ReadOnly"
   db_names     = alicloud_db_database.db.*.name
 }
