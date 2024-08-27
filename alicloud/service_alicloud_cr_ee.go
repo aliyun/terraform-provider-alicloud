@@ -452,46 +452,74 @@ func (c *CrService) ListCrEERepoTags(instanceId string, repoId string, pageNo in
 }
 
 func (c *CrService) DescribeCrEESyncRule(id string) (*cr_ee.SyncRulesItem, error) {
+	response := &cr_ee.ListRepoSyncRuleResponse{}
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	instanceId := parts[0]
-	namespace := parts[1]
-	syncRuleId := parts[2]
 
-	pageNo := 1
+	request := cr_ee.CreateListRepoSyncRuleRequest()
+	request.RegionId = c.client.RegionId
+	request.InstanceId = parts[0]
+	request.NamespaceName = parts[1]
+	request.PageSize = requests.NewInteger(PageSizeLarge)
+	request.PageNo = requests.NewInteger(1)
+
+	idExist := false
 	for {
-		response := &cr_ee.ListRepoSyncRuleResponse{}
-		request := cr_ee.CreateListRepoSyncRuleRequest()
-		request.RegionId = c.client.RegionId
-		request.InstanceId = instanceId
-		request.NamespaceName = namespace
-		request.PageNo = requests.NewInteger(pageNo)
-		request.PageSize = requests.NewInteger(PageSizeLarge)
-		raw, err := c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-			return creeClient.ListRepoSyncRule(request)
+		var raw interface{}
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			raw, err = c.client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
+				return creeClient.ListRepoSyncRule(request)
+			})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
+		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+
 		if err != nil {
 			return nil, WrapErrorf(err, DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
-		addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 
 		response, _ = raw.(*cr_ee.ListRepoSyncRuleResponse)
+
 		if !response.ListRepoSyncRuleIsSuccess {
 			return nil, WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, id, request.GetActionName(), AlibabaCloudSdkGoERROR)
 		}
 
+		if len(response.SyncRules) < 1 {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("CrEE:SyncRule", id)), NotFoundWithResponse, response)
+		}
+
 		for _, rule := range response.SyncRules {
-			if rule.SyncRuleId == syncRuleId && rule.LocalInstanceId == instanceId {
+			if rule.LocalInstanceId == parts[0] && rule.LocalNamespaceName == parts[1] && rule.SyncRuleId == parts[2] {
+				idExist = true
 				return &rule, nil
 			}
 		}
 
 		if len(response.SyncRules) < PageSizeLarge {
-			return nil, WrapErrorf(errors.New("sync rule not found"), NotFoundMsg, AlibabaCloudSdkGoERROR)
+			break
 		}
 
-		pageNo++
+		pageNum, err := getNextpageNumber(request.PageNo)
+		if err != nil {
+			return nil, WrapError(err)
+		}
+
+		request.PageNo = pageNum
 	}
+
+	if !idExist {
+		return nil, WrapErrorf(Error(GetNotFoundMessage("CrEE:SyncRule", id)), NotFoundWithResponse, response)
+	}
+
+	return nil, nil
 }
