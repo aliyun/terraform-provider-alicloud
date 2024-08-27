@@ -1,5 +1,5 @@
 ---
-subcategory: "Ens"
+subcategory: "ENS"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ens_nat_gateway"
 description: |-
