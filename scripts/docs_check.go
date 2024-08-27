@@ -98,26 +98,34 @@ func main() {
 				exitCode = 1
 				continue
 			}
-			if strings.Contains(text, "Available since v") || strings.Contains(text, "Deprecated since v") {
+			if strings.Contains(text, "Available since v") {
 				versionChecked = true
-				for _, v := range []string{"Available since v", "Deprecated since v"} {
-					if strings.Contains(text, v) && !strings.HasPrefix(text, "-> **NOTE:** "+v) {
-						parts := strings.Split(text, v)
-						fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, "-> **NOTE:** "+v+strings.Replace(parts[1], "+", "", -1), text)
-						exitCode = 1
-					}
+				v := "Available since v"
+				if strings.Contains(text, v) && !strings.HasPrefix(text, "-> **NOTE:** "+v) {
+					parts := strings.Split(text, v)
+					fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, "-> **NOTE:** "+v+strings.Replace(parts[1], "+", "", -1), text)
+					exitCode = 1
 				}
 				continue
 			}
-			if strings.Contains(text, "Available in v") || strings.Contains(text, "Deprecated from v") {
+			if strings.Contains(text, "Available in v") {
 				versionChecked = true
-				for _, v := range []string{"Available in v", "Deprecated from v"} {
-					if strings.Contains(text, v) {
-						parts := strings.Split(text, v)
-						v = strings.Replace(strings.Replace(v, "in", "since", -1), "from", "since", -1)
-						fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, parts[0]+v+strings.Replace(parts[1], "+", "", -1), text)
-						exitCode = 1
-					}
+				v := "Available in v"
+				if strings.Contains(text, v) {
+					parts := strings.Split(text, v)
+					v = strings.Replace(strings.Replace(v, "in", "since", -1), "from", "since", -1)
+					fmt.Printf("\n[Error] line %d: Expected: %s Got: %s", line, parts[0]+v+strings.Replace(parts[1], "+", "", -1), text)
+					exitCode = 1
+				}
+				continue
+			}
+			if strings.Contains(text, "-> **DEPRECATED:**") || strings.Contains(text, "-> **NOTE:** deprecated since") ||
+				strings.Contains(text, "-> **NOTE:** Deprecated since") ||
+				(strings.Contains(text, "This resource has been") && (strings.Contains(text, "deprecated") || strings.Contains(text, "DEPRECATED"))) {
+				versionChecked = true
+				if !strings.HasPrefix(text, "-> **DEPRECATED:**") {
+					fmt.Printf("\n[Error] line %d: Expected: %s. Got: %s.", line, "-> **DEPRECATED:** This [resource|data source] has been deprecated from vxxx", text)
+					exitCode = 1
 				}
 				continue
 			}
