@@ -385,7 +385,7 @@ func resourceAliCloudDBInstance() *schema.Resource {
 			},
 			"tde_status": {
 				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"Enabled"}, false),
+				ValidateFunc: StringInSlice([]string{"Enabled", "Disabled"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
