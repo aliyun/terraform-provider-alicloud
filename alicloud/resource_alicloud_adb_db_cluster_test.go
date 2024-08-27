@@ -133,7 +133,7 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_category": "Cluster",
 					"db_node_class":       "C8",
-					"description":         "${var.name}",
+					"description":         name,
 					"db_node_count":       "1",
 					"db_node_storage":     "100",
 					"mode":                "reserver",
@@ -238,6 +238,33 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"payment_type":      "Subscription",
+					"period":            "1",
+					"renewal_status":    "AutoRenewal",
+					"auto_renew_period": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type":      "Subscription",
+						"renewal_status":    "AutoRenewal",
+						"auto_renew_period": "2",
+						"pay_type":          "PrePaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+						"pay_type":     "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"db_node_class":   "C8",
 					"db_node_count":   "1",
 					"db_node_storage": "100",
@@ -264,9 +291,10 @@ func TestAccAliCloudADBDbCluster_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auto_renew_period", "modify_type", "period", "renewal_status"},
 			},
 		},
 	})
@@ -295,7 +323,7 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_category": "MixedStorage",
-					"description":         "${var.name}",
+					"description":         name,
 					"mode":                "flexible",
 					"compute_resource":    "8Core32GB",
 					"vswitch_id":          "${local.vswitch_id}",
@@ -445,7 +473,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"db_cluster_category": "MixedStorage",
-					"description":         "${var.name}",
+					"description":         name,
 					"mode":                "flexible",
 					"compute_resource":    "32Core128GB",
 					"vswitch_id":          "${local.vswitch_id}",
@@ -571,84 +599,9 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudADBDbCluster_modifyPayType(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_adb_db_cluster.default"
-	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap2)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &AdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeAdbDbCluster")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%sadbCluster%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAdbDbClusterBasicDependence0)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, false, connectivity.AdbReserverUnSupportRegions)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_category": "Cluster",
-					"db_node_class":       "C8",
-					"description":         "${var.name}",
-					"db_node_count":       "1",
-					"db_node_storage":     "100",
-					"mode":                "reserver",
-					"vswitch_id":          "${local.vswitch_id}",
-					"payment_type":        "PayAsYouGo",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"db_cluster_category": "Cluster",
-						"db_node_class":       "C8",
-						"description":         name,
-						"db_node_count":       "1",
-						"db_node_storage":     "100",
-						"mode":                "reserver",
-						"vswitch_id":          CHECKSET,
-						"payment_type":        "PayAsYouGo",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "Subscription",
-					"period":       "1",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type": "Subscription",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"payment_type": "PayAsYouGo",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"payment_type": "PayAsYouGo",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew_period", "period", "renewal_status"},
-			},
-		},
-	})
-}
-
 func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
 	resourceId := "alicloud_adb_db_cluster.default"
 	ra := resourceAttrInit(resourceId, AliCloudAdbDbClusterMap2)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -669,28 +622,42 @@ func TestAccAliCloudADBDbCluster_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_cluster_category": "MixedStorage",
-					"description":         "${var.name}",
-					"mode":                "flexible",
-					"compute_resource":    "32Core128GB",
-					"vswitch_id":          "${local.vswitch_id}",
-					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
-					"elastic_io_resource": "1",
-					"disk_encryption":     "true",
-					"kms_id":              "${alicloud_kms_key.default.id}",
+					"db_cluster_category":      "MixedStorage",
+					"description":              name,
+					"mode":                     "flexible",
+					"compute_resource":         "32Core128GBNEW",
+					"vswitch_id":               "${local.vswitch_id}",
+					"vpc_id":                   "${data.alicloud_vpcs.default.ids.0}",
+					"elastic_io_resource":      "1",
+					"disk_encryption":          "true",
+					"elastic_io_resource_size": "8Core64GB",
+					"disk_performance_level":   "PL1",
+					"kms_id":                   "${alicloud_kms_key.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_cluster_category": "MixedStorage",
-						"description":         name,
-						"mode":                "flexible",
-						"compute_resource":    "32Core128GB",
-						"vswitch_id":          CHECKSET,
-						"vpc_id":              CHECKSET,
-						"db_node_class":       "E32",
-						"elastic_io_resource": "1",
-						"disk_encryption":     "true",
-						"kms_id":              CHECKSET,
+						"db_cluster_category":      "MixedStorage",
+						"description":              name,
+						"mode":                     "flexible",
+						"compute_resource":         "32Core128GBNEW",
+						"elastic_io_resource_size": "8Core64GB",
+						"disk_performance_level":   "PL1",
+						"vswitch_id":               CHECKSET,
+						"vpc_id":                   CHECKSET,
+						"db_node_class":            "E32",
+						"elastic_io_resource":      "1",
+						"disk_encryption":          "true",
+						"kms_id":                   CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"elastic_io_resource_size": "12Core96GB",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"elastic_io_resource_size": "12Core96GB",
 					}),
 				),
 			},
@@ -715,7 +682,6 @@ var AliCloudAdbDbClusterMap0 = map[string]string{
 	"modify_type":         NOSET,
 	"payment_type":        "PayAsYouGo",
 	"pay_type":            "PostPaid",
-	"period":              NOSET,
 	"renewal_status":      NOSET,
 	"resource_group_id":   CHECKSET,
 	"security_ips.#":      "1",
@@ -738,7 +704,6 @@ var AliCloudAdbDbClusterMap1 = map[string]string{
 	"modify_type":         NOSET,
 	"payment_type":        "PayAsYouGo",
 	"pay_type":            "PostPaid",
-	"period":              NOSET,
 	"renewal_status":      NOSET,
 	"resource_group_id":   CHECKSET,
 	"security_ips.#":      "1",
