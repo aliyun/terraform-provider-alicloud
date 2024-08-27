@@ -50,6 +50,15 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"status": `"Creating"`,
 		}),
 	}
+	typeConf := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
+			"transit_router_route_table_type": `"System"`,
+		}),
+		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
+			"ids":                             `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
+			"transit_router_route_table_type": `"System"`,
+		}),
+	}
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
 			"ids":                               `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
@@ -58,6 +67,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"transit_router_route_table_ids":    `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}"]`,
 			"transit_router_route_table_names":  `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_name}"]`,
 			"transit_router_route_table_status": `"Active"`,
+			"transit_router_route_table_type":   `"Custom"`,
 		}),
 		fakeConfig: testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand, map[string]string{
 			"ids":                               `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}_fake"]`,
@@ -66,6 +76,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"transit_router_route_table_ids":    `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_id}_fake"]`,
 			"transit_router_route_table_names":  `["${alicloud_cen_transit_router_route_table.default.transit_router_route_table_name}_fake"]`,
 			"transit_router_route_table_status": `"Creating"`,
+			"transit_router_route_table_type":   `"System"`,
 		}),
 	}
 	var existAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -74,9 +85,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 			"names.#":                                "1",
 			"tables.#":                               "1",
 			"tables.0.transit_router_route_table_id": CHECKSET,
-			"tables.0.transit_router_route_table_description": `desp`,
-			"tables.0.transit_router_route_table_name":        CHECKSET,
-			"tables.0.transit_router_route_table_type":        CHECKSET,
+			"tables.0.transit_router_route_table_type": CHECKSET,
 		}
 	}
 	var fakeAlicloudCenTransitRouterRouteTablesDataSourceNameMapFunc = func(rand int) map[string]string {
@@ -93,7 +102,7 @@ func TestAccAlicloudCenTransitRouterRouteTablesDataSource(t *testing.T) {
 	preCheck := func() {
 		testAccPreCheckWithRegions(t, true, connectivity.CenTRSupportRegions)
 	}
-	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, allConf)
+	alicloudCenTransitRouterRouteTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, transitRouterRouteTableStatusConf, nameRegexConf, statusConf, typeConf, allConf)
 }
 func testAccCheckAlicloudCenTransitRouterRouteTablesDataSourceName(rand int, attrMap map[string]string) string {
 	var pairs []string

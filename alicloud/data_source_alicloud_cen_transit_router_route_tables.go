@@ -64,6 +64,12 @@ func dataSourceAlicloudCenTransitRouterRouteTables() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Active", "Creating", "Deleting", "Updating"}, false),
 			},
+			"transit_router_route_table_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -118,6 +124,9 @@ func dataSourceAlicloudCenTransitRouterRouteTablesRead(d *schema.ResourceData, m
 	}
 	if v, ok := d.GetOk("transit_router_route_table_status"); ok {
 		request["TransitRouterRouteTableStatus"] = v
+	}
+	if v, ok := d.GetOk("transit_router_route_table_type"); ok {
+		request["TransitRouterRouteTableType"] = v
 	}
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
