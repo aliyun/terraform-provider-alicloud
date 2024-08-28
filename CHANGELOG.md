@@ -1,39 +1,41 @@
-## 1.229.1 (Unreleased)
+## 1.230.0 (Unreleased)
+## 1.229.1 (August 28, 2024)
 
 ENHANCEMENTS:
 
-- resource/alicloud_cs_serverless_kubernetes: support modify cluster name and migrate cluster; add params custom_san, addon version and add param delete_options for delete operation; update vpc_id as Optional; deprecate load_balancer_spec, logging_type, sls_project_name; remove force_update, create_v2_cluster, vswitch_id. resource/alicloud_cs_managed_kubernetes: support update custom_san, refactor modifyCluster and output error message if deleteCluster fails. resource/alicloud_cs_kubernetes: refactor modifyCluster and output error message if deleteCluster fails. docs: improve code sample for alicloud_cs_kubernetes, alicloud_cs_serverless_kubernetes. [GH-7524]
-- resource/alicloud_db_backup_policy: add backup_priority,enable_increment_data_backup,log_backup_local_retention_number,backup_method argument.resource/alicloud_db_instance: Example Change the instance release time. [GH-7549]
-- resource/alicloud_kvstore_instance: Improved update delay time. [GH-7560]
-- alicloud/service_alicloud_polardb: modified loose_polar_log_bin compatible with mysql5.6. [GH-7566]
-- resource/alicloud_cr_ee_namespace: Removed the name enums limitation; Added retry strategy. [GH-7571]
-- resource/alicloud_cdn_domain_config: Added retry strategy for error code ServiceBusy. [GH-7572]
-- resource/alicloud_polardb_cluster: modified parameters provisioned_iops and imporved storage_type; resource/alicloud_polardb_cluster_test: modified parameters provisioned_iops; docs: modified polardb_cluster parameters. [GH-7575]
-- resource/alicloud_cr_ee_repo: Removed the namespace, name, summary, detail enums limitation. [GH-7576]
-- resource/alicloud_ssl_certificates_service_certificate: Removed the certificate_name, name enums limitation. [GH-7583]
-- resource/alicloud_slb_listener: Supported tls_cipher_policy set to tls_cipher_policy_1_2_strict_with_1_3. [GH-7591]
-- resource/alicloud_db_instance: add tde_status disabled status. [GH-7594]
-- resource/alicloud_cr_ee_sync_rule: Removed the namespace_name, target_namespace_name, repo_name, target_repo_name enums limitation; Added retry strategy. [GH-7595]
-- resource/alicloud_amqp_instance: add resource not found code. [GH-7604]
-- data-source/alicloud_cen_transit_router_route_tables: support type filter. [GH-7598]
-- docs: deprecate the product Brain Industrial. [GH-7580]
-- docs: modified polardb_cluster support pg serverless. [GH-7582]
-- docs: Improved the document cas_certificate. [GH-7584]
-- docs: Supports link to explorer. [GH-7585]
-- docs: Example change the document version number. [GH-7586]
-- docs: Improve link section to explorer. [GH-7589]
-- docs: db_database improves the description of attributes. [GH-7592]
-- docs: remove deprecated attributes in examples. [GH-7593]
-- docs: Improves subcategory for ens. [GH-7600]
-- docs: improve subcategory for Ehpc. [GH-7603]
-- docs: update version info for cs. [GH-7605]
+- resource/alicloud_cs_serverless_kubernetes: support modify cluster name and migrate cluster; add params custom_san, addon version and add param delete_options for delete operation; update vpc_id as Optional; deprecate load_balancer_spec, logging_type, sls_project_name; remove force_update, create_v2_cluster, vswitch_id. resource/alicloud_cs_managed_kubernetes: support update custom_san, refactor modifyCluster and output error message if deleteCluster fails. resource/alicloud_cs_kubernetes: refactor modifyCluster and output error message if deleteCluster fails. docs: improve code sample for alicloud_cs_kubernetes, alicloud_cs_serverless_kubernetes. ([#7524](https://github.com/aliyun/terraform-provider-alicloud/issues/7524))
+- resource/alicloud_db_backup_policy: add backup_priority,enable_increment_data_backup,log_backup_local_retention_number,backup_method argument.resource/alicloud_db_instance: Example Change the instance release time. ([#7549](https://github.com/aliyun/terraform-provider-alicloud/issues/7549))
+- resource/alicloud_kvstore_instance: Improved update delay time. ([#7560](https://github.com/aliyun/terraform-provider-alicloud/issues/7560))
+- alicloud/service_alicloud_polardb: modified loose_polar_log_bin compatible with mysql5.6. ([#7566](https://github.com/aliyun/terraform-provider-alicloud/issues/7566))
+- resource/alicloud_cr_ee_namespace: Removed the name enums limitation; Added retry strategy. ([#7571](https://github.com/aliyun/terraform-provider-alicloud/issues/7571))
+- resource/alicloud_cdn_domain_config: Added retry strategy for error code ServiceBusy. ([#7572](https://github.com/aliyun/terraform-provider-alicloud/issues/7572))
+- resource/alicloud_polardb_cluster: modified parameters provisioned_iops and imporved storage_type; resource/alicloud_polardb_cluster_test: modified parameters provisioned_iops; docs: modified polardb_cluster parameters. ([#7575](https://github.com/aliyun/terraform-provider-alicloud/issues/7575))
+- resource/alicloud_cr_ee_repo: Removed the namespace, name, summary, detail enums limitation. ([#7576](https://github.com/aliyun/terraform-provider-alicloud/issues/7576))
+- resource/alicloud_ssl_certificates_service_certificate: Removed the certificate_name, name enums limitation. ([#7583](https://github.com/aliyun/terraform-provider-alicloud/issues/7583))
+- resource/alicloud_slb_listener: Supported tls_cipher_policy set to tls_cipher_policy_1_2_strict_with_1_3. ([#7591](https://github.com/aliyun/terraform-provider-alicloud/issues/7591))
+- resource/alicloud_db_instance: add tde_status disabled status. ([#7594](https://github.com/aliyun/terraform-provider-alicloud/issues/7594))
+- resource/alicloud_cr_ee_sync_rule: Removed the namespace_name, target_namespace_name, repo_name, target_repo_name enums limitation; Added retry strategy. ([#7595](https://github.com/aliyun/terraform-provider-alicloud/issues/7595))
+- resource/alicloud_amqp_instance: add resource not found code. ([#7604](https://github.com/aliyun/terraform-provider-alicloud/issues/7604))
+- data-source/alicloud_cen_transit_router_route_tables: support type filter. ([#7598](https://github.com/aliyun/terraform-provider-alicloud/issues/7598))
+- docs: deprecate the product Brain Industrial. ([#7580](https://github.com/aliyun/terraform-provider-alicloud/issues/7580))
+- docs: modified polardb_cluster support pg serverless. ([#7582](https://github.com/aliyun/terraform-provider-alicloud/issues/7582))
+- docs: Improved the document cas_certificate. ([#7584](https://github.com/aliyun/terraform-provider-alicloud/issues/7584))
+- docs: Supports link to explorer. ([#7585](https://github.com/aliyun/terraform-provider-alicloud/issues/7585))
+- docs: Example change the document version number. ([#7586](https://github.com/aliyun/terraform-provider-alicloud/issues/7586))
+- docs: Improve link section to explorer. ([#7589](https://github.com/aliyun/terraform-provider-alicloud/issues/7589))
+- docs: db_database improves the description of attributes. ([#7592](https://github.com/aliyun/terraform-provider-alicloud/issues/7592))
+- docs: remove deprecated attributes in examples. ([#7593](https://github.com/aliyun/terraform-provider-alicloud/issues/7593))
+- docs: Improves subcategory for ens. ([#7600](https://github.com/aliyun/terraform-provider-alicloud/issues/7600))
+- docs: improve subcategory for Ehpc. ([#7603](https://github.com/aliyun/terraform-provider-alicloud/issues/7603))
+- docs: update version info for cs. ([#7605](https://github.com/aliyun/terraform-provider-alicloud/issues/7605))
+- docs: docs: Improves link sections. ([#7607](https://github.com/aliyun/terraform-provider-alicloud/issues/7607))
 
 BUG FIXES:
 
-- resource/alicloud_db_instance: Fix tde_status cannot be displayed. [GH-7562]
-- resource/alicloud_db_instance: Fix set server_cert and client_ca_cert is sensitive. [GH-7581]
-- resource/alicloud_adb_db_cluster: Fixed the create error caused by field elastic_io_resource_size, disk_performance_level. [GH-7596]
-- resource/alicloud_mongodb_instance: Fixed the read error caused by error code SingleNodeNotSupport. [GH-7602]
+- resource/alicloud_db_instance: Fix tde_status cannot be displayed. ([#7562](https://github.com/aliyun/terraform-provider-alicloud/issues/7562))
+- resource/alicloud_db_instance: Fix set server_cert and client_ca_cert is sensitive. ([#7581](https://github.com/aliyun/terraform-provider-alicloud/issues/7581))
+- resource/alicloud_adb_db_cluster: Fixed the create error caused by field elastic_io_resource_size, disk_performance_level. ([#7596](https://github.com/aliyun/terraform-provider-alicloud/issues/7596))
+- resource/alicloud_mongodb_instance: Fixed the read error caused by error code SingleNodeNotSupport. ([#7602](https://github.com/aliyun/terraform-provider-alicloud/issues/7602))
 
 ## 1.229.0 (August 21, 2024)
 
