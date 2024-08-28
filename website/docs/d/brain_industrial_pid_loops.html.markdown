@@ -13,7 +13,7 @@ This data source provides the Brain Industrial Pid Loops of the current Alibaba 
 
 -> **NOTE:** Available since v1.117.0.
 
--> **DEPRECATED:**  This data source has been deprecated from version `1.230.0`.
+-> **DEPRECATED:**  This data source has been deprecated from version `1.229.1`.
 
 ## Example Usage
 

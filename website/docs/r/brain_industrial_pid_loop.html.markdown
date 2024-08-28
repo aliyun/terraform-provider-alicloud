@@ -13,7 +13,7 @@ Provides a Brain Industrial Pid Loop resource.
 
 -> **NOTE:** Available since v1.117.0.
 
--> **DEPRECATED:**  This resource has been deprecated from version `1.230.0`.
+-> **DEPRECATED:**  This resource has been deprecated from version `1.229.1`.
 
 ## Example Usage
 
