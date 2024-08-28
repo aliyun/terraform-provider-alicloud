@@ -501,7 +501,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 	d.Set("db_instance_class", object["DBInstanceClass"])
 	d.Set("db_instance_storage", object["DBInstanceStorage"])
 	d.Set("storage_engine", object["StorageEngine"])
-	d.Set("storage_type", object["StorageType"])
+	d.Set("storage_type", convertMongoDBInstanceStorageTypeResponse(fmt.Sprint(object["StorageType"])))
 	d.Set("provisioned_iops", formatInt(object["ProvisionedIops"]))
 	d.Set("vpc_id", object["VPCId"])
 	d.Set("vswitch_id", object["VSwitchId"])
@@ -577,7 +577,7 @@ func resourceAliCloudMongoDBInstanceRead(d *schema.ResourceData, meta interface{
 
 	sslAction, err := ddsService.DescribeDBInstanceSSL(d.Id())
 	if err != nil {
-		if !IsExpectedErrors(err, []string{"StorageTypeOrInstanceTypeNotSupported"}) {
+		if !IsExpectedErrors(err, []string{"StorageTypeOrInstanceTypeNotSupported", "SingleNodeNotSupport"}) {
 			return WrapError(err)
 		}
 	} else {
@@ -1278,4 +1278,13 @@ func resourceAliCloudMongoDBInstanceDelete(d *schema.ResourceData, meta interfac
 	}
 
 	return nil
+}
+
+func convertMongoDBInstanceStorageTypeResponse(source string) string {
+	switch source {
+	case "cloud_essd":
+		return "cloud_essd1"
+	}
+
+	return source
 }
