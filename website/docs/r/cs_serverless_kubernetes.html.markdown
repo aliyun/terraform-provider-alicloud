@@ -29,7 +29,7 @@ Please refer to the `Authorization management` and `Cluster management` sections
 
 -> **NOTE:** From version 1.162.0, support for creating professional serverless cluster.
 
--> **NOTE:** From version 1.230.0, support to migrate basic serverless cluster to professional serverless cluster.
+-> **NOTE:** From version 1.229.1, support to migrate basic serverless cluster to professional serverless cluster.
 
 ## Example Usage
 
@@ -124,27 +124,27 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (Optional, Deprecated since v1.226.0) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
 * `addons` - (Optional, Available since v1.91.0) You can specific network plugin, log component, ingress component and so on. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 * `time_zone` - (Optional, Available since v1.123.1) The time zone of the cluster.
 * `zone_id` - (Optional, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
 * `service_cidr` - (Optional, ForceNew, Available since v1.123.1) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
-* `logging_type` - (Optional, ForceNew, Deprecated since v1.226.0) Enable log service, Valid value `SLS`. 
-* `sls_project_name` - (Optional, ForceNew, Deprecated since v1.226.0) If you use an existing SLS project, you must specify `sls_project_name`.
+* `logging_type` - (Optional, ForceNew, Deprecated since v1.229.1) Enable log service, Valid value `SLS`. 
+* `sls_project_name` - (Optional, ForceNew, Deprecated since v1.229.1) If you use an existing SLS project, you must specify `sls_project_name`.
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
-* `delete_options` - (Optional) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
+* `delete_options` - (Optional, Available since v1.229.1) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `cluster_spec` - (Optional, ForceNew, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
     - ack.standard: Standard serverless clusters.
     - ack.pro.small: Professional serverless clusters.
-* `custom_san` - (Optional) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
+* `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
 
 *Removed params*
 
-* `vswitch_id` - (Removed since v1.226.0) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
-* `private_zone` - (Deprecated from version 1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
-* `create_v2_cluster` - (Removed since v1.226.0) whether to create a v2 version cluster.
-* `force_update` - (Removed since v1.226.0) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
+* `vswitch_id` - (Removed since v1.229.1) The vswitch where new kubernetes cluster will be located. Specify one vswitch's id, if it is not specified, a new VPC and VSwicth will be built. It must be in the zone which `availability_zone` specified.
+* `private_zone` - (Deprecated since v1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
+* `create_v2_cluster` - (Removed since v1.229.1) whether to create a v2 version cluster.
+* `force_update` - (Removed since v1.229.1) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
 
 ### `addons`
 
@@ -152,7 +152,7 @@ The addons supports the following:
 
 * `name` - (Optional) Name of the ACK add-on. The name must match one of the names returned by [DescribeAddons](https://help.aliyun.com/document_detail/171524.html).
 * `config` - (Optional) The ACK add-on configurations. For more config information, see [cs_kubernetes_addon_metadata](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/cs_kubernetes_addon_metadata).
-* `version` - (Optional) It specifies the version of the component.
+* `version` - (Optional, Available since v1.229.1) It specifies the version of the component.
 * `disabled` - (Optional) Disables the automatic installation of a component. Default is `false`.
 
 The following example is the definition of addons block, The type of this field is list:
