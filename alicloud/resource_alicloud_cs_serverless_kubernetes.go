@@ -55,7 +55,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				Removed:  "Field 'vswitch_id' has been removed from provider version 1.230.0. New field 'vswitch_ids' replace it.",
+				Removed:  "Field 'vswitch_id' has been removed from provider version 1.229.1. New field 'vswitch_ids' replace it.",
 			},
 			"vswitch_ids": {
 				Type:     schema.TypeList,
@@ -138,7 +138,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 			"force_update": {
 				Type:     schema.TypeBool,
 				Optional: true,
-				Removed:  "Field 'force_update' has been removed from provider version 1.230.0.",
+				Removed:  "Field 'force_update' has been removed from provider version 1.229.1.",
 			},
 			"security_group_id": {
 				Type:     schema.TypeString,
@@ -186,19 +186,19 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
-				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.230.0. The load balancer has been changed to PayByCLCU so that no spec is need anymore.",
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.229.1. The load balancer has been changed to PayByCLCU so that no spec is need anymore.",
 			},
 			"logging_type": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Default:    "SLS",
-				Deprecated: "Field 'logging_type' has been deprecated from provider version 1.230.0. Please use addons `alibaba-log-controller` to enable logging.",
+				Deprecated: "Field 'logging_type' has been deprecated from provider version 1.229.1. Please use addons `alibaba-log-controller` to enable logging.",
 			},
 			"sls_project_name": {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'sls_project_name' has been deprecated from provider version 1.230.0. Please use the field `config` of addons `alibaba-log-controller` to specify log project name.",
+				Deprecated: "Field 'sls_project_name' has been deprecated from provider version 1.229.1. Please use the field `config` of addons `alibaba-log-controller` to specify log project name.",
 			},
 			"time_zone": {
 				Type:     schema.TypeString,
@@ -222,7 +222,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
-				Removed:  "Field 'create_v2_cluster' has been removed from provider version 1.230.0.",
+				Removed:  "Field 'create_v2_cluster' has been removed from provider version 1.229.1.",
 			},
 			"rrsa_metadata": {
 				Type:     schema.TypeList,
