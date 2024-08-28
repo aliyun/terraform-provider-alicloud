@@ -89,7 +89,7 @@ resource "alicloud_log_alert" "example" {
 Basic Usage for new alert
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_alert&exampleId=3e6948e6-2850-8796-36a8-6a87dfd4d52ebf1b224a&activeTab=example&spm=docs.r.log_alert.1.3e6948e628&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_alert&exampleId=c21c7650-789a-fe6a-59cf-81dc055a64d950d2b31e&activeTab=example&spm=docs.r.log_alert.1.c21c765078&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -214,7 +214,7 @@ resource "alicloud_log_alert" "example-2" {
 Basic Usage for alert template
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_alert&exampleId=8cbedad9-5651-795c-4c08-df5aeaf9eeb14295755c&activeTab=example&spm=docs.r.log_alert.2.8cbedad956&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_log_alert&exampleId=cea67a8f-cee7-ce99-008f-0fa3e60f113cca6b547a&activeTab=example&spm=docs.r.log_alert.2.cea67a8fce&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
