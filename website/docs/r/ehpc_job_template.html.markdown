@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic High Performance Computing(ehpc)"
+subcategory: "Elastic_High_Performance_Computing(Ehpc)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ehpc_job_template"
 sidebar_current: "docs-alicloud-resource-ehpc-job-template"
@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud Ehpc Job Template resource.
 ---
 
-# alicloud\_ehpc\_job\_template
+# alicloud_ehpc_job_template
 
 Provides a Ehpc Job Template resource.
 
 For information about Ehpc Job Template and how to use it, see [What is Job Template](https://www.alibabacloud.com/help/product/57664.html).
 
--> **NOTE:** Available in v1.133.0+.
+-> **NOTE:** Available since v1.133.0.
 
 ## Example Usage
 

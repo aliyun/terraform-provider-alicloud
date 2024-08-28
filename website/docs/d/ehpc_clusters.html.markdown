@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic High Performance Computing(ehpc)"
+subcategory: "Elastic_High_Performance_Computing(Ehpc)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ehpc_clusters"
 sidebar_current: "docs-alicloud-datasource-ehpc-clusters"
@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ehpc Clusters to the user.
 ---
 
-# alicloud\_ehpc\_clusters
+# alicloud_ehpc_clusters
 
 This data source provides the Ehpc Clusters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.173.0+.
+-> **NOTE:** Available since v1.173.0.
 
 ## Example Usage
 
@@ -49,14 +49,14 @@ The following arguments are supported:
   * `exception`: The cluster encounters an exception.
   * `releasing`: The cluster is being released.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `names` - A list of Cluster names.
 * `clusters` - A list of Ehpc Clusters. Each element contains the following attributes:
   * `account_type` - The server type of the account.
-		* `client_version` - The version number of the client used by the cluster.
+  * `client_version` - The version number of the client used by the cluster.
   * `cluster_id` - The id of E-HPC Cluster.
   * `cluster_name` - The name of E-HPC cluster.
   * `compute_count` - The number of compute nodes in the cluster.
@@ -88,3 +88,10 @@ The following attributes are exported in addition to the arguments listed above:
   * `volume_type` - The type of the network shared storage. Valid value: NAS.
   * `vpc_id` - The ID of the VPC network.
   * `vswitch_id` - The vswitch id.
+  * `manager_count` - The number of control nodes.
+  * `application` - A list of clustered applications.
+    * `tag` - Application Tags.
+  * `zone_id` - The available zone ID.
+  * `post_install_script` - List of post-installation scripts.
+    * `url` - The download path of the script.
+    * `args` - The parameters of the script.
