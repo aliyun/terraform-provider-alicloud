@@ -54,6 +54,9 @@ func (s *AmqpServiceV2) DescribeAmqpInstance(id string) (object map[string]inter
 
 	v, err := jsonpath.Get("$.Data", response)
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotfound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		}
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data", response)
 	}
 
