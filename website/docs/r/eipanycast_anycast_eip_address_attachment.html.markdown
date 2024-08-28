@@ -80,7 +80,7 @@ Multiple Usage
 -> **NOTE:**  Anycast EIP supports binding cloud resource instances in multiple regions. Only one cloud resource instance is supported as the default origin station, and the rest are normal origin stations. When no access point is specified or an access point is added, the access request is forwarded to the default origin by default.  If you are bound for the first time, the Default value of the binding mode is **Default * *. /li> li> If you are not binding for the first time, you can set the binding mode to **Default**, and the new Default origin will take effect. The original Default origin will be changed to a common origin.
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=47442fdf-b9e0-2bad-8037-7201f1ddf0de92f69825&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.1.47442fdfb9&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_eipanycast_anycast_eip_address_attachment&exampleId=aa4fd8d3-f48b-e412-01d0-81401540669093b77a06&activeTab=example&spm=docs.r.eipanycast_anycast_eip_address_attachment.1.aa4fd8d3f4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -248,7 +248,7 @@ resource "alicloud_fc_trigger" "default" {
 CDN events trigger:
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=375f343e-d966-2917-a612-3acd8a14ac40d3dd408f&activeTab=example&spm=docs.r.fc_trigger.2.375f343ed9&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fc_trigger&exampleId=33bbfc00-315e-a4c1-44ac-4df032a1b46a0167ff13&activeTab=example&spm=docs.r.fc_trigger.2.33bbfc0031&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
