@@ -41,7 +41,7 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "ask-example"
+  default = "ask-example-pro"
 }
 
 data "alicloud_zones" "default" {
@@ -50,13 +50,13 @@ data "alicloud_zones" "default" {
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "10.1.0.0/21"
+  cidr_block = "10.2.0.0/21"
 }
 
 resource "alicloud_vswitch" "default" {
   vswitch_name = var.name
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "10.1.1.0/24"
+  cidr_block   = "10.2.1.0/24"
   zone_id      = data.alicloud_zones.default.zones[0].id
 }
 
@@ -75,8 +75,6 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   service_discovery_types = ["PrivateZone"]
   # Enable log service, A project named k8s-log-{ClusterID} will be automatically created
   logging_type = "SLS"
-  # Select an existing sls project
-  # sls_project_name             = ""
 
   # tags
   tags = {
@@ -95,7 +93,9 @@ resource "alicloud_cs_serverless_kubernetes" "serverless" {
   addons {
     name = "knative"
   }
-
+  addons {
+    name = "managed-arms-prometheus"
+  }
 }
 ```
 
