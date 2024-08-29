@@ -45,6 +45,12 @@ func dataSourceAlicloudRouteTables() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"route_table_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"System", "Custom"}, false),
+			},
 			"router_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -162,6 +168,9 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("route_table_name"); ok {
 		request["RouteTableName"] = v
 	}
+	if v, ok := d.GetOk("route_table_type"); ok {
+		request["RouteTableType"] = v
+	}
 	if v, ok := d.GetOk("router_id"); ok {
 		request["RouterId"] = v
 	}
@@ -222,7 +231,7 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-		
+
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -237,7 +246,7 @@ func dataSourceAlicloudRouteTablesRead(d *schema.ResourceData, meta interface{})
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_route_tables", action, AlibabaCloudSdkGoERROR)
 		}
-		
+
 		resp, err := jsonpath.Get("$.RouterTableList.RouterTableListType", response)
 		if err != nil {
 			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.RouterTableList.RouterTableListType", response)
