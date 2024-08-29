@@ -48,6 +48,18 @@ func TestAccAlicloudVPCRouteTablesDataSourceBasic(t *testing.T) {
 		}),
 	}
 
+	typeConfig := dataSourceTestAccConfig{
+		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"route_table_type": `"System"`,
+			"vpc_id":           `"${alicloud_vpc.default.id}"`,
+		}),
+		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
+			"route_table_type": `"System"`,
+			"name_regex":       `"${alicloud_route_table.default.name}"`,
+			"vpc_id":           `"${alicloud_vpc.default.id}_fake"`,
+		}),
+	}
+
 	idsConfig := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"ids": `[ "${alicloud_route_table.default.id}" ]`,
@@ -106,6 +118,7 @@ func TestAccAlicloudVPCRouteTablesDataSourceBasic(t *testing.T) {
 			"status":            `"Available"`,
 			"route_table_name":  `"${alicloud_route_table.default.name}"`,
 			"page_number":       `1`,
+			"route_table_type":  `"Custom"`,
 		}),
 		fakeConfig: testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand, map[string]string{
 			"name_regex":        `"${alicloud_route_table.default.name}_fake"`,
@@ -115,10 +128,11 @@ func TestAccAlicloudVPCRouteTablesDataSourceBasic(t *testing.T) {
 			"status":            `"Pending"`,
 			"route_table_name":  `"${alicloud_route_table.default.name}_fake"`,
 			"page_number":       `2`,
+			"route_table_type":  `"System"`,
 		}),
 	}
 
-	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, statusConfig, vpcIdConfig, idsConfig, tagsConfig, resourceGroupIdConfig, pagingConf, allConfig)
+	routeTablesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConfig, statusConfig, vpcIdConfig, typeConfig, idsConfig, tagsConfig, resourceGroupIdConfig, pagingConf, allConfig)
 }
 
 func testAccCheckAlicloudRouteTablesDataSourceConfigBaisc(rand int, attrMap map[string]string) string {
@@ -163,16 +177,10 @@ var existRouteTablesMapFunc = func(rand int) map[string]string {
 		"tables.0.id":                CHECKSET,
 		"tables.0.route_table_type":  CHECKSET,
 		"tables.0.router_id":         CHECKSET,
-		"tables.0.name":              fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
-		"tables.0.description":       fmt.Sprintf("tf-testAccRouteTablesDatasource%d_description", rand),
 		"tables.0.status":            "Available",
 		"tables.0.vswitch_ids.#":     CHECKSET,
 		"tables.0.vpc_id":            CHECKSET,
-		"tables.0.tags.%":            "2",
-		"tables.0.tags.Created":      "TF",
-		"tables.0.tags.For":          "acceptance test",
 		"tables.0.router_type":       CHECKSET,
-		"tables.0.route_table_name":  fmt.Sprintf("tf-testAccRouteTablesDatasource%d", rand),
 		"tables.0.route_table_id":    CHECKSET,
 		"tables.0.resource_group_id": CHECKSET,
 	}
