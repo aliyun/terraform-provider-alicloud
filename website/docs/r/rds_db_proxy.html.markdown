@@ -103,6 +103,9 @@ The following arguments are supported:
 * `vswitch_id` - (Required, ForceNew)The ID of the vSwitch that is associated with the specified VPC.
 * `db_proxy_connection_prefix` - (Optional)The new prefix of the proxy endpoint. Enter a prefix.
 * `db_proxy_connect_string_port` - (Optional)The port number that is associated with the proxy endpoint.
+* `db_proxy_instance_type` - (Optional, Available since v1.230.0) The database proxy type. Valid values:
+  - common: universal proxy.
+  - exclusive: Exclusive proxy (default).
 * `effective_time` - (Optional)When modifying the number of proxy instances,The time when you want to apply the new database proxy settings.Valid values:
   - Immediate: ApsaraDB RDS immediately applies the new settings.
   - MaintainTime: ApsaraDB RDS applies the new settings during the maintenance window that you specified. For more information, see Modify the maintenance window.
@@ -145,7 +148,7 @@ The following arguments are supported:
 * `upgrade_time` - (Optional) The time when you want to upgrade the database proxy version of the instance. Valid values:
   - MaintainTime: ApsaraDB RDS performs the upgrade during the maintenance window that you specified. This is the default value. For more information, see Modify the maintenance window.
   - Immediate: ApsaraDB RDS immediately performs the upgrade.
-  - SpecificTime: ApsaraDB RDS performs the upgrade at a specified point in time.  
+  - SpecificTime: ApsaraDB RDS performs the upgrade at a specified point in time.
 * `switch_time` - (Optional) The point in time at which you want to upgrade the database proxy version of the instance. Specify the time in the ISO 8601 standard in the yyyy-MM-ddTHH:mm:ssZ format. The time must be in UTC.
 * `resource_group_id` - (Optional) The ID of the resource group.
 
