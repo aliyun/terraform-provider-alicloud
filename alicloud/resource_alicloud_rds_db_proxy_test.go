@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
+func TestAccAliCloudRdsDBProxy_MySQL(t *testing.T) {
 	var connection map[string]interface{}
 	var primary map[string]interface{}
 	var readonly map[string]interface{}
@@ -35,7 +36,8 @@ func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
 		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeDBReadonlyInstance")
 	rand := acctest.RandString(5)
-
+	effectiveSpecificTime := time.Now().UTC().Add(45 * time.Minute).Format("2006-01-02T15:04:05Z")
+	switchTime := time.Now().UTC().Add(45 * time.Minute).Format("2006-01-02T15:04:05Z")
 	rac := resourceAttrCheckInit(rc_connection, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccDBProxy%s", rand)
@@ -53,22 +55,64 @@ func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":           "${alicloud_db_instance.default.id}",
-					"instance_network_type": "VPC",
-					"db_proxy_instance_num": "2",
-					"vswitch_id":            "${alicloud_db_instance.default.vswitch_id}",
-					"vpc_id":                "${alicloud_db_instance.default.vpc_id}",
-					"depends_on":            []string{"alicloud_db_readonly_instance.default"},
+					"instance_id":            "${alicloud_db_instance.default.id}",
+					"instance_network_type":  "VPC",
+					"db_proxy_instance_num":  "2",
+					"db_proxy_instance_type": "common",
+					"vswitch_id":             "${alicloud_db_instance.default.vswitch_id}",
+					"vpc_id":                 "${alicloud_db_instance.default.vpc_id}",
+					"depends_on":             []string{"alicloud_db_readonly_instance.default"},
+					"resource_group_id":      "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					rc_primary.checkResourceExists(),
 					rc_readonly.checkResourceExists(),
 					testAccCheck(map[string]string{
-						"instance_id":           CHECKSET,
-						"instance_network_type": "VPC",
-						"db_proxy_instance_num": "2",
-						"vswitch_id":            CHECKSET,
-						"vpc_id":                CHECKSET,
+						"instance_id":            CHECKSET,
+						"db_proxy_instance_type": CHECKSET,
+						"instance_network_type":  "VPC",
+						"db_proxy_instance_num":  "2",
+						"vswitch_id":             CHECKSET,
+						"vpc_id":                 CHECKSET,
+						"resource_group_id":      CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"upgrade_time": "Immediate",
+					"switch_time":  switchTime,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"upgrade_time": "Immediate",
+						"switch_time":  CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"db_proxy_instance_num":   "2",
+					"db_proxy_instance_type":  "exclusive",
+					"effective_time":          "SpecificTime",
+					"effective_specific_time": effectiveSpecificTime,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"db_proxy_instance_num":   "2",
+						"db_proxy_instance_type":  "exclusive",
+						"effective_time":          "SpecificTime",
+						"effective_specific_time": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -137,13 +181,15 @@ func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"db_proxy_instance_num": "3",
-					"effective_time":        "Immediate",
+					"db_proxy_instance_num":  "3",
+					"effective_time":         "Immediate",
+					"db_proxy_instance_type": "exclusive",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"db_proxy_instance_num": "3",
-						"effective_time":        "Immediate",
+						"db_proxy_instance_num":  "3",
+						"effective_time":         "Immediate",
+						"db_proxy_instance_type": "exclusive",
 					}),
 				),
 			},
@@ -170,19 +216,10 @@ func TestAccAlicloudRdsDBProxy_MySQL(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{
-					"upgrade_time": "Immediate",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"upgrade_time": "Immediate",
-					}),
-				),
-			},
-			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: false,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       false,
+				ImportStateVerifyIgnore: []string{"switch_time", "effective_specific_time"},
 			},
 		},
 	})
@@ -238,7 +275,7 @@ resource "alicloud_db_instance" "default" {
     engine = "MySQL"
 	engine_version = "8.0"
  	db_instance_storage_type = "cloud_essd"
-	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_type = "mysql.x2.large.2c"
 	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
 	vswitch_id = local.vswitch_id
 	instance_name = var.name

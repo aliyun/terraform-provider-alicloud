@@ -2009,7 +2009,7 @@ func (s *RdsService) tagsToString(tags []Tag) string {
 	return string(v)
 }
 
-func (s *RdsService) DescribeDBProxy(id string) (map[string]interface{}, error) {
+func (s *RdsService) DescribeDBProxy(id string) (object map[string]interface{}, err error) {
 	action := "DescribeDBProxy"
 	request := map[string]interface{}{
 		"RegionId":     s.client.RegionId,
@@ -2030,7 +2030,39 @@ func (s *RdsService) DescribeDBProxy(id string) (map[string]interface{}, error) 
 		return nil, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	addDebug(action, response, request)
-	return response, nil
+	object = make(map[string]interface{})
+	v, err := jsonpath.Get("$.DBProxyConnectStringItems", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DBProxyConnectStringItems", response)
+	}
+	if dbProxyInstanceType, ok := response["DBProxyInstanceType"]; ok {
+		object["DBProxyInstanceType"] = dbProxyInstanceType
+	}
+	object["DBProxyInstanceStatus"] = response["DBProxyInstanceStatus"]
+	if dBProxyInstanceNum, ok := response["DBProxyInstanceNum"]; ok {
+		object["DBProxyInstanceNum"] = dBProxyInstanceNum
+	}
+	if dBProxyPersistentConnectionStatus, ok := response["DBProxyPersistentConnectionStatus"]; ok {
+		object["DBProxyPersistentConnectionStatus"] = dBProxyPersistentConnectionStatus
+	}
+	if dBProxyInstanceCurrentMinorVersion, ok := response["DBProxyInstanceCurrentMinorVersion"]; ok {
+		object["DBProxyInstanceCurrentMinorVersion"] = dBProxyInstanceCurrentMinorVersion
+	}
+	if dBProxyInstanceLatestMinorVersion, ok := response["DBProxyInstanceLatestMinorVersion"]; ok {
+		object["DBProxyInstanceLatestMinorVersion"] = dBProxyInstanceLatestMinorVersion
+	}
+	if dBProxyServiceStatus, ok := response["DBProxyServiceStatus"]; ok {
+		object["DBProxyServiceStatus"] = dBProxyServiceStatus
+	}
+	if dBProxyConnectStringItems, ok := v.(map[string]interface{})["DBProxyConnectStringItems"].([]interface{}); ok {
+		if len(dBProxyConnectStringItems) < 1 {
+			return nil, WrapErrorf(Error(GetNotFoundMessage("DBProxyConnectStringItems", id)), NotFoundMsg, ProviderERROR)
+		}
+		dBProxyConnectStringItem := dBProxyConnectStringItems[0].(map[string]interface{})
+		object["DBProxyVpcId"] = dBProxyConnectStringItem["DBProxyVpcId"]
+		object["DBProxyVswitchId"] = dBProxyConnectStringItem["DBProxyVswitchId"]
+	}
+	return object, nil
 }
 
 func (s *RdsService) DescribeDBProxyEndpoint(id string, endpointName string) (map[string]interface{}, error) {
@@ -2551,9 +2583,6 @@ func (s *RdsService) RdsDBProxyStateRefreshFunc(id string, failStates []string) 
 			return nil, "", WrapError(err)
 		}
 		for _, failState := range failStates {
-			if _, ok := object["DBProxyInstanceStatus"]; !ok && failState == "Deleted" {
-				return nil, "", nil
-			}
 			if object["DBProxyInstanceStatus"] == failState {
 				return object, fmt.Sprint(object["DBProxyInstanceStatus"]), WrapError(Error(FailedToReachTargetStatus, object["DBProxyInstanceStatus"]))
 			}
