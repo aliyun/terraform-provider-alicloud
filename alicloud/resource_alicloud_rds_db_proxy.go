@@ -68,6 +68,12 @@ func resourceAlicloudRdsDBProxy() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: validation.StringInSlice([]string{"Standard", "Custom"}, false),
 			},
+			"db_proxy_instance_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"common", "exclusive"}, false),
+			},
 			"read_only_instance_weight": {
 				Type:     schema.TypeSet,
 				Optional: true,
@@ -183,6 +189,10 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 	if ok && vpcId.(string) != "" {
 		request["VSwitchId"] = vSwithId
 	}
+	dBProxyInstanceType, ok := d.GetOk("db_proxy_instance_type")
+	if ok && vpcId.(string) != "" {
+		request["DBProxyInstanceType"] = dBProxyInstanceType
+	}
 	resourceGroupId, ok := d.GetOk("resource_group_id")
 	if ok && vpcId.(string) != "" {
 		request["ResourceGroupId"] = resourceGroupId
@@ -207,7 +217,7 @@ func resourceAlicloudRdsDBProxyCreate(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	d.SetId(request["DBInstanceId"].(string))
-	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(d.Id(), []string{"Deleting"}))
+	stateConf := BuildStateConf([]string{"Creating"}, []string{"Running"}, d.Timeout(schema.TimeoutCreate), 3*time.Minute, rdsService.RdsDBProxyStateRefreshFunc(request["DBInstanceId"].(string), []string{"Deleting"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -230,6 +240,7 @@ func resourceAlicloudRdsDBProxyRead(d *schema.ResourceData, meta interface{}) er
 		d.SetId("")
 		return nil
 	}
+
 	endpointInfo, endpointError := rdsService.DescribeRdsProxyEndpoint(d.Id())
 	if endpointError != nil {
 		if NotFoundError(endpointError) {
@@ -239,6 +250,11 @@ func resourceAlicloudRdsDBProxyRead(d *schema.ResourceData, meta interface{}) er
 		return WrapError(endpointError)
 	}
 	d.Set("instance_id", d.Id())
+	d.Set("db_proxy_instance_type", convertDBProxyInstanceTypeResponse(proxy["DBProxyInstanceType"]))
+	d.Set("db_proxy_instance_num", proxy["DBProxyInstanceNum"])
+	d.Set("vpc_id", proxy["DBProxyVpcId"])
+	d.Set("vswitch_id", proxy["DBProxyVswitchId"])
+	d.Set("instance_network_type", "VPC")
 	d.Set("db_proxy_endpoint_id", endpointInfo["DBProxyEndpointId"])
 	d.Set("db_proxy_connection_string", endpointInfo["DBProxyConnectString"])
 	d.Set("db_proxy_connection_prefix", strings.Split(endpointInfo["DBProxyConnectString"].(string), ".")[0])
@@ -354,14 +370,14 @@ func resourceAlicloudRdsDBProxyUpdate(d *schema.ResourceData, meta interface{}) 
 	if endpointError != nil {
 		return WrapError(endpointError)
 	}
-	if !d.IsNewResource() && d.HasChange("db_proxy_instance_num") {
+	if !d.IsNewResource() && (d.HasChange("db_proxy_instance_num") || d.HasChange("db_proxy_instance_type")) {
 		action := "ModifyDBProxyInstance"
 		request := map[string]interface{}{
 			"RegionId":            client.RegionId,
 			"DBInstanceId":        d.Id(),
 			"DBProxyEndpointId":   endpointInfo["DBProxyEndpointId"],
 			"DBProxyInstanceNum":  d.Get("db_proxy_instance_num"),
-			"DBProxyInstanceType": "DedicatedProxy",
+			"DBProxyInstanceType": d.Get("db_proxy_instance_type"),
 			"SourceIp":            client.SourceIp,
 		}
 		if d.HasChange("effective_time") {
@@ -576,4 +592,14 @@ func resourceAlicloudRdsDBProxyDelete(d *schema.ResourceData, meta interface{}) 
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 	return nil
+}
+
+func convertDBProxyInstanceTypeResponse(source interface{}) interface{} {
+	switch source {
+	case "2":
+		return "exclusive"
+	case "3":
+		return "common"
+	}
+	return ""
 }
