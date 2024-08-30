@@ -47,10 +47,9 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 				MinItems: 1,
 			},
 			"expressions": {
-				Optional:      true,
-				Computed:      true,
-				Type:          schema.TypeSet,
-				ConflictsWith: []string{"metric_name", "comparison_operator", "statistics", "period", "threshold"},
+				Optional: true,
+				Computed: true,
+				Type:     schema.TypeSet,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"metric_name": {
@@ -118,6 +117,11 @@ func resourceAlicloudEssAlarm() *schema.Resource {
 					string(Minimum),
 					string(Maximum),
 				}, false),
+			},
+			"effective": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"threshold": {
 				Type:     schema.TypeString,
@@ -215,11 +219,7 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 	d.Set("alarm_actions", object.AlarmActions.AlarmAction)
 	d.Set("scaling_group_id", object.ScalingGroupId)
 	d.Set("metric_type", object.MetricType)
-	d.Set("metric_name", object.MetricName)
-	d.Set("period", object.Period)
-	d.Set("statistics", object.Statistics)
-	d.Set("threshold", strconv.FormatFloat(object.Threshold, 'f', -1, 32))
-	d.Set("comparison_operator", object.ComparisonOperator)
+	d.Set("effective", object.Effective)
 	d.Set("evaluation_count", object.EvaluationCount)
 	d.Set("state", object.State)
 	d.Set("enable", object.Enable)
@@ -251,6 +251,13 @@ func resourceAliyunEssAlarmRead(d *schema.ResourceData, meta interface{}) error 
 		}
 		d.Set("expressions", result)
 	}
+	d.Set("metric_name", object.MetricName)
+	if object.Period != 0 {
+		d.Set("period", object.Period)
+	}
+	d.Set("statistics", object.Statistics)
+	d.Set("threshold", strconv.FormatFloat(object.Threshold, 'f', -1, 32))
+	d.Set("comparison_operator", object.ComparisonOperator)
 	d.Set("expressions_logic_operator", object.ExpressionsLogicOperator)
 	return nil
 }
@@ -285,6 +292,9 @@ func resourceAliyunEssAlarmUpdate(d *schema.ResourceData, meta interface{}) erro
 	}
 	if d.HasChange("statistics") {
 		request.Statistics = d.Get("statistics").(string)
+	}
+	if d.HasChange("effective") {
+		request.Effective = d.Get("effective").(string)
 	}
 	if d.HasChange("threshold") {
 		request.Threshold = requests.Float(d.Get("threshold").(string))
@@ -418,6 +428,10 @@ func buildAlicloudEssAlarmArgs(d *schema.ResourceData) (*ess.CreateAlarmRequest,
 
 	if description, ok := d.GetOk("description"); ok && description.(string) != "" {
 		request.Description = description.(string)
+	}
+
+	if effective, ok := d.GetOk("effective"); ok {
+		request.Effective = effective.(string)
 	}
 
 	if v, ok := d.GetOk("alarm_actions"); ok {
