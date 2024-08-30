@@ -131,6 +131,7 @@ The following arguments are supported:
 
 * `name` - (Optional) The name for ess alarm.
 * `description` - (Optional) The description for the alarm.
+* `effective` - (Optional, Available since v1.231.0) The effective period of the event-triggered task. By default, the event-triggered task is in effect at all times.
 * `enable` - (Optional, Available in 1.48.0+) Whether to enable specific ess alarm. Default to true.
 * `alarm_actions` - (Required) The list of actions to execute when this alarm transition into an ALARM state. Each action is specified as ess scaling rule ari.
 * `scaling_group_id` - (Required, ForceNew) The scaling group associated with this alarm, the 'ForceNew' attribute is available in 1.56.0+.

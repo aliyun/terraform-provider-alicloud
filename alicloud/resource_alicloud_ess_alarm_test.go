@@ -389,6 +389,173 @@ func TestAccAliCloudEssAlarmWithExpression(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudEssAlarmWithEffective(t *testing.T) {
+	var v ess.Alarm
+	rand := acctest.RandIntRange(10000, 999999)
+	var basicMap = map[string]string{
+		"name":                   fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand),
+		"description":            "Acc alarm test",
+		"alarm_actions.#":        "1",
+		"scaling_group_id":       CHECKSET,
+		"metric_type":            "system",
+		"evaluation_count":       "2",
+		"cloud_monitor_group_id": NOSET,
+		"enable":                 "true",
+		"expressions.#":          "1",
+	}
+	resourceId := "alicloud_ess_alarm.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssAlarmConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      "Acc alarm test",
+					"alarm_actions":    []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
+					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
+					"metric_type":      "system",
+					"evaluation_count": "2",
+					"effective":        "* * * * * ?",
+					"expressions": []map[string]string{{
+						"period":              "300",
+						"statistics":          "Average",
+						"metric_name":         "CpuUtilization",
+						"threshold":           "200.3",
+						"comparison_operator": ">=",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"description":      "Acc alarm test",
+						"scaling_group_id": CHECKSET,
+						"metric_type":      "system",
+						"evaluation_count": "2",
+						"alarm_actions.#":  "1",
+						"expressions.#":    "1",
+						"effective":        "* * * * * ?",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"effective": "* * 17-18 * * ?",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective": "* * 17-18 * * ?",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+func TestAccAliCloudEssAlarmWithEffectiveModify(t *testing.T) {
+	var v ess.Alarm
+	rand := acctest.RandIntRange(10000, 999999)
+	var basicMap = map[string]string{
+		"name":                   fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand),
+		"description":            "Acc alarm test",
+		"alarm_actions.#":        "1",
+		"scaling_group_id":       CHECKSET,
+		"metric_type":            "system",
+		"evaluation_count":       "2",
+		"cloud_monitor_group_id": NOSET,
+		"enable":                 "true",
+		"expressions.#":          "1",
+	}
+	resourceId := "alicloud_ess_alarm.default"
+	ra := resourceAttrInit(resourceId, basicMap)
+	serviceFunc := func() interface{} {
+		return &EssService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}
+	rc := resourceCheckInit(resourceId, &v, serviceFunc)
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := fmt.Sprintf("tf-testAccEssAlarm_basic-%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssAlarmConfigDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"name":             name,
+					"description":      "Acc alarm test",
+					"alarm_actions":    []string{"${alicloud_ess_scaling_rule.default.0.ari}"},
+					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
+					"metric_type":      "system",
+					"evaluation_count": "2",
+					"expressions": []map[string]string{{
+						"period":              "300",
+						"statistics":          "Average",
+						"metric_name":         "CpuUtilization",
+						"threshold":           "200.3",
+						"comparison_operator": ">=",
+					},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"name":             name,
+						"description":      "Acc alarm test",
+						"scaling_group_id": CHECKSET,
+						"metric_type":      "system",
+						"evaluation_count": "2",
+						"alarm_actions.#":  "1",
+						"expressions.#":    "1",
+						"effective":        "* * * * * ?",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"effective": "* * 17-18 * * ?",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"effective": "* * 17-18 * * ?",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
 func TestAccAliCloudEssAlarmMulti(t *testing.T) {
 	var v ess.Alarm
 	rand := acctest.RandIntRange(10000, 999999)
