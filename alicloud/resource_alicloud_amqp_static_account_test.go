@@ -11,10 +11,10 @@ import (
 )
 
 // Case 1
-func TestAccAlicloudOnsStaticAccount_basic1775(t *testing.T) {
+func TestAccAliCloudOnsStaticAccount_basic1775(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_amqp_static_account.default"
-	ra := resourceAttrInit(resourceId, AlicloudOnsStaticAccountMap1775)
+	ra := resourceAttrInit(resourceId, AliCloudOnsStaticAccountMap1775)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AmqpOpenService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAmqpStaticAccount")
@@ -22,7 +22,7 @@ func TestAccAlicloudOnsStaticAccount_basic1775(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sAmqpStaticAccount%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudOnsStaticAccountBasicDependence1775)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudOnsStaticAccountBasicDependence1775)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -39,14 +39,11 @@ func TestAccAlicloudOnsStaticAccount_basic1775(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_name":   CHECKSET,
 						"instance_id": CHECKSET,
-						"create_time": CHECKSET,
-						"master_uid":  CHECKSET,
-						"password":    CHECKSET,
 					}),
 				),
-			}, {
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -56,15 +53,21 @@ func TestAccAlicloudOnsStaticAccount_basic1775(t *testing.T) {
 	})
 }
 
-var AlicloudOnsStaticAccountMap1775 = map[string]string{}
+var AliCloudOnsStaticAccountMap1775 = map[string]string{
+	"user_name":   CHECKSET,
+	"password":    CHECKSET,
+	"master_uid":  CHECKSET,
+	"create_time": CHECKSET,
+}
 
-func AlicloudOnsStaticAccountBasicDependence1775(name string) string {
+func AliCloudOnsStaticAccountBasicDependence1775(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-    default = "%s"
-}
-data "alicloud_amqp_instances" "default" {
-	status = "SERVING"
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_amqp_instances" "default" {
+  		status = "SERVING"
+	}
 `, name)
 }
