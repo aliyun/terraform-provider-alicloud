@@ -1493,7 +1493,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_waf_protection_module":                                 resourceAlicloudWafProtectionModule(),
 			"alicloud_ecd_user":                                              resourceAlicloudEcdUser(),
 			"alicloud_vpc_traffic_mirror_session":                            resourceAliCloudVpcTrafficMirrorSession(),
-			"alicloud_gpdb_account":                                          resourceAlicloudGpdbAccount(),
+			"alicloud_gpdb_account":                                          resourceAliCloudGpdbAccount(),
 			"alicloud_security_center_service_linked_role":                   resourceAlicloudSecurityCenterServiceLinkedRole(),
 			"alicloud_event_bridge_service_linked_role":                      resourceAlicloudEventBridgeServiceLinkedRole(),
 			"alicloud_vpc_ipv6_gateway":                                      resourceAliCloudVpcIpv6Gateway(),

@@ -108,7 +108,7 @@ resource "alicloud_gpdb_instance" "defaultJXWSlW" {
   instance_network_type      = "VPC"
   db_instance_category       = "Basic"
   engine                     = "gpdb"
-  resource_management_mode   = "resourceGroup"
+  // resource_management_mode   = "resourceGroup"
   payment_type               = "PayAsYouGo"
   ssl_enabled                = "0"
   engine_version             = "6.0"
@@ -216,9 +216,23 @@ func TestAccAliCloudGpdbDbResourceGroup_basic6919_raw(t *testing.T) {
 				),
 			},
 			{
-				Config: testAccConfig(map[string]interface{}{}),
+				Config: testAccConfig(map[string]interface{}{
+					"role_list": []string{"test0", "test1"},
+				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
+					testAccCheck(map[string]string{
+						"role_list.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"role_list": []string{"test2", "test1"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"role_list.#": "2",
+					}),
 				),
 			},
 			{

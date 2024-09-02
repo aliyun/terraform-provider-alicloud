@@ -1,12 +1,12 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
 	"fmt"
 	"log"
 	"regexp"
+	"strings"
 	"time"
-
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -14,40 +14,51 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudGpdbAccount() *schema.Resource {
+func resourceAliCloudGpdbAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudGpdbAccountCreate,
-		Read:   resourceAlicloudGpdbAccountRead,
-		Update: resourceAlicloudGpdbAccountUpdate,
-		Delete: resourceAlicloudGpdbAccountDelete,
+		Create: resourceAliCloudGpdbAccountCreate,
+		Read:   resourceAliCloudGpdbAccountRead,
+		Update: resourceAliCloudGpdbAccountUpdate,
+		Delete: resourceAliCloudGpdbAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"account_description": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[A-Za-z][\w\\_]{2,255}$`), "The description of the account. The description must be 2 to 256 characters in length and can contain letters, digits, underscores (_)."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "The description of the account."),
 			},
 			"account_name": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-z][a-z0-9_]{1,14}[a-z0-9]$`), "The name of the account. The name must be 2 to 16 characters in length and can contain lower letters, digits, underscores (_)."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[\u4E00-\u9FA5A-Za-z0-9_]+$"), "The account name."),
 			},
 			"account_password": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringLenBetween(8, 32),
+				Type:      schema.TypeString,
+				Required:  true,
+				Sensitive: true,
+			},
+			"account_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"db_instance_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"database_name": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -57,25 +68,37 @@ func resourceAlicloudGpdbAccount() *schema.Resource {
 	}
 }
 
-func resourceAlicloudGpdbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudGpdbAccountCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	var response map[string]interface{}
+
 	action := "CreateAccount"
-	request := make(map[string]interface{})
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewGpdbClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	query["AccountName"] = d.Get("account_name")
+	query["DBInstanceId"] = d.Get("db_instance_id")
+
 	if v, ok := d.GetOk("account_description"); ok {
 		request["AccountDescription"] = v
 	}
-	request["AccountName"] = d.Get("account_name")
-	request["DBInstanceId"] = d.Get("db_instance_id")
 	request["AccountPassword"] = d.Get("account_password")
-	wait := incrementalWait(3*time.Second, 3*time.Second)
+	if v, ok := d.GetOk("account_type"); ok {
+		request["AccountType"] = v
+	}
+	if v, ok := d.GetOk("database_name"); ok {
+		request["DatabaseName"] = v
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -83,75 +106,90 @@ func resourceAlicloudGpdbAccountCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
+		addDebug(action, response, request)
 		return nil
 	})
-	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_gpdb_account", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(request["DBInstanceId"], ":", request["AccountName"]))
-	gpdbService := GpdbService{client}
-	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, gpdbService.GpdbAccountStateRefreshFunc(d.Id(), []string{}))
+	d.SetId(fmt.Sprintf("%v:%v", query["DBInstanceId"], query["AccountName"]))
+
+	gpdbServiceV2 := GpdbServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"1"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, gpdbServiceV2.GpdbAccountStateRefreshFunc(d.Id(), "AccountStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudGpdbAccountRead(d, meta)
+	return resourceAliCloudGpdbAccountRead(d, meta)
 }
-func resourceAlicloudGpdbAccountRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudGpdbAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	gpdbService := GpdbService{client}
-	object, err := gpdbService.DescribeGpdbAccount(d.Id())
+	gpdbServiceV2 := GpdbServiceV2{client}
+
+	objectRaw, err := gpdbServiceV2.DescribeGpdbAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_gpdb_account gpdbService.DescribeGpdbAccount Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_gpdb_account DescribeGpdbAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+
+	if objectRaw["AccountDescription"] != nil {
+		d.Set("account_description", objectRaw["AccountDescription"])
 	}
-	d.Set("account_name", parts[1])
+	if objectRaw["AccountType"] != nil {
+		d.Set("account_type", objectRaw["AccountType"])
+	}
+	if objectRaw["AccountStatus"] != nil {
+		d.Set("status", objectRaw["AccountStatus"])
+	}
+	if objectRaw["AccountName"] != nil {
+		d.Set("account_name", objectRaw["AccountName"])
+	}
+	if objectRaw["DBInstanceId"] != nil {
+		d.Set("db_instance_id", objectRaw["DBInstanceId"])
+	}
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
-	d.Set("account_description", object["AccountDescription"])
-	d.Set("status", convertGpdbAccountStatusResponse(object["AccountStatus"]))
+	d.Set("account_name", parts[1])
+
 	return nil
 }
-func resourceAlicloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAliCloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+	parts := strings.Split(d.Id(), ":")
+	action := "ModifyAccountDescription"
 	conn, err := client.NewGpdbClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	var response map[string]interface{}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AccountName"] = parts[1]
+	query["DBInstanceId"] = parts[0]
 
-	request := map[string]interface{}{
-		"AccountName":  parts[1],
-		"DBInstanceId": parts[0],
-	}
-
-	update := false
-	if d.HasChange("account_password") {
+	if d.HasChange("account_description") {
 		update = true
-		if v, ok := d.GetOk("account_password"); ok {
-			request["AccountPassword"] = v
-		}
 	}
-
+	request["AccountDescription"] = d.Get("account_description")
 	if update {
-		action := "ResetAccountPassword"
-		wait := incrementalWait(3*time.Second, 3*time.Second)
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -159,18 +197,98 @@ func resourceAlicloudGpdbAccountUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
+			addDebug(action, response, request)
 			return nil
 		})
-		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	parts = strings.Split(d.Id(), ":")
+	action = "ResetAccountPassword"
+	conn, err = client.NewGpdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["AccountName"] = parts[1]
+	query["DBInstanceId"] = parts[0]
+
+	if d.HasChange("account_password") {
+		update = true
+	}
+	request["AccountPassword"] = d.Get("account_password")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
 
-	return resourceAlicloudGpdbAccountRead(d, meta)
+	d.Partial(false)
+	return resourceAliCloudGpdbAccountRead(d, meta)
 }
-func resourceAlicloudGpdbAccountDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudGpdbAccount. Terraform will remove this resource from the state file, however resources may remain.")
+
+func resourceAliCloudGpdbAccountDelete(d *schema.ResourceData, meta interface{}) error {
+
+	if v, ok := d.GetOk("account_type"); ok {
+		if v == "Super" {
+			log.Printf("[WARN] Cannot destroy resource alicloud_gpdb_account which account_type valued Super. Terraform will remove this resource from the state file, however resources may remain.")
+			return nil
+		}
+	}
+
+	client := meta.(*connectivity.AliyunClient)
+	parts := strings.Split(d.Id(), ":")
+	action := "DeleteAccount"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewGpdbClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query["DBInstanceId"] = parts[0]
+	query["AccountName"] = parts[1]
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
 	return nil
 }
 func convertGpdbAccountStatusResponse(source interface{}) interface{} {

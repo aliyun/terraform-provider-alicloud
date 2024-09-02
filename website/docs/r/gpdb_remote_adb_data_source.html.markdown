@@ -20,12 +20,6 @@ For information about GPDB Remote A D B Data Source and how to use it, see [What
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_remote_adb_data_source&exampleId=29ccb4f3-21f7-217c-d64b-6ccddea267def0bb2562&activeTab=example&spm=docs.r.gpdb_remote_adb_data_source.0.29ccb4f321&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -125,8 +119,8 @@ The following arguments are supported:
 * `manager_user_password` - (Required, ForceNew) Password of the Manager user of the local instance
 * `remote_database` - (Required, ForceNew) The database of the remote instance which provide data.
 * `remote_db_instance_id` - (Required, ForceNew) The instanceId of the remote instance which provide data.
-* `user_name` - (Required, ForceNew) The user name used to connect to the remote instance
-* `user_password` - (Required, ForceNew) The user password used to connect to the remote instance
+* `user_name` - (Required) The user name used to connect to the remote instance
+* `user_password` - (Required) The user password used to connect to the remote instance
 
 ## Attributes Reference
 
