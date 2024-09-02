@@ -78,16 +78,6 @@ func resourceAliCloudCenTransitRouterPeerAttachment() *schema.Resource {
 				ForceNew: true,
 				Default:  "TR",
 			},
-			"route_table_association_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
-			"route_table_propagation_enabled": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				ForceNew: true,
-			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -111,6 +101,16 @@ func resourceAliCloudCenTransitRouterPeerAttachment() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"route_table_association_enabled": {
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `route_table_association_enabled` has been deprecated from provider version 1.230.0.",
+			},
+			"route_table_propagation_enabled": {
+				Type:       schema.TypeBool,
+				Optional:   true,
+				Deprecated: "Field `route_table_propagation_enabled` has been deprecated from provider version 1.230.0.",
+			},
 		},
 	}
 }
@@ -130,14 +130,6 @@ func resourceAliCloudCenTransitRouterPeerAttachmentCreate(d *schema.ResourceData
 	request = make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
-
-	if v, ok := d.GetOkExists("route_table_association_enabled"); ok {
-		request["RouteTableAssociationEnabled"] = v
-	}
-
-	if v, ok := d.GetOkExists("route_table_propagation_enabled"); ok {
-		request["RouteTablePropagationEnabled"] = v
-	}
 
 	if v, ok := d.GetOk("transit_router_id"); ok {
 		request["TransitRouterId"] = v

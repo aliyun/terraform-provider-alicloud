@@ -12,7 +12,7 @@ Provides a Service Catalog Product resource.
 
 Service catalog product, IaC template encapsulation concept.
 
-For information about Service Catalog Product and how to use it, see [What is Product](https://www.alibabacloud.com/help/en/).
+For information about Service Catalog Product and how to use it, see [What is Product](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-createproduct).
 
 -> **NOTE:** Available since v1.230.0.
 

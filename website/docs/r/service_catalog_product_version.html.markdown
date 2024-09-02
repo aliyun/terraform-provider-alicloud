@@ -12,7 +12,7 @@ Provides a Service Catalog Product Version resource.
 
 There can be one or more versions of the product.
 
-For information about Service Catalog Product Version and how to use it, see [What is Product Version](https://www.alibabacloud.com/help/en/).
+For information about Service Catalog Product Version and how to use it, see [What is Product Version](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-createproductversion).
 
 -> **NOTE:** Available since v1.230.0.
 

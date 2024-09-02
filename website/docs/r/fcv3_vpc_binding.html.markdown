@@ -1,20 +1,20 @@
 ---
 subcategory: "Function Compute Service V3 (FCV3)"
 layout: "alicloud"
-page_title: "Alicloud: alicloud_fcv3_function_version"
+page_title: "Alicloud: alicloud_fcv3_vpc_binding"
 description: |-
-  Provides a Alicloud FCV3 Function Version resource.
+  Provides a Alicloud FCV3 Vpc Binding resource.
 ---
 
-# alicloud_fcv3_function_version
+# alicloud_fcv3_vpc_binding
 
-Provides a FCV3 Function Version resource.
+Provides a FCV3 Vpc Binding resource.
 
-Version of the function.
 
-For information about FCV3 Function Version and how to use it, see [What is Function Version](https://www.alibabacloud.com/help/en/functioncompute/api-fc-2023-03-30-listfunctionversions).
 
--> **NOTE:** Available since v1.228.0.
+For information about FCV3 Vpc Binding and how to use it, see [What is Vpc Binding](https://www.alibabacloud.com/help/en/functioncompute/fc-3-0/developer-reference/api-fc-2023-03-30-createvpcbinding).
+
+-> **NOTE:** Available since v1.230.0.
 
 ## Example Usage
 
@@ -29,7 +29,9 @@ provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-resource "random_uuid" "default" {
+resource "alicloud_vpc" "vpc" {
+  cidr_block = "10.0.0.0/8"
+  vpc_name   = var.name
 }
 
 resource "alicloud_fcv3_function" "function" {
@@ -39,7 +41,7 @@ resource "alicloud_fcv3_function" "function" {
   code {
     zip_file = "UEsDBBQACAAIAAAAAAAAAAAAAAAAAAAAAAAIAAAAaW5kZXgucHmEkEFKxEAQRfd9ig9ZTCJOooIwDMwNXLqXnnQlaalUhU5lRj2KZ/FOXkESGR114bJ/P/7jV4b1xRq1hijtFpM1682cuNgPmgysbRulPT0fRxXnMtwrSPyeCdYRokSLnuMLJTTkbUqEvDMbxm1VdcRD6Tk+T1LW2ldB66knsYdA5iNX17ebm6tN2VnPhcswMPmREPuBacb+CiapLarAj9gT6/H97dVlCNScY3mtYvRkxdZlwDKDEnanPWVLdrdkeXEGlFEazVdfPVHaVeHc3N15CUwppwOJXeK7HshAB8NuOU7J6sP4SRXuH/EvbUfMiqMmDqv5M5FNSfAj/wgAAP//UEsHCPl//NYAAQAArwEAAFBLAQIUABQACAAIAAAAAAD5f/zWAAEAAK8BAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5weVBLBQYAAAAAAQABADYAAAA2AQAAAAA="
   }
-  function_name = "${var.name}-${random_uuid.default.result}"
+  function_name = var.name
   runtime       = "python3.9"
   disk_size     = "512"
   log_config {
@@ -47,34 +49,33 @@ resource "alicloud_fcv3_function" "function" {
   }
 }
 
-resource "alicloud_fcv3_function_version" "default" {
+resource "alicloud_fcv3_vpc_binding" "default" {
   function_name = alicloud_fcv3_function.function.function_name
-  description   = "version1"
+  vpc_id        = alicloud_vpc.vpc.id
 }
 ```
 
 ## Argument Reference
 
 The following arguments are supported:
-* `description` - (Optional, ForceNew) Description of the function version
 * `function_name` - (Required, ForceNew) Function Name
+* `vpc_id` - (Optional, ForceNew, Computed) VPC instance ID
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<version_id>`.
-* `create_time` - The creation time of the resource
+* `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<vpc_id>`.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-* `create` - (Defaults to 5 mins) Used when create the Function Version.
-* `delete` - (Defaults to 5 mins) Used when delete the Function Version.
+* `create` - (Defaults to 5 mins) Used when create the Vpc Binding.
+* `delete` - (Defaults to 5 mins) Used when delete the Vpc Binding.
 
 ## Import
 
-FCV3 Function Version can be imported using the id, e.g.
+FCV3 Vpc Binding can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_fcv3_function_version.example <function_name>:<version_id>
+$ terraform import alicloud_fcv3_vpc_binding.example <function_name>:<vpc_id>
 ```

@@ -314,7 +314,7 @@ func dataSourceAlicloudEmrV2ClustersRead(d *schema.ResourceData, meta interface{
 			mapping["state_change_reason"] = object["StateChangeReason"].(map[string]interface{})
 		}
 
-		ids = append(ids, fmt.Sprint(mapping["ClusterId"]))
+		ids = append(ids, fmt.Sprint(object["ClusterId"]))
 		names = append(names, object["ClusterName"])
 		s = append(s, mapping)
 	}

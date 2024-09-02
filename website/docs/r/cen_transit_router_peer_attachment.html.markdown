@@ -97,35 +97,36 @@ The following arguments are supported:
 * `cen_bandwidth_package_id` - (Optional) The ID of the bandwidth package. If you do not enter the ID of the package, it means you are using the test. The system default test is 1bps, demonstrating that you test network connectivity
 * `bandwidth` - (Optional) The bandwidth of the bandwidth package.
 * `auto_publish_route_enabled` - (Optional) Auto publish route enabled. The system default value is `false`.
-* `route_table_association_enabled` - (Optional, ForceNew) Whether to association route table. System default is `false`.
-* `route_table_propagation_enabled` - (Optional, ForceNew) Whether to propagation route table. System default is `false`.
 * `transit_router_attachment_description` - (Optional) The description of transit router attachment. The description is 2~256 characters long and must start with a letter or Chinese, but cannot start with `http://` or `https://`.
 * `transit_router_attachment_name` - (Optional) The name of transit router attachment. The name is 2~128 characters in length, starts with uppercase and lowercase letters or Chinese, and can contain numbers, underscores (_) and dashes (-)
 * `bandwidth_type` - (Optional, Available since v1.157.0) The method that is used to allocate bandwidth to the cross-region connection. Valid values: `BandwidthPackage` and `DataTransfer`.
   * `DataTransfer` - uses pay-by-data-transfer bandwidth.
   * `BandwidthPackage` - allocates bandwidth from a bandwidth plan.
 * `default_link_type` - (Optional, Available since v1.223.1) DefaultLinkType. Valid values: `Platinum` and `Gold`.
+* `route_table_association_enabled` - (Deprecated since v1.230.0) Field `route_table_association_enabled` has been deprecated from provider version 1.230.0.
+* `route_table_propagation_enabled` - (Deprecated since v1.230.0) Field `route_table_propagation_enabled` has been deprecated from provider version 1.230.0.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`. 
-* `transit_router_attachment_id` - The ID of transit router attachment id.
+* `id` - The resource ID in terraform of Transit Router Peer Attachment. It formats as `<cen_id>:<transit_router_attachment_id>`. 
+* `transit_router_attachment_id` - The ID of transit router attachment.
 * `status` - The status of the resource.
 * `create_time` - The creation time of the resource.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Transit Router Peer Attachment.
-* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Peer Attachment.
 * `update` - (Defaults to 5 mins) Used when update the Transit Router Peer Attachment.
+* `delete` - (Defaults to 5 mins) Used when delete the Transit Router Peer Attachment.
 
 ## Import
 
 CEN Transit Router Peer Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_peer_attachment.example <id>
+$ terraform import alicloud_cen_transit_router_peer_attachment.example <cen_id>:<transit_router_attachment_id>
 ```
