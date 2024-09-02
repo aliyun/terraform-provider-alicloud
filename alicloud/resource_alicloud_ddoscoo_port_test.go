@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudDdoscooPort_basic(t *testing.T) {
+func TestAccAliCloudDdosCooPort_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_port.default"
 	ra := resourceAttrInit(resourceId, AlicloudDdoscooPortMap0)
@@ -104,7 +104,7 @@ data "alicloud_ddoscoo_instances" "default" {}
 `, name)
 }
 
-func TestAccAlicloudDdoscooPort_basic1(t *testing.T) {
+func TestAccAliCloudDdosCooPort_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ddoscoo_port.default"
 	ra := resourceAttrInit(resourceId, AlicloudDdoscooPortMap1)
@@ -257,7 +257,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooPortCreate(dInit, rawClient)
+	err = resourceAliCloudDdosCooPortCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -279,7 +279,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooPortCreate(dInit, rawClient)
+		err := resourceAliCloudDdosCooPortCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -306,7 +306,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooPortUpdate(dExisted, rawClient)
+	err = resourceAliCloudDdosCooPortUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	//ModifyPort
@@ -346,7 +346,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooPortUpdate(dExisted, rawClient)
+		err := resourceAliCloudDdosCooPortUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -391,7 +391,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooPortRead(dExisted, rawClient)
+		err := resourceAliCloudDdosCooPortRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -409,7 +409,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudDdoscooPortDelete(dExisted, rawClient)
+	err = resourceAliCloudDdosCooPortDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -439,7 +439,7 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudDdoscooPortDelete(dExisted, rawClient)
+		err := resourceAliCloudDdosCooPortDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -449,3 +449,113 @@ func TestUnitAlicloudDdoscooPort(t *testing.T) {
 		}
 	}
 }
+
+// Test DdosCoo Port. >>> Resource test cases, automatically generated.
+// Case 端口资源测试 7456
+func TestAccAliCloudDdosCooPort_basic7456(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ddoscoo_port.default"
+	ra := resourceAttrInit(resourceId, AlicloudDdosCooPortMap7456)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &DdosCooServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDdosCooPort")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sddoscooport%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudDdosCooPortBasicDependence7456)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, connectivity.DdoscooSupportedRegions)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_id":  "${data.alicloud_ddoscoo_instances.default.ids.0}",
+					"backend_port": "8000",
+					"real_servers": []string{
+						"1.1.1.1"},
+					"config": []map[string]interface{}{
+						{
+							"persistence_timeout": "900",
+						},
+					},
+					"frontend_port":     "8082",
+					"frontend_protocol": "tcp",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_id":       CHECKSET,
+						"backend_port":      "8000",
+						"real_servers.#":    "1",
+						"frontend_port":     "8082",
+						"frontend_protocol": "tcp",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"real_servers": []string{
+						"1.1.1.1", "2.2.2.2", "3.3.3.3"},
+					"config": []map[string]interface{}{
+						{
+							"persistence_timeout": "0",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"real_servers.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"real_servers": []string{
+						"5.5.5.5", "6.6.6.6", "7.7.7.7"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"real_servers.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"real_servers": []string{
+						"5.5.5.5", "6.6.6.6"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"real_servers.#": "2",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudDdosCooPortMap7456 = map[string]string{}
+
+func AlicloudDdosCooPortBasicDependence7456(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_ddoscoo_instances" "default" {}
+
+`, name)
+}
+
+// Test DdosCoo Port. <<< Resource test cases, automatically generated.
