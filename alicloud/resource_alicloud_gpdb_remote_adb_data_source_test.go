@@ -68,6 +68,16 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"user_name": "test_002",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_name": "test_002",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"data_source_name": "testDataSource2",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -123,9 +133,7 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_gpdb_zones" "default" {}
 
 resource "alicloud_vpc" "default4Mf0nY" {
   cidr_block = "192.168.0.0/16"
@@ -133,7 +141,7 @@ resource "alicloud_vpc" "default4Mf0nY" {
 
 resource "alicloud_vswitch" "defaultwSAVpf" {
   vpc_id     = alicloud_vpc.default4Mf0nY.id
-  zone_id    = data.alicloud_zones.default.zones.0.id
+  zone_id    = data.alicloud_gpdb_zones.default.zones.0.id
   cidr_block = "192.168.1.0/24"
 }
 
@@ -146,7 +154,7 @@ resource "alicloud_gpdb_instance" "defaultEtEzMF" {
   payment_type               = "PayAsYouGo"
   ssl_enabled                = "0"
   engine_version             = "6.0"
-  zone_id                    = data.alicloud_zones.default.zones.0.id
+  zone_id                    = data.alicloud_gpdb_zones.default.zones.0.id
   vswitch_id                 = alicloud_vswitch.defaultwSAVpf.id
   storage_size               = "50"
   master_cu                  = "4"
@@ -166,7 +174,7 @@ resource "alicloud_gpdb_instance" "defaultEY7t9t" {
   payment_type               = "PayAsYouGo"
   ssl_enabled                = "0"
   engine_version             = "6.0"
-  zone_id                    = data.alicloud_zones.default.zones.0.id
+  zone_id                    = data.alicloud_gpdb_zones.default.zones.0.id
   vswitch_id                 = alicloud_vswitch.defaultwSAVpf.id
   storage_size               = "50"
   master_cu                  = "4"
