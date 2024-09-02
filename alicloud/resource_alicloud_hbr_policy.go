@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -59,7 +60,7 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 						"backup_type": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"COMPLETE", "INCREMENTAL"}, true),
+							ValidateFunc: StringInSlice([]string{"COMPLETE", "INCREMENTAL"}, false),
 						},
 						"archive_days": {
 							Type:     schema.TypeInt,
@@ -69,7 +70,7 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 						"rule_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"BACKUP", "TRANSITION", "REPLICATION"}, true),
+							ValidateFunc: StringInSlice([]string{"BACKUP", "TRANSITION", "REPLICATION"}, false),
 						},
 						"retention": {
 							Type:     schema.TypeInt,
@@ -87,7 +88,7 @@ func resourceAliCloudHbrPolicy() *schema.Resource {
 									"advanced_retention_type": {
 										Type:         schema.TypeString,
 										Optional:     true,
-										ValidateFunc: StringInSlice([]string{"WEEKLY", "MONTHLY", "YEARLY"}, true),
+										ValidateFunc: StringInSlice([]string{"WEEKLY", "MONTHLY", "YEARLY", "DAILY"}, false),
 									},
 									"retention": {
 										Type:     schema.TypeInt,
@@ -128,7 +129,7 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 		request["PolicyDescription"] = v
 	}
 	if v, ok := d.GetOk("rules"); ok {
-		rulesMaps := make([]map[string]interface{}, 0)
+		rulesMaps := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
@@ -137,7 +138,7 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			dataLoopMap["Schedule"] = dataLoopTmp["schedule"]
 			dataLoopMap["ReplicationRegionId"] = dataLoopTmp["replication_region_id"]
 			dataLoopMap["ArchiveDays"] = dataLoopTmp["archive_days"]
-			localMaps := make([]map[string]interface{}, 0)
+			localMaps := make([]interface{}, 0)
 			localData1 := dataLoopTmp["retention_rules"]
 			for _, dataLoop1 := range localData1.([]interface{}) {
 				dataLoop1Tmp := dataLoop1.(map[string]interface{})
@@ -154,7 +155,11 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			rulesMaps = append(rulesMaps, dataLoopMap)
 		}
-		request["Rules"], err = convertListMapToJsonString(rulesMaps)
+		rulesMapsJson, err := json.Marshal(rulesMaps)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Rules"] = string(rulesMapsJson)
 	}
 
 	runtime := util.RuntimeOptions{}
@@ -162,7 +167,6 @@ func resourceAliCloudHbrPolicyCreate(d *schema.ResourceData, meta interface{}) e
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -197,9 +201,15 @@ func resourceAliCloudHbrPolicyRead(d *schema.ResourceData, meta interface{}) err
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreatedTime"])
-	d.Set("policy_description", objectRaw["PolicyDescription"])
-	d.Set("policy_name", objectRaw["PolicyName"])
+	if objectRaw["CreatedTime"] != nil {
+		d.Set("create_time", objectRaw["CreatedTime"])
+	}
+	if objectRaw["PolicyDescription"] != nil {
+		d.Set("policy_description", objectRaw["PolicyDescription"])
+	}
+	if objectRaw["PolicyName"] != nil {
+		d.Set("policy_name", objectRaw["PolicyName"])
+	}
 
 	rules1Raw := objectRaw["Rules"]
 	rulesMaps := make([]map[string]interface{}, 0)
@@ -233,7 +243,11 @@ func resourceAliCloudHbrPolicyRead(d *schema.ResourceData, meta interface{}) err
 			rulesMaps = append(rulesMaps, rulesMap)
 		}
 	}
-	d.Set("rules", rulesMaps)
+	if objectRaw["Rules"] != nil {
+		if err := d.Set("rules", rulesMaps); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -242,6 +256,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	action := "UpdatePolicyV2"
 	conn, err := client.NewHbrClient()
@@ -249,7 +264,9 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
+	query = make(map[string]interface{})
 	request["PolicyId"] = d.Id()
+
 	if d.HasChange("policy_name") {
 		update = true
 		request["PolicyName"] = d.Get("policy_name")
@@ -263,7 +280,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 	if d.HasChange("rules") {
 		update = true
 		if v, ok := d.GetOk("rules"); ok {
-			rulesMaps := make([]map[string]interface{}, 0)
+			rulesMaps := make([]interface{}, 0)
 			for _, dataLoop := range v.([]interface{}) {
 				dataLoopTmp := dataLoop.(map[string]interface{})
 				dataLoopMap := make(map[string]interface{})
@@ -273,7 +290,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				dataLoopMap["ReplicationRegionId"] = dataLoopTmp["replication_region_id"]
 				dataLoopMap["KeepLatestSnapshots"] = dataLoopTmp["keep_latest_snapshots"]
 				dataLoopMap["ArchiveDays"] = dataLoopTmp["archive_days"]
-				localMaps := make([]map[string]interface{}, 0)
+				localMaps := make([]interface{}, 0)
 				localData1 := dataLoopTmp["retention_rules"]
 				for _, dataLoop1 := range localData1.([]interface{}) {
 					dataLoop1Tmp := dataLoop1.(map[string]interface{})
@@ -289,7 +306,11 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				rulesMaps = append(rulesMaps, dataLoopMap)
 			}
-			request["Rules"], err = convertListMapToJsonString(rulesMaps)
+			rulesMapsJson, err := json.Marshal(rulesMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["Rules"] = string(rulesMapsJson)
 		}
 	}
 
@@ -298,8 +319,7 @@ func resourceAliCloudHbrPolicyUpdate(d *schema.ResourceData, meta interface{}) e
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), nil, request, &runtime)
-
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

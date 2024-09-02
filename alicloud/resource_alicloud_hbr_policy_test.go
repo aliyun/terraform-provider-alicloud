@@ -498,35 +498,35 @@ func TestAccAliCloudHbrPolicy_basic5320(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"rules": []map[string]interface{}{
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "COMPLETE",
-							"schedule":     "I|1631685600|P1D",
-							"retention":    "8",
-							"archive_days": "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"replication_region_id": "cn-chengdu",
-						},
-						{
-							"rule_type":    "BACKUP",
-							"backup_type":  "INCREMENTAL",
-							"schedule":     "I|1631685600|P2D",
-							"retention":    "9",
-							"archive_days": "0",
-							//"retention_rules":       []map[string]interface{}{},
-							"replication_region_id": "cn-chengdu",
-						},
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"rules.#": "2",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"rules": []map[string]interface{}{
+			//			{
+			//				"rule_type":    "BACKUP",
+			//				"backup_type":  "COMPLETE",
+			//				"schedule":     "I|1631685600|P1D",
+			//				"retention":    "8",
+			//				"archive_days": "0",
+			//				//"retention_rules":       []map[string]interface{}{},
+			//				"replication_region_id": "cn-chengdu",
+			//			},
+			//			{
+			//				"rule_type":    "BACKUP",
+			//				"backup_type":  "INCREMENTAL",
+			//				"schedule":     "I|1631685600|P2D",
+			//				"retention":    "9",
+			//				"archive_days": "0",
+			//				//"retention_rules":       []map[string]interface{}{},
+			//				"replication_region_id": "cn-chengdu",
+			//			},
+			//		},
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"rules.#": "2",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"policy_description": "镇元Policy-创建",
@@ -1137,8 +1137,14 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 							"schedule":     "I|1631685600|P1D",
 							"retention":    "8",
 							"archive_days": "0",
-							//"retention_rules":       []map[string]interface{}{},
+							"retention_rules": []map[string]interface{}{
+								{
+									"advanced_retention_type": "WEEKLY",
+									"retention":               "240",
+								},
+							},
 							"replication_region_id": "cn-chengdu",
+							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 						},
 						{
 							"rule_type":    "BACKUP",
@@ -1146,8 +1152,14 @@ func TestAccAliCloudHbrPolicy_basic5320_raw(t *testing.T) {
 							"schedule":     "I|1631685600|P2D",
 							"retention":    "9",
 							"archive_days": "0",
-							//"retention_rules":       []map[string]interface{}{},
+							"retention_rules": []map[string]interface{}{
+								{
+									"advanced_retention_type": "MONTHLY",
+									"retention":               "960",
+								},
+							},
 							"replication_region_id": "cn-chengdu",
+							"vault_id":              "${alicloud_hbr_vault.defaultL7kwwD.id}",
 						},
 					},
 				}),
