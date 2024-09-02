@@ -16,73 +16,70 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudAmqpStaticAccount() *schema.Resource {
+func resourceAliCloudAmqpStaticAccount() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudAmqpStaticAccountCreate,
-		Read:   resourceAlicloudAmqpStaticAccountRead,
-		Delete: resourceAlicloudAmqpStaticAccountDelete,
+		Create: resourceAliCloudAmqpStaticAccountCreate,
+		Read:   resourceAliCloudAmqpStaticAccountRead,
+		Delete: resourceAliCloudAmqpStaticAccountDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
+		},
 		Schema: map[string]*schema.Schema{
-			"access_key": {
-				Required: true,
-				ForceNew: true,
-				Type:     schema.TypeString,
-			},
-			"create_time": {
-				Computed: true,
-				Type:     schema.TypeInt,
-			},
 			"instance_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
-			"master_uid": {
-				Computed: true,
+			"access_key": {
 				Type:     schema.TypeString,
-			},
-			"password": {
-				Computed: true,
-				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"secret_key": {
+				Type:      schema.TypeString,
 				Required:  true,
 				ForceNew:  true,
 				Sensitive: true,
-				Type:      schema.TypeString,
 			},
 			"user_name": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"password": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"master_uid": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
+				Type:     schema.TypeInt,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	var response map[string]interface{}
+	action := "CreateOrGetAccount"
 	request := make(map[string]interface{})
 	conn, err := client.NewOnsproxyClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	timestamp := time.Now().UnixMilli()
 	request["createTimestamp"] = timestamp
 
-	if v, ok := d.GetOk("instance_id"); ok {
-		request["instanceId"] = v
-	}
-	if v, ok := d.GetOk("instance_id"); ok {
-		request["instanceId"] = v
-	}
-
-	if v, ok := d.GetOk("access_key"); ok {
-		request["accountAccessKey"] = v
-	}
-	stringToBase64Encode := "2:" + request["instanceId"].(string) + ":" + request["accountAccessKey"].(string)
-	request["userName"] = base64.StdEncoding.EncodeToString([]byte(stringToBase64Encode))
+	request["instanceId"] = d.Get("instance_id")
+	request["accountAccessKey"] = d.Get("access_key")
 
 	if v, ok := d.GetOk("secret_key"); ok {
 		mac := hmac.New(sha1.New, []byte(v.(string)))
@@ -91,16 +88,19 @@ func resourceAlicloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interf
 		request["signature"] = hex.EncodeToString(signature)
 
 		macSecret := hmac.New(sha1.New, []byte(strconv.FormatInt(timestamp, 10)))
-		macSecret.Write([]byte(request["accountAccessKey"].(string)))
+		macSecret.Write([]byte(v.(string)))
 		secretSign := macSecret.Sum(nil)
 		request["secretSign"] = hex.EncodeToString(secretSign)
 	}
 
-	var response map[string]interface{}
-	action := "CreateOrGetAccount"
+	stringToBase64Encode := "2:" + request["instanceId"].(string) + ":" + request["accountAccessKey"].(string)
+	request["userName"] = base64.StdEncoding.EncodeToString([]byte(stringToBase64Encode))
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -108,52 +108,57 @@ func resourceAlicloudAmqpStaticAccountCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_amqp_static_account", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(request["instanceId"], ":", request["accountAccessKey"]))
 
-	return resourceAlicloudAmqpStaticAccountRead(d, meta)
+	return resourceAliCloudAmqpStaticAccountRead(d, meta)
 }
 
-func resourceAlicloudAmqpStaticAccountRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAmqpStaticAccountRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	amqpOpenService := AmqpOpenService{client}
 
 	object, err := amqpOpenService.DescribeAmqpStaticAccount(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_amqp_static_account amqpOpenService.DescribeAmqpStaticAccount Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("instance_id", parts[0])
 	d.Set("access_key", parts[1])
-	d.Set("master_uid", object["masterUid"])
 	d.Set("user_name", object["userName"])
 	d.Set("password", object["password"])
+	d.Set("master_uid", object["masterUid"])
 	d.Set("create_time", object["createTimestamp"])
 
 	return nil
 }
 
-func resourceAlicloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	action := "DeleteAccount"
+	var response map[string]interface{}
 	conn, err := client.NewOnsproxyClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	request := make(map[string]interface{})
 
 	if v, ok := d.GetOk("user_name"); ok {
@@ -163,10 +168,11 @@ func resourceAlicloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interf
 		request["CreateTimestamp"] = v
 	}
 
-	action := "DeleteAccount"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-12-12"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -174,14 +180,16 @@ func resourceAlicloudAmqpStaticAccountDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	return nil
 }

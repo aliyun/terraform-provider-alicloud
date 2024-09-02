@@ -29,9 +29,11 @@ Basic Usage
 variable "access_key" {
   default = "access_key"
 }
+
 variable "secret_key" {
   default = "secret_key"
 }
+
 resource "alicloud_amqp_instance" "default" {
   instance_type  = "enterprise"
   max_tps        = 3000
@@ -42,6 +44,7 @@ resource "alicloud_amqp_instance" "default" {
   payment_type   = "Subscription"
   period         = 1
 }
+
 resource "alicloud_amqp_static_account" "default" {
   instance_id = alicloud_amqp_instance.default.id
   access_key  = var.access_key
@@ -52,22 +55,25 @@ resource "alicloud_amqp_static_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `access_key` - (Required, ForceNew) Access key.
+
 * `instance_id` - (Required, ForceNew) Amqp instance ID.
+* `access_key` - (Required, ForceNew) Access key.
 * `secret_key` - (Required, ForceNew) Secret key.
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.The value is formulated as `<instance_id>:<access_key>`.
-* `user_name` - Static user name.
-* `password` - Static password.
-* `create_time` - Create time stamp. Unix timestamp, to millisecond level.
+
+* `id` - The resource ID in terraform of Static Account. It formats as `<instance_id>:<access_key>`.
+* `user_name` - The static username.
+* `password` - The static password.
 * `master_uid` - The ID of the user's primary account.
+* `create_time` - The timestamp that indicates when the pair of static username and password was created.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
 * `create` - (Defaults to 5 mins) Used when create the Static Account.
 * `delete` - (Defaults to 5 mins) Used when delete the Static Account.
 

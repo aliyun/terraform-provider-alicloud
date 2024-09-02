@@ -1698,7 +1698,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_dms_enterprise_proxy_access":                           resourceAlicloudDmsEnterpriseProxyAccess(),
 			"alicloud_threat_detection_vul_whitelist":                        resourceAlicloudThreatDetectionVulWhitelist(),
 			"alicloud_dms_enterprise_logic_database":                         resourceAlicloudDmsEnterpriseLogicDatabase(),
-			"alicloud_amqp_static_account":                                   resourceAlicloudAmqpStaticAccount(),
+			"alicloud_amqp_static_account":                                   resourceAliCloudAmqpStaticAccount(),
 			"alicloud_adb_resource_group":                                    resourceAliCloudAdbResourceGroup(),
 			"alicloud_alb_ascript":                                           resourceAlicloudAlbAscript(),
 			"alicloud_threat_detection_honeypot_node":                        resourceAlicloudThreatDetectionHoneypotNode(),
