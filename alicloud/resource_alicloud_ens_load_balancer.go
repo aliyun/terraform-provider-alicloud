@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -27,6 +28,38 @@ func resourceAliCloudEnsLoadBalancer() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"backend_servers": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"type": {
+							Type:         schema.TypeString,
+							Optional:     true,
+							ValidateFunc: StringInSlice([]string{"ens"}, false),
+						},
+						"server_id": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"ip": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"port": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							Computed:     true,
+							ValidateFunc: IntBetween(0, 65535),
+						},
+						"weight": {
+							Type:         schema.TypeInt,
+							Optional:     true,
+							ValidateFunc: IntBetween(0, 100),
+						},
+					},
+				},
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -88,7 +121,7 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	if v, ok := d.GetOk("load_balancer_name"); ok {
 		request["LoadBalancerName"] = v
 	}
-	request["PayType"] = convertEnsPayTypeRequest(d.Get("payment_type").(string))
+	request["PayType"] = convertEnsLoadBalancerPayTypeRequest(d.Get("payment_type").(string))
 	request["NetworkId"] = d.Get("network_id")
 	request["VSwitchId"] = d.Get("vswitch_id")
 	runtime := util.RuntimeOptions{}
@@ -96,7 +129,6 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -120,7 +152,7 @@ func resourceAliCloudEnsLoadBalancerCreate(d *schema.ResourceData, meta interfac
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAliCloudEnsLoadBalancerRead(d, meta)
+	return resourceAliCloudEnsLoadBalancerUpdate(d, meta)
 }
 
 func resourceAliCloudEnsLoadBalancerRead(d *schema.ResourceData, meta interface{}) error {
@@ -137,14 +169,51 @@ func resourceAliCloudEnsLoadBalancerRead(d *schema.ResourceData, meta interface{
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("ens_region_id", objectRaw["EnsRegionId"])
-	d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
-	d.Set("load_balancer_spec", objectRaw["LoadBalancerSpec"])
-	d.Set("network_id", objectRaw["NetworkId"])
-	d.Set("payment_type", convertEnsPayTypeResponse(objectRaw["PayType"]))
-	d.Set("status", objectRaw["LoadBalancerStatus"])
-	d.Set("vswitch_id", objectRaw["VSwitchId"])
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["EnsRegionId"] != nil {
+		d.Set("ens_region_id", objectRaw["EnsRegionId"])
+	}
+	if objectRaw["LoadBalancerName"] != nil {
+		d.Set("load_balancer_name", objectRaw["LoadBalancerName"])
+	}
+	if objectRaw["LoadBalancerSpec"] != nil {
+		d.Set("load_balancer_spec", objectRaw["LoadBalancerSpec"])
+	}
+	if objectRaw["NetworkId"] != nil {
+		d.Set("network_id", objectRaw["NetworkId"])
+	}
+	if convertEnsLoadBalancerPayTypeResponse(objectRaw["PayType"]) != nil {
+		d.Set("payment_type", convertEnsLoadBalancerPayTypeResponse(objectRaw["PayType"]))
+	}
+	if objectRaw["LoadBalancerStatus"] != nil {
+		d.Set("status", objectRaw["LoadBalancerStatus"])
+	}
+	if objectRaw["VSwitchId"] != nil {
+		d.Set("vswitch_id", objectRaw["VSwitchId"])
+	}
+
+	backendServers1Raw := objectRaw["BackendServers"]
+	backendServersMaps := make([]map[string]interface{}, 0)
+	if backendServers1Raw != nil {
+		for _, backendServersChild1Raw := range backendServers1Raw.([]interface{}) {
+			backendServersMap := make(map[string]interface{})
+			backendServersChild1Raw := backendServersChild1Raw.(map[string]interface{})
+			backendServersMap["ip"] = backendServersChild1Raw["Ip"]
+			backendServersMap["port"] = backendServersChild1Raw["Port"]
+			backendServersMap["server_id"] = backendServersChild1Raw["ServerId"]
+			backendServersMap["type"] = backendServersChild1Raw["Type"]
+			backendServersMap["weight"] = backendServersChild1Raw["Weight"]
+
+			backendServersMaps = append(backendServersMaps, backendServersMap)
+		}
+	}
+	if objectRaw["BackendServers"] != nil {
+		if err := d.Set("backend_servers", backendServersMaps); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -163,18 +232,17 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["LoadBalancerId"] = d.Id()
-	if d.HasChange("load_balancer_name") {
-		update = true
-		request["LoadBalancerName"] = d.Get("load_balancer_name")
-	}
 
+	if !d.IsNewResource() && d.HasChange("load_balancer_name") {
+		update = true
+	}
+	request["LoadBalancerName"] = d.Get("load_balancer_name")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -190,6 +258,109 @@ func resourceAliCloudEnsLoadBalancerUpdate(d *schema.ResourceData, meta interfac
 		}
 	}
 
+	if d.HasChange("backend_servers") {
+		oldEntry, newEntry := d.GetChange("backend_servers")
+		removed := oldEntry
+		added := newEntry
+
+		if len(removed.([]interface{})) > 0 {
+			action := "RemoveBackendServers"
+			conn, err := client.NewEnsClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			query["LoadBalancerId"] = d.Id()
+
+			localData := removed.([]interface{})
+			backendServersMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["ServerId"] = dataLoopTmp["server_id"]
+				dataLoopMap["Weight"] = dataLoopTmp["weight"]
+				dataLoopMap["Type"] = dataLoopTmp["type"]
+				dataLoopMap["Ip"] = dataLoopTmp["ip"]
+				dataLoopMap["Port"] = dataLoopTmp["port"]
+				backendServersMaps = append(backendServersMaps, dataLoopMap)
+			}
+			backendServersMapsJson, err := json.Marshal(backendServersMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["BackendServers"] = string(backendServersMapsJson)
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if len(added.([]interface{})) > 0 {
+			action := "AddBackendServers"
+			conn, err := client.NewEnsClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			query["LoadBalancerId"] = d.Id()
+
+			localData := added.([]interface{})
+			backendServersMaps := make([]interface{}, 0)
+			for _, dataLoop := range localData {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["ServerId"] = dataLoopTmp["server_id"]
+				dataLoopMap["Weight"] = dataLoopTmp["weight"]
+				dataLoopMap["Type"] = dataLoopTmp["type"]
+				dataLoopMap["Ip"] = dataLoopTmp["ip"]
+				dataLoopMap["Port"] = dataLoopTmp["port"]
+				backendServersMaps = append(backendServersMaps, dataLoopMap)
+			}
+			backendServersMapsJson, err := json.Marshal(backendServersMaps)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["BackendServers"] = string(backendServersMapsJson)
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+	}
 	return resourceAliCloudEnsLoadBalancerRead(d, meta)
 }
 
@@ -233,17 +404,18 @@ func resourceAliCloudEnsLoadBalancerDelete(d *schema.ResourceData, meta interfac
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 
-func convertEnsPayTypeResponse(source interface{}) interface{} {
+func convertEnsLoadBalancerPayTypeResponse(source interface{}) interface{} {
 	switch source {
 	case "PostPaid":
 		return "PayAsYouGo"
 	}
 	return source
 }
-func convertEnsPayTypeRequest(source interface{}) interface{} {
+func convertEnsLoadBalancerPayTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
 		return "PostPaid"
