@@ -2,6 +2,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -69,6 +70,23 @@ func resourceAliCloudHbrPolicyBinding() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"cross_account_role_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"cross_account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"SELF_ACCOUNT", "CROSS_ACCOUNT"}, false),
+			},
+			"cross_account_user_id": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
 			"data_source_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -106,7 +124,7 @@ func resourceAliCloudHbrPolicyBinding() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"UDM_ECS", "NAS", "OSS", "File", "ECS_FILE"}, true),
+				ValidateFunc: StringInSlice([]string{"UDM_ECS", "NAS", "OSS", "File", "ECS_FILE"}, false),
 			},
 			"speed_limit": {
 				Type:     schema.TypeString,
@@ -159,6 +177,18 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 		policyBindingListLocalMap["SpeedLimit"] = v
 	}
 
+	if v, ok := d.GetOk("cross_account_role_name"); ok {
+		policyBindingListLocalMap["CrossAccountRoleName"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_type"); ok {
+		policyBindingListLocalMap["CrossAccountType"] = v
+	}
+
+	if v, ok := d.GetOk("cross_account_user_id"); ok {
+		policyBindingListLocalMap["CrossAccountUserId"] = v
+	}
+
 	if _, ok := d.GetOk("advanced_options"); ok {
 		objectDataLocalMap := make(map[string]interface{})
 		if v := d.Get("advanced_options"); v != nil {
@@ -188,7 +218,6 @@ func resourceAliCloudHbrPolicyBindingCreate(d *schema.ResourceData, meta interfa
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -225,16 +254,45 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreatedTime"])
-	d.Set("disabled", objectRaw["Disabled"])
-	d.Set("exclude", objectRaw["Exclude"])
-	d.Set("include", objectRaw["Include"])
-	d.Set("policy_binding_description", objectRaw["PolicyBindingDescription"])
-	d.Set("source", objectRaw["Source"])
-	d.Set("speed_limit", objectRaw["SpeedLimit"])
-	d.Set("data_source_id", objectRaw["DataSourceId"])
-	d.Set("policy_id", objectRaw["PolicyId"])
-	d.Set("source_type", objectRaw["SourceType"])
+	if objectRaw["CreatedTime"] != nil {
+		d.Set("create_time", objectRaw["CreatedTime"])
+	}
+	if objectRaw["CrossAccountRoleName"] != nil {
+		d.Set("cross_account_role_name", objectRaw["CrossAccountRoleName"])
+	}
+	if objectRaw["CrossAccountType"] != nil {
+		d.Set("cross_account_type", objectRaw["CrossAccountType"])
+	}
+	if objectRaw["CrossAccountUserId"] != nil {
+		d.Set("cross_account_user_id", objectRaw["CrossAccountUserId"])
+	}
+	if objectRaw["Disabled"] != nil {
+		d.Set("disabled", objectRaw["Disabled"])
+	}
+	if objectRaw["Exclude"] != nil {
+		d.Set("exclude", objectRaw["Exclude"])
+	}
+	if objectRaw["Include"] != nil {
+		d.Set("include", objectRaw["Include"])
+	}
+	if objectRaw["PolicyBindingDescription"] != nil {
+		d.Set("policy_binding_description", objectRaw["PolicyBindingDescription"])
+	}
+	if objectRaw["Source"] != nil {
+		d.Set("source", objectRaw["Source"])
+	}
+	if objectRaw["SpeedLimit"] != nil {
+		d.Set("speed_limit", objectRaw["SpeedLimit"])
+	}
+	if objectRaw["DataSourceId"] != nil {
+		d.Set("data_source_id", objectRaw["DataSourceId"])
+	}
+	if objectRaw["PolicyId"] != nil {
+		d.Set("policy_id", objectRaw["PolicyId"])
+	}
+	if objectRaw["SourceType"] != nil {
+		d.Set("source_type", objectRaw["SourceType"])
+	}
 
 	advancedOptionsMaps := make([]map[string]interface{}, 0)
 	advancedOptionsMap := make(map[string]interface{})
@@ -244,6 +302,7 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 		udmDetail1Raw = udmDetail1RawObj.(map[string]interface{})
 	}
 	if len(udmDetail1Raw) > 0 {
+
 		udmDetailMaps := make([]map[string]interface{}, 0)
 		udmDetailMap := make(map[string]interface{})
 		if len(udmDetail1Raw) > 0 {
@@ -266,7 +325,11 @@ func resourceAliCloudHbrPolicyBindingRead(d *schema.ResourceData, meta interface
 		advancedOptionsMap["udm_detail"] = udmDetailMaps
 		advancedOptionsMaps = append(advancedOptionsMaps, advancedOptionsMap)
 	}
-	d.Set("advanced_options", advancedOptionsMaps)
+	if udmDetail1RawObj != nil {
+		if err := d.Set("advanced_options", advancedOptionsMaps); err != nil {
+			return err
+		}
+	}
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("policy_id", parts[0])
@@ -290,9 +353,10 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["PolicyId"] = parts[0]
-	query["DataSourceId"] = parts[2]
+	request["PolicyId"] = parts[0]
+	request["DataSourceId"] = parts[2]
 	query["SourceType"] = parts[1]
+
 	if d.HasChange("disabled") {
 		update = true
 		request["Disabled"] = d.Get("disabled")
@@ -326,23 +390,29 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 	if d.HasChange("advanced_options") {
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
-		if v := d.Get("advanced_options"); v != nil {
+
+		if v := d.Get("advanced_options"); !IsNil(v) {
 			udmDetail := make(map[string]interface{})
-			nodeNative, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
-			if nodeNative != nil && nodeNative != "" {
-				udmDetail["DiskIdList"] = nodeNative
+			diskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].disk_id_list", d.Get("advanced_options"))
+			if diskIdList1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.disk_id_list") || diskIdList1 != "") {
+				udmDetail["DiskIdList"] = diskIdList1
 			}
-			nodeNative1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", v)
-			if nodeNative1 != nil && nodeNative1 != "" {
-				udmDetail["DestinationKmsKeyId"] = nodeNative1
+			destinationKmsKeyId1, _ := jsonpath.Get("$[0].udm_detail[0].destination_kms_key_id", v)
+			if destinationKmsKeyId1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.destination_kms_key_id") || destinationKmsKeyId1 != "") {
+				udmDetail["DestinationKmsKeyId"] = destinationKmsKeyId1
 			}
-			nodeNative2, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
-			if nodeNative2 != nil && nodeNative2 != "" {
-				udmDetail["ExcludeDiskIdList"] = nodeNative2
+			excludeDiskIdList1, _ := jsonpath.Get("$[0].udm_detail[0].exclude_disk_id_list", d.Get("advanced_options"))
+			if excludeDiskIdList1 != nil && (d.HasChange("advanced_options.0.udm_detail.0.exclude_disk_id_list") || excludeDiskIdList1 != "") {
+				udmDetail["ExcludeDiskIdList"] = excludeDiskIdList1
 			}
 
 			objectDataLocalMap["UdmDetail"] = udmDetail
-			request["AdvancedOptions"] = convertMapToJsonStringIgnoreError(objectDataLocalMap)
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["AdvancedOptions"] = string(objectDataLocalMapJson)
 		}
 	}
 
@@ -352,7 +422,6 @@ func resourceAliCloudHbrPolicyBindingUpdate(d *schema.ResourceData, meta interfa
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()

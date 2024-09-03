@@ -142,13 +142,13 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["DataSourceId"] != parts[2] {
+		if fmt.Sprint(item["DataSourceId"]) != parts[2] {
 			continue
 		}
-		if item["PolicyId"] != parts[0] {
+		if fmt.Sprint(item["PolicyId"]) != parts[0] {
 			continue
 		}
-		if item["SourceType"] != parts[1] {
+		if fmt.Sprint(item["SourceType"]) != parts[1] {
 			continue
 		}
 		return item, nil

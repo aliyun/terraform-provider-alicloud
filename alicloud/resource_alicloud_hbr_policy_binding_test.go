@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Hbr PolicyBinding. >>> Resource test cases, automatically generated.
-// Case ECS Instance Backup 6295
 func TestAccAliCloudHbrPolicyBinding_basic6295(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbr_policy_binding.default"
@@ -388,6 +386,8 @@ resource "alicloud_hbr_policy" "defaultoqWvHQ" {
     schedule     = "I|1631685600|P1D"
     retention    = "7"
     archive_days = "0"
+    keep_latest_snapshots = 1
+    vault_id     = alicloud_hbr_vault.defaultTDOTE0.id
   }
 }
 
@@ -1696,6 +1696,105 @@ func TestAccAliCloudHbrPolicyBinding_basic6220_raw(t *testing.T) {
 			},
 		},
 	})
+}
+
+// Test Hbr PolicyBinding. >>> Resource test cases, automatically generated.
+// Case OSS Backup跨账号 7232
+func TestAccAliCloudHbrPolicyBinding_basic7232(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_hbr_policy_binding.default"
+	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap7232)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeHbrPolicyBinding")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence7232)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"source_type":                "OSS",
+					"disabled":                   "false",
+					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
+					"data_source_id":             "${alicloud_oss_bucket.defaultKtt2XY.bucket}",
+					"policy_binding_description": "policy binding example",
+					"source":                     "prefix-example-create/",
+					"cross_account_user_id":      "1",
+					"cross_account_role_name":    "mock",
+					"cross_account_type":         "CROSS_ACCOUNT",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"source_type":                "OSS",
+						"disabled":                   "false",
+						"policy_id":                  CHECKSET,
+						"data_source_id":             CHECKSET,
+						"policy_binding_description": "policy binding example",
+						"source":                     "prefix-example-create/",
+						"cross_account_user_id":      "1",
+						"cross_account_role_name":    "mock",
+						"cross_account_type":         "CROSS_ACCOUNT",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudHbrPolicyBindingMap7232 = map[string]string{
+	"create_time":    CHECKSET,
+	"source_type":    CHECKSET,
+	"policy_id":      CHECKSET,
+	"data_source_id": CHECKSET,
+}
+
+func AlicloudHbrPolicyBindingBasicDependence7232(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_hbr_vault" "defaultyk84Hc" {
+  vault_type = "STANDARD"
+  vault_name = var.name
+}
+
+resource "alicloud_hbr_policy" "defaultoqWvHQ" {
+  policy_description = "created by zhenyuan"
+  policy_name        = format("%%s1", var.name)
+  rules {
+    rule_type             = "BACKUP"
+    backup_type           = "COMPLETE"
+    schedule              = "I|1631685600|P1D"
+    retention             = "7"
+    vault_id              = alicloud_hbr_vault.defaultyk84Hc.id
+    keep_latest_snapshots = "1"
+    archive_days          = "0"
+  }
+}
+
+resource "alicloud_oss_bucket" "defaultKtt2XY" {
+  storage_class = "Standard"
+  bucket        = format("%%s2", var.name)
+}
+
+
+`, name)
 }
 
 // Test Hbr PolicyBinding. <<< Resource test cases, automatically generated.
