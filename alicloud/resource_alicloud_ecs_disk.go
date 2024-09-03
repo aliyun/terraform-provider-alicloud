@@ -414,8 +414,8 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"UnknownError", "LastTokenProcessing"}) {
-				if NeedRetry(err) {
+			if err != nil {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"UnknownError", "LastTokenProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
