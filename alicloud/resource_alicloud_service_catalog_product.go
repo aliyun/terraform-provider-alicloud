@@ -12,12 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
+func resourceAliCloudServiceCatalogProduct() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudServiceCatalogPortfolioCreate,
-		Read:   resourceAliCloudServiceCatalogPortfolioRead,
-		Update: resourceAliCloudServiceCatalogPortfolioUpdate,
-		Delete: resourceAliCloudServiceCatalogPortfolioDelete,
+		Create: resourceAliCloudServiceCatalogProductCreate,
+		Read:   resourceAliCloudServiceCatalogProductRead,
+		Update: resourceAliCloudServiceCatalogProductUpdate,
+		Delete: resourceAliCloudServiceCatalogProductDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -35,13 +35,14 @@ func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"portfolio_arn": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"portfolio_name": {
+			"product_name": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"product_type": {
+				Type:     schema.TypeString,
+				Required: true,
+				ForceNew: true,
 			},
 			"provider_name": {
 				Type:     schema.TypeString,
@@ -51,11 +52,11 @@ func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
 	}
 }
 
-func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreatePortfolio"
+	action := "CreateProduct"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -64,12 +65,12 @@ func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["PortfolioName"] = d.Get("portfolio_name")
+	request["ProductName"] = d.Get("product_name")
+	request["ProductType"] = d.Get("product_type")
 	request["ProviderName"] = d.Get("provider_name")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -88,22 +89,22 @@ func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta 
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_catalog_portfolio", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_catalog_product", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["PortfolioId"]))
+	d.SetId(fmt.Sprint(response["ProductId"]))
 
-	return resourceAliCloudServiceCatalogPortfolioRead(d, meta)
+	return resourceAliCloudServiceCatalogProductRead(d, meta)
 }
 
-func resourceAliCloudServiceCatalogPortfolioRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	serviceCatalogServiceV2 := ServiceCatalogServiceV2{client}
 
-	objectRaw, err := serviceCatalogServiceV2.DescribeServiceCatalogPortfolio(d.Id())
+	objectRaw, err := serviceCatalogServiceV2.DescribeServiceCatalogProduct(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_service_catalog_portfolio DescribeServiceCatalogPortfolio Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_service_catalog_product DescribeServiceCatalogProduct Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
@@ -116,11 +117,11 @@ func resourceAliCloudServiceCatalogPortfolioRead(d *schema.ResourceData, meta in
 	if objectRaw["Description"] != nil {
 		d.Set("description", objectRaw["Description"])
 	}
-	if objectRaw["PortfolioArn"] != nil {
-		d.Set("portfolio_arn", objectRaw["PortfolioArn"])
+	if objectRaw["ProductName"] != nil {
+		d.Set("product_name", objectRaw["ProductName"])
 	}
-	if objectRaw["PortfolioName"] != nil {
-		d.Set("portfolio_name", objectRaw["PortfolioName"])
+	if objectRaw["ProductType"] != nil {
+		d.Set("product_type", objectRaw["ProductType"])
 	}
 	if objectRaw["ProviderName"] != nil {
 		d.Set("provider_name", objectRaw["ProviderName"])
@@ -129,30 +130,30 @@ func resourceAliCloudServiceCatalogPortfolioRead(d *schema.ResourceData, meta in
 	return nil
 }
 
-func resourceAliCloudServiceCatalogPortfolioUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdatePortfolio"
+	action := "UpdateProduct"
 	conn, err := client.NewSrvcatalogClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["PortfolioId"] = d.Id()
+	request["ProductId"] = d.Id()
 	query["RegionId"] = client.RegionId
 	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
 
-	if d.HasChange("portfolio_name") {
+	if d.HasChange("product_name") {
 		update = true
 	}
-	request["PortfolioName"] = d.Get("portfolio_name")
+	request["ProductName"] = d.Get("product_name")
 	if d.HasChange("provider_name") {
 		update = true
 	}
@@ -178,13 +179,13 @@ func resourceAliCloudServiceCatalogPortfolioUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
-	return resourceAliCloudServiceCatalogPortfolioRead(d, meta)
+	return resourceAliCloudServiceCatalogProductRead(d, meta)
 }
 
-func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeletePortfolio"
+	action := "DeleteProduct"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -193,7 +194,7 @@ func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["PortfolioId"] = d.Id()
+	request["ProductId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -214,7 +215,7 @@ func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta 
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidPortfolio.NotFound"}) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

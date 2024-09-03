@@ -4,6 +4,7 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -12,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
+func resourceAliCloudServiceCatalogProductVersion() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAliCloudServiceCatalogPortfolioCreate,
-		Read:   resourceAliCloudServiceCatalogPortfolioRead,
-		Update: resourceAliCloudServiceCatalogPortfolioUpdate,
-		Delete: resourceAliCloudServiceCatalogPortfolioDelete,
+		Create: resourceAliCloudServiceCatalogProductVersionCreate,
+		Read:   resourceAliCloudServiceCatalogProductVersionRead,
+		Update: resourceAliCloudServiceCatalogProductVersionUpdate,
+		Delete: resourceAliCloudServiceCatalogProductVersionDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -27,6 +28,10 @@ func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"active": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -35,27 +40,41 @@ func resourceAliCloudServiceCatalogPortfolio() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"portfolio_arn": {
-				Type:     schema.TypeString,
-				Computed: true,
+			"guidance": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Administrator guidance"),
 			},
-			"portfolio_name": {
+			"product_id": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Product ID"),
+			},
+			"product_version_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"provider_name": {
+			"template_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9a-zA-Z_-]+$"), "Template Type"),
+			},
+			"template_url": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 		},
 	}
 }
 
-func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductVersionCreate(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "CreatePortfolio"
+	action := "CreateProductVersion"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -64,13 +83,20 @@ func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["RegionId"] = client.RegionId
 
+	if v, ok := d.GetOk("active"); ok {
+		request["Active"] = v
+	}
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
 	}
-	request["PortfolioName"] = d.Get("portfolio_name")
-	request["ProviderName"] = d.Get("provider_name")
+	if v, ok := d.GetOk("guidance"); ok {
+		request["Guidance"] = v
+	}
+	request["ProductId"] = d.Get("product_id")
+	request["ProductVersionName"] = d.Get("product_version_name")
+	request["TemplateType"] = d.Get("template_type")
+	request["TemplateUrl"] = d.Get("template_url")
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -88,75 +114,90 @@ func resourceAliCloudServiceCatalogPortfolioCreate(d *schema.ResourceData, meta 
 	})
 
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_catalog_portfolio", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_service_catalog_product_version", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(response["PortfolioId"]))
+	d.SetId(fmt.Sprint(response["ProductVersionId"]))
 
-	return resourceAliCloudServiceCatalogPortfolioRead(d, meta)
+	return resourceAliCloudServiceCatalogProductVersionRead(d, meta)
 }
 
-func resourceAliCloudServiceCatalogPortfolioRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductVersionRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	serviceCatalogServiceV2 := ServiceCatalogServiceV2{client}
 
-	objectRaw, err := serviceCatalogServiceV2.DescribeServiceCatalogPortfolio(d.Id())
+	objectRaw, err := serviceCatalogServiceV2.DescribeServiceCatalogProductVersion(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_service_catalog_portfolio DescribeServiceCatalogPortfolio Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_service_catalog_product_version DescribeServiceCatalogProductVersion Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
 
+	if objectRaw["Active"] != nil {
+		d.Set("active", objectRaw["Active"])
+	}
 	if objectRaw["CreateTime"] != nil {
 		d.Set("create_time", objectRaw["CreateTime"])
 	}
 	if objectRaw["Description"] != nil {
 		d.Set("description", objectRaw["Description"])
 	}
-	if objectRaw["PortfolioArn"] != nil {
-		d.Set("portfolio_arn", objectRaw["PortfolioArn"])
+	if objectRaw["Guidance"] != nil {
+		d.Set("guidance", objectRaw["Guidance"])
 	}
-	if objectRaw["PortfolioName"] != nil {
-		d.Set("portfolio_name", objectRaw["PortfolioName"])
+	if objectRaw["ProductId"] != nil {
+		d.Set("product_id", objectRaw["ProductId"])
 	}
-	if objectRaw["ProviderName"] != nil {
-		d.Set("provider_name", objectRaw["ProviderName"])
+	if objectRaw["ProductVersionName"] != nil {
+		d.Set("product_version_name", objectRaw["ProductVersionName"])
+	}
+	if objectRaw["TemplateType"] != nil {
+		d.Set("template_type", objectRaw["TemplateType"])
+	}
+	if objectRaw["TemplateUrl"] != nil {
+		d.Set("template_url", objectRaw["TemplateUrl"])
 	}
 
 	return nil
 }
 
-func resourceAliCloudServiceCatalogPortfolioUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductVersionUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]interface{}
 	update := false
-	action := "UpdatePortfolio"
+	action := "UpdateProductVersion"
 	conn, err := client.NewSrvcatalogClient()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	request["PortfolioId"] = d.Id()
+	request["ProductVersionId"] = d.Id()
 	query["RegionId"] = client.RegionId
+	if d.HasChange("active") {
+		update = true
+		request["Active"] = d.Get("active")
+	}
+
 	if d.HasChange("description") {
 		update = true
 		request["Description"] = d.Get("description")
 	}
 
-	if d.HasChange("portfolio_name") {
+	if d.HasChange("guidance") {
+		update = true
+		request["Guidance"] = d.Get("guidance")
+	}
+
+	if d.HasChange("product_version_name") {
 		update = true
 	}
-	request["PortfolioName"] = d.Get("portfolio_name")
-	if d.HasChange("provider_name") {
-		update = true
-	}
-	request["ProviderName"] = d.Get("provider_name")
+	request["ProductVersionName"] = d.Get("product_version_name")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -178,13 +219,13 @@ func resourceAliCloudServiceCatalogPortfolioUpdate(d *schema.ResourceData, meta 
 		}
 	}
 
-	return resourceAliCloudServiceCatalogPortfolioRead(d, meta)
+	return resourceAliCloudServiceCatalogProductVersionRead(d, meta)
 }
 
-func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudServiceCatalogProductVersionDelete(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeletePortfolio"
+	action := "DeleteProductVersion"
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
@@ -193,7 +234,7 @@ func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["PortfolioId"] = d.Id()
+	request["ProductVersionId"] = d.Id()
 	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -214,7 +255,7 @@ func resourceAliCloudServiceCatalogPortfolioDelete(d *schema.ResourceData, meta 
 	})
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidPortfolio.NotFound"}) {
+		if IsExpectedErrors(err, []string{"ResourceNotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
