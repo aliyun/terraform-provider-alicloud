@@ -29,3 +29,5 @@ PROVIDER_URL="https:\/\/github.com\/aliyun\/terraform-provider-alicloud\/issues"
 $SED "s/GH-([0-9]+)/\[#\1\]\($PROVIDER_URL\/\1\)/g" -e 's/\[\[#(.+)([0-9])\)]$/(\[#\1\2))/g' CHANGELOG.md
 
 rm CHANGELOG.md.bak
+
+sh scripts/docs-link.sh
