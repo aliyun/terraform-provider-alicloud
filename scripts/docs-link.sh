@@ -16,7 +16,9 @@ file_name=${element%%.*}
 code_sample=""
 file_path="${base_path}${file_name}.html.markdown"
 link_div="<div style=\"display: block;margin-bottom: 40px;\">"
+deprecate_section="-> **DEPRECATED:**"
 found_example=0
+found_deprecate=0
 
 line_number=$(grep -n "$link_div" "$file_path" | cut -d':' -f1)
 read -d '' -ra arr <<< "$(echo "$line_number" | tr ' ' '\n')"
@@ -41,8 +43,15 @@ while read -r line; do
   if [[ $line == *"$code_section"* ]]; then
     found_example=1
   fi
+  if [[ $line == *"$deprecate_section"* ]]; then
+    found_deprecate=1
+  fi
 done < "$file_path"
 IFS="$old_ifs"
+
+if [[ $found_deprecate -eq 1 ]]; then
+  continue
+fi
 
 example_indexes=$(grep -n "$code_section" "$file_path" | cut -d':' -f1)
 read -d '' -ra arr <<< "$(echo "$example_indexes" | tr ' ' '\n')"
