@@ -189,7 +189,7 @@ func resourceAliCloudCloudFirewallNatFirewallCreate(d *schema.ResourceData, meta
 	d.SetId(fmt.Sprint(response["ProxyId"]))
 
 	cloudFirewallServiceV2 := CloudFirewallServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{"closed", "noraml"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, cloudFirewallServiceV2.CloudFirewallNatFirewallStateRefreshFunc(d.Id(), "ProxyStatus", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{"closed", "normal"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, cloudFirewallServiceV2.CloudFirewallNatFirewallStateRefreshFunc(d.Id(), "ProxyStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
