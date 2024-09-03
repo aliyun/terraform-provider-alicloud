@@ -2,7 +2,6 @@
 subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_account"
-sidebar_current: "docs-alicloud-resource-gpdb-account"
 description: |-
   Provides a Alicloud GPDB Account resource.
 ---
@@ -18,12 +17,6 @@ For information about GPDB Account and how to use it, see [What is Account](http
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_account&exampleId=32410332-99b6-368a-bfc8-d78a60558e39415edfab&activeTab=example&spm=docs.r.gpdb_account.0.3241033299&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 provider "alicloud" {
@@ -76,32 +69,32 @@ resource "alicloud_gpdb_account" "default" {
 ## Argument Reference
 
 The following arguments are supported:
+* `account_description` - (Optional) The description of the account.
+* `account_name` - (Required, ForceNew) The account name.
+* `account_password` - (Required) AccountPassword
+* `account_type` - (Optional, ForceNew, Available since v1.230.0) Account type. The value range is as follows:
 
-* `account_description` - (Optional, ForceNew) The description of the account.
-  * Starts with a letter.
-  * Does not start with `http://` or `https://`.
-  * Contains letters, underscores (_), hyphens (-), or digits.
-  * Be 2 to 256 characters in length.
-* `account_name` - (Required, ForceNew) The name of the account. The account name must be unique and meet the following requirements:
-  * Starts with a letter.
-  * Contains only lowercase letters, digits, or underscores (_).
-  * Be up to 16 characters in length.
-  * Contains no reserved keywords.
-* `account_password` - (Required) The password of the account. The password must be 8 to 32 characters in length and contain at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters. Special characters include `! @ # $ % ^ & * ( ) _ + - =`.
-* `db_instance_id` - (Required, ForceNew) The ID of the instance.
+  Normal: Normal account number.
+
+  Super: a high-privilege account.
+* `db_instance_id` - (Required, ForceNew) The Adb pg instance ID.
+* `database_name` - (Optional, Available since v1.230.0) Database name, with the following restrictions:
+  - Can only contain letters, numbers and underscores.
+  - Must start with a letter.
+  - Length cannot exceed 63 characters.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID of Account. The value formats as `<db_instance_id>:<account_name>`.
-* `status` - The status of the account. Valid values: `Active`, `Creating` and `Deleting`.
+* `id` - The ID of the resource supplied above.The value is formulated as `<db_instance_id>:<account_name>`.
+* `status` - The status of the resource
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
 * `create` - (Defaults to 5 mins) Used when create the Account.
+* `delete` - (Defaults to 5 mins) Used when delete the Account.
+* `update` - (Defaults to 5 mins) Used when update the Account.
 
 ## Import
 
