@@ -338,7 +338,7 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 					}),
 				),
 			},
-			//// API does not support to updating the compute_resource
+			// API does not support to updating the compute_resource
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"compute_resource": "16Core64GB",
@@ -349,7 +349,7 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 			//		}),
 			//	),
 			//},
-			//// API does not support updating elastic_io_resource when compute_resource is 8Core32GB or 16Core64GB
+			// API does not support updating elastic_io_resource when compute_resource is 8Core32GB or 16Core64GB
 			//{
 			//	Config: testAccConfig(map[string]interface{}{
 			//		"elastic_io_resource": "1",
@@ -387,6 +387,26 @@ func TestAccAliCloudADBDbCluster_flexible8C(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"enable_ssl": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"enable_ssl": "false",
 					}),
 				),
 			},
@@ -477,6 +497,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 					"mode":                "flexible",
 					"compute_resource":    "32Core128GB",
 					"vswitch_id":          "${local.vswitch_id}",
+					"enable_ssl":          "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -485,6 +506,7 @@ func TestAccAliCloudADBDbCluster_flexible32C(t *testing.T) {
 						"mode":                "flexible",
 						"compute_resource":    "32Core128GB",
 						"vswitch_id":          CHECKSET,
+						"enable_ssl":          "true",
 						"db_node_class":       "E32",
 					}),
 				),
