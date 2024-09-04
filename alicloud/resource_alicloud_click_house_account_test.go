@@ -10,6 +10,7 @@ import (
 )
 
 func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
@@ -89,6 +90,7 @@ func TestAccAliCloudClickHouseAccount_basic0(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
@@ -200,6 +202,7 @@ func TestAccAliCloudClickHouseAccount_basic1(t *testing.T) {
 }
 
 func TestAccAliCloudClickHouseAccount_CreateSuperAccount(t *testing.T) {
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_click_house_account.default"
 	ra := resourceAttrInit(resourceId, AliCloudClickHouseAccountMap0)
