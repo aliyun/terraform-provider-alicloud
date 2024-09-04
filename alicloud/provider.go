@@ -870,6 +870,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_service_catalog_product_version":                      resourceAliCloudServiceCatalogProductVersion(),
 			"alicloud_service_catalog_product_portfolio_association":        resourceAliCloudServiceCatalogProductPortfolioAssociation(),
 			"alicloud_service_catalog_product":                              resourceAliCloudServiceCatalogProduct(),
+			"alicloud_gpdb_hadoop_data_source":                              resourceAliCloudGpdbHadoopDataSource(),
+			"alicloud_gpdb_jdbc_data_source":                                resourceAliCloudGpdbJdbcDataSource(),
 			"alicloud_data_works_project":                                   resourceAliCloudDataWorksProject(),
 			"alicloud_fcv3_function_version":                                resourceAliCloudFcv3FunctionVersion(),
 			"alicloud_governance_account":                                   resourceAliCloudGovernanceAccount(),
