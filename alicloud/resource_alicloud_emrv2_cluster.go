@@ -327,7 +327,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 									"category": {
 										Type:         schema.TypeString,
 										Required:     true,
-										ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_efficiency"}, false),
+										ValidateFunc: validation.StringInSlice([]string{"cloud_essd", "cloud_efficiency", "cloud_ssd"}, false),
 									},
 									"size": {
 										Type:     schema.TypeInt,
@@ -356,7 +356,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 									"category": {
 										Type:         schema.TypeString,
 										Required:     true,
-										ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud", "local_hdd_pro"}, false),
+										ValidateFunc: validation.StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "cloud_essd", "cloud", "local_hdd_pro", "local_disk", "local_ssd_pro"}, false),
 									},
 									"size": {
 										Type:     schema.TypeInt,
@@ -1678,6 +1678,9 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 		if "PayAsYouGo" == newPaymentType.(string) {
 			return WrapError(Error("EMR cluster can only change paymentType from PayAsYouGo to Subscription."))
 		}
+		if !d.HasChange("node_groups") {
+			return WrapError(Error("Subscription paymentType of emr cluster can not contains PayAsYouGo node group with 'MASTER' or 'CORE'."))
+		}
 	}
 
 	if d.HasChange("node_groups") {
@@ -1743,6 +1746,11 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				} else {
 					updateClusterPaymentTypeRequest["AutoPayOrder"] = true
 				}
+				if autoRenew, exists := sc.(*schema.Set).List()[0].(map[string]interface{})["auto_renew"]; exists {
+					updateClusterPaymentTypeRequest["AutoRenew"] = autoRenew.(bool)
+				} else {
+					updateClusterPaymentTypeRequest["AutoRenew"] = false
+				}
 			}
 			var convertNodeGroups []map[string]interface{}
 			for originNodeGroupName := range originNodeGroupMap {
@@ -1752,6 +1760,8 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				if newNodeGroup, ok := newNodeGroupMap[originNodeGroupName]; ok {
 					if newNodeGroupValue, newNodeGroupExists := newNodeGroup["payment_type"]; newNodeGroupExists && "Subscription" == newNodeGroupValue {
 						convertNodeGroup["PaymentType"] = newNodeGroupValue
+					} else if "PayAsYouGo" == newNodeGroupValue && ("MASTER" == newNodeGroup["node_group_type"] || "CORE" == newNodeGroup["node_group_type"]) {
+						return WrapError(Error("Subscription paymentType of emr cluster can not contains PayAsYouGo node group with 'MASTER' or 'CORE'."))
 					} else {
 						continue
 					}
@@ -2127,6 +2137,16 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["payment_duration_unit"]; subscriptionConfigExists {
 						updateNodeGroupPaymentType["PaymentDurationUnit"] = subscriptionConfigValue
 					}
+					if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["auto_pay_order"]; subscriptionConfigExists {
+						updateNodeGroupPaymentType["AutoPayOrder"] = subscriptionConfigValue
+					} else {
+						updateNodeGroupPaymentType["AutoPayOrder"] = true
+					}
+					if subscriptionConfigValue, subscriptionConfigExists := subscriptionConfigMap["auto_renew"]; subscriptionConfigExists {
+						updateNodeGroupPaymentType["AutoRenew"] = subscriptionConfigValue
+					} else {
+						updateNodeGroupPaymentType["AutoRenew"] = false
+					}
 				} else {
 					return WrapError(Error("The '%s' nodeGroup: '%s' is needed parameter 'subscription_config' for changing paymentType.",
 						newNodeGroup["node_group_type"], newNodeGroup["node_group_name"]))
@@ -2135,11 +2155,6 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 				UpdateNodeGroupPaymentTypeRequest := map[string]interface{}{
 					"ClusterId": d.Id(),
 					"RegionId":  client.RegionId,
-				}
-				if autoPay, ok := newNodeGroup["auto_pay_order"]; ok {
-					UpdateNodeGroupPaymentTypeRequest["AutoPayOrder"] = autoPay.(bool)
-				} else {
-					UpdateNodeGroupPaymentTypeRequest["AutoPayOrder"] = true
 				}
 				UpdateNodeGroupPaymentTypeRequest["NodeGroup"] = updateNodeGroupPaymentType
 				wait = incrementalWait(3*time.Second, 5*time.Second)

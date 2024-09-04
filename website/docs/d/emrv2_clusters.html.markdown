@@ -2,16 +2,16 @@
 subcategory: "E-MapReduce (EMR)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_emrv2_clusters"
-sidebar_current: "docs-alicloud-datasource-emr-clusters-new"
+sidebar_current: "docs-alicloud-datasource-emrv2-clusters"
 description: |-
   Provides a list of Emr Clusters to the user based on EMR's new version OpenAPI.
 ---
 
-# alicloud\_emrv2\_clusters
+# alicloud_emrv2_clusters
 
 This data source provides the Emr Clusters of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.199.0+.
+-> **NOTE:** Available since v1.199.0.
 
 ## Example Usage
 
@@ -48,7 +48,7 @@ resource "alicloud_security_group" "default" {
 }
 
 resource "alicloud_ram_role" "default" {
-  name     = "tftest"
+  name     = "emrtf"
   document = <<EOF
     {
         "Statement": [
@@ -186,7 +186,7 @@ The following arguments are supported:
 * `next_token` - (Optional) The next token is used to list clusters for next page.
 * `max_results` - (Optional) The max results is used to list clusters for next page.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
