@@ -22,6 +22,11 @@ func dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocks() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"accelerator_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -58,6 +63,10 @@ func dataSourceAliCloudGaEndpointGroupIpAddressCidrBlocksRead(d *schema.Resource
 	request := make(map[string]interface{})
 	request["RegionId"] = client.RegionId
 	request["EndpointGroupRegion"] = d.Get("endpoint_group_region")
+
+	if v, ok := d.GetOk("accelerator_id"); ok {
+		request["AcceleratorId"] = v
+	}
 
 	var response map[string]interface{}
 	conn, err := client.NewGaplusClient()

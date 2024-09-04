@@ -32,6 +32,7 @@ output "ga_endpoint_group_ip_address_cidr_blocks_endpoint_group_region" {
 The following arguments are supported:
 
 * `endpoint_group_region` - (Required, ForceNew) The region ID of the endpoint group.
+* `accelerator_id` - (Optional, ForceNew, Available since v1.230.0) The ID of the Global Accelerator (GA) instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
