@@ -998,7 +998,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			request["SSLEnabled"] = 2
 		}
 
-		if sslAction == "Update" && d.Get("engine").(string) == "PostgreSQL" {
+		if sslAction == "Update" && (d.Get("engine").(string) == "PostgreSQL" || d.Get("engine").(string) == "MySQL") {
 			request["SSLEnabled"] = 1
 		}
 
