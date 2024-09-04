@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -42,11 +43,20 @@ func resourceAliCloudGpdbDbResourceGroup() *schema.Resource {
 					equal, _ := compareJsonTemplateAreEquivalent(old, new)
 					return equal
 				},
+				StateFunc: func(v interface{}) string {
+					jsonString, _ := normalizeJsonString(v)
+					return jsonString
+				},
 			},
 			"resource_group_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"role_list": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
@@ -91,7 +101,7 @@ func resourceAliCloudGpdbDbResourceGroupCreate(d *schema.ResourceData, meta inte
 
 	d.SetId(fmt.Sprintf("%v:%v", query["DBInstanceId"], query["ResourceGroupName"]))
 
-	return resourceAliCloudGpdbDbResourceGroupRead(d, meta)
+	return resourceAliCloudGpdbDbResourceGroupUpdate(d, meta)
 }
 
 func resourceAliCloudGpdbDbResourceGroupRead(d *schema.ResourceData, meta interface{}) error {
@@ -115,6 +125,9 @@ func resourceAliCloudGpdbDbResourceGroupRead(d *schema.ResourceData, meta interf
 		d.Set("resource_group_name", objectRaw["ResourceGroupName"])
 	}
 
+	role1Raw, _ := jsonpath.Get("$.RoleList.Role", objectRaw)
+	d.Set("role_list", role1Raw)
+
 	parts := strings.Split(d.Id(), ":")
 	d.Set("db_instance_id", parts[0])
 	d.Set("resource_group_name", parts[1])
@@ -136,6 +149,7 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
+	query["DBInstanceId"] = parts[0]
 	jsonString := "{}"
 	jsonString, _ = sjson.Set(jsonString, "ResourceGroupItems.0.ResourceGroupName", parts[1])
 	jsonString, _ = sjson.Set(jsonString, "ResourceGroupItems.0.ResourceGroupConfig", d.Get("resource_group_config"))
@@ -144,7 +158,6 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 	if err != nil {
 		return WrapError(err)
 	}
-	query["DBInstanceId"] = parts[0]
 	if _, ok := d.GetOk("resource_group_config"); ok && d.HasChange("resource_group_config") {
 		update = true
 	}
@@ -168,12 +181,89 @@ func resourceAliCloudGpdbDbResourceGroupUpdate(d *schema.ResourceData, meta inte
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		gpdbServiceV2 := GpdbServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_config"))}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbServiceV2.GpdbDbResourceGroupStateRefreshFunc(d.Id(), "ResourceGroupConfig", []string{}))
+		resourceGroupConfig, _ := normalizeJsonString(fmt.Sprint(d.Get("resource_group_config")))
+		stateConf := BuildStateConf([]string{}, []string{resourceGroupConfig}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbServiceV2.GpdbDbResourceGroupStateRefreshFunc(d.Id(), "ResourceGroupConfig", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
 
+	if d.HasChange("role_list") {
+		oldEntry, newEntry := d.GetChange("role_list")
+		oldEntrySet := oldEntry.(*schema.Set)
+		newEntrySet := newEntry.(*schema.Set)
+		removed := oldEntrySet.Difference(newEntrySet)
+		added := newEntrySet.Difference(oldEntrySet)
+
+		if removed.Len() > 0 {
+			parts := strings.Split(d.Id(), ":")
+			action := "UnbindDBResourceGroupWithRole"
+			conn, err := client.NewGpdbClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			query["DBInstanceId"] = parts[0]
+			query["ResourceGroupName"] = parts[1]
+			query["RoleList"] = convertListToCommaSeparate(removed.List())
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+		if added.Len() > 0 {
+			parts := strings.Split(d.Id(), ":")
+			action := "BindDBResourceGroupWithRole"
+			conn, err := client.NewGpdbClient()
+			if err != nil {
+				return WrapError(err)
+			}
+			request = make(map[string]interface{})
+			query = make(map[string]interface{})
+			query["DBInstanceId"] = parts[0]
+			query["ResourceGroupName"] = parts[1]
+			query["RoleList"] = convertListToCommaSeparate(added.List())
+
+			runtime := util.RuntimeOptions{}
+			runtime.SetAutoretry(true)
+			wait := incrementalWait(3*time.Second, 5*time.Second)
+			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), query, request, &runtime)
+				if err != nil {
+					if NeedRetry(err) {
+						wait()
+						return resource.RetryableError(err)
+					}
+					return resource.NonRetryableError(err)
+				}
+				addDebug(action, response, request)
+				return nil
+			})
+			if err != nil {
+				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+			}
+
+		}
+
+	}
 	return resourceAliCloudGpdbDbResourceGroupRead(d, meta)
 }
 

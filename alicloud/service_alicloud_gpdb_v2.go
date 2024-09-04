@@ -239,6 +239,10 @@ func (s *GpdbServiceV2) GpdbDbResourceGroupStateRefreshFunc(id string, field str
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
 
+		if field == "ResourceGroupConfig" {
+			currentStatus, _ = normalizeJsonString(v)
+		}
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
