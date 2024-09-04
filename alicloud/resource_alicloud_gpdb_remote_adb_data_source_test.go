@@ -9,8 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Gpdb RemoteADBDataSource. >>> Resource test cases, automatically generated.
-// Case adb2adb测试用例_yb_test 6853
 func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_remote_adb_data_source.default"
@@ -78,6 +76,18 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"user_name":     "test_002",
+					"user_password": "test_002",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_name":     "test_002",
+						"user_password": "test_002",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"remote_database":       "test_001",
 					"manager_user_name":     "test_001",
 					"user_name":             "test_001",
@@ -123,9 +133,7 @@ variable "name" {
     default = "%s"
 }
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+data "alicloud_gpdb_zones" "default" {}
 
 resource "alicloud_vpc" "default4Mf0nY" {
   cidr_block = "192.168.0.0/16"
@@ -133,7 +141,7 @@ resource "alicloud_vpc" "default4Mf0nY" {
 
 resource "alicloud_vswitch" "defaultwSAVpf" {
   vpc_id     = alicloud_vpc.default4Mf0nY.id
-  zone_id    = data.alicloud_zones.default.zones.0.id
+  zone_id    = data.alicloud_gpdb_zones.default.zones.0.id
   cidr_block = "192.168.1.0/24"
 }
 
@@ -146,7 +154,7 @@ resource "alicloud_gpdb_instance" "defaultEtEzMF" {
   payment_type               = "PayAsYouGo"
   ssl_enabled                = "0"
   engine_version             = "6.0"
-  zone_id                    = data.alicloud_zones.default.zones.0.id
+  zone_id                    = data.alicloud_gpdb_zones.default.zones.0.id
   vswitch_id                 = alicloud_vswitch.defaultwSAVpf.id
   storage_size               = "50"
   master_cu                  = "4"
@@ -166,7 +174,7 @@ resource "alicloud_gpdb_instance" "defaultEY7t9t" {
   payment_type               = "PayAsYouGo"
   ssl_enabled                = "0"
   engine_version             = "6.0"
-  zone_id                    = data.alicloud_zones.default.zones.0.id
+  zone_id                    = data.alicloud_gpdb_zones.default.zones.0.id
   vswitch_id                 = alicloud_vswitch.defaultwSAVpf.id
   storage_size               = "50"
   master_cu                  = "4"
@@ -189,6 +197,13 @@ resource "alicloud_gpdb_account" "defaultwXePof" {
   account_password    = "test_001"
 }
 
+resource "alicloud_gpdb_account" "defaultTQoLwv" {
+  account_description = "test_002"
+  db_instance_id      = alicloud_gpdb_instance.defaultEY7t9t.id
+  account_name        = "test_002"
+  account_password    = "test_002"
+  account_type        = "Normal"
+}
 
 `, name)
 }
@@ -259,5 +274,3 @@ func TestAccAliCloudGpdbRemoteADBDataSource_basic6853_raw(t *testing.T) {
 		},
 	})
 }
-
-// Test Gpdb RemoteADBDataSource. <<< Resource test cases, automatically generated.
