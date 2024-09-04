@@ -51,7 +51,6 @@ func resourceAliCloudGpdbRemoteADBDataSource() *schema.Resource {
 			"manager_user_password": {
 				Type:      schema.TypeString,
 				Required:  true,
-				ForceNew:  true,
 				Sensitive: true,
 			},
 			"remote_adb_data_source_id": {
@@ -75,12 +74,10 @@ func resourceAliCloudGpdbRemoteADBDataSource() *schema.Resource {
 			"user_name": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"user_password": {
 				Type:      schema.TypeString,
 				Required:  true,
-				ForceNew:  true,
 				Sensitive: true,
 			},
 		},
@@ -210,6 +207,7 @@ func resourceAliCloudGpdbRemoteADBDataSourceUpdate(d *schema.ResourceData, meta 
 	query = make(map[string]interface{})
 	query["LocalDBInstanceId"] = parts[0]
 	query["DataSourceId"] = parts[1]
+
 	if d.HasChange("user_name") {
 		update = true
 	}
@@ -290,9 +288,10 @@ func resourceAliCloudGpdbRemoteADBDataSourceDelete(d *schema.ResourceData, meta 
 	}
 
 	gpdbServiceV2 := GpdbServiceV2{client}
-	stateConf := BuildStateConf([]string{}, []string{""}, d.Timeout(schema.TimeoutDelete), 30*time.Second, gpdbServiceV2.GpdbRemoteADBDataSourceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 30*time.Second, gpdbServiceV2.GpdbRemoteADBDataSourceStateRefreshFunc(d.Id(), "", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
