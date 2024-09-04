@@ -3,12 +3,13 @@ subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_db_resource_group"
 description: |-
-  Provides a Alicloud Gpdb Db Resource Group resource.
+  Provides a Alicloud GPDB Db Resource Group resource.
 ---
 
 # alicloud_gpdb_db_resource_group
 
-Provides a Gpdb Db Resource Group resource. 
+Provides a GPDB Db Resource Group resource.
+
 
 For information about Gpdb Db Resource Group and how to use it, see [What is Db Resource Group](https://www.alibabacloud.com/help/en/).
 
@@ -17,12 +18,6 @@ For information about Gpdb Db Resource Group and how to use it, see [What is Db 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_db_resource_group&exampleId=ace7d56c-6774-c110-4e54-d77b5c2201c1ea69de37&activeTab=example&spm=docs.r.gpdb_db_resource_group.0.ace7d56c67&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -48,23 +43,22 @@ resource "alicloud_vswitch" "defaultRv5UXt" {
 }
 
 resource "alicloud_gpdb_instance" "defaultJXWSlW" {
-  instance_spec            = "2C8G"
-  seg_node_num             = "2"
-  seg_storage_type         = "cloud_essd"
-  instance_network_type    = "VPC"
-  db_instance_category     = "Basic"
-  engine                   = "gpdb"
-  resource_management_mode = "resourceGroup"
-  payment_type             = "PayAsYouGo"
-  ssl_enabled              = "0"
-  engine_version           = "6.0"
-  zone_id                  = data.alicloud_zones.default.zones.0.id
-  vswitch_id               = alicloud_vswitch.defaultRv5UXt.id
-  storage_size             = "50"
-  master_cu                = "4"
-  vpc_id                   = alicloud_vpc.defaultZc8RD9.id
-  db_instance_mode         = "StorageElastic"
-  description              = var.name
+  instance_spec         = "2C8G"
+  seg_node_num          = "2"
+  seg_storage_type      = "cloud_essd"
+  instance_network_type = "VPC"
+  db_instance_category  = "Basic"
+  engine                = "gpdb"
+  payment_type          = "PayAsYouGo"
+  ssl_enabled           = "0"
+  engine_version        = "6.0"
+  zone_id               = data.alicloud_zones.default.zones.0.id
+  vswitch_id            = alicloud_vswitch.defaultRv5UXt.id
+  storage_size          = "50"
+  master_cu             = "4"
+  vpc_id                = alicloud_vpc.defaultZc8RD9.id
+  db_instance_mode      = "StorageElastic"
+  description           = var.name
 }
 
 
@@ -81,6 +75,7 @@ The following arguments are supported:
 * `db_instance_id` - (Required, ForceNew) The instance ID.> You can call the [DescribeDBInstances](~~ 86911 ~~) operation to view the instance IDs of all AnalyticDB PostgreSQL instances in the target region.
 * `resource_group_config` - (Required) Resource group configuration.
 * `resource_group_name` - (Required, ForceNew) Resource group name.
+* `role_list` - (Optional, Set, Available since v1.230.0) Role List
 
 ## Attributes Reference
 
@@ -96,7 +91,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Gpdb Db Resource Group can be imported using the id, e.g.
+GPDB Db Resource Group can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_db_resource_group.example <db_instance_id>:<resource_group_name>
