@@ -42,10 +42,10 @@ resource "alicloud_cen_transit_router" "example" {
 }
 
 resource "alicloud_vpn_customer_gateway" "example" {
-  name        = var.name
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = var.name
+  customer_gateway_name = var.name
+  ip_address            = "42.104.22.210"
+  asn                   = "45014"
+  description           = var.name
 }
 
 resource "alicloud_vpn_gateway_vpn_attachment" "example" {

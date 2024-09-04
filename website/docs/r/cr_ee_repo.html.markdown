@@ -33,8 +33,8 @@ variable "name" {
 }
 
 resource "random_integer" "default" {
-  min = 10000
-  max = 99999
+  min = 10000000
+  max = 99999999
 }
 
 resource "alicloud_cr_ee_instance" "default" {
