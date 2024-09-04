@@ -52,7 +52,7 @@ data "alicloud_ram_roles" "example" {
 resource "alicloud_actiontrail_trail" "example" {
   trail_name         = var.name
   sls_write_role_arn = data.alicloud_ram_roles.example.roles.0.arn
-  sls_project_arn    = "acs:log:${data.alicloud_regions.example.regions.0.id}:${data.alicloud_account.example.id}:project/${alicloud_log_project.example.name}"
+  sls_project_arn    = "acs:log:${data.alicloud_regions.example.regions.0.id}:${data.alicloud_account.example.id}:project/${alicloud_log_project.example.project_name}"
 }
 ```
 

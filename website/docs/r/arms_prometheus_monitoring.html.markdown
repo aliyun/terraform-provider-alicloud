@@ -84,13 +84,13 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = "desired_size"
+  node_pool_name       = "desired_size"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.vswitch.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   desired_size         = 2
 }
 
