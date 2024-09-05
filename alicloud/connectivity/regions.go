@@ -201,7 +201,7 @@ var WAFSupportRegions = []Region{Hangzhou}
 var MSCSupportRegions = []Region{Hangzhou}
 var VPCPublicIpAddressPoolCidrBlockSupportRegions = []Region{Hangzhou}
 var RDSInstanceClassesSupportRegions = []Region{Hangzhou}
-var ServerlessSupportRegions = []Region{Shanghai, Qingdao, Beijing, Zhangjiakou, Huhehaote, WuLanChaBu, Shenzhen, ChengDu, Hongkong, Hangzhou}
+var ServerlessSupportRegions = []Region{APSouthEast1, Shanghai, Qingdao, Beijing, Zhangjiakou, Huhehaote, WuLanChaBu, Shenzhen, ChengDu, Hongkong, Hangzhou}
 
 // Other regions requires the custom should have icp
 var FCCustomDomainSupportRegions = []Region{EUCentral1, APSouthEast1}
