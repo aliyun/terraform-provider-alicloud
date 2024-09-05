@@ -280,7 +280,7 @@ The spot_bid_prices mapping supports the following:
 
 The system_disk mapping supports the following: 
 
-* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_ssd`.
+* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_ssd`. **NOTE:** Since version v1.230.0, the category `cloud_ssd` is available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
@@ -289,7 +289,7 @@ The system_disk mapping supports the following:
 
 The data_disks mapping supports the following: 
 
-* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud_essd`, `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro`.
+* `category` - (Required) The type of the data disk. Valid values: `cloud_efficiency`, `cloud_essd`, `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro`. **NOTE:** Since version v1.230.0, the categories `cloud`, `local_hdd_pro`, `local_disk`, `local_ssd_pro` are available.
 * `size` - (Required)The size of a data disk, at least 40. Unit: GiB.
 * `performance_level` - (Optional) Worker node data disk performance level, when `category` values `cloud_essd`, the optional values are `PL0`, `PL1`, `PL2` or `PL3`, but the specific performance level is related to the disk capacity.
 * `count` - (Optional) The count of a data disk.
