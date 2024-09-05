@@ -12,7 +12,7 @@ Provides a Quotas Template Service resource.
 
 Quota Template Service.
 
-For information about Quotas Template Service and how to use it, see [What is Template Service](https://www.alibabacloud.com/help/en/).
+For information about Quotas Template Service and how to use it, see [What is Template Service](https://www.alibabacloud.com/help/en/quota-center/developer-reference/api-quotas-2020-05-10-modifyquotatemplateservicestatus).
 
 -> **NOTE:** Available since v1.230.0.
 
