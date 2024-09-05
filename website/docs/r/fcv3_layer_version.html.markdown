@@ -12,7 +12,7 @@ Provides a FCV3 Layer Version resource.
 
 Layer provides you with the ability to publish and deploy common dependency libraries, runtime environments, and function extensions.
 
-For information about FCV3 Layer Version and how to use it, see [What is Layer Version](https://www.alibabacloud.com/help/en/).
+For information about FCV3 Layer Version and how to use it, see [What is Layer Version](https://www.alibabacloud.com/help/en/functioncompute/api-fc-2023-03-30-createlayerversion).
 
 -> **NOTE:** Available since v1.230.0.
 

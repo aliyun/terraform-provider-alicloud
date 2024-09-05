@@ -20,12 +20,6 @@ For information about FCV3 Async Invoke Config and how to use it, see [What is A
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_async_invoke_config&exampleId=be7c16e0-04af-42e5-9682-c2abbd16dfcea05a8929&activeTab=example&spm=docs.r.fcv3_async_invoke_config.0.be7c16e004&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -107,17 +101,17 @@ resource "alicloud_fcv3_async_invoke_config" "default" {
 
 The following arguments are supported:
 * `async_task` - (Optional) Whether to enable an asynchronous task
-* `destination_config` - (Optional) Target Configuration See [`destination_config`](#destination_config) below.
+* `destination_config` - (Optional, List) Target Configuration See [`destination_config`](#destination_config) below.
 * `function_name` - (Required, ForceNew) Function Name
-* `max_async_event_age_in_seconds` - (Optional) Event maximum survival time
-* `max_async_retry_attempts` - (Optional) Number of Asynchronous call retries
+* `max_async_event_age_in_seconds` - (Optional, Int) Event maximum survival time
+* `max_async_retry_attempts` - (Optional, Int) Number of Asynchronous call retries
 * `qualifier` - (Optional) Function version or alias
 
 ### `destination_config`
 
 The destination_config supports the following:
-* `on_failure` - (Optional) Failed callback target structure. See [`on_failure`](#destination_config-on_failure) below.
-* `on_success` - (Optional) Successful callback target structure. See [`on_success`](#destination_config-on_success) below.
+* `on_failure` - (Optional, List) Failed callback target structure. See [`on_failure`](#destination_config-on_failure) below.
+* `on_success` - (Optional, List) Successful callback target structure. See [`on_success`](#destination_config-on_success) below.
 
 ### `destination_config-on_failure`
 
