@@ -23,12 +23,6 @@ For information about FCV3 Custom Domain and how to use it, see [What is Custom 
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_custom_domain&exampleId=64b801cc-b386-8631-aff2-0cec10062d1a75e5b7eb&activeTab=example&spm=docs.r.fcv3_custom_domain.0.64b801ccb3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-shanghai"
@@ -221,13 +215,13 @@ resource "alicloud_fcv3_custom_domain" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `auth_config` - (Optional) Permission authentication configuration See [`auth_config`](#auth_config) below.
-* `cert_config` - (Optional) HTTPS certificate information See [`cert_config`](#cert_config) below.
+* `auth_config` - (Optional, List) Permission authentication configuration See [`auth_config`](#auth_config) below.
+* `cert_config` - (Optional, List) HTTPS certificate information See [`cert_config`](#cert_config) below.
 * `custom_domain_name` - (Optional, ForceNew, Computed) The name of the resource
 * `protocol` - (Optional) The protocol type supported by the domain name. HTTP: only HTTP protocol is supported. HTTPS: only HTTPS is supported. HTTP,HTTPS: Supports HTTP and HTTPS protocols.
-* `route_config` - (Optional) Route matching rule configuration See [`route_config`](#route_config) below.
-* `tls_config` - (Optional) TLS configuration information See [`tls_config`](#tls_config) below.
-* `waf_config` - (Optional) Web application firewall configuration information See [`waf_config`](#waf_config) below.
+* `route_config` - (Optional, List) Route matching rule configuration See [`route_config`](#route_config) below.
+* `tls_config` - (Optional, List) TLS configuration information See [`tls_config`](#tls_config) below.
+* `waf_config` - (Optional, List) Web application firewall configuration information See [`waf_config`](#waf_config) below.
 
 ### `auth_config`
 
@@ -245,23 +239,23 @@ The cert_config supports the following:
 ### `route_config`
 
 The route_config supports the following:
-* `routes` - (Optional) Routing Configuration List. See [`routes`](#route_config-routes) below.
+* `routes` - (Optional, List) Routing Configuration List. See [`routes`](#route_config-routes) below.
 
 ### `route_config-routes`
 
 The route_config-routes supports the following:
 * `function_name` - (Optional) Function name.
-* `methods` - (Optional) List of supported HTTP methods.
+* `methods` - (Optional, List) List of supported HTTP methods.
 * `path` - (Optional) Route matching rule.
 * `qualifier` - (Optional) Version or Alias.
-* `rewrite_config` - (Optional) Override Configuration. See [`rewrite_config`](#route_config-routes-rewrite_config) below.
+* `rewrite_config` - (Optional, List) Override Configuration. See [`rewrite_config`](#route_config-routes-rewrite_config) below.
 
 ### `route_config-routes-rewrite_config`
 
 The route_config-routes-rewrite_config supports the following:
-* `equal_rules` - (Optional) Exact Match Rule List. See [`equal_rules`](#route_config-routes-rewrite_config-equal_rules) below.
-* `regex_rules` - (Optional) Regular match rule list. See [`regex_rules`](#route_config-routes-rewrite_config-regex_rules) below.
-* `wildcard_rules` - (Optional) List of wildcard matching rules. See [`wildcard_rules`](#route_config-routes-rewrite_config-wildcard_rules) below.
+* `equal_rules` - (Optional, List) Exact Match Rule List. See [`equal_rules`](#route_config-routes-rewrite_config-equal_rules) below.
+* `regex_rules` - (Optional, List) Regular match rule list. See [`regex_rules`](#route_config-routes-rewrite_config-regex_rules) below.
+* `wildcard_rules` - (Optional, List) List of wildcard matching rules. See [`wildcard_rules`](#route_config-routes-rewrite_config-wildcard_rules) below.
 
 ### `route_config-routes-rewrite_config-equal_rules`
 
@@ -284,7 +278,7 @@ The route_config-routes-rewrite_config-wildcard_rules supports the following:
 ### `tls_config`
 
 The tls_config supports the following:
-* `cipher_suites` - (Optional) List of TLS cipher suites.
+* `cipher_suites` - (Optional, List) List of TLS cipher suites.
 * `max_version` - (Optional) The maximum version of TLS. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0.
 * `min_version` - (Optional) TLS minimum version number. Enumeration values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1.0.
 

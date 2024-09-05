@@ -12,7 +12,7 @@ Provides a FCV3 Provision Config resource.
 
 Function Reservation Configuration.
 
-For information about FCV3 Provision Config and how to use it, see [What is Provision Config](https://www.alibabacloud.com/help/en/).
+For information about FCV3 Provision Config and how to use it, see [What is Provision Config](https://www.alibabacloud.com/help/en/functioncompute/fc-3-0/developer-reference/api-fc-2023-03-30-putprovisionconfig).
 
 -> **NOTE:** Available since v1.230.0.
 
