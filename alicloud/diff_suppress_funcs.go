@@ -440,14 +440,16 @@ func adbPostPaidDiffSuppressFunc(k, old, new string, d *schema.ResourceData) boo
 }
 
 func ecsSpotStrategyDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("instance_charge_type").(string) == string(PostPaid) {
+	value, ok := d.GetOk("instance_charge_type")
+	if !ok || value == string(PostPaid) {
 		return false
 	}
 	return true
 }
 
 func ecsSpotPriceLimitDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
-	if d.Get("instance_charge_type").(string) == "PostPaid" && d.Get("spot_strategy").(string) == "SpotWithPriceLimit" {
+	value, ok := d.GetOk("instance_charge_type")
+	if (!ok || value == "PostPaid") && d.Get("spot_strategy").(string) == "SpotWithPriceLimit" {
 		return false
 	}
 	return true

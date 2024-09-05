@@ -1722,7 +1722,6 @@ func TestAccAliCloudECSInstanceSpotInstanceLimit(t *testing.T) {
 					"internet_max_bandwidth_out": "5",
 					"security_groups":            []string{"${alicloud_security_group.default.id}"},
 					"instance_name":              "${var.name}",
-					"instance_charge_type":       "PostPaid",
 					"spot_strategy":              "SpotWithPriceLimit",
 					"spot_price_limit":           "1.002",
 					"spot_duration":              "1",
