@@ -19,12 +19,6 @@ For information about WAF and how to use it, see [What is Alibaba Cloud WAF](htt
 
 ## Example Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_waf_instance&exampleId=bb172d48-8404-035c-b38d-686ce2b74420b94ffc1b&activeTab=example&spm=docs.r.waf_instance.0.bb172d4884&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 data "alicloud_waf_instances" "default" {}
 resource "alicloud_waf_instance" "default" {

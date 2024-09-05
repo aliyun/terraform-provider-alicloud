@@ -17,12 +17,6 @@ Provides a backup policy for ApsaraDB Redis / Memcache instance resource.
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_kvstore_backup_policy&exampleId=dc264d85-91c8-71d4-5a37-8f3b8627c45b8631646d&activeTab=example&spm=docs.r.kvstore_backup_policy.0.dc264d8591&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 
 variable "name" {

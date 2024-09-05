@@ -19,12 +19,6 @@ For information about snapshot policy and how to use it, see [Snapshot](https://
 
 ## Example Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_snapshot_policy&exampleId=6c2e108e-b0e1-52ae-ceec-1cac9a0aeb94b911f384&activeTab=example&spm=docs.r.snapshot_policy.0.6c2e108eb0&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "alicloud_snapshot_policy" "sp" {
   name            = "tf-testAcc-sp"

@@ -1,47 +1,48 @@
-## 1.230.0 (Unreleased)
+## 1.231.0 (Unreleased)
+## 1.230.0 (September 5, 2024)
 
-- **New Resource:** `alicloud_gpdb_hadoop_data_source` [GH-7599]
-- **New Resource:** `alicloud_gpdb_jdbc_data_source` [GH-7599]
-- **New Resource:** `alicloud_service_catalog_product` [GH-7612]
-- **New Resource:** `alicloud_service_catalog_product_version` [GH-7612]
-- **New Resource:** `alicloud_service_catalog_product_portfolio_association` [GH-7612]
-- **New Resource:** `alicloud_service_catalog_principal_portfolio_association` [GH-7612]
-- **New Resource:** `alicloud_fcv3_provision_config` [GH-7634]
-- **New Resource:** `alicloud_fcv3_layer_version` [GH-7634]
-- **New Resource:** `alicloud_fcv3_vpc_binding` [GH-7634]
-- **New Resource:** `alicloud_quotas_template_service` [GH-7640]
+- **New Resource:** `alicloud_gpdb_hadoop_data_source` ([#7599](https://github.com/aliyun/terraform-provider-alicloud/issues/7599))
+- **New Resource:** `alicloud_gpdb_jdbc_data_source` ([#7599](https://github.com/aliyun/terraform-provider-alicloud/issues/7599))
+- **New Resource:** `alicloud_service_catalog_product` ([#7612](https://github.com/aliyun/terraform-provider-alicloud/issues/7612))
+- **New Resource:** `alicloud_service_catalog_product_version` ([#7612](https://github.com/aliyun/terraform-provider-alicloud/issues/7612))
+- **New Resource:** `alicloud_service_catalog_product_portfolio_association` ([#7612](https://github.com/aliyun/terraform-provider-alicloud/issues/7612))
+- **New Resource:** `alicloud_service_catalog_principal_portfolio_association` ([#7612](https://github.com/aliyun/terraform-provider-alicloud/issues/7612))
+- **New Resource:** `alicloud_fcv3_provision_config` ([#7634](https://github.com/aliyun/terraform-provider-alicloud/issues/7634))
+- **New Resource:** `alicloud_fcv3_layer_version` ([#7634](https://github.com/aliyun/terraform-provider-alicloud/issues/7634))
+- **New Resource:** `alicloud_fcv3_vpc_binding` ([#7634](https://github.com/aliyun/terraform-provider-alicloud/issues/7634))
+- **New Resource:** `alicloud_quotas_template_service` ([#7640](https://github.com/aliyun/terraform-provider-alicloud/issues/7640))
 
 ENHANCEMENTS:
 
-- resource/alicloud_log_*: improve client protocol. [GH-7574]
-- resource/alicloud_rds_db_proxy: add db_proxy_instance_type argument and improves the description. [GH-7608]
-- resource/alicloud_service_catalog_portfolio: Improves code and document. [GH-7612]
-- resource/alicloud_cen_transit_router_peer_attachment: Deprecated the field route_table_association_enabled, route_table_propagation_enable. [GH-7614]
-- resource/alicloud_ddoscoo_port: add new attribute config. [GH-7615]
-- resource/alicloud_hbr_policy: add new enum type for retention_rules.advanced_retention_type. [GH-7616]
-- resource/alicloud_ens_load_balancer: add new attribute backend_servers. [GH-7618]
-- resource/alicloud_adb_db_cluster: Added the field enable_ssl. [GH-7619]
-- resource/alicloud_ecs_disk: improve error handle for ModifyDiskSpec. [GH-7621]
-- resource/alicloud_hbr_policy_binding: add new attribute cross_account_role_name, cross_account_type and cross_account_user_id. [GH-7622]
-- resource/alicloud_gpdb_account: add new attribute account_type, database_name. [GH-7623]
-- resource/alicloud_gpdb_remote_adb_data_source: support update attribute user_name and user_password. [GH-7625]
-- resource/alicloud_gpdb_db_resource_group: add new attribute role_list. [GH-7627]
-- resource/alicloud_emrv2_cluster: supported auto renew with resize emr cluster. [GH-7637]
-- data-source/alicloud_route_tables: support attribute route_table_type. [GH-7609]
-- data-source/alicloud_ga_endpoint_group_ip_address_cidr_blocks: Added the field accelerator_id. [GH-7631]
-- docs: Remove deprecated resource link section. [GH-7624]
-- docs: improve the examples for actiontrail, arms, cen, cr. [GH-7630]
-- docs: Improves type description for fcv3. [GH-7641]
-- docs: Improves links. [GH-7642]
-- docs: Improves the emr cluster disk category. [GH-7643]
-- testcase: Specify region for testcases of resource alicloud_click_house_account to run. [GH-7636]
+- resource/alicloud_log_*: improve client protocol. ([#7574](https://github.com/aliyun/terraform-provider-alicloud/issues/7574))
+- resource/alicloud_rds_db_proxy: add db_proxy_instance_type argument and improves the description. ([#7608](https://github.com/aliyun/terraform-provider-alicloud/issues/7608))
+- resource/alicloud_service_catalog_portfolio: Improves code and document. ([#7612](https://github.com/aliyun/terraform-provider-alicloud/issues/7612))
+- resource/alicloud_cen_transit_router_peer_attachment: Deprecated the field route_table_association_enabled, route_table_propagation_enable. ([#7614](https://github.com/aliyun/terraform-provider-alicloud/issues/7614))
+- resource/alicloud_ddoscoo_port: add new attribute config. ([#7615](https://github.com/aliyun/terraform-provider-alicloud/issues/7615))
+- resource/alicloud_hbr_policy: add new enum type for retention_rules.advanced_retention_type. ([#7616](https://github.com/aliyun/terraform-provider-alicloud/issues/7616))
+- resource/alicloud_ens_load_balancer: add new attribute backend_servers. ([#7618](https://github.com/aliyun/terraform-provider-alicloud/issues/7618))
+- resource/alicloud_adb_db_cluster: Added the field enable_ssl. ([#7619](https://github.com/aliyun/terraform-provider-alicloud/issues/7619))
+- resource/alicloud_ecs_disk: improve error handle for ModifyDiskSpec. ([#7621](https://github.com/aliyun/terraform-provider-alicloud/issues/7621))
+- resource/alicloud_hbr_policy_binding: add new attribute cross_account_role_name, cross_account_type and cross_account_user_id. ([#7622](https://github.com/aliyun/terraform-provider-alicloud/issues/7622))
+- resource/alicloud_gpdb_account: add new attribute account_type, database_name. ([#7623](https://github.com/aliyun/terraform-provider-alicloud/issues/7623))
+- resource/alicloud_gpdb_remote_adb_data_source: support update attribute user_name and user_password. ([#7625](https://github.com/aliyun/terraform-provider-alicloud/issues/7625))
+- resource/alicloud_gpdb_db_resource_group: add new attribute role_list. ([#7627](https://github.com/aliyun/terraform-provider-alicloud/issues/7627))
+- resource/alicloud_emrv2_cluster: supported auto renew with resize emr cluster. ([#7637](https://github.com/aliyun/terraform-provider-alicloud/issues/7637))
+- data-source/alicloud_route_tables: support attribute route_table_type. ([#7609](https://github.com/aliyun/terraform-provider-alicloud/issues/7609))
+- data-source/alicloud_ga_endpoint_group_ip_address_cidr_blocks: Added the field accelerator_id. ([#7631](https://github.com/aliyun/terraform-provider-alicloud/issues/7631))
+- docs: Remove deprecated resource link section. ([#7624](https://github.com/aliyun/terraform-provider-alicloud/issues/7624))
+- docs: improve the examples for actiontrail, arms, cen, cr. ([#7630](https://github.com/aliyun/terraform-provider-alicloud/issues/7630))
+- docs: Improves type description for fcv3. ([#7641](https://github.com/aliyun/terraform-provider-alicloud/issues/7641))
+- docs: Improves links. ([#7642](https://github.com/aliyun/terraform-provider-alicloud/issues/7642))
+- docs: Improves the emr cluster disk category. ([#7643](https://github.com/aliyun/terraform-provider-alicloud/issues/7643))
+- testcase: Specify region for testcases of resource alicloud_click_house_account to run. ([#7636](https://github.com/aliyun/terraform-provider-alicloud/issues/7636))
 
 BUG FIXES:
 
-- resource/alicloud_amqp_instance: fix bug while delete instance. [GH-7611]
-- resource/alicloud_amqp_static_account: Fixed the create error caused by field secret_key. [GH-7613]
-- resource/alicloud_cloud_firewall_nat_firewall: fix bug while creating nat_firewall. [GH-7626]
-- data-source/alicloud_emrv2_clusters: fix wrong value ids. [GH-7637]
+- resource/alicloud_amqp_instance: fix bug while delete instance. ([#7611](https://github.com/aliyun/terraform-provider-alicloud/issues/7611))
+- resource/alicloud_amqp_static_account: Fixed the create error caused by field secret_key. ([#7613](https://github.com/aliyun/terraform-provider-alicloud/issues/7613))
+- resource/alicloud_cloud_firewall_nat_firewall: fix bug while creating nat_firewall. ([#7626](https://github.com/aliyun/terraform-provider-alicloud/issues/7626))
+- data-source/alicloud_emrv2_clusters: fix wrong value ids. ([#7637](https://github.com/aliyun/terraform-provider-alicloud/issues/7637))
 
 ## 1.229.1 (August 28, 2024)
 

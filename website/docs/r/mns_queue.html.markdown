@@ -19,12 +19,6 @@ Provides a MNS queue resource.
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_mns_queue&exampleId=f9971663-00cc-a5e5-3c8c-fd0ff0e33601ae0994c2&activeTab=example&spm=docs.r.mns_queue.0.f997166300&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 resource "alicloud_mns_queue" "queue" {
   name                     = "tf-example-mnsqueue"
