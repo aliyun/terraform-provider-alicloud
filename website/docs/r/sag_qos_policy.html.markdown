@@ -39,6 +39,8 @@ resource "alicloud_sag_qos" "default" {
   name = var.name
 }
 
+resource "time_static" "example" {}
+
 resource "alicloud_sag_qos_policy" "default" {
   qos_id            = alicloud_sag_qos.default.id
   name              = var.name
@@ -49,8 +51,8 @@ resource "alicloud_sag_qos_policy" "default" {
   source_port_range = "-1/-1"
   dest_cidr         = "10.10.0.0/24"
   dest_port_range   = "-1/-1"
-  start_time        = replace(timestamp(), "Z", "+0800")
-  end_time          = replace(timeadd(timestamp(), "24h"), "Z", "+0800")
+  start_time        = replace(time_static.example.rfc3339, "Z", "+0800")
+  end_time          = replace(timeadd(time_static.example.rfc3339, "24h"), "Z", "+0800")
 }
 ```
 ## Argument Reference
