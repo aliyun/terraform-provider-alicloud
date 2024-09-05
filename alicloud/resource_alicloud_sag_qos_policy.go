@@ -88,7 +88,7 @@ func resourceAlicloudSagQosPolicyCreate(d *schema.ResourceData, meta interface{}
 	request.DestPortRange = d.Get("dest_port_range").(string)
 
 	if v, ok := d.GetOk("name"); ok && v.(string) != "" {
-		request.Description = v.(string)
+		request.Name = v.(string)
 	}
 	if v, ok := d.GetOk("description"); ok && v.(string) != "" {
 		request.Description = v.(string)
