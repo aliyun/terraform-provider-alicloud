@@ -866,6 +866,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_quotas_template_service":                              resourceAliCloudQuotasTemplateService(),
 			"alicloud_fcv3_vpc_binding":                                     resourceAliCloudFcv3VpcBinding(),
 			"alicloud_fcv3_layer_version":                                   resourceAliCloudFcv3LayerVersion(),
 			"alicloud_service_catalog_principal_portfolio_association":      resourceAliCloudServiceCatalogPrincipalPortfolioAssociation(),
