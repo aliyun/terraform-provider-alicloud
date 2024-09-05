@@ -998,7 +998,7 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 			request["SSLEnabled"] = 2
 		}
 
-		if sslAction == "Update" && d.Get("engine").(string) == "PostgreSQL" {
+		if sslAction == "Update" && (d.Get("engine").(string) == "PostgreSQL" || d.Get("engine").(string) == "MySQL") {
 			request["SSLEnabled"] = 1
 		}
 
@@ -1054,6 +1054,25 @@ func resourceAliCloudDBInstanceUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 			}
 		}
+
+		if d.Get("engine").(string) == "MySQL" {
+			if d.HasChange("ca_type") {
+				if v, ok := d.GetOk("ca_type"); ok && v.(string) != "" {
+					request["CAType"] = v.(string)
+				}
+			}
+			if d.HasChange("server_cert") {
+				if v, ok := d.GetOk("server_cert"); ok && v.(string) != "" {
+					request["ServerCert"] = v.(string)
+				}
+			}
+			if d.HasChange("server_key") {
+				if v, ok := d.GetOk("server_key"); ok && v.(string) != "" {
+					request["ServerKey"] = v.(string)
+				}
+			}
+		}
+
 		request["ConnectionString"] = instance["ConnectionString"]
 		if d.HasChange("ssl_connection_string") {
 			if v, ok := d.GetOk("ssl_connection_string"); ok && v.(string) != "" {
