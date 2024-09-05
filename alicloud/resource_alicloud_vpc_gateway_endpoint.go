@@ -42,6 +42,10 @@ func resourceAliCloudVpcGatewayEndpoint() *schema.Resource {
 			"policy_document": {
 				Type:     schema.TypeString,
 				Optional: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					equal, _ := compareJsonTemplateAreEquivalent(old, new)
+					return equal
+				},
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
