@@ -11,7 +11,7 @@ import (
 
 // Test Vpc GatewayEndpoint. >>> Resource test cases, automatically generated.
 // Case 3630
-func TestAccAlicloudVpcGatewayEndpoint_basic3630(t *testing.T) {
+func TestAccAliCloudVpcGatewayEndpoint_basic3630(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_gateway_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3630)
@@ -217,7 +217,7 @@ data "alicloud_resource_manager_resource_groups" "default" {
 }
 
 // Case 3630  twin
-func TestAccAlicloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
+func TestAccAliCloudVpcGatewayEndpoint_basic3630_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_vpc_gateway_endpoint.default"
 	ra := resourceAttrInit(resourceId, AlicloudVpcGatewayEndpointMap3630)
