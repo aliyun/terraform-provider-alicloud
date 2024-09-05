@@ -12,7 +12,7 @@ Provides a Service Catalog Principal Portfolio Association resource.
 
 Principal portfolio association.
 
-For information about Service Catalog Principal Portfolio Association and how to use it, see [What is Principal Portfolio Association](https://www.alibabacloud.com/help/en/).
+For information about Service Catalog Principal Portfolio Association and how to use it, see [What is Principal Portfolio Association](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-associateprincipalwithportfolio).
 
 -> **NOTE:** Available since v1.230.0.
 

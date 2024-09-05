@@ -12,7 +12,7 @@ Provides a Service Catalog Product Portfolio Association resource.
 
 Product portfolio association.
 
-For information about Service Catalog Product Portfolio Association and how to use it, see [What is Product Portfolio Association](https://www.alibabacloud.com/help/en/).
+For information about Service Catalog Product Portfolio Association and how to use it, see [What is Product Portfolio Association](https://www.alibabacloud.com/help/en/service-catalog/developer-reference/api-servicecatalog-2021-09-01-associateproductwithportfolio).
 
 -> **NOTE:** Available since v1.230.0.
 
