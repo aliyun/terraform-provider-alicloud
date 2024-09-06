@@ -1528,7 +1528,7 @@ func resourceAlicloudEciContainerGroupRead(d *schema.ResourceData, meta interfac
 		dnsConfigMap["name_servers"] = dnsConfig.(map[string]interface{})["NameServers"]
 
 		optionsSli := make([]map[string]interface{}, 0)
-		if len(dnsConfig.(map[string]interface{})["Options"].([]interface{})) > 0 {
+		if dnsConfig.(map[string]interface{})["Options"] != nil && len(dnsConfig.(map[string]interface{})["Options"].([]interface{})) > 0 {
 			for _, options := range dnsConfig.(map[string]interface{})["Options"].([]interface{}) {
 				optionsMap := make(map[string]interface{})
 				optionsMap["name"] = options.(map[string]interface{})["Name"]
