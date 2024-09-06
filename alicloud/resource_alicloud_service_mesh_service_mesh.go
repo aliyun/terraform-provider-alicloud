@@ -1,7 +1,7 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
@@ -24,7 +24,7 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
 			Update: schema.DefaultTimeout(10 * time.Minute),
 			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
@@ -71,6 +71,10 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 			"force": {
 				Type:     schema.TypeBool,
 				Optional: true,
+			},
+			"kubeconfig": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"load_balancer": {
 				Type:     schema.TypeList,
@@ -300,13 +304,116 @@ func resourceAliCloudServiceMeshServiceMesh() *schema.Resource {
 							MaxItems: 1,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
+									"aggregated_kiali_address": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"integrate_clb": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"auth_strategy": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										ValidateFunc: StringInSlice([]string{"token", "openid", "ramoauth"}, false),
+									},
 									"enabled": {
 										Type:     schema.TypeBool,
 										Optional: true,
 									},
+									"kiali_arms_auth_tokens": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"open_id_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"issuer_uri": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"client_secret": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"scopes": {
+													Type:     schema.TypeList,
+													Optional: true,
+													Elem:     &schema.Schema{Type: schema.TypeString},
+												},
+												"client_id": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
 									"url": {
 										Type:     schema.TypeString,
 										Computed: true,
+									},
+									"distributed_kiali_addresses": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"use_populated_arms_prometheus": {
+										Type:     schema.TypeBool,
+										Computed: true,
+									},
+									"server_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"web_schema": {
+													Type:         schema.TypeString,
+													Optional:     true,
+													ValidateFunc: StringInSlice([]string{"http", "https"}, false),
+												},
+												"web_root": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"web_fqdn": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+												"web_port": {
+													Type:     schema.TypeInt,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"kiali_service_annotations": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"distributed_kiali_access_tokens": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+									"ram_oauth_config": {
+										Type:     schema.TypeList,
+										Optional: true,
+										MaxItems: 1,
+										Elem: &schema.Resource{
+											Schema: map[string]*schema.Schema{
+												"redirect_uris": {
+													Type:     schema.TypeString,
+													Optional: true,
+												},
+											},
+										},
+									},
+									"custom_prometheus_url": {
+										Type:     schema.TypeString,
+										Optional: true,
 									},
 								},
 							},
@@ -446,7 +553,7 @@ func resourceAliCloudServiceMeshServiceMeshCreate(d *schema.ResourceData, meta i
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("service_mesh_name"); ok {
 		request["Name"] = v
@@ -673,18 +780,30 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		return WrapError(err)
 	}
 
-	d.Set("cluster_spec", objectRaw["ClusterSpec"])
+	if objectRaw["ClusterSpec"] != nil {
+		d.Set("cluster_spec", objectRaw["ClusterSpec"])
+	}
 
 	serviceMeshInfo1RawObj, _ := jsonpath.Get("$.ServiceMeshInfo", objectRaw)
 	serviceMeshInfo1Raw := make(map[string]interface{})
 	if serviceMeshInfo1RawObj != nil {
 		serviceMeshInfo1Raw = serviceMeshInfo1RawObj.(map[string]interface{})
 	}
-	d.Set("create_time", serviceMeshInfo1Raw["CreationTime"])
-	d.Set("edition", serviceMeshInfo1Raw["Profile"])
-	d.Set("service_mesh_name", serviceMeshInfo1Raw["Name"])
-	d.Set("status", serviceMeshInfo1Raw["State"])
-	d.Set("version", serviceMeshInfo1Raw["Version"])
+	if serviceMeshInfo1Raw["CreationTime"] != nil {
+		d.Set("create_time", serviceMeshInfo1Raw["CreationTime"])
+	}
+	if serviceMeshInfo1Raw["Profile"] != nil {
+		d.Set("edition", serviceMeshInfo1Raw["Profile"])
+	}
+	if serviceMeshInfo1Raw["Name"] != nil {
+		d.Set("service_mesh_name", serviceMeshInfo1Raw["Name"])
+	}
+	if serviceMeshInfo1Raw["State"] != nil {
+		d.Set("status", serviceMeshInfo1Raw["State"])
+	}
+	if serviceMeshInfo1Raw["Version"] != nil {
+		d.Set("version", serviceMeshInfo1Raw["Version"])
+	}
 
 	clusters1Raw := make([]interface{}, 0)
 	if objectRaw["Clusters"] != nil {
@@ -705,7 +824,11 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 
 		extraConfigurationMaps = append(extraConfigurationMaps, extraConfigurationMap)
 	}
-	d.Set("extra_configuration", extraConfigurationMaps)
+	if cRAggregationConfiguration1RawObj != nil {
+		if err := d.Set("extra_configuration", extraConfigurationMaps); err != nil {
+			return err
+		}
+	}
 	loadBalancerMaps := make([]map[string]interface{}, 0)
 	loadBalancerMap := make(map[string]interface{})
 	loadBalancer1RawObj, _ := jsonpath.Get("$.Spec.LoadBalancer", objectRaw)
@@ -721,7 +844,11 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 
 		loadBalancerMaps = append(loadBalancerMaps, loadBalancerMap)
 	}
-	d.Set("load_balancer", loadBalancerMaps)
+	if loadBalancer1RawObj != nil {
+		if err := d.Set("load_balancer", loadBalancerMaps); err != nil {
+			return err
+		}
+	}
 	meshConfigMaps := make([]map[string]interface{}, 0)
 	meshConfigMap := make(map[string]interface{})
 	meshConfig1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig", objectRaw)
@@ -791,20 +918,6 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			controlPlaneLogMaps = append(controlPlaneLogMaps, controlPlaneLogMap)
 		}
 		meshConfigMap["control_plane_log"] = controlPlaneLogMaps
-		kialiMaps := make([]map[string]interface{}, 0)
-		kialiMap := make(map[string]interface{})
-		kiali1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.Kiali", objectRaw)
-		kiali1Raw := make(map[string]interface{})
-		if kiali1RawObj != nil {
-			kiali1Raw = kiali1RawObj.(map[string]interface{})
-		}
-		if len(kiali1Raw) > 0 {
-			kialiMap["enabled"] = kiali1Raw["Enabled"]
-			kialiMap["url"] = kiali1Raw["Url"]
-
-			kialiMaps = append(kialiMaps, kialiMap)
-		}
-		meshConfigMap["kiali"] = kialiMaps
 		oPAMaps := make([]map[string]interface{}, 0)
 		oPAMap := make(map[string]interface{})
 		oPA1RawObj, _ := jsonpath.Get("$.Spec.MeshConfig.OPA", objectRaw)
@@ -901,9 +1014,8 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 			sidecarInjectorMaps = append(sidecarInjectorMaps, sidecarInjectorMap)
 		}
 		meshConfigMap["sidecar_injector"] = sidecarInjectorMaps
-		meshConfigMaps = append(meshConfigMaps, meshConfigMap)
 	}
-	d.Set("mesh_config", meshConfigMaps)
+
 	networkMaps := make([]map[string]interface{}, 0)
 	networkMap := make(map[string]interface{})
 	network1RawObj, _ := jsonpath.Get("$.Spec.Network", objectRaw)
@@ -919,7 +1031,84 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 		networkMap["vswitche_list"] = vSwitches1Raw
 		networkMaps = append(networkMaps, networkMap)
 	}
-	d.Set("network", networkMaps)
+	if network1RawObj != nil {
+		if err := d.Set("network", networkMaps); err != nil {
+			return err
+		}
+	}
+
+	objectRaw, err = serviceMeshServiceV2.DescribeDescribeKialiConfiguration(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	kialiMaps := make([]map[string]interface{}, 0)
+	kialiMap := make(map[string]interface{})
+
+	kialiMap["aggregated_kiali_address"] = objectRaw["AggregatedKialiAddress"]
+	kialiMap["auth_strategy"] = objectRaw["AuthStrategy"]
+	kialiMap["custom_prometheus_url"] = objectRaw["CustomPrometheusUrl"]
+	kialiMap["distributed_kiali_access_tokens"] = objectRaw["DistributedKialiAccessTokens"]
+	kialiMap["distributed_kiali_addresses"] = objectRaw["DistributedKialiAddresses"]
+	kialiMap["enabled"] = objectRaw["Enabled"]
+	kialiMap["integrate_clb"] = objectRaw["IntegrateCLB"]
+	kialiMap["kiali_arms_auth_tokens"] = objectRaw["KialiArmsAuthTokens"]
+	kialiMap["kiali_service_annotations"] = objectRaw["KialiServiceAnnotations"]
+	kialiMap["url"] = objectRaw["KialiIstioIngressAddress"]
+	kialiMap["use_populated_arms_prometheus"] = objectRaw["UsePopulatedArmsPrometheus"]
+
+	openIdConfigMaps := make([]map[string]interface{}, 0)
+	openIdConfigMap := make(map[string]interface{})
+	openIdConfig1RawObj, _ := jsonpath.Get("$.OpenIdConfig", objectRaw)
+	openIdConfig1Raw := make(map[string]interface{})
+	if openIdConfig1RawObj != nil {
+		openIdConfig1Raw = openIdConfig1RawObj.(map[string]interface{})
+	}
+	if len(openIdConfig1Raw) > 0 {
+		openIdConfigMap["client_id"] = openIdConfig1Raw["ClientId"]
+		openIdConfigMap["client_secret"] = openIdConfig1Raw["ClientSecret"]
+		openIdConfigMap["issuer_uri"] = openIdConfig1Raw["IssuerUri"]
+
+		scopes1Raw, _ := jsonpath.Get("$.OpenIdConfig.Scopes", objectRaw)
+		openIdConfigMap["scopes"] = scopes1Raw
+		openIdConfigMaps = append(openIdConfigMaps, openIdConfigMap)
+	}
+	kialiMap["open_id_config"] = openIdConfigMaps
+	ramOAuthConfigMaps := make([]map[string]interface{}, 0)
+	ramOAuthConfigMap := make(map[string]interface{})
+	rAMOAuthConfig1RawObj, _ := jsonpath.Get("$.RAMOAuthConfig", objectRaw)
+	rAMOAuthConfig1Raw := make(map[string]interface{})
+	if rAMOAuthConfig1RawObj != nil {
+		rAMOAuthConfig1Raw = rAMOAuthConfig1RawObj.(map[string]interface{})
+	}
+	if len(rAMOAuthConfig1Raw) > 0 {
+		ramOAuthConfigMap["redirect_uris"] = rAMOAuthConfig1Raw["RedirectUris"]
+
+		ramOAuthConfigMaps = append(ramOAuthConfigMaps, ramOAuthConfigMap)
+	}
+	kialiMap["ram_oauth_config"] = ramOAuthConfigMaps
+	serverConfigMaps := make([]map[string]interface{}, 0)
+	serverConfigMap := make(map[string]interface{})
+	serverConfig1RawObj, _ := jsonpath.Get("$.ServerConfig", objectRaw)
+	serverConfig1Raw := make(map[string]interface{})
+	if serverConfig1RawObj != nil {
+		serverConfig1Raw = serverConfig1RawObj.(map[string]interface{})
+	}
+	if len(serverConfig1Raw) > 0 {
+		serverConfigMap["web_fqdn"] = serverConfig1Raw["WebFQDN"]
+		serverConfigMap["web_port"] = serverConfig1Raw["WebPort"]
+		serverConfigMap["web_root"] = serverConfig1Raw["WebRoot"]
+		serverConfigMap["web_schema"] = serverConfig1Raw["WebSchema"]
+
+		serverConfigMaps = append(serverConfigMaps, serverConfigMap)
+	}
+	kialiMap["server_config"] = serverConfigMaps
+	kialiMaps = append(kialiMaps, kialiMap)
+	meshConfigMap["kiali"] = kialiMaps
+	meshConfigMaps = append(meshConfigMaps, meshConfigMap)
+	if err := d.Set("mesh_config", meshConfigMaps); err != nil {
+		return err
+	}
 
 	objectRaw, err = serviceMeshServiceV2.DescribeListTagResources(d.Id())
 	if err != nil {
@@ -932,6 +1121,10 @@ func resourceAliCloudServiceMeshServiceMeshRead(d *schema.ResourceData, meta int
 	objectRaw, err = serviceMeshServiceV2.DescribeDescribeServiceMeshKubeconfig(d.Id())
 	if err != nil {
 		return WrapError(err)
+	}
+
+	if objectRaw["Kubeconfig"] != nil {
+		d.Set("kubeconfig", objectRaw["Kubeconfig"])
 	}
 
 	return nil
@@ -952,6 +1145,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
+
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.tracing") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].tracing", d.Get("mesh_config"))
@@ -1080,84 +1274,76 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		}
 	}
 
-	if !d.IsNewResource() && d.HasChange("mesh_config.0.kiali.0.enabled") {
-		update = true
-		jsonPathResult16, err := jsonpath.Get("$[0].kiali[0].enabled", d.Get("mesh_config"))
-		if err == nil {
-			request["KialiEnabled"] = jsonPathResult16
-		}
-	}
-
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.access_log.0.enabled") {
 		update = true
-		jsonPathResult17, err := jsonpath.Get("$[0].access_log[0].enabled", d.Get("mesh_config"))
+		jsonPathResult16, err := jsonpath.Get("$[0].access_log[0].enabled", d.Get("mesh_config"))
 		if err == nil {
-			request["AccessLogEnabled"] = jsonPathResult17
+			request["AccessLogEnabled"] = jsonPathResult16
 		}
 	}
 
-	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.exclude_namespaces") && (d.Get("cluster_spec") == "enterprise" || d.Get("cluster_spec") == "ultimate") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.exclude_namespaces") {
 		update = true
-		jsonPathResult18, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].exclude_namespaces", d.Get("mesh_config"))
+		jsonPathResult17, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].exclude_namespaces", d.Get("mesh_config"))
 		if err == nil {
-			request["CniExcludeNamespaces"] = jsonPathResult18
+			request["CniExcludeNamespaces"] = jsonPathResult17
 		}
 	}
 
-	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.enabled") && (d.Get("cluster_spec") == "enterprise" || d.Get("cluster_spec") == "ultimate") {
+	if d.HasChange("mesh_config.0.sidecar_injector.0.init_cni_configuration.0.enabled") {
 		update = true
-	}
-	jsonPathResult19, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
-	if err == nil {
-		request["CniEnabled"] = jsonPathResult19
+		jsonPathResult18, err := jsonpath.Get("$[0].sidecar_injector[0].init_cni_configuration[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["CniEnabled"] = jsonPathResult18
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.proxy.0.request_memory") {
 		update = true
-		jsonPathResult20, err := jsonpath.Get("$[0].proxy[0].request_memory", d.Get("mesh_config"))
+		jsonPathResult19, err := jsonpath.Get("$[0].proxy[0].request_memory", d.Get("mesh_config"))
 		if err == nil {
-			request["ProxyRequestMemory"] = jsonPathResult20
+			request["ProxyRequestMemory"] = jsonPathResult19
 		}
 	}
 
 	if d.HasChange("mesh_config.0.sidecar_injector.0.request_memory") {
 		update = true
-		jsonPathResult21, err := jsonpath.Get("$[0].sidecar_injector[0].request_memory", d.Get("mesh_config"))
+		jsonPathResult20, err := jsonpath.Get("$[0].sidecar_injector[0].request_memory", d.Get("mesh_config"))
 		if err == nil {
-			request["SidecarInjectorRequestMemory"] = jsonPathResult21
+			request["SidecarInjectorRequestMemory"] = jsonPathResult20
 		}
 	}
 
 	if d.HasChange("mesh_config.0.sidecar_injector.0.limit_memory") {
 		update = true
-		jsonPathResult22, err := jsonpath.Get("$[0].sidecar_injector[0].limit_memory", d.Get("mesh_config"))
+		jsonPathResult21, err := jsonpath.Get("$[0].sidecar_injector[0].limit_memory", d.Get("mesh_config"))
 		if err == nil {
-			request["SidecarInjectorLimitMemory"] = jsonPathResult22
+			request["SidecarInjectorLimitMemory"] = jsonPathResult21
 		}
 	}
 
 	if d.HasChange("mesh_config.0.sidecar_injector.0.limit_cpu") {
 		update = true
-		jsonPathResult23, err := jsonpath.Get("$[0].sidecar_injector[0].limit_cpu", d.Get("mesh_config"))
+		jsonPathResult22, err := jsonpath.Get("$[0].sidecar_injector[0].limit_cpu", d.Get("mesh_config"))
 		if err == nil {
-			request["SidecarInjectorLimitCPU"] = jsonPathResult23
+			request["SidecarInjectorLimitCPU"] = jsonPathResult22
 		}
 	}
 
 	if d.HasChange("mesh_config.0.sidecar_injector.0.request_cpu") {
 		update = true
-		jsonPathResult24, err := jsonpath.Get("$[0].sidecar_injector[0].request_cpu", d.Get("mesh_config"))
+		jsonPathResult23, err := jsonpath.Get("$[0].sidecar_injector[0].request_cpu", d.Get("mesh_config"))
 		if err == nil {
-			request["SidecarInjectorRequestCPU"] = jsonPathResult24
+			request["SidecarInjectorRequestCPU"] = jsonPathResult23
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.opa.0.enabled") {
 		update = true
-	}
-	jsonPathResult25, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
-	if err == nil {
-		request["OpaEnabled"] = jsonPathResult25
+		jsonPathResult24, err := jsonpath.Get("$[0].opa[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["OpaEnabled"] = jsonPathResult24
+		}
 	}
 
 	if v, ok := d.GetOkExists("customized_prometheus"); ok {
@@ -1168,66 +1354,66 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	}
 	if d.HasChange("mesh_config.0.sidecar_injector.0.auto_injection_policy_enabled") {
 		update = true
-	}
-	jsonPathResult28, err := jsonpath.Get("$[0].sidecar_injector[0].auto_injection_policy_enabled", d.Get("mesh_config"))
-	if err == nil {
-		request["AutoInjectionPolicyEnabled"] = jsonPathResult28
+		jsonPathResult27, err := jsonpath.Get("$[0].sidecar_injector[0].auto_injection_policy_enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["AutoInjectionPolicyEnabled"] = jsonPathResult27
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.access_log.0.project") {
 		update = true
-		jsonPathResult29, err := jsonpath.Get("$[0].access_log[0].project", d.Get("mesh_config"))
+		jsonPathResult28, err := jsonpath.Get("$[0].access_log[0].project", d.Get("mesh_config"))
 		if err == nil {
-			request["AccessLogProject"] = jsonPathResult29
+			request["AccessLogProject"] = jsonPathResult28
 		}
 	}
 
 	if d.HasChange("mesh_config.0.access_log.0.gateway_enabled") {
 		update = true
-		jsonPathResult30, err := jsonpath.Get("$[0].access_log[0].gateway_enabled", d.Get("mesh_config"))
+		jsonPathResult29, err := jsonpath.Get("$[0].access_log[0].gateway_enabled", d.Get("mesh_config"))
 		if err == nil {
-			request["AccessLogGatewayEnabled"] = jsonPathResult30
+			request["AccessLogGatewayEnabled"] = jsonPathResult29
 		}
 	}
 
 	if d.HasChange("mesh_config.0.access_log.0.sidecar_enabled") {
 		update = true
-		jsonPathResult31, err := jsonpath.Get("$[0].access_log[0].sidecar_enabled", d.Get("mesh_config"))
+		jsonPathResult30, err := jsonpath.Get("$[0].access_log[0].sidecar_enabled", d.Get("mesh_config"))
 		if err == nil {
-			request["AccessLogSidecarEnabled"] = jsonPathResult31
+			request["AccessLogSidecarEnabled"] = jsonPathResult30
 		}
 	}
 
 	if d.HasChange("mesh_config.0.access_log.0.gateway_lifecycle") {
 		update = true
-		jsonPathResult32, err := jsonpath.Get("$[0].access_log[0].gateway_lifecycle", d.Get("mesh_config"))
-		if err == nil && jsonPathResult32.(int) > 0 {
-			request["AccessLogGatewayLifecycle"] = jsonPathResult32
+		jsonPathResult31, err := jsonpath.Get("$[0].access_log[0].gateway_lifecycle", d.Get("mesh_config"))
+		if err == nil && jsonPathResult31.(int) > 0 {
+			request["AccessLogGatewayLifecycle"] = jsonPathResult31
 		}
 	}
 
 	if d.HasChange("mesh_config.0.access_log.0.sidecar_lifecycle") {
 		update = true
-		jsonPathResult33, err := jsonpath.Get("$[0].access_log[0].sidecar_lifecycle", d.Get("mesh_config"))
-		if err == nil && jsonPathResult33.(int) > 0 {
-			request["AccessLogSidecarLifecycle"] = jsonPathResult33
+		jsonPathResult32, err := jsonpath.Get("$[0].access_log[0].sidecar_lifecycle", d.Get("mesh_config"))
+		if err == nil && jsonPathResult32.(int) > 0 {
+			request["AccessLogSidecarLifecycle"] = jsonPathResult32
 		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.audit.0.project") {
 		update = true
-	}
-	jsonPathResult34, err := jsonpath.Get("$[0].audit[0].project", d.Get("mesh_config"))
-	if err == nil {
-		request["AuditProject"] = jsonPathResult34
+		jsonPathResult33, err := jsonpath.Get("$[0].audit[0].project", d.Get("mesh_config"))
+		if err == nil {
+			request["AuditProject"] = jsonPathResult33
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.audit.0.enabled") {
 		update = true
-	}
-	jsonPathResult35, err := jsonpath.Get("$[0].audit[0].enabled", d.Get("mesh_config"))
-	if err == nil {
-		request["EnableAudit"] = jsonPathResult35
+		jsonPathResult34, err := jsonpath.Get("$[0].audit[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["EnableAudit"] = jsonPathResult34
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("cluster_spec") {
@@ -1269,6 +1455,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
+
 	if d.HasChange("extra_configuration.0.cr_aggregation_enabled") {
 		update = true
 		jsonPathResult, err := jsonpath.Get("$[0].cr_aggregation_enabled", d.Get("extra_configuration"))
@@ -1311,6 +1498,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
+
 	if !d.IsNewResource() && d.HasChange("version") {
 		update = true
 		request["ExpectedVersion"] = d.Get("version")
@@ -1351,6 +1539,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
+
 	if !d.IsNewResource() && d.HasChange("mesh_config.0.control_plane_log.0.enabled") {
 		update = true
 	}
@@ -1409,9 +1598,165 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ServiceMeshId"] = d.Id()
+
 	if !d.IsNewResource() && d.HasChange("service_mesh_name") {
 		update = true
-		request["Name"] = d.Get("service_mesh_name")
+	}
+	request["Name"] = d.Get("service_mesh_name")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+	update = false
+	action = "UpdateKialiConfiguration"
+	conn, err = client.NewServicemeshClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ServiceMeshId"] = d.Id()
+
+	if !d.IsNewResource() && d.HasChange("mesh_config.0.kiali.0.enabled") {
+		update = true
+		jsonPathResult, err := jsonpath.Get("$[0].kiali[0].enabled", d.Get("mesh_config"))
+		if err == nil {
+			request["Enabled"] = jsonPathResult
+		}
+	}
+
+	if d.HasChange("mesh_config.0.kiali.0.custom_prometheus_url") {
+		update = true
+		jsonPathResult1, err := jsonpath.Get("$[0].kiali[0].custom_prometheus_url", d.Get("mesh_config"))
+		if err == nil {
+			request["CustomPrometheusUrl"] = jsonPathResult1
+		}
+	}
+
+	if d.HasChange("mesh_config.0.kiali.0.integrate_clb") {
+		update = true
+		jsonPathResult2, err := jsonpath.Get("$[0].kiali[0].integrate_clb", d.Get("mesh_config"))
+		if err == nil {
+			request["IntegrateCLB"] = jsonPathResult2
+		}
+	}
+
+	if d.HasChange("mesh_config.0.kiali.0.kiali_service_annotations") {
+		update = true
+		jsonPathResult3, err := jsonpath.Get("$[0].kiali[0].kiali_service_annotations", d.Get("mesh_config"))
+		if err == nil {
+			request["KialiServiceAnnotations"] = jsonPathResult3
+		}
+	}
+
+	if d.HasChange("mesh_config.0.kiali.0.kiali_arms_auth_tokens") {
+		update = true
+		jsonPathResult4, err := jsonpath.Get("$[0].kiali[0].kiali_arms_auth_tokens", d.Get("mesh_config"))
+		if err == nil {
+			request["KialiArmsAuthTokens"] = jsonPathResult4
+		}
+	}
+
+	if d.HasChange("mesh_config.0.kiali.0.auth_strategy") {
+		update = true
+		jsonPathResult5, err := jsonpath.Get("$[0].kiali[0].auth_strategy", d.Get("mesh_config"))
+		if err == nil {
+			request["AuthStrategy"] = jsonPathResult5
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		objectDataLocalMap := make(map[string]interface{})
+
+		if v := d.Get("mesh_config"); !IsNil(v) {
+			redirectUris1, _ := jsonpath.Get("$[0].kiali[0].ram_oauth_config[0].redirect_uris", v)
+			if redirectUris1 != nil && (d.HasChange("mesh_config.0.kiali.0.ram_oauth_config.0.redirect_uris") || redirectUris1 != "") {
+				objectDataLocalMap["RedirectUris"] = redirectUris1
+			}
+
+			objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["RAMOAuthConfig"] = string(objectDataLocalMapJson)
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		objectDataLocalMap1 := make(map[string]interface{})
+
+		if v := d.Get("mesh_config"); !IsNil(v) {
+			clientId1, _ := jsonpath.Get("$[0].kiali[0].open_id_config[0].client_id", v)
+			if clientId1 != nil && (d.HasChange("mesh_config.0.kiali.0.open_id_config.0.client_id") || clientId1 != "") {
+				objectDataLocalMap1["ClientId"] = clientId1
+			}
+			clientSecret1, _ := jsonpath.Get("$[0].kiali[0].open_id_config[0].client_secret", v)
+			if clientSecret1 != nil && (d.HasChange("mesh_config.0.kiali.0.open_id_config.0.client_secret") || clientSecret1 != "") {
+				objectDataLocalMap1["ClientSecret"] = clientSecret1
+			}
+			issuerUri1, _ := jsonpath.Get("$[0].kiali[0].open_id_config[0].issuer_uri", v)
+			if issuerUri1 != nil && (d.HasChange("mesh_config.0.kiali.0.open_id_config.0.issuer_uri") || issuerUri1 != "") {
+				objectDataLocalMap1["IssuerUri"] = issuerUri1
+			}
+			scopes1, _ := jsonpath.Get("$[0].kiali[0].open_id_config[0].scopes", d.Get("mesh_config"))
+			if scopes1 != nil && (d.HasChange("mesh_config.0.kiali.0.open_id_config.0.scopes") || scopes1 != "") {
+				objectDataLocalMap1["Scopes"] = scopes1
+			}
+
+			objectDataLocalMap1Json, err := json.Marshal(objectDataLocalMap1)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["OpenIdConfig"] = string(objectDataLocalMap1Json)
+		}
+	}
+
+	if d.HasChange("mesh_config") {
+		update = true
+		objectDataLocalMap2 := make(map[string]interface{})
+
+		if v := d.Get("mesh_config"); !IsNil(v) {
+			webFqdn, _ := jsonpath.Get("$[0].kiali[0].server_config[0].web_fqdn", v)
+			if webFqdn != nil && (d.HasChange("mesh_config.0.kiali.0.server_config.0.web_fqdn") || webFqdn != "") {
+				objectDataLocalMap2["WebFQDN"] = webFqdn
+			}
+			webPort1, _ := jsonpath.Get("$[0].kiali[0].server_config[0].web_port", v)
+			if webPort1 != nil && (d.HasChange("mesh_config.0.kiali.0.server_config.0.web_port") || webPort1 != "") {
+				objectDataLocalMap2["WebPort"] = webPort1
+			}
+			webRoot1, _ := jsonpath.Get("$[0].kiali[0].server_config[0].web_root", v)
+			if webRoot1 != nil && (d.HasChange("mesh_config.0.kiali.0.server_config.0.web_root") || webRoot1 != "") {
+				objectDataLocalMap2["WebRoot"] = webRoot1
+			}
+			webSchema1, _ := jsonpath.Get("$[0].kiali[0].server_config[0].web_schema", v)
+			if webSchema1 != nil && (d.HasChange("mesh_config.0.kiali.0.server_config.0.web_schema") || webSchema1 != "") {
+				objectDataLocalMap2["WebSchema"] = webSchema1
+			}
+
+			objectDataLocalMap2Json, err := json.Marshal(objectDataLocalMap2)
+			if err != nil {
+				return WrapError(err)
+			}
+			request["ServerConfig"] = string(objectDataLocalMap2Json)
+		}
 	}
 
 	if update {
@@ -1433,6 +1778,11 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+		serviceMeshServiceV2 := ServiceMeshServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, serviceMeshServiceV2.ServiceMeshServiceMeshStateRefreshFunc(d.Id(), "$.ServiceMeshInfo.State", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
 	}
 
 	if d.HasChange("cluster_ids") {
@@ -1452,6 +1802,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
+
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
 					if err != nil {
@@ -1498,6 +1849,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				request["ServiceMeshId"] = d.Id()
+
 				if v, ok := item.(string); ok {
 					jsonPathResult, err := jsonpath.Get("$", v)
 					if err != nil {
@@ -1552,6 +1904,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ServiceMeshId"] = d.Id()
+
 			request["Operation"] = "UnBindEip"
 			if v, ok := d.GetOk("load_balancer"); ok {
 				jsonPathResult, err := jsonpath.Get("$[0].pilot_public_eip", v)
@@ -1589,6 +1942,7 @@ func resourceAliCloudServiceMeshServiceMeshUpdate(d *schema.ResourceData, meta i
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ServiceMeshId"] = d.Id()
+
 			if v, ok := d.GetOk("load_balancer"); ok {
 				jsonPathResult, err := jsonpath.Get("$[0].pilot_public_eip", v)
 				if err == nil && jsonPathResult != "" {
@@ -1667,5 +2021,6 @@ func resourceAliCloudServiceMeshServiceMeshDelete(d *schema.ResourceData, meta i
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
