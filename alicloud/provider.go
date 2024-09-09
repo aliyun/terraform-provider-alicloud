@@ -1413,7 +1413,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cddc_dedicated_host_group":                             resourceAlicloudCddcDedicatedHostGroup(),
 			"alicloud_hbr_ecs_backup_client":                                 resourceAlicloudHbrEcsBackupClient(),
 			"alicloud_msc_sub_contact":                                       resourceAlicloudMscSubContact(),
-			"alicloud_express_connect_physical_connection":                   resourceAlicloudExpressConnectPhysicalConnection(),
+			"alicloud_express_connect_physical_connection":                   resourceAliCloudExpressConnectPhysicalConnection(),
 			"alicloud_alb_load_balancer":                                     resourceAliCloudAlbLoadBalancer(),
 			"alicloud_sddp_rule":                                             resourceAliCloudSddpRule(),
 			"alicloud_bastionhost_user_group":                                resourceAlicloudBastionhostUserGroup(),
