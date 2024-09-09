@@ -29,12 +29,18 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
+resource "random_integer" "default" {
+  min = 10000000
+  max = 99999999
+}
+
 resource "alicloud_cr_ee_instance" "default" {
   payment_type   = "Subscription"
   period         = 1
   renewal_status = "ManualRenewal"
   instance_type  = "Advanced"
-  instance_name  = var.name
+  instance_name  = "${var.name}-${random_integer.default.result}"
 }
 
 data "alicloud_cr_endpoint_acl_service" "default" {
