@@ -42,12 +42,12 @@ resource "alicloud_log_project" "default" {
 }
 
 resource "alicloud_log_store" "default" {
-  project_name  = alicloud_log_project.default.name
+  project_name  = alicloud_log_project.default.project_name
   logstore_name = "example-value"
 }
 
 resource "alicloud_log_store" "source_store" {
-  project_name  = alicloud_log_project.default.name
+  project_name  = alicloud_log_project.default.project_name
   logstore_name = "example-source-store"
 }
 
@@ -84,8 +84,8 @@ resource "alicloud_fc_service" "default" {
   description = "example-value"
   role        = alicloud_ram_role.default.arn
   log_config {
-    project                 = alicloud_log_project.default.name
-    logstore                = alicloud_log_store.default.name
+    project                 = alicloud_log_project.default.project_name
+    logstore                = alicloud_log_store.default.logstore_name
     enable_instance_metrics = true
     enable_request_metrics  = true
   }
@@ -118,12 +118,12 @@ resource "alicloud_fc_trigger" "default" {
   function   = alicloud_fc_function.default.name
   name       = "terraform-example"
   role       = alicloud_ram_role.default.arn
-  source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.name}"
+  source_arn = "acs:log:${data.alicloud_regions.default.regions.0.id}:${data.alicloud_account.default.id}:project/${alicloud_log_project.default.project_name}"
   type       = "log"
   config     = <<EOF
     {
         "sourceConfig": {
-            "logstore": "${alicloud_log_store.source_store.name}",
+            "logstore": "${alicloud_log_store.source_store.logstore_name}",
             "startTime": null
         },
         "jobConfig": {
@@ -135,10 +135,9 @@ resource "alicloud_fc_trigger" "default" {
             "c": "d"
         },
         "logConfig": {
-             "project": "${alicloud_log_project.default.name}",
-            "logstore": "${alicloud_log_store.default.name}"
+             "project": "${alicloud_log_project.default.project_name}",
+            "logstore": "${alicloud_log_store.default.logstore_name}"
         },
-        "targetConfig": null,
         "enable": true
     }
   

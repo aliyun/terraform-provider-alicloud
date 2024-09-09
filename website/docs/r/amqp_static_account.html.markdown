@@ -26,14 +26,15 @@ Basic Usage
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
 variable "access_key" {
   default = "access_key"
 }
-
 variable "secret_key" {
   default = "secret_key"
 }
-
 resource "alicloud_amqp_instance" "default" {
   instance_type  = "enterprise"
   max_tps        = 3000
@@ -44,7 +45,6 @@ resource "alicloud_amqp_instance" "default" {
   payment_type   = "Subscription"
   period         = 1
 }
-
 resource "alicloud_amqp_static_account" "default" {
   instance_id = alicloud_amqp_instance.default.id
   access_key  = var.access_key

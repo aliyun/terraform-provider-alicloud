@@ -26,6 +26,10 @@ Basic Usage
 </div></div>
 
 ```terraform
+provider "alicloud" {
+  region = "cn-shanghai"
+}
+
 resource "alicloud_amqp_instance" "default" {
   instance_type  = "professional"
   max_tps        = 1000

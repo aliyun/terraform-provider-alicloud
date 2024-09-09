@@ -30,7 +30,7 @@ variable "name" {
 }
 
 provider "alicloud" {
-  region = "cn-hangzhou"
+  region = "cn-shanghai"
 }
 
 
