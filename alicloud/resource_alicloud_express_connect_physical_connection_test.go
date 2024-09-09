@@ -19,11 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+func TestAccAliCloudExpressConnectPhysicalConnection_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_physical_connection.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectPhysicalConnectionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeExpressConnectPhysicalConnection")
@@ -31,7 +31,7 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectPhysicalConnectionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -44,73 +44,15 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// currently， not all access points are available
 					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
-					"access_point_id":          getAccessPointId(),
-					"type":                     "VPC",
-					"peer_location":            "testacc12345",
-					"physical_connection_name": "${var.name}",
-					"description":              "${var.name}",
-					"line_operator":            "CU",
-					"port_type":                "1000Base-LX",
+					"access_point_id": getAccessPointId(),
+					"line_operator":   "CU",
+					"port_type":       "1000Base-LX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_point_id":          CHECKSET,
-						"type":                     "VPC",
-						"peer_location":            "testacc12345",
-						"physical_connection_name": name,
-						"description":              name,
-						"line_operator":            "CU",
-						"port_type":                "1000Base-LX",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"physical_connection_name": name + "_Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"physical_connection_name": name + "_Update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"bandwidth": "10",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"bandwidth": "10",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"circuit_code": "longtel001",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"circuit_code": "longtel001",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "_Update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "_Update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"line_operator": "CU",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"line_operator": "CU",
+						"access_point_id": CHECKSET,
+						"line_operator":   "CU",
+						"port_type":       "1000Base-LX",
 					}),
 				),
 			},
@@ -126,83 +68,101 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"line_operator": "CO",
+					"bandwidth": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"line_operator": "CO",
+						"bandwidth": "10",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"peer_location": "浙江省---vfjdbg_21e",
+					"circuit_code": "longtel001",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"peer_location": "浙江省---vfjdbg_21e",
+						"circuit_code": "longtel001",
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"port_type": "10GBase-LR",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"port_type": "10GBase-LR",
-			//		}),
-			//	),
-			//},
-			// Only confirmed connection can be enabled.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"status": "Enabled",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"status": "Enabled",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"peer_location": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"peer_location": name,
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"physical_connection_name": name,
-					"status":                   "Canceled",
-					"bandwidth":                "15",
-					"circuit_code":             "longtel002",
-					"description":              name,
-					"line_operator":            "CT",
-					"peer_location":            "testacc12345",
-					"port_type":                "1000Base-LX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"physical_connection_name": name,
-						"status":                   "Canceled",
-						"bandwidth":                "15",
-						"circuit_code":             "longtel002",
-						"description":              name,
-						"line_operator":            "CT",
-						"peer_location":            "testacc12345",
-						"port_type":                "1000Base-LX",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Confirmed",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Confirmed",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Enabled",
+					"period": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":   "Enabled",
+						"order_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Terminated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Terminated",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "pricing_cycle", "order_id"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+func TestAccAliCloudExpressConnectPhysicalConnection_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_physical_connection.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectPhysicalConnectionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeExpressConnectPhysicalConnection")
@@ -210,7 +170,82 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectPhysicalConnectionBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					// currently， not all access points are available
+					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
+					"access_point_id":                  getAccessPointId(),
+					"line_operator":                    "CU",
+					"type":                             "VPC",
+					"port_type":                        "1000Base-LX",
+					"bandwidth":                        "10",
+					"circuit_code":                     "longtel001",
+					"peer_location":                    name,
+					"redundant_physical_connection_id": "${data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id}",
+					"physical_connection_name":         name,
+					"description":                      name,
+					"status":                           "Enabled",
+					"period":                           "1",
+					"pricing_cycle":                    "Month",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"access_point_id":                  CHECKSET,
+						"line_operator":                    "CU",
+						"type":                             "VPC",
+						"port_type":                        "1000Base-LX",
+						"bandwidth":                        "10",
+						"circuit_code":                     "longtel001",
+						"peer_location":                    name,
+						"redundant_physical_connection_id": CHECKSET,
+						"physical_connection_name":         name,
+						"description":                      name,
+						"status":                           "Enabled",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Terminated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Terminated",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "pricing_cycle", "order_id"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudExpressConnectPhysicalConnection_basic0_intl(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+	resourceId := "alicloud_express_connect_physical_connection.default"
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectPhysicalConnectionMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeExpressConnectPhysicalConnection")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectPhysicalConnectionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -223,34 +258,26 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					// currently， not all access points are available
-					//"access_point_id": "${data.alicloud_express_connect_access_points.default.ids.0}",
-					"access_point_id":          getAccessPointId(),
-					"type":                     "VPC",
-					"peer_location":            "testacc12345",
-					"physical_connection_name": "${var.name}",
-					"description":              "${var.name}",
-					"line_operator":            "Other",
-					"port_type":                "1000Base-LX",
+					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
+					"access_point_id": getAccessPointId(),
+					"line_operator":   "Other",
+					"port_type":       "1000Base-LX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"access_point_id":          CHECKSET,
-						"type":                     "VPC",
-						"peer_location":            "testacc12345",
-						"physical_connection_name": name,
-						"description":              name,
-						"line_operator":            "Other",
-						"port_type":                "1000Base-LX",
+						"access_point_id": CHECKSET,
+						"line_operator":   "Other",
+						"port_type":       "1000Base-LX",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"physical_connection_name": name + "_Update",
+					"line_operator": "Equinix",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"physical_connection_name": name + "_Update",
+						"line_operator": "Equinix",
 					}),
 				),
 			},
@@ -276,95 +303,69 @@ func TestAccAlicloudExpressConnectPhysicalConnection_intl(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": name + "_Update",
+					"peer_location": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": name + "_Update",
+						"peer_location": name,
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"line_operator": "Equinix",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"line_operator": "Equinix",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"peer_location": "国际---vfjdbg_21e",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"peer_location": "国际---vfjdbg_21e",
-					}),
-				),
-			},
-			// Currently, the internal region does not support 10G
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"port_type": "10GBase-LR",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"port_type": "10GBase-LR",
-			//		}),
-			//	),
-			//},
-			// Only confirmed connection can be enabled.
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"status": "Enabled",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"status": "Enabled",
-			//		}),
-			//	),
-			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"physical_connection_name": name,
-					"status":                   "Canceled",
-					"bandwidth":                "15",
-					"circuit_code":             "longtel002",
-					"description":              name,
-					"line_operator":            "Other",
-					"peer_location":            "testacc12345",
-					"port_type":                "1000Base-LX",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"physical_connection_name": name,
-						"status":                   "Canceled",
-						"bandwidth":                "15",
-						"circuit_code":             "longtel002",
-						"description":              name,
-						"line_operator":            "Other",
-						"peer_location":            "testacc12345",
-						"port_type":                "1000Base-LX",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Confirmed",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Confirmed",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Canceled",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Canceled",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "pricing_cycle", "order_id"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
-	t.Skipf("There is an api bug that its describe response does not return CircuitCode. If the bug fixed, reopen this case")
-	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
+func TestAccAliCloudExpressConnectPhysicalConnection_basic0_intl_twin(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.VbrSupportRegions)
 	resourceId := "alicloud_express_connect_physical_connection.default"
-	ra := resourceAttrInit(resourceId, AlicloudExpressConnectPhysicalConnectionMap0)
+	ra := resourceAttrInit(resourceId, AliCloudExpressConnectPhysicalConnectionMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &VpcService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeExpressConnectPhysicalConnection")
@@ -372,10 +373,11 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sexpressconnectphysicalconnection%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudExpressConnectPhysicalConnectionBasicDependence1)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudExpressConnectPhysicalConnectionBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithAccountSiteType(t, IntlSite)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -386,75 +388,79 @@ func TestAccAlicloudExpressConnectPhysicalConnection_domesic1(t *testing.T) {
 					// currently， not all access points are available
 					//"access_point_id":          "${data.alicloud_express_connect_access_points.default.ids.0}",
 					"access_point_id":                  getAccessPointId(),
-					"redundant_physical_connection_id": "${data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id}",
+					"line_operator":                    "Other",
 					"type":                             "VPC",
-					"peer_location":                    "testacc12345",
-					"physical_connection_name":         name,
-					"description":                      "${var.name}",
-					"line_operator":                    "CU",
-					"port_type":                        "10GBase-LR",
+					"port_type":                        "1000Base-LX",
 					"bandwidth":                        "10",
 					"circuit_code":                     "longtel001",
+					"peer_location":                    name,
+					"redundant_physical_connection_id": "${data.alicloud_express_connect_physical_connections.nameRegex.connections.0.id}",
+					"physical_connection_name":         name,
+					"description":                      name,
+					"status":                           "Enabled",
+					"period":                           "1",
+					"pricing_cycle":                    "Month",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"access_point_id":                  CHECKSET,
-						"redundant_physical_connection_id": CHECKSET,
+						"line_operator":                    "Other",
 						"type":                             "VPC",
-						"peer_location":                    "testacc12345",
-						"physical_connection_name":         name,
-						"description":                      name,
-						"line_operator":                    "CU",
-						"port_type":                        "10GBase-LR",
+						"port_type":                        "1000Base-LX",
 						"bandwidth":                        "10",
 						"circuit_code":                     "longtel001",
+						"peer_location":                    name,
+						"redundant_physical_connection_id": CHECKSET,
+						"physical_connection_name":         name,
+						"description":                      name,
+						"status":                           "Enabled",
 					}),
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				Config: testAccConfig(map[string]interface{}{
+					"status": "Terminated",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status": "Terminated",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "pricing_cycle", "order_id"},
 			},
 		},
 	})
 }
 
-var AlicloudExpressConnectPhysicalConnectionMap0 = map[string]string{
-	"status":                           CHECKSET,
-	"redundant_physical_connection_id": "",
-	"bandwidth":                        CHECKSET,
+var AliCloudExpressConnectPhysicalConnectionMap0 = map[string]string{
+	"type":          CHECKSET,
+	"bandwidth":     CHECKSET,
+	"peer_location": CHECKSET,
+	"status":        CHECKSET,
 }
 
-func AlicloudExpressConnectPhysicalConnectionBasicDependence0(name string) string {
+func AliCloudExpressConnectPhysicalConnectionBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-data "alicloud_express_connect_access_points" "default" {
-	status = "recommended"
-}
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_express_connect_access_points" "default" {
+  		status = "recommended"
+	}
+
+	data "alicloud_express_connect_physical_connections" "nameRegex" {
+  		name_regex = "^preserved-NODELETING"
+	}
 `, name)
 }
 
-func AlicloudExpressConnectPhysicalConnectionBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-data "alicloud_express_connect_access_points" "default" {
-	status = "recommended"
-}
-
-data "alicloud_express_connect_physical_connections" "nameRegex" {
-  name_regex = "^preserved-NODELETING"
-}
-
-`, name)
-}
-
-func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
+func TestUnitAliCloudExpressConnectPhysicalConnection(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	dInit, _ := schema.InternalMap(p["alicloud_express_connect_physical_connection"].Schema).Data(nil, nil)
 	dExisted, _ := schema.InternalMap(p["alicloud_express_connect_physical_connection"].Schema).Data(nil, nil)
@@ -540,7 +546,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudExpressConnectPhysicalConnectionCreate(dInit, rawClient)
+	err = resourceAliCloudExpressConnectPhysicalConnectionCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -572,7 +578,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionCreate(dInit, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -599,7 +605,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
+	err = resourceAliCloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ModifyPhysicalConnectionAttribute
@@ -653,7 +659,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -708,7 +714,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
 		patches.Reset()
 
 		switch errorCode {
@@ -764,7 +770,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -819,7 +825,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -858,7 +864,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionRead(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -877,7 +883,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudExpressConnectPhysicalConnectionDelete(dExisted, rawClient)
+	err = resourceAliCloudExpressConnectPhysicalConnectionDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -899,7 +905,7 @@ func TestUnitAlicloudExpressConnectPhysicalConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudExpressConnectPhysicalConnectionDelete(dExisted, rawClient)
+		err := resourceAliCloudExpressConnectPhysicalConnectionDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

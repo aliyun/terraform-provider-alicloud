@@ -1940,50 +1940,75 @@ func (s *VpcService) EipAddressStateRefreshFunc(id string, failStates []string) 
 
 func (s *VpcService) DescribeExpressConnectPhysicalConnection(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "DescribePhysicalConnections"
+
 	conn, err := s.client.NewVpcClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "DescribePhysicalConnections"
+
 	request := map[string]interface{}{
-		"RegionId": s.client.RegionId,
+		"RegionId":   s.client.RegionId,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
 	}
+
 	filterMapList := make([]map[string]interface{}, 0)
 	filterMapList = append(filterMapList, map[string]interface{}{
 		"Key":   "PhysicalConnectionId",
 		"Value": []string{id},
 	})
 	request["Filter"] = filterMapList
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		return nil
-	})
-	addDebug(action, response, request)
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
-	v, err := jsonpath.Get("$.PhysicalConnectionSet.PhysicalConnectionType", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PhysicalConnectionSet.PhysicalConnectionType", response)
-	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect", id)), NotFoundWithResponse, response)
-	} else {
-		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["PhysicalConnectionId"]) != id {
-			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect", id)), NotFoundWithResponse, response)
+
+		resp, err := jsonpath.Get("$.PhysicalConnectionSet.PhysicalConnectionType", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PhysicalConnectionSet.PhysicalConnectionType", response)
 		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect:PhysicalConnection", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["PhysicalConnectionId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	object = v.([]interface{})[0].(map[string]interface{})
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("ExpressConnect:PhysicalConnection", id)), NotFoundWithResponse, response)
+	}
+
 	return object, nil
 }
 
@@ -2003,6 +2028,7 @@ func (s *VpcService) ExpressConnectPhysicalConnectionStateRefreshFunc(id string,
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
@@ -4228,6 +4254,7 @@ func (s *VpcService) DescribeExpressConnectRouterInterface(id string) (object ma
 	}
 	return v.([]interface{})[0].(map[string]interface{}), nil
 }
+
 func (s *VpcService) ExpressConnectRouterInterfaceStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
 	return func() (interface{}, string, error) {
 		object, err := s.DescribeExpressConnectRouterInterface(id)
@@ -4282,6 +4309,7 @@ func (s *VpcService) DescribeHighDefinitionMonitorLogAttribute(id string) (objec
 	object = v.(map[string]interface{})
 	return object, nil
 }
+
 func (s *VpcService) DescribeVpcHaVipAttachment(id string) (object map[string]interface{}, err error) {
 	conn, err := s.client.NewVpcClient()
 	if err != nil {
@@ -4352,4 +4380,166 @@ func (s *VpcService) VpcHaVipAttachmentStateRefreshFunc(id string, failStates []
 		}
 		return object, fmt.Sprint(status84), nil
 	}
+}
+
+func (s *VpcService) ModifyExpressConnectPhysicalConnectionStatus(d *schema.ResourceData, status string) (err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewVpcClient()
+	if err != nil {
+		return WrapError(err)
+	}
+
+	switch status {
+	case "Confirmed":
+		action := "ConfirmPhysicalConnection"
+
+		confirmedReq := map[string]interface{}{
+			"RegionId":             s.client.RegionId,
+			"ClientToken":          buildClientToken("ConfirmPhysicalConnection"),
+			"PhysicalConnectionId": d.Id(),
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, confirmedReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, confirmedReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Confirmed"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.ExpressConnectPhysicalConnectionStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	case "Enabled":
+		action := "CreatePhysicalConnectionOccupancyOrder"
+
+		createPhysicalConnectionOccupancyOrderReq := map[string]interface{}{
+			"RegionId":             s.client.RegionId,
+			"ClientToken":          buildClientToken("CreatePhysicalConnectionOccupancyOrder"),
+			"PhysicalConnectionId": d.Id(),
+			"InstanceChargeType":   "PrePaid",
+			"AutoPay":              true,
+		}
+
+		if v, ok := d.GetOkExists("period"); ok {
+			createPhysicalConnectionOccupancyOrderReq["Period"] = v
+		}
+
+		if v, ok := d.GetOk("pricing_cycle"); ok {
+			createPhysicalConnectionOccupancyOrderReq["PricingCycle"] = v
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, createPhysicalConnectionOccupancyOrderReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, createPhysicalConnectionOccupancyOrderReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		if resp, err := jsonpath.Get("$.Data", response); err != nil || resp == nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, d.Id(), "$.Data", response)
+		} else {
+			orderId := resp.(map[string]interface{})["OrderId"]
+			d.Set("order_id", orderId)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Enabled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.ExpressConnectPhysicalConnectionStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	case "Canceled":
+		action := "CancelPhysicalConnection"
+
+		canceledReq := map[string]interface{}{
+			"RegionId":             s.client.RegionId,
+			"ClientToken":          buildClientToken("CancelPhysicalConnection"),
+			"PhysicalConnectionId": d.Id(),
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, canceledReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, canceledReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Canceled"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.ExpressConnectPhysicalConnectionStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	case "Terminated":
+		action := "TerminatePhysicalConnection"
+
+		terminatedReq := map[string]interface{}{
+			"RegionId":             s.client.RegionId,
+			"ClientToken":          buildClientToken("TerminatePhysicalConnection"),
+			"PhysicalConnectionId": d.Id(),
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(20*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, terminatedReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, terminatedReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Terminated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, s.ExpressConnectPhysicalConnectionStateRefreshFunc(d.Id(), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
+	return nil
 }
