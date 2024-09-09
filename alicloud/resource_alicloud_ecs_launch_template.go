@@ -16,12 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
+func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEcsLaunchTemplateCreate,
-		Read:   resourceAlicloudEcsLaunchTemplateRead,
-		Update: resourceAlicloudEcsLaunchTemplateUpdate,
-		Delete: resourceAlicloudEcsLaunchTemplateDelete,
+		Create: resourceAliCloudEcsLaunchTemplateCreate,
+		Read:   resourceAliCloudEcsLaunchTemplateRead,
+		Update: resourceAliCloudEcsLaunchTemplateUpdate,
+		Delete: resourceAliCloudEcsLaunchTemplateDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -78,6 +78,10 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 							Optional: true,
 						},
 						"snapshot_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"device": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -395,7 +399,7 @@ func resourceAlicloudEcsLaunchTemplate() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
 	action := "CreateLaunchTemplate"
@@ -432,6 +436,10 @@ func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 			if snapshotId, ok := dataDisksArg["snapshot_id"].(string); ok && snapshotId != "" {
 				dataDisksMap["SnapshotId"] = snapshotId
+			}
+
+			if device, ok := dataDisksArg["device"].(string); ok && device != "" {
+				dataDisksMap["Device"] = device
 			}
 
 			dataDisksMap["DeleteWithInstance"] = requests.NewBoolean(dataDisksArg["delete_with_instance"].(bool))
@@ -691,10 +699,10 @@ func resourceAlicloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprint(response["LaunchTemplateId"]))
 
-	return resourceAlicloudEcsLaunchTemplateRead(d, meta)
+	return resourceAliCloudEcsLaunchTemplateRead(d, meta)
 }
 
-func resourceAlicloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	object, err := ecsService.DescribeEcsLaunchTemplate(d.Id())
@@ -734,6 +742,7 @@ func resourceAlicloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 					"performance_level":    m1["PerformanceLevel"],
 					"size":                 m1["Size"],
 					"snapshot_id":          m1["SnapshotId"],
+					"device":               m1["Device"],
 				}
 				dataDisk = append(dataDisk, temp1)
 
@@ -827,7 +836,7 @@ func resourceAlicloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	return nil
 }
 
-func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	var response map[string]interface{}
@@ -896,6 +905,10 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 
 			if snapshotId, ok := DataDisksMap["snapshot_id"].(string); ok && snapshotId != "" {
 				DataDisks[i]["SnapshotId"] = snapshotId
+			}
+
+			if device, ok := DataDisksMap["device"].(string); ok && device != "" {
+				DataDisks[i]["Device"] = device
 			}
 
 			DataDisks[i]["DeleteWithInstance"] = DataDisksMap["delete_with_instance"]
@@ -1256,10 +1269,10 @@ func resourceAlicloudEcsLaunchTemplateUpdate(d *schema.ResourceData, meta interf
 		d.SetPartial("zone_id")
 	}
 	d.Partial(false)
-	return resourceAlicloudEcsLaunchTemplateRead(d, meta)
+	return resourceAliCloudEcsLaunchTemplateRead(d, meta)
 }
 
-func resourceAlicloudEcsLaunchTemplateDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsLaunchTemplateDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteLaunchTemplate"
 	var response map[string]interface{}

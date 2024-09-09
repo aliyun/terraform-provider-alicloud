@@ -216,6 +216,7 @@ The data_disks supports the following:
 * `performance_level` - (Optional) The performance level of the ESSD used as the data disk.
 * `size` - (Optional) The size of the data disk.
 * `snapshot_id` - (Optional) The snapshot ID used to initialize the data disk. If the size specified by snapshot is greater that the size of the disk, use the size specified by snapshot as the size of the data disk.
+* `device` - (Optional, Available since v1.230.1) The mount point of the data disk.
 
 ## Attributes Reference
 
