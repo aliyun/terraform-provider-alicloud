@@ -731,12 +731,20 @@ func (s *MongoDBService) ModifyMongoDBBackupPolicy(d *schema.ResourceData) error
 		request["BackupRetentionPeriod"] = v
 	}
 
-	if v, ok := d.GetOk("backup_interval"); ok {
-		request["BackupInterval"] = v
+	if v, ok := d.GetOkExists("enable_backup_log"); ok {
+		request["EnableBackupLog"] = v
+	}
+
+	if v, ok := d.GetOkExists("log_backup_retention_period"); ok {
+		request["LogBackupRetentionPeriod"] = v
 	}
 
 	if v, ok := d.GetOk("snapshot_backup_type"); ok {
 		request["SnapshotBackupType"] = v
+	}
+
+	if v, ok := d.GetOk("backup_interval"); ok {
+		request["BackupInterval"] = v
 	}
 
 	runtime := util.RuntimeOptions{}
