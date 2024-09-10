@@ -112,10 +112,14 @@ The following arguments are supported:
 * `backup_time` - (Optional, Available since v1.42.0) MongoDB instance backup time. It is required when `backup_period` was existed. In the format of HH:mmZ- HH:mmZ. Time setting interval is one hour. If not set, the system will return a default, like "23:00Z-24:00Z".
 * `backup_period` - (Optional, List, Available since v1.42.0) MongoDB Instance backup period. It is required when `backup_time` was existed. Valid values: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]. Default to [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday].
 * `backup_retention_period` - (Optional, Int, Available since v1.213.1) The retention period of full backups.
-* `backup_interval` - (Optional, Available since v1.212.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
+* `enable_backup_log` - (Optional, Int, Available since v1.230.1) Specifies whether to enable the log backup feature. Valid values:
+  - `0`: The log backup feature is disabled.
+  - `1 `: The log backup feature is enabled.
+* `log_backup_retention_period` - (Optional, Int, Available since v1.230.1) The number of days for which log backups are retained. Valid values: `7` to `730`. **NOTE:** `log_backup_retention_period` is valid only when `enable_backup_log` is set to `1`.
 * `snapshot_backup_type` - (Optional, Available since v1.212.0) The snapshot backup type. Default value: `Standard`. Valid values:
   - `Standard`: standard backup.
   - `Flash `: single-digit second backup.
+* `backup_interval` - (Optional, Available since v1.212.0) The frequency at which high-frequency backups are created. Valid values: `-1`, `15`, `30`, `60`, `120`, `180`, `240`, `360`, `480`, `720`.
 * `ssl_action` - (Optional, Available since v1.78.0) Actions performed on SSL functions. Valid values:
   - `Open`: turn on SSL encryption.
   - `Close`: turn off SSL encryption.
