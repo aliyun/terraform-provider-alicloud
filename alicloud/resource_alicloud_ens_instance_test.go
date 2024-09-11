@@ -545,28 +545,6 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type": "ens.sn1.tiny",
-					"status":        "Running",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_type": "ens.sn1.tiny",
-						"status":        "Running",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"status": "Stopped",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"status": "Stopped",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"net_district_code":    "100102",
 					"amount":               "1",
 					"period":               "1",
@@ -595,7 +573,6 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 					"billing_cycle":              "Day",
 					"instance_charge_strategy":   "instance",
 					"period_unit":                "Month",
-					"status":                     "Running",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -622,7 +599,6 @@ func TestAccAliCloudEnsInstance_basic5654(t *testing.T) {
 						"billing_cycle":              "Day",
 						"instance_charge_strategy":   "instance",
 						"period_unit":                "Month",
-						"status":                     "Running",
 					}),
 				),
 			},
@@ -744,7 +720,6 @@ func TestAccAliCloudEnsInstance_basic5654_twin(t *testing.T) {
 	})
 }
 
-// Test Ens Instance. >>> Resource test cases, automatically generated.
 // Case 实例创建_预付费_网络参数 5657
 func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 	var v map[string]interface{}
@@ -847,6 +822,26 @@ func TestAccAliCloudEnsInstance_basic5657(t *testing.T) {
 					}),
 				),
 			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"status": "Stopped",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"status": "Stopped",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"instance_type": "ens.sn1.tiny",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"instance_type": "ens.sn1.tiny",
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -1030,18 +1025,6 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "_update",
-					"status":        "Running",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"instance_name": name + "_update",
-						"status":        "Running",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"user_data":            "IyEvYmluL3NoCmVjaG8gIkhlbGxvIFdvcmxkLiAgVGhlIHRpbWUgaXMgbm93ICQoZGF0ZSAtUikhIiB8IHRlZSAvcm9vdC9vdXRwdXQudHh0",
 					"amount":               "1",
 					"period":               "1",
@@ -1076,7 +1059,6 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 					"auto_use_coupon":            "true",
 					"ens_region_id":              "cn-nanjing-cmcc",
 					"password_inherit":           "false",
-					"status":                     "Running",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1103,10 +1085,19 @@ func TestAccAliCloudEnsInstance_basic5608(t *testing.T) {
 						"auto_use_coupon":            "true",
 						"ens_region_id":              "cn-nanjing-cmcc",
 						"password_inherit":           "false",
-						"status":                     "Running",
 					}),
 				),
 			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"payment_type": "PayAsYouGo",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"payment_type": "PayAsYouGo",
+			//		}),
+			//	),
+			//},
 			{
 				ResourceName:            resourceId,
 				ImportState:             true,
@@ -1324,6 +1315,414 @@ func TestAccAliCloudEnsInstance_basic5608_twin(t *testing.T) {
 						"status":                     "Stopped",
 						"force_stop":                 "true",
 						"include_data_disks":         "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+			},
+		},
+	})
+}
+
+// Case kms/keypairname创建_副本1724657888313 7639
+func TestAccAliCloudEnsInstance_basic7639(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ens_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudEnsInstanceMap7639)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEnsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sensinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsInstanceBasicDependence7639)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-zhangjiakou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk": []map[string]interface{}{
+						{
+							"size": "20",
+						},
+					},
+					"schedule_area_level":  "Region",
+					"image_id":             "centos_6_08_64_20G_alibase_20171208",
+					"payment_type":         "PayAsYouGo",
+					"instance_type":        "ens.sn1.stiny",
+					"password":             "12345678abcABC",
+					"status":               "Running",
+					"amount":               "1",
+					"internet_charge_type": "95BandwidthByMonth",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":           "20",
+							"category":       "cloud_efficiency",
+							"encrypted":      "true",
+							"encrypt_key_id": "${data.alicloud_kms_keys.default.ids.0}",
+						},
+					},
+					"ens_region_id":              "ch-zurich-1",
+					"period_unit":                "Month",
+					"key_pair_name":              "${alicloud_ens_key_pair.default7EjAoY.key_pair_name}",
+					"internet_max_bandwidth_out": "10",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"schedule_area_level":        "Region",
+						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
+						"payment_type":               "PayAsYouGo",
+						"instance_type":              "ens.sn1.stiny",
+						"password":                   "12345678abcABC",
+						"status":                     "Running",
+						"amount":                     "1",
+						"internet_charge_type":       "95BandwidthByMonth",
+						"data_disk.#":                "1",
+						"ens_region_id":              "ch-zurich-1",
+						"period_unit":                "Month",
+						"key_pair_name":              CHECKSET,
+						"internet_max_bandwidth_out": "10",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+			},
+		},
+	})
+}
+
+var AlicloudEnsInstanceMap7639 = map[string]string{
+	"host_name":     CHECKSET,
+	"status":        CHECKSET,
+	"instance_name": CHECKSET,
+}
+
+func AlicloudEnsInstanceBasicDependence7639(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_kms_keys" "default" {
+  status = "Enabled"
+}
+
+//resource "alicloud_kms_key" "defaultjVtbpt" {
+//	is_enabled = true
+//	pending_window_in_days = 7
+//}
+
+resource "alicloud_ens_key_pair" "default7EjAoY" {
+  key_pair_name = format("%%s1", var.name)
+  version = "2017-11-10"
+}
+
+
+`, name)
+}
+
+// Case 抢占式实例 7627
+func TestAccAliCloudEnsInstance_basic7627(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ens_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudEnsInstanceMap7627)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEnsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sensinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsInstanceBasicDependence7627)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-chengdu"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"system_disk": []map[string]interface{}{
+						{
+							"size": "20",
+						},
+					},
+					"schedule_area_level":        "Region",
+					"image_id":                   "m-61nk2opqjl3p0e5wiuzm160ks",
+					"payment_type":               "PayAsYouGo",
+					"instance_type":              "ens.pfv.cg72g2",
+					"spot_strategy":              "SpotAsPriceGo",
+					"password":                   "12345678abcABC",
+					"status":                     "Running",
+					"amount":                     "1",
+					"internet_charge_type":       "95BandwidthByMonth",
+					"ens_region_id":              "sg-singapore-9",
+					"auto_release_time":          "2024-09-10T18:00:00Z",
+					"internet_max_bandwidth_out": "0",
+					"period_unit":                "Month",
+					"billing_cycle":              "Day",
+					"instance_charge_strategy":   "instance",
+					"public_ip_identification":   "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"schedule_area_level":        "Region",
+						"image_id":                   "m-61nk2opqjl3p0e5wiuzm160ks",
+						"payment_type":               "PayAsYouGo",
+						"instance_type":              "ens.pfv.cg72g2",
+						"spot_strategy":              "SpotAsPriceGo",
+						"password":                   "12345678abcABC",
+						"status":                     "Running",
+						"amount":                     "1",
+						"internet_charge_type":       "95BandwidthByMonth",
+						"ens_region_id":              "sg-singapore-9",
+						"auto_release_time":          "2024-09-10T18:00:00Z",
+						"internet_max_bandwidth_out": "0",
+						"period_unit":                "Month",
+						"billing_cycle":              "Day",
+						"instance_charge_strategy":   "instance",
+						"public_ip_identification":   "false",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"amount", "auto_renew", "auto_use_coupon", "billing_cycle", "carrier", "force_stop", "include_data_disks", "instance_charge_strategy", "internet_charge_type", "ip_type", "net_district_code", "password", "password_inherit", "period", "period_unit", "public_ip_identification", "schedule_area_level", "scheduling_price_strategy", "scheduling_strategy", "unique_suffix", "user_data"},
+			},
+		},
+	})
+}
+
+var AlicloudEnsInstanceMap7627 = map[string]string{
+	"host_name":     CHECKSET,
+	"status":        CHECKSET,
+	"instance_name": CHECKSET,
+}
+
+func AlicloudEnsInstanceBasicDependence7627(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Test Ens Instance. >>> Resource test cases, automatically generated.
+// Case 实例创建 5608
+func TestAccAliCloudEnsInstance_basic5608_raw(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ens_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudEnsInstanceMap5608)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EnsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEnsInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sensinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEnsInstanceBasicDependence5608)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data":            "IyEvYmluL3NoCmVjaG8gIkhlbGxvIFdvcmxkLiAgVGhlIHRpbWUgaXMgbm93ICQoZGF0ZSAtUikhIiB8IHRlZSAvcm9vdC9vdXRwdXQudHh0",
+					"amount":               "1",
+					"period":               "1",
+					"internet_charge_type": "95BandwidthByMonth",
+					"instance_name":        name,
+					"system_disk": []map[string]interface{}{
+						{
+							"size":     "20",
+							"category": "cloud_efficiency",
+						},
+					},
+					"scheduling_strategy": "Concentrate",
+					"data_disk": []map[string]interface{}{
+						{
+							"size":     "20",
+							"category": "cloud_efficiency",
+						},
+					},
+					"schedule_area_level":        "Region",
+					"internet_max_bandwidth_out": "10",
+					"public_ip_identification":   "true",
+					"scheduling_price_strategy":  "PriceHighPriority",
+					"image_id":                   "centos_6_08_64_20G_alibase_20171208",
+					"payment_type":               "Subscription",
+					"instance_type":              "ens.sn1.stiny",
+					"host_name":                  "InstanceHostName_autotest",
+					"password":                   "12345678abcABC",
+					"period_unit":                "Month",
+					"ip_type":                    "ipv4",
+					"auto_renew":                 "false",
+					"unique_suffix":              "false",
+					"auto_use_coupon":            "true",
+					"ens_region_id":              "cn-nanjing-cmcc",
+					"password_inherit":           "false",
+					"status":                     "Running",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data":                  "IyEvYmluL3NoCmVjaG8gIkhlbGxvIFdvcmxkLiAgVGhlIHRpbWUgaXMgbm93ICQoZGF0ZSAtUikhIiB8IHRlZSAvcm9vdC9vdXRwdXQudHh0",
+						"amount":                     "1",
+						"period":                     "1",
+						"internet_charge_type":       "95BandwidthByMonth",
+						"instance_name":              name,
+						"scheduling_strategy":        "Concentrate",
+						"data_disk.#":                "1",
+						"schedule_area_level":        "Region",
+						"internet_max_bandwidth_out": "10",
+						"public_ip_identification":   "true",
+						"scheduling_price_strategy":  "PriceHighPriority",
+						"image_id":                   "centos_6_08_64_20G_alibase_20171208",
+						"payment_type":               "Subscription",
+						"instance_type":              "ens.sn1.stiny",
+						"host_name":                  "InstanceHostName_autotest",
+						"password":                   "12345678abcABC",
+						"period_unit":                "Month",
+						"ip_type":                    "ipv4",
+						"auto_renew":                 "false",
+						"unique_suffix":              "false",
+						"auto_use_coupon":            "true",
+						"ens_region_id":              "cn-nanjing-cmcc",
+						"password_inherit":           "false",
+						"status":                     "Running",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"status":     "Stopped",
+					"force_stop": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"status":     "Stopped",
+						"force_stop": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type": "ens.sn1.tiny",
+					"status":        "",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type": "ens.sn1.tiny",
+						"status":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"user_data": "Stopped",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"user_data": "Stopped",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"period":             "1",
+					"payment_type":       "PayAsYouGo",
+					"include_data_disks": "false",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"period":             "1",
+						"payment_type":       "PayAsYouGo",
+						"include_data_disks": "false",
 					}),
 				),
 			},
