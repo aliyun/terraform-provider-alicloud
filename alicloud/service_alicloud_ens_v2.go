@@ -48,7 +48,6 @@ func (s *EnsServiceV2) DescribeEnsInstance(id string) (object map[string]interfa
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -64,6 +63,44 @@ func (s *EnsServiceV2) DescribeEnsInstance(id string) (object map[string]interfa
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *EnsServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListTagResources"
+	conn, err := client.NewEnsClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId.1"] = id
+
+	request["ResourceType"] = "instance"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
 }
 
 func (s *EnsServiceV2) EnsInstanceStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
@@ -82,6 +119,10 @@ func (s *EnsServiceV2) EnsInstanceStateRefreshFunc(id string, field string, fail
 			e := jsonata.MustCompile("$.SystemDisk.Size/1024")
 			v, _ = e.Eval(object)
 			currentStatus = fmt.Sprint(v)
+		}
+
+		if field == "InstanceResourceType" {
+			currentStatus = fmt.Sprint(convertEnsInstanceInstancesInstanceInstanceResourceTypeResponse(v))
 		}
 
 		for _, failState := range failStates {

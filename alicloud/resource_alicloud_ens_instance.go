@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -36,6 +35,11 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Default:      1,
 				ValidateFunc: IntBetween(0, 100),
 			},
+			"auto_release_time": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"auto_renew": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -64,12 +68,26 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ForceNew:     true,
-							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "local_hdd", "local_ssd"}, true),
+							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "local_hdd", "local_ssd"}, false),
+						},
+						"encrypt_key_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
 						},
 						"size": {
 							Type:     schema.TypeInt,
 							Optional: true,
 							ForceNew: true,
+						},
+						"encrypted": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							ForceNew: true,
+						},
+						"disk_id": {
+							Type:     schema.TypeString,
+							Computed: true,
 						},
 					},
 				},
@@ -130,6 +148,11 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_-]+$"), "The IP type. Value:-ipv4 (default):IPv4-ipv6:IPv6-ipv4Andipv6:IPv4 and IPv6"),
 			},
+			"key_pair_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"net_district_code": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -152,8 +175,7 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 			"payment_type": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, true),
+				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"period": {
 				Type:     schema.TypeInt,
@@ -193,6 +215,11 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Computed: true,
 				ForceNew: true,
 			},
+			"spot_strategy": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -206,10 +233,11 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"category": {
-							Type:     schema.TypeString,
-							Optional: true,
-							ForceNew: true,
-							Computed: true,
+							Type:         schema.TypeString,
+							Optional:     true,
+							Computed:     true,
+							ForceNew:     true,
+							ValidateFunc: StringInSlice([]string{"cloud_efficiency", "cloud_ssd", "local_hdd", "local_ssd"}, false),
 						},
 						"size": {
 							Type:     schema.TypeInt,
@@ -220,6 +248,7 @@ func resourceAliCloudEnsInstance() *schema.Resource {
 					},
 				},
 			},
+			"tags": tagsSchema(),
 			"unique_suffix": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -299,12 +328,14 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["EnsRegionId"] = v
 	}
 	if v, ok := d.GetOk("data_disk"); ok {
-		dataDiskMaps := make([]map[string]interface{}, 0)
+		dataDiskMaps := make([]interface{}, 0)
 		for _, dataLoop := range v.(*schema.Set).List() {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["Size"] = dataLoopTmp["size"]
 			dataLoopMap["Category"] = dataLoopTmp["category"]
+			dataLoopMap["Encrypted"] = dataLoopTmp["encrypted"]
+			dataLoopMap["KMSKeyId"] = dataLoopTmp["encrypt_key_id"]
 			dataDiskMaps = append(dataDiskMaps, dataLoopMap)
 		}
 		dataDiskMapsJson, err := json.Marshal(dataDiskMaps)
@@ -321,12 +352,22 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 		request["InstanceName"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
+
 	if v := d.Get("system_disk"); !IsNil(v) {
-		nodeNative2, _ := jsonpath.Get("$[0].size", d.Get("system_disk"))
-		if nodeNative2 != nil && nodeNative2 != "" {
-			objectDataLocalMap["Size"] = nodeNative2
+		size3, _ := jsonpath.Get("$[0].size", d.Get("system_disk"))
+		if size3 != nil && size3 != "" {
+			objectDataLocalMap["Size"] = size3
 		}
-		request["SystemDisk"] = convertMapToJsonStringIgnoreError(objectDataLocalMap)
+		category3, _ := jsonpath.Get("$[0].category", d.Get("system_disk"))
+		if category3 != nil && category3 != "" {
+			objectDataLocalMap["Category"] = category3
+		}
+
+		objectDataLocalMapJson, err := json.Marshal(objectDataLocalMap)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["SystemDisk"] = string(objectDataLocalMapJson)
 	}
 
 	if v, ok := d.GetOk("instance_charge_strategy"); ok {
@@ -357,12 +398,25 @@ func resourceAliCloudEnsInstanceCreate(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("password"); ok {
 		request["Password"] = v
 	}
+	if v, ok := d.GetOk("auto_release_time"); ok {
+		request["AutoReleaseTime"] = v
+	}
+	if v, ok := d.GetOk("spot_strategy"); ok {
+		request["SpotStrategy"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
+	if v, ok := d.GetOk("key_pair_name"); ok {
+		request["KeyPairName"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -404,22 +458,51 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("ens_region_id", objectRaw["EnsRegionId"])
-	d.Set("host_name", objectRaw["HostName"])
-	d.Set("image_id", objectRaw["ImageId"])
-	d.Set("instance_name", objectRaw["InstanceName"])
-	d.Set("instance_type", objectRaw["SpecName"])
-	d.Set("internet_max_bandwidth_out", objectRaw["InternetMaxBandwidthOut"])
-	d.Set("payment_type", convertEnsInstanceInstancesInstanceInstanceResourceTypeResponse(objectRaw["InstanceResourceType"]))
-	d.Set("status", objectRaw["Status"])
+	if objectRaw["AutoReleaseTime"] != nil {
+		d.Set("auto_release_time", objectRaw["AutoReleaseTime"])
+	}
+	if objectRaw["EnsRegionId"] != nil {
+		d.Set("ens_region_id", objectRaw["EnsRegionId"])
+	}
+	if objectRaw["HostName"] != nil {
+		d.Set("host_name", objectRaw["HostName"])
+	}
+	if objectRaw["ImageId"] != nil {
+		d.Set("image_id", objectRaw["ImageId"])
+	}
+	if objectRaw["InstanceName"] != nil {
+		d.Set("instance_name", objectRaw["InstanceName"])
+	}
+	if objectRaw["SpecName"] != nil {
+		d.Set("instance_type", objectRaw["SpecName"])
+	}
+	if objectRaw["InternetMaxBandwidthOut"] != nil {
+		d.Set("internet_max_bandwidth_out", objectRaw["InternetMaxBandwidthOut"])
+	}
+	if objectRaw["KeyPairName"] != nil {
+		d.Set("key_pair_name", objectRaw["KeyPairName"])
+	}
+	if convertEnsInstanceInstancesInstanceInstanceResourceTypeResponse(objectRaw["InstanceResourceType"]) != nil {
+		d.Set("payment_type", convertEnsInstanceInstancesInstanceInstanceResourceTypeResponse(objectRaw["InstanceResourceType"]))
+	}
+	if objectRaw["SpotStrategy"] != nil {
+		d.Set("spot_strategy", objectRaw["SpotStrategy"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
 
 	networkAttributes1RawObj, _ := jsonpath.Get("$.NetworkAttributes", objectRaw)
 	networkAttributes1Raw := make(map[string]interface{})
 	if networkAttributes1RawObj != nil {
 		networkAttributes1Raw = networkAttributes1RawObj.(map[string]interface{})
 	}
-	d.Set("net_work_id", networkAttributes1Raw["NetworkId"])
-	d.Set("vswitch_id", networkAttributes1Raw["VSwitchId"])
+	if networkAttributes1Raw["NetworkId"] != nil {
+		d.Set("net_work_id", networkAttributes1Raw["NetworkId"])
+	}
+	if networkAttributes1Raw["VSwitchId"] != nil {
+		d.Set("vswitch_id", networkAttributes1Raw["VSwitchId"])
+	}
 
 	privateIpAddress1RawObj, _ := jsonpath.Get("$.PrivateIpAddresses.PrivateIpAddress[*]", objectRaw)
 	privateIpAddress1Raw := make([]interface{}, 0)
@@ -443,6 +526,9 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 			dataDiskMap := make(map[string]interface{})
 			dataDiskChild1Raw := dataDiskChild1Raw.(map[string]interface{})
 			dataDiskMap["category"] = dataDiskChild1Raw["Category"]
+			dataDiskMap["disk_id"] = dataDiskChild1Raw["DiskId"]
+			dataDiskMap["encrypt_key_id"] = dataDiskChild1Raw["EncryptKeyId"]
+			dataDiskMap["encrypted"] = dataDiskChild1Raw["Encrypted"]
 			dataDiskMap["size"] = dataDiskChild1Raw["DiskSize"]
 
 			size, _ := dataDiskChild1Raw["Size"].(json.Number).Int64()
@@ -450,7 +536,11 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 			dataDiskMaps = append(dataDiskMaps, dataDiskMap)
 		}
 	}
-	d.Set("data_disk", dataDiskMaps)
+	if dataDisk3Raw != nil {
+		if err := d.Set("data_disk", dataDiskMaps); err != nil {
+			return err
+		}
+	}
 	systemDiskMaps := make([]map[string]interface{}, 0)
 	systemDiskMap := make(map[string]interface{})
 	systemDisk1Raw := make(map[string]interface{})
@@ -459,11 +549,26 @@ func resourceAliCloudEnsInstanceRead(d *schema.ResourceData, meta interface{}) e
 	}
 	if len(systemDisk1Raw) > 0 {
 		systemDiskMap["category"] = systemDisk1Raw["Category"]
-		size, _ := systemDisk1Raw["Size"].(json.Number).Int64()
-		systemDiskMap["size"] = size / 1024
+		if systemDisk1Raw["Size"] != nil {
+			size, _ := systemDisk1Raw["Size"].(json.Number).Int64()
+			systemDiskMap["size"] = size / 1024
+		}
 		systemDiskMaps = append(systemDiskMaps, systemDiskMap)
 	}
-	d.Set("system_disk", systemDiskMaps)
+	if objectRaw["SystemDisk"] != nil {
+		if err := d.Set("system_disk", systemDiskMaps); err != nil {
+			return err
+		}
+	}
+
+	objectRaw, err = ensServiceV2.DescribeListTagResources(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	tagsMaps := objectRaw["TagResources"]
+	d.Set("tags", tagsToMap(tagsMaps))
+
 	return nil
 }
 
@@ -482,6 +587,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = d.Id()
+
 	if !d.IsNewResource() && d.HasChange("instance_name") {
 		update = true
 		request["InstanceName"] = d.Get("instance_name")
@@ -506,7 +612,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -521,13 +626,11 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ensServiceV2 := EnsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("host_name"))}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "HostName", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("host_name"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "HostName", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_name")
-		d.SetPartial("host_name")
-		d.SetPartial("password")
+
 	}
 	update = false
 	action = "ModifyPrepayInstanceSpec"
@@ -548,7 +651,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -563,11 +665,10 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ensServiceV2 := EnsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_type"))}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "SpecName", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_type"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "SpecName", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
 	}
 	update = false
 	action = "ModifyPostPaidInstanceSpec"
@@ -588,7 +689,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -603,11 +703,10 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 		ensServiceV2 := EnsServiceV2{client}
-		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_type"))}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "SpecName", []string{}))
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("instance_type"))}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "SpecName", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("instance_type")
 	}
 	update = false
 	action = "ModifyInstanceChargeType"
@@ -617,30 +716,30 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["InstanceId"] = d.Id()
+	query["InstanceIds"] = "[\"" + d.Id() + "\"]"
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 	}
-	request["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
+	query["InstanceChargeType"] = convertEnsInstanceInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	if v, ok := d.GetOkExists("auto_renew"); ok {
-		request["AutoRenew"] = v
+		query["AutoRenew"] = v
 	}
 	if v, ok := d.GetOk("period"); ok {
-		request["Period"] = v
+		query["Period"] = v
 	}
 	if v, ok := d.GetOk("period_unit"); ok {
-		request["PeriodUnit"] = v
+		query["PeriodUnit"] = v
 	}
 	if v, ok := d.GetOkExists("include_data_disks"); ok {
-		request["IncludeDataDisks"] = v
+		query["IncludeDataDisks"] = v
 	}
+	query["AutoPay"] = "true"
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -659,7 +758,12 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
-		d.SetPartial("payment_type")
+		ensServiceV2 = EnsServiceV2{client}
+		stateConf = BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, ensServiceV2.EnsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 	}
 
 	if d.HasChange("status") {
@@ -681,6 +785,7 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["InstanceId"] = d.Id()
+
 				if v, ok := d.GetOk("force_stop"); ok {
 					request["ForceStop"] = v
 				}
@@ -689,7 +794,6 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -719,12 +823,12 @@ func resourceAliCloudEnsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				request = make(map[string]interface{})
 				query = make(map[string]interface{})
 				query["InstanceId"] = d.Id()
+
 				runtime := util.RuntimeOptions{}
 				runtime.SetAutoretry(true)
 				wait := incrementalWait(3*time.Second, 5*time.Second)
 				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-11-10"), StringPointer("AK"), query, request, &runtime)
-
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -793,6 +897,7 @@ func resourceAliCloudEnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		return nil
 	}
 
@@ -835,6 +940,7 @@ func resourceAliCloudEnsInstanceDelete(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		return nil
 	}
 	return nil
