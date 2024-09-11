@@ -54,6 +54,12 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"HTTP", "HTTPS"}, false),
 			},
+			"endpoint_protocol_version": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"HTTP1.1", "HTTP2"}, false),
+			},
 			"health_check_enabled": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -177,6 +183,10 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 
 	if v, ok := d.GetOk("endpoint_request_protocol"); ok {
 		request["EndpointRequestProtocol"] = v
+	}
+
+	if v, ok := d.GetOk("endpoint_protocol_version"); ok {
+		request["EndpointProtocolVersion"] = v
 	}
 
 	if v, ok := d.GetOkExists("health_check_enabled"); ok {
@@ -307,6 +317,7 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 	d.Set("endpoint_group_region", object["EndpointGroupRegion"])
 	d.Set("endpoint_group_type", object["EndpointGroupType"])
 	d.Set("endpoint_request_protocol", object["EndpointRequestProtocol"])
+	d.Set("endpoint_protocol_version", object["EndpointProtocolVersion"])
 	d.Set("health_check_enabled", object["HealthCheckEnabled"])
 	d.Set("health_check_path", object["HealthCheckPath"])
 	d.Set("health_check_port", formatInt(object["HealthCheckPort"]))
@@ -413,6 +424,13 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 	}
 	if v, ok := d.GetOk("endpoint_request_protocol"); ok {
 		request["EndpointRequestProtocol"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("endpoint_protocol_version") {
+		update = true
+	}
+	if v, ok := d.GetOk("endpoint_protocol_version"); ok {
+		request["EndpointProtocolVersion"] = v
 	}
 
 	if !d.IsNewResource() && d.HasChange("health_check_enabled") {
@@ -563,6 +581,7 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		}
 
 		d.SetPartial("endpoint_request_protocol")
+		d.SetPartial("endpoint_protocol_version")
 		d.SetPartial("health_check_enabled")
 		d.SetPartial("health_check_path")
 		d.SetPartial("health_check_port")

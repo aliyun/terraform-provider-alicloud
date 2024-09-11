@@ -108,8 +108,10 @@ The following arguments are supported:
 * `endpoint_group_region` - (Required, ForceNew) The ID of the region where the endpoint group is deployed.
 * `endpoint_group_type` - (Optional, ForceNew) The endpoint group type. Default value: `default`. Valid values: `default`, `virtual`.
 -> **NOTE:** Currently, only `HTTP` or `HTTPS` protocol listener can directly create a `virtual` Endpoint Group. If it is `TCP` protocol listener, and you want to create a `virtual` Endpoint Group, please ensure that the `default` Endpoint Group has been created.
-* `endpoint_request_protocol` - (Optional) The endpoint request protocol. Valid values: `HTTP`, `HTTPS`.
--> **NOTE:** This item is only supported when creating terminal node group for listening instance of HTTP or HTTPS protocol. For the listening instance of HTTP protocol, the back-end service protocol supports and only supports HTTP.
+* `endpoint_request_protocol` - (Optional) The protocol that is used by the backend server. Valid values: `HTTP`, `HTTPS`.
+-> **NOTE:** `endpoint_request_protocol` can be specified only if the listener that is associated with the endpoint group uses `HTTP` or `HTTPS`. For the listener of `HTTP` protocol, `endpoint_request_protocol` can only be set to `HTTP`.
+* `endpoint_protocol_version` - (Optional, Available since v1.230.1) The backend service protocol of the endpoint that is associated with the intelligent routing listener. Valid values: `HTTP1.1`, `HTTP2`.
+-> **NOTE:** `endpoint_protocol_version` is valid only when `endpoint_request_protocol` is set to `HTTPS`.
 * `health_check_enabled` - (Optional, Bool, Available since v1.215.0) Specifies whether to enable the health check feature. Valid values:
   - `true`: Enables the health check feature.
   - `false`: Disables the health check feature.
@@ -141,9 +143,9 @@ The endpoint_configurations supports the following:
   - `PublicIp`: an Alibaba Cloud public IP address.
   - `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance.
   - `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
-    -> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
+-> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
-  -> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+-> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.

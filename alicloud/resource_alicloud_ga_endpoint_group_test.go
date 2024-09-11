@@ -366,7 +366,7 @@ func TestAccAliCloudGaEndpointGroup_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -399,11 +399,21 @@ func TestAccAliCloudGaEndpointGroup_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"endpoint_request_protocol": "HTTP",
+					"endpoint_request_protocol": "HTTPS",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"endpoint_request_protocol": "HTTP",
+						"endpoint_request_protocol": "HTTPS",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_protocol_version": "HTTP2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_protocol_version": "HTTP2",
 					}),
 				),
 			},
@@ -565,7 +575,7 @@ func TestAccAliCloudGaEndpointGroup_basic1(t *testing.T) {
 					"port_overrides": []map[string]interface{}{
 						{
 							"endpoint_port": "10",
-							"listener_port": "60",
+							"listener_port": "8080",
 						},
 					},
 				}),
@@ -611,7 +621,7 @@ func TestAccAliCloudGaEndpointGroup_basic1_twin(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testAcc%sAliCloudGaEndpointGroup%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudGaEndpointGroupBasicDependence1)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -626,7 +636,8 @@ func TestAccAliCloudGaEndpointGroup_basic1_twin(t *testing.T) {
 					"listener_id":                   "${alicloud_ga_listener.default.id}",
 					"endpoint_group_region":         defaultRegionToTest,
 					"endpoint_group_type":           "virtual",
-					"endpoint_request_protocol":     "HTTP",
+					"endpoint_request_protocol":     "HTTPS",
+					"endpoint_protocol_version":     "HTTP2",
 					"health_check_enabled":          "true",
 					"health_check_path":             "/healthCheck",
 					"health_check_port":             "30",
@@ -648,7 +659,7 @@ func TestAccAliCloudGaEndpointGroup_basic1_twin(t *testing.T) {
 					"port_overrides": []map[string]interface{}{
 						{
 							"endpoint_port": "10",
-							"listener_port": "60",
+							"listener_port": "8080",
 						},
 					},
 					"tags": map[string]string{
@@ -662,7 +673,8 @@ func TestAccAliCloudGaEndpointGroup_basic1_twin(t *testing.T) {
 						"listener_id":                   CHECKSET,
 						"endpoint_group_region":         defaultRegionToTest,
 						"endpoint_group_type":           "virtual",
-						"endpoint_request_protocol":     "HTTP",
+						"endpoint_request_protocol":     "HTTPS",
+						"endpoint_protocol_version":     "HTTP2",
 						"health_check_enabled":          "true",
 						"health_check_path":             "/healthCheck",
 						"health_check_port":             "30",
@@ -704,8 +716,8 @@ func AliCloudGaEndpointGroupBasicDependence0(name string) string {
 	}
 
 	data "alicloud_ga_accelerators" "default" {
-  		status = "active"
-		bandwidth_billing_type = "BandwidthPackage"
+  		status                 = "active"
+  		bandwidth_billing_type = "BandwidthPackage"
 	}
 
 	resource "alicloud_ga_bandwidth_package" "default" {
@@ -741,6 +753,113 @@ func AliCloudGaEndpointGroupBasicDependence0(name string) string {
   		address_name         = var.name
 	}
 `, name)
+}
+
+func AliCloudGaEndpointGroupBasicDependence1(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_ga_accelerators" "default" {
+  		status                 = "active"
+  		bandwidth_billing_type = "BandwidthPackage"
+	}
+
+	resource "alicloud_ga_bandwidth_package" "default" {
+  		bandwidth              = 100
+  		type                   = "Basic"
+  		bandwidth_type         = "Enhanced"
+  		payment_type           = "PayAsYouGo"
+  		billing_type           = "PayBy95"
+  		ratio                  = 30
+  		bandwidth_package_name = var.name
+	}
+
+	resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
+  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	}
+
+	resource "alicloud_ssl_certificates_service_certificate" "default" {
+  		certificate_name = var.name
+  		cert             = <<EOF
+-----BEGIN CERTIFICATE-----
+MIID7jCCAtagAwIBAgIQUNnSVa/sQNeb9pBN9NhkwTANBgkqhkiG9w0BAQsFADBe
+MQswCQYDVQQGEwJDTjEOMAwGA1UEChMFTXlTU0wxKzApBgNVBAsTIk15U1NMIFRl
+c3QgUlNBIC0gRm9yIHRlc3QgdXNlIG9ubHkxEjAQBgNVBAMTCU15U1NMLmNvbTAe
+Fw0yMzA4MDkwMzM4MThaFw0yODA4MDcwMzM4MThaMCwxCzAJBgNVBAYTAkNOMR0w
+GwYDVQQDExRhbGljbG91ZC1wcm92aWRlci5jbjCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAOgskr8dEfZYdjr0xaIqlCkmE802vABoj3SQNn3rLWnUj+1v
+Wqbpsj6Bu61Scb8mtl/OZOOM7sgq0Q1hpdO8xvMGxTMuZ2bjX0EqCMqh4AvFofHL
+a/iVD07hfoM1Jo8CEidh1uvcOuXP1TlaqU020x1TX3a3niJu4JVkmCkCOwAbWYuj
+O8IsgBCsFaF9d4+C1JRYOtRbIHCNhd0sxG8AGovUDLvlkePeH5NF7DNvFXgGJ4iv
+EQcY9pP08RBFUkaznOw/r64Up7zhLb+Ie4SyAvs1FulhMAmIXOcbsND39hJ+/WIP
+8beWvIN1eCS8zcvgAvDgMkV8oqqVbQu1dqx5WuMCAwEAAaOB2TCB1jAOBgNVHQ8B
+Af8EBAMCBaAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMB8GA1UdIwQY
+MBaAFCiBJgXRNBo/wXMPu5PPFRw/A79/MGMGCCsGAQUFBwEBBFcwVTAhBggrBgEF
+BQcwAYYVaHR0cDovL29jc3AubXlzc2wuY29tMDAGCCsGAQUFBzAChiRodHRwOi8v
+Y2EubXlzc2wuY29tL215c3NsdGVzdHJzYS5jcnQwHwYDVR0RBBgwFoIUYWxpY2xv
+dWQtcHJvdmlkZXIuY24wDQYJKoZIhvcNAQELBQADggEBALd0hFZAd2XHJgETbHQs
+h4YUBNKxrIy6JiWfxffhIL1ZK5pI443DC4VRGfxVi3zWqs01WbNtJ2b1KdfSoovH
+Zwi3hdMF1IwoAB/Y2sS4zjqS0H1od7MN9KKHes6bl3yCgpmaYs5cHbyg0IJHmeq3
+rCgbKsvHfUwtzBNNPHlpANakAYd/5O1pztmUskWMUVaExfpMoQLo/AX9Lqm8pVjw
+xs921I703l/E5zEnd3PVSYagy/KQJrwVt+wQZS11HsAryfO9kct/9f+c85VDo6Ht
+iRirW/EnNPQRSno4z0V2x1Rn5+ZaoJo8cWzPvKrdfCG9TUozt4AR/LIudNLb6NNW
+n7g=
+-----END CERTIFICATE-----
+EOF
+  		key              = <<EOF
+-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA6CySvx0R9lh2OvTFoiqUKSYTzTa8AGiPdJA2festadSP7W9a
+pumyPoG7rVJxvya2X85k44zuyCrRDWGl07zG8wbFMy5nZuNfQSoIyqHgC8Wh8ctr
++JUPTuF+gzUmjwISJ2HW69w65c/VOVqpTTbTHVNfdreeIm7glWSYKQI7ABtZi6M7
+wiyAEKwVoX13j4LUlFg61FsgcI2F3SzEbwAai9QMu+WR494fk0XsM28VeAYniK8R
+Bxj2k/TxEEVSRrOc7D+vrhSnvOEtv4h7hLIC+zUW6WEwCYhc5xuw0Pf2En79Yg/x
+t5a8g3V4JLzNy+AC8OAyRXyiqpVtC7V2rHla4wIDAQABAoIBABKGQ+sluaIrKrvH
+feFTfmDOHfRYsqVhslh9jSt80THJePZb1SLOMJ+WIFBS7Kpwv0pjoF8bho3IBMgJ
+i36aaFFJsABGao+mApqjbPIl+kdWLHarYWEDG6aSjVKQshPk+WfVAZ3uA3EEpSGf
+XzS+9Bc56LsDKYXbzOV+kjlraSO35AMec3CpISdx4K1caEAhKX6it9bvPq4pSYXi
+PQspba0Jv46VV7MaabVjLzsinz5/md4vxyYHNIJAukHUfwJIsVC9ZNxukwSw+CzE
+MMO64ylq2DGokNerGsLetuViV8UWi7qmUmms2fAmchodW16olgNkYTz27+V/A42S
+eex63pkCgYEA+CqKhqp3qPe2E9KVrycrwjoycxmhOn3Iz1xiN7uAEv+DzfKtfZVf
+mcOIiqw4Z82RkgjHb9vJuTigKdDkB1zE2gSDnep44sDWJM/5nPjGlMgnkiJWJhci
+CnD0P4d6cT5wyDt7Q0/tS6ql2UrCpW4ktw1AP0Rm/z/VBD8jGkVenjcCgYEA74DM
+Z2Qmh3bPt1TykpOlw+H+sEuvlkYxqMlbtn3Rv3WgEPIBekOFrgP7n/uLW1Aizn8w
+EhNBBAE8w5jvklqZWYbpFMJQc09eqUkI8aTbLooZbzYj1f3CrzBRKn1GoTPmN9V0
+j9r+TbH3/5CEoqlsJdmeQPofuv5Qid2oEutZcrUCgYBuZ16hco0xmqJiRzlYZvDM
+w99V3X0g7Hy947e+W6gqy4nzwZb1W9LgMWE5cEzXwViVw1oWpY0k3dBDSi9oJxlc
+dM2pH3sQRgH+9pdyAis2XaVdGfGBmKEITCAdc0RBxSmfqva3h4NmOlD2TpAx0MJ8
+vWRrwR6hR+CYtw4CzgG+GQKBgQDGmi5lugW9JUe/xeBUrbyyv0+cT1auLUz2ouq7
+XIA23Mo74wJYqW9Lyp+4nTWFJeGHDK8G/hJWyNPjeomG+jvZombbQPrHc9SSWi7h
+eowKfpfywZlb1M7AyTc1HacY+9l3CTlcJQPl16NHuEZUQFue02NIjGENhd+xQy4h
+ainFVQKBgAoPs9ebtWbBOaqGpOnquzb7WibvW/ifOfzv5/aOhkbpp+KCjcSON6CB
+QF3BEXMcNMGWlpPrd8PaxCAzR4MyU///ekJri2icS9lrQhGSz2TtYhdED4pv1Aag
+7eTPl5L7xAwphCSwy8nfCKmvlqcX/MSJ7A+LHB/2hdbuuEOyhpbu
+-----END RSA PRIVATE KEY-----
+EOF
+	}
+
+	resource "alicloud_ga_listener" "default" {
+  		accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
+  		name           = var.name
+  		protocol       = "HTTPS"
+  		port_ranges {
+    		from_port = 8080
+    		to_port   = 8080
+  		}
+  		certificates {
+    		id = join("-", [alicloud_ssl_certificates_service_certificate.default.id, "%s"])
+  		}
+	}
+
+	resource "alicloud_eip_address" "default" {
+  		count                = 2
+  		bandwidth            = "10"
+  		internet_charge_type = "PayByBandwidth"
+  		address_name         = var.name
+	}
+`, name, defaultRegionToTest)
 }
 
 func TestUnitAliCloudGaEndpointGroup(t *testing.T) {
