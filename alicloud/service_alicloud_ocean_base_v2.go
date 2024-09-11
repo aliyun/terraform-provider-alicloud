@@ -7,7 +7,6 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/blues/jsonata-go"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
@@ -47,11 +46,11 @@ func (s *OceanBaseServiceV2) DescribeOceanBaseInstance(id string) (object map[st
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"IllegalOperation.Resource", "UnknownError"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
 		}
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -92,8 +91,8 @@ func (s *OceanBaseServiceV2) DescribeDescribeInstances(id string) (object map[st
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -121,11 +120,6 @@ func (s *OceanBaseServiceV2) OceanBaseInstanceStateRefreshFunc(id string, field 
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
-		if field == "$.InstanceClass" {
-			e := jsonata.MustCompile("$.InstanceClass & 'B'")
-			v, _ = e.Eval(object)
-			currentStatus = fmt.Sprint(v)
-		}
 
 		for _, failState := range failStates {
 			if currentStatus == failState {
