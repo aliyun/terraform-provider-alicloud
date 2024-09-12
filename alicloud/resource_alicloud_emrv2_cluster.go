@@ -233,6 +233,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"deployment_set_strategy": {
 							Type:         schema.TypeString,
 							Optional:     true,
+							ForceNew:     true,
 							Computed:     true,
 							ValidateFunc: validation.StringInSlice([]string{"NONE", "CLUSTER", "NODE_GROUP"}, false),
 						},
@@ -298,21 +299,25 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"vswitch_ids": {
 							Type:     schema.TypeSet,
 							Optional: true,
+							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"with_public_ip": {
 							Type:     schema.TypeBool,
 							Optional: true,
+							ForceNew: true,
 							Computed: true,
 						},
 						"additional_security_group_ids": {
 							Type:     schema.TypeSet,
 							Optional: true,
+							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"instance_types": {
 							Type:     schema.TypeSet,
 							Required: true,
+							ForceNew: true,
 							Elem:     &schema.Schema{Type: schema.TypeString},
 						},
 						"node_count": {
@@ -389,6 +394,7 @@ func resourceAlicloudEmrV2Cluster() *schema.Resource {
 						"cost_optimized_config": {
 							Type:     schema.TypeSet,
 							Optional: true,
+							ForceNew: true,
 							Elem: &schema.Resource{
 								Schema: map[string]*schema.Schema{
 									"on_demand_base_capacity": {
@@ -1861,6 +1867,7 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					increaseNodesGroup["ClusterId"] = d.Id()
 					increaseNodesGroup["NodeGroupId"] = oldNodeGroup["NodeGroupId"]
 					increaseNodesGroup["IncreaseNodeCount"] = count
+					increaseNodesGroup["AutoRenew"] = false
 					if "Subscription" == newNodeGroup["payment_type"].(string) {
 						subscriptionConfig := newNodeGroup["subscription_config"].(*schema.Set).List()
 						if len(subscriptionConfig) == 1 {
@@ -1871,6 +1878,9 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 								increaseNodesGroup["AutoPayOrder"] = value.(bool)
 							} else {
 								increaseNodesGroup["AutoPayOrder"] = true
+							}
+							if value, exists := configMap["auto_renew"]; exists {
+								increaseNodesGroup["AutoRenew"] = value.(bool)
 							}
 						}
 					}
@@ -1936,13 +1946,16 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					subscriptionMap := newNodeGroup["subscription_config"].(*schema.Set).List()[0].(map[string]interface{})
 					subscriptionConfig["PaymentDurationUnit"] = subscriptionMap["payment_duration_unit"]
 					subscriptionConfig["PaymentDuration"] = subscriptionMap["payment_duration"]
-					subscriptionConfig["AutoRenew"] = subscriptionMap["auto_renew"]
 					subscriptionConfig["AutoRenewDurationUnit"] = subscriptionMap["auto_renew_duration_unit"]
 					subscriptionConfig["AutoRenewDuration"] = subscriptionMap["auto_renew_duration"]
+					subscriptionConfig["AutoRenew"] = false
 					if value, exists := subscriptionMap["auto_pay_order"]; exists {
 						subscriptionConfig["AutoPayOrder"] = value.(bool)
 					} else {
 						subscriptionConfig["AutoPayOrder"] = true
+					}
+					if value, exists := subscriptionMap["auto_renew"]; exists {
+						subscriptionConfig["AutoRenew"] = value.(bool)
 					}
 				}
 				var spotBidPrices []map[string]interface{}
@@ -2096,12 +2109,19 @@ func resourceAlicloudEmrV2ClusterUpdate(d *schema.ResourceData, meta interface{}
 					increaseNodesGroup["NodeGroupId"] = nodeGroupId
 					increaseNodesGroup["IncreaseNodeCount"] = newNodeCount
 					increaseNodesGroup["AutoPayOrder"] = true
+					increaseNodesGroup["AutoRenew"] = false
 					if "Subscription" == newNodeGroup["payment_type"].(string) {
 						subscriptionConfig := newNodeGroup["subscription_config"].(*schema.Set).List()
 						if len(subscriptionConfig) == 1 {
 							configMap := subscriptionConfig[0].(map[string]interface{})
 							increaseNodesGroup["PaymentDuration"] = configMap["payment_duration"]
 							increaseNodesGroup["PaymentDurationUnit"] = configMap["payment_duration_unit"]
+							if value, exists := configMap["auto_pay_order"]; exists {
+								increaseNodesGroup["AutoPayOrder"] = value.(bool)
+							}
+							if value, exists := configMap["auto_renew"]; exists {
+								increaseNodesGroup["AutoRenew"] = value.(bool)
+							}
 						}
 					}
 					increaseNodesGroups = append(increaseNodesGroups, increaseNodesGroup)

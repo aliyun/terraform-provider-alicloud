@@ -244,17 +244,17 @@ The node_groups mapping supports the following:
 * `payment_type` - (Optional) Payment Type for this cluster. Supported value: PayAsYouGo or Subscription.
 * `subscription_config` - (Optional) The detail configuration of subscription payment type. See [`subscription_config`](#node_groups-subscription_config) below.
 * `spot_bid_prices` - (Optional) The spot bid prices of a PayAsYouGo instance. See [`spot_bid_prices`](#node_groups-spot_bid_prices) below.
-* `vswitch_ids` - (Optional) Global vSwitch ids, you can also specify it in node group.
-* `with_public_ip` - (Optional) Whether the node has a public IP address enabled.
-* `additional_security_group_ids` - (Optional) Additional security Group IDS for Cluster, you can also specify this key for each node group.
-* `instance_types` - (Required) Host Ecs instance types.
+* `vswitch_ids` - (Optional, ForceNew) Global vSwitch ids, you can also specify it in node group. **NOTE:** From version 1.230.1, `vswitch_ids` can not be modified.
+* `with_public_ip` - (Optional, ForceNew) Whether the node has a public IP address enabled. **NOTE:** From version 1.230.1, `with_public_ip` can not be modified.
+* `additional_security_group_ids` - (Optional, ForceNew) Additional security Group IDS for Cluster, you can also specify this key for each node group. **NOTE:** From version 1.230.1, `additional_security_group_ids` can not be modified.
+* `instance_types` - (Required, ForceNew) Host Ecs instance types. **NOTE:** From version 1.230.1, `instance_types` can not be modified.
 * `node_count` - (Required) Host Ecs number in this node group.
 * `system_disk` - (Required) Host Ecs system disk information in this node group. See [`system_disk`](#node_groups-system_disk) below.
 * `data_disks` - (Required) Host Ecs data disks information in this node group. See [`data_disks`](#node_groups-data_disks) below.
 * `graceful_shutdown` - (Optional) Enable emr cluster of task node graceful decommission, ’true’ or ‘false’ .
 * `spot_instance_remedy` - (Optional) Whether to replace spot instances with newly created spot/onDemand instance when receive a spot recycling message.
-* `cost_optimized_config` - (Optional) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below.
-* `deployment_set_strategy` - (Optional, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP.
+* `cost_optimized_config` - (Optional, ForceNew) The detail cost optimized configuration of emr cluster. See [`cost_optimized_config`](#node_groups-cost_optimized_config) below. **NOTE:** From version 1.230.1, `cost_optimized_config` can not be modified.
+* `deployment_set_strategy` - (Optional, ForceNew, Available since v1.219.0) Deployment set strategy for this cluster node group. Supported value: NONE, CLUSTER or NODE_GROUP. **NOTE:** From version 1.230.1, `deployment_set_strategy` can not be modified.
 * `auto_scaling_policy` - (Optional, Available since v1.227.0) The node group auto scaling policy for emr cluster. See [`auto_scaling_policy`](#node_groups-auto_scaling_policy) below.
 * `node_resize_strategy` - (Optional, Available since v1.219.0) Node resize strategy for this cluster node group. Supported value: PRIORITY, COST_OPTIMIZED.
 
