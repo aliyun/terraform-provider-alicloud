@@ -119,7 +119,7 @@ func testSweepVpcIpv6Gateway(region string) error {
 	return nil
 }
 
-func TestAccAliCloudVPCIpv6Gateway_basic0(t *testing.T) {
+func TestAccAliCloudVpcIpv6Gateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.VpcIpv6GatewaySupportRegions)
 	resourceId := "alicloud_vpc_ipv6_gateway.default"
