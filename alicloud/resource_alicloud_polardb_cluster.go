@@ -754,7 +754,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("db_cluster_ip_array")
 	}
 
-	if d.HasChange("security_ips") {
+	if !d.IsNewResource() && d.HasChange("security_ips") {
 		ipList := expandStringList(d.Get("security_ips").(*schema.Set).List())
 
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
@@ -791,22 +791,33 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 				if v, ok := d.GetOk("imci_switch"); ok && v.(string) != "" {
 					request.ImciSwitch = v.(string)
 				}
-				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-					return polarDBClient.CreateDBNodes(request)
+
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+						return polarDBClient.CreateDBNodes(request)
+					})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
 				})
 
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 				if err != nil {
-					return WrapErrorf(
-						err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 				}
-				response, _ := raw.(*polardb.CreateDBNodesResponse)
 				// wait cluster status change from DBNodeCreating to running
-				stateConf := BuildStateConf([]string{"DBNodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(response.DBClusterId, []string{"Deleting"}))
+				stateConf := BuildStateConf([]string{"DBNodeCreating"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 				if _, err := stateConf.WaitForState(); err != nil {
-					return WrapErrorf(err, IdMsg, response.DBClusterId)
+					return WrapErrorf(err, IdMsg, d.Id())
 				}
-			} else {
+
+			} else if expectDbNodeCount < currentDbNodeCount {
 				//delete node
 				deleteDbNodeId := ""
 				for _, dbNode := range cluster.DBNodes.DBNode {
@@ -821,11 +832,26 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 					deleteDbNodeId,
 				}
 
-				raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
-					return polarDBClient.DeleteDBNodes(request)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					raw, err := client.WithPolarDBClient(func(polarDBClient *polardb.Client) (interface{}, error) {
+						return polarDBClient.DeleteDBNodes(request)
+					})
+					if err != nil {
+						if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+					return nil
 				})
 
-				addDebug(request.GetActionName(), raw, request.RpcRequest, request)
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
+				}
+
 				stateConf := BuildStateConf([]string{"DBNodeDeleting"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 5*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{"Deleting"}))
 				if _, err = stateConf.WaitForState(); err != nil {
 					return WrapErrorf(err, IdMsg, d.Id())
@@ -1026,32 +1052,40 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 			d.SetPartial("scale_ap_ro_num_max")
 		}
 		// Turn off steady state
-		if u, ok := d.GetOk("serverless_steady_switch"); ok && u.(string) == "OFF" {
-			action := "DisableDBClusterServerless"
-			request := map[string]interface{}{
-				"DBClusterId": d.Id(),
-			}
-			//retry
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-				if err != nil {
-					if NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
-				}
-				addDebug(action, response, request)
-				return nil
-			})
+		if u, ok := d.GetOk("serverless_steady_switch"); ok {
+			switchValue := u.(string)
+			cluster, err := polarDBService.DescribePolarDBCluster(d.Id())
 			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				return WrapError(err)
 			}
-			// wait cluster status change from ConfigSwitching to running
-			stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 8*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+
+			if switchValue == "OFF" && "SteadyServerless" == cluster.ServerlessType {
+				action := "DisableDBClusterServerless"
+				request := map[string]interface{}{
+					"DBClusterId": d.Id(),
+				}
+				//retry
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(action, response, request)
+					return nil
+				})
+				if err != nil {
+					return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+				}
+				// wait cluster status change from ConfigSwitching to running
+				stateConf := BuildStateConf([]string{"ConfigSwitching", "Maintaining"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 8*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+				if _, err := stateConf.WaitForState(); err != nil {
+					return WrapErrorf(err, IdMsg, d.Id())
+				}
 			}
 		}
 	}
