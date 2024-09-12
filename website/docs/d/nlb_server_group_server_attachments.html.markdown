@@ -7,11 +7,11 @@ description: |-
   Provides a list of Nlb Server Group Server Attachments to the user.
 ---
 
-# alicloud\_nlb\_server\_group\_server\_attachments
+# alicloud_nlb_server_group_server_attachments
 
 This data source provides the Nlb Server Group Server Attachments of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.192.0+.
+-> **NOTE:** Available since v1.192.0.
 
 ## Example Usage
 
@@ -36,7 +36,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Server Group Server Attachment IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -50,4 +50,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `status` - Indicates the status of the backend server.
 	* `weight` - The weight of the backend server.
 	* `zone_id` - The zone ID of the server.
-	* `id` - The ID of the server group.
+	* `id` - The ID of the server group. The value is formulated as `<server_group_id>:<server_id>:<server_type>:<port>`.

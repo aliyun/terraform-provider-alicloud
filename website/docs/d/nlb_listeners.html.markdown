@@ -7,11 +7,11 @@ description: |-
   Provides a list of Nlb Listeners to the user.
 ---
 
-# alicloud\_nlb\_listeners
+# alicloud_nlb_listeners
 
 This data source provides the Nlb Listeners of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.191.0+.
+-> **NOTE:** Available since v1.191.0.
 
 ## Example Usage
 
@@ -22,7 +22,7 @@ data "alicloud_nlb_listeners" "ids" {
   ids = ["example_value"]
 }
 output "alicloud_nlb_listener_id_1" {
-  value = data.alicloud_nlb_listeners.ids.policies.0.id
+  value = data.alicloud_nlb_listeners.ids.listeners.0.id
 }
 ```
 
@@ -35,7 +35,7 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Listener IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 

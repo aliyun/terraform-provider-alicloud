@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_nlb_loadbalancer_common_bandwidth_package_attachment
 
-Provides a NLB Loadbalancer Common Bandwidth Package Attachment resource. Bandwidth Package Operation.
+Provides a NLB Loadbalancer Common Bandwidth Package Attachment resource.
+
+Bandwidth Package Operation.
 
 For information about NLB Loadbalancer Common Bandwidth Package Attachment and how to use it, see [What is Loadbalancer Common Bandwidth Package Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/nlb-instances-change).
 
@@ -17,12 +19,6 @@ For information about NLB Loadbalancer Common Bandwidth Package Attachment and h
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_loadbalancer_common_bandwidth_package_attachment&exampleId=d9907c24-ad5f-ca7d-e580-c403e93ead1e01806a15&activeTab=example&spm=docs.r.nlb_loadbalancer_common_bandwidth_package_attachment.0.d9907c24ad&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -75,7 +71,7 @@ resource "alicloud_nlb_load_balancer" "default" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   bandwidth              = 2
-  internet_charge_type   = "PayByBandwidth"
+  internet_charge_type   = "PayByTraffic"
   bandwidth_package_name = var.name
   description            = var.name
 }
@@ -89,8 +85,10 @@ resource "alicloud_nlb_loadbalancer_common_bandwidth_package_attachment" "defaul
 ## Argument Reference
 
 The following arguments are supported:
-* `bandwidth_package_id` - (Required, ForceNew) The ID of the bound shared bandwidth package.
-* `load_balancer_id` - (Required, ForceNew) The ID of the network-based server load balancer instance.
+* `bandwidth_package_id` - (Required, ForceNew) Specifies whether only to precheck the request. Valid values:
+  - `true`: prechecks the request but does not disassociate the NLB instance from the EIP bandwidth plan. The system prechecks the required parameters, request syntax, and limits. If the request fails the precheck, an error message is returned. If the request passes the precheck, the `DryRunOperation` error code is returned.
+  - `false` (default): sends the request. If the request passes the precheck, an HTTP 2xx status code is returned and the operation is performed.
+* `load_balancer_id` - (Required, ForceNew) The ID of the EIP bandwidth plan.
 
 ## Attributes Reference
 
