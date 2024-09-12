@@ -8,21 +8,17 @@ description: |-
 
 # alicloud_nlb_load_balancer_security_group_attachment
 
-Provides a Nlb Load Balancer Security Group Attachment resource.
+Provides a NLB Load Balancer Security Group Attachment resource.
 
-For information about Nlb Load Balancer Security Group Attachment and how to use it, see [What is Load Balancer Security Group Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/loadbalancerjoinsecuritygroup).
+Security Group mount.
+
+For information about NLB Load Balancer Security Group Attachment and how to use it, see [What is Load Balancer Security Group Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/loadbalancerjoinsecuritygroup).
 
 -> **NOTE:** Available since v1.198.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_load_balancer_security_group_attachment&exampleId=860fb2cb-c63d-b129-d52d-288058f23b0c82ea7e11&activeTab=example&spm=docs.r.nlb_load_balancer_security_group_attachment.0.860fb2cbc6&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -82,11 +78,12 @@ resource "alicloud_nlb_load_balancer_security_group_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `dry_run` - (Optional) Whether to PreCheck this request only. Value:
-  - **true**: sends a check request and does not bind a security group to the instance. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
-  - **false** (default): Sends a normal request, returns the HTTP 2xx status code after the check, and directly performs the operation.
-* `load_balancer_id` - (Required, ForceNew) The ID of the network-based server load balancer instance to be bound to the security group.
-* `security_group_id` - (Required, ForceNew, Computed) The ID of the security group.
+* `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
+
+  - `true`: checks the request without performing the operation. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
+  - `false` (default): performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `load_balancer_id` - (Required, ForceNew) The ID of the NLB instance to be associated with the security group.
+* `security_group_id` - (Required, ForceNew, Computed) The ID of the security group to be disassociated.
 
 ## Attributes Reference
 

@@ -8,7 +8,7 @@ description: |-
 
 # alicloud_nlb_listener_additional_certificate_attachment
 
-Provides a NLB Listener Additional Certificate Attachment resource. 
+Provides a NLB Listener Additional Certificate Attachment resource.
 
 For information about NLB Listener Additional Certificate Attachment and how to use it, see [What is Listener Additional Certificate Attachment](https://www.alibabacloud.com/help/en/server-load-balancer/latest/nlb-instances-change).
 
@@ -17,12 +17,6 @@ For information about NLB Listener Additional Certificate Attachment and how to 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_nlb_listener_additional_certificate_attachment&exampleId=7f63da70-f440-ed5c-a40c-3aba03159e5da3ae88b5&activeTab=example&spm=docs.r.nlb_listener_additional_certificate_attachment.0.7f63da70f4&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -187,15 +181,18 @@ resource "alicloud_nlb_listener_additional_certificate_attachment" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `certificate_id` - (Required, ForceNew) Certificate ID. Currently, only server certificates are supported.
-* `dry_run` - (Optional) Whether to PreCheck only this request, value: - **true**: sends a check request and does not create a resource. Check items include whether required parameters, request format, and business restrictions have been filled in. If the check fails, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '. - **false** (default): Sends a normal request, returns the HTTP 2xx status code after the check, and directly performs the operation.
-* `listener_id` - (Required, ForceNew) The ID of the tcpssl listener.
+* `certificate_id` - (Required, ForceNew) The ID of additional certificates.
+* `dry_run` - (Optional) Specifies whether to perform a dry run, without performing the actual request. Valid values:
+
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
+  - `false`(default): performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `listener_id` - (Required, ForceNew) The listener ID. You must specify the ID of a listener that uses SSL over TCP.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<listener_id>:<certificate_id>`.
-* `status` - The status of the resource.
+* `status` - The status of the resource
 
 ## Timeouts
 

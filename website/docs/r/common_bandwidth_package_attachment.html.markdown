@@ -37,7 +37,7 @@ variable "name" {
 
 resource "alicloud_common_bandwidth_package" "default" {
   bandwidth            = 3
-  internet_charge_type = "PayByBandwidth"
+  internet_charge_type = "PayByTraffic"
 }
 
 resource "alicloud_eip_address" "default" {
