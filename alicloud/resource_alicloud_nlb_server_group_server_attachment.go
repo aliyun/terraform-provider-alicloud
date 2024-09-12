@@ -96,7 +96,7 @@ func resourceAliCloudNlbServerGroupServerAttachmentCreate(d *schema.ResourceData
 	if v, ok := d.GetOk("server_ip"); ok {
 		request["Servers.1.ServerIp"] = v
 	}
-	if v, ok := d.GetOk("weight"); ok {
+	if v, ok := d.GetOkExists("weight"); ok {
 		request["Servers.1.Weight"] = v
 	}
 	if v, ok := d.GetOk("description"); ok {
