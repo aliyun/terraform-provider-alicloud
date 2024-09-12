@@ -122,7 +122,7 @@ func resourceAliCloudCenTransitRouterVpcAttachment() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Computed:   true,
-				Deprecated: "Field 'transit_router_attachment_name' has been deprecated since provider version 1.231.0. New field 'transit_router_vpc_attachment_name' instead.",
+				Deprecated: "Field 'transit_router_attachment_name' has been deprecated since provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.",
 			},
 			"route_table_association_enabled": {
 				Type:       schema.TypeBool,

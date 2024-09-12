@@ -47,7 +47,7 @@ The following arguments are supported:
 * `marking_dscp` - (Required, ForceNew, Int) MarkingDscp
 * `priority` - (Required, ForceNew, Int) Priority
 * `traffic_marking_policy_name` - (Optional) TrafficMarkingPolicyName
-* `traffic_match_rules` - (Optional, Set, Available since v1.231.0) List of stream classification rules.
+* `traffic_match_rules` - (Optional, Set, Available since v1.230.1) List of stream classification rules.
 
   You can add up to 50 stream classification rules at a time. See [`traffic_match_rules`](#traffic_match_rules) below.
 * `transit_router_id` - (Required, ForceNew) TransitRouterId
