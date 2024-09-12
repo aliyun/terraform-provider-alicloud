@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"hash/crc32"
 	"log"
 	"regexp"
 	"time"
@@ -151,6 +152,9 @@ func resourceAliCloudNlbLoadBalancer() *schema.Resource {
 			"zone_mappings": {
 				Type:     schema.TypeSet,
 				Required: true,
+				Set: func(v interface{}) int {
+					return int(crc32.ChecksumIEEE([]byte(v.(map[string]interface{})["zone_id"].(string))))
+				},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"status": {
@@ -1122,7 +1126,7 @@ func resourceAliCloudNlbLoadBalancerDelete(d *schema.ResourceData, meta interfac
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-04-30"), StringPointer("AK"), query, request, &runtime)
 		request["ClientToken"] = buildClientToken(action)
 
-		if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.loadBalancer"}) || err != nil {
 			if NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
