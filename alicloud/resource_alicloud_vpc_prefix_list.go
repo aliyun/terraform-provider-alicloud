@@ -38,9 +38,8 @@ func resourceAliCloudVpcPrefixList() *schema.Resource {
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"description": {
-							Type:         schema.TypeString,
-							Optional:     true,
-							ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9_.-]{2,256}$"), "The description of the cidr entry. It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with `http://` or `https://`."),
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"cidr": {
 							Type:     schema.TypeString,
