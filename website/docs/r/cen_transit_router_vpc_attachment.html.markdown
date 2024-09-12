@@ -87,7 +87,7 @@ The following arguments are supported:
 * `dry_run` - (Optional) Whether to perform PreCheck on this request, including permissions and instance status verification. Value:
   - `false` (default): A normal request is sent, and a VPC connection is directly created after the check is passed.
   - `true`: The check request is sent, only verification is performed, and no VPC connection is created. Check items include whether required parameters and request format are filled in. If the check does not pass, the corresponding error is returned. If the check passes, the error code 'DryRunOperation' is returned '.
-* `force_delete` - (Optional, Available since v1.231.0) Whether to forcibly delete the VPC connection. The value is:
+* `force_delete` - (Optional, Available since v1.230.1) Whether to forcibly delete the VPC connection. The value is:
   - `false` (default): before deleting the VPC connection, check whether there are related resource dependencies, such as Association forwarding and route learning. If related dependencies exist, deletion is not allowed and the corresponding error is returned.
   - `true`: When you delete a VPC connection, all related dependencies are deleted by default.
 * `payment_type` - (Optional, ForceNew, Computed) The billing method. The default value is `PayAsYouGo`, which specifies the pay-as-you-go billing method.
@@ -99,11 +99,11 @@ The following arguments are supported:
 
 * `transit_router_id` - (Optional, ForceNew) The ID of the Enterprise Edition transit router.
 
-* `transit_router_vpc_attachment_name` - (Optional, Available since v1.231.0) The name of the VPC connection.
+* `transit_router_vpc_attachment_name` - (Optional, Available since v1.230.1) The name of the VPC connection.
 
   The name must be 2 to 128 characters in length, and can contain letters, digits, underscores (\_), and hyphens (-). It must start with a letter.
 
-* `transit_router_vpc_attachment_options` - (Optional, Map, Available since v1.231.0) TransitRouterVpcAttachmentOptions
+* `transit_router_vpc_attachment_options` - (Optional, Map, Available since v1.230.1) TransitRouterVpcAttachmentOptions
 * `vpc_id` - (Required, ForceNew) The VPC ID.
 
 * `vpc_owner_id` - (Optional, ForceNew, Computed, Int) VpcOwnerId
@@ -111,7 +111,7 @@ The following arguments are supported:
 * `zone_mappings` - (Required, Set) ZoneMappingss See [`zone_mappings`](#zone_mappings) below.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
-* `transit_router_attachment_name` - (Deprecated since v1.231.0). Field 'transit_router_attachment_name' has been deprecated from provider version 1.231.0. New field 'transit_router_vpc_attachment_name' instead.
+* `transit_router_attachment_name` - (Deprecated since v1.230.1). Field 'transit_router_attachment_name' has been deprecated from provider version 1.230.1. New field 'transit_router_vpc_attachment_name' instead.
 * `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
 * `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.192.0) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.192.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
 
