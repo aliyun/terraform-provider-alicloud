@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -122,12 +123,12 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["RegionId"] = client.RegionId
+			query["RegionId"] = client.RegionId
+			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			request["ResourceType"] = resourceType
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -158,7 +159,7 @@ func (s *CenServiceV2) SetResourceTags(d *schema.ResourceData, resourceType stri
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["RegionId"] = client.RegionId
+			query["RegionId"] = client.RegionId
 			count := 1
 			for key, value := range added {
 				request[fmt.Sprintf("Tag.%d.Key", count)] = key
@@ -207,7 +208,11 @@ func (s *CenServiceV2) DescribeCenTransitRouterEcrAttachment(id string) (object 
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["TransitRouterAttachmentId"] = id
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	query["TransitRouterAttachmentId"] = parts[1]
 	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -277,3 +282,179 @@ func (s *CenServiceV2) CenTransitRouterEcrAttachmentStateRefreshFunc(id string, 
 }
 
 // DescribeCenTransitRouterEcrAttachment >>> Encapsulated.
+
+// DescribeCenTrafficMarkingPolicy <<< Encapsulated get interface for Cen TrafficMarkingPolicy.
+
+func (s *CenServiceV2) DescribeCenTrafficMarkingPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := "ListTrafficMarkingPolicies"
+	conn, err := client.NewCenClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["TrafficMarkingPolicyId"] = parts[1]
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TrafficMarkingPolicies[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TrafficMarkingPolicies[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMarkingPolicy", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["TrafficMarkingPolicyId"]) != parts[1] {
+			continue
+		}
+		if fmt.Sprint(item["TransitRouterId"]) != parts[0] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TrafficMarkingPolicy", id)), NotFoundMsg, response)
+}
+
+func (s *CenServiceV2) CenTrafficMarkingPolicyStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTrafficMarkingPolicy(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCenTrafficMarkingPolicy >>> Encapsulated.
+
+// DescribeCenTransitRouterVpcAttachment <<< Encapsulated get interface for Cen TransitRouterVpcAttachment.
+
+func (s *CenServiceV2) DescribeCenTransitRouterVpcAttachment(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "ListTransitRouterVpcAttachments"
+	conn, err := client.NewCenClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	parts, err1 := ParseResourceId(id, 2)
+	if err1 != nil {
+		return nil, WrapError(err1)
+	}
+	query["TransitRouterAttachmentId"] = parts[1]
+	query["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"IllegalParam.Region"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:TransitRouterVpcAttachment", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.TransitRouterAttachments[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.TransitRouterAttachments[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterVpcAttachment", id)), NotFoundMsg, response)
+	}
+
+	result, _ := v.([]interface{})
+	for _, v := range result {
+		item := v.(map[string]interface{})
+		if fmt.Sprint(item["TransitRouterAttachmentId"]) != parts[1] {
+			continue
+		}
+		return item, nil
+	}
+	return object, WrapErrorf(Error(GetNotFoundMessage("TransitRouterVpcAttachment", id)), NotFoundMsg, response)
+}
+
+func (s *CenServiceV2) CenTransitRouterVpcAttachmentStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCenTransitRouterVpcAttachment(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeCenTransitRouterVpcAttachment >>> Encapsulated.

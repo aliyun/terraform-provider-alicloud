@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCENTrafficMarkingPolicy_basic0(t *testing.T) {
+func TestAccAliCloudCenTrafficMarkingPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cen_traffic_marking_policy.default"
 	checkoutSupportedRegions(t, true, connectivity.CenTRSupportRegions)
@@ -180,7 +180,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTrafficMarkingPolicyCreate(dInit, rawClient)
+	err = resourceAliCloudCenTrafficMarkingPolicyCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -203,7 +203,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTrafficMarkingPolicyCreate(dInit, rawClient)
+		err := resourceAliCloudCenTrafficMarkingPolicyCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -230,7 +230,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTrafficMarkingPolicyUpdate(dExisted, rawClient)
+	err = resourceAliCloudCenTrafficMarkingPolicyUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -268,7 +268,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTrafficMarkingPolicyUpdate(dExisted, rawClient)
+		err := resourceAliCloudCenTrafficMarkingPolicyUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -312,7 +312,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTrafficMarkingPolicyRead(dExisted, rawClient)
+		err := resourceAliCloudCenTrafficMarkingPolicyRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -331,7 +331,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudCenTrafficMarkingPolicyDelete(dExisted, rawClient)
+	err = resourceAliCloudCenTrafficMarkingPolicyDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -362,7 +362,7 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudCenTrafficMarkingPolicyDelete(dExisted, rawClient)
+		err := resourceAliCloudCenTrafficMarkingPolicyDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -372,3 +372,193 @@ func TestUnitAccAlicloudCENTrafficMarkingPolicy(t *testing.T) {
 		}
 	}
 }
+
+// Test Cen TrafficMarkingPolicy. >>> Resource test cases, automatically generated.
+// Case TR支持IPv6-善问-线上 7854
+func TestAccAliCloudCenTrafficMarkingPolicy_basic7854(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_traffic_marking_policy.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTrafficMarkingPolicyMap7854)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTrafficMarkingPolicy")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentrafficmarkingpolicy%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTrafficMarkingPolicyBasicDependence7854)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_marking_policy_name": name,
+					"marking_dscp":                "11",
+					"priority":                    "11",
+					"transit_router_id":           "${alicloud_cen_transit_router.default8JJJSl.transit_router_id}",
+					"traffic_match_rules": []map[string]interface{}{
+						{
+							"match_dscp":                     "11",
+							"dst_cidr":                       "::/0",
+							"traffic_match_rule_description": "xxx",
+							"protocol":                       "UDP",
+							"src_cidr":                       "::/0",
+							"traffic_match_rule_name":        "ttt",
+							"address_family":                 "IPv6",
+							"dst_port_range": []string{
+								"1", "2"},
+							"src_port_range": []string{
+								"1", "2"},
+						},
+						{
+							"match_dscp":                     "13",
+							"dst_cidr":                       "192.169.6.6/32",
+							"traffic_match_rule_description": "xxxhg",
+							"protocol":                       "UDP",
+							"src_cidr":                       "192.166.3.3/32",
+							"traffic_match_rule_name":        "ttt信息发达",
+							"address_family":                 "IPv4",
+							"dst_port_range": []string{
+								"1", "105"},
+							"src_port_range": []string{
+								"1", "101"},
+						},
+						{
+							"match_dscp":                     "15",
+							"traffic_match_rule_description": "765432",
+							"traffic_match_rule_name":        "09876",
+							"dst_port_range": []string{
+								"1", "105"},
+							"src_port_range": []string{
+								"1", "101"},
+						},
+					},
+					"description": "ttt",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_marking_policy_name": name,
+						"marking_dscp":                "11",
+						"priority":                    "11",
+						"transit_router_id":           CHECKSET,
+						"traffic_match_rules.#":       "3",
+						"description":                 "ttt",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": "xxx",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": "xxx",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_marking_policy_name": name + "_update",
+					"traffic_match_rules": []map[string]interface{}{
+						{
+							"address_family":                 "IPv4",
+							"match_dscp":                     "12",
+							"dst_cidr":                       "10.0.4.0/24",
+							"traffic_match_rule_description": "xxxxxtt",
+							"protocol":                       "SSH",
+							"traffic_match_rule_name":        "gdafdax",
+							"src_cidr":                       "10.0.2.0/24",
+							"dst_port_range": []string{
+								"22", "22"},
+							"src_port_range": []string{
+								"22", "22"},
+						},
+						{
+							"address_family":                 "IPv6",
+							"match_dscp":                     "18",
+							"traffic_match_rule_description": "zzxxxxxtt",
+							"protocol":                       "SSH",
+							"traffic_match_rule_name":        "gdafdaxd",
+							"src_cidr":                       "::/0",
+							"dst_port_range": []string{
+								"22", "22"},
+							"src_port_range": []string{
+								"22", "22"},
+						},
+						{
+							"match_dscp":                     "55",
+							"traffic_match_rule_description": "xx",
+							"traffic_match_rule_name":        "yy",
+							"dst_port_range": []string{
+								"1", "101"},
+							"src_port_range": []string{
+								"1", "105"},
+						},
+					},
+					"description": "hhh",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_marking_policy_name": name + "_update",
+						"traffic_match_rules.#":       "3",
+						"description":                 "hhh",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"traffic_marking_policy_name": name + "_update",
+					"description":                 "oooo",
+					"traffic_match_rules":         REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"traffic_marking_policy_name": name + "_update",
+						"description":                 "oooo",
+						"traffic_match_rules":         NOSET,
+						"traffic_match_rules.#":       "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudCenTrafficMarkingPolicyMap7854 = map[string]string{
+	"status":                    CHECKSET,
+	"traffic_marking_policy_id": CHECKSET,
+}
+
+func AlicloudCenTrafficMarkingPolicyBasicDependence7854(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+resource "alicloud_cen_instance" "defaultcIz05m" {
+  cen_instance_name = var.name
+}
+
+resource "alicloud_cen_transit_router" "default8JJJSl" {
+  support_multicast          = true
+  cen_id                     = alicloud_cen_instance.defaultcIz05m.id
+  transit_router_name        = format("%%s1", var.name)
+  transit_router_description = "tr"
+}
+
+
+`, name)
+}
+
+// Test Cen TrafficMarkingPolicy. <<< Resource test cases, automatically generated.

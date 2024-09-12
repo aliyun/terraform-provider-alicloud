@@ -56,6 +56,8 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 							"zone_id":    "${data.alicloud_vswitches.default.vswitches.0.zone_id}",
 						},
 					},
+					"route_table_association_enabled": "false",
+					"route_table_propagation_enabled": "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -65,16 +67,16 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"auto_publish_route_enabled": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"auto_publish_route_enabled": "true",
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"auto_publish_route_enabled": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"auto_publish_route_enabled": "true",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"transit_router_attachment_name": name,
@@ -141,9 +143,10 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"route_table_association_enabled", "route_table_propagation_enabled"},
 			},
 		},
 	})
@@ -178,7 +181,7 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0_twin(t *testing.T) {
 					"resource_type":                         "VPC",
 					"payment_type":                          "PayAsYouGo",
 					"vpc_owner_id":                          "${data.alicloud_account.default.id}",
-					"auto_publish_route_enabled":            "true",
+					"auto_publish_route_enabled":            "false",
 					"transit_router_attachment_name":        name,
 					"transit_router_attachment_description": name,
 					"zone_mappings": []map[string]interface{}{
@@ -204,7 +207,7 @@ func TestAccAliCloudCenTransitRouterVpcAttachment_basic0_twin(t *testing.T) {
 						"resource_type":                         "VPC",
 						"payment_type":                          "PayAsYouGo",
 						"vpc_owner_id":                          CHECKSET,
-						"auto_publish_route_enabled":            "true",
+						"auto_publish_route_enabled":            "false",
 						"transit_router_attachment_name":        name,
 						"transit_router_attachment_description": name,
 						"zone_mappings.#":                       "2",
@@ -591,3 +594,374 @@ func TestUnitAliCloudCenTransitRouterVpcAttachment(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+// Test Cen TransitRouterVpcAttachment. >>> Resource test cases, automatically generated.
+// Case TR支持IPv6_善问_线上_副本1726040691220 7866
+func TestAccAliCloudCenTransitRouterVpcAttachment_basic7866(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap7866)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterVpcAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentransitroutervpcattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence7866)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id": "${alicloud_vpc.defaultJLRlxW.id}",
+					"cen_id": "${alicloud_cen_instance.defaultJ6HrUE.id}",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaulteKv3Dd.id}",
+							"zone_id":    "${alicloud_vswitch.defaulteKv3Dd.zone_id}",
+						},
+					},
+					"transit_router_id":                     "${alicloud_cen_transit_router.defaults5WvfD.transit_router_id}",
+					"transit_router_vpc_attachment_name":    name,
+					"transit_router_attachment_description": "test",
+					"auto_publish_route_enabled":            "true",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "enable",
+					},
+					"payment_type": "PayAsYouGo",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                                CHECKSET,
+						"cen_id":                                CHECKSET,
+						"zone_mappings.#":                       "2",
+						"transit_router_id":                     CHECKSET,
+						"transit_router_vpc_attachment_name":    name,
+						"transit_router_attachment_description": "test",
+						"auto_publish_route_enabled":            "true",
+						"payment_type":                          "PayAsYouGo",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultBY6Ody.id}",
+							"zone_id":    "${alicloud_vswitch.defaultBY6Ody.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaulteKv3Dd.id}",
+							"zone_id":    "${alicloud_vswitch.defaulteKv3Dd.zone_id}",
+						},
+					},
+					"transit_router_vpc_attachment_name":    name + "_update",
+					"transit_router_attachment_description": "testupdate",
+					"auto_publish_route_enabled":            "false",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "disable",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#":                       "3",
+						"transit_router_vpc_attachment_name":    name + "_update",
+						"transit_router_attachment_description": "testupdate",
+						"auto_publish_route_enabled":            "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultBY6Ody.id}",
+							"zone_id":    "${alicloud_vswitch.defaultBY6Ody.zone_id}",
+						},
+					},
+					"transit_router_vpc_attachment_name": name + "_update",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "enable",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#":                    "2",
+						"transit_router_vpc_attachment_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"cen_id", "dry_run"},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterVpcAttachmentMap7866 = map[string]string{
+	"status":       CHECKSET,
+	"create_time":  CHECKSET,
+	"vpc_owner_id": CHECKSET,
+	"payment_type": CHECKSET,
+}
+
+func AlicloudCenTransitRouterVpcAttachmentBasicDependence7866(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "defaultJLRlxW" {
+  cidr_block  = "192.168.0.0/16"
+  ipv6_isp    = "BGP"
+  description = "ttt"
+  enable_ipv6 = true
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "defaulteKv3Dd" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  cidr_block           = "192.168.3.0/24"
+  zone_id              = data.alicloud_zones.default.zones.0.id
+  vswitch_name         = format("%%s1", var.name)
+  ipv6_cidr_block_mask = "3"
+}
+
+resource "alicloud_vswitch" "defaultoxj0Cs" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  zone_id              = data.alicloud_zones.default.zones.1.id
+  cidr_block           = "192.168.4.0/24"
+  vswitch_name         = format("%%s2", var.name)
+  ipv6_cidr_block_mask = "4"
+}
+
+resource "alicloud_vswitch" "defaultBY6Ody" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  zone_id              = data.alicloud_zones.default.zones.2.id
+  cidr_block           = "192.168.6.0/24"
+  vswitch_name         = format("%%s3", var.name)
+  ipv6_cidr_block_mask = "6"
+}
+
+resource "alicloud_cen_instance" "defaultJ6HrUE" {
+  cen_instance_name = format("%%s4", var.name)
+}
+
+resource "alicloud_cen_transit_router" "defaults5WvfD" {
+  cen_id = alicloud_cen_instance.defaultJ6HrUE.id
+}
+
+
+`, name)
+}
+
+// Case TR支持IPv6_善问_线上 7852
+func TestAccAliCloudCenTransitRouterVpcAttachment_basic7852(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cen_transit_router_vpc_attachment.default"
+	ra := resourceAttrInit(resourceId, AlicloudCenTransitRouterVpcAttachmentMap7852)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &CenServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCenTransitRouterVpcAttachment")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%scentransitroutervpcattachment%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCenTransitRouterVpcAttachmentBasicDependence7852)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id": "${alicloud_vpc.defaultJLRlxW.id}",
+					"cen_id": "${alicloud_cen_instance.defaultJ6HrUE.id}",
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaulteKv3Dd.id}",
+							"zone_id":    "${alicloud_vswitch.defaulteKv3Dd.zone_id}",
+						},
+					},
+					"transit_router_id":                     "${alicloud_cen_transit_router.defaults5WvfD.transit_router_id}",
+					"transit_router_vpc_attachment_name":    name,
+					"transit_router_attachment_description": "test",
+					"auto_publish_route_enabled":            "true",
+					"force_delete":                          "false",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "enable",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"vpc_id":                                CHECKSET,
+						"cen_id":                                CHECKSET,
+						"zone_mappings.#":                       "2",
+						"transit_router_id":                     CHECKSET,
+						"transit_router_vpc_attachment_name":    name,
+						"transit_router_attachment_description": "test",
+						"auto_publish_route_enabled":            "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultBY6Ody.id}",
+							"zone_id":    "${alicloud_vswitch.defaultBY6Ody.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaulteKv3Dd.id}",
+							"zone_id":    "${alicloud_vswitch.defaulteKv3Dd.zone_id}",
+						},
+					},
+					"transit_router_vpc_attachment_name":    name + "_update",
+					"transit_router_attachment_description": "testupdate",
+					"auto_publish_route_enabled":            "false",
+					"force_delete":                          "true",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "disable",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#":                       "3",
+						"transit_router_vpc_attachment_name":    name + "_update",
+						"transit_router_attachment_description": "testupdate",
+						"auto_publish_route_enabled":            "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"zone_mappings": []map[string]interface{}{
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultoxj0Cs.id}",
+							"zone_id":    "${alicloud_vswitch.defaultoxj0Cs.zone_id}",
+						},
+						{
+							"vswitch_id": "${alicloud_vswitch.defaultBY6Ody.id}",
+							"zone_id":    "${alicloud_vswitch.defaultBY6Ody.zone_id}",
+						},
+					},
+					"transit_router_vpc_attachment_name": name + "_update",
+					"transit_router_vpc_attachment_options": map[string]interface{}{
+						"\"ipv6Support\"": "enable",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"zone_mappings.#":                    "2",
+						"transit_router_vpc_attachment_name": name + "_update",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"dry_run", "force_delete"},
+			},
+		},
+	})
+}
+
+var AlicloudCenTransitRouterVpcAttachmentMap7852 = map[string]string{
+	"status":       CHECKSET,
+	"create_time":  CHECKSET,
+	"vpc_owner_id": CHECKSET,
+	"payment_type": CHECKSET,
+}
+
+func AlicloudCenTransitRouterVpcAttachmentBasicDependence7852(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+resource "alicloud_vpc" "defaultJLRlxW" {
+  cidr_block  = "192.168.0.0/16"
+  ipv6_isp    = "BGP"
+  description = "ttt"
+  enable_ipv6 = true
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "defaulteKv3Dd" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  cidr_block           = "192.168.3.0/24"
+  zone_id              = data.alicloud_zones.default.zones.0.id
+  vswitch_name         = format("%%s1", var.name)
+  ipv6_cidr_block_mask = "3"
+}
+
+resource "alicloud_vswitch" "defaultoxj0Cs" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  zone_id              = data.alicloud_zones.default.zones.1.id
+  cidr_block           = "192.168.4.0/24"
+  vswitch_name         = format("%%s2", var.name)
+  ipv6_cidr_block_mask = "4"
+}
+
+resource "alicloud_vswitch" "defaultBY6Ody" {
+  vpc_id               = alicloud_vpc.defaultJLRlxW.id
+  zone_id              = data.alicloud_zones.default.zones.2.id
+  cidr_block           = "192.168.6.0/24"
+  vswitch_name         = format("%%s3", var.name)
+  ipv6_cidr_block_mask = "6"
+}
+
+resource "alicloud_cen_instance" "defaultJ6HrUE" {
+  cen_instance_name = format("%%s4", var.name)
+}
+
+resource "alicloud_cen_transit_router" "defaults5WvfD" {
+  cen_id = alicloud_cen_instance.defaultJ6HrUE.id
+}
+
+
+`, name)
+}
+
+// Test Cen TransitRouterVpcAttachment. <<< Resource test cases, automatically generated.
