@@ -25,7 +25,6 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	instanceId := id
 	action := fmt.Sprintf("/instances/%s", instanceId)
 	conn, err := client.NewRocketmqClient()
@@ -33,16 +32,14 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -54,17 +51,22 @@ func (s *RocketmqServiceV2) DescribeRocketmqInstance(id string) (object map[stri
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"Instance.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	v, err := jsonpath.Get("$.body.data", response)
+	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
+	}
+
+	currentStatus := v.(map[string]interface{})["status"]
+	if currentStatus == "RELEASED" {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -74,7 +76,6 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 	var request map[string]interface{}
 	var response map[string]interface{}
 	var query map[string]*string
-	var body map[string]interface{}
 	instanceId := id
 	action := fmt.Sprintf("/instances/%s/account", instanceId)
 	conn, err := client.NewRocketmqClient()
@@ -82,16 +83,14 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 		return object, WrapError(err)
 	}
 	request = make(map[string]interface{})
-	body = make(map[string]interface{})
 	query = make(map[string]*string)
 	request["instanceId"] = id
 
-	body["body"] = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("GET"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -103,14 +102,15 @@ func (s *RocketmqServiceV2) DescribeGetInstanceAccount(id string) (object map[st
 		addDebug(action, response, request)
 		return nil
 	})
-
 	if err != nil {
+		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	v, err := jsonpath.Get("$.body.data", response)
+	v, err := jsonpath.Get("$.data", response)
 	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.body.data", response)
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.data", response)
 	}
 
 	return v.(map[string]interface{}), nil
@@ -128,6 +128,7 @@ func (s *RocketmqServiceV2) RocketmqInstanceStateRefreshFunc(id string, field st
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
@@ -179,7 +180,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -227,7 +227,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 				response, err = conn.DoRequest(StringPointer("2022-08-01"), nil, StringPointer("POST"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
-
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -243,7 +242,6 @@ func (s *RocketmqServiceV2) SetResourceTags(d *schema.ResourceData, resourceType
 			}
 
 		}
-		d.SetPartial("tags")
 	}
 
 	return nil
