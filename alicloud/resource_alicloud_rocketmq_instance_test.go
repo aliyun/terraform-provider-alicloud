@@ -182,7 +182,6 @@ func TestAccAliCloudRocketmqInstance_bugfix(t *testing.T) {
 	})
 }
 
-// Test Rocketmq Instance. >>> Resource test cases, automatically generated.
 // Case 4665
 func TestAccAliCloudRocketmqInstance_basic4665(t *testing.T) {
 	var v map[string]interface{}
@@ -1751,6 +1750,273 @@ func TestAccAliCloudRocketmqInstance_basic4101_twin(t *testing.T) {
 			},
 		},
 	})
+}
+
+// Test Rocketmq Instance. >>> Resource test cases, automatically generated.
+// Case 创建serverless实例 6747
+func TestAccAliCloudRocketmqInstance_basic6747(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rocketmq_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap6747)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRocketmqInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence6747)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"series_code":  "standard",
+					"payment_type": "PayAsYouGo",
+					"product_info": []map[string]interface{}{
+						{
+							"msg_process_spec":       "rmq.s3.nxlarge",
+							"auto_scaling":           "true",
+							"message_retention_time": "72",
+							// "support_auto_scaling":   "true",
+						},
+					},
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"network_info": []map[string]interface{}{
+						{
+							"vpc_info": []map[string]interface{}{
+								{
+									"vpc_id":             "${alicloud_vpc.createVPC.id}",
+									"security_group_ids": "${alicloud_security_group.CreateSecurityGroup.id}",
+									"vswitches": []map[string]interface{}{
+										{
+											"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+										},
+										{
+											"vswitch_id": "${alicloud_vswitch.createVSwitch2.id}",
+										},
+									},
+								},
+							},
+							"internet_info": []map[string]interface{}{
+								{
+									"internet_spec": "disable",
+									"flow_out_type": "uninvolved",
+								},
+							},
+						},
+					},
+					"sub_series_code": "serverless",
+					"instance_name":   name,
+					"service_code":    "rmq",
+					"commodity_code":  "ons_rmqsrvlesspost_public_cn",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"series_code":       "standard",
+						"payment_type":      "PayAsYouGo",
+						"resource_group_id": CHECKSET,
+						"sub_series_code":   "serverless",
+						"instance_name":     name,
+						"service_code":      "rmq",
+						"commodity_code":    "ons_rmqsrvlesspost_public_cn",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+		},
+	})
+}
+
+var AlicloudRocketmqInstanceMap6747 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudRocketmqInstanceBasicDependence6747(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "createVPC" {
+  description = "111"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+}
+
+resource "alicloud_security_group" "CreateSecurityGroup" {
+  name   = var.name
+  vpc_id = alicloud_vpc.createVPC.id
+}
+
+resource "alicloud_vswitch" "createVSwitch" {
+  vpc_id       = alicloud_vpc.createVPC.id
+  zone_id      = "cn-hangzhou-i"
+  cidr_block   = "172.17.0.0/16"
+  vswitch_name = format("%%s1", var.name)
+}
+
+resource "alicloud_vswitch" "createVSwitch2" {
+  vpc_id       = alicloud_vpc.createVPC.id
+  cidr_block   = "172.18.0.0/16"
+  vswitch_name = format("%%s4", var.name)
+  zone_id      = "cn-hangzhou-j"
+}
+
+
+`, name)
+}
+
+// Case 创建单节点实例用例_副本1719467789892 7144
+func TestAccAliCloudRocketmqInstance_basic7144(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_rocketmq_instance.default"
+	ra := resourceAttrInit(resourceId, AlicloudRocketmqInstanceMap7144)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &RocketmqServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeRocketmqInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%srocketmqinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudRocketmqInstanceBasicDependence7144)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_name": name,
+					"product_info": []map[string]interface{}{
+						{
+							"msg_process_spec":       "rmq.s1.micro",
+							"send_receive_ratio":     "0.3",
+							"auto_scaling":           "false",
+							"message_retention_time": "70",
+						},
+					},
+					"service_code": "rmq",
+					"series_code":  "standard",
+					"network_info": []map[string]interface{}{
+						{
+							"vpc_info": []map[string]interface{}{
+								{
+									"vpc_id":     "${alicloud_vpc.createVPC.id}",
+									"vswitch_id": "${alicloud_vswitch.createVSwitch.id}",
+								},
+							},
+							"internet_info": []map[string]interface{}{
+								{
+									"internet_spec":      "enable",
+									"flow_out_type":      "payByBandwidth",
+									"flow_out_bandwidth": "30",
+									"ip_whitelist": []string{
+										"192.168.0.0/16", "10.10.0.0/16", "172.168.0.0/16"},
+								},
+							},
+						},
+					},
+					"payment_type":      "PayAsYouGo",
+					"sub_series_code":   "single_node",
+					"remark":            "自动化测试购买使用11",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"commodity_code":    "ons_rmqpost_public_cn",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_name":     name,
+						"service_code":      "rmq",
+						"series_code":       "standard",
+						"payment_type":      "PayAsYouGo",
+						"sub_series_code":   "single_node",
+						"remark":            "自动化测试购买使用11",
+						"resource_group_id": CHECKSET,
+						"commodity_code":    "ons_rmqpost_public_cn",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+		},
+	})
+}
+
+var AlicloudRocketmqInstanceMap7144 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudRocketmqInstanceBasicDependence7144(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_zones" "default" {
+  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+resource "alicloud_vpc" "createVPC" {
+  description = "1111"
+  cidr_block  = "172.16.0.0/12"
+  vpc_name    = var.name
+}
+
+resource "alicloud_vswitch" "createVSwitch" {
+  description  = "1111"
+  vpc_id       = alicloud_vpc.createVPC.id
+  cidr_block   = "172.16.0.0/24"
+  vswitch_name = format("%%s1", var.name)
+  zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
+`, name)
 }
 
 // Test Rocketmq Instance. <<< Resource test cases, automatically generated.
