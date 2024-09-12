@@ -75,7 +75,8 @@ resource "alicloud_mse_engine_namespace" "example" {
 The following arguments are supported:
 
 * `accept_language` - (Optional) The language type of the returned information. Valid values: `zh`, `en`.
-* `cluster_id` - (Required, ForceNew) The id of the cluster.
+* `cluster_id` - (Optional, ForceNew) The id of the cluster.
+* `instance_id` - (Required, ForceNew) The ID of the MSE Cluster Instance.It is formatted to `mse-cn-xxxxxxxxxxx`
 * `namespace_id` - (Required, ForceNew) The id of Namespace.
 * `namespace_show_name` - (Required) The name of the Engine Namespace.
 

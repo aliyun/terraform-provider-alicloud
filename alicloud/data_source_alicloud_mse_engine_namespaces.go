@@ -25,6 +25,10 @@ func dataSourceAlicloudMseEngineNamespaces() *schema.Resource {
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"instance_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
@@ -92,6 +96,7 @@ func dataSourceAlicloudMseEngineNamespacesRead(d *schema.ResourceData, meta inte
 		request["AcceptLanguage"] = v
 	}
 	request["ClusterId"] = d.Get("cluster_id")
+	request["InstanceId"] = d.Get("instance_id")
 	var objects []map[string]interface{}
 
 	idsMap := make(map[string]string)
@@ -134,7 +139,7 @@ func dataSourceAlicloudMseEngineNamespacesRead(d *schema.ResourceData, meta inte
 	for _, v := range result {
 		item := v.(map[string]interface{})
 		if len(idsMap) > 0 {
-			if _, ok := idsMap[fmt.Sprint(request["ClusterId"], ":", item["Namespace"])]; !ok {
+			if _, ok := idsMap[fmt.Sprint(request["InstanceId"], ":", item["Namespace"])]; !ok {
 				continue
 			}
 		}
@@ -145,7 +150,7 @@ func dataSourceAlicloudMseEngineNamespacesRead(d *schema.ResourceData, meta inte
 	for _, object := range objects {
 		mapping := map[string]interface{}{
 			"config_count":        formatInt(object["ConfigCount"]),
-			"id":                  fmt.Sprint(request["ClusterId"], ":", object["Namespace"]),
+			"id":                  fmt.Sprint(request["InstanceId"], ":", object["Namespace"]),
 			"namespace_id":        fmt.Sprint(object["Namespace"]),
 			"namespace_desc":      object["NamespaceDesc"],
 			"namespace_show_name": object["NamespaceShowName"],

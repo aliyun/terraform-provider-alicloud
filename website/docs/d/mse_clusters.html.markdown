@@ -7,23 +7,23 @@ description: |-
     Provides a collection of MSE Clusters to the specified filters.
 ---
 
-# alicloud\_mse\_clusters
+# alicloud_mse_clusters
 
 This data source provides a list of MSE Clusters in an Alibaba Cloud account according to the specified filters.
- 
--> **NOTE:** Available in v1.94.0+.
+
+-> **NOTE:** Available since v1.94.0.
 
 ## Example Usage
 
-```
+```terraform
 # Declare the data source
 
 data "alicloud_mse_clusters" "example" {
-  ids = ["mse-cn-0d9xxxx"]
+  ids = ["mse-cn-xxxxxxxxxxx"]
   status = "INIT_SUCCESS"
 }
 
-output "cluster_id" {
+output "instance_id" {
   value = "${data.alicloud_mse_clusters.example.clusters.0.id}"
 }
 ```
@@ -32,11 +32,13 @@ output "cluster_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of MSE Cluster ids.
+* `ids` - (Optional) A list of MSE Cluster ids. It is formatted to `<instance_id>`
 * `names` - (Optional)  A list of MSE Cluster names.
 * `name_regex` - (Optional) A regex string to filter the results by the cluster alias name.
 * `cluster_alias_name` - (Optional) The alias name of MSE Cluster.
 * `status` - (Optional) The status of MSE Cluster. Valid: `DESTROY_FAILED`, `DESTROY_ING`, `DESTROY_SUCCESS`, `INIT_FAILED`, `INIT_ING`, `INIT_SUCCESS`, `INIT_TIME_OUT`, `RESTART_FAILED`, `RESTART_ING`, `RESTART_SUCCESS`, `SCALE_FAILED`, `SCALE_ING`, `SCALE_SUCCESS`
+* `request_pars` - (Optional) The extended request parameters. The JSON format is supported.
+* `enable_details` - (Optional) Default to `false`. Set it to `true` can output more details about resource attributes.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference

@@ -19,19 +19,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
+func TestAccAlicloudMSEEngineConfig_basic0(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_mse_engine_namespace.default"
+	resourceId := "alicloud_mse_engine_config.default"
 	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
-	ra := resourceAttrInit(resourceId, AlicloudMSEEngineNamespaceMap0)
+
+	ra := resourceAttrInit(resourceId, AlicloudMSEEngineConfigMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeMseEngineNamespace")
+	}, "DescribeMseEngineConfig")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc-mseenginenamespace%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMSEEngineNamespaceBasicDependence0)
+	name := fmt.Sprintf("tf-testacc-mseengineconfig%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudMSEEngineConfigBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,26 +43,53 @@ func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_id":         "${data.alicloud_mse_clusters.default.clusters.0.instance_id}",
-					"cluster_id":          "${data.alicloud_mse_clusters.default.clusters.0.cluster_id}",
-					"namespace_show_name": "${var.name}",
-					"namespace_id":        "${var.name}",
-					"accept_language":     "zh",
+					"instance_id":     "${data.alicloud_mse_clusters.tf.clusters.0.instance_id}",
+					"data_id":         "${var.name}",
+					"group":           "${var.name}",
+					"namespace_id":    "default",
+					"content":         "test",
+					"app_name":        "test",
+					"desc":            "test",
+					"type":            "text",
+					"accept_language": "zh",
+					"tags":            "",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_id":          CHECKSET,
-						"namespace_show_name": name,
+						"data_id":  name,
+						"group":    name,
+						"content":  "test",
+						"app_name": "test",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"namespace_show_name": "${var.name}_update",
+					"content": "test_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"namespace_show_name": name + "_update",
+						"content": "test_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"app_name": "test_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"app_name": "test_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"desc": "test_update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"desc": "test_update",
 					}),
 				),
 			},
@@ -69,36 +97,37 @@ func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"accept_language", "cluster_id"},
+				ImportStateVerifyIgnore: []string{"accept_language"},
 			},
 		},
 	})
 }
 
-var AlicloudMSEEngineNamespaceMap0 = map[string]string{}
+var AlicloudMSEEngineConfigMap0 = map[string]string{}
 
-func AlicloudMSEEngineNamespaceBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+func AlicloudMSEEngineConfigBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+ 		 default = "%s"
 }
 
-data "alicloud_mse_clusters" "default" {
-name_regex = "default"
-}
+	data "alicloud_mse_clusters" "tf" {
+		name_regex = "tf"
+	}
+
 `, name)
 }
 
-func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
+func TestUnitAlicloudMSEEngineConfig(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
-	dInit, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)
-	dExisted, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)
+	dInit, _ := schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(nil, nil)
+	dExisted, _ := schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"instance_id":         "CreateMseEngineNamespaceValue",
-		"namespace_show_name": "CreateMseEngineNamespaceValue",
-		"namespace_id":        "CreateMseEngineNamespaceValue",
-		"accept_language":     "CreateMseEngineNamespaceValue",
+		"instance_id":  "CreateMseEngineConfigValue",
+		"data_id":      "CreateMseEngineConfigValue",
+		"group":        "CreateMseEngineConfigValue",
+		"namespace_id": "CreateMseEngineConfigValue",
 	}
 	for key, value := range attributes {
 		err := dInit.Set(key, value)
@@ -120,12 +149,10 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	ReadMockResponse := map[string]interface{}{
 		"Data": []interface{}{
 			map[string]interface{}{
-				"Type":              0,
-				"Quota":             10000,
-				"ConfigCount":       0,
-				"NamespaceShowName": "CreateMseEngineNamespaceValue",
-				"Namespace":         "CreateMseEngineNamespaceValue",
-				"ServiceCount":      0,
+				"instance_id":  "CreateMseEngineConfigValue",
+				"data_id":      "CreateMseEngineConfigValue",
+				"group":        "CreateMseEngineConfigValue",
+				"namespace_id": "CreateMseEngineConfigValue",
 			},
 		},
 	}
@@ -139,7 +166,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 		}
 	}
 	notFoundResponseMock := func(errorCode string) (map[string]interface{}, error) {
-		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_mse_engine_namespace", errorCode))
+		return nil, GetNotFoundErrorFromString(GetNotFoundMessage("alicloud_mse_engine_config", errorCode))
 	}
 	successResponseMock := func(operationMockResponse map[string]interface{}) (map[string]interface{}, error) {
 		if len(operationMockResponse) > 0 {
@@ -156,7 +183,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMseEngineNamespaceCreate(dInit, rawClient)
+	err = resourceAlicloudMseEngineConfigCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -164,7 +191,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1 // a counter used to cover retry scenario; the same below
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "CreateEngineNamespace" {
+			if *action == "CreateEngineConfig" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -179,14 +206,14 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMseEngineNamespaceCreate(dInit, rawClient)
+		err := resourceAlicloudMseEngineConfigCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(dInit.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(dInit.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -206,27 +233,22 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMseEngineNamespaceUpdate(dExisted, rawClient)
+	err = resourceAlicloudMseEngineConfigUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
-		"namespace_show_name": "UpdateMseEngineNamespaceValue",
-		"accept_language":     "UpdateMseEngineNamespaceValue",
+		"Content":         "UpdateMseEngineConfigValue",
+		"accept_language": "UpdateMseEngineConfigValue",
 	}
-	diff, err := newInstanceDiff("alicloud_mse_engine_namespace", attributes, attributesDiff, dInit.State())
+	diff, err := newInstanceDiff("alicloud_mse_engine_config", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(dInit.State(), diff)
 	ReadMockResponseDiff = map[string]interface{}{
 		"Data": []interface{}{
 			map[string]interface{}{
-				"Type":              0,
-				"Quota":             10000,
-				"ConfigCount":       0,
-				"NamespaceShowName": "UpdateMseEngineNamespaceValue",
-				"Namespace":         "CreateMseEngineNamespaceValue",
-				"ServiceCount":      0,
+				"Content": "UpdateMseEngineConfigValue",
 			},
 		},
 	}
@@ -234,7 +256,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "UpdateEngineNamespace" {
+			if *action == "UpdateEngineConfig" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -248,14 +270,14 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMseEngineNamespaceUpdate(dExisted, rawClient)
+		err := resourceAlicloudMseEngineConfigUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
 			assert.NotNil(t, err)
 		default:
 			assert.Nil(t, err)
-			dCompare, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(dExisted.State(), nil)
+			dCompare, _ := schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(dExisted.State(), nil)
 			for key, value := range attributes {
 				_ = dCompare.Set(key, value)
 			}
@@ -267,16 +289,16 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	}
 
 	// Read
-	diff, err = newInstanceDiff("alicloud_mse_engine_namespace", attributes, attributesDiff, dInit.State())
+	diff, err = newInstanceDiff("alicloud_mse_engine_config", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil", "{}"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches = gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "ListEngineNamespaces" {
+			if *action == "ListEngineConfigs" {
 				switch errorCode {
 				case "{}":
 					return notFoundResponseMock(errorCode)
@@ -292,7 +314,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMseEngineNamespaceRead(dExisted, rawClient)
+		err := resourceAlicloudMseEngineConfigRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -311,20 +333,20 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudMseEngineNamespaceDelete(dExisted, rawClient)
+	err = resourceAlicloudMseEngineConfigDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
-	diff, err = newInstanceDiff("alicloud_mse_engine_namespace", attributes, attributesDiff, dInit.State())
+	diff, err = newInstanceDiff("alicloud_mse_engine_config", attributes, attributesDiff, dInit.State())
 	if err != nil {
 		t.Error(err)
 	}
-	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(dInit.State(), diff)
+	dExisted, _ = schema.InternalMap(p["alicloud_mse_engine_config"].Schema).Data(dInit.State(), diff)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
 	for index, errorCode := range errorCodes {
 		retryIndex := index - 1
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, action *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
-			if *action == "DeleteEngineNamespace" {
+			if *action == "DeleteEngineConfig" {
 				switch errorCode {
 				case "NonRetryableError":
 					return failedResponseMock(errorCode)
@@ -339,7 +361,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudMseEngineNamespaceDelete(dExisted, rawClient)
+		err := resourceAlicloudMseEngineConfigDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

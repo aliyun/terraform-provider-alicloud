@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudMseEngineNamespace() *schema.Resource {
+func resourceAlicloudMseEngineConfig() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudMseEngineNamespaceCreate,
-		Read:   resourceAlicloudMseEngineNamespaceRead,
-		Update: resourceAlicloudMseEngineNamespaceUpdate,
-		Delete: resourceAlicloudMseEngineNamespaceDelete,
+		Create: resourceAlicloudMseEngineConfigCreate,
+		Read:   resourceAlicloudMseEngineConfigRead,
+		Update: resourceAlicloudMseEngineConfigUpdate,
+		Delete: resourceAlicloudMseEngineConfigDelete,
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(1 * time.Minute),
 			Delete: schema.DefaultTimeout(1 * time.Minute),
@@ -38,27 +38,63 @@ func resourceAlicloudMseEngineNamespace() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
-			"cluster_id": {
+			"namespace_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				//Required: true,
+				ForceNew: true,
 			},
-			"namespace_id": {
+			"data_id": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"namespace_show_name": {
+			"group": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"app_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"tags": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"desc": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"content": {
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"beta_ips": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"md5": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"encrypted_data_key": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudMseEngineConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	action := "CreateEngineNamespace"
+	action := "CreateNacosConfig"
 	request := make(map[string]interface{})
 	conn, err := client.NewMseClient()
 	if err != nil {
@@ -67,13 +103,35 @@ func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}
+
 	request["InstanceId"] = d.Get("instance_id")
-	request["Id"] = d.Get("namespace_id")
-	request["Name"] = d.Get("namespace_show_name")
-	if v, ok := d.GetOk("cluster_id"); ok {
-		request["ClusterId"] = v
-		d.Set("cluster_id", v)
+	request["DataId"] = d.Get("data_id")
+	request["Group"] = d.Get("group")
+
+	if v, ok := d.GetOk("app_name"); ok {
+		request["AppName"] = v
 	}
+
+	if v, ok := d.GetOk("tags"); ok {
+		request["Tags"] = v
+	}
+	if v, ok := d.GetOk("desc"); ok {
+		request["Desc"] = v
+	}
+	if v, ok := d.GetOk("type"); ok {
+		request["Type"] = v
+	}
+	if v, ok := d.GetOk("content"); ok {
+		request["Content"] = v
+	}
+	if v, ok := d.GetOk("namespace_id"); ok {
+		request["NamespaceId"] = v
+	}
+
+	if v, ok := d.GetOk("beta_ips"); ok {
+		request["BetaIps"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -88,38 +146,58 @@ func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta inter
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_engine_namespace", action, AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_engine_config", action, AlibabaCloudSdkGoERROR)
 	}
 
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
-	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Id"]))
+	var namespaceId = request["NamespaceId"]
+	if namespaceId == nil {
+		namespaceId = ""
+	}
 
-	return resourceAlicloudMseEngineNamespaceRead(d, meta)
+	d.SetId(fmt.Sprint(request["InstanceId"], ":", namespaceId, ":", request["DataId"], ":", request["Group"]))
+
+	return resourceAlicloudMseEngineConfigRead(d, meta)
 }
-func resourceAlicloudMseEngineNamespaceRead(d *schema.ResourceData, meta interface{}) error {
+
+func resourceAlicloudMseEngineConfigRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	mseService := MseService{client}
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
-	}
-	object, err := mseService.DescribeMseEngineNamespace(d.Id())
+
+	object, err := mseService.DescribeMseEngineConfig(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_mse_engine_namespace mseService.DescribeMseEngineNamespace Failed!!! %s", err)
+			log.Printf("[DEBUG] Resource alicloud_mse_engine_config mseService.DescribeMseEngineConfig Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("namespace_id", object["Namespace"])
-	d.Set("instance_id", parts[0])
-	d.Set("namespace_show_name", object["NamespaceShowName"])
+
+	parts, err := ParseResourceId(d.Id(), 4)
+
+	err = d.Set("instance_id", parts[0])
+	if err != nil {
+		return err
+	}
+	d.Set("namespace_id", parts[1])
+	d.Set("app_name", object["AppName"])
+	d.Set("data_id", object["DataId"])
+	d.Set("group", object["Group"])
+	d.Set("type", object["Type"])
+	d.Set("tags", object["Tags"])
+	d.Set("md5", object["Md5"])
+	d.Set("content", object["Content"])
+	d.Set("desc", object["Desc"])
+	d.Set("encrypted_data_key", object["EncryptedDataKey"])
+	d.Set("id", object["Id"])
+	d.Set("beta_ips", object["BetaIps"])
+
 	return nil
 }
-func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudMseEngineConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	conn, err := client.NewMseClient()
 	if err != nil {
@@ -127,27 +205,34 @@ func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta inter
 	}
 	var response map[string]interface{}
 	update := false
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"InstanceId": parts[0],
-		"ClusterId":  parts[0],
-		"Id":         parts[1],
+		"InstanceId":  parts[0],
+		"NamespaceId": parts[1],
+		"DataId":      parts[2],
+		"Group":       parts[3],
 	}
 
-	if d.HasChange("namespace_show_name") {
+	if d.HasChanges("content", "app_name", "tags", "desc", "type", "md5", "beta_ips", "encrypted_data_key") {
 		update = true
-		if v, ok := d.GetOk("namespace_show_name"); ok {
-			request["Name"] = v
-		}
+		request["Content"] = d.Get("content")
+		request["AppName"] = d.Get("app_name")
+		request["Tags"] = d.Get("tags")
+		request["Desc"] = d.Get("desc")
+		request["Type"] = d.Get("type")
+		request["Md5"] = d.Get("md5")
+		request["BetaIps"] = d.Get("beta_ips")
+		request["EncryptedDataKey"] = d.Get("encrypted_data_key")
 	}
+
 	if update {
 		if v, ok := d.GetOk("accept_language"); ok {
 			request["AcceptLanguage"] = v
 		}
-		action := "UpdateEngineNamespace"
+		action := "UpdateNacosConfig"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -165,26 +250,26 @@ func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta inter
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 	}
-	return resourceAlicloudMseEngineNamespaceRead(d, meta)
+	return resourceAlicloudMseEngineConfigRead(d, meta)
 }
-func resourceAlicloudMseEngineNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAlicloudMseEngineConfigDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	action := "DeleteEngineNamespace"
+	action := "DeleteNacosConfig"
 	var response map[string]interface{}
 	conn, err := client.NewMseClient()
 	if err != nil {
 		return WrapError(err)
 	}
-	parts, err := ParseResourceId(d.Id(), 2)
+	parts, err := ParseResourceId(d.Id(), 4)
 	if err != nil {
 		return WrapError(err)
 	}
 	request := map[string]interface{}{
-		"Id":         parts[1],
-		"InstanceId": parts[0],
-		"ClusterId":  parts[0],
+		"InstanceId":  parts[0],
+		"NamespaceId": parts[1],
+		"DataId":      parts[2],
+		"Group":       parts[3],
 	}
-
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}

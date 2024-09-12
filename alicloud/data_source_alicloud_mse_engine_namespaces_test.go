@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -25,8 +24,8 @@ func TestAccAlicloudMseEngineNamespacesDataSource(t *testing.T) {
 			"ids.#":                            "1",
 			"namespaces.#":                     "1",
 			"namespaces.0.namespace_desc":      "",
-			"namespaces.0.namespace_show_name": fmt.Sprintf("tf-testAccEngineNamespace-%d", rand),
-			"namespaces.0.namespace_id":        fmt.Sprintf("tf-testAccEngineNamespace-%d", rand),
+			"namespaces.0.namespace_show_name": "public",
+			"namespaces.0.namespace_id":        "",
 			"namespaces.0.service_count":       CHECKSET,
 			"namespaces.0.quota":               CHECKSET,
 			"namespaces.0.type":                CHECKSET,
@@ -36,7 +35,7 @@ func TestAccAlicloudMseEngineNamespacesDataSource(t *testing.T) {
 	}
 	var fakeAlicloudMseEngineNamespacesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#": "0",
+			"ids.#": "2",
 		}
 	}
 	var alicloudMseEngineNamespacesCheckInfo = dataSourceAttr{
@@ -58,23 +57,24 @@ func testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand int, attrMap map
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
-	default = "tf-testAccEngineNamespace-%d"
-}
+	variable "name" {	
+		default = "tf-testAccEngineNamespace-%d"
+	}
 
-data "alicloud_mse_clusters" "default" {
-	name_regex = "default-NODELETING"
-}
-resource "alicloud_mse_engine_namespace" "default" {
-	cluster_id = data.alicloud_mse_clusters.default.clusters.0.cluster_id
-	namespace_show_name = var.name
-	namespace_id = var.name
-}
+	data "alicloud_mse_clusters" "tf" {
+	name_regex = "tf"
+	}
 
-data "alicloud_mse_engine_namespaces" "default" {	
-	cluster_id = data.alicloud_mse_clusters.default.clusters.0.cluster_id
-	%s
-}
-`, rand, strings.Join(pairs, " \n "))
+	resource "alicloud_mse_engine_namespace" "default" {
+		instance_id = data.alicloud_mse_clusters.tf.clusters.0.instance_id
+		namespace_show_name = var.name
+		namespace_id = var.name
+	}
+	
+	data "alicloud_mse_engine_namespaces" "default" {
+	   instance_id = data.alicloud_mse_clusters.tf.clusters.0.instance_id
+	}
+
+`, rand)
 	return config
 }

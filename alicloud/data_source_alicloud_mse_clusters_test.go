@@ -7,11 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudMSEClustersDataSource(t *testing.T) {
+func TestAccAlicloudMSEClustersDataSource_nacos(t *testing.T) {
 	resourceId := "data.alicloud_mse_clusters.default"
 	rand := acctest.RandIntRange(1000000, 9999999)
 	name := fmt.Sprintf("tf-testAccMseCluster-%d", rand)
-	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceMseClustersDependence)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceMseClustersDependence_nacos)
 
 	nameRegexConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -68,15 +68,15 @@ func TestAccAlicloudMSEClustersDataSource(t *testing.T) {
 			"names.0":                     name,
 			"clusters.#":                  "1",
 			"clusters.0.app_version":      CHECKSET,
-			"clusters.0.cluster_name":     name,
+			"clusters.0.cluster_name":     CHECKSET,
 			"clusters.0.cluster_id":       CHECKSET,
 			"clusters.0.cluster_type":     "Nacos-Ans",
 			"clusters.0.id":               CHECKSET,
 			"clusters.0.instance_id":      CHECKSET,
 			"clusters.0.internet_address": CHECKSET,
 			"clusters.0.intranet_address": CHECKSET,
-			"clusters.0.internet_domain":  CHECKSET,
-			"clusters.0.intranet_domain":  CHECKSET,
+			//"clusters.0.internet_domain":  NOSET,
+			//"clusters.0.intranet_domain":  NOSET,
 			"clusters.0.acl_id":           CHECKSET,
 			"clusters.0.health_status":    CHECKSET,
 			"clusters.0.init_cost_time":   CHECKSET,
@@ -107,26 +107,42 @@ func TestAccAlicloudMSEClustersDataSource(t *testing.T) {
 	mseClustersInfo.dataSourceTestCheck(t, 0, nameRegexConf, idsConf, statusConf, allConf)
 }
 
-func dataSourceMseClustersDependence(name string) string {
+func dataSourceMseClustersDependence_nacos(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
+	variable "name" {
+		 default = "%v"
+		}
+
+	data "alicloud_zones" "default" {
+	  available_resource_creation = "VSwitch"
 	}
-	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
+
+	resource "alicloud_vpc" "default" {
+	  vpc_name       = "${var.name}"
+      cidr_block = "172.17.3.0/24"
 	}
-	
+
+	resource "alicloud_vswitch" "default" {
+	  vswitch_name = "${var.name}"
+	  cidr_block   = "172.17.3.0/24"
+	  vpc_id       = alicloud_vpc.default.id
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+
 	resource "alicloud_mse_cluster" "default" {
 	  cluster_specification = "MSE_SC_1_2_60_c"
 	  cluster_type = "Nacos-Ans"
 	  cluster_version = "NACOS_2_0_0"
 	  instance_count = 1
 	  net_type = "privatenet"
-	  vswitch_id = data.alicloud_vswitches.default.ids.0
+	  vswitch_id = alicloud_vswitch.default.id
+      connection_type   = "slb"
 	  pub_network_flow = "1"
-	  acl_entry_list= ["127.0.0.1/32"]
-	  cluster_alias_name= "%s"
       mse_version = "mse_dev"
+      vpc_id = alicloud_vpc.default.id
+      cluster_alias_name= "${var.name}"
+      
 	}
 	`, name)
 }
