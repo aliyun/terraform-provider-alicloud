@@ -20,6 +20,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sgovernanceaccount%d", defaultRegionToTest, rand)
+	defaultDomainName := fmt.Sprintf("%s.onaliyun.com", name)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGovernanceAccountBasicDependence7372)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -37,6 +38,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 					"display_name":        name,
 					"account_name_prefix": name,
 					"folder_id":           "${data.alicloud_resource_manager_folders.default.ids.0}",
+					"default_domain_name": defaultDomainName,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -45,6 +47,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 						"display_name":        CHECKSET,
 						"account_name_prefix": CHECKSET,
 						"folder_id":           CHECKSET,
+						"default_domain_name": CHECKSET,
 					}),
 				),
 			},
@@ -52,7 +55,7 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_name_prefix", "display_name", "folder_id", "payer_account_id", "baseline_id"},
+				ImportStateVerifyIgnore: []string{"account_name_prefix", "display_name", "folder_id", "payer_account_id", "baseline_id", "default_domain_name"},
 			},
 		},
 	})
@@ -69,6 +72,7 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%sgovernanceaccount%d", defaultRegionToTest, rand)
+	defaultDomainName := fmt.Sprintf("%s.onaliyun.com", name)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudGovernanceAccountBasicDependence7372)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -85,6 +89,7 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 					"display_name":        name,
 					"account_name_prefix": name,
 					"folder_id":           "${data.alicloud_resource_manager_folders.default.ids.0}",
+					"default_domain_name": defaultDomainName,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -93,6 +98,7 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 						"display_name":        CHECKSET,
 						"account_name_prefix": CHECKSET,
 						"folder_id":           CHECKSET,
+						"default_domain_name": CHECKSET,
 					}),
 				),
 			},
@@ -110,7 +116,7 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"account_name_prefix", "display_name", "folder_id", "payer_account_id", "baseline_id"},
+				ImportStateVerifyIgnore: []string{"account_name_prefix", "display_name", "folder_id", "payer_account_id", "baseline_id", "default_domain_name"},
 			},
 		},
 	})

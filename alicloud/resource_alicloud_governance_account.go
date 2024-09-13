@@ -1,9 +1,10 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"time"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
@@ -53,6 +54,11 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"default_domain_name": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,49}[A-Za-z0-9_.].onaliyun.com$"), "The default_domain_name (with suffix) has a maximum length of 64 characters and must end with .onaliyun.com."),
+			},
 			"status": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -92,6 +98,19 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("payer_account_id"); ok {
 		request["PayerAccountUid"] = v
 	}
+
+	baselineItemsMaps := make([]interface{}, 0)
+	if v, ok := d.GetOk("default_domain_name"); ok {
+		baselineItemConfig := make(map[string]interface{})
+		baselineItemConfig["DefaultDomainName"] = v
+		config, _ := json.Marshal(baselineItemConfig)
+		baselineItem := make(map[string]interface{})
+		baselineItem["Config"] = string(config)
+		baselineItem["Name"] = "ACS-BP_ACCOUNT_FACTORY_RAM_DEFAULT_DOMAIN"
+		baselineItemsMaps = append(baselineItemsMaps, baselineItem)
+	}
+	request["BaselineItems"] = baselineItemsMaps
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
