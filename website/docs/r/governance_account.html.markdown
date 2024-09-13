@@ -84,6 +84,9 @@ The following arguments are supported:
 
   If the registration application is applied to an existing account, this parameter does not need to be filled in.
 * `payer_account_id` - (Optional) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
+* `default_domain_name` - (Optional, Available since v1.231.0) The domain name is used to qualify the login name of RAM users and RAM roles.
+
+  Format: \<AccountAlias>.onaliyun.com where \<AccountAlias> is the account alias, and the default value is the Aliyun account ID. The default domain name must end with the .onaliyun.com suffix. The maximum length of the default domain name (including suffix) is 64 characters. It can contain English letters, numbers, English periods (.) , dashes (-) and underscores (_).
 
 ## Attributes Reference
 
