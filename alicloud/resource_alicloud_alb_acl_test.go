@@ -109,7 +109,7 @@ func testSweepAlbAcl(region string) error {
 	return nil
 }
 
-func TestAccAlicloudALBAcl_basic0(t *testing.T) {
+func TestAccAliCloudALBAcl_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudALBAclMap0)
@@ -130,6 +130,12 @@ func TestAccAlicloudALBAcl_basic0(t *testing.T) {
 		Providers:     testAccProviders,
 		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"acl_name": "${var.name}",
@@ -380,7 +386,7 @@ func TestAccAlicloudALBAcl_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudALBAcl_basic1(t *testing.T) {
+func TestAccAliCloudALBAcl_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_acl.default"
 	ra := resourceAttrInit(resourceId, AlicloudALBAclMap0)

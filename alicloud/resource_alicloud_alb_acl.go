@@ -3,7 +3,6 @@ package alicloud
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -56,8 +55,7 @@ func resourceAlicloudAlbAcl() *schema.Resource {
 			},
 			"acl_name": {
 				Type:         schema.TypeString,
-				Required:     true,
-				ValidateFunc: validation.StringMatch(regexp.MustCompile(`^[a-zA-Z][A-Za-z0-9._-]{2,128}$`), "The name must be `2` to `128` characters in length, and can contain letters, digits, hyphens (-) and underscores (_). It must start with a letter."),
+				Optional:     true,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
