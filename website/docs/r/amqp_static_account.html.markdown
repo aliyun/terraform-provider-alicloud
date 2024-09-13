@@ -20,7 +20,7 @@ For information about Amqp Static Account and how to use it, see [What is Static
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_amqp_static_account&exampleId=d05ec641-0dfd-bc87-cea1-0f25162053609ef90642&activeTab=example&spm=docs.r.amqp_static_account.0.d05ec6410d&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_amqp_static_account&exampleId=919dcffb-0ea4-f6df-823a-d8cfd79ddce79a715064&activeTab=example&spm=docs.r.amqp_static_account.0.919dcffb0e&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

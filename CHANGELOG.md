@@ -1,26 +1,29 @@
-## 1.230.1 (Unreleased)
+## 1.231.0 (Unreleased)
+## 1.230.1 (September 13, 2024)
 
 ENHANCEMENTS:
 
-- resource/alicloud_ocean_base_instance: add new attribute cpu_arch, primary_instance and primary_region. [GH-7628]
-- resource/alicloud_ens_instance: add new attribute auto_release_time, data_disk.*, key_pair_name and spot_strategy. [GH-7635]
-- resource/alicloud_vpc_gateway_endpoint: add DiffSuppressFunc for attribute policy_document. [GH-7645]
-- resource/alicloud_sag_qos_policy: improve attribute name in create function. [GH-7646]
-- resource/alicloud_express_connect_physical_connection: Added the field period, pricing_cycle, order_id; Added the ForceNew for field port_type, redundant_physical_connection_id; Supported for new action ConfirmPhysicalConnection; Updated action EnablePhysicalConnection to CreatePhysicalConnectionOccupancyOrder to improve the update field status. [GH-7651]
-- resource/alicloud_ecs_launch_template: Added the field device. [GH-7652]
-- resource/alicloud_ddosbgp_ip: mark member_uid as computed. [GH-7653]
-- resource/alicloud_mongodb_instance: Added the field enable_backup_log, log_backup_retention_period. [GH-7656]
-- resource/alicloud_ga_endpoint_group: Added the field endpoint_protocol_version. [GH-7658]
-- resource/alicloud_cen_traffic_marking_policy: add new attribute traffic_marking_policy_id, traffic_match_rules; resource/alicloud_cen_transit_router_vpc_attachment: add new attribute force_delete, transit_router_vpc_attachment_options. [GH-7659]
-- resource/alicloud_polardb_cluster: improve add retry etc. [GH-7660]
-- resource/alicloud_vpc_ipv6_gateway: add retry code for delete operation. [GH-7663]
-- resource/alicloud_nlb_load_balancer: Improves diff calculation for sub attributes of zone_mappings. [GH-7665]
-- docs: improve the examples for amqp, cr, fc, service_mesh. [GH-7654]
-- testcase: improve the test for alicloud_instance; resource/alicloud_instance: improve DiffSuppressFunc for default value. [GH-7633]
+- resource/alicloud_ocean_base_instance: add new attribute cpu_arch, primary_instance and primary_region. ([#7628](https://github.com/aliyun/terraform-provider-alicloud/issues/7628))
+- resource/alicloud_ens_instance: add new attribute auto_release_time, data_disk.*, key_pair_name and spot_strategy. ([#7635](https://github.com/aliyun/terraform-provider-alicloud/issues/7635))
+- resource/alicloud_vpc_gateway_endpoint: add DiffSuppressFunc for attribute policy_document. ([#7645](https://github.com/aliyun/terraform-provider-alicloud/issues/7645))
+- resource/alicloud_sag_qos_policy: improve attribute name in create function. ([#7646](https://github.com/aliyun/terraform-provider-alicloud/issues/7646))
+- resource/alicloud_express_connect_physical_connection: Added the field period, pricing_cycle, order_id; Added the ForceNew for field port_type, redundant_physical_connection_id; Supported for new action ConfirmPhysicalConnection; Updated action EnablePhysicalConnection to CreatePhysicalConnectionOccupancyOrder to improve the update field status. ([#7651](https://github.com/aliyun/terraform-provider-alicloud/issues/7651))
+- resource/alicloud_ecs_launch_template: Added the field device. ([#7652](https://github.com/aliyun/terraform-provider-alicloud/issues/7652))
+- resource/alicloud_ddosbgp_ip: mark member_uid as computed. ([#7653](https://github.com/aliyun/terraform-provider-alicloud/issues/7653))
+- resource/alicloud_mongodb_instance: Added the field enable_backup_log, log_backup_retention_period. ([#7656](https://github.com/aliyun/terraform-provider-alicloud/issues/7656))
+- resource/alicloud_ga_endpoint_group: Added the field endpoint_protocol_version. ([#7658](https://github.com/aliyun/terraform-provider-alicloud/issues/7658))
+- resource/alicloud_cen_traffic_marking_policy: add new attribute traffic_marking_policy_id, traffic_match_rules; resource/alicloud_cen_transit_router_vpc_attachment: add new attribute force_delete, transit_router_vpc_attachment_options. ([#7659](https://github.com/aliyun/terraform-provider-alicloud/issues/7659))
+- resource/alicloud_polardb_cluster: improve add retry etc. ([#7660](https://github.com/aliyun/terraform-provider-alicloud/issues/7660))
+- resource/alicloud_vpc_ipv6_gateway: add retry code for delete operation. ([#7663](https://github.com/aliyun/terraform-provider-alicloud/issues/7663))
+- resource/alicloud_emrv2_cluster: Fixed increase emr cluster with auto renew. ([#7668](https://github.com/aliyun/terraform-provider-alicloud/issues/7668))
+- resource/alicloud_nlb_load_balancer: Improves diff calculation for sub attributes of zone_mappings. ([#7665](https://github.com/aliyun/terraform-provider-alicloud/issues/7665))
+- docs: improve the examples for amqp, cr, fc, service_mesh. ([#7654](https://github.com/aliyun/terraform-provider-alicloud/issues/7654))
+- docs: Improves description of nlb resources. ([#7666](https://github.com/aliyun/terraform-provider-alicloud/issues/7666))
+- testcase: improve the test for alicloud_instance; resource/alicloud_instance: improve DiffSuppressFunc for default value. ([#7633](https://github.com/aliyun/terraform-provider-alicloud/issues/7633))
 
 BUG FIXES:
 
-- resource/alicloud_nlb_server_group_server_attachment: fix bug while the attribute weight does not take effect when the value is zero. [GH-7662]
+- resource/alicloud_nlb_server_group_server_attachment: fix bug while the attribute weight does not take effect when the value is zero. ([#7662](https://github.com/aliyun/terraform-provider-alicloud/issues/7662))
 
 ## 1.230.0 (September 5, 2024)
 
