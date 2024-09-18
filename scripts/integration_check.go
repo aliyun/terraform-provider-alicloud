@@ -14,7 +14,7 @@ func main() {
 	invocationId := strings.Replace(ossObjectPath, "/", "_", -1)
 	log.Println("run log path:", ossObjectPath)
 	log.Println("trace id:", invocationId)
-	urlPrefix := "https://terraform-provider-alicloud-ct.oss-ap-southeast-1.aliyuncs.com"
+	urlPrefix := "https://terraform-provider-alicloud-ct-eu.oss-eu-central-1.aliyuncs.com"
 	runLogFileName := "terraform.run.log"
 	runResultFileName := "terraform.run.result.log"
 	runLogUrl := urlPrefix + "/" + ossObjectPath + "/" + runLogFileName
