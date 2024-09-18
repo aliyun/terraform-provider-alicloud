@@ -3713,12 +3713,10 @@ func TestAccAliCloudECSInstance_LaunchTemplate(t *testing.T) {
 	}
 	rc := resourceCheckInit(resourceId, &v, serviceFunc)
 	rac := resourceAttrCheckInit(rc, ra)
-
 	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAcc%sEcsInstanceLaunchTemplate%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceInstanceLaunchTemplateDependence)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -4306,63 +4304,63 @@ resource "alicloud_kms_key" "key" {
 
 func resourceInstanceLaunchTemplateDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-  	default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-data "alicloud_zones" "default" {
-  available_disk_category     = "cloud_efficiency"
-  available_resource_creation = "Instance"
-}
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
 
-data "alicloud_instance_types" "default" {
-  availability_zone = data.alicloud_zones.default.zones.0.id
-}
+	data "alicloud_images" "default" {
+  		most_recent = true
+  		owners      = "system"
+	}
 
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu"
-  most_recent = true
-  owners      = "system"
-}
+	data "alicloud_instance_types" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		image_id          = data.alicloud_images.default.images.0.id
+	}
 
-resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "10.4.0.0/16"
-}
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
 
-resource "alicloud_vswitch" "default" {
-  vpc_id     = alicloud_vpc.default.id
-  cidr_block = "10.4.0.0/24"
-  zone_id = data.alicloud_zones.default.zones.0.id
-}
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
 
-resource "alicloud_security_group" "default" {
-  name   = var.name
-  vpc_id = alicloud_vpc.default.id
-}
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
 
-resource "alicloud_ecs_launch_template" "default" {
-  launch_template_name          = var.name
-  image_id                      = data.alicloud_images.default.images.0.id
-  host_name                     = var.name
-  instance_charge_type          = "PostPaid"
-  instance_name                 = var.name
-  instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
-  internet_charge_type          = "PayByTraffic"
-  internet_max_bandwidth_in     = "5"
-  internet_max_bandwidth_out    = "0"
-  security_group_id             = alicloud_security_group.default.id
-  vswitch_id                    = alicloud_vswitch.default.id
-  vpc_id                        = alicloud_vpc.default.id
-  zone_id                       = data.alicloud_zones.default.zones.0.id
-  security_enhancement_strategy = "Active"
-  user_data                     = "I_am_user_data"
-
-  template_tags = {
-    Created = "tf"
-    For     = "example"
-  }
-}
+	resource "alicloud_ecs_launch_template" "default" {
+  		launch_template_name          = var.name
+  		image_id                      = data.alicloud_images.default.images.0.id
+  		host_name                     = "hostNameExample"
+  		instance_charge_type          = "PostPaid"
+  		instance_name                 = var.name
+  		instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
+  		internet_charge_type          = "PayByTraffic"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		security_group_id             = alicloud_security_group.default.id
+  		vswitch_id                    = alicloud_vswitch.default.id
+  		vpc_id                        = alicloud_vpc.default.id
+  		zone_id                       = data.alicloud_zones.default.zones.0.id
+  		security_enhancement_strategy = "Active"
+  		user_data                     = "I_am_user_data"
+  		template_tags = {
+    		Created = "tf"
+    		For     = "example"
+  		}
+	}
 `, name)
 }
 
