@@ -649,7 +649,7 @@ func resourceAliyunEssScalingGroupDelete(d *schema.ResourceData, meta interface{
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), request.GetActionName(), AlibabaCloudSdkGoERROR)
 	}
-	return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, Timeout5Minute))
+	return WrapError(essService.WaitForEssScalingGroup(d.Id(), Deleted, DefaultLongTimeout))
 }
 
 func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) (map[string]interface{}, error) {

@@ -450,7 +450,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
-	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	//checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -492,7 +492,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.tmpVs.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default3.id}",
 					"launch_template_version": "Default",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -508,7 +508,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateId(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default3.id}",
 					"launch_template_version": "Latest",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -529,7 +529,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
-	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	//checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -571,7 +571,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.tmpVs.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default3.id}",
 					"launch_template_version": "Default",
 					"launch_template_override": []map[string]string{{
 						"instance_type": "${data.alicloud_instance_types.default.instance_types.0.id}",
@@ -591,7 +591,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default3.id}",
 					"launch_template_version": "Latest",
 					"launch_template_override": []map[string]string{{
 						"instance_type":     "${data.alicloud_instance_types.default.instance_types.1.id}",
@@ -619,7 +619,7 @@ func TestAccAliClouddEssScalingGroup_withLaunchTemplateOverride(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default4.id}",
 					"launch_template_version": "Latest",
 					"launch_template_override": []map[string]string{{
 						"instance_type":     "${data.alicloud_instance_types.default.instance_types.0.id}",
@@ -652,7 +652,6 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
-	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size":                "0",
@@ -695,7 +694,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.tmpVs.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default3.id}",
 					"launch_template_version": "Default",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -712,7 +711,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default4.id}",
 					"launch_template_version": "Latest",
 					"alb_server_group": []map[string]string{{
 						"alb_server_group_id": "${alicloud_alb_server_group.default.0.id}",
@@ -741,7 +740,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default4.id}",
 					"launch_template_version": "Latest",
 					"alb_server_group": []map[string]string{{
 						"alb_server_group_id": "${alicloud_alb_server_group.default.0.id}",
@@ -776,7 +775,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default4.id}",
 					"launch_template_version": "Latest",
 					"alb_server_group":        REMOVEKEY,
 				}),
@@ -801,7 +800,7 @@ func TestAccAliClouddEssScalingGroup_withAlbServerGroup(t *testing.T) {
 					"vswitch_id":              "${alicloud_vswitch.default.id}",
 					"vswitch_ids":             []string{"${alicloud_vswitch.default.id}"},
 					"removal_policies":        []string{"OldestInstance", "NewestInstance"},
-					"launch_template_id":      "${alicloud_ecs_launch_template.default1.id}",
+					"launch_template_id":      "${alicloud_ecs_launch_template.default4.id}",
 					"launch_template_version": "Default",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2154,7 +2153,7 @@ func TestAccAliCloudEssScalingGroup_protected_instances(t *testing.T) {
 	rand := acctest.RandIntRange(10000, 999999)
 	var v ess.ScalingGroup
 	resourceId := "alicloud_ess_scaling_group.default"
-	checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
+	//checkoutSupportedRegions(t, true, connectivity.MetaTagSupportRegions)
 
 	basicMap := map[string]string{
 		"min_size": "0",
@@ -2363,19 +2362,31 @@ func resourceEssScalingAttachmentConfigDependence(name string) string {
 		default = "%s" 
 	}
 
+    data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		image_id = "${data.alicloud_images.default1.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.c6.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = true
 		active = true
 		enable = true
 	}
 
+
+
 	resource "alicloud_instance" "default" {
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		image_id = "${data.alicloud_images.default1.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.c6.instance_types.0.id}"
 		count = 1
 		security_groups = ["${alicloud_security_group.default.id}"]
 		internet_charge_type = "PayByTraffic"
@@ -2456,10 +2467,19 @@ func resourceEssScalingGroupInstance(name string) string {
   		availability_zone = "${data.alicloud_zones.default.zones.0.id}"
   		name = "${var.name}-bar"
 	}
-	
+	data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
 	resource "alicloud_instance" "default" {
-		image_id = "${data.alicloud_images.default.images.0.id}"
-		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
+		image_id = "${data.alicloud_images.default1.images.0.id}"
+		instance_type = "${data.alicloud_instance_types.c6.instance_types.0.id}"
 		security_groups = ["${alicloud_security_group.default1.id}"]
 		internet_charge_type = "PayByTraffic"
 		internet_max_bandwidth_out = "10"
@@ -2563,6 +2583,48 @@ func resourceEssScalingGroupTemplate(name string) string {
 	resource "alicloud_security_group" "default1" {
   		name   = var.name
   		vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	data "alicloud_images" "default3" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
+	resource "alicloud_ecs_launch_template" "default3" {
+  		launch_template_name = "tf-test3"
+  		image_id             =  data.alicloud_images.default3.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.c6.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}
+	
+	resource "alicloud_ecs_launch_template" "default4" {
+  		launch_template_name = "tf-test4"
+  		image_id             =  data.alicloud_images.default3.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.c6.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
 	}
 
 	resource "alicloud_ecs_launch_template" "default1" {
@@ -2670,6 +2732,48 @@ func resourceEssScalingGroupAlbServerGroup(name string) string {
 	resource "alicloud_security_group" "default1" {
   		name   = var.name
   		vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	data "alicloud_images" "default3" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
+	resource "alicloud_ecs_launch_template" "default3" {
+  		launch_template_name = "tf-test3"
+  		image_id             =  data.alicloud_images.default3.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.c6.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
+	}
+
+	resource "alicloud_ecs_launch_template" "default4" {
+  		launch_template_name = "tf-test4"
+  		image_id             =  data.alicloud_images.default3.images.0.id
+  		instance_charge_type = "PrePaid"
+  		instance_type        =  data.alicloud_instance_types.c6.instance_types.0.id
+  		internet_charge_type          = "PayByBandwidth"
+  		internet_max_bandwidth_in     = "5"
+  		internet_max_bandwidth_out    = "0"
+  		io_optimized                  = "optimized"
+  		network_type                  = "vpc"
+  		security_enhancement_strategy = "Active"
+  		spot_price_limit              = "5"
+  		spot_strategy                 = "SpotWithPriceLimit"
+  		security_group_id             = alicloud_security_group.default1.id
 	}
 
 	resource "alicloud_ecs_launch_template" "default1" {
