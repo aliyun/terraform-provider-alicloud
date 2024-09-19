@@ -4,8 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -21,12 +19,6 @@ func resourceAliyunRouteEntry() *schema.Resource {
 			State: schema.ImportStatePassthrough,
 		},
 		Schema: map[string]*schema.Schema{
-			"router_id": {
-				Type:       schema.TypeString,
-				Optional:   true,
-				Computed:   true,
-				Deprecated: "Attribute router_id has been deprecated and suggest removing it from your template.",
-			},
 			"route_table_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -51,7 +43,17 @@ func resourceAliyunRouteEntry() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringLenBetween(2, 128),
+				ValidateFunc: StringLenBetween(2, 128),
+			},
+			"description": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"router_id": {
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Attribute router_id has been deprecated and suggest removing it from your template.",
 			},
 		},
 	}
@@ -86,7 +88,14 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	request.NextHopType = nt
 	request.NextHopId = ni
 	request.ClientToken = buildClientToken(request.GetActionName())
-	request.RouteEntryName = d.Get("name").(string)
+
+	if v, ok := d.GetOk("name"); ok {
+		request.RouteEntryName = v.(string)
+	}
+
+	if v, ok := d.GetOk("description"); ok {
+		request.Description = v.(string)
+	}
 
 	// retry 10 min to create lots of entries concurrently
 	err = resource.Retry(10*time.Minute, func() *resource.RetryError {
@@ -128,6 +137,7 @@ func resourceAliyunRouteEntryCreate(d *schema.ResourceData, meta interface{}) er
 	if err := vpcService.WaitForRouteEntry(d.Id(), Available, DefaultTimeout); err != nil {
 		return WrapError(err)
 	}
+
 	return resourceAliyunRouteEntryRead(d, meta)
 }
 
@@ -147,12 +157,13 @@ func resourceAliyunRouteEntryRead(d *schema.ResourceData, meta interface{}) erro
 		return WrapError(err)
 	}
 
-	d.Set("router_id", parts[1])
 	d.Set("route_table_id", object.RouteTableId)
 	d.Set("destination_cidrblock", object.DestinationCidrBlock)
 	d.Set("nexthop_type", object.NextHopType)
 	d.Set("nexthop_id", object.InstanceId)
 	d.Set("name", object.RouteEntryName)
+	d.Set("description", object.Description)
+	d.Set("router_id", parts[1])
 
 	return nil
 }
