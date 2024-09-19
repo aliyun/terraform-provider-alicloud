@@ -147,6 +147,7 @@ The following arguments are supported:
 * `eip_instance_id` - (Optional, Available since v1.170.0) The ID of the elastic IP address (EIP).
 * `containers` - (Required, Set) The list of containers. See [`containers`](#containers) below.
 * `init_containers` - (Optional, Set) The list of initContainers. See [`init_containers`](#init_containers) below.
+* `dns_policy` - (Optional, ForceNew) The policy of DNS. Default value: `Default`. Valid values: `Default` and `None`.
 * `dns_config` - (Optional, Set) The structure of dnsConfig. See [`dns_config`](#dns_config) below.
 * `eci_security_context` - (Deprecated since 1.215.0, Optional, ForceNew, Set) The security context of the container group. See [`eci_security_context`](#eci_security_context) below.
 * `security_context` - (Optional, ForceNew, Set, Available since v1.215.0) The security context of the container group. See [`security_context`](#security_context) below.

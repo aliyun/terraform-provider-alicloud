@@ -1523,6 +1523,79 @@ func TestAccAliCloudEciContainerGroup_basic8(t *testing.T) {
 						"resource_group_id":    CHECKSET,
 						"cpu":                  "2",
 						"memory":               "4",
+						"dns_policy":           "Default",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"image_registry_credential", "eip_bandwidth", "auto_create_eip", "termination_grace_period_seconds", "containers.0.lifecycle_pre_stop_handler_exec", "auto_match_image_cache", "containers.0.security_context.0.privileged"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudEciContainerGroup_basic9(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_eci_container_group.default"
+	ra := resourceAttrInit(resourceId, AlicloudEciContainerGroupMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EciService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEciContainerGroup")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sAlicloudEciContainerGroup%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEciContainerGroupBasicDependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"container_group_name": strings.ToLower(name),
+					"security_group_id":    "${alicloud_security_group.default.id}",
+					"vswitch_id":           "${alicloud_vswitch.default.id}",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
+					"containers": []map[string]interface{}{
+						{
+							"name":              strings.ToLower(name),
+							"image":             fmt.Sprintf("registry-vpc.%s.aliyuncs.com/eci_open/nginx:alpine", defaultRegionToTest),
+							"image_pull_policy": "IfNotPresent",
+							"commands":          []string{"/bin/sh"},
+							"args":              []string{"-c", "sleep 9999"},
+							"cpu":               "1",
+							"memory":            "2",
+							"gpu":               "0",
+						},
+					},
+					"auto_match_image_cache": "false",
+					"cpu":                    "2",
+					"memory":                 "4",
+					"dns_policy":             "None",
+					"dns_config": []map[string]interface{}{
+						{
+							"name_servers": []string{"1.1.1.1"},
+							"searches":     []string{"aliyun.com"},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"container_group_name": strings.ToLower(name),
+						"containers.#":         "1",
+						"security_group_id":    CHECKSET,
+						"vswitch_id":           CHECKSET,
+						"resource_group_id":    CHECKSET,
+						"cpu":                  "2",
+						"memory":               "4",
+						"dns_policy":           "None",
 					}),
 				),
 			},
