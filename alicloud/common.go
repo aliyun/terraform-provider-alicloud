@@ -913,7 +913,12 @@ func addDebug(action, content interface{}, requestInfo ...interface{}) {
 
 			requestContent := ""
 			if len(requestInfo) > 1 {
-				requestContent = fmt.Sprintf("%#v", requestInfo[1])
+				switch requestInfo[1].(type) {
+				case *tea.SDKError:
+					requestContent = fmt.Sprintf("%#v", requestInfo[1].(*tea.SDKError).Error())
+				default:
+					requestContent = fmt.Sprintf("%#v", requestInfo[1])
+				}
 			}
 
 			if len(requestInfo) == 1 {

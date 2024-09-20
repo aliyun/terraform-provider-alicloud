@@ -183,7 +183,7 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 		response, err = conn.Execute(genXmlParam("GetBucketHttpsConfig", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
-
+		addDebug(action, response, request, err)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -191,7 +191,6 @@ func (s *OssServiceV2) DescribeOssBucketHttpsConfig(id string) (object map[strin
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
