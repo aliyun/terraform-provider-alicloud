@@ -1367,7 +1367,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_ecs_disk":                                              resourceAlicloudEcsDisk(),
 			"alicloud_ecs_disk_attachment":                                   resourceAlicloudEcsDiskAttachment(),
 			"alicloud_ecs_auto_snapshot_policy_attachment":                   resourceAlicloudEcsAutoSnapshotPolicyAttachment(),
-			"alicloud_ddoscoo_domain_resource":                               resourceAlicloudDdoscooDomainResource(),
+			"alicloud_ddoscoo_domain_resource":                               resourceAliCloudDdosCooDomainResource(),
 			"alicloud_ddoscoo_port":                                          resourceAliCloudDdosCooPort(),
 			"alicloud_slb_load_balancer":                                     resourceAlicloudSlbLoadBalancer(),
 			"alicloud_ecs_network_interface":                                 resourceAliCloudEcsNetworkInterface(),
