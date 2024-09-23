@@ -14,11 +14,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
+func TestAccAliCloudECSImageCopyBasic(t *testing.T) {
 	var v ecs.Image
-
 	resourceId := "alicloud_image_copy.default"
-	// multi provideris
+	ra := resourceAttrInit(resourceId, testAccCopyImageCheckMap)
 	var providers []*schema.Provider
 	providerFactories := map[string]terraform.ResourceProviderFactory{
 		"alicloud": func() (terraform.ResourceProvider, error) {
@@ -27,9 +26,8 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 			return p, nil
 		},
 	}
-	ra := resourceAttrInit(resourceId, testAccCopyImageCheckMap)
-	rand := acctest.RandIntRange(1000, 9999)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000, 9999)
 	name := fmt.Sprintf("tf-testAccEcsCopyImageConfigBasic%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceImageCopyBasicConfigDependence)
 	resource.Test(t, resource.TestCase{
@@ -38,7 +36,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 		},
 		IDRefreshName:     resourceId,
 		ProviderFactories: providerFactories,
-		CheckDestroy:      testAccCheckImageDestroyWithProviders(&providers),
+		CheckDestroy:      testAccCheckECSImageCopyDestroyWithProviders(&providers),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -53,7 +51,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
+					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"image_name":   name,
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
@@ -68,7 +66,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 					"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescriptionChange", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
+					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"description": fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescriptionChange", rand),
 					}),
@@ -79,7 +77,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 					"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
+					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"image_name": fmt.Sprintf("tf-testAccEcsImageConfigBasic%dchange", rand),
 					}),
@@ -93,7 +91,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
+					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"tags.%":       "2",
 						"tags.Created": "TF1",
@@ -111,7 +109,7 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckImageExistsWithProviders(resourceId, &v, &providers),
+					testAccCheckECSImageCopyExistsWithProviders(resourceId, &v, &providers),
 					testAccCheck(map[string]string{
 						"description":  fmt.Sprintf("tf-testAccEcsImageConfigBasic%ddescription", rand),
 						"image_name":   name,
@@ -125,7 +123,46 @@ func TestAccAlicloudECSImageCopyBasic(t *testing.T) {
 	})
 }
 
-func testAccCheckImageExistsWithProviders(n string, image *ecs.Image, providers *[]*schema.Provider) resource.TestCheckFunc {
+func testAccCheckECSImageCopyDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		for _, provider := range *providers {
+			if provider.Meta() == nil {
+				continue
+			}
+
+			if err := testAccCheckECSImageCopyDestroyWithProvider(s, provider); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckECSImageCopyDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
+	client := provider.Meta().(*connectivity.AliyunClient)
+	ecsService := EcsService{client}
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "alicloud_image_copy" {
+			continue
+		}
+
+		resp, err := ecsService.DescribeImageById(rs.Primary.ID)
+		if err != nil {
+			if NotFoundError(err) {
+				continue
+			}
+			return err
+		} else {
+			return fmt.Errorf("Image Copy still exist, ID %s ", resp.ImageId)
+		}
+	}
+
+	return nil
+}
+
+func testAccCheckECSImageCopyExistsWithProviders(n string, image *ecs.Image, providers *[]*schema.Provider) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
@@ -133,8 +170,9 @@ func testAccCheckImageExistsWithProviders(n string, image *ecs.Image, providers 
 		}
 
 		if rs.Primary.ID == "" {
-			return fmt.Errorf("No image  ID is set")
+			return fmt.Errorf("No alicloud_image_copy ID is set")
 		}
+
 		for _, provider := range *providers {
 			if provider.Meta() == nil {
 				continue
@@ -152,104 +190,80 @@ func testAccCheckImageExistsWithProviders(n string, image *ecs.Image, providers 
 			}
 
 			*image = resp
+
 			return nil
 		}
-		return fmt.Errorf("image not found")
+
+		return fmt.Errorf("alicloud_image_copy not found")
 	}
-}
-
-func testAccCheckImageDestroyWithProviders(providers *[]*schema.Provider) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		for _, provider := range *providers {
-			if provider.Meta() == nil {
-				continue
-			}
-			if err := testAccCheckImageDestroyWithProvider(s, provider); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-func testAccCheckImageDestroyWithProvider(s *terraform.State, provider *schema.Provider) error {
-
-	client := provider.Meta().(*connectivity.AliyunClient)
-	ecsService := EcsService{client}
-
-	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "alicloud_copy_image" {
-			continue
-		}
-
-		resp, err := ecsService.DescribeImageById(rs.Primary.ID)
-		if err != nil {
-			if NotFoundError(err) {
-				continue
-			}
-			return err
-		} else {
-			return fmt.Errorf("image still exist,  ID %s ", resp.ImageId)
-		}
-	}
-
-	return nil
 }
 
 var testAccCopyImageCheckMap = map[string]string{}
 
 func resourceImageCopyBasicConfigDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-	default = "%s"
-}
-provider "alicloud" {
-  alias = "sh"
-  region = "cn-shanghai"
-}
-provider "alicloud" {
-  alias = "hz"
-  region = "cn-hangzhou"
-}
-data "alicloud_instance_types" "default" {
-  instance_type_family = "ecs.sn1ne"
-}
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  owners      = "system"
-}
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  vswitch_name      = var.name
-}
+	variable "name" {
+  		default = "%s"
+	}
 
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-resource "alicloud_security_group" "default" {
-  name   = "${var.name}"
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-resource "alicloud_instance" "default" {
-  image_id = "${data.alicloud_images.default.ids[0]}"
-  instance_type = "${data.alicloud_instance_types.default.ids[0]}"
-  security_groups = "${[alicloud_security_group.default.id]}"
-  vswitch_id = local.vswitch_id
-  instance_name = "${var.name}"
-}
-resource "alicloud_image" "default" {
-  instance_id = "${alicloud_instance.default.id}"
-  image_name        = "${var.name}"
-}
+	provider "alicloud" {
+  		alias  = "sh"
+  		region = "cn-shanghai"
+	}
+
+	provider "alicloud" {
+  		alias  = "hz"
+  		region = "cn-hangzhou"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_disk_category     = "cloud_efficiency"
+  		available_resource_creation = "VSwitch"
+	}
+
+	data "alicloud_images" "default" {
+  		most_recent = true
+  		owners      = "system"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		image_id          = data.alicloud_images.default.images.0.id
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                   = data.alicloud_images.default.images.0.id
+  		instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups            = alicloud_security_group.default.*.id
+  		internet_charge_type       = "PayByTraffic"
+  		internet_max_bandwidth_out = "10"
+  		availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		instance_charge_type       = "PostPaid"
+  		system_disk_category       = "cloud_efficiency"
+  		vswitch_id                 = alicloud_vswitch.default.id
+  		instance_name              = var.name
+	}
+
+	resource "alicloud_image" "default" {
+  		instance_id = alicloud_instance.default.id
+  		image_name  = var.name
+	}
 `, name)
 }
