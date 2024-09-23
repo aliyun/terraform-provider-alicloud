@@ -826,14 +826,17 @@ func (s *AlbService) AlbRuleStateRefreshFunc(id, direction string, failStates []
 
 func (s *AlbService) DescribeAlbHealthCheckTemplate(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetHealthCheckTemplateAttribute"
+
 	conn, err := s.client.NewAlbClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetHealthCheckTemplateAttribute"
+
 	request := map[string]interface{}{
 		"HealthCheckTemplateId": id,
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -849,17 +852,21 @@ func (s *AlbService) DescribeAlbHealthCheckTemplate(id string) (object map[strin
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"ResourceNotFound.HealthCheckTemplate"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ALB:HealthCheckTemplate", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 

@@ -37,7 +37,7 @@ func init() {
 func testSweepAlbHealthCheckTemplate(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -123,10 +123,10 @@ func testSweepAlbHealthCheckTemplate(region string) error {
 	return nil
 }
 
-func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
+func TestAccAliCloudAlbHealthCheckTemplate_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_health_check_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBHealthCheckTemplateMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAlbHealthCheckTemplateMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbHealthCheckTemplate")
@@ -134,11 +134,10 @@ func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbhealthchecktemplate%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBHealthCheckTemplateBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbHealthCheckTemplateBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -147,32 +146,40 @@ func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_template_name": name,
-					"health_check_protocol":      "HTTP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_template_name": name,
-						"health_check_protocol":      "HTTP",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_template_name": name + "Update",
+					"health_check_template_name": name + "测试",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_template_name": name + "Update",
+						"health_check_template_name": name + "测试",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_host": "www.test.com",
+					"health_check_connect_port": "8080",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_host": "www.test.com",
+						"health_check_connect_port": "8080",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host": "tf-testAcc.com",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host": "tf-testAcc.com",
 					}),
 				),
 			},
@@ -208,51 +215,203 @@ func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_path": "/test",
+					"health_check_path": "/tf-testAcc",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_path": "/test",
+						"health_check_path": "/tf-testAcc",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_timeout": "50",
+					"health_check_timeout": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_timeout": "50",
+						"health_check_timeout": "60",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"healthy_threshold": "5",
+					"healthy_threshold": "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"healthy_threshold": "5",
+						"healthy_threshold": "6",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"unhealthy_threshold": "5",
+					"unhealthy_threshold": "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"unhealthy_threshold": "5",
+						"unhealthy_threshold": "6",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_codes": []string{"http_3xx", "http_4xx"},
+					"health_check_codes": []string{"http_2xx", "http_3xx", "http_4xx"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_codes.#": "2",
+						"health_check_codes.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host":         REMOVEKEY,
+					"health_check_http_version": REMOVEKEY,
+					"health_check_method":       REMOVEKEY,
+					"health_check_path":         REMOVEKEY,
+					"health_check_protocol":     "TCP",
+					"health_check_codes":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host":         REMOVEKEY,
+						"health_check_http_version": REMOVEKEY,
+						"health_check_method":       REMOVEKEY,
+						"health_check_path":         REMOVEKEY,
+						"health_check_protocol":     "TCP",
+						"health_check_codes.#":      "0",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host":         "tf-testAcc.com",
+					"health_check_http_version": "HTTP1.1",
+					"health_check_method":       "GET",
+					"health_check_path":         "/tf-testAcc",
+					"health_check_protocol":     "HTTP",
+					"health_check_codes":        []string{"http_2xx", "http_3xx", "http_4xx"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host":         "tf-testAcc.com",
+						"health_check_http_version": "HTTP1.1",
+						"health_check_method":       "GET",
+						"health_check_path":         "/tf-testAcc",
+						"health_check_protocol":     "HTTP",
+						"health_check_codes.#":      "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAlbHealthCheckTemplate_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_health_check_template.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlbHealthCheckTemplateMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbHealthCheckTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbhealthchecktemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbHealthCheckTemplateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_template_name": name,
+					"health_check_connect_port":  "8080",
+					"health_check_host":          "tf-testAcc.com",
+					"health_check_http_version":  "HTTP1.0",
+					"health_check_interval":      "20",
+					"health_check_method":        "GET",
+					"health_check_path":          "/tf-testAcc",
+					"health_check_protocol":      "HTTP",
+					"health_check_timeout":       "60",
+					"healthy_threshold":          "6",
+					"unhealthy_threshold":        "6",
+					"health_check_codes":         []string{"http_2xx", "http_3xx", "http_4xx"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_template_name": name,
+						"health_check_connect_port":  "8080",
+						"health_check_host":          "tf-testAcc.com",
+						"health_check_http_version":  "HTTP1.0",
+						"health_check_interval":      "20",
+						"health_check_method":        "GET",
+						"health_check_path":          "/tf-testAcc",
+						"health_check_protocol":      "HTTP",
+						"health_check_timeout":       "60",
+						"healthy_threshold":          "6",
+						"unhealthy_threshold":        "6",
+						"health_check_codes.#":       "3",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudAlbHealthCheckTemplate_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_alb_health_check_template.default"
+	ra := resourceAttrInit(resourceId, AliCloudAlbHealthCheckTemplateMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeAlbHealthCheckTemplate")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%salbhealthchecktemplate%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbHealthCheckTemplateBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_template_name": name,
+					"health_check_protocol":      "TCP",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_template_name": name,
+						"health_check_protocol":      "TCP",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_template_name": name + "测试",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_template_name": name + "测试",
 					}),
 				),
 			},
@@ -268,59 +427,97 @@ func TestAccAlicloudALBHealthCheckTemplate_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_protocol": "TCP",
+					"health_check_interval": "20",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_protocol": "TCP",
+						"health_check_interval": "20",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"health_check_template_name": name,
-					"health_check_protocol":      "HTTP",
-					"health_check_connect_port":  "0",
-					"health_check_host":          "www.test2.com",
-					"health_check_http_version":  "HTTP1.1",
-					"health_check_interval":      "2",
-					"health_check_method":        "HEAD",
-					"health_check_path":          "/test2",
-					"health_check_timeout":       "5",
-					"healthy_threshold":          "3",
-					"unhealthy_threshold":        "3",
-					"health_check_codes":         []string{"http_2xx", "http_5xx"},
+					"health_check_timeout": "60",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"health_check_template_name": name,
-						"health_check_protocol":      "HTTP",
-						"health_check_connect_port":  "0",
-						"health_check_host":          "www.test2.com",
-						"health_check_http_version":  "HTTP1.1",
-						"health_check_interval":      "2",
-						"health_check_method":        "HEAD",
-						"health_check_path":          "/test2",
-						"health_check_timeout":       "5",
-						"healthy_threshold":          "3",
-						"unhealthy_threshold":        "3",
-						"health_check_codes.#":       "2",
+						"health_check_timeout": "60",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"healthy_threshold": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"healthy_threshold": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"unhealthy_threshold": "6",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"unhealthy_threshold": "6",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host":         "tf-testAcc.com",
+					"health_check_http_version": "HTTP1.1",
+					"health_check_method":       "GET",
+					"health_check_path":         "/tf-testAcc",
+					"health_check_protocol":     "HTTP",
+					"health_check_codes":        []string{"http_2xx", "http_3xx", "http_4xx"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host":         "tf-testAcc.com",
+						"health_check_http_version": "HTTP1.1",
+						"health_check_method":       "GET",
+						"health_check_path":         "/tf-testAcc",
+						"health_check_protocol":     "HTTP",
+						"health_check_codes.#":      "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"health_check_host":         REMOVEKEY,
+					"health_check_http_version": REMOVEKEY,
+					"health_check_method":       REMOVEKEY,
+					"health_check_path":         REMOVEKEY,
+					"health_check_protocol":     "TCP",
+					"health_check_codes":        REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"health_check_host":         REMOVEKEY,
+						"health_check_http_version": REMOVEKEY,
+						"health_check_method":       REMOVEKEY,
+						"health_check_path":         REMOVEKEY,
+						"health_check_protocol":     "TCP",
+						"health_check_codes.#":      "0",
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func TestAccAlicloudALBHealthCheckTemplate_basic1(t *testing.T) {
+func TestAccAliCloudAlbHealthCheckTemplate_basic1_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_alb_health_check_template.default"
-	ra := resourceAttrInit(resourceId, AlicloudALBHealthCheckTemplateMap0)
+	ra := resourceAttrInit(resourceId, AliCloudAlbHealthCheckTemplateMap1)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &AlbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeAlbHealthCheckTemplate")
@@ -328,11 +525,10 @@ func TestAccAlicloudALBHealthCheckTemplate_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%salbhealthchecktemplate%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudALBHealthCheckTemplateBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudAlbHealthCheckTemplateBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.AlbSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -341,57 +537,66 @@ func TestAccAlicloudALBHealthCheckTemplate_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"health_check_template_name": name,
-					"health_check_protocol":      "HTTP",
-					"dry_run":                    "false",
-					"health_check_codes":         []string{"http_3xx", "http_4xx"},
 					"health_check_connect_port":  "8080",
-					"health_check_host":          "www.test.com",
-					"health_check_http_version":  "HTTP1.0",
-					"health_check_interval":      "2",
-					"health_check_method":        "GET",
-					"health_check_path":          "/test",
-					"health_check_timeout":       "50",
-					"healthy_threshold":          "5",
-					"unhealthy_threshold":        "5",
+					"health_check_interval":      "20",
+					"health_check_protocol":      "TCP",
+					"health_check_timeout":       "60",
+					"healthy_threshold":          "6",
+					"unhealthy_threshold":        "6",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"health_check_template_name": name,
-						"health_check_protocol":      "HTTP",
-						"dry_run":                    "false",
-						"health_check_codes.#":       "2",
 						"health_check_connect_port":  "8080",
-						"health_check_host":          "www.test.com",
-						"health_check_http_version":  "HTTP1.0",
-						"health_check_interval":      "2",
-						"health_check_method":        "GET",
-						"health_check_path":          "/test",
-						"health_check_timeout":       "50",
-						"healthy_threshold":          "5",
-						"unhealthy_threshold":        "5",
+						"health_check_interval":      "20",
+						"health_check_protocol":      "TCP",
+						"health_check_timeout":       "60",
+						"healthy_threshold":          "6",
+						"unhealthy_threshold":        "6",
 					}),
 				),
 			},
 			{
 				ResourceName:      resourceId,
 				ImportState:       true,
-				ImportStateVerify: true, ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-var AlicloudALBHealthCheckTemplateMap0 = map[string]string{}
-
-func AlicloudALBHealthCheckTemplateBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+var AliCloudAlbHealthCheckTemplateMap0 = map[string]string{
+	"health_check_connect_port": CHECKSET,
+	"health_check_host":         CHECKSET,
+	"health_check_http_version": CHECKSET,
+	"health_check_interval":     CHECKSET,
+	"health_check_method":       CHECKSET,
+	"health_check_path":         CHECKSET,
+	"health_check_protocol":     CHECKSET,
+	"health_check_timeout":      CHECKSET,
+	"healthy_threshold":         CHECKSET,
+	"unhealthy_threshold":       CHECKSET,
+	"health_check_codes.#":      CHECKSET,
 }
+
+var AliCloudAlbHealthCheckTemplateMap1 = map[string]string{
+	"health_check_connect_port": CHECKSET,
+	"health_check_interval":     CHECKSET,
+	"health_check_protocol":     CHECKSET,
+	"health_check_timeout":      CHECKSET,
+	"healthy_threshold":         CHECKSET,
+	"unhealthy_threshold":       CHECKSET,
+}
+
+func AliCloudAlbHealthCheckTemplateBasicDependence0(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
+func TestUnitAliCloudAlbHealthCheckTemplate(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_alb_health_check_template"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_alb_health_check_template"].Schema).Data(nil, nil)
@@ -487,7 +692,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateCreate(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -504,7 +709,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateCreate(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -521,7 +726,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateCreate(dCreate, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -539,7 +744,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudAlbHealthCheckTemplateUpdate(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -578,7 +783,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateUpdate(resourceData1, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -614,7 +819,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateUpdate(resourceData1, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -629,7 +834,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateDelete(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -646,7 +851,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateDelete(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -663,7 +868,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateDelete(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateDelete(d, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -680,7 +885,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["DeleteNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateDelete(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateDelete(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -697,7 +902,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateRead(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -713,7 +918,7 @@ func TestUnitAlicloudALBHealthCheckTemplate(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudAlbHealthCheckTemplateRead(d, rawClient)
+		err := resourceAliCloudAlbHealthCheckTemplateRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.NotNil(t, err)
 	})
