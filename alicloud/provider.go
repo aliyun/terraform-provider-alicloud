@@ -1441,7 +1441,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_direct_mail_domain":                                    resourceAlicloudDirectMailDomain(),
 			"alicloud_bastionhost_host_group":                                resourceAlicloudBastionhostHostGroup(),
 			"alicloud_vpc_dhcp_options_set":                                  resourceAliCloudVpcDhcpOptionsSet(),
-			"alicloud_alb_health_check_template":                             resourceAlicloudAlbHealthCheckTemplate(),
+			"alicloud_alb_health_check_template":                             resourceAliCloudAlbHealthCheckTemplate(),
 			"alicloud_cdn_real_time_log_delivery":                            resourceAlicloudCdnRealTimeLogDelivery(),
 			"alicloud_click_house_account":                                   resourceAlicloudClickHouseAccount(),
 			"alicloud_selectdb_db_cluster":                                   resourceAlicloudSelectDBDbCluster(),
