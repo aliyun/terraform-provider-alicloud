@@ -112,6 +112,8 @@ The plan_config supports the following:
 * `pause` - (Optional, Set) Pause instance plan config. See [`pause`](#plan_config-pause) below.
 * `scale_in` - (Optional, Set) Scale In instance plan config. See [`scale_in`](#plan_config-scale_in) below.
 * `scale_out` - (Optional, Set) Scale out instance plan config. See [`scale_out`](#plan_config-scale_out) below.
+* `scale_up` - (Optional, Set, Available since v1.231.0) Scale up instance plan config. See [`scale_up`](#plan_config-scale_up) below.
+* `scale_down` - (Optional, Set, Available since v1.231.0) Scale down instance plan config. See [`scale_down`](#plan_config-scale_down) below.
 
 ### `plan_config-resume`
 
@@ -143,12 +145,41 @@ The scale_out supports the following:
 * `execute_time` - (Optional) The executed time of the Plan.
 * `plan_cron_time` - (Optional) The Cron Time of the plan.
 
+### `plan_config-scale_up`
+
+The scale_up supports the following:
+
+* `instance_spec` - (Optional) The specification of segment nodes of the Plan.
+* `execute_time` - (Optional) The executed time of the Plan.
+* `plan_cron_time` - (Optional) The Cron Time of the plan.
+
+### `plan_config-scale_down`
+
+The scale_down supports the following:
+
+* `instance_spec` - (Optional) The specification of segment nodes of the Plan.
+* `execute_time` - (Optional) The executed time of the Plan.
+* `plan_cron_time` - (Optional) The Cron Time of the plan.
+
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of DB Instance Plan. It formats as `<db_instance_id>:<plan_id>`.
 * `plan_id` - The ID of the plan.
+* `plan_config` - The execution information of the plan. Each element contains the following attributes:
+  * `pause` - Pause instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
+  * `resume` - Resume instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
+  * `scale_out` - Scale out instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
+  * `scale_in` - Scale in instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
+  * `scale_up` - Scale up instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
+  * `scale_down` - Scale down instance plan config.
+    * `plan_task_status` - (Available since v1.231.0) The status of the plan task.
 
 ## Timeouts
 
