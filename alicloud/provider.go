@@ -866,6 +866,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_gpdb_db_instance_ip_array":                            resourceAliCloudGpdbDBInstanceIPArray(),
 			"alicloud_quotas_template_service":                              resourceAliCloudQuotasTemplateService(),
 			"alicloud_fcv3_vpc_binding":                                     resourceAliCloudFcv3VpcBinding(),
 			"alicloud_fcv3_layer_version":                                   resourceAliCloudFcv3LayerVersion(),
@@ -876,6 +877,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gpdb_hadoop_data_source":                              resourceAliCloudGpdbHadoopDataSource(),
 			"alicloud_gpdb_jdbc_data_source":                                resourceAliCloudGpdbJdbcDataSource(),
 			"alicloud_fcv3_provision_config":                                resourceAliCloudFcv3ProvisionConfig(),
+			"alicloud_gpdb_streaming_job":                                   resourceAliCloudGpdbStreamingJob(),
 			"alicloud_data_works_project":                                   resourceAliCloudDataWorksProject(),
 			"alicloud_fcv3_function_version":                                resourceAliCloudFcv3FunctionVersion(),
 			"alicloud_governance_account":                                   resourceAliCloudGovernanceAccount(),
