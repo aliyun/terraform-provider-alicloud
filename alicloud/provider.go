@@ -1723,7 +1723,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_multicast_domain_association":       resourceAliCloudCenTransitRouterMulticastDomainAssociation(),
 			"alicloud_threat_detection_honeypot_preset":                      resourceAlicloudThreatDetectionHoneypotPreset(),
 			"alicloud_service_catalog_provisioned_product":                   resourceAlicloudServiceCatalogProvisionedProduct(),
-			"alicloud_vpc_peer_connection_accepter":                          resourceAlicloudVpcPeerConnectionAccepter(),
+			"alicloud_vpc_peer_connection_accepter":                          resourceAliCloudVpcPeerPeerConnectionAccepter(),
 			"alicloud_ebs_dedicated_block_storage_cluster":                   resourceAlicloudEbsDedicatedBlockStorageCluster(),
 			"alicloud_ecs_elasticity_assurance":                              resourceAlicloudEcsElasticityAssurance(),
 			"alicloud_express_connect_grant_rule_to_cen":                     resourceAlicloudExpressConnectGrantRuleToCen(),
