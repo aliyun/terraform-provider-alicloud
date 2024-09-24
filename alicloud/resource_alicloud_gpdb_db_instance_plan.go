@@ -39,7 +39,7 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"PauseResume", "Resize"}, false),
+				ValidateFunc: StringInSlice([]string{"PauseResume", "Resize", "ModifySpec"}, false),
 			},
 			"plan_schedule_type": {
 				Type:         schema.TypeString,
@@ -69,7 +69,6 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 			"plan_config": {
 				Type:     schema.TypeList,
 				Required: true,
-				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"resume": {
@@ -86,6 +85,10 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 									"plan_cron_time": {
 										Type:     schema.TypeString,
 										Optional: true,
+									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
 									},
 								},
 							},
@@ -104,6 +107,10 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 									"plan_cron_time": {
 										Type:     schema.TypeString,
 										Optional: true,
+									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
 									},
 								},
 							},
@@ -127,6 +134,10 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
 								},
 							},
 						},
@@ -148,6 +159,62 @@ func resourceAliCloudGpdbDbInstancePlan() *schema.Resource {
 									"plan_cron_time": {
 										Type:     schema.TypeString,
 										Optional: true,
+									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"scale_up": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_spec": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"execute_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"plan_cron_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
+									},
+								},
+							},
+						},
+						"scale_down": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"instance_spec": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"execute_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"plan_cron_time": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+									"plan_task_status": {
+										Type:     schema.TypeString,
+										Computed: true,
 									},
 								},
 							},
@@ -271,6 +338,48 @@ func resourceAliCloudGpdbDbInstancePlanCreate(d *schema.ResourceData, meta inter
 
 			planConfigMap["scaleOut"] = scaleOutMap
 		}
+
+		if scaleUp, ok := planConfigArg["scale_up"]; ok && len(scaleUp.([]interface{})) > 0 {
+			scaleUpMap := map[string]interface{}{}
+			for _, scaleUpList := range scaleUp.([]interface{}) {
+				scaleUpArg := scaleUpList.(map[string]interface{})
+
+				if instanceSpec, ok := scaleUpArg["instance_spec"]; ok {
+					scaleUpMap["instanceSpec"] = instanceSpec
+				}
+
+				if executeTime, ok := scaleUpArg["execute_time"]; ok {
+					scaleUpMap["executeTime"] = executeTime
+				}
+
+				if planCronTime, ok := scaleUpArg["plan_cron_time"]; ok {
+					scaleUpMap["planCronTime"] = planCronTime
+				}
+			}
+
+			planConfigMap["scaleUp"] = scaleUpMap
+		}
+
+		if scaleDown, ok := planConfigArg["scale_down"]; ok && len(scaleDown.([]interface{})) > 0 {
+			scaleDownMap := map[string]interface{}{}
+			for _, scaleDownList := range scaleDown.([]interface{}) {
+				scaleDownArg := scaleDownList.(map[string]interface{})
+
+				if instanceSpec, ok := scaleDownArg["instance_spec"]; ok {
+					scaleDownMap["instanceSpec"] = instanceSpec
+				}
+
+				if executeTime, ok := scaleDownArg["execute_time"]; ok {
+					scaleDownMap["executeTime"] = executeTime
+				}
+
+				if planCronTime, ok := scaleDownArg["plan_cron_time"]; ok {
+					scaleDownMap["planCronTime"] = planCronTime
+				}
+			}
+
+			planConfigMap["scaleDown"] = scaleDownMap
+		}
 	}
 
 	planConfigJson, err := convertMaptoJsonString(planConfigMap)
@@ -356,6 +465,10 @@ func resourceAliCloudGpdbDbInstancePlanRead(d *schema.ResourceData, meta interfa
 				resumeMap["plan_cron_time"] = planCronTime
 			}
 
+			if planTaskStatus, ok := resumeArg["planTaskStatus"]; ok {
+				resumeMap["plan_task_status"] = planTaskStatus
+			}
+
 			resumeMaps = append(resumeMaps, resumeMap)
 
 			planConfigMap["resume"] = resumeMaps
@@ -372,6 +485,10 @@ func resourceAliCloudGpdbDbInstancePlanRead(d *schema.ResourceData, meta interfa
 
 			if planCronTime, ok := pauseArg["planCronTime"]; ok {
 				pauseMap["plan_cron_time"] = planCronTime
+			}
+
+			if planTaskStatus, ok := pauseArg["planTaskStatus"]; ok {
+				pauseArg["plan_task_status"] = planTaskStatus
 			}
 
 			pauseMaps = append(pauseMaps, pauseMap)
@@ -396,6 +513,10 @@ func resourceAliCloudGpdbDbInstancePlanRead(d *schema.ResourceData, meta interfa
 				scaleInMap["plan_cron_time"] = planCronTime
 			}
 
+			if planTaskStatus, ok := scaleInArg["planTaskStatus"]; ok {
+				scaleInArg["plan_task_status"] = planTaskStatus
+			}
+
 			scaleInMaps = append(scaleInMaps, scaleInMap)
 
 			planConfigMap["scale_in"] = scaleInMaps
@@ -418,9 +539,65 @@ func resourceAliCloudGpdbDbInstancePlanRead(d *schema.ResourceData, meta interfa
 				scaleOutMap["plan_cron_time"] = planCronTime
 			}
 
+			if planTaskStatus, ok := scaleOutArg["planTaskStatus"]; ok {
+				scaleOutArg["plan_task_status"] = planTaskStatus
+			}
+
 			scaleOutMaps = append(scaleOutMaps, scaleOutMap)
 
 			planConfigMap["scale_out"] = scaleOutMaps
+		}
+
+		if scaleUp, ok := planConfigArg["scaleUp"]; ok {
+			scaleUpMaps := make([]map[string]interface{}, 0)
+			scaleUpArg := scaleUp.(map[string]interface{})
+			scaleUpMap := map[string]interface{}{}
+
+			if instanceSpec, ok := scaleUpArg["instanceSpec"]; ok {
+				scaleUpMap["instance_spec"] = instanceSpec
+			}
+
+			if executeTime, ok := scaleUpArg["executeTime"]; ok {
+				scaleUpMap["execute_time"] = executeTime
+			}
+
+			if planCronTime, ok := scaleUpArg["planCronTime"]; ok {
+				scaleUpMap["plan_cron_time"] = planCronTime
+			}
+
+			if planTaskStatus, ok := scaleUpArg["planTaskStatus"]; ok {
+				scaleUpArg["plan_task_status"] = planTaskStatus
+			}
+
+			scaleUpMaps = append(scaleUpMaps, scaleUpMap)
+
+			planConfigMap["scale_up"] = scaleUpMaps
+		}
+
+		if scaleDown, ok := planConfigArg["scaleDown"]; ok {
+			scaleDownMaps := make([]map[string]interface{}, 0)
+			scaleDownArg := scaleDown.(map[string]interface{})
+			scaleDownMap := map[string]interface{}{}
+
+			if instanceSpec, ok := scaleDownArg["instanceSpec"]; ok {
+				scaleDownMap["instance_spec"] = instanceSpec
+			}
+
+			if executeTime, ok := scaleDownArg["executeTime"]; ok {
+				scaleDownMap["execute_time"] = executeTime
+			}
+
+			if planCronTime, ok := scaleDownArg["planCronTime"]; ok {
+				scaleDownMap["plan_cron_time"] = planCronTime
+			}
+
+			if planTaskStatus, ok := scaleDownArg["planTaskStatus"]; ok {
+				scaleDownArg["plan_task_status"] = planTaskStatus
+			}
+
+			scaleDownMaps = append(scaleDownMaps, scaleDownMap)
+
+			planConfigMap["scale_down"] = scaleDownMaps
 		}
 
 		planConfigMaps = append(planConfigMaps, planConfigMap)
@@ -556,6 +733,48 @@ func resourceAliCloudGpdbDbInstancePlanUpdate(d *schema.ResourceData, meta inter
 			}
 
 			planConfigMap["scaleOut"] = scaleOutMap
+		}
+
+		if scaleUp, ok := planConfigArg["scale_up"]; ok && len(scaleUp.([]interface{})) > 0 {
+			scaleUpMap := map[string]interface{}{}
+			for _, scaleUpList := range scaleUp.([]interface{}) {
+				scaleUpArg := scaleUpList.(map[string]interface{})
+
+				if instanceSpec, ok := scaleUpArg["instance_spec"]; ok {
+					scaleUpMap["instanceSpec"] = instanceSpec
+				}
+
+				if executeTime, ok := scaleUpArg["execute_time"]; ok {
+					scaleUpMap["executeTime"] = executeTime
+				}
+
+				if planCronTime, ok := scaleUpArg["plan_cron_time"]; ok {
+					scaleUpMap["planCronTime"] = planCronTime
+				}
+			}
+
+			planConfigMap["scaleUp"] = scaleUpMap
+		}
+
+		if scaleDown, ok := planConfigArg["scale_down"]; ok && len(scaleDown.([]interface{})) > 0 {
+			scaleDownMap := map[string]interface{}{}
+			for _, scaleDownList := range scaleDown.([]interface{}) {
+				scaleDownArg := scaleDownList.(map[string]interface{})
+
+				if instanceSpec, ok := scaleDownArg["instance_spec"]; ok {
+					scaleDownMap["instanceSpec"] = instanceSpec
+				}
+
+				if executeTime, ok := scaleDownArg["execute_time"]; ok {
+					scaleDownMap["executeTime"] = executeTime
+				}
+
+				if planCronTime, ok := scaleDownArg["plan_cron_time"]; ok {
+					scaleDownMap["planCronTime"] = planCronTime
+				}
+			}
+
+			planConfigMap["scaleDown"] = scaleDownMap
 		}
 	}
 

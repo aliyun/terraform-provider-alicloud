@@ -152,6 +152,20 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
 					"vswitch_id":            "${local.vswitch_id}",
 					"create_sample_data":    `false`,
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "optimizer",
+							"value": "on",
+						},
+						{
+							"name":  "rds_master_mode",
+							"value": "single",
+						},
+						{
+							"name":  "statement_timeout",
+							"value": "10800000",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -172,6 +186,7 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 						"storage_size":          "50",
 						"vpc_id":                CHECKSET,
 						"vswitch_id":            CHECKSET,
+						"parameters.#":          "3",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.For":              "acceptance test",
@@ -296,6 +311,29 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "optimizer",
+							"value": "off",
+						},
+						{
+							"name":  "rds_master_mode",
+							"value": "single",
+						},
+						{
+							"name":  "statement_timeout",
+							"value": "11800000",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"parameters.#": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"seg_node_num": "8",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -358,6 +396,20 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 							"security_ip_list":   "10.0.0.1,11.0.0.1",
 						},
 					},
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "optimizer",
+							"value": "on",
+						},
+						{
+							"name":  "rds_master_mode",
+							"value": "single",
+						},
+						{
+							"name":  "statement_timeout",
+							"value": "12800000",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF2",
 						"For":     "acceptance test2",
@@ -373,6 +425,7 @@ func TestAccAliCloudGPDBDBInstance_basic(t *testing.T) {
 						"maintain_start_time": CHECKSET,
 						"maintain_end_time":   CHECKSET,
 						"ip_whitelist.#":      "3",
+						"parameters.#":        "3",
 						"tags.%":              "2",
 						"tags.Created":        "TF2",
 						"tags.For":            "acceptance test2",
@@ -434,6 +487,20 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 							"security_ip_list": "127.0.0.1",
 						},
 					},
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "optimizer",
+							"value": "on",
+						},
+						{
+							"name":  "rds_master_mode",
+							"value": "single",
+						},
+						{
+							"name":  "statement_timeout",
+							"value": "10800000",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -454,6 +521,7 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 						"storage_size":          "50",
 						"vpc_id":                CHECKSET,
 						"vswitch_id":            CHECKSET,
+						"parameters.#":          "3",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.For":              "acceptance test",
@@ -474,7 +542,7 @@ func TestAccAliCloudGPDBDBInstancePrepaid(t *testing.T) {
 func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_gpdb_instance.default"
-	checkoutSupportedRegions(t, true, connectivity.GPDBServerlessSupportRegions)
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
 	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &GpdbService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -511,6 +579,20 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 							"security_ip_list": "127.0.0.1",
 						},
 					},
+					"parameters": []map[string]interface{}{
+						{
+							"name":  "optimizer",
+							"value": "off",
+						},
+						{
+							"name":  "rds_master_mode",
+							"value": "single",
+						},
+						{
+							"name":  "statement_timeout",
+							"value": "11800000",
+						},
+					},
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -530,6 +612,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 						"vpc_id":                CHECKSET,
 						"vswitch_id":            CHECKSET,
 						"ip_whitelist.#":        "1",
+						"parameters.#":          "3",
 						"tags.%":                "2",
 						"tags.Created":          "TF",
 						"tags.For":              "acceptance test",
@@ -548,6 +631,7 @@ func TestAccAliCloudGPDBDBInstanceServerless(t *testing.T) {
 
 func TestAccAliCloudGPDBDBInstance_basic1(t *testing.T) {
 	var v map[string]interface{}
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
 	resourceId := "alicloud_gpdb_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudGPDBDBInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
@@ -782,14 +866,31 @@ func AliCloudGPDBDBInstanceBasicDependence2(name string) string {
   		vswitch_name = var.name
 	}
 
+	locals {
+  		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	}
+
+	resource "alicloud_kms_instance" "default" {
+	  	product_version = "3"
+	  	vpc_id          = data.alicloud_vpcs.default.ids.0
+		zone_ids 		= [
+			data.alicloud_gpdb_zones.default.ids.0,
+			data.alicloud_gpdb_zones.default.ids.1
+		]
+	  	vswitch_ids = [
+			local.vswitch_id
+	  	]
+	  	vpc_num    = "1"
+	  	key_num    = "1000"
+	  	secret_num = "0"
+	  	spec       = "1000"
+	}
+
 	resource "alicloud_kms_key" "key" {
   		pending_window_in_days = "7"
   		key_state              = "Enabled"
   		description            = var.name
-	}
-
-	locals {
-  		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+		dkms_instance_id	   = alicloud_kms_instance.default.id
 	}
 `, name)
 }

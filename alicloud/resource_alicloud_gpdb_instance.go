@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"reflect"
@@ -252,6 +253,44 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field `private_ip_address` has been deprecated from provider version 1.213.0.",
+			},
+			"parameters": {
+				Type: schema.TypeSet,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"default_value": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"is_changeable_config": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"force_restart_instance": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"optional_range": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"parameter_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
+				Set:      parameterToHash,
+				Optional: true,
+				Computed: true,
 			},
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -526,6 +565,28 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := resourceManagementModeObject["ResourceManagementMode"]; ok {
 		d.Set("resource_management_mode", v)
+	}
+
+	parameterObject, err := gpdbService.DescribeParameters(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+	if parameterList, ok := parameterObject["Parameters"].([]interface{}); ok && parameterList != nil {
+		parameterListMaps := make([]map[string]interface{}, 0)
+		for _, parameterListItem := range parameterList {
+			if parameterListValueItemMap, ok := parameterListItem.(map[string]interface{}); ok {
+				parameterListMap := map[string]interface{}{}
+				parameterListMap["name"] = parameterListValueItemMap["ParameterName"]
+				parameterListMap["value"] = parameterListValueItemMap["CurrentValue"]
+				parameterListMap["default_value"] = parameterListValueItemMap["ParameterValue"]
+				parameterListMap["is_changeable_config"] = parameterListValueItemMap["IsChangeableConfig"]
+				parameterListMap["force_restart_instance"] = parameterListValueItemMap["ForceRestartInstance"]
+				parameterListMap["optional_range"] = parameterListValueItemMap["OptionalRange"]
+				parameterListMap["parameter_description"] = parameterListValueItemMap["ParameterDescription"]
+				parameterListMaps = append(parameterListMaps, parameterListMap)
+			}
+		}
+		d.Set("parameters", parameterListMaps)
 	}
 
 	return nil
@@ -989,6 +1050,38 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		d.SetPartial("vector_configuration_status")
 	}
 
+	if d.HasChange("parameters") {
+		action := "ModifyParameters"
+		request, err = getModifyParametersRequest(d)
+		if err != nil {
+			return WrapError(err)
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("parameters")
+	}
+
 	update = false
 	modifyMasterSpec := map[string]interface{}{
 		"DBInstanceId": d.Id(),
@@ -1109,6 +1202,29 @@ func resourceAliCloudGpdbDbInstanceDelete(d *schema.ResourceData, meta interface
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 	return nil
+}
+
+func getModifyParametersRequest(d *schema.ResourceData) (map[string]interface{}, error) {
+	request := map[string]interface{}{
+		"DBInstanceId": d.Id(),
+	}
+	o, n := d.GetChange("parameters")
+	os, ns := o.(*schema.Set), n.(*schema.Set)
+	add := ns.Difference(os).List()
+	config := make(map[string]string)
+	if len(add) > 0 {
+		for _, i := range add {
+			key := i.(map[string]interface{})["name"].(string)
+			value := i.(map[string]interface{})["value"].(string)
+			config[key] = value
+		}
+	}
+	configJson, err := json.Marshal(config)
+	if err != nil {
+		return nil, err
+	}
+	request["Parameters"] = string(configJson)
+	return request, nil
 }
 
 func convertGpdbDbInstancePaymentTypeRequest(source interface{}) interface{} {
