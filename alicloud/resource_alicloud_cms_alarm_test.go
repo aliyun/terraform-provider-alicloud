@@ -238,7 +238,7 @@ func TestAccAliCloudCmsAlarm_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": ">",
+							"comparison_operator": "==",
 							"statistics":          "Maximum",
 							"threshold":           "35",
 							"times":               "2",
@@ -365,7 +365,7 @@ func TestAccAliCloudCmsAlarm_basic0_twin(t *testing.T) {
 					},
 					"escalations_warn": []map[string]interface{}{
 						{
-							"comparison_operator": "GreaterThanYesterday",
+							"comparison_operator": "==",
 							"statistics":          "Average",
 							"threshold":           "30",
 							"times":               "5",
@@ -964,7 +964,7 @@ func TestAccAliCloudCmsAlarm_basic2_twin(t *testing.T) {
 							"expression_list": []map[string]interface{}{
 								{
 									"metric_name":         "cpu_total",
-									"comparison_operator": ">",
+									"comparison_operator": "==",
 									"statistics":          "Maximum",
 									"threshold":           "50",
 									"period":              "2",
@@ -1030,10 +1030,9 @@ func TestAccAliCloudCmsAlarm_basic3(t *testing.T) {
 					"contact_groups": []string{"${alicloud_cms_monitor_group.default.id}"},
 					"escalations_critical": []map[string]interface{}{
 						{
-							"comparison_operator": "LessThanYesterday",
-							"statistics":          "Average",
-							"threshold":           "90",
-							"times":               "1",
+							"statistics": "Average",
+							"threshold":  "90",
+							"times":      "1",
 						},
 					},
 				}),
@@ -1277,7 +1276,7 @@ func TestAccAliCloudCmsAlarm_basic3_twin(t *testing.T) {
 					},
 					"escalations_info": []map[string]interface{}{
 						{
-							"comparison_operator": ">",
+							"comparison_operator": "==",
 							"statistics":          "Minimum",
 							"threshold":           "20",
 							"times":               "3",

@@ -16,8 +16,8 @@ const (
 	MoreThanOrEqual = ">="
 	LessThan        = "<"
 	LessThanOrEqual = "<="
-	Equal           = "=="
 	NotEqual        = "!="
+	Equal           = "=="
 )
 
 const (

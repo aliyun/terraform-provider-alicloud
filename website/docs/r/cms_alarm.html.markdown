@@ -136,7 +136,7 @@ The following arguments are supported:
 
 The escalations_critical supports the following:
 
-* `comparison_operator` - (Optional) Critical level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.225.0, `comparison_operator` cannot be set to `==`.
+* `comparison_operator` - (Optional) Critical level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Critical level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Critical level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Critical level alarm retry times. Default value: `3`.
@@ -145,7 +145,7 @@ The escalations_critical supports the following:
 
 The escalations_info supports the following:
 
-* `comparison_operator` - (Optional) Info level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.225.0, `comparison_operator` cannot be set to `==`.
+* `comparison_operator` - (Optional) Info level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Info level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Info level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Info level alarm retry times. Default value: `3`.
@@ -154,7 +154,7 @@ The escalations_info supports the following:
 
 The escalations_warn supports the following:
 
-* `comparison_operator` - (Optional) Warn level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.225.0, `comparison_operator` cannot be set to `==`.
+* `comparison_operator` - (Optional) Warn level alarm comparison operator. Default value: `>`. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) Warn level alarm statistics method. It must be consistent with that defined for metrics. For more information, see [How to use it](https://cms.console.aliyun.com/metric-meta/acs_ecs_dashboard/ecs).
 * `threshold` - (Optional) Warn level alarm threshold value, which must be a numeric value currently.
 * `times` - (Optional, Int) Warn level alarm retry times. Default value: `3`.
@@ -194,7 +194,7 @@ The composite_expression supports the following:
 The expression_list supports the following:
 
 * `metric_name` - (Optional) The metric that is used to monitor the cloud service.
-* `comparison_operator` - (Optional) The operator that is used to compare the metric value with the threshold. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`.
+* `comparison_operator` - (Optional) The operator that is used to compare the metric value with the threshold. Valid values: `>`, `>=`, `<`, `<=`, `!=`, `==`, `GreaterThanYesterday`, `LessThanYesterday`, `GreaterThanLastWeek`, `LessThanLastWeek`, `GreaterThanLastPeriod`, `LessThanLastPeriod`. **NOTE:** From version 1.231.0, `comparison_operator` can be set to `==`.
 * `statistics` - (Optional) The statistical method of the metric.
 * `threshold` - (Optional) The alert threshold.
 * `period` - (Optional) The aggregation period of the metric. Unit: seconds.

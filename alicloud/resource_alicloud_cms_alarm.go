@@ -98,7 +98,7 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 							Optional: true,
 							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
-								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Equal,
 								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
 								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
@@ -132,7 +132,7 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 							Optional: true,
 							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
-								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Equal,
 								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
 								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
@@ -166,7 +166,7 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 							Optional: true,
 							Default:  MoreThan,
 							ValidateFunc: StringInSlice([]string{
-								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+								MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Equal,
 								"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
 								"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 							}, false),
@@ -280,7 +280,7 @@ func resourceAliCloudCmsAlarm() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 										ValidateFunc: StringInSlice([]string{
-											MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual,
+											MoreThan, MoreThanOrEqual, LessThan, LessThanOrEqual, NotEqual, Equal,
 											"GreaterThanYesterday", "LessThanYesterday", "GreaterThanLastWeek",
 											"LessThanLastWeek", "GreaterThanLastPeriod", "LessThanLastPeriod",
 										}, false),
@@ -1050,6 +1050,8 @@ func convertCmsAlarmComparisonOperator(comparisonOperator string) string {
 		return "LessThanOrEqualToThreshold"
 	case NotEqual:
 		return "NotEqualToThreshold"
+	case Equal:
+		return "EqualToThreshold"
 	case "GreaterThanThreshold":
 		return MoreThan
 	case "GreaterThanOrEqualToThreshold":
@@ -1060,6 +1062,8 @@ func convertCmsAlarmComparisonOperator(comparisonOperator string) string {
 		return LessThanOrEqual
 	case "NotEqualToThreshold":
 		return NotEqual
+	case "EqualToThreshold":
+		return Equal
 	default:
 		return comparisonOperator
 	}
