@@ -10,15 +10,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccAliCloudEssAlbServerGroupAttachment_basic(t *testing.T) {
+func TestAccAliCloudEssServerGroupAttachment_basic(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
-	resourceId := "alicloud_ess_alb_server_group_attachment.default"
+	resourceId := "alicloud_ess_server_group_attachment.default"
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testAccEssScalingGroupAlbServerGroup-%d", rand)
+	name := fmt.Sprintf("tf-testAccEssScalingGroupServerGroup-%d", rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupAlbServerGroup)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -28,16 +28,17 @@ func TestAccAliCloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssAlbServerGroupsDestroy,
+		CheckDestroy: testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"depends_on":          []string{"alicloud_ess_scaling_configuration.default"},
-					"force_attach":        true,
-					"weight":              "100",
-					"port":                "80",
-					"alb_server_group_id": "${alicloud_alb_server_group.default.id}",
-					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"depends_on":       []string{"alicloud_ess_scaling_configuration.default"},
+					"force_attach":     true,
+					"weight":           "100",
+					"port":             "80",
+					"type":             "ALB",
+					"server_group_id":  "${alicloud_alb_server_group.default.id}",
+					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -55,16 +56,16 @@ func TestAccAliCloudEssAlbServerGroupAttachment_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
+func TestAccAliCloudEssServerGroupAttachment_nonForceAttach(t *testing.T) {
 	rand := acctest.RandIntRange(1000, 999999)
-	resourceId := "alicloud_ess_alb_server_group_attachment.default"
+	resourceId := "alicloud_ess_server_group_attachment.default"
 	basicMap := map[string]string{
 		"scaling_group_id": CHECKSET,
 	}
 	ra := resourceAttrInit(resourceId, basicMap)
 	testAccCheck := ra.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEssScalingGroupAlbServerGroup-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupAlbServerGroupNotForceAttach)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, testAccEssScalingGroupServerGroupNotForceAttach)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -73,16 +74,17 @@ func TestAccAliCloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
 		IDRefreshName: resourceId,
 
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckEssAlbServerGroupsDestroy,
+		CheckDestroy: testAccCheckEssServerGroupsDestroy,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"depends_on":          []string{"alicloud_ess_scaling_configuration.default"},
-					"force_attach":        false,
-					"weight":              "11",
-					"port":                "22",
-					"alb_server_group_id": "${alicloud_alb_server_group.default.id}",
-					"scaling_group_id":    "${alicloud_ess_scaling_group.default.id}",
+					"depends_on":       []string{"alicloud_ess_scaling_configuration.default"},
+					"force_attach":     false,
+					"weight":           "11",
+					"port":             "22",
+					"type":             "ALB",
+					"server_group_id":  "${alicloud_alb_server_group.default.id}",
+					"scaling_group_id": "${alicloud_ess_scaling_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -100,7 +102,7 @@ func TestAccAliCloudEssAlbServerGroupAttachment_nonForceAttach(t *testing.T) {
 	})
 }
 
-func testAccCheckEssAlbServerGroupsDestroy(s *terraform.State) error {
+func testAccCheckEssServerGroupsDestroy(s *terraform.State) error {
 	client := testAccProvider.Meta().(*connectivity.AliyunClient)
 	essService := EssService{client}
 	for _, rs := range s.RootModule().Resources {
@@ -116,13 +118,13 @@ func testAccCheckEssAlbServerGroupsDestroy(s *terraform.State) error {
 			return WrapError(err)
 		}
 
-		if len(scalingGroup.AlbServerGroups.AlbServerGroup) > 0 {
+		if len(scalingGroup.ServerGroups.ServerGroup) > 0 {
 			return WrapError(fmt.Errorf("There are still attached alb server groups."))
 		}
 	}
 	return nil
 }
-func testAccEssScalingGroupAlbServerGroupNotForceAttach(name string) string {
+func testAccEssScalingGroupServerGroupNotForceAttach(name string) string {
 	return fmt.Sprintf(`
 	%s
 	variable "name" {
@@ -137,11 +139,19 @@ func testAccEssScalingGroupAlbServerGroupNotForceAttach(name string) string {
 	  removal_policies = ["OldestInstance"]
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
-
+	data "alicloud_images" "default2" {
+		name_regex  = "^aliyun"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
-		image_id = data.alicloud_images.default.images[0].id
-		instance_type = "ecs.f1-c8f1.2xlarge"
+		image_id = data.alicloud_images.default2.images[0].id
+		instance_type = data.alicloud_instance_types.c6.instance_types[0].id
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
 		active = true
@@ -179,10 +189,20 @@ func testAccEssScalingGroupAlbServerGroup(name string) string {
 	  vswitch_ids = ["${alicloud_vswitch.default.id}"]
 	}
 
+	data "alicloud_images" "default2" {
+		name_regex  = "^aliyun"
+  		most_recent = true
+  		owners      = "system"
+	}
+	data "alicloud_instance_types" "c6" {
+      instance_type_family = "ecs.c6"
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
+
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
-		image_id = data.alicloud_images.default.images[0].id
-		instance_type = "ecs.f1-c8f1.2xlarge"
+		image_id = data.alicloud_images.default2.images[0].id
+		instance_type = data.alicloud_instance_types.c6.instance_types[0].id
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
 		active = true

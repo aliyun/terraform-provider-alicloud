@@ -7,24 +7,24 @@ description: |-
   Provides a ESS Attachment resource to attach or remove alb server group.
 ---
 
-# alicloud_ess_alb_server_group_attachment
+# alicloud_ess_server_group_attachment
 
-Attaches/Detaches alb server group to a specified scaling group.
+Attaches/Detaches server group to a specified scaling group.
 
-For information about alb server group attachment, see [AttachAlbServerGroups](https://www.alibabacloud.com/help/en/doc-detail/266800.html).
+For information about  server group attachment, see [AttachServerGroups](https://www.alibabacloud.com/help/en/auto-scaling/developer-reference/api-attachservergroups).
 
 -> **NOTE:** If scaling group's network type is `VPC`, the alb server groups must be in the same `VPC`.
 
--> **NOTE:** Alb server group attachment is defined uniquely by `scaling_group_id`, `alb_server_group_id`, `port`.
+-> **NOTE:** Alb server group attachment is defined uniquely by `scaling_group_id`, `server_group_id`,`type`, `port`.
 
--> **NOTE:** Resource `alicloud_ess_alb_server_group_attachment` don't support modification.
+-> **NOTE:** Resource `alicloud_ess_server_group_attachment` don't support modification.
 
 -> **NOTE:** Available since v1.158.0.
 
 ## Example Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ess_alb_server_group_attachment&exampleId=da1e6d66-3f6c-c05b-afd7-6e23f858715a82a5acf3&activeTab=example&spm=docs.r.ess_alb_server_group_attachment.0.da1e6d663f&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ess_server_group_attachment&exampleId=da1e6d66-3f6c-c05b-afd7-6e23f858715a82a5acf3&activeTab=example&spm=docs.r.ess_alb_server_group_attachment.0.da1e6d663f&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
@@ -109,10 +109,11 @@ resource "alicloud_alb_server_group" "default" {
   }
 }
 
-resource "alicloud_ess_alb_server_group_attachment" "default" {
+resource "alicloud_ess_server_group_attachment" "default" {
   scaling_group_id    = alicloud_ess_scaling_configuration.default.scaling_group_id
   alb_server_group_id = alicloud_alb_server_group.default.id
   port                = 9000
+  type                = ALB
   weight              = 50
   force_attach        = true
 }
@@ -123,10 +124,11 @@ resource "alicloud_ess_alb_server_group_attachment" "default" {
 The following arguments are supported:
 
 * `scaling_group_id` - (Required, ForceNew) ID of the scaling group.
-* `alb_server_group_id` - (Required, ForceNew) ID of Alb Server Group.
+* `server_group_id` - (Required, ForceNew) ID of Server Group.
+* `type` - (Required, ForceNew, Available in 1.231.0) The type of server group N. Valid values: ALB, NLB.
 * `port` - (Required, ForceNew) - The port will be used for Alb Server Group backend server.
 * `weight` - (Required, ForceNew) The weight of an ECS instance attached to the Alb Server Group.
-* `force_attach` - (Optional) If instances of scaling group are attached/removed from slb backend server when attach/detach alb
+* `force_attach` - (Optional) If instances of scaling group are attached/removed from alb/nlb backend server when alb/nlb alb
   server group from scaling group. Default to false.
 
 ## Attributes Reference
@@ -134,12 +136,12 @@ The following arguments are supported:
 The following attributes are exported:
 
 * `id` - (Required, ForceNew) The ESS alb server group attachment resource ID，in the follwing format: scaling_group_id:
-  alb_server_group_id:port.
+  server_group_id:type:port.
 
 ## Import
 
-ESS alb server groups can be imported using the id, e.g.
+ESS server groups can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_ess_alb_server_group_attachment.example asg-xxx:sgp-xxx:5000 
+$ terraform import alicloud_ess_server_group_attachment.example asg-xxx:sgp-xxx:alb:5000 
 ```
