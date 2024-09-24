@@ -316,6 +316,7 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 					"accepting_vpc_id":    "${alicloud_vpc.accepting.id}",
 					"accepting_region_id": "${data.alicloud_regions.default.regions.0.id}",
 					"accepting_ali_uid":   "${data.alicloud_account.default.id}",
+					"force_delete":        "false",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckVPCPeerConnectionExistsWithProviders(resourceId, v, &providers),
@@ -335,6 +336,17 @@ func TestAccAliCloudVPCPeerConnection_basic1(t *testing.T) {
 					testAccCheckVPCPeerConnectionExistsWithProviders(resourceId, v, &providers),
 					testAccCheck(map[string]string{
 						"bandwidth": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"force_delete": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckVPCPeerConnectionExistsWithProviders(resourceId, v, &providers),
+					testAccCheck(map[string]string{
+						"force_delete": "true",
 					}),
 				),
 			},
@@ -714,7 +726,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerConnectionCreate(dInit, rawClient)
+	err = resourceAliCloudVpcPeerPeerConnectionCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{}
@@ -737,7 +749,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerConnectionCreate(dInit, rawClient)
+		err := resourceAliCloudVpcPeerPeerConnectionCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -764,7 +776,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerConnectionUpdate(dExisted, rawClient)
+	err = resourceAliCloudVpcPeerPeerConnectionUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff := map[string]interface{}{
@@ -800,7 +812,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerConnectionUpdate(dExisted, rawClient)
+		err := resourceAliCloudVpcPeerPeerConnectionUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -844,7 +856,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerConnectionRead(dExisted, rawClient)
+		err := resourceAliCloudVpcPeerPeerConnectionRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -863,7 +875,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAliCloudVpcPeerConnectionDelete(dExisted, rawClient)
+	err = resourceAliCloudVpcPeerPeerConnectionDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -894,7 +906,7 @@ func TestUnitAccAliCloudVpcPeerConnection(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAliCloudVpcPeerConnectionDelete(dExisted, rawClient)
+		err := resourceAliCloudVpcPeerPeerConnectionDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":

@@ -1659,7 +1659,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_vpc_public_ip_address_pool":                            resourceAliCloudVpcPublicIpAddressPool(),
 			"alicloud_dcdn_waf_policy_domain_attachment":                     resourceAlicloudDcdnWafPolicyDomainAttachment(),
 			"alicloud_nlb_server_group":                                      resourceAliCloudNlbServerGroup(),
-			"alicloud_vpc_peer_connection":                                   resourceAliCloudVpcPeerConnection(),
+			"alicloud_vpc_peer_connection":                                   resourceAliCloudVpcPeerPeerConnection(),
 			"alicloud_ga_access_log":                                         resourceAlicloudGaAccessLog(),
 			"alicloud_ebs_disk_replica_group":                                resourceAlicloudEbsDiskReplicaGroup(),
 			"alicloud_nlb_security_policy":                                   resourceAliCloudNlbSecurityPolicy(),
