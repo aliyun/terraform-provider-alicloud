@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -5,95 +6,120 @@ import (
 	"log"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudVpcPeerConnectionAccepter() *schema.Resource {
+func resourceAliCloudVpcPeerPeerConnectionAccepter() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudVpcPeerConnectionAccepterCreate,
-		Read:   resourceAlicloudVpcPeerConnectionAccepterRead,
-		Update: resourceAlicloudVpcPeerConnectionAccepterUpdate,
-		Delete: resourceAlicloudVpcPeerConnectionAccepterDelete,
+		Create: resourceAliCloudVpcPeerPeerConnectionAccepterCreate,
+		Read:   resourceAliCloudVpcPeerPeerConnectionAccepterRead,
+		Update: resourceAliCloudVpcPeerPeerConnectionAccepterUpdate,
+		Delete: resourceAliCloudVpcPeerPeerConnectionAccepterDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"accepting_owner_uid": {
-				Computed: true,
 				Type:     schema.TypeInt,
+				Computed: true,
 			},
 			"accepting_region_id": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"accepting_vpc_id": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"bandwidth": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: IntAtLeast(1),
+			},
+			"create_time": {
+				Type:     schema.TypeString,
 				Computed: true,
-				Type:     schema.TypeInt,
 			},
 			"description": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"dry_run": {
-				Optional: true,
 				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"force_delete": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"instance_id": {
+				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
-				Type:     schema.TypeString,
 			},
 			"peer_connection_accepter_name": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"status": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"vpc_id": {
-				Computed: true,
 				Type:     schema.TypeString,
+				Computed: true,
 			},
 		},
 	}
 }
 
-func resourceAlicloudVpcPeerConnectionAccepterCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPeerPeerConnectionAccepterCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
-	vpcPeerService := VpcPeerService{client}
-	request := make(map[string]interface{})
-	conn, err := client.NewVpcPeerClient()
+
+	action := "AcceptVpcPeerConnection"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewVpcpeerClient()
 	if err != nil {
 		return WrapError(err)
 	}
-
-	if v, ok := d.GetOk("dry_run"); ok {
-		request["DryRun"] = v
-	}
+	request = make(map[string]interface{})
 	if v, ok := d.GetOk("instance_id"); ok {
 		request["InstanceId"] = v
 	}
 
-	request["ClientToken"] = buildClientToken("AcceptVpcPeerConnection")
-	var response map[string]interface{}
-	action := "AcceptVpcPeerConnection"
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request["ResourceGroupId"] = v
+	}
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -101,10 +127,10 @@ func resourceAlicloudVpcPeerConnectionAccepterCreate(d *schema.ResourceData, met
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if !IsExpectedErrors(err, []string{"IncorrectStatus.VpcPeer"}) {
 			return WrapErrorf(err, DefaultErrorMsg, "alicloud_vpc_peer_connection_accepter", action, AlibabaCloudSdkGoERROR)
@@ -113,85 +139,232 @@ func resourceAlicloudVpcPeerConnectionAccepterCreate(d *schema.ResourceData, met
 
 	d.SetId(fmt.Sprint(request["InstanceId"]))
 
-	stateConf := BuildStateConf([]string{}, []string{"Activated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcPeerService.VpcPeerConnectionAccepterStateRefreshFunc(d, []string{}))
+	vpcPeerServiceV2 := VpcPeerServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"Activated"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcPeerServiceV2.VpcPeerPeerConnectionAccepterStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudVpcPeerConnectionAccepterRead(d, meta)
+
+	return resourceAliCloudVpcPeerPeerConnectionAccepterUpdate(d, meta)
 }
 
-func resourceAlicloudVpcPeerConnectionAccepterRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPeerPeerConnectionAccepterRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcPeerService := VpcPeerService{client}
+	vpcPeerServiceV2 := VpcPeerServiceV2{client}
 
-	object, err := vpcPeerService.DescribeVpcPeerConnectionAccepter(d.Id())
+	objectRaw, err := vpcPeerServiceV2.DescribeVpcPeerPeerConnectionAccepter(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_vpc_peer_connection_accepter vpcPeerService.DescribeVpcPeerConnectionAccepter Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_vpc_peer_connection_accepter DescribeVpcPeerPeerConnectionAccepter Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("accepting_owner_uid", formatInt(object["AcceptingOwnerUid"]))
-	d.Set("accepting_region_id", object["AcceptingRegionId"])
-	d.Set("accepting_vpc_id", object["AcceptingVpc"].(map[string]interface{})["VpcId"])
-	if v, ok := object["Bandwidth"]; ok && fmt.Sprint(v) != "0" {
-		d.Set("bandwidth", formatInt(v))
+
+	if objectRaw["AcceptingOwnerUid"] != nil {
+		d.Set("accepting_owner_uid", objectRaw["AcceptingOwnerUid"])
 	}
-	d.Set("description", object["Description"])
-	d.Set("peer_connection_accepter_name", object["Name"])
-	d.Set("status", object["Status"])
-	d.Set("vpc_id", object["Vpc"].(map[string]interface{})["VpcId"])
-	d.Set("instance_id", object["InstanceId"])
+	if objectRaw["AcceptingRegionId"] != nil {
+		d.Set("accepting_region_id", objectRaw["AcceptingRegionId"])
+	}
+	if objectRaw["Bandwidth"] != nil {
+		d.Set("bandwidth", objectRaw["Bandwidth"])
+	}
+	if objectRaw["GmtCreate"] != nil {
+		d.Set("create_time", objectRaw["GmtCreate"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("peer_connection_accepter_name", objectRaw["Name"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["InstanceId"] != nil {
+		d.Set("instance_id", objectRaw["InstanceId"])
+	}
+
+	acceptingVpc1RawObj, _ := jsonpath.Get("$.AcceptingVpc", objectRaw)
+	acceptingVpc1Raw := make(map[string]interface{})
+	if acceptingVpc1RawObj != nil {
+		acceptingVpc1Raw = acceptingVpc1RawObj.(map[string]interface{})
+	}
+	if acceptingVpc1Raw["VpcId"] != nil {
+		d.Set("accepting_vpc_id", acceptingVpc1Raw["VpcId"])
+	}
+
+	vpc1RawObj, _ := jsonpath.Get("$.Vpc", objectRaw)
+	vpc1Raw := make(map[string]interface{})
+	if vpc1RawObj != nil {
+		vpc1Raw = vpc1RawObj.(map[string]interface{})
+	}
+	if vpc1Raw["VpcId"] != nil {
+		d.Set("vpc_id", vpc1Raw["VpcId"])
+	}
+
+	d.Set("instance_id", d.Id())
+
 	return nil
 }
 
-func resourceAlicloudVpcPeerConnectionAccepterUpdate(d *schema.ResourceData, meta interface{}) error {
-	log.Println(fmt.Sprintf("[WARNING] The resouce has not update operation."))
-	return resourceAlicloudVpcPeerConnectionAccepterRead(d, meta)
-}
-
-func resourceAlicloudVpcPeerConnectionAccepterDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudVpcPeerPeerConnectionAccepterUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	vpcPeerService := VpcPeerService{client}
-	conn, err := client.NewVpcPeerClient()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
+	action := "ModifyVpcPeerConnection"
+	conn, err := client.NewVpcpeerClient()
 	if err != nil {
 		return WrapError(err)
 	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
 
-	request := map[string]interface{}{
-		"InstanceId": d.Id(),
+	request["ClientToken"] = buildClientToken(action)
+	if d.HasChange("description") {
+		update = true
+		request["Description"] = d.Get("description")
 	}
+
+	if d.HasChange("peer_connection_accepter_name") {
+		update = true
+		request["Name"] = d.Get("peer_connection_accepter_name")
+	}
+
+	if d.HasChange("bandwidth") {
+		update = true
+		request["Bandwidth"] = d.Get("bandwidth")
+	}
+
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
 	}
-	request["ClientToken"] = buildClientToken("DeleteVpcPeerConnection")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"IncorrectStatus.VpcPeer"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		vpcPeerServiceV2 := VpcPeerServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Activated"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcPeerServiceV2.VpcPeerPeerConnectionAccepterStateRefreshFunc(d.Id(), "Status", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "MoveResourceGroup"
+	conn, err = client.NewVpcpeerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	query["ResourceId"] = d.Id()
+	query["RegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["NewResourceGroupId"] = d.Get("resource_group_id")
+	request["ResourceType"] = "PeerConnection"
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	d.Partial(false)
+	return resourceAliCloudVpcPeerPeerConnectionAccepterRead(d, meta)
+}
+
+func resourceAliCloudVpcPeerPeerConnectionAccepterDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteVpcPeerConnection"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewVpcpeerClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOkExists("dry_run"); ok {
+		request["DryRun"] = v
+	}
+	if v, ok := d.GetOkExists("force_delete"); ok {
+		request["Force"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), nil, request, &runtime)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
 		if err != nil {
-			if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.RouteEntryExist"}) {
+			if IsExpectedErrors(err, []string{"IncorrectStatus.VpcPeer", "IncorrectStatus", "OperationDenied.RouteEntryExist"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
+
 	if err != nil {
 		if NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
-	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcPeerService.VpcPeerConnectionAccepterStateRefreshFunc(d, []string{}))
+
+	vpcPeerServiceV2 := VpcPeerServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcPeerServiceV2.VpcPeerPeerConnectionAccepterStateRefreshFunc(d.Id(), "Status", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

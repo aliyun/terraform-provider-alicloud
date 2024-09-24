@@ -56,6 +56,7 @@ func resourceAliCloudVpcPeerPeerConnection() *schema.Resource {
 			"description": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"dry_run": {
 				Type:     schema.TypeBool,
@@ -68,6 +69,7 @@ func resourceAliCloudVpcPeerPeerConnection() *schema.Resource {
 			"peer_connection_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
@@ -458,6 +460,9 @@ func resourceAliCloudVpcPeerPeerConnectionDelete(d *schema.ResourceData, meta in
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.InstanceId"}) || NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

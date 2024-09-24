@@ -2,7 +2,6 @@
 subcategory: "VPC"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_vpc_peer_connection_accepter"
-sidebar_current: "docs-alicloud-resource-vpc-peer-connection-accepter"
 description: |-
   Provides a Alicloud Vpc Peer Connection Accepter resource.
 ---
@@ -18,12 +17,6 @@ For information about Vpc Peer Connection Accepter and how to use it, see [What 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_vpc_peer_connection_accepter&exampleId=8204ef10-2d10-b925-a0ac-68de784036d01a919786&activeTab=example&spm=docs.r.vpc_peer_connection_accepter.0.8204ef102d&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -91,32 +84,52 @@ resource "alicloud_vpc_peer_connection_accepter" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `instance_id` - (Required, ForceNew) The ID of the instance of the created VPC peer connection.
-* `dry_run` - (Optional) The dry run.
+* `bandwidth` - (Optional, Computed, Int, Available since v1.231.0) The new bandwidth of the VPC peering connection. Unit: Mbit/s. The value must be an integer greater than 0.
+* `description` - (Optional, Computed, Available since v1.231.0) The new description of the VPC peering connection.
+
+  The description must be 1 to 256 characters in length, and cannot start with `http://` or `https://`.
+* `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
+
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the `DryRunOperation` error code is returned.
+  - `false` (default): performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
+* `force_delete` - (Optional, Available since v1.231.0) Specifies whether to forcefully delete the VPC peering connection. Valid values:
+
+  - `false` (default): no.
+  - `true`: yes. If you forcefully delete the VPC peering connection, the system deletes the routes that point to the VPC peering connection from the VPC route table.
+* `instance_id` - (Required, ForceNew) The ID of the VPC peering connection whose name or description you want to modify.
+* `peer_connection_accepter_name` - (Optional, Computed, Available since v1.231.0) The new name of the VPC peering connection.
+
+  The name must be 1 to 128 characters in length, and cannot start with `http://` or `https://`.
+* `resource_group_id` - (Optional, Computed, Available since v1.231.0) The ID of the new resource group.
+
+-> **NOTE:**   You can use resource groups to manage resources within your Alibaba Cloud account by group. This helps you resolve issues such as resource grouping and permission management for your Alibaba Cloud account. For more information, see [What is resource management?](https://www.alibabacloud.com/help/en/doc-detail/94475.html)
+
 
 ## Attributes Reference
 
 The following attributes are exported:
-* `id` - The `key` of the resource supplied above.
-* `accepting_owner_uid` - The ID of the Alibaba Cloud account (primary account) of the receiving end of the VPC peering connection to be created.-Enter the ID of your Alibaba Cloud account to create a peer-to-peer connection to the VPC account.-Enter the ID of another Alibaba Cloud account to create a cross-account VPC peer-to-peer connection.> If the recipient account is a RAM user (sub-account), enter the ID of the Alibaba Cloud account corresponding to the RAM user.
-* `accepting_region_id` - The region ID of the recipient of the VPC peering connection to be created.-When creating a VPC peer-to-peer connection in the same region, enter the same region ID as the region ID of the initiator.-When creating a cross-region VPC peer-to-peer connection, enter a region ID that is different from the region ID of the initiator.
+* `id` - The ID of the resource supplied above.
+* `accepting_owner_uid` - The ID of the Alibaba Cloud account (primary account) of the receiving end of the VPC peering connection to be created.-to-peer connection to the VPC account.-account VPC peer-to-peer connection.
+
+-> **NOTE:**  If the recipient account is a RAM user (sub-account), enter the ID of the Alibaba Cloud account corresponding to the RAM user.
+
+* `accepting_region_id` - The region ID of the recipient of the VPC peering connection to be created.-to-peer connection in the same region, enter the same region ID as the region ID of the initiator.-region VPC peer-to-peer connection, enter a region ID that is different from the region ID of the initiator.
 * `accepting_vpc_id` - The VPC ID of the receiving end of the VPC peer connection.
-* `bandwidth` - The bandwidth of the VPC peering connection to be modified. Unit: Mbps. The value range is an integer greater than 0.
-* `description` - The description of the VPC peer connection to be created.It must be 2 to 256 characters in length and must start with a letter or Chinese, but cannot start with http:// or https.
-* `peer_connection_accepter_name` - The name of the resource
+* `create_time` - The creation time of the VPC peer connection. Use UTC time in the format' YYYY-MM-DDThh:mm:ssZ '.
 * `status` - The status of the resource
-* `vpc_id` - You must create a VPC ID on the initiator of a VPC peer connection.
+* `vpc_id` - The VPC ID of the initiator of the VPC peering connection.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 * `create` - (Defaults to 5 mins) Used when create the Peer Connection Accepter.
 * `delete` - (Defaults to 5 mins) Used when delete the Peer Connection Accepter.
+* `update` - (Defaults to 5 mins) Used when update the Peer Connection Accepter.
 
 ## Import
 
 Vpc Peer Connection Accepter can be imported using the id, e.g.
 
 ```shell
-$terraform import alicloud_vpc_peer_connection_accepter.example <id>
+$ terraform import alicloud_vpc_peer_connection_accepter.example <id>
 ```
