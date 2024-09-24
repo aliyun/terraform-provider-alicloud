@@ -2,27 +2,23 @@
 subcategory: "AnalyticDB for PostgreSQL (GPDB)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_gpdb_instance"
-sidebar_current: "docs-alicloud-resource-gpdb-instance"
 description: |-
-  Provides a AnalyticDB for PostgreSQL instance resource.
+  Provides a Alicloud GPDB D B Instance resource.
 ---
 
 # alicloud_gpdb_instance
 
-Provides a AnalyticDB for PostgreSQL instance resource supports replica set instances only. the AnalyticDB for PostgreSQL provides stable, reliable, and automatic scalable database services.
-You can see detail product introduction [here](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance)
+Provides a GPDB D B Instance resource.
 
--> **NOTE:** Available since v1.47.0.
+AnalyticDB for PostgreSQL database instances.
+
+For information about GPDB D B Instance and how to use it, see [What is D B Instance](https://www.alibabacloud.com/help/en/).
+
+-> **NOTE:** Available since v1.226.0.
 
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_gpdb_instance&exampleId=beac6fb2-7bb3-c67b-00d3-4e76327bc40e0120436d&activeTab=example&spm=docs.r.gpdb_instance.0.beac6fb27b&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -67,87 +63,194 @@ resource "alicloud_gpdb_instance" "default" {
 }
 ```
 
+### Deleting `alicloud_gpdb_instance` or removing it from your configuration
+
+The `alicloud_gpdb_instance` resource allows you to manage  `payment_type = "Subscription"`  instance, but Terraform cannot destroy it.
+Deleting the subscription resource or removing it from your configuration will remove it from your state file and management, but will not destroy the Instance.
+You can resume managing the subscription instance via the AlibabaCloud Console.
+
 ## Argument Reference
 
 The following arguments are supported:
+* `connection_string` - (Optional, Available since v1.231.0) The endpoint of the instance.
+* `db_instance_category` - (Optional, ForceNew) Instance series. Description of value:
+  - `HighAvailability`: High availability.
+  - `Basic`: Basic Edition.
 
-* `engine` - (Required, ForceNew) The database engine used by the instance. Value options can refer to the latest docs [CreateDBInstance](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/api-gpdb-2016-05-03-createdbinstance) `EngineVersion`.
-* `engine_version` - (Required, ForceNew) The version of the database engine used by the instance.
-* `vswitch_id` - (Required, ForceNew) The vswitch id.
-* `db_instance_class` - (Optional, ForceNew) The db instance class. see [Instance specifications](https://www.alibabacloud.com/help/en/analyticdb-for-postgresql/latest/instance-types).
--> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
-* `db_instance_category` - (Optional, ForceNew) The db instance category. Valid values: `Basic`, `HighAvailability`.
--> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
-* `db_instance_mode` - (Required, ForceNew) The db instance mode. Valid values: `StorageElastic`, `Serverless`, `Classic`.
-* `instance_spec` - (Optional) The specification of segment nodes.
-  * When `db_instance_category` is `HighAvailability`, Valid values: `2C16G`, `4C32G`, `16C128G`.
-  * When `db_instance_category` is `Basic`, Valid values: `2C8G`, `4C16G`, `8C32G`, `16C64G`.
-  * When `db_instance_category` is `Serverless`, Valid values: `4C16G`, `8C32G`.
--> **NOTE:** This parameter must be passed to create a storage elastic mode instance and a serverless version instance.
-* `storage_size` - (Optional, Int) The storage capacity. Unit: GB. Valid values: `50` to `4000`.
--> **NOTE:** This parameter must be passed in to create a storage reservation mode instance.
-* `instance_network_type` - (Optional, ForceNew) The network type of the instance. Valid values: `VPC`.
-* `vpc_id` - (Optional, ForceNew) The vpc ID of the resource.
-* `zone_id` - (Optional, ForceNew) The zone ID of the instance.
-* `instance_group_count` - (Optional, ForceNew, Int) The number of nodes. Valid values: `2`, `4`, `8`, `12`, `16`, `24`, `32`, `64`, `96`, `128`.
-* `payment_type` - (Optional, ForceNew) The billing method of the instance. Valid values: `Subscription`, `PayAsYouGo`.
-* `period` - (Optional) The duration that you will buy the resource, in month. required when `payment_type` is `Subscription`. Valid values: `Year`, `Month`.
-* `resource_group_id` - (Optional) The ID of the enterprise resource group to which the instance belongs.
-* `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
-* `seg_node_num` - (Optional, Int) Calculate the number of nodes. Valid values: `2` to `512`. The value range of the high-availability version of the storage elastic mode is `4` to `512`, and the value must be a multiple of `4`. The value range of the basic version of the storage elastic mode is `2` to `512`, and the value must be a multiple of `2`. The-Serverless version has a value range of `2` to `512`. The value must be a multiple of `2`.
--> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
-* `seg_storage_type` - (Optional) The seg storage type. Valid values: `cloud_essd`, `cloud_efficiency`.
--> **NOTE:** This parameter must be passed in to create a storage elastic mode instance. Storage Elastic Mode Basic Edition instances only support ESSD cloud disks.
-* `create_sample_data` - (Optional, Bool) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
-* `ssl_enabled` - (Optional, Int, Available since v1.188.0) Enable or disable SSL. Valid values: `0` and `1`.
-* `encryption_type` - (Optional, ForceNew, Available since v1.207.2) The encryption type. Valid values: `CloudDisk`.
--> **NOTE:** Disk encryption cannot be disabled after it is enabled.
-* `encryption_key` - (Optional, ForceNew, Available since v1.207.2) The ID of the encryption key.
--> **NOTE:** If `encryption_type` is set to `CloudDisk`, you must specify an encryption key that resides in the same region as the cloud disk that is specified by EncryptionType. Otherwise, leave this parameter empty.
-* `vector_configuration_status` - (Optional, Available since v1.207.2) Specifies whether to enable vector engine optimization. Default value: `disabled`. Valid values: `enabled` and `disabled`.
-* `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
-* `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
-* `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`.
+-> **NOTE:**  This parameter must be passed in to create a storage elastic mode instance.
+
+* `db_instance_ip_array_attribute` - (Optional, Available since v1.231.0) The default is empty. To distinguish between different attribute values, the console does not display groups with the 'hidden' attribute.
+* `db_instance_ip_array_name` - (Optional, Available since v1.231.0) The name of the IP whitelist group.
+* `data_share_status` - (Optional, Available since v1.231.0) The status of data sharing. Value Description:
+  - `opening`: opening.
+  - `opened`: opened.
+  - `closing`: closing.
+  - `closed`: closed.
+* `db_instance_mode` - (Required, ForceNew) Instance resource type. Valid values:
+  - `StorageElastic`: storage elastic mode.
+  - `Serverless`:Serverless version.
+  - `Classic`: Storage reservation mode.
+
+-> **NOTE:**  This parameter is required.
+
 * `description` - (Optional) The description of the instance.
-* `tags` - (Optional) A mapping of tags to assign to the resource.
-* `ip_whitelist` - (Optional, Set, Available since v1.187.0) The ip whitelist. See [`ip_whitelist`](#ip_whitelist) below.
-  Default to creating a whitelist group with the group name "default" and security_ip_list "127.0.0.1".
-* `security_ip_list` - (Optional, List, Deprecated since v1.187.0) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
-* `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.187.0) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
-* `availability_zone` - (Optional, ForceNew, Deprecated since v1.187.0) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
-* `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been deprecated from provider version 1.213.0.
-* `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been deprecated from provider version 1.213.0.
-* `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
+* `encryption_key` - (Optional, ForceNew) The key ID.
 
-### `ip_whitelist`
+-> **NOTE:**  If the value of the `EncryptionType` parameter is `CloudDisk`, you must use this parameter to specify the ID of the encryption key in the same region. Otherwise, it is null.
 
-The ip_whitelist supports the following:
+* `encryption_type` - (Optional, ForceNew) Encryption type, value description:
+  - `Off`: does not enable encryption (default).
+  - `CloudDisk`: Enable cloud disk encryption and specify the key by using the `EncryptionKey` parameter.
 
-* `ip_group_attribute` - (Optional) The value of this parameter is empty by default. The attribute of the whitelist group. 
-  If the value contains `hidden`, this white list item will not output.
-* `ip_group_name` - (Optional) IP whitelist group name.
-* `security_ip_list` - (Optional) List of IP addresses allowed to access all databases of an instance. The list contains up to 1,000 IP addresses, separated by commas. Supported formats include 0.0.0.0/0, 10.23.12.24 (IP), and 10.23.12.24/24 (Classless Inter-Domain Routing (CIDR) mode. /24 represents the length of the prefix in an IP address. The range of the prefix length is [1,32]). System default to `["127.0.0.1"]`.
+-> **NOTE:**  The current cloud disk encryption cannot be turned off after it is turned on.
+
+* `engine_version` - (Required, ForceNew) Engine version. The value is as follows:
+
+  6.0:6.0 edition.
+
+  7.0:7.0 edition.
+* `idle_time` - (Optional, ForceNew, Int, Available since v1.231.0) 空闲释放等待时长 ->
+        即当无业务流量的时长达到指定时长后，实例转为空闲状态。单位为秒，最小值为 60，默认值为 600。
+* `instance_network_type` - (Optional, ForceNew) The network type of the instance. The value is VPC.
+
+  Description
+
+  Public cloud only supports VPC networks.
+
+  If this parameter is not specified, the default value is the VPC type.
+* `instance_spec` - (Optional) Compute node specifications.
+
+  The storage elastic mode high availability edition value is as follows:
+
+  2C16G
+
+  4C32G
+
+  16C128G
+
+  The value of the storage elastic mode base version is as follows:
+
+  2C8G
+
+  4C16G:
+
+  8C32G:
+
+  16C64G
+
+  The value of the Serverless mode is as follows:
+
+  4C16G
+
+  8C32G
+
+  Description
+
+  This parameter must be set when creating a storage elastic mode instance and a Serverless mode instance.
+* `maintain_end_time` - (Optional) The end time of the maintenance window for the instance.
+* `maintain_start_time` - (Optional) The start time of the maintenance window for the instance.
+* `master_cu` - (Optional, Int) Used to describe master node specifications
+* `modify_mode` - (Optional, Available since v1.231.0) The IP address whitelist modification mode. The value is as follows:
+  - `0` (default): overwrites the original IP address in the target IP whitelist group.
+  - `1`: adds an IP address to the destination IP whitelist group.
+  - `2`: deletes an IP address from the destination IP whitelist group.
+* `payment_type` - (Optional, Computed) The billing method of the instance.
+* `period` - (Optional) The unit of time for purchasing resources. The values are as follows:
+  - `Month`: Month
+  - `Year`: Year
+
+-> **NOTE:**  This parameter must be passed in when creating an instance of the subscription billing type.
+
+* `prod_type` - (Optional, ForceNew, Available since v1.231.0) Product type, can be divided into standard version and Economic version
+* `resource_group_id` - (Optional, Computed) The ID of the enterprise resource group to which the instance belongs.
+* `resource_management_mode` - (Optional) Resource management mode
+* `sample_data_status` - (Optional, Available since v1.231.0) The loading status of the sample dataset. Value Description:
+  - `loaded`: loaded.
+  - `loading`: loading.
+  - `unload`: Not loaded.
+* `security_ip_list` - (Optional) The IP address whitelist contains a maximum of 1000 IP addresses separated by commas in the following three formats:
+  - 0.0.0.0/0
+  - 10.23.12.24(IP)
+  - 10.23.12.24/24(CIDR mode, Classless Inter-Domain Routing, '/24' indicates the length of the prefix in the address, and the range is '[1,32]')
+* `seg_disk_performance_level` - (Optional, Available since v1.231.0) The performance level of the ESSD cloud disk. The value is as follows:
+  - `pl0`:PL0 level.
+  - `pl1`:PL1 level.
+  - `pl2`:PL2 level.
+
+-> **NOTE:** - This parameter takes effect only when the disk storage type is ESSD cloud disk.
+  - If not filled, the default is PL1 level.
+* `seg_node_num` - (Optional) Calculate the number of nodes. Valid values:
+  - The value range of the high-availability version of the storage elastic mode is 4 to 512, and the value must be a multiple of 4.
+  - The value range of the basic version of the storage elastic mode is 2 to 512, and the value must be a multiple of 2.
+
+  The-Serverless version has a value range of 2 to 512. The value must be a multiple of 2.
+
+-> **NOTE:** - this parameter must be passed in to create a storage elastic mode instance and a Serverless version instance.
+  - During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
+* `seg_storage_type` - (Optional) The disk storage type. Currently, only ESSD disks are supported. Set the value to **cloud_essd * *.
+
+-> **NOTE:**  This parameter must be set when creating a storage elastic mode instance.
+
+* `serverless_mode` - (Optional, ForceNew, Available since v1.231.0) The mode of the Serverless instance. The values are as follows:
+  - `Manual`: Manual scheduling, the default value.
+  - `Auto`: automatic scheduling.
+
+-> **NOTE:**  This parameter is required for only Serverless mode instances.
+
+* `serverless_resource` - (Optional, ForceNew, Int, Available since v1.231.0) Calculate resource thresholds. The value range is 8 to 32, the step size is 8, the unit is ACU. The default value is 32.
+
+-> **NOTE:**  This parameter is required for only Serverless automatic scheduling mode instances.
+
+* `ssl_enabled` - (Optional, Int) ssl status
+* `status` - (Optional, Computed, Available since v1.231.0) The status of the resource
+* `storage_size` - (Optional, Computed, Int) 
+
+  The storage space size, in GB, in the range of 50 to 4000.
+
+  Description
+
+  This parameter must be set when creating a storage elastic mode instance.
+* `tags` - (Optional, Map) The tags of the instance.
+* `upgrade_type` - (Optional, Int, Available since v1.231.0) The type of instance type change. Valid values:
+  - `0` (default): changes the number of Segment nodes.
+  - `1`: Change the size of the Segment node and the size of the storage space.
+  - `2`: Change the number of Master nodes.
+
+-> **NOTE:** - Different instance resource types have different support levels for computing node configuration changes. For more information, see [Note](~~ 50956 ~~).
+  - After the corresponding change type is selected, only the corresponding parameters take effect, and other parameters do not take effect. For example, if the `UpgradeType` parameter is 0, the parameter that changes the number of Segment nodes and the number of Master nodes is passed in at the same time, only the parameter that changes the number of Segment nodes takes effect.
+  - Only the China site supports changing the number of Master nodes.
+* `used_time` - (Optional) Length of purchase of resources. The values are as follows:
+  - When `Period` is `Month`, the value is 1 to 9.
+  - When `Period` is `Year`, the value is 1 to 3.
+
+-> **NOTE:**  This parameter must be passed in when creating an instance of the subscription billing type.
+
+* `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch.
+* `vector_configuration_status` - (Optional) Whether to enable vector engine optimization. Value Description:
+  - `enabled`: enables vector engine optimization.
+  - `disabled` (default): does not enable vector engine optimization.
+
+-> **NOTE:** - For mainstream analysis scenarios, data warehouse scenarios, and real-time data warehouse scenarios, we recommend that you **do not enable** vector engine optimization.
+  - For users who use the vector analysis engine for scenarios such as AIGC and vector retrieval, we recommend that you `enable` vector engine optimization.
+* `vpc_id` - (Optional, ForceNew) The ID of the VPC。
+* `zone_id` - (Required, ForceNew) The zone ID of the instance.
 
 ## Attributes Reference
 
 The following attributes are exported:
-
-* `id` - The resource ID in terraform of AnalyticDB for PostgreSQL.
-* `status` - The status of the instance.
-* `connection_string` - (Available since v1.196.0) The connection string of the instance.
-* `port` - (Available since v1.196.0) The connection port of the instance.
+* `id` - The ID of the resource supplied above.
+* `create_time` - The time when the instance was created. The time is in the YYYY-MM-DDThh:mm:ssZ format, such as 2011-05-30T12:11:4Z.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
-
-* `create` - (Defaults to 60 mins) Used when create the DB Instance.
-* `update` - (Defaults to 60 mins) Used when update the DB Instance.
-* `delete` - (Defaults to 10 mins) Used when update the DB Instance.
+* `create` - (Defaults to 5 mins) Used when create the D B Instance.
+* `delete` - (Defaults to 5 mins) Used when delete the D B Instance.
+* `update` - (Defaults to 5 mins) Used when update the D B Instance.
 
 ## Import
 
-AnalyticDB for PostgreSQL can be imported using the id, e.g.
+GPDB D B Instance can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_gpdb_instance.example <id>
