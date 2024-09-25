@@ -513,6 +513,19 @@ func (s *EssService) flattenVserverGroupList(vServerGroups []ess.VServerGroup) [
 	return groups
 }
 
+func (s *EssService) flattenServerGroupList(serverGroups []ess.ServerGroup) []map[string]interface{} {
+	groups := make([]map[string]interface{}, 0, len(serverGroups))
+	for _, v := range serverGroups {
+		group := map[string]interface{}{
+			"server_group_id": v.ServerGroupId,
+			"type":            v.Type,
+			"port":            v.Port,
+			"weight":          v.Weight,
+		}
+		groups = append(groups, group)
+	}
+	return groups
+}
 func (s *EssService) DescribeEssScalingRule(id string) (rule ess.ScalingRule, err error) {
 	request := ess.CreateDescribeScalingRulesRequest()
 	request.ScalingRuleId = &[]string{id}
