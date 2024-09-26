@@ -56,7 +56,11 @@ func resourceAliCloudGaForwardingRule() *schema.Resource {
 						"rule_condition_type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Path", "Host"}, false),
+							ValidateFunc: StringInSlice([]string{"Host", "Path", "RequestHeader", "Query", "Method", "Cookie", "SourceIP"}, false),
+						},
+						"rule_condition_value": {
+							Type:     schema.TypeString,
+							Optional: true,
 						},
 						"path_config": {
 							Type:     schema.TypeSet,
@@ -103,8 +107,9 @@ func resourceAliCloudGaForwardingRule() *schema.Resource {
 							Required: true,
 						},
 						"rule_action_type": {
-							Type:     schema.TypeString,
-							Required: true,
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: StringInSlice([]string{"ForwardGroup", "Redirect", "FixResponse", "Rewrite", "AddHeader", "RemoveHeader", "Drop"}, false),
 						},
 						"rule_action_value": {
 							Type:     schema.TypeString,
@@ -180,6 +185,10 @@ func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 		ruleConditionsArg := ruleConditionsList.(map[string]interface{})
 
 		ruleConditionsMap["RuleConditionType"] = ruleConditionsArg["rule_condition_type"]
+
+		if ruleConditionValue, ok := ruleConditionsArg["rule_condition_value"]; ok {
+			ruleConditionsMap["RuleConditionValue"] = ruleConditionValue
+		}
 
 		if pathConfig, ok := ruleConditionsArg["path_config"]; ok {
 			pathConfigMap := map[string]interface{}{}
@@ -297,6 +306,7 @@ func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	gaService := GaService{client}
+
 	object, err := gaService.DescribeGaForwardingRule(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -320,12 +330,17 @@ func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 	d.Set("forwarding_rule_status", object["ForwardingRuleStatus"])
 
 	ruleConditionsMap := make([]map[string]interface{}, 0)
+	isPathConfigExist := false
+	isHostConfigExist := false
+
 	for _, ruleCondition := range object["RuleConditions"].([]interface{}) {
 		ruleConditionArg := ruleCondition.(map[string]interface{})
 		ruleConditionMap := map[string]interface{}{}
 		ruleConditionMap["rule_condition_type"] = ruleConditionArg["RuleConditionType"]
 
 		if ruleConditionArg["PathConfig"].(map[string]interface{})["Values"] != nil {
+			isPathConfigExist = true
+
 			ruleConditionMap["path_config"] = []map[string]interface{}{
 				{
 					"values": ruleConditionArg["PathConfig"].(map[string]interface{})["Values"],
@@ -334,10 +349,18 @@ func resourceAliCloudGaForwardingRuleRead(d *schema.ResourceData, meta interface
 		}
 
 		if ruleConditionArg["HostConfig"].(map[string]interface{})["Values"] != nil {
+			isHostConfigExist = true
+
 			ruleConditionMap["host_config"] = []map[string]interface{}{
 				{
 					"values": ruleConditionArg["HostConfig"].(map[string]interface{})["Values"],
 				},
+			}
+		}
+
+		if !isPathConfigExist && !isHostConfigExist {
+			if ruleConditionValue, ok := ruleConditionArg["RuleConditionValue"]; ok {
+				ruleConditionMap["rule_condition_value"] = ruleConditionValue
 			}
 		}
 
@@ -443,6 +466,10 @@ func resourceAliCloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 		ruleConditionsArg := ruleConditionsList.(map[string]interface{})
 
 		ruleConditionsMap["RuleConditionType"] = ruleConditionsArg["rule_condition_type"]
+
+		if ruleConditionValue, ok := ruleConditionsArg["rule_condition_value"]; ok {
+			ruleConditionsMap["RuleConditionValue"] = ruleConditionValue
+		}
 
 		if pathConfig, ok := ruleConditionsArg["path_config"]; ok {
 			pathConfigMap := map[string]interface{}{}

@@ -286,12 +286,8 @@ func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 					"listener_id":    "${alicloud_ga_listener.default.id}",
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Path",
-							"path_config": []map[string]interface{}{
-								{
-									"values": []string{"/tf-testAcc"},
-								},
-							},
+							"rule_condition_type":  "Path",
+							"rule_condition_value": `[\"/tf-testAcc\"]`,
 						},
 					},
 					"rule_actions": []map[string]interface{}{
@@ -335,12 +331,8 @@ func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Path",
-							"path_config": []map[string]interface{}{
-								{
-									"values": []string{"/tf-testAcc-update"},
-								},
-							},
+							"rule_condition_type":  "Path",
+							"rule_condition_value": `[\"/tf-testAcc-update\"]`,
 						},
 					},
 				}),
@@ -354,12 +346,8 @@ func TestAccAliCloudGaForwardingRule_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Host",
-							"host_config": []map[string]interface{}{
-								{
-									"values": []string{"www.alicloud.com"},
-								},
-							},
+							"rule_condition_type":  "Host",
+							"rule_condition_value": `[\"www.alicloud.com\"]`,
 						},
 					},
 				}),
@@ -438,12 +426,8 @@ func TestAccAliCloudGaForwardingRule_basic1_twin(t *testing.T) {
 					"forwarding_rule_name": name,
 					"rule_conditions": []map[string]interface{}{
 						{
-							"rule_condition_type": "Host",
-							"host_config": []map[string]interface{}{
-								{
-									"values": []string{"www.alicloud.com"},
-								},
-							},
+							"rule_condition_type":  "Host",
+							"rule_condition_value": `[\"www.alicloud.com\"]`,
 						},
 					},
 					"rule_actions": []map[string]interface{}{
