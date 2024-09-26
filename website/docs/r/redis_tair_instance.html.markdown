@@ -12,7 +12,7 @@ Provides a Redis Tair Instance resource.
 
 Describe the creation, deletion and query of tair instances.
 
-For information about Redis Tair Instance and how to use it, see [What is Tair Instance](https://www.alibabacloud.com/help/en/tair).
+For information about Redis Tair Instance and how to use it, see [What is Tair Instance](https://www.alibabacloud.com/help/redis/product-overview/overview-1).
 
 -> **NOTE:** Available since v1.206.0.
 
