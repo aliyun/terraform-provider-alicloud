@@ -116,7 +116,7 @@ func resourceAliCloudEipanycastAnycastEipAddressAttachmentCreate(d *schema.Resou
 	}
 	if v, ok := d.GetOk("pop_locations"); ok {
 		popLocationsMaps := make([]map[string]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
+		for _, dataLoop := range v.(*schema.Set).List() {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
 			dataLoopMap["PopLocation"] = dataLoopTmp["pop_location"]
