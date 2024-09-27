@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
+func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 	ra := resourceAttrInit(resourceId, AlicloudEipanycastAnycastEipAddressAttachmentMap)
@@ -27,6 +27,7 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 		},
 
 		IDRefreshName: resourceId,
@@ -38,14 +39,14 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic(t *testing.T) {
 					// "bind_instance_region_id" must be consistent with the region of slb instance.
 					"anycast_id":              "${alicloud_eipanycast_anycast_eip_address.default.id}",
 					"bind_instance_id":        "${alicloud_slb_load_balancer.default.id}",
-					"bind_instance_region_id": defaultRegionToTest,
+					"bind_instance_region_id": "${data.alicloud_regions.current_regions.regions.0.id}",
 					"bind_instance_type":      "SlbInstance",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"anycast_id":              CHECKSET,
 						"bind_instance_id":        CHECKSET,
-						"bind_instance_region_id": defaultRegionToTest,
+						"bind_instance_region_id": CHECKSET,
 						"bind_instance_type":      "SlbInstance",
 					}),
 				),
@@ -94,13 +95,18 @@ resource "alicloud_eipanycast_anycast_eip_address" "default" {
   service_location = "ChineseMainland"
 }
 
+data "alicloud_regions" "current_regions" {
+  current = true
+}
+
 `, name)
 }
 
 // Test Eipanycast AnycastEipAddressAttachment. >>> Resource test cases, automatically generated.
 // Case 3732
-func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T) {
+func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T) {
 	var v map[string]interface{}
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
@@ -130,7 +136,7 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T
 					"bind_instance_id":        "${alicloud_instance.defaultEcs2.network_interface_id}",
 					"bind_instance_type":      "NetworkInterface",
 					"anycast_id":              "${alicloud_eipanycast_anycast_eip_address_attachment.defaultEfYBJY.anycast_id}",
-					"bind_instance_region_id": defaultRegionToTest,
+					"bind_instance_region_id": "${data.alicloud_regions.current_regions.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEipanycastEipAddressAttachmentExistsWithProviders(resourceId, v, &providers),
@@ -247,7 +253,7 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732(t *testing.T
 					"bind_instance_type":      "NetworkInterface",
 					"association_mode":        "Normal",
 					"anycast_id":              "${alicloud_eipanycast_anycast_eip_address.defaultXkpFRs.id}",
-					"bind_instance_region_id": defaultRegionToTest,
+					"bind_instance_region_id": "${data.alicloud_regions.current_regions.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEipanycastEipAddressAttachmentExistsWithProviders(resourceId, v, &providers),
@@ -351,6 +357,11 @@ resource "alicloud_vpc" "defaultVpc2" {
   provider   = "alicloud.hangzhou"
   vpc_name   = "${var.name}6"
   cidr_block = "192.168.0.0/16"
+}
+
+data "alicloud_regions" "current_regions" {
+  provider = "alicloud.hangzhou"
+  current = true
 }
 
 data "alicloud_zones" "default2" {
@@ -467,6 +478,11 @@ resource "alicloud_instance" "default9KDlN7" {
   vswitch_id                 = alicloud_vswitch.defaultVsw.id
 }
 
+data "alicloud_regions" "current_regions" {
+  provider         = "alicloud.central"
+  current = true
+}
+
 resource "alicloud_eipanycast_anycast_eip_address" "defaultXkpFRs" {
   provider         = "alicloud.central"
   service_location = "international"
@@ -535,8 +551,9 @@ resource "alicloud_instance" "defaultEcs2" {
 }
 
 // Case 3732  twin
-func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *testing.T) {
+func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *testing.T) {
 	var v map[string]interface{}
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
@@ -566,7 +583,7 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *test
 					"bind_instance_id":        "${alicloud_instance.defaultEcs2.network_interface_id}",
 					"bind_instance_type":      "NetworkInterface",
 					"anycast_id":              "${alicloud_eipanycast_anycast_eip_address_attachment.defaultEfYBJY.anycast_id}",
-					"bind_instance_region_id": defaultRegionToTest,
+					"bind_instance_region_id": "${data.alicloud_regions.current_regions.regions.0.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckEipanycastEipAddressAttachmentExistsWithProviders(resourceId, v, &providers),
@@ -582,8 +599,9 @@ func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_twin(t *test
 	})
 }
 
-func TestAccAlicloudEipanycastAnycastEipAddressAttachment_basic3732_region(t *testing.T) {
+func TestAccAliCloudEipanycastAnycastEipAddressAttachment_basic3732_region(t *testing.T) {
 	var v map[string]interface{}
+	testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 	resourceId := "alicloud_eipanycast_anycast_eip_address_attachment.default"
 
 	var providers []*schema.Provider
