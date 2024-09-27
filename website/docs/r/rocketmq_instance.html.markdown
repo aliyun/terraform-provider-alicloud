@@ -115,7 +115,7 @@ The following arguments are supported:
   The values can be as follows:
   - Monthly renewal: 1, 2, 3, 6, 12
 * `auto_renew_period_unit` - (Optional, Computed) The minimum periodic unit for the duration of auto-renewal. This parameter is only valid when auto-renewal is enabled. Valid values: `Month`, `Year`.
-* `commodity_code` - (Optional, ForceNew, Available since v1.229.0) Commodity code
+* `commodity_code` - (Optional, ForceNew, Available since v1.231.0) Commodity code
 
   ons_rmqsub_public_cn: Package year and month instance
 
@@ -182,15 +182,15 @@ The network_info-internet_info supports the following:
 ### `network_info-vpc_info`
 
 The network_info-vpc_info supports the following:
-* `security_group_ids` - (Optional, ForceNew, Available since v1.229.0) Security group id.
+* `security_group_ids` - (Optional, ForceNew, Available since v1.231.0) Security group id.
 * `vswitch_id` - (Optional, ForceNew) VPC network switch.
-* `vswitches` - (Optional, ForceNew, List, Available since v1.229.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
+* `vswitches` - (Optional, ForceNew, List, Available since v1.231.0) Multiple VSwitches. At least two VSwitches are required for a serverless instance. See [`vswitches`](#network_info-vpc_info-vswitches) below.
 * `vpc_id` - (Required, ForceNew) Proprietary Network.
 
 ### `network_info-vpc_info-vswitches`
 
 The network_info-vpc_info-vswitches supports the following:
-* `vswitch_id` - (Optional, ForceNew, Available since v1.229.0) VPC switch id.
+* `vswitch_id` - (Optional, ForceNew) VPC switch id.
 
 ### `product_info`
 
