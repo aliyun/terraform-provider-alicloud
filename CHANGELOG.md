@@ -1,4 +1,44 @@
 ## 1.231.0 (Unreleased)
+
+- **New Resource:** `alicloud_gpdb_streaming_job` [GH-7699]
+- **New Resource:** `alicloud_gpdb_db_instance_ip_array` [GH-7699]
+- **New Resource:** `alicloud_ess_server_group_attachment` [GH-7707]
+- **New Data Source:** `alicloud_gpdb_log_backups` [GH-7705]
+- **New Data Source:** `alicloud_gpdb_data_backups` [GH-7710]
+
+ENHANCEMENTS:
+
+- resource/alicloud_rocketmq_instance: add new attribute commodity_code, vpc_info.vswitches and support serverless instance type. [GH-7590]
+- resource/alicloud_ess_alarm: add new attribute effective. [GH-7610]
+- resource/alicloud_db_instance: SSL adds MySQL engine. [GH-7644]
+- resource/alicloud_governance_account: Supports a new argument default_domain_name. [GH-7672]
+- resource/alicloud_alb_acl: modify acl_name to optional. [GH-7673]
+- resource/alicloud_ecs_snapshot: Removed the ForceNew for field retention_days; Deprecated the field instant_access, instant_access_retention_days; Improved alicloud_ecs_snapshot testcase. [GH-7675]
+- resource/alicloud_vpc_peer_connection: add new attribute force_delete. [GH-7680]
+- resource/alicloud_route_entry: Added the field description; Improved alicloud_route_entry testcase. [GH-7684]
+- resource/alicloud_ess_scaling_group: prolong waiting delete time. [GH-7685]
+- resource/alicloud_ddoscoo_domain_resource: add new attribute cert, cert_region and etc. [GH-7686]
+- resource/alicloud_oss_bucket_https_config: adjust log output. [GH-7688]
+- resource/alicloud_alb_health_check_template: Removed the health_check_template_name, health_check_host, health_check_path enums limitation. Improved alicloud_alb_health_check_template testcase. [GH-7692]
+- resource/alicloud_cms_alarm: Supported comparison_operator set to ==. [GH-7697]
+- resource/alicloud_gpdb_db_instance_plan: add new attribute scale_up, scale_down; resource/alicloud_gpdb_instance: add new attribute parameters. [GH-7698]
+- resource/alicloud_vpc_peer_connection_accepter: add new attributes resource_group_id, force_delete; resource/alicloud_vpc_peer_connection: ignore resource not found err while deleting peer_connection. [GH-7700]
+- resource/alicloud_ga_forwarding_rule: Added the field rule_condition_value; Supported rule_condition_type set to RequestHeader, Query, Method, Cookie, SourceIP. [GH-7704]
+- data-source/alicloud_oos_secret_parameters: Added the field with_decryption, value. [GH-7690]
+- docs: Add dualstack nlb scenario example. [GH-7702]
+- docs: Improves link for tair. [GH-7708]
+- testcase: Improved alicloud_config_rule testcase. [GH-7677]
+- testcase: Improved alicloud_instance testcase. [GH-7678]
+- testcase: Improved alicloud_ram_role_attachment testcase. [GH-7681]
+- testcase: Improved alicloud_image_copy testcase. [GH-7693]
+- testcase: Improved alicloud_image_export testcase. [GH-7695]
+- testcase: fix testcase for fcv3_invoke_config. [GH-7712]
+
+BUG FIXES:
+
+- resource/alicloud_eci_container_group: Fix dns config options nil conversion exception. [GH-7649]
+- resource/alicloud_eipanycast_anycast_eip_address_attachment: fix bug while creating with pop_locations. [GH-7711]
+
 ## 1.230.1 (September 13, 2024)
 
 ENHANCEMENTS:
