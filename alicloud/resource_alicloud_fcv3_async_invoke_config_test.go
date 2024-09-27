@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-// Test Fcv3 AsyncInvokeConfig. >>> Resource test cases, automatically generated.
 // Case AsyncInvokeConfig_Base 7133
 func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133(t *testing.T) {
 	var v map[string]interface{}
@@ -38,12 +37,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 						},
@@ -91,12 +90,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 						},
@@ -143,12 +142,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 						},
@@ -186,6 +185,10 @@ func AlicloudFcv3AsyncInvokeConfigBasicDependence7133(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
+}
+
+data "alicloud_regions" "current_regions" {
+  current = true
 }
 
 data "alicloud_account" "current" {
@@ -267,12 +270,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133_twin(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 						},
@@ -330,12 +333,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133_raw(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function1.function_name}",
 								},
 							},
 						},
@@ -361,12 +364,12 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133_raw(t *testing.T) {
 						{
 							"on_failure": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 							"on_success": []map[string]interface{}{
 								{
-									"destination": "acs:fc:eu-central-1:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
+									"destination": "acs:fc:${data.alicloud_regions.current_regions.regions.0.id}:${data.alicloud_account.current.id}:functions/${alicloud_fcv3_function.function2.function_name}",
 								},
 							},
 						},
@@ -392,5 +395,3 @@ func TestAccAliCloudFcv3AsyncInvokeConfig_basic7133_raw(t *testing.T) {
 		},
 	})
 }
-
-// Test Fcv3 AsyncInvokeConfig. <<< Resource test cases, automatically generated.
