@@ -42,9 +42,8 @@ func resourceAliCloudVpcIpv4Gateway() *schema.Resource {
 				Computed: true,
 			},
 			"ipv4_gateway_description": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[a-zA-Z][a-zA-Z0-9-._]{2,256}$"), "The description of the IPv4 gateway. The description must be 2 to 256 characters in length. It must start with a letter but cannot start with http:// or https://."),
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"ipv4_gateway_id": {
 				Type:     schema.TypeString,
