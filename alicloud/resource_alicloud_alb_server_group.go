@@ -765,54 +765,112 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			"ServerGroupId": d.Id(),
 		}
 
+		removedList := removed.(*schema.Set).List()
 		removeServersMaps := make([]map[string]interface{}, 0)
-		for _, servers := range removed.(*schema.Set).List() {
-			update = true
-			serversMap := map[string]interface{}{}
-			serversArg := servers.(map[string]interface{})
 
-			serversMap["ServerId"] = serversArg["server_id"]
-			serversMap["ServerType"] = serversArg["server_type"]
+		for i := 0; i < len(removedList); i = i + 200 {
+			removeServersMaps = removeServersMaps[:0]
 
-			if serverIp, ok := serversArg["server_ip"]; ok {
-				serversMap["ServerIp"] = serverIp
-			}
+			if len(removedList[i:]) <= 200 {
+				for _, servers := range removedList[i:] {
+					update = true
+					serversMap := map[string]interface{}{}
+					serversArg := servers.(map[string]interface{})
 
-			if port, ok := serversArg["port"]; ok {
-				serversMap["Port"] = port
-			}
+					serversMap["ServerId"] = serversArg["server_id"]
+					serversMap["ServerType"] = serversArg["server_type"]
 
-			removeServersMaps = append(removeServersMaps, serversMap)
-		}
-
-		removeServersFromServerGroupReq["Servers"] = removeServersMaps
-
-		if update {
-			action := "RemoveServersFromServerGroup"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 3*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, removeServersFromServerGroupReq, &runtime)
-				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
+					if serverIp, ok := serversArg["server_ip"]; ok {
+						serversMap["ServerIp"] = serverIp
 					}
-					return resource.NonRetryableError(err)
-				}
-				return nil
-			})
-			addDebug(action, response, removeServersFromServerGroupReq)
 
-			stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+					if port, ok := serversArg["port"]; ok {
+						serversMap["Port"] = port
+					}
+
+					removeServersMaps = append(removeServersMaps, serversMap)
+				}
+
+				removeServersFromServerGroupReq["Servers"] = removeServersMaps
+
+				if update {
+					action := "RemoveServersFromServerGroup"
+					conn, err := client.NewAlbClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, removeServersFromServerGroupReq, &runtime)
+						if err != nil {
+							if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, removeServersFromServerGroupReq)
+
+					stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
+					if _, err := stateConf.WaitForState(); err != nil {
+						return WrapErrorf(err, IdMsg, d.Id())
+					}
+				}
+			} else {
+				for _, servers := range removedList[i : i+200] {
+					update = true
+					serversMap := map[string]interface{}{}
+					serversArg := servers.(map[string]interface{})
+
+					serversMap["ServerId"] = serversArg["server_id"]
+					serversMap["ServerType"] = serversArg["server_type"]
+
+					if serverIp, ok := serversArg["server_ip"]; ok {
+						serversMap["ServerIp"] = serverIp
+					}
+
+					if port, ok := serversArg["port"]; ok {
+						serversMap["Port"] = port
+					}
+
+					removeServersMaps = append(removeServersMaps, serversMap)
+				}
+
+				removeServersFromServerGroupReq["Servers"] = removeServersMaps
+
+				if update {
+					action := "RemoveServersFromServerGroup"
+					conn, err := client.NewAlbClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 3*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, removeServersFromServerGroupReq, &runtime)
+						if err != nil {
+							if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, removeServersFromServerGroupReq)
+
+					stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
+					if _, err := stateConf.WaitForState(); err != nil {
+						return WrapErrorf(err, IdMsg, d.Id())
+					}
+				}
 			}
 		}
 
@@ -822,70 +880,144 @@ func resourceAliCloudAlbServerGroupUpdate(d *schema.ResourceData, meta interface
 			"ServerGroupId": d.Id(),
 		}
 
+		addedList := added.(*schema.Set).List()
 		addServersMaps := make([]map[string]interface{}, 0)
-		for _, servers := range added.(*schema.Set).List() {
-			update = true
-			serversArg := servers.(map[string]interface{})
-			serversMap := map[string]interface{}{}
 
-			serversMap["ServerId"] = serversArg["server_id"]
-			serversMap["ServerType"] = serversArg["server_type"]
+		for i := 0; i < len(addedList); i = i + 200 {
+			addServersMaps = addServersMaps[:0]
 
-			if serverIp, ok := serversArg["server_ip"]; ok {
-				serversMap["ServerIp"] = serverIp
-			}
+			if len(addedList[i:]) <= 200 {
+				for _, servers := range addedList[i:] {
+					update = true
+					serversArg := servers.(map[string]interface{})
+					serversMap := map[string]interface{}{}
 
-			if port, ok := serversArg["port"]; ok {
-				serversMap["Port"] = port
-			}
+					serversMap["ServerId"] = serversArg["server_id"]
+					serversMap["ServerType"] = serversArg["server_type"]
 
-			if remoteIpEnabled, ok := serversArg["remote_ip_enabled"]; ok {
-				serversMap["RemoteIpEnabled"] = remoteIpEnabled
-			}
-
-			if weight, ok := serversArg["weight"]; ok {
-				serversMap["Weight"] = weight
-			}
-
-			if description, ok := serversArg["description"]; ok && fmt.Sprint(description) != "" {
-				serversMap["Description"] = description
-			}
-
-			addServersMaps = append(addServersMaps, serversMap)
-		}
-
-		addServersToServerGroupReq["Servers"] = addServersMaps
-
-		if update {
-			action := "AddServersToServerGroup"
-			conn, err := client.NewAlbClient()
-			if err != nil {
-				return WrapError(err)
-			}
-
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
-			wait := incrementalWait(3*time.Second, 5*time.Second)
-			err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, addServersToServerGroupReq, &runtime)
-				if err != nil {
-					if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
-						wait()
-						return resource.RetryableError(err)
+					if serverIp, ok := serversArg["server_ip"]; ok {
+						serversMap["ServerIp"] = serverIp
 					}
-					return resource.NonRetryableError(err)
+
+					if port, ok := serversArg["port"]; ok {
+						serversMap["Port"] = port
+					}
+
+					if remoteIpEnabled, ok := serversArg["remote_ip_enabled"]; ok {
+						serversMap["RemoteIpEnabled"] = remoteIpEnabled
+					}
+
+					if weight, ok := serversArg["weight"]; ok {
+						serversMap["Weight"] = weight
+					}
+
+					if description, ok := serversArg["description"]; ok && fmt.Sprint(description) != "" {
+						serversMap["Description"] = description
+					}
+
+					addServersMaps = append(addServersMaps, serversMap)
 				}
-				return nil
-			})
-			addDebug(action, response, addServersToServerGroupReq)
 
-			if err != nil {
-				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-			}
+				addServersToServerGroupReq["Servers"] = addServersMaps
 
-			stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
-			if _, err := stateConf.WaitForState(); err != nil {
-				return WrapErrorf(err, IdMsg, d.Id())
+				if update {
+					action := "AddServersToServerGroup"
+					conn, err := client.NewAlbClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, addServersToServerGroupReq, &runtime)
+						if err != nil {
+							if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, addServersToServerGroupReq)
+
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+
+					stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
+					if _, err := stateConf.WaitForState(); err != nil {
+						return WrapErrorf(err, IdMsg, d.Id())
+					}
+				}
+			} else {
+				for _, servers := range addedList[i : i+200] {
+					update = true
+					serversArg := servers.(map[string]interface{})
+					serversMap := map[string]interface{}{}
+
+					serversMap["ServerId"] = serversArg["server_id"]
+					serversMap["ServerType"] = serversArg["server_type"]
+
+					if serverIp, ok := serversArg["server_ip"]; ok {
+						serversMap["ServerIp"] = serverIp
+					}
+
+					if port, ok := serversArg["port"]; ok {
+						serversMap["Port"] = port
+					}
+
+					if remoteIpEnabled, ok := serversArg["remote_ip_enabled"]; ok {
+						serversMap["RemoteIpEnabled"] = remoteIpEnabled
+					}
+
+					if weight, ok := serversArg["weight"]; ok {
+						serversMap["Weight"] = weight
+					}
+
+					if description, ok := serversArg["description"]; ok && fmt.Sprint(description) != "" {
+						serversMap["Description"] = description
+					}
+
+					addServersMaps = append(addServersMaps, serversMap)
+				}
+
+				addServersToServerGroupReq["Servers"] = addServersMaps
+
+				if update {
+					action := "AddServersToServerGroup"
+					conn, err := client.NewAlbClient()
+					if err != nil {
+						return WrapError(err)
+					}
+
+					runtime := util.RuntimeOptions{}
+					runtime.SetAutoretry(true)
+					wait := incrementalWait(3*time.Second, 5*time.Second)
+					err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-06-16"), StringPointer("AK"), nil, addServersToServerGroupReq, &runtime)
+						if err != nil {
+							if IsExpectedErrors(err, []string{"IncorrectStatus.ServerGroup"}) || NeedRetry(err) {
+								wait()
+								return resource.RetryableError(err)
+							}
+							return resource.NonRetryableError(err)
+						}
+						return nil
+					})
+					addDebug(action, response, addServersToServerGroupReq)
+
+					if err != nil {
+						return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+					}
+
+					stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, albService.AlbServerGroupStateRefreshFunc(d.Id(), []string{}))
+					if _, err := stateConf.WaitForState(); err != nil {
+						return WrapErrorf(err, IdMsg, d.Id())
+					}
+				}
 			}
 		}
 
