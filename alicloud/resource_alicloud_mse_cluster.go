@@ -117,7 +117,6 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"mse_version": {
 				Type:         schema.TypeString,
