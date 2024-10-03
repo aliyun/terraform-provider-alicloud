@@ -3,26 +3,20 @@ package connectivity
 import (
 	"fmt"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	sts20150401 "github.com/alibabacloud-go/sts-20150401/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
-	"encoding/json"
-	"net/http"
-	"strings"
-
-	sts20150401 "github.com/alibabacloud-go/sts-20150401/v2/client"
 	rpc "github.com/alibabacloud-go/tea-rpc/client"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/responses"
 	credential "github.com/aliyun/credentials-go/credentials"
-	"github.com/jmespath/go-jmespath"
 )
 
 var securityCredURL = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
@@ -43,6 +37,7 @@ type Config struct {
 	SourceIp             string
 	SecureTransport      string
 	MaxRetryTimeout      int
+	Credential           credential.Credential
 
 	RamRoleArn               string
 	RamRoleSessionName       string
@@ -228,6 +223,10 @@ func (c *Config) validateRegion() error {
 }
 
 func (c *Config) getAuthCredential(stsSupported bool) auth.Credential {
+	credential, err := c.Credential.GetCredential()
+	if err == nil && credential != nil {
+		c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
+	}
 	if c.AccessKey != "" && c.SecretKey != "" {
 		if stsSupported && c.SecurityToken != "" {
 			return credentials.NewStsTokenCredential(c.AccessKey, c.SecretKey, c.SecurityToken)
@@ -256,69 +255,31 @@ func (c *Config) setAuthByAssumeRole() (err error) {
 	if c.AccessKey == "" || c.RamRoleArn == "" {
 		return
 	}
-	config := &openapi.Config{
-		RegionId:        tea.String(c.RegionId),
-		AccessKeyId:     tea.String(c.AccessKey),
-		AccessKeySecret: tea.String(c.SecretKey),
-		Endpoint:        tea.String(c.StsEndpoint),
-		UserAgent:       tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
-		// currently, sts endpoint only supports https
-		Protocol:       tea.String("HTTPS"),
-		ReadTimeout:    tea.Int(c.ClientReadTimeout),
-		ConnectTimeout: tea.Int(c.ClientConnectTimeout),
-		MaxIdleConns:   tea.Int(500),
-	}
+
+	config := new(credential.Config).
+		SetType("ram_role_arn").
+		SetAccessKeyId(c.AccessKey).
+		SetAccessKeySecret(c.SecretKey).
+		SetRoleArn(c.RamRoleArn).
+		SetRoleSessionName(c.RamRoleSessionName).
+		SetPolicy(c.RamRolePolicy).
+		//SetExternalId(c.RamRoleExternalId).
+		SetRoleSessionExpiration(c.RamRoleSessionExpiration)
 	if c.SecurityToken != "" {
-		config.SecurityToken = tea.String(c.SecurityToken)
+		config.SetSecurityToken(c.SecurityToken)
 	}
-
-	query := map[string]*string{
-		"AcceptLanguage": tea.String("en-US"),
-	}
-	if c.SourceIp != "" {
-		query["SourceIp"] = tea.String(c.SourceIp)
-	}
-	if c.SecureTransport != "" {
-		query["SecureTransport"] = tea.String(c.SecureTransport)
-	}
-
-	param := &openapi.GlobalParameters{Queries: query}
-	config.GlobalParameters = param
-	stsClient, err := sts20150401.NewClient(config)
+	// TODO: change to SetExternalId
+	config.ExternalId = tea.String(c.RamRoleExternalId)
+	provider, err := credential.NewCredential(config)
 	if err != nil {
-		return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
+		return
 	}
-
-	request := &sts20150401.AssumeRoleRequest{
-		RoleArn:         tea.String(c.RamRoleArn),
-		RoleSessionName: tea.String(c.RamRoleSessionName),
+	c.Credential = provider
+	credential, err := provider.GetCredential()
+	if err != nil || credential == nil {
+		return fmt.Errorf("refresh Ram Role Arn credential failed. Error: %v", err)
 	}
-	if c.RamRolePolicy != "" {
-		request.Policy = tea.String(c.RamRolePolicy)
-	}
-	if c.RamRoleSessionExpiration != 0 {
-		request.DurationSeconds = tea.Int64(int64(c.RamRoleSessionExpiration))
-	}
-	if c.RamRoleExternalId != "" {
-		request.ExternalId = tea.String(c.RamRoleExternalId)
-	}
-
-	runtime := &util.RuntimeOptions{}
-	var response *sts20150401.AssumeRoleResponse
-	maxRetries := 5
-	for i := 0; i <= maxRetries; i++ {
-		response, err = stsClient.AssumeRoleWithOptions(request, runtime)
-		if err != nil {
-			if needRetry(err) && i < maxRetries {
-				time.Sleep(time.Duration(i))
-				continue
-			}
-			return fmt.Errorf("refreshing credential failed by AssumeRole. Error: %v", err)
-		}
-		break
-	}
-
-	c.AccessKey, c.SecretKey, c.SecurityToken = *response.Body.Credentials.AccessKeyId, *response.Body.Credentials.AccessKeySecret, *response.Body.Credentials.SecurityToken
+	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	return nil
 }
 
@@ -331,62 +292,18 @@ func (c *Config) setAuthCredentialByEcsRoleName() (err error) {
 	if c.AccessKey != "" || c.EcsRoleName == "" {
 		return
 	}
-	requestUrl := securityCredURL + c.EcsRoleName
-	httpRequest, err := http.NewRequest(requests.GET, requestUrl, strings.NewReader(""))
+	config := new(credential.Config).SetType("ecs_ram_role").SetRoleName(c.EcsRoleName)
+	provider, err := credential.NewCredential(config)
 	if err != nil {
-		err = fmt.Errorf("build sts requests err: %s", err.Error())
 		return
 	}
-	httpClient := &http.Client{}
-	httpResponse, err := httpClient.Do(httpRequest)
-	if err != nil {
-		err = fmt.Errorf("get Ecs sts token err : %s", err.Error())
-		return
+	c.Credential = provider
+	credential, err := provider.GetCredential()
+	if err != nil || credential == nil {
+		return fmt.Errorf("refresh Ecs Ram Role credential failed. Error: %v", err)
 	}
 
-	response := responses.NewCommonResponse()
-	err = responses.Unmarshal(response, httpResponse, "")
-	if err != nil {
-		err = fmt.Errorf("Unmarshal Ecs sts token response err : %s", err.Error())
-		return
-	}
-
-	if response.GetHttpStatus() != http.StatusOK {
-		err = fmt.Errorf("get Ecs sts token err, httpStatus: %d, message = %s", response.GetHttpStatus(), response.GetHttpContentString())
-		return
-	}
-	var data interface{}
-	err = json.Unmarshal(response.GetHttpContentBytes(), &data)
-	if err != nil {
-		err = fmt.Errorf("refresh Ecs sts token err, json.Unmarshal fail: %s", err.Error())
-		return
-	}
-	code, err := jmespath.Search("Code", data)
-	if err != nil {
-		err = fmt.Errorf("refresh Ecs sts token err, fail to get Code: %s", err.Error())
-		return
-	}
-	if code.(string) != "Success" {
-		err = fmt.Errorf("refresh Ecs sts token err, Code is not Success")
-		return
-	}
-	accessKeyId, err := jmespath.Search("AccessKeyId", data)
-	if err != nil || accessKeyId == nil {
-		err = fmt.Errorf("refresh Ecs sts token err, fail to get AccessKeyId: %s", err.Error())
-		return
-	}
-	accessKeySecret, err := jmespath.Search("AccessKeySecret", data)
-	if err != nil || accessKeySecret == nil {
-		err = fmt.Errorf("refresh Ecs sts token err, fail to get AccessKeySecret: %s", err.Error())
-		return
-	}
-	securityToken, err := jmespath.Search("SecurityToken", data)
-	if err != nil || securityToken == nil {
-		err = fmt.Errorf("refresh Ecs sts token err, fail to get SecurityToken: %s", err.Error())
-		return
-	}
-
-	c.AccessKey, c.SecretKey, c.SecurityToken = accessKeyId.(string), accessKeySecret.(string), securityToken.(string)
+	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
 	return
 }
 
@@ -397,63 +314,86 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 	if c.AccessKey != "" || c.AssumeRoleWithOidc == nil {
 		return
 	}
-	config := &openapi.Config{
-		RegionId:  tea.String(c.RegionId),
-		Endpoint:  tea.String(c.StsEndpoint),
-		UserAgent: tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
-		// currently, sts endpoint only supports https
-		Protocol:       tea.String("HTTPS"),
-		ReadTimeout:    tea.Int(c.ClientReadTimeout),
-		ConnectTimeout: tea.Int(c.ClientConnectTimeout),
-		MaxIdleConns:   tea.Int(500),
-	}
-	query := map[string]*string{
-		"AcceptLanguage": tea.String("en-US"),
-	}
-	if c.SourceIp != "" {
-		query["SourceIp"] = tea.String(c.SourceIp)
-	}
-	if c.SecureTransport != "" {
-		query["SecureTransport"] = tea.String(c.SecureTransport)
-	}
-
-	param := &openapi.GlobalParameters{Queries: query}
-	config.GlobalParameters = param
-	stsClient, err := sts20150401.NewClient(config)
-	if err != nil {
-		return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
-	}
-
-	request := &sts20150401.AssumeRoleWithOIDCRequest{
-		OIDCProviderArn: tea.String(c.AssumeRoleWithOidc.OIDCProviderArn),
-		RoleArn:         tea.String(c.AssumeRoleWithOidc.RoleARN),
-		OIDCToken:       tea.String(c.AssumeRoleWithOidc.OIDCToken),
-		RoleSessionName: tea.String(c.AssumeRoleWithOidc.RoleSessionName),
-	}
-	if c.AssumeRoleWithOidc.Policy != "" {
-		request.Policy = tea.String(c.AssumeRoleWithOidc.Policy)
-	}
-	if c.AssumeRoleWithOidc.DurationSeconds != 0 {
-		request.DurationSeconds = tea.Int64(int64(c.AssumeRoleWithOidc.DurationSeconds))
-	}
-
-	runtime := &util.RuntimeOptions{}
-	var response *sts20150401.AssumeRoleWithOIDCResponse
-	maxRetries := 5
-	for i := 0; i <= maxRetries; i++ {
-		response, err = stsClient.AssumeRoleWithOIDCWithOptions(request, runtime)
-		if err != nil {
-			if needRetry(err) && i < maxRetries {
-				time.Sleep(time.Duration(i))
-				continue
-			}
-			return fmt.Errorf("refreshing credential failed by AssumeRole. Error: %v", err)
+	credConfig := new(credential.Config)
+	if c.AssumeRoleWithOidc.OIDCToken == "" && c.AssumeRoleWithOidc.OIDCTokenFile != "" {
+		credConfig.SetType("oidc_role_arn").
+			SetOIDCProviderArn(c.AssumeRoleWithOidc.OIDCProviderArn).
+			SetOIDCTokenFilePath(c.AssumeRoleWithOidc.OIDCTokenFile).
+			SetRoleSessionName(c.AssumeRoleWithOidc.RoleSessionName).
+			SetPolicy(c.AssumeRoleWithOidc.Policy).
+			SetRoleArn(c.AssumeRoleWithOidc.RoleARN).
+			SetSessionExpiration(c.AssumeRoleWithOidc.DurationSeconds)
+	} else {
+		conf := &openapi.Config{
+			RegionId:  tea.String(c.RegionId),
+			Endpoint:  tea.String(c.StsEndpoint),
+			UserAgent: tea.String(fmt.Sprintf("%s/%s %s/%s %s/%s %s/%s", Terraform, c.TerraformVersion, Provider, providerVersion, Module, c.ConfigurationSource, TerraformTraceId, c.TerraformTraceId)),
+			// currently, sts endpoint only supports https
+			Protocol:       tea.String("HTTPS"),
+			ReadTimeout:    tea.Int(c.ClientReadTimeout),
+			ConnectTimeout: tea.Int(c.ClientConnectTimeout),
+			MaxIdleConns:   tea.Int(500),
 		}
-		break
+		query := map[string]*string{
+			"AcceptLanguage": tea.String("en-US"),
+		}
+		if c.SourceIp != "" {
+			query["SourceIp"] = tea.String(c.SourceIp)
+		}
+		if c.SecureTransport != "" {
+			query["SecureTransport"] = tea.String(c.SecureTransport)
+		}
+
+		param := &openapi.GlobalParameters{Queries: query}
+		conf.GlobalParameters = param
+		stsClient, err := sts20150401.NewClient(conf)
+		if err != nil {
+			return fmt.Errorf("refreshing credential failed when building sts client. Error: %v", err)
+		}
+
+		request := &sts20150401.AssumeRoleWithOIDCRequest{
+			OIDCProviderArn: tea.String(c.AssumeRoleWithOidc.OIDCProviderArn),
+			RoleArn:         tea.String(c.AssumeRoleWithOidc.RoleARN),
+			OIDCToken:       tea.String(c.AssumeRoleWithOidc.OIDCToken),
+			RoleSessionName: tea.String(c.AssumeRoleWithOidc.RoleSessionName),
+		}
+		if c.AssumeRoleWithOidc.Policy != "" {
+			request.Policy = tea.String(c.AssumeRoleWithOidc.Policy)
+		}
+		if c.AssumeRoleWithOidc.DurationSeconds != 0 {
+			request.DurationSeconds = tea.Int64(int64(c.AssumeRoleWithOidc.DurationSeconds))
+		}
+		runtime := &util.RuntimeOptions{}
+		var response *sts20150401.AssumeRoleWithOIDCResponse
+		maxRetries := 5
+		for i := 0; i <= maxRetries; i++ {
+			response, err = stsClient.AssumeRoleWithOIDCWithOptions(request, runtime)
+			if err != nil {
+				if needRetry(err) && i < maxRetries {
+					time.Sleep(time.Duration(i))
+					continue
+				}
+				return fmt.Errorf("refreshing credential failed by AssumeRoleWithOIDC. Error: %v", err)
+			}
+			break
+		}
+		credConfig.SetType("sts").
+			SetAccessKeyId(*response.Body.Credentials.AccessKeyId).
+			SetAccessKeySecret(*response.Body.Credentials.AccessKeySecret).
+			SetSecurityToken(*response.Body.Credentials.SecurityToken)
+	}
+	provider, err := credential.NewCredential(credConfig)
+	if err != nil {
+		return
+	}
+	c.Credential = provider
+	credential, err := provider.GetCredential()
+	if err != nil || credential == nil {
+		return fmt.Errorf("refresh OIDC credential failed. Error: %v", err)
 	}
 
-	c.AccessKey, c.SecretKey, c.SecurityToken = *response.Body.Credentials.AccessKeyId, *response.Body.Credentials.AccessKeySecret, *response.Body.Credentials.SecurityToken
-	return nil
+	c.AccessKey, c.SecretKey, c.SecurityToken = *credential.AccessKeyId, *credential.AccessKeySecret, *credential.SecurityToken
+	return
 }
 func needRetry(err error) bool {
 	postRegex := regexp.MustCompile("^Post [\"]*https://.*")

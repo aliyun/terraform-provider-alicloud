@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/aliyun/credentials-go/credentials"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -1833,6 +1834,17 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		TerraformVersion:     p.TerraformVersion,
 	}
 	log.Println("alicloud provider trace id:", config.TerraformTraceId)
+	if accessKey != "" && secretKey != "" {
+		credentialConfig := new(credentials.Config).SetType("access_key").SetAccessKeyId(accessKey).SetAccessKeySecret(secretKey)
+		if v := strings.TrimSpace(securityToken); v != "" {
+			credentialConfig.SetType("sts").SetSecurityToken(v)
+		}
+		credential, err := credentials.NewCredential(credentialConfig)
+		if err != nil {
+			return nil, err
+		}
+		config.Credential = credential
+	}
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/hmac"
 	"crypto/md5"
@@ -10,10 +11,15 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"io"
-	rand2 "math/rand"
+	mathrand "math/rand"
 	"net/url"
+	"os"
+	"runtime"
+	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,7 +36,6 @@ var hookRSA = func(fn func(rand io.Reader, priv *rsa.PrivateKey, hash crypto.Has
 }
 
 // GetUUID returns a uuid
-// Deprecated: it was used for internal
 func GetUUID() (uuidHex string) {
 	uuid := newUUID()
 	uuidHex = hex.EncodeToString(uuid[:])
@@ -41,13 +46,12 @@ func GetUUID() (uuidHex string) {
 func RandStringBytes(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand2.Intn(len(letterBytes))]
+		b[i] = letterBytes[mathrand.Intn(len(letterBytes))]
 	}
 	return string(b)
 }
 
 // ShaHmac1 return a string which has been hashed
-// Deprecated: it was used for internal
 func ShaHmac1(source, secret string) string {
 	key := []byte(secret)
 	hmac := hmac.New(sha1.New, key)
@@ -58,7 +62,6 @@ func ShaHmac1(source, secret string) string {
 }
 
 // Sha256WithRsa return a string which has been hashed with Rsa
-// Deprecated: it was used for internal
 func Sha256WithRsa(source, secret string) string {
 	decodeString, err := base64.StdEncoding.DecodeString(secret)
 	if err != nil {
@@ -82,7 +85,6 @@ func Sha256WithRsa(source, secret string) string {
 }
 
 // GetMD5Base64 returns a string which has been base64
-// Deprecated: it was used for internal
 func GetMD5Base64(bytes []byte) (base64Value string) {
 	md5Ctx := md5.New()
 	md5Ctx.Write(bytes)
@@ -92,7 +94,6 @@ func GetMD5Base64(bytes []byte) (base64Value string) {
 }
 
 // GetTimeInFormatISO8601 returns a time string
-// Deprecated: it was used for internal
 func GetTimeInFormatISO8601() (timeStr string) {
 	gmt := time.FixedZone("GMT", 0)
 
@@ -100,7 +101,6 @@ func GetTimeInFormatISO8601() (timeStr string) {
 }
 
 // GetURLFormedMap returns a url encoded string
-// Deprecated: it was used for internal
 func GetURLFormedMap(source map[string]string) (urlEncoded string) {
 	urlEncoder := url.Values{}
 	for key, value := range source {
@@ -149,4 +149,56 @@ func (u uuid) String() string {
 	hex.Encode(buf[24:], u[10:])
 
 	return string(buf)
+}
+
+var processStartTime int64 = time.Now().UnixNano() / 1e6
+var seqId int64 = 0
+
+func getGID() uint64 {
+	// https://blog.sgmansfield.com/2015/12/goroutine-ids/
+	b := make([]byte, 64)
+	b = b[:runtime.Stack(b, false)]
+	b = bytes.TrimPrefix(b, []byte("goroutine "))
+	b = b[:bytes.IndexByte(b, ' ')]
+	n, _ := strconv.ParseUint(string(b), 10, 64)
+	return n
+}
+
+func GetNonce() (uuidHex string) {
+	routineId := getGID()
+	currentTime := time.Now().UnixNano() / 1e6
+	seq := atomic.AddInt64(&seqId, 1)
+	randNum := mathrand.Int63()
+	msg := fmt.Sprintf("%d-%d-%d-%d-%d", processStartTime, routineId, currentTime, seq, randNum)
+	h := md5.New()
+	h.Write([]byte(msg))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Get first non-empty value
+func GetDefaultString(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+
+	return ""
+}
+
+// set back the memoried enviroment variables
+type Rollback func()
+
+func Memory(keys ...string) Rollback {
+	// remenber enviroment variables
+	m := make(map[string]string)
+	for _, key := range keys {
+		m[key] = os.Getenv(key)
+	}
+
+	return func() {
+		for _, key := range keys {
+			os.Setenv(key, m[key])
+		}
+	}
 }
