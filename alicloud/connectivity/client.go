@@ -2,6 +2,7 @@ package connectivity
 
 import (
 	"fmt"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"net/http"
 	"net/url"
@@ -300,6 +301,11 @@ func (client *AliyunClient) WithEcsClient(do func(*ecs.Client) (interface{}, err
 		ecsconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		ecsconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.ecsconn = ecsconn
+	} else {
+		err := client.ecsconn.InitWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the ECS client: %#v", err)
+		}
 	}
 
 	return do(client.ecsconn)
@@ -558,6 +564,11 @@ func (client *AliyunClient) WithCenClient(do func(*cbn.Client) (interface{}, err
 		cenconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		cenconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.cenconn = cenconn
+	} else {
+		err := client.cenconn.InitWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CEN client: %#v", err)
+		}
 	}
 
 	return do(client.cenconn)
@@ -2116,6 +2127,11 @@ func (client *AliyunClient) WithEdasClient(do func(*edas.Client) (interface{}, e
 		edasconn.AppendUserAgent(Module, client.config.ConfigurationSource)
 		edasconn.AppendUserAgent(TerraformTraceId, client.config.TerraformTraceId)
 		client.edasconn = edasconn
+	} else {
+		err := client.edasconn.InitWithOptions(client.config.RegionId, client.getSdkConfig().WithTimeout(time.Duration(60)*time.Second), client.config.getAuthCredential(true))
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the EDAS client: %#v", err)
+		}
 	}
 
 	return do(client.edasconn)
@@ -5572,4 +5588,40 @@ func (client *AliyunClient) NewGovernanceClient() (*rpc.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
+}
+
+func (client *AliyunClient) loadApiEndpoint(locationCode string) (string, error) {
+	if v, ok := client.config.Endpoints.Load(locationCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(locationCode); err != nil {
+			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", locationCode, err)
+		}
+	} else {
+		return v.(string), nil
+	}
+	if v, ok := client.config.Endpoints.Load(locationCode); ok && v.(string) != "" {
+		return v.(string), nil
+	}
+	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", locationCode)
+}
+func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	endpoint, err := client.loadApiEndpoint(locationCode)
+	if err != nil {
+		return nil, err
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s client: %#v", locationCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 }

@@ -12,9 +12,10 @@ import (
 
 	"github.com/alibabacloud-go/debug/debug"
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/providers"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
 	"github.com/aliyun/credentials-go/credentials/response"
-	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
 var debuglog = debug.Init("credential")
@@ -25,8 +26,11 @@ var hookParse = func(err error) error {
 
 // Credential is an interface for getting actual credential
 type Credential interface {
+	// Deprecated: GetAccessKeyId is deprecated, use GetCredential instead of.
 	GetAccessKeyId() (*string, error)
+	// Deprecated: GetAccessKeySecret is deprecated, use GetCredential instead of.
 	GetAccessKeySecret() (*string, error)
+	// Deprecated: GetSecurityToken is deprecated, use GetCredential instead of.
 	GetSecurityToken() (*string, error)
 	GetBearerToken() *string
 	GetType() *string
@@ -44,6 +48,8 @@ type Config struct {
 	RoleSessionName       *string  `json:"role_session_name"`
 	PublicKeyId           *string  `json:"public_key_id"`
 	RoleName              *string  `json:"role_name"`
+	EnableIMDSv2          *bool    `json:"enable_imds_v2"`
+	MetadataTokenDuration *int     `json:"metadata_token_duration"`
 	SessionExpiration     *int     `json:"session_expiration"`
 	PrivateKeyFile        *string  `json:"private_key_file"`
 	BearerToken           *string  `json:"bearer_token"`
@@ -100,6 +106,16 @@ func (s *Config) SetPublicKeyId(v string) *Config {
 
 func (s *Config) SetRoleName(v string) *Config {
 	s.RoleName = &v
+	return s
+}
+
+func (s *Config) SetEnableIMDSv2(v bool) *Config {
+	s.EnableIMDSv2 = &v
+	return s
+}
+
+func (s *Config) SetMetadataTokenDuration(v int) *Config {
+	s.MetadataTokenDuration = &v
 	return s
 }
 
@@ -177,74 +193,108 @@ func (s *Config) SetSTSEndpoint(v string) *Config {
 }
 
 // NewCredential return a credential according to the type in config.
-// if config is nil, the function will use default provider chain to get credential.
+// if config is nil, the function will use default provider chain to get credentials.
 // please see README.md for detail.
 func NewCredential(config *Config) (credential Credential, err error) {
 	if config == nil {
-		config, err = defaultChain.resolve()
-		if err != nil {
-			return
-		}
-		return NewCredential(config)
+		provider := providers.NewDefaultCredentialsProvider()
+		credential = fromCredentialsProvider("default", provider)
+		return
 	}
 	switch tea.StringValue(config.Type) {
 	case "credentials_uri":
 		credential = newURLCredential(tea.StringValue(config.Url))
 	case "oidc_role_arn":
-		err = checkoutAssumeRamoidc(config)
+		provider, err := providers.NewOIDCCredentialsProviderBuilder().
+			WithRoleArn(tea.StringValue(config.RoleArn)).
+			WithOIDCTokenFilePath(tea.StringValue(config.OIDCTokenFilePath)).
+			WithOIDCProviderARN(tea.StringValue(config.OIDCProviderArn)).
+			WithDurationSeconds(tea.IntValue(config.RoleSessionExpiration)).
+			WithPolicy(tea.StringValue(config.Policy)).
+			WithRoleSessionName(tea.StringValue(config.RoleSessionName)).
+			WithSTSEndpoint(tea.StringValue(config.STSEndpoint)).
+			WithHttpOptions(&providers.HttpOptions{
+				Proxy:          tea.StringValue(config.Proxy),
+				ReadTimeout:    tea.IntValue(config.Timeout),
+				ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+			}).
+			Build()
+
 		if err != nil {
-			return
+			return nil, err
 		}
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-			STSEndpoint:    tea.StringValue(config.STSEndpoint),
-		}
-		credential = newOIDCRoleArnCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.RoleArn), tea.StringValue(config.OIDCProviderArn), tea.StringValue(config.OIDCTokenFilePath), tea.StringValue(config.RoleSessionName), tea.StringValue(config.Policy), tea.IntValue(config.RoleSessionExpiration), runtime)
+		credential = fromCredentialsProvider("oidc_role_arn", provider)
 	case "access_key":
-		err = checkAccessKey(config)
+		provider, err := providers.NewStaticAKCredentialsProviderBuilder().
+			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+			WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+			Build()
 		if err != nil {
-			return
+			return nil, err
 		}
-		credential = newAccessKeyCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret))
+
+		credential = fromCredentialsProvider("access_key", provider)
 	case "sts":
-		err = checkSTS(config)
+		provider, err := providers.NewStaticSTSCredentialsProviderBuilder().
+			WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+			WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+			WithSecurityToken(tea.StringValue(config.SecurityToken)).
+			Build()
 		if err != nil {
-			return
+			return nil, err
 		}
-		credential = newStsTokenCredential(tea.StringValue(config.AccessKeyId), tea.StringValue(config.AccessKeySecret), tea.StringValue(config.SecurityToken))
+
+		credential = fromCredentialsProvider("sts", provider)
 	case "ecs_ram_role":
-		checkEcsRAMRole(config)
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-		}
-		credential = newEcsRAMRoleCredential(tea.StringValue(config.RoleName), tea.Float64Value(config.InAdvanceScale), runtime)
-	case "ram_role_arn":
-		err = checkRAMRoleArn(config)
+		provider, err := providers.NewECSRAMRoleCredentialsProviderBuilder().
+			WithRoleName(tea.StringValue(config.RoleName)).
+			WithEnableIMDSv2(tea.BoolValue(config.EnableIMDSv2)).
+			WithMetadataTokenDurationSeconds(tea.IntValue(config.MetadataTokenDuration)).
+			Build()
+
 		if err != nil {
-			return
+			return nil, err
 		}
-		runtime := &utils.Runtime{
-			Host:           tea.StringValue(config.Host),
-			Proxy:          tea.StringValue(config.Proxy),
-			ReadTimeout:    tea.IntValue(config.Timeout),
-			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
-			STSEndpoint:    tea.StringValue(config.STSEndpoint),
+
+		credential = fromCredentialsProvider("ecs_ram_role", provider)
+	case "ram_role_arn":
+		var credentialsProvider providers.CredentialsProvider
+		if config.SecurityToken != nil && *config.SecurityToken != "" {
+			credentialsProvider, err = providers.NewStaticSTSCredentialsProviderBuilder().
+				WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+				WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+				WithSecurityToken(tea.StringValue(config.SecurityToken)).
+				Build()
+		} else {
+			credentialsProvider, err = providers.NewStaticAKCredentialsProviderBuilder().
+				WithAccessKeyId(tea.StringValue(config.AccessKeyId)).
+				WithAccessKeySecret(tea.StringValue(config.AccessKeySecret)).
+				Build()
 		}
-		credential = newRAMRoleArnWithExternalIdCredential(
-			tea.StringValue(config.AccessKeyId),
-			tea.StringValue(config.AccessKeySecret),
-			tea.StringValue(config.RoleArn),
-			tea.StringValue(config.RoleSessionName),
-			tea.StringValue(config.Policy),
-			tea.IntValue(config.RoleSessionExpiration),
-			tea.StringValue(config.ExternalId),
-			runtime)
+
+		if err != nil {
+			return nil, err
+		}
+
+		provider, err := providers.NewRAMRoleARNCredentialsProviderBuilder().
+			WithCredentialsProvider(credentialsProvider).
+			WithRoleArn(tea.StringValue(config.RoleArn)).
+			WithRoleSessionName(tea.StringValue(config.RoleSessionName)).
+			WithPolicy(tea.StringValue(config.Policy)).
+			WithDurationSeconds(tea.IntValue(config.RoleSessionExpiration)).
+			WithExternalId(tea.StringValue(config.ExternalId)).
+			WithStsEndpoint(tea.StringValue(config.STSEndpoint)).
+			WithHttpOptions(&providers.HttpOptions{
+				Proxy:          tea.StringValue(config.Proxy),
+				ReadTimeout:    tea.IntValue(config.Timeout),
+				ConnectTimeout: tea.IntValue(config.ConnectTimeout),
+			}).
+			Build()
+		if err != nil {
+			return nil, err
+		}
+
+		credential = fromCredentialsProvider("ram_role_arn", provider)
 	case "rsa_key_pair":
 		err = checkRSAKeyPair(config)
 		if err != nil {
@@ -271,7 +321,11 @@ func NewCredential(config *Config) (credential Credential, err error) {
 			ConnectTimeout: tea.IntValue(config.ConnectTimeout),
 			STSEndpoint:    tea.StringValue(config.STSEndpoint),
 		}
-		credential = newRsaKeyPairCredential(privateKey, tea.StringValue(config.PublicKeyId), tea.IntValue(config.SessionExpiration), runtime)
+		credential = newRsaKeyPairCredential(
+			privateKey,
+			tea.StringValue(config.PublicKeyId),
+			tea.IntValue(config.SessionExpiration),
+			runtime)
 	case "bearer":
 		if tea.StringValue(config.BearerToken) == "" {
 			err = errors.New("BearerToken cannot be empty")
@@ -279,7 +333,7 @@ func NewCredential(config *Config) (credential Credential, err error) {
 		}
 		credential = newBearerTokenCredential(tea.StringValue(config.BearerToken))
 	default:
-		err = errors.New("Invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
+		err = errors.New("invalid type option, support: access_key, sts, ecs_ram_role, ram_role_arn, rsa_key_pair")
 		return
 	}
 	return credential, nil
@@ -292,70 +346,6 @@ func checkRSAKeyPair(config *Config) (err error) {
 	}
 	if tea.StringValue(config.PublicKeyId) == "" {
 		err = errors.New("PublicKeyId cannot be empty")
-		return
-	}
-	return
-}
-
-func checkoutAssumeRamoidc(config *Config) (err error) {
-	if tea.StringValue(config.RoleArn) == "" {
-		err = errors.New("RoleArn cannot be empty")
-		return
-	}
-	if tea.StringValue(config.OIDCProviderArn) == "" {
-		err = errors.New("OIDCProviderArn cannot be empty")
-		return
-	}
-	return
-}
-
-func checkRAMRoleArn(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-	if tea.StringValue(config.RoleArn) == "" {
-		err = errors.New("RoleArn cannot be empty")
-		return
-	}
-	if tea.StringValue(config.RoleSessionName) == "" {
-		err = errors.New("RoleSessionName cannot be empty")
-		return
-	}
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-	return
-}
-
-func checkEcsRAMRole(config *Config) (err error) {
-	return
-}
-
-func checkSTS(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
-		return
-	}
-	if tea.StringValue(config.SecurityToken) == "" {
-		err = errors.New("SecurityToken cannot be empty")
-		return
-	}
-	return
-}
-
-func checkAccessKey(config *Config) (err error) {
-	if tea.StringValue(config.AccessKeyId) == "" {
-		err = errors.New("AccessKeyId cannot be empty")
-		return
-	}
-	if tea.StringValue(config.AccessKeySecret) == "" {
-		err = errors.New("AccessKeySecret cannot be empty")
 		return
 	}
 	return
@@ -390,12 +380,12 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 			return
 		}
 	}
-	trans := &http.Transport{}
+	transport := &http.Transport{}
 	if proxy != nil && runtime.Proxy != "" {
-		trans.Proxy = http.ProxyURL(proxy)
+		transport.Proxy = http.ProxyURL(proxy)
 	}
-	trans.DialContext = utils.Timeout(time.Duration(runtime.ConnectTimeout) * time.Second)
-	httpClient.Transport = trans
+	transport.DialContext = utils.Timeout(time.Duration(runtime.ConnectTimeout) * time.Second)
+	httpClient.Transport = transport
 	httpResponse, err := hookDo(httpClient.Do)(httpRequest)
 	if err != nil {
 		return
@@ -417,4 +407,71 @@ func doAction(request *request.CommonRequest, runtime *utils.Runtime) (content [
 		return
 	}
 	return resp.GetHTTPContentBytes(), nil
+}
+
+type credentialsProviderWrap struct {
+	typeName string
+	provider providers.CredentialsProvider
+}
+
+// Deprecated: use GetCredential() instead of
+func (cp *credentialsProviderWrap) GetAccessKeyId() (accessKeyId *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	accessKeyId = &cc.AccessKeyId
+	return
+}
+
+// Deprecated: use GetCredential() instead of
+func (cp *credentialsProviderWrap) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	accessKeySecret = &cc.AccessKeySecret
+	return
+}
+
+// Deprecated: use GetCredential() instead of
+func (cp *credentialsProviderWrap) GetSecurityToken() (securityToken *string, err error) {
+	cc, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+	securityToken = &cc.SecurityToken
+	return
+}
+
+// Deprecated: don't use it
+func (cp *credentialsProviderWrap) GetBearerToken() (bearerToken *string) {
+	return tea.String("")
+}
+
+// Get credentials
+func (cp *credentialsProviderWrap) GetCredential() (cm *CredentialModel, err error) {
+	c, err := cp.provider.GetCredentials()
+	if err != nil {
+		return
+	}
+
+	cm = &CredentialModel{
+		AccessKeyId:     &c.AccessKeyId,
+		AccessKeySecret: &c.AccessKeySecret,
+		SecurityToken:   &c.SecurityToken,
+		Type:            &c.ProviderName,
+	}
+	return
+}
+
+func (cp *credentialsProviderWrap) GetType() *string {
+	return &cp.typeName
+}
+
+func fromCredentialsProvider(typeName string, cp providers.CredentialsProvider) Credential {
+	return &credentialsProviderWrap{
+		typeName: typeName,
+		provider: cp,
+	}
 }

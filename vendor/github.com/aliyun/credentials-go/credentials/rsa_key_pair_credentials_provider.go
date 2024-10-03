@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/alibabacloud-go/tea/tea"
+	"github.com/aliyun/credentials-go/credentials/internal/utils"
 	"github.com/aliyun/credentials-go/credentials/request"
-	"github.com/aliyun/credentials-go/credentials/utils"
 )
 
-// RsaKeyPairCredential is a kind of credentials
-type RsaKeyPairCredential struct {
+// Deprecated: no more recommend to use it
+// RsaKeyPairCredentialsProvider is a kind of credentials provider
+type RsaKeyPairCredentialsProvider struct {
 	*credentialUpdater
 	PrivateKey        string
 	PublicKeyId       string
@@ -32,8 +33,8 @@ type sessionAccessKey struct {
 	Expiration             string `json:"Expiration" xml:"Expiration"`
 }
 
-func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredential {
-	return &RsaKeyPairCredential{
+func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration int, runtime *utils.Runtime) *RsaKeyPairCredentialsProvider {
+	return &RsaKeyPairCredentialsProvider{
 		PrivateKey:        privateKey,
 		PublicKeyId:       publicKeyId,
 		SessionExpiration: sessionExpiration,
@@ -42,7 +43,7 @@ func newRsaKeyPairCredential(privateKey, publicKeyId string, sessionExpiration i
 	}
 }
 
-func (e *RsaKeyPairCredential) GetCredential() (*CredentialModel, error) {
+func (e *RsaKeyPairCredentialsProvider) GetCredential() (*CredentialModel, error) {
 	if e.sessionCredential == nil || e.needUpdateCredential() {
 		err := e.updateCredential()
 		if err != nil {
@@ -60,44 +61,42 @@ func (e *RsaKeyPairCredential) GetCredential() (*CredentialModel, error) {
 
 // GetAccessKeyId reutrns RsaKeyPairCredential's AccessKeyId
 // if AccessKeyId is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessKeyId() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *RsaKeyPairCredentialsProvider) GetAccessKeyId() (accessKeyId *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeyId), nil
+	accessKeyId = c.AccessKeyId
+	return
 }
 
 // GetAccessSecret reutrns  RsaKeyPairCredential's AccessKeySecret
 // if AccessKeySecret is not exist or out of date, the function will update it.
-func (r *RsaKeyPairCredential) GetAccessKeySecret() (*string, error) {
-	if r.sessionCredential == nil || r.needUpdateCredential() {
-		err := r.updateCredential()
-		if err != nil {
-			return tea.String(""), err
-		}
+func (r *RsaKeyPairCredentialsProvider) GetAccessKeySecret() (accessKeySecret *string, err error) {
+	c, err := r.GetCredential()
+	if err != nil {
+		return
 	}
-	return tea.String(r.sessionCredential.AccessKeySecret), nil
+	accessKeySecret = c.AccessKeySecret
+	return
 }
 
 // GetSecurityToken is useless  RsaKeyPairCredential
-func (r *RsaKeyPairCredential) GetSecurityToken() (*string, error) {
+func (r *RsaKeyPairCredentialsProvider) GetSecurityToken() (*string, error) {
 	return tea.String(""), nil
 }
 
 // GetBearerToken is useless for  RsaKeyPairCredential
-func (r *RsaKeyPairCredential) GetBearerToken() *string {
+func (r *RsaKeyPairCredentialsProvider) GetBearerToken() *string {
 	return tea.String("")
 }
 
 // GetType reutrns  RsaKeyPairCredential's type
-func (r *RsaKeyPairCredential) GetType() *string {
+func (r *RsaKeyPairCredentialsProvider) GetType() *string {
 	return tea.String("rsa_key_pair")
 }
 
-func (r *RsaKeyPairCredential) updateCredential() (err error) {
+func (r *RsaKeyPairCredentialsProvider) updateCredential() (err error) {
 	if r.runtime == nil {
 		r.runtime = new(utils.Runtime)
 	}

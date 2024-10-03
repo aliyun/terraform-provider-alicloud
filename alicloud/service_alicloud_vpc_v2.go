@@ -875,19 +875,13 @@ func (s *VpcServiceV2) DescribeVpcVpc(id string) (object map[string]interface{},
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeVpcAttribute"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	query = make(map[string]interface{})
 	query["VpcId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -917,19 +911,13 @@ func (s *VpcServiceV2) DescribeDescribeRouteTableList(id string) (object map[str
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeRouteTableList"
-	conn, err := client.NewVpcClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	query = make(map[string]interface{})
 	query["VpcId"] = id
 	query["RegionId"] = client.RegionId
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("vpc", "2016-04-28", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
