@@ -62,31 +62,31 @@ The following arguments are supported:
 * `renewal_duration` - (Optional) Auto-Renewal Duration. It is required under the condition that `renewal_status` is `AutoRenewal`. Valid values: `1`, `2`, `3`, `6`, `12`.
 **NOTE:** `renewal_duration` takes effect only if `payment_type` is set to `Subscription`, and `renewal_status` is set to `AutoRenewal`.
 * `renewal_duration_unit` - (Optional) Auto-Renewal Cycle Unit Values Include: Month: Month. Year: Years. Valid values: `Month`, `Year`.
-* `renewal_status` - (Optional) Whether to renew an instance automatically or not. Default to "ManualRenewal".
+* `renewal_status` - (Optional) Whether to renew an instance automatically or not. Default value: `ManualRenewal`.
   - `AutoRenewal`: Auto renewal.
   - `ManualRenewal`: Manual renewal.
   - `NotRenewal`: No renewal any longer. After you specify this value, Alibaba Cloud stop sending notification of instance expiry, and only gives a brief reminder on the third day before the instance expiry.
 **NOTE:** `renewal_status` takes effect only if `payment_type` is set to `Subscription`.
 * `logistics` - (Optional) The logistics.
-* `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`.  **NOTE:** The `modify_type` is required when you execute an update operation.
+* `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
 * `cfw_service` - (Removed since v1.209.1) Attribute `cfw_service` does not support longer, and it has been removed since v1.209.1.
 * `spec` - (Optional) Current version. Valid values: `premium_version`, `enterprise_version`,`ultimate_version`.
-* `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`.
-* `cfw_log_storage` - (Optional) The log storage capacity. It will be ignored when `cfw_log = false`. 
+* `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`. **NOTE:** From version 1.231.1, When `payment_type` is set to `PayAsYouGo`, `cfw_log` can only be set to `true`, `cfw_log` cannot be modified to `false`.
+* `cfw_log_storage` - (Optional) The log storage capacity. **NOTE:** From version 1.231.1, When `payment_type` is set to `PayAsYouGo`, or `cfw_log` is set to `false`, `cfw_log_storage` will be ignored.
   * `premium_version` - The valid cfw_log_storage is [1000, 500000] with the step size 1000. Default Value: `1000`. Unit: GB.
   * `enterprise_version` - The valid cfw_log_storage is [3000, 500000] with the step size 1000. Default Value: `3000`. Unit: GB.
   * `ultimate_version` - The valid cfw_log_storage is [5000, 500000] with the step size 1000. Default Value: `5000`. Unit: GB.
 * `ip_number` - (Optional) The number of public IPs that can be protected. Valid values: 20 to 4000.
-  * `premium_version` - The valid cfw_log_storage is [60, 1000] with the step size 1. Default Value: `20`. 
-  * `enterprise_version` - The valid cfw_log_storage is [60, 1000] with the step size 1. Default Value: `50`. 
-  * `ultimate_version` - The valid cfw_log_storage is [400, 4000] with the step size 1. Default Value: `400`. 
+  * `premium_version` - The valid cfw_log_storage is [60, 1000] with the step size 1. Default Value: `20`.
+  * `enterprise_version` - The valid cfw_log_storage is [60, 1000] with the step size 1. Default Value: `50`.
+  * `ultimate_version` - The valid cfw_log_storage is [400, 4000] with the step size 1. Default Value: `400`.
 * `band_width` - (Optional) Public network processing capability. Valid values: 10 to 15000. Unit: Mbps.
   * `premium_version` - The valid cfw_log_storage is [10, 2000] with the step size 5. Default Value: `10`. Unit: Mbps.
   * `enterprise_version` - The valid cfw_log_storage is [50, 5000] with the step size 5. Default Value: `50`. Unit: Mbps.
   * `ultimate_version` - The valid cfw_log_storage is [200, 15000] with the step size 5. Default Value: `200`. Unit: Mbps.
 * `fw_vpc_number` - (Optional) The number of protected VPCs. It will be ignored when `spec = "premium_version"`. Valid values between 2 and 500.
-  * `enterprise_version` - The valid cfw_log_storage is [2, 200] with the step size 1. Default Value: `2`. 
-  * `ultimate_version` - The valid cfw_log_storage is [5, 500] with the step size 1. Default Value: `5`. 
+  * `enterprise_version` - The valid cfw_log_storage is [2, 200] with the step size 1. Default Value: `2`.
+  * `ultimate_version` - The valid cfw_log_storage is [5, 500] with the step size 1. Default Value: `5`.
 * `instance_count` - (Optional)  The number of assets.
 * `cfw_account` - (Optional, Available since v1.209.1, Bool) Whether to use multi-account. Valid values: `true`, `false`.
 * `account_number` - (Optional, Available since v1.209.1, Int) The number of multi account. It will be ignored when `cfw_account = false`.
@@ -98,8 +98,9 @@ The following arguments are supported:
 
 The following attributes are exported:
 
+* `user_status` - (Available since v1.231.1) The user status of Cloud Firewall Instance.
+* `status` - The status of Cloud Firewall Instance.
 * `create_time` - The creation time.
-* `status` - The status of Instance.
 * `end_time` - The end time.
 * `release_time` - The release time.
 
