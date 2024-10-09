@@ -95,6 +95,10 @@ func resourceAliCloudFcv2Function() *schema.Resource {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"instance_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
 					},
 				},
 			},
@@ -376,9 +380,13 @@ func resourceAliCloudFcv2FunctionCreate(d *schema.ResourceData, meta interface{}
 		if nodeNative14 != "" {
 			customContainerConfig["accelerationType"] = nodeNative14
 		}
-		nodeNative15, _ := jsonpath.Get("$[0].web_server_mode", v)
+		nodeNative15, _ := jsonpath.Get("$[0].instance_id", v)
 		if nodeNative15 != "" {
-			customContainerConfig["webServerMode"] = nodeNative15
+			customContainerConfig["instanceID"] = nodeNative15
+		}
+		nodeNative16, _ := jsonpath.Get("$[0].web_server_mode", v)
+		if nodeNative16 != "" {
+			customContainerConfig["webServerMode"] = nodeNative16
 		}
 		objectDataLocalMap["customContainerConfig"] = customContainerConfig
 	}
@@ -574,6 +582,7 @@ func resourceAliCloudFcv2FunctionRead(d *schema.ResourceData, meta interface{}) 
 		customContainerConfigMap["args"] = customContainerConfig1Raw["args"]
 		customContainerConfigMap["command"] = customContainerConfig1Raw["command"]
 		customContainerConfigMap["image"] = customContainerConfig1Raw["image"]
+		customContainerConfigMap["instance_id"] = customContainerConfig1Raw["instanceID"]
 		customContainerConfigMap["web_server_mode"] = customContainerConfig1Raw["webServerMode"]
 		customContainerConfigMaps = append(customContainerConfigMaps, customContainerConfigMap)
 	}
@@ -813,9 +822,13 @@ func resourceAliCloudFcv2FunctionUpdate(d *schema.ResourceData, meta interface{}
 			if nodeNative13 != "" {
 				customContainerConfig["accelerationType"] = nodeNative13
 			}
-			nodeNative14, _ := jsonpath.Get("$[0].web_server_mode", v)
+			nodeNative14, _ := jsonpath.Get("$[0].instance_id", v)
 			if nodeNative14 != "" {
-				customContainerConfig["webServerMode"] = nodeNative14
+				customContainerConfig["instanceID"] = nodeNative14
+			}
+			nodeNative15, _ := jsonpath.Get("$[0].web_server_mode", v)
+			if nodeNative15 != "" {
+				customContainerConfig["webServerMode"] = nodeNative15
 			}
 			objectDataLocalMap["customContainerConfig"] = customContainerConfig
 		}
