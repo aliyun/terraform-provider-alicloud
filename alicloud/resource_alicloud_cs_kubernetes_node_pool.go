@@ -453,6 +453,10 @@ func resourceAliCloudAckNodepool() *schema.Resource {
 				Deprecated:   "Field 'platform' has been deprecated from provider version 1.145.0. Operating system release, using `image_type` instead.",
 				ValidateFunc: StringInSlice([]string{"CentOS", "AliyunLinux", "Windows", "WindowsCore"}, false),
 			},
+			"pre_user_data": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"private_pool_options": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -1186,6 +1190,10 @@ func resourceAliCloudAckNodepoolCreate(d *schema.ResourceData, meta interface{})
 
 	}
 
+	if v, ok := d.GetOk("pre_user_data"); ok {
+		objectDataLocalMap2["pre_user_data"] = v
+	}
+
 	request["kubernetes_config"] = objectDataLocalMap2
 	objectDataLocalMap3 := make(map[string]interface{})
 
@@ -1453,6 +1461,7 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 	d.Set("cpu_policy", kubernetes_config1Raw["cpu_policy"])
 	d.Set("install_cloud_monitor", kubernetes_config1Raw["cms_enabled"])
 	d.Set("node_name_mode", kubernetes_config1Raw["node_name_mode"])
+	d.Set("pre_user_data", kubernetes_config1Raw["pre_user_data"])
 	d.Set("runtime_name", kubernetes_config1Raw["runtime"])
 	d.Set("runtime_version", kubernetes_config1Raw["runtime_version"])
 	d.Set("unschedulable", kubernetes_config1Raw["unschedulable"])
@@ -1545,7 +1554,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			dataDisksMaps = append(dataDisksMaps, dataDisksMap)
 		}
 	}
-	d.Set("data_disks", dataDisksMaps)
+	if data_disks1Raw != nil {
+		if err := d.Set("data_disks", dataDisksMaps); err != nil {
+			return err
+		}
+	}
 	instance_types1Raw, _ := jsonpath.Get("$.scaling_group.instance_types", objectRaw)
 	d.Set("instance_types", instance_types1Raw)
 	kubeletConfigurationMaps := make([]map[string]interface{}, 0)
@@ -1609,7 +1622,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		kubeletConfigurationMap["allowed_unsafe_sysctls"] = allowedUnsafeSysctls1Raw
 		kubeletConfigurationMaps = append(kubeletConfigurationMaps, kubeletConfigurationMap)
 	}
-	d.Set("kubelet_configuration", kubeletConfigurationMaps)
+	if kubelet_configuration1RawObj != nil {
+		if err := d.Set("kubelet_configuration", kubeletConfigurationMaps); err != nil {
+			return err
+		}
+	}
 	labels1Raw, _ := jsonpath.Get("$.kubernetes_config.labels", objectRaw)
 	labelsMaps := make([]map[string]interface{}, 0)
 	if labels1Raw != nil {
@@ -1622,7 +1639,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			labelsMaps = append(labelsMaps, labelsMap)
 		}
 	}
-	d.Set("labels", labelsMaps)
+	if labels1Raw != nil {
+		if err := d.Set("labels", labelsMaps); err != nil {
+			return err
+		}
+	}
 	managementMaps := make([]map[string]interface{}, 0)
 	managementMap := make(map[string]interface{})
 	management1Raw := make(map[string]interface{})
@@ -1684,7 +1705,9 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 		managementMap["auto_vul_fix_policy"] = autoVulFixPolicyMaps
 		managementMaps = append(managementMaps, managementMap)
 	}
-	d.Set("management", managementMaps)
+	if err := d.Set("management", managementMaps); err != nil {
+		return err
+	}
 	privatePoolOptionsMaps := make([]map[string]interface{}, 0)
 	privatePoolOptionsMap := make(map[string]interface{})
 	private_pool_options1RawObj, _ := jsonpath.Get("$.scaling_group.private_pool_options", objectRaw)
@@ -1698,7 +1721,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 
 		privatePoolOptionsMaps = append(privatePoolOptionsMaps, privatePoolOptionsMap)
 	}
-	d.Set("private_pool_options", privatePoolOptionsMaps)
+	if private_pool_options1RawObj != nil {
+		if err := d.Set("private_pool_options", privatePoolOptionsMaps); err != nil {
+			return err
+		}
+	}
 	rds_instances1Raw, _ := jsonpath.Get("$.scaling_group.rds_instances", objectRaw)
 	d.Set("rds_instances", rds_instances1Raw)
 	scalingConfigMaps := make([]map[string]interface{}, 0)
@@ -1718,7 +1745,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 
 		scalingConfigMaps = append(scalingConfigMaps, scalingConfigMap)
 	}
-	d.Set("scaling_config", scalingConfigMaps)
+	if objectRaw["auto_scaling"] != nil {
+		if err := d.Set("scaling_config", scalingConfigMaps); err != nil {
+			return err
+		}
+	}
 	security_group_ids1Raw, _ := jsonpath.Get("$.scaling_group.security_group_ids", objectRaw)
 	d.Set("security_group_ids", security_group_ids1Raw)
 	spot_price_limit1Raw, _ := jsonpath.Get("$.scaling_group.spot_price_limit", objectRaw)
@@ -1733,7 +1764,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			spotPriceLimitMaps = append(spotPriceLimitMaps, spotPriceLimitMap)
 		}
 	}
-	d.Set("spot_price_limit", spotPriceLimitMaps)
+	if spot_price_limit1Raw != nil {
+		if err := d.Set("spot_price_limit", spotPriceLimitMaps); err != nil {
+			return err
+		}
+	}
 	system_disk_categories1Raw, _ := jsonpath.Get("$.scaling_group.system_disk_categories", objectRaw)
 	d.Set("system_disk_categories", system_disk_categories1Raw)
 	tagsMaps, _ := jsonpath.Get("$.scaling_group.tags", objectRaw)
@@ -1751,7 +1786,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 			taintsMaps = append(taintsMaps, taintsMap)
 		}
 	}
-	d.Set("taints", taintsMaps)
+	if taints1Raw != nil {
+		if err := d.Set("taints", taintsMaps); err != nil {
+			return err
+		}
+	}
 	teeConfigMaps := make([]map[string]interface{}, 0)
 	teeConfigMap := make(map[string]interface{})
 	tee_config1Raw := make(map[string]interface{})
@@ -1763,7 +1802,11 @@ func resourceAliCloudAckNodepoolRead(d *schema.ResourceData, meta interface{}) e
 
 		teeConfigMaps = append(teeConfigMaps, teeConfigMap)
 	}
-	d.Set("tee_config", teeConfigMaps)
+	if objectRaw["tee_config"] != nil {
+		if err := d.Set("tee_config", teeConfigMaps); err != nil {
+			return err
+		}
+	}
 	vswitch_ids1Raw, _ := jsonpath.Get("$.scaling_group.vswitch_ids", objectRaw)
 	d.Set("vswitch_ids", vswitch_ids1Raw)
 
@@ -2198,12 +2241,17 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		objectDataLocalMap2["unschedulable"] = d.Get("unschedulable")
 	}
 
+	if d.HasChange("pre_user_data") {
+		update = true
+		objectDataLocalMap2["pre_user_data"] = d.Get("pre_user_data")
+	}
+
 	request["kubernetes_config"] = objectDataLocalMap2
 	if d.HasChange("scaling_config") {
 		update = true
 		objectDataLocalMap3 := make(map[string]interface{})
 
-		if v := d.Get("scaling_config"); v != nil {
+		if v := d.Get("scaling_config"); !IsNil(v) {
 			type1, _ := jsonpath.Get("$[0].type", v)
 			if type1 != nil && type1 != "" {
 				objectDataLocalMap3["type"] = type1
@@ -2240,7 +2288,8 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("management") {
 		update = true
 		objectDataLocalMap4 := make(map[string]interface{})
-		if v := d.Get("management"); v != nil {
+
+		if v := d.Get("management"); !IsNil(v) {
 			enable3, _ := jsonpath.Get("$[0].enable", v)
 			if enable3 != nil && enable3 != "" {
 				objectDataLocalMap4["enable"] = enable3
@@ -2302,7 +2351,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 		}
 	}
 
-	if v, ok := d.GetOk("update_nodes"); ok {
+	if v, ok := d.GetOkExists("update_nodes"); ok {
 		request["update_nodes"] = v
 	}
 	if _, exist := d.GetOk("desired_size"); !exist && d.HasChange("node_count") {
@@ -2368,7 +2417,8 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 	if d.HasChange("kubelet_configuration") {
 		update = true
 		objectDataLocalMap := make(map[string]interface{})
-		if v := d.Get("kubelet_configuration"); v != nil {
+
+		if v := d.Get("kubelet_configuration"); !IsNil(v) {
 			registryBurst1Raw, _ := jsonpath.Get("$[0].registry_burst", v)
 			if registryBurst1Raw != nil && registryBurst1Raw != "" {
 				registryBurst1, _ := strconv.ParseInt(registryBurst1Raw.(string), 10, 64)
@@ -2462,7 +2512,7 @@ func resourceAliCloudAckNodepoolUpdate(d *schema.ResourceData, meta interface{})
 
 	objectDataLocalMap1 = make(map[string]interface{})
 
-	if v := d.Get("rolling_policy"); v != nil {
+	if v := d.Get("rolling_policy"); !IsNil(v) {
 		maxParallelism, _ := jsonpath.Get("$[0].max_parallelism", v)
 		if maxParallelism != nil && maxParallelism != "" {
 			objectDataLocalMap1["max_parallelism"] = maxParallelism
@@ -2564,6 +2614,9 @@ func resourceAliCloudAckNodepoolDelete(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

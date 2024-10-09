@@ -1911,6 +1911,7 @@ resource "alicloud_instance" "default" {
 
 data "alicloud_cs_managed_kubernetes_clusters" "default" {
  name_regex = "^Default"
+ enable_details = true
 }
 
 resource "alicloud_cs_managed_kubernetes" "default" {
@@ -2157,11 +2158,11 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"runtime_version": "1.6.28",
+					"runtime_version": "1.6.34",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"runtime_version": "1.6.28",
+						"runtime_version": "1.6.34",
 					}),
 				),
 			},
@@ -2391,7 +2392,7 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 					"system_disk_size":      "120",
 					"multi_az_policy":       "COST_OPTIMIZED",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
+					"runtime_version":       "1.6.34",
 					"desired_size":          "0",
 					"instance_types": []string{
 						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}", "${data.alicloud_instance_types.cloud_essd.instance_types.1.id}"},
@@ -2426,7 +2427,7 @@ func TestAccAliCloudAckNodepool_basic5288(t *testing.T) {
 						"system_disk_size":                         "120",
 						"multi_az_policy":                          "COST_OPTIMIZED",
 						"cpu_policy":                               "none",
-						"runtime_version":                          "1.6.28",
+						"runtime_version":                          "1.6.34",
 						"desired_size":                             "0",
 						"instance_types.#":                         "2",
 						"spot_instance_remedy":                     "true",
@@ -2588,7 +2589,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"vswitch_ids": []string{
 						"${local.vsw1}"},
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_auto.instance_types.0.id}", "${data.alicloud_instance_types.cloud_auto.instance_types.1.id}"},
+						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}"},
 					"system_disk_category": "cloud_auto",
 					"system_disk_size":     "120",
 				}),
@@ -2597,7 +2598,7 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 						"node_pool_name":       name,
 						"cluster_id":           CHECKSET,
 						"vswitch_ids.#":        "1",
-						"instance_types.#":     "2",
+						"instance_types.#":     "1",
 						"system_disk_category": "cloud_auto",
 						"system_disk_size":     "120",
 					}),
@@ -2686,11 +2687,11 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"runtime_version": "1.6.28",
+					"runtime_version": "1.6.34",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"runtime_version": "1.6.28",
+						"runtime_version": "1.6.34",
 					}),
 				),
 			},
@@ -2964,14 +2965,13 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 					"vswitch_ids": []string{
 						"${local.vsw1}"},
 					"install_cloud_monitor": "true",
-					"login_as_non_root":     "true",
 					"system_disk_size":      "120",
 					"multi_az_policy":       "PRIORITY",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
+					"runtime_version":       "1.6.34",
 					"desired_size":          "1",
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_auto.instance_types.0.id}", "${data.alicloud_instance_types.cloud_auto.instance_types.1.id}"},
+						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}"},
 					"kubelet_configuration": []map[string]interface{}{
 						{
 							"event_burst":           "50",
@@ -3036,13 +3036,12 @@ func TestAccAliCloudAckNodepool_basic5291(t *testing.T) {
 						"system_disk_category":         "cloud_auto",
 						"vswitch_ids.#":                "1",
 						"install_cloud_monitor":        "true",
-						"login_as_non_root":            "true",
 						"system_disk_size":             "120",
 						"multi_az_policy":              "PRIORITY",
 						"cpu_policy":                   "none",
-						"runtime_version":              "1.6.28",
+						"runtime_version":              "1.6.34",
 						"desired_size":                 "1",
-						"instance_types.#":             "2",
+						"instance_types.#":             "1",
 						"system_disk_provisioned_iops": "100",
 						"system_disk_bursting_enabled": "true",
 						"unschedulable":                "true",
@@ -3339,11 +3338,11 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"runtime_version": "1.6.28",
+					"runtime_version": "1.6.34",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"runtime_version": "1.6.28",
+						"runtime_version": "1.6.34",
 					}),
 				),
 			},
@@ -3467,7 +3466,7 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 						},
 					},
 					"system_disk_performance_level": "PL0",
-					"runtime_version":               "1.6.28",
+					"runtime_version":               "1.6.34",
 					"labels": []map[string]interface{}{
 						{
 							"key":   "tf",
@@ -3496,7 +3495,7 @@ func TestAccAliCloudAckNodepool_basic5266(t *testing.T) {
 						"cpu_policy":                    "none",
 						"period":                        "1",
 						"system_disk_performance_level": "PL0",
-						"runtime_version":               "1.6.28",
+						"runtime_version":               "1.6.34",
 						"labels.#":                      "1",
 						"period_unit":                   "Month",
 						"desired_size":                  "0",
@@ -3757,11 +3756,11 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"runtime_version": "1.6.28",
+					"runtime_version": "1.6.34",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"runtime_version": "1.6.28",
+						"runtime_version": "1.6.34",
 					}),
 				),
 			},
@@ -3861,6 +3860,16 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"unschedulable": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pre_user_data": "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pre_user_data": "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
 					}),
 				),
 			},
@@ -4030,11 +4039,13 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"user_data": "IyEvYmluL2Jhc2gKCmVjaG8gIlRoaXMgaXMgYSBleGFtcGxlIg==",
+					"user_data":     "IyEvYmluL2Jhc2gKCmVjaG8gIlRoaXMgaXMgYSBleGFtcGxlIg==",
+					"pre_user_data": "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_data": "IyEvYmluL2Jhc2gKCmVjaG8gIlRoaXMgaXMgYSBleGFtcGxlIg==",
+						"user_data":     "IyEvYmluL2Jhc2gKCmVjaG8gIlRoaXMgaXMgYSBleGFtcGxlIg==",
+						"pre_user_data": "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
 					}),
 				),
 			},
@@ -4077,7 +4088,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 					"system_disk_size":      "80",
 					"multi_az_policy":       "PRIORITY",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
+					"runtime_version":       "1.6.34",
 					"desired_size":          "0",
 					"instance_types": []string{
 						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}"},
@@ -4119,6 +4130,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 					"node_name_mode":                 "customized,aliyun,ip,com",
 					"user_data":                      "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgYSBleGFtcGxlIg==",
 					"unschedulable":                  "false",
+					"pre_user_data":                  "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
 					"system_disk_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.defaultrt8z7K.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -4134,7 +4146,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 						"system_disk_size":               "80",
 						"multi_az_policy":                "PRIORITY",
 						"cpu_policy":                     "none",
-						"runtime_version":                "1.6.28",
+						"runtime_version":                "1.6.34",
 						"desired_size":                   "0",
 						"instance_types.#":               "1",
 						"data_disks.#":                   "3",
@@ -4146,6 +4158,7 @@ func TestAccAliCloudAckNodepool_basic5172(t *testing.T) {
 						"node_name_mode":                 "customized,aliyun,ip,com",
 						"user_data":                      "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgYSBleGFtcGxlIg==",
 						"unschedulable":                  "false",
+						"pre_user_data":                  "IyEvYmluL2Jhc2gKCmVjaG8gInRoaXMgaXMgcHJlLXVzZXItZGF0YSBhZnRlciBtb2RpZmllZCI=",
 						"system_disk_snapshot_policy_id": CHECKSET,
 					}),
 				),
@@ -4379,11 +4392,11 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"runtime_version": "1.6.28",
+					"runtime_version": "1.6.34",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"runtime_version": "1.6.28",
+						"runtime_version": "1.6.34",
 					}),
 				),
 			},
@@ -4401,7 +4414,7 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 					"password":             "${var.password}",
 					"system_disk_category": "cloud_efficiency",
 					"runtime_name":         "containerd",
-					"runtime_version":      "1.6.28",
+					"runtime_version":      "1.6.34",
 					"node_pool_name":       name + "_update",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -4416,7 +4429,7 @@ func TestAccAliCloudAckNodepool_basic5401(t *testing.T) {
 						"password":             CHECKSET,
 						"system_disk_category": "cloud_efficiency",
 						"runtime_name":         "containerd",
-						"runtime_version":      "1.6.28",
+						"runtime_version":      "1.6.34",
 						"node_pool_name":       name + "_update",
 					}),
 				),
@@ -4806,7 +4819,7 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 					"system_disk_size":      "120",
 					"multi_az_policy":       "COST_OPTIMIZED",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
+					"runtime_version":       "1.6.34",
 					"desired_size":          "0",
 					"instance_types": []string{
 						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}",
@@ -4846,7 +4859,7 @@ func TestAccAliCloudAckNodepool_basic5288_twin(t *testing.T) {
 						"system_disk_size":                         "120",
 						"multi_az_policy":                          "COST_OPTIMIZED",
 						"cpu_policy":                               "none",
-						"runtime_version":                          "1.6.28",
+						"runtime_version":                          "1.6.34",
 						"desired_size":                             "0",
 						"instance_types.#":                         "2",
 						"spot_instance_remedy":                     "false",
@@ -4933,11 +4946,10 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 					"system_disk_size":      "120",
 					"multi_az_policy":       "PRIORITY",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
-					"desired_size":          "2",
+					"runtime_version":       "1.6.34",
+					"desired_size":          "1",
 					"instance_types": []string{
-						"${data.alicloud_instance_types.cloud_auto.instance_types.0.id}",
-						"${data.alicloud_instance_types.cloud_auto.instance_types.1.id}",
+						"${data.alicloud_instance_types.cloud_essd.instance_types.8.id}",
 					},
 					"kubelet_configuration": []map[string]interface{}{
 						{
@@ -5013,9 +5025,9 @@ func TestAccAliCloudAckNodepool_basic5291_twin(t *testing.T) {
 						"system_disk_size":             "120",
 						"multi_az_policy":              "PRIORITY",
 						"cpu_policy":                   "none",
-						"runtime_version":              "1.6.28",
-						"desired_size":                 "2",
-						"instance_types.#":             "2",
+						"runtime_version":              "1.6.34",
+						"desired_size":                 "1",
+						"instance_types.#":             "1",
 						"system_disk_provisioned_iops": "200",
 						"system_disk_bursting_enabled": "false",
 						"unschedulable":                "false",
@@ -5101,7 +5113,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 						},
 					},
 					"system_disk_performance_level": "PL0",
-					"runtime_version":               "1.6.28",
+					"runtime_version":               "1.6.34",
 					"labels": []map[string]interface{}{
 						{
 							"key":   "tf",
@@ -5134,7 +5146,7 @@ func TestAccAliCloudAckNodepool_basic5266_twin(t *testing.T) {
 						"cpu_policy":                    "none",
 						"period":                        "6",
 						"system_disk_performance_level": "PL0",
-						"runtime_version":               "1.6.28",
+						"runtime_version":               "1.6.34",
 						"labels.#":                      "1",
 						"period_unit":                   "Month",
 						"desired_size":                  "0",
@@ -5217,7 +5229,7 @@ func TestAccAliCloudAckNodepool_basic5172_twin(t *testing.T) {
 					"system_disk_size":      "100",
 					"multi_az_policy":       "PRIORITY",
 					"cpu_policy":            "none",
-					"runtime_version":       "1.6.28",
+					"runtime_version":       "1.6.34",
 					"desired_size":          "0",
 					"instance_types": []string{
 						"${data.alicloud_instance_types.cloud_essd.instance_types.0.id}",
@@ -5299,7 +5311,7 @@ func TestAccAliCloudAckNodepool_basic5172_twin(t *testing.T) {
 						"system_disk_size":               "100",
 						"multi_az_policy":                "PRIORITY",
 						"cpu_policy":                     "none",
-						"runtime_version":                "1.6.28",
+						"runtime_version":                "1.6.34",
 						"desired_size":                   "0",
 						"instance_types.#":               "3",
 						"data_disks.#":                   "3",
@@ -5365,7 +5377,7 @@ func TestAccAliCloudAckNodepool_basic5401_twin(t *testing.T) {
 					"password":             "${var.password}",
 					"system_disk_category": "cloud_efficiency",
 					"runtime_name":         "containerd",
-					"runtime_version":      "1.6.28",
+					"runtime_version":      "1.6.34",
 					"node_pool_name":       name,
 					"tags": map[string]string{
 						"Created": "TF",
@@ -5385,7 +5397,7 @@ func TestAccAliCloudAckNodepool_basic5401_twin(t *testing.T) {
 						"password":             CHECKSET,
 						"system_disk_category": "cloud_efficiency",
 						"runtime_name":         "containerd",
-						"runtime_version":      "1.6.28",
+						"runtime_version":      "1.6.34",
 						"node_pool_name":       name,
 						"tags.%":               "2",
 						"tags.Created":         "TF",

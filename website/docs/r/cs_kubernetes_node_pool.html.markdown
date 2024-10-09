@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_cs_kubernetes_node_pool
 
-Provides a ACK Nodepool resource. This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). 
+Provides a ACK Nodepool resource.
+
+This resource will help you to manage node pool in Kubernetes Cluster, see [What is kubernetes node pool](https://www.alibabacloud.com/help/en/ack/ack-managed-and-ack-dedicated/developer-reference/api-create-node-pools). 
 
 -> **NOTE:** Available since v1.97.0.
 
@@ -354,6 +356,7 @@ The following arguments are supported:
 * `period` - (Optional, Int) Node payment period. Its valid value is one of {1, 2, 3, 6, 12}.
 * `period_unit` - (Optional) Node payment period unit, valid value: `Month`. Default is `Month`.
 * `platform` - (Optional, Computed, Deprecated since v1.145.0) Operating system release, using `image_type` instead.
+* `pre_user_data` - (Optional, Available since v1.232.0) Node pre custom data, base64-encoded, the script executed before the node is initialized. 
 * `private_pool_options` - (Optional, List) Private node pool configuration. See [`private_pool_options`](#private_pool_options) below.
 * `rds_instances` - (Optional, List) The list of RDS instances.
 * `resource_group_id` - (Optional, Computed) The ID of the resource group
@@ -370,7 +373,9 @@ The following arguments are supported:
   -`true`: enable Alibaba Cloud OS security reinforcement.
   -`false`: does not enable Alibaba Cloud OS security reinforcement.
 * `soc_enabled` - (Optional, ForceNew) Whether enable worker node to support soc security reinforcement, its valid value `true` or `false`. Default to `false` and apply to AliyunLinux series. See [SOC Reinforcement](https://help.aliyun.com/document_detail/196148.html).
+
 -> **NOTE:**  It is forbidden to set both `security_hardening_os` and `soc_enabled` to `true` at the same time.
+
 * `spot_instance_pools` - (Optional, Int) The number of instance types that are available. Auto Scaling creates preemptible instances of multiple instance types that are available at the lowest cost. Valid values: 1 to 10.
 * `spot_instance_remedy` - (Optional) Specifies whether to supplement preemptible instances when the number of preemptible instances drops below the specified minimum number. If you set the value to true, Auto Scaling attempts to create a new preemptible instance when the system notifies that an existing preemptible instance is about to be reclaimed. Valid values: `true`: enables the supplementation of preemptible instances. `false`: disables the supplementation of preemptible instances.
 * `spot_price_limit` - (Optional, List) The current single preemptible instance type market price range configuration. See [`spot_price_limit`](#spot_price_limit) below.
@@ -392,12 +397,12 @@ The following arguments are supported:
 * `system_disk_provisioned_iops` - (Optional, Int) The predefined IOPS of a system disk. Valid values: 0 to min{50,000, 1,000 × Capacity - Baseline IOPS}. Baseline IOPS = min{1,800 + 50 × Capacity, 50,000}. This parameter is supported only when `system_disk_category` is set to `cloud_auto`.
 * `system_disk_size` - (Optional, Int) The system disk category of worker node. Its valid value range [40~500] in GB. Default to `120`.
 * `system_disk_snapshot_policy_id` - (Optional) The ID of the automatic snapshot policy used by the system disk.
-* `tags` - (Optional, Map) Add tags only for ECS instances. The maximum length of the tag key is 128 characters. The tag key and value cannot start with aliyun or acs:, or contain https:// or http://".
+* `tags` - (Optional, Map) Add tags only for ECS instances. The maximum length of the tag key is 128 characters. The tag key and value cannot start with aliyun or acs:, or contain https:// or http://.
 * `taints` - (Optional, List) A List of Kubernetes taints to assign to the nodes. Detailed below. More information in [Taints and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). See [`taints`](#taints) below.
 * `tee_config` - (Optional, ForceNew, Computed, List) The configuration about confidential computing for the cluster. See [`tee_config`](#tee_config) below.
 * `unschedulable` - (Optional) Whether the node after expansion can be scheduled.
 * `update_nodes` - (Optional) Synchronously update node labels and taints.
-* `user_data` - (Optional) Node custom data.
+* `user_data` - (Optional) Node custom data, base64-encoded.
 * `vswitch_ids` - (Required, List) The vswitches used by node pool workers.
 
 * `kms_encrypted_password` - (Optional, Available since v1.177.0) An KMS encrypts password used to a cs kubernetes. You have to specify one of `password` `key_name` `kms_encrypted_password` fields.
