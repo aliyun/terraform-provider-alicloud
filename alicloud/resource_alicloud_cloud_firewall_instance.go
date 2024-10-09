@@ -27,6 +27,12 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
+			"spec": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"premium_version", "enterprise_version", "ultimate_version", "payg_version"}, false),
+			},
 			"period": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -97,11 +103,6 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"cfw_service": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Removed:  "Attribute 'cfw_service' does not support longer, and it has been removed since v1.209.1",
-			},
 			"cfw_account": {
 				Type:     schema.TypeBool,
 				Optional: true,
@@ -131,22 +132,23 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"ip_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntBetween(20, 4000),
+			},
+			"cfw_log": {
+				Type:     schema.TypeBool,
+				Optional: true,
 			},
 			"cfw_log_storage": {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: IntBetween(1000, 500000),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
-					if v, ok := d.GetOk("cfw_log"); ok && v.(bool) {
+					if v, ok := d.GetOk("cfw_log"); ok && v.(bool) && d.Get("payment_type").(string) == "Subscription" {
 						return false
 					}
 					return true
 				},
-			},
-			"cfw_log": {
-				Type:     schema.TypeBool,
-				Optional: true,
 			},
 			"band_width": {
 				Type:         schema.TypeInt,
@@ -158,16 +160,20 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: IntBetween(5, 5000),
 			},
-			"spec": {
+			"modify_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"premium_version", "enterprise_version", "ultimate_version"}, false),
+				ValidateFunc: StringInSlice([]string{"Downgrade", "Upgrade"}, false),
 			},
-			"create_time": {
-				Type:     schema.TypeString,
+			"user_status": {
+				Type:     schema.TypeBool,
 				Computed: true,
 			},
 			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"create_time": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -179,16 +185,18 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"modify_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ValidateFunc: StringInSlice([]string{"Downgrade", "Upgrade"}, false),
+			"cfw_service": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Removed:  "Attribute 'cfw_service' does not support longer, and it has been removed since v1.209.1",
 			},
 		},
 	}
 }
+
 func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	cloudfwService := CloudfwService{client}
 	var response map[string]interface{}
 	action := "CreateInstance"
 	request := make(map[string]interface{})
@@ -234,7 +242,7 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 	parameterMapList := make([]map[string]interface{}, 0)
 	parameterMapList = append(parameterMapList, map[string]interface{}{
 		"Code":  "Spec",
-		"Value": convertCloudFirewallInstanceVersion(d.Get("spec").(string)),
+		"Value": convertCloudFirewallInstanceSpecRequest(d.Get("spec").(string)),
 	})
 
 	parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -331,14 +339,22 @@ func resourceAliCloudCloudFirewallInstanceCreate(d *schema.ResourceData, meta in
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 	responseData := response["Data"].(map[string]interface{})
+
 	d.SetId(fmt.Sprint(responseData["InstanceId"]))
-	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
+
+	stateConf := BuildStateConf([]string{}, []string{"normal"}, d.Timeout(schema.TimeoutCreate), 30*time.Second, cloudfwService.CloudFirewallInstanceStateRefreshFunc(d.Id(), []string{}))
+	if _, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id())
+	}
+
+	return resourceAliCloudCloudFirewallInstanceUpdate(d, meta)
 }
 
 func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-
 	bssOpenApiService := BssOpenApiService{client}
+	cloudfwService := CloudfwService{client}
+
 	getQueryInstanceObject, err := bssOpenApiService.QueryAvailableInstance(d.Id())
 	if err != nil {
 		if !d.IsNewResource() && NotFoundError(err) {
@@ -348,19 +364,34 @@ func resourceAliCloudCloudFirewallInstanceRead(d *schema.ResourceData, meta inte
 		}
 		return WrapError(err)
 	}
+
 	d.Set("create_time", getQueryInstanceObject["CreateTime"])
 	d.Set("renewal_status", getQueryInstanceObject["RenewStatus"])
 	d.Set("renewal_duration_unit", convertCloudFirewallInstanceRenewalDurationUnitResponse(getQueryInstanceObject["RenewalDurationUnit"]))
 	d.Set("renewal_duration", getQueryInstanceObject["RenewalDuration"])
 	d.Set("renew_period", getQueryInstanceObject["RenewalDuration"])
-	d.Set("status", getQueryInstanceObject["Status"])
 	d.Set("payment_type", getQueryInstanceObject["SubscriptionType"])
 	d.Set("end_time", getQueryInstanceObject["EndTime"])
+
+	object, err := cloudfwService.DescribeCloudFirewallInstanceUserBuyVersion(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Set("spec", convertCloudFirewallInstanceSpecResponse(fmt.Sprint(object["Version"])))
+	d.Set("cfw_log", object["LogStatus"])
+	d.Set("cfw_log_storage", object["LogStorage"])
+	d.Set("fw_vpc_number", object["VpcNumber"])
+	d.Set("ip_number", object["IpNumber"])
+	d.Set("user_status", object["UserStatus"])
+	d.Set("status", object["InstanceStatus"])
+
 	return nil
 }
 
 func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	bssOpenApiService := BssOpenApiService{client}
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
@@ -368,6 +399,8 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 	var response map[string]interface{}
 	d.Partial(true)
 	update := false
+	isPostPaid := d.Get("payment_type").(string) == "PayAsYouGo"
+
 	setRenewalReq := map[string]interface{}{
 		"InstanceIDs": d.Id(),
 	}
@@ -430,12 +463,15 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			return nil
 		})
 		addDebug(action, response, setRenewalReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
+
 		d.SetPartial("renewal_status")
 		d.SetPartial("payment_type")
 		d.SetPartial("renewal_duration")
@@ -457,7 +493,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 
 	parameterMapList := make([]map[string]interface{}, 0)
 
-	if d.HasChange("cfw_account") {
+	if !d.IsNewResource() && d.HasChange("cfw_account") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("cfw_account"); ok {
@@ -467,7 +503,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		})
 	}
 
-	if d.HasChange("account_number") {
+	if !d.IsNewResource() && d.HasChange("account_number") {
 		update = true
 	}
 	if v, ok := d.GetOkExists("account_number"); ok {
@@ -477,7 +513,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		})
 	}
 
-	if d.HasChange("fw_vpc_number") {
+	if !d.IsNewResource() && d.HasChange("fw_vpc_number") {
 		update = true
 		if v, ok := d.GetOk("fw_vpc_number"); ok {
 			parameterMapList = append(parameterMapList, map[string]interface{}{
@@ -487,7 +523,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		}
 	}
 
-	if d.HasChange("ip_number") {
+	if !d.IsNewResource() && d.HasChange("ip_number") {
 		update = true
 	}
 	if v, ok := d.GetOk("ip_number"); ok {
@@ -497,7 +533,18 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		})
 	}
 
-	if d.HasChange("cfw_log_storage") {
+	if !d.IsNewResource() && d.HasChange("cfw_log") && !isPostPaid {
+		update = true
+
+		if v, ok := d.GetOk("cfw_log"); ok {
+			parameterMapList = append(parameterMapList, map[string]interface{}{
+				"Code":  "CfwLog",
+				"Value": v,
+			})
+		}
+	}
+
+	if !d.IsNewResource() && d.HasChange("cfw_log_storage") && !isPostPaid {
 		update = true
 	}
 	if v, ok := d.GetOk("cfw_log_storage"); ok {
@@ -507,17 +554,7 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		})
 	}
 
-	if d.HasChange("cfw_log") {
-		update = true
-	}
-	if v, ok := d.GetOk("cfw_log"); ok {
-		parameterMapList = append(parameterMapList, map[string]interface{}{
-			"Code":  "CfwLog",
-			"Value": v,
-		})
-	}
-
-	if d.HasChange("band_width") {
+	if !d.IsNewResource() && d.HasChange("band_width") {
 		update = true
 	}
 	if v, ok := d.GetOk("band_width"); ok {
@@ -527,17 +564,17 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		})
 	}
 
-	if d.HasChange("spec") {
+	if !d.IsNewResource() && d.HasChange("spec") {
 		update = true
 	}
 	if v, ok := d.GetOk("spec"); ok {
 		parameterMapList = append(parameterMapList, map[string]interface{}{
 			"Code":  "Spec",
-			"Value": convertCloudFirewallInstanceVersion(v.(string)),
+			"Value": convertCloudFirewallInstanceSpecRequest(v.(string)),
 		})
 	}
 
-	if d.HasChange("instance_count") {
+	if !d.IsNewResource() && d.HasChange("instance_count") {
 		update = true
 	}
 	if v, ok := d.GetOk("instance_count"); ok {
@@ -597,14 +634,21 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 			return nil
 		})
 		addDebug(action, response, modifyInstanceRequest)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		if fmt.Sprint(response["Code"]) != "Success" {
 			return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Paid"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, bssOpenApiService.CloudFirewallInstanceOrderDetailStateRefreshFunc(fmt.Sprint(response["Data"].(map[string]interface{})["OrderId"]), []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
 		d.SetPartial("payment_type")
-		//d.SetPartial("cfw_service")
 		d.SetPartial("fw_vpc_number")
 		d.SetPartial("ip_number")
 		d.SetPartial("cfw_log_storage")
@@ -613,7 +657,45 @@ func resourceAliCloudCloudFirewallInstanceUpdate(d *schema.ResourceData, meta in
 		d.SetPartial("spec")
 		d.SetPartial("instance_count")
 	}
+
+	if d.HasChange("cfw_log") && d.Get("cfw_log") == true && isPostPaid {
+		action := "CreateSlsLogDispatch"
+		conn, err := client.NewCloudfwClient()
+		if err != nil {
+			return WrapError(err)
+		}
+
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, nil, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
+			return nil
+		})
+		addDebug(action, response, nil)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_cloud_firewall_instance", action, AlibabaCloudSdkGoERROR)
+		}
+
+		d.SetPartial("cfw_log")
+	}
+
 	d.Partial(false)
+
 	return resourceAliCloudCloudFirewallInstanceRead(d, meta)
 }
 
@@ -672,7 +754,7 @@ func resourceAliCloudCloudFirewallInstanceDelete(d *schema.ResourceData, meta in
 	return nil
 }
 
-func convertCloudFirewallInstanceVersion(source string) interface{} {
+func convertCloudFirewallInstanceSpecRequest(source interface{}) interface{} {
 	switch source {
 	case "premium_version":
 		return 2
@@ -680,17 +762,23 @@ func convertCloudFirewallInstanceVersion(source string) interface{} {
 		return 3
 	case "ultimate_version":
 		return 4
+	case "payg_version":
+		return 10
 	}
 
 	return source
 }
 
-func convertCloudFirewallInstanceRenewalDurationUnitResponse(source interface{}) interface{} {
+func convertCloudFirewallInstanceSpecResponse(source interface{}) interface{} {
 	switch source {
-	case "M":
-		return "Month"
-	case "Y":
-		return "Year"
+	case "2":
+		return "premium_version"
+	case "3":
+		return "enterprise_version"
+	case "4":
+		return "ultimate_version"
+	case "10":
+		return "payg_version"
 	}
 
 	return source
@@ -702,6 +790,17 @@ func convertCloudFirewallInstanceRenewalDurationUnitRequest(source interface{}) 
 		return "M"
 	case "Year":
 		return "Y"
+	}
+
+	return source
+}
+
+func convertCloudFirewallInstanceRenewalDurationUnitResponse(source interface{}) interface{} {
+	switch source {
+	case "M":
+		return "Month"
+	case "Y":
+		return "Year"
 	}
 
 	return source

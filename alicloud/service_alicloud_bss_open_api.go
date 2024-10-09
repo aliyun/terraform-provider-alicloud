@@ -214,6 +214,14 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 	}
 
 	if fmt.Sprint(response["Code"]) != "Success" {
+		accountId, err := s.client.AccountId()
+		if err != nil {
+			return nil, err
+		}
+
+		if fmt.Sprint(response["Message"]) == fmt.Sprintf("BssOpenApiException(code=40001, message=account not exists.pk:%s, enableTraceBackSource=false)", accountId) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall", id)), NotFoundWithResponse, response)
+		}
 		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
@@ -233,4 +241,82 @@ func (s *BssOpenApiService) QueryAvailableInstance(id string) (object map[string
 	object = v.([]interface{})[0].(map[string]interface{})
 
 	return object, nil
+}
+
+func (s *BssOpenApiService) DescribeCloudFirewallInstanceOrderDetail(orderId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewBssopenapiClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetOrderDetail"
+	request := map[string]interface{}{
+		"OrderId": orderId,
+	}
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		return object, WrapErrorf(err, DefaultErrorMsg, orderId, action, AlibabaCloudSdkGoERROR)
+	}
+
+	if fmt.Sprint(response["Code"]) != "Success" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+
+	v, err := jsonpath.Get("$.Data.OrderList.Order", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, orderId, "$.Data.OrderList.Order", response)
+	}
+
+	if len(v.([]interface{})) < 1 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewallOrderId", orderId)), NotFoundWithResponse, response)
+	} else {
+		if fmt.Sprint(v.([]interface{})[0].(map[string]interface{})["OrderId"]) != orderId {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewallOrderId", orderId)), NotFoundWithResponse, response)
+		}
+	}
+
+	object = v.([]interface{})[0].(map[string]interface{})
+
+	return object, nil
+}
+
+func (s *BssOpenApiService) CloudFirewallInstanceOrderDetailStateRefreshFunc(orderId string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeCloudFirewallInstanceOrderDetail(orderId)
+		if err != nil {
+			if NotFoundError(err) {
+				// Set this to nil as if we didn't find anything.
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if object["PaymentStatus"].(string) == failState {
+				return object, object["PaymentStatus"].(string), WrapError(Error(FailedToReachTargetStatus, object["PaymentStatus"].(string)))
+			}
+		}
+
+		return object, object["PaymentStatus"].(string), nil
+	}
 }

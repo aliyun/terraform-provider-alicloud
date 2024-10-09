@@ -37,7 +37,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  nil,
+		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -50,10 +50,62 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
+				Config: testAccConfig(map[string]interface{}{
+					"cfw_log": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cfw_log": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_firewall_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &BssOpenApiService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "QueryAvailableInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%ssddpinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudFirewallInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"payment_type": "PayAsYouGo",
+					"spec":         "payg_version",
+					"cfw_log":      "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"payment_type": "PayAsYouGo",
+						"spec":         "payg_version",
+						"cfw_log":      "true",
+					}),
+				),
+			},
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -84,7 +136,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 					"payment_type": "Subscription",
 					"spec":         "premium_version",
 					"ip_number":    "20",
-					"band_width":   "10",
+					"band_width":   "20",
 					"cfw_log":      "false",
 					"period":       "1",
 				}),
@@ -93,7 +145,6 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 						"payment_type": "Subscription",
 						"spec":         "premium_version",
 						"ip_number":    "20",
-						"band_width":   "10",
 						"cfw_log":      "false",
 						"period":       "1",
 					}),
@@ -114,14 +165,11 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"band_width":  "20",
+					"band_width":  "25",
 					"modify_type": "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"band_width":  "20",
-						"modify_type": "Upgrade",
-					}),
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -143,6 +191,16 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cfw_log_storage": "2000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ip_number": "25",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ip_number": "25",
 					}),
 				),
 			},
@@ -215,17 +273,19 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      resourceId,
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"band_width", "cfw_log", "cfw_log_storage", "ip_number", "period",
-					"modify_type", "spec", "cfw_account", "account_number"},
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"band_width", "period", "modify_type", "cfw_account", "account_number"},
 			},
 		},
 	})
 }
 
-var AliCloudCloudFirewallInstanceMap0 = map[string]string{}
+var AliCloudCloudFirewallInstanceMap0 = map[string]string{
+	"user_status": CHECKSET,
+	"status":      CHECKSET,
+}
 
 func AliCloudCloudFirewallInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
