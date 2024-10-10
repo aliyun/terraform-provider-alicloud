@@ -668,6 +668,16 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"bandwidth": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"bandwidth": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"private_connection_prefix": fmt.Sprintf("privateprefix%d", rand),
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -739,6 +749,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 					"security_ips":                []string{"10.0.0.1"},
 					"db_instance_name":            name,
 					"vpc_auth_mode":               "Open",
+					"bandwidth":                   "100",
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
@@ -772,6 +783,7 @@ func TestAccAliCloudKVStoreRedisInstance_6_0(t *testing.T) {
 						"security_ips.#":                "1",
 						"db_instance_name":              name,
 						"vpc_auth_mode":                 "Open",
+						"bandwidth":                     "100",
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
@@ -822,6 +834,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					"instance_type":    "Redis",
 					"engine_version":   "7.0",
 					"shard_count":      "2",
+					"bandwidth":        "200",
 					"tags": map[string]string{
 						"Created": "TF",
 						"For":     "acceptance test",
@@ -838,6 +851,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"instance_type":     "Redis",
 						"engine_version":    "7.0",
 						"shard_count":       "2",
+						"bandwidth":         "200",
 						"tags.%":            "2",
 						"tags.Created":      "TF",
 						"tags.For":          "acceptance test",
@@ -939,10 +953,12 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"instance_class": "redis.shard.mid.ce",
+					"bandwidth":      "296",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_class": "redis.shard.mid.ce",
+						"bandwidth":      "296",
 					}),
 				),
 			},
@@ -1034,6 +1050,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 					"security_ips":                []string{"10.0.0.1"},
 					"db_instance_name":            name,
 					"vpc_auth_mode":               "Open",
+					"bandwidth":                   "200",
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
@@ -1064,6 +1081,7 @@ func TestAccAliCloudKVStoreRedisInstance_7_0(t *testing.T) {
 						"security_ip_group_name":        "tf",
 						"security_ips.#":                "1",
 						"db_instance_name":              name,
+						"bandwidth":                     "200",
 						"vpc_auth_mode":                 "Open",
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
@@ -1984,16 +2002,16 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 					}),
 				),
 			},
-			//{
-			//	Config: testAccConfig(map[string]interface{}{
-			//		"ssl_enable": "Enable",
-			//	}),
-			//	Check: resource.ComposeTestCheckFunc(
-			//		testAccCheck(map[string]string{
-			//			"ssl_enable": "Enable",
-			//		}),
-			//	),
-			//},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"ssl_enable": "Enable",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"ssl_enable": "Enable",
+					}),
+				),
+			},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"maintain_start_time": "02:00Z",
@@ -2056,7 +2074,7 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 					"security_ips":                []string{"10.0.0.1"},
 					"db_instance_name":            name,
 					"vpc_auth_mode":               "Open",
-					//"ssl_enable":                  "Disable",
+					"ssl_enable":                  "Disable",
 					"config": map[string]string{
 						"appendonly":             "yes",
 						"lazyfree-lazy-eviction": "yes",
@@ -2083,13 +2101,13 @@ func TestAccAliCloudKVStoreRedisInstance_5_0_memory_classic_standard(t *testing.
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":              "redis.amber.master.small.multithread",
-						"instance_release_protection": "false",
-						"resource_group_id":           CHECKSET,
-						"security_ips.#":              "1",
-						"db_instance_name":            name,
-						"vpc_auth_mode":               "Open",
-						//"ssl_enable":                    "Disable",
+						"instance_class":                "redis.amber.master.small.multithread",
+						"instance_release_protection":   "false",
+						"resource_group_id":             CHECKSET,
+						"security_ips.#":                "1",
+						"db_instance_name":              name,
+						"vpc_auth_mode":                 "Open",
+						"ssl_enable":                    "Disable",
 						"config.%":                      "3",
 						"config.appendonly":             "yes",
 						"config.lazyfree-lazy-eviction": "yes",
@@ -2663,6 +2681,7 @@ func SkipTestAccAliCloudKVStoreMemcacheInstance_vpctest(t *testing.T) {
 
 var AliCloudKVStoreMap0 = map[string]string{
 	"connection_domain": CHECKSET,
+	"bandwidth":         CHECKSET,
 	"ssl_enable":        "Disable",
 }
 
