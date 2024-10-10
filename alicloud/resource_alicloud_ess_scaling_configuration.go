@@ -61,6 +61,23 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"image_options_login_as_non_root": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"deletion_protection": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"system_disk_encrypt_algorithm": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"AES-256", "SM4-128"}, false),
+			},
+			"system_disk_kms_key_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"instance_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -104,6 +121,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"instance_description": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringLenBetween(2, 256),
+			},
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -114,6 +136,11 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
+			},
+			"spot_duration": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(0, 1),
 			},
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
@@ -134,6 +161,12 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Default:      DiskCloudEfficiency,
 				ValidateFunc: StringInSlice([]string{"cloud", "ephemeral_ssd", "cloud_ssd", "cloud_essd", "cloud_efficiency"}, false),
 			},
+			"security_enhancement_strategy": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Active", "Deactive"}, false),
+			},
 			"system_disk_size": {
 				Type:         schema.TypeInt,
 				Optional:     true,
@@ -151,12 +184,20 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"system_disk_provisioned_iops": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"data_disk": {
 				Optional: true,
 				Type:     schema.TypeList,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"size": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"provisioned_iops": {
 							Type:     schema.TypeInt,
 							Optional: true,
 						},
@@ -412,6 +453,9 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	request["ScalingGroupId"] = d.Get("scaling_group_id")
 	request["PasswordInherit"] = d.Get("password_inherit")
 	request["SystemDisk.Encrypted"] = d.Get("system_disk_encrypted")
+	request["ImageOptions.LoginAsNonRoot"] = d.Get("image_options_login_as_non_root")
+	request["DeletionProtection"] = d.Get("deletion_protection")
+	request["SystemDisk.KMSKeyId"] = d.Get("system_disk_kms_key_id")
 	if securityGroupId != "" {
 		request["SecurityGroupId"] = d.Get("security_group_id")
 	}
@@ -459,6 +503,13 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 	if v := d.Get("scaling_configuration_name").(string); v != "" {
 		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
 	}
+	if v, ok := d.GetOk("instance_description"); ok {
+		request["InstanceDescription"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_encrypt_algorithm"); ok {
+		request["SystemDisk.EncryptAlgorithm"] = v
+	}
 
 	if v := d.Get("image_name").(string); v != "" {
 		request["ImageName"] = d.Get("image_name")
@@ -468,8 +519,19 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 		request["InternetChargeType"] = d.Get("internet_charge_type")
 	}
 
+	if v, ok := d.GetOk("spot_duration"); ok {
+		request["SpotDuration"] = v
+	}
+
+	if v, ok := d.GetOk("system_disk_provisioned_iops"); ok {
+		request["SystemDisk.ProvisionedIops"] = v
+	}
+
 	if v := d.Get("system_disk_category").(string); v != "" {
 		request["SystemDisk.Category"] = d.Get("system_disk_category")
+	}
+	if v, ok := d.GetOk("security_enhancement_strategy"); ok && v.(string) != "" {
+		request["SecurityEnhancementStrategy"] = v
 	}
 
 	if v := d.Get("internet_max_bandwidth_in").(int); v != 0 {
@@ -550,6 +612,8 @@ func resourceAliyunEssScalingConfigurationCreate(d *schema.ResourceData, meta in
 			disksMap := make(map[string]interface{})
 			item := rew.(map[string]interface{})
 			disksMap["Size"] = item["size"].(int)
+			disksMap["ProvisionedIops"] = item["provisioned_iops"].(int)
+
 			if category, ok := item["category"].(string); ok && category != "" {
 				disksMap["Category"] = category
 			}
@@ -719,6 +783,16 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 		request["ImageName"] = d.Get("image_name")
 		update = true
 	}
+	if d.HasChange("instance_description") {
+		request["InstanceDescription"] = d.Get("instance_description")
+		update = true
+	}
+
+	if d.HasChange("system_disk_encrypt_algorithm") {
+		request["SystemDisk.EncryptAlgorithm"] = d.Get("system_disk_encrypt_algorithm")
+		update = true
+	}
+
 	if d.HasChange("scaling_configuration_name") {
 		request["ScalingConfigurationName"] = d.Get("scaling_configuration_name")
 		update = true
@@ -727,6 +801,20 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 	if d.HasChange("internet_charge_type") {
 		request["InternetChargeType"] = d.Get("internet_charge_type")
 		update = true
+	}
+
+	if d.HasChange("spot_duration") {
+		if v, ok := d.GetOkExists("spot_duration"); ok {
+			request["SpotDuration"] = requests.NewInteger(v.(int))
+			update = true
+		}
+	}
+
+	if d.HasChange("system_disk_provisioned_iops") {
+		if v, ok := d.GetOkExists("system_disk_provisioned_iops"); ok {
+			request["SystemDisk.ProvisionedIops"] = requests.NewInteger(v.(int))
+			update = true
+		}
 	}
 
 	if d.HasChange("system_disk_category") {
@@ -932,6 +1020,7 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 				pack := e.(map[string]interface{})
 				dataDisks = append(dataDisks, map[string]interface{}{
 					"Size":                 pack["size"],
+					"ProvisionedIops":      pack["provisioned_iops"],
 					"Category":             pack["category"],
 					"SnapshotId":           pack["snapshot_id"],
 					"DeleteWithInstance":   pack["delete_with_instance"],
@@ -951,6 +1040,21 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("system_disk_encrypted") {
 		request["SystemDisk.Encrypted"] = d.Get("system_disk_encrypted")
+		update = true
+	}
+
+	if d.HasChange("image_options_login_as_non_root") {
+		request["ImageOptions.LoginAsNonRoot"] = d.Get("image_options_login_as_non_root")
+		update = true
+	}
+
+	if d.HasChange("deletion_protection") {
+		request["DeletionProtection"] = d.Get("deletion_protection")
+		update = true
+	}
+
+	if d.HasChange("system_disk_kms_key_id") {
+		request["SystemDisk.KMSKeyId"] = d.Get("system_disk_kms_key_id")
 		update = true
 	}
 
@@ -1073,19 +1177,34 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 	d.Set("image_id", response["ImageId"])
 	d.Set("image_name", response["ImageName"])
 	d.Set("scaling_configuration_name", response["ScalingConfigurationName"])
+	d.Set("instance_description", response["InstanceDescription"])
+	if response["SystemDisk.EncryptAlgorithm"] != nil {
+		d.Set("system_disk_encrypt_algorithm", response["SystemDisk.EncryptAlgorithm"])
+	}
 	d.Set("internet_charge_type", response["InternetChargeType"])
+	if response["SpotDuration"] != nil {
+		d.Set("spot_duration", response["SpotDuration"])
+	}
+	if response["SystemDisk.ProvisionedIops"] != nil {
+		d.Set("system_disk_provisioned_iops", response["SystemDisk.ProvisionedIops"])
+	}
 	d.Set("system_disk_category", response["SystemDiskCategory"])
+	d.Set("security_enhancement_strategy", response["SecurityEnhancementStrategy"])
 	d.Set("internet_max_bandwidth_in", response["InternetMaxBandwidthIn"])
 	d.Set("internet_max_bandwidth_out", response["InternetMaxBandwidthOut"])
 
 	d.Set("credit_specification", response["CreditSpecification"])
-	d.Set("system_disk_size", response["SystemDiskSize"])
+	if response["SystemDiskSize"] != nil && response["SystemDiskSize"] != 0 {
+		d.Set("system_disk_size", response["SystemDiskSize"])
+	}
 	d.Set("system_disk_name", response["SystemDiskName"])
 	d.Set("system_disk_description", response["SystemDiskDescription"])
 	d.Set("system_disk_auto_snapshot_policy_id", response["SystemDiskAutoSnapshotPolicyId"])
 	d.Set("system_disk_performance_level", response["SystemDiskPerformanceLevel"])
+	d.Set("system_disk_kms_key_id", response["SystemDisk.KMSKeyId"])
 	d.Set("system_disk_encrypted", response["SystemDisk.Encrypted"])
-
+	d.Set("image_options_login_as_non_root", response["ImageOptions.LoginAsNonRoot"])
+	d.Set("deletion_protection", response["DeletionProtection"])
 	d.Set("role_name", response["RamRoleName"])
 	d.Set("key_name", response["KeyPairName"])
 	d.Set("force_delete", d.Get("force_delete").(bool))
@@ -1156,6 +1275,7 @@ func resourceAliyunEssScalingConfigurationRead(d *schema.ResourceData, meta inte
 			r := i.(map[string]interface{})
 			l := map[string]interface{}{
 				"size":                    r["Size"],
+				"provisioned_iops":        r["ProvisionedIops"],
 				"category":                r["Category"],
 				"snapshot_id":             r["SnapshotId"],
 				"device":                  r["Device"],
