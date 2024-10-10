@@ -63,6 +63,46 @@ func (s *ServiceMeshServiceV2) DescribeServiceMeshServiceMesh(id string) (object
 
 	return v.(map[string]interface{}), nil
 }
+func (s *ServiceMeshServiceV2) DescribeDescribeKialiConfiguration(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeKialiConfiguration"
+	conn, err := client.NewServicemeshClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ServiceMeshId"] = id
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-11"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		addDebug(action, response, request)
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"403", "503", "500"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("ServiceMesh", id)), NotFoundMsg, response)
+		}
+		addDebug(action, response, request)
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
 func (s *ServiceMeshServiceV2) DescribeListTagResources(id string) (object map[string]interface{}, err error) {
 	client := s.client
 	var request map[string]interface{}
@@ -195,7 +235,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["RegionId"] = client.RegionId
+			query["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			for i, key := range removedTagKeys {
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
@@ -231,7 +271,7 @@ func (s *ServiceMeshServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
-			request["RegionId"] = client.RegionId
+			query["RegionId"] = client.RegionId
 			request["ResourceType"] = resourceType
 			count := 1
 			for key, value := range added {
