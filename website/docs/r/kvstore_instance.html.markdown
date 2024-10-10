@@ -269,6 +269,7 @@ The following arguments are supported:
 * `is_auto_upgrade_open` - (Optional, Available since v1.228.0) Specifies whether to enable automatic minor version update. Valid values:
   - `1`: Enables automatic minor version update.
   - `0`: Disables automatic minor version update.
+* `bandwidth` - (Optional, Int) The total bandwidth of the instance. **NOTE:** From version 1.231.1, `bandwidth` can be set. If the instance is a cluster instance, `bandwidth` must be divisible by the number of `shard_count` in the instance, and if the instance is a read/write splitting instance, `bandwidth` cannot be set.
 * `connection_string` - (Deprecated since v1.101.0) Indicates whether the address is a private endpoint.
 * `modify_mode`- (Removed since v1.216.0) The method of modifying the whitelist. **NOTE:** Field `modify_mode` has been removed from provider version 1.216.0.
 
@@ -292,7 +293,6 @@ The parameters supports the following:
 The following attributes are exported:
 
 * `id` - The ID of KVStore DBInstance.
-* `bandwidth` - The bandwidth.
 * `end_time` - The expiration time of the prepaid instance.
 * `qps` - Theoretical maximum QPS value.
 * `connection_domain`- Intranet connection address of the KVStore instance.
