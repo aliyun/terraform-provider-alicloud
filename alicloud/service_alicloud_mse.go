@@ -51,6 +51,41 @@ func (s *MseService) DescribeMseCluster(id string) (object map[string]interface{
 	return object, nil
 }
 
+func (s *MseService) GetInstanceIdBYClusterId(clusterId string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewMseClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "QueryClusterDetail"
+	request := map[string]interface{}{
+		"RegionId":  s.client.RegionId,
+		"ClusterId": clusterId,
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	request["ClientToken"] = buildClientToken("QueryClusterDetail")
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &runtime)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"mse-200-021"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("MseCluster", clusterId)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, clusterId, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Data", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, clusterId, "$.Data", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
+
 func (s *MseService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
 	if d.HasChange("tags") {
 		var err error
@@ -356,6 +391,9 @@ func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]in
 		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:EngineNamespace", id)), NotFoundMsg, ProviderERROR)
 	}
 	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidParameter"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("MSE cluster", parts[0])), NotFoundMsg, "")
+		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	if fmt.Sprint(response["Success"]) == "false" {

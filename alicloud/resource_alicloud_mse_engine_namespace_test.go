@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
+func TestAccAliCloudMSEEngineNamespace_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_engine_namespace.default"
 	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
@@ -42,9 +42,11 @@ func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_id":          "${alicloud_mse_cluster.default.id}",
+					"instance_id":         "${alicloud_mse_cluster.default.id}",
+					"cluster_id":          "${alicloud_mse_cluster.default.cluster_id}",
 					"namespace_show_name": "${var.name}",
 					"namespace_id":        "${var.name}",
+					"accept_language":     "zh",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -67,7 +69,7 @@ func TestAccAlicloudMSEEngineNamespace_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"cluster_id", "accept_language"},
+				ImportStateVerifyIgnore: []string{"accept_language", "cluster_id"},
 			},
 		},
 	})
@@ -81,23 +83,37 @@ variable "name" {
   default = "%s"
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+data "alicloud_zones" "default" {
+ available_resource_creation = "VSwitch"
 }
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
+
+resource "alicloud_vpc" "default" {
+ vpc_name   = "default"
+ cidr_block = "172.17.3.0/24"
 }
+
+resource "alicloud_vswitch" "default" {
+ vswitch_name = "default"
+ cidr_block   = "172.17.3.0/24"
+ vpc_id       = alicloud_vpc.default.id
+ zone_id      = data.alicloud_zones.default.zones.0.id
+}
+
 resource "alicloud_mse_cluster" "default" {
-	  connection_type = "slb"
-	  net_type = "privatenet"
-	  vswitch_id = data.alicloud_vswitches.default.ids.0
-	  cluster_specification = "MSE_SC_1_2_60_c"
-	  cluster_version = "NACOS_2_0_0"
-	  instance_count = "1"
-	  pub_network_flow = "1"
-	  cluster_alias_name = "tf-testAccMseCluster2119826"
-	  mse_version = "mse_dev"
-	  cluster_type = "Nacos-Ans"
+ cluster_specification = "MSE_SC_1_2_60_c"
+ cluster_type          = "Nacos-Ans"
+ cluster_version       = "NACOS_2_0_0"
+ instance_count        = 3
+ net_type              = "privatenet"
+ vswitch_id            = alicloud_vswitch.default.id
+ connection_type       = "slb"
+ pub_network_flow      = "1"
+ mse_version           = "mse_pro"
+ vpc_id                = alicloud_vpc.default.id
+}
+
+data "alicloud_mse_clusters" "default" {
+	name_regex = "tftest"
 }
 `, name)
 }
@@ -108,7 +124,7 @@ func TestUnitAlicloudMSEEngineNamespace(t *testing.T) {
 	dExisted, _ := schema.InternalMap(p["alicloud_mse_engine_namespace"].Schema).Data(nil, nil)
 	dInit.MarkNewResource()
 	attributes := map[string]interface{}{
-		"cluster_id":          "CreateMseEngineNamespaceValue",
+		"instance_id":         "CreateMseEngineNamespaceValue",
 		"namespace_show_name": "CreateMseEngineNamespaceValue",
 		"namespace_id":        "CreateMseEngineNamespaceValue",
 		"accept_language":     "CreateMseEngineNamespaceValue",

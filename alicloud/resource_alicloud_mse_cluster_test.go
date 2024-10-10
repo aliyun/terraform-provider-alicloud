@@ -97,7 +97,7 @@ func testSweepMSECluster(region string) error {
 	return nil
 }
 
-func TestAccAlicloudMSECluster_basic0(t *testing.T) {
+func TestAccAliCloudMSECluster_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -112,7 +112,7 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
 		},
 
 		IDRefreshName: resourceId,
@@ -120,16 +120,21 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_1_2_60_c",
-					"cluster_type":          "Nacos-Ans",
-					"cluster_version":       "NACOS_2_0_0",
-					"instance_count":        "1",
-					"net_type":              "privatenet",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
-					"pub_network_flow":      "1",
-					"cluster_alias_name":    name,
-					"connection_type":       "slb",
-					"mse_version":           "mse_dev",
+					"cluster_specification":     "MSE_SC_1_2_60_c",
+					"cluster_type":              "Nacos-Ans",
+					"cluster_version":           "NACOS_2_0_0",
+					"instance_count":            "1",
+					"net_type":                  "privatenet",
+					"vswitch_id":                "${alicloud_vswitch.default.id}",
+					"pub_network_flow":          "1",
+					"cluster_alias_name":        name,
+					"connection_type":           "slb",
+					"mse_version":               "mse_dev",
+					"private_slb_specification": "test",
+					"pub_slb_specification":     "test",
+					"disk_type":                 "test",
+					"request_pars":              "",
+					"vpc_id":                    "${alicloud_vpc.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -191,16 +196,107 @@ func TestAccAlicloudMSECluster_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"private_slb_specification": "test_update",
+					"pub_slb_specification":     "test_update",
+					"disk_type":                 "test_update",
+					"request_pars":              "{}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_alias_name": name,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+					}),
+				),
+			},
+
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"acl_entry_list"},
+				ImportStateVerifyIgnore: []string{"acl_entry_list", "private_slb_specification", "pub_slb_specification", "disk_type", "request_pars"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudMSECluster_basic1(t *testing.T) {
+func TestAccAliCloudMSECluster_changeNetwork(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-shenzhen"})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_60_c",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_2_0_0",
+					"instance_count":        "1",
+					"net_type":              "privatenet",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+					"connection_type":       "slb",
+					"mse_version":           "mse_dev",
+					"vpc_id":                "${alicloud_vpc.default.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_60_c",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_2_0_0",
+						"instance_count":        "1",
+						"net_type":              "privatenet",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+						"connection_type":       "slb",
+						"mse_version":           "mse_dev",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"vpc_id":           "${alicloud_vpc.default2.id}",
+					"vswitch_id":       "${alicloud_vswitch.default2.id}",
+					"pub_network_flow": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_alias_name": name,
+						"vswitch_id":         CHECKSET,
+						"vpc_id":             CHECKSET,
+						"pub_network_flow":   "2",
+					}),
+				),
+			},
+
+			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMSECluster_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -228,7 +324,7 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 					"cluster_version":       "ZooKeeper_3_8_0",
 					"instance_count":        "1",
 					"net_type":              "privatenet",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
 					"connection_type":       "slb",
@@ -291,7 +387,7 @@ func TestAccAlicloudMSECluster_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMSECluster_pro(t *testing.T) {
+func TestAccAliCloudMSECluster_pro(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -313,12 +409,12 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_2_4_60_c",
+					"cluster_specification": "MSE_SC_4_8_60_c",
 					"cluster_type":          "Nacos-Ans",
 					"cluster_version":       "NACOS_2_0_0",
 					"instance_count":        "3",
 					"net_type":              "privatenet",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
 					"mse_version":           "mse_pro",
@@ -326,7 +422,7 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_2_4_60_c",
+						"cluster_specification": "MSE_SC_4_8_60_c",
 						"cluster_type":          "Nacos-Ans",
 						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "3",
@@ -340,11 +436,11 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_1_2_60_c",
+					"cluster_specification": "MSE_SC_8_16_60_c",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_1_2_60_c",
+						"cluster_specification": "MSE_SC_8_16_60_c",
 					}),
 				),
 			},
@@ -359,14 +455,56 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 				),
 			},
 			{
+				ResourceName:      resourceId,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+func TestAccAliCloudMSECluster_serverless(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
 				Config: testAccConfig(map[string]interface{}{
-					"cluster_specification": "MSE_SC_2_4_60_c",
+					"cluster_specification": "MSE_SC_SERVERLESS",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_2_0_0",
 					"instance_count":        "3",
+					"net_type":              "both",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+					"mse_version":           "mse_serverless",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cluster_specification": "MSE_SC_2_4_60_c",
+						"cluster_specification": "MSE_SC_SERVERLESS",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_2_0_0",
 						"instance_count":        "3",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+						"mse_version":           "mse_serverless",
 					}),
 				),
 			},
@@ -379,7 +517,7 @@ func TestAccAlicloudMSECluster_pro(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
+func TestAccAliCloudMSECluster_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -407,12 +545,12 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 					"cluster_version":       "NACOS_2_0_0",
 					"instance_count":        "1",
 					"net_type":              "privatenet",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
 					"connection_type":       "slb",
 					"mse_version":           "mse_dev",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":                "${alicloud_vpc.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -491,7 +629,7 @@ func TestAccAlicloudMSECluster_VpcId(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudMSECluster_PrePaid(t *testing.T) {
+func TestAccAliCloudMSECluster_PrePaid(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_mse_cluster.default"
 	ra := resourceAttrInit(resourceId, MseClusterMap)
@@ -521,12 +659,12 @@ func TestAccAlicloudMSECluster_PrePaid(t *testing.T) {
 					"instance_count":        "1",
 					"net_type":              "privatenet",
 					"payment_type":          "Subscription",
-					"vswitch_id":            "${data.alicloud_vswitches.default.ids.0}",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
 					"pub_network_flow":      "1",
 					"cluster_alias_name":    name,
 					"connection_type":       "slb",
 					"mse_version":           "mse_dev",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
+					"vpc_id":                "${alicloud_vpc.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -595,6 +733,59 @@ func TestAccAlicloudMSECluster_PrePaid(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudMSECluster_single_eni(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_mse_cluster.default"
+	ra := resourceAttrInit(resourceId, MseClusterMap)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &MseService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeMseCluster")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(1000000, 9999999)
+	name := fmt.Sprintf("tf-testAccMseCluster%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, MseClusterBasicdependence)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"ap-southeast-1"})
+		},
+
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_specification": "MSE_SC_1_2_60_c",
+					"cluster_type":          "Nacos-Ans",
+					"cluster_version":       "NACOS_2_0_0",
+					"instance_count":        "1",
+					"net_type":              "privatenet",
+					"vswitch_id":            "${alicloud_vswitch.default.id}",
+					"pub_network_flow":      "1",
+					"cluster_alias_name":    name,
+					"connection_type":       "single_eni",
+					"mse_version":           "mse_dev",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_specification": "MSE_SC_1_2_60_c",
+						"cluster_type":          "Nacos-Ans",
+						"cluster_version":       "NACOS_2_0_0",
+						"instance_count":        "1",
+						"net_type":              "privatenet",
+						"vswitch_id":            CHECKSET,
+						"pub_network_flow":      "1",
+						"cluster_alias_name":    name,
+						"connection_type":       "single_eni",
+						"mse_version":           "mse_dev",
+					}),
+				),
+			},
+		},
+	})
+}
+
 var MseClusterMap = map[string]string{
 	"cluster_id":  CHECKSET,
 	"app_version": CHECKSET,
@@ -603,16 +794,42 @@ var MseClusterMap = map[string]string{
 
 func MseClusterBasicdependence(name string) string {
 	return fmt.Sprintf(`
-	data "alicloud_vpcs" "default" {
-	  name_regex = "^default-NODELETING$"
-	}
-	data "alicloud_vswitches" "default" {
-	  vpc_id = data.alicloud_vpcs.default.ids.0
+
+	variable "name" {
+		 default = "%v"
+		}
+
+	data "alicloud_zones" "default" {
+	  available_resource_creation = "VSwitch"
 	}
 
-data "alicloud_resource_manager_resource_groups" "default" {
-}
-`)
+	resource "alicloud_vpc" "default" {
+	  vpc_name       = "${var.name}"
+      cidr_block = "172.17.3.0/24"
+	}
+
+	resource "alicloud_vswitch" "default" {
+	  vswitch_name = "${var.name}"
+	  cidr_block   = "172.17.3.0/24"
+	  vpc_id       = alicloud_vpc.default.id
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_vpc" "default2" {
+	  vpc_name       = "tftest"
+      cidr_block = "172.17.3.0/24"
+	}
+
+	resource "alicloud_vswitch" "default2" {
+	  vswitch_name = "tftest"
+	  cidr_block   = "172.17.3.0/24"
+	  vpc_id       = alicloud_vpc.default2.id
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+	}
+`, name)
 }
 
 func TestUnitAlicloudMSECluster(t *testing.T) {
