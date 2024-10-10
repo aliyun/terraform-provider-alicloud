@@ -1162,10 +1162,15 @@ func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, err
 		endpoint := client.config.DdsEndpoint
 		if endpoint == "" {
 			endpoint = loadEndpoint(client.config.RegionId, DDSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
+			}
 		}
+
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(DDSCode), endpoint)
 		}
+
 		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize the DDS client: %#v", err)
@@ -4282,25 +4287,30 @@ func (client *AliyunClient) NewEmrClient() (*rpc.Client, error) {
 func (client *AliyunClient) NewDdsClient() (*rpc.Client, error) {
 	productCode := "dds"
 	endpoint := ""
+
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("dds.%s.aliyuncs.com", client.config.RegionId)
+			endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
 	}
+
 	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		endpoint = v.(string)
 	}
+
 	if endpoint == "" {
 		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 	}
+
 	sdkConfig := client.teaSdkConfig
 	sdkConfig.SetEndpoint(endpoint)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
+
 	return conn, nil
 }
 
