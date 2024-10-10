@@ -128,7 +128,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic0(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -461,7 +460,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic1(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -621,7 +619,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic2(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -776,7 +773,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic3(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -964,6 +960,11 @@ func AlicloudServiceMeshServiceMeshBasicDependence1(name string) string {
 		description = "created by terraform"
 	}
 
+	resource "alicloud_eip" "default" {
+		bandwidth            = "10"
+		internet_charge_type = "PayByBandwidth"
+	}
+
 	locals {
 		vswitch_id    = alicloud_vswitch.default.id
 		vpc_id        = alicloud_vpc.default.id
@@ -1088,7 +1089,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic4(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -1425,7 +1425,6 @@ func TestAccAliCloudServiceMeshServiceMesh_basic5(t *testing.T) {
 					},
 					"load_balancer": []map[string]interface{}{
 						{
-							"pilot_public_eip":      "false",
 							"api_server_public_eip": "false",
 						},
 					},
@@ -1767,4 +1766,412 @@ func AlicloudServiceMeshServiceMeshBasicDependence6(name string) string {
 		version_2     = reverse(data.alicloud_service_mesh_versions.default.versions).1.version
 	}
 `, name)
+}
+
+func TestAccAliCloudServiceMeshServiceMesh_basic7(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc-servicemesh%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Pro",
+					"cluster_spec":      "enterprise",
+					"version":           "${local.version_1}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"tracing":            "false",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "0",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"cluster_domain": "cluster.local",
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
+								},
+							},
+						},
+					},
+					"customized_prometheus": "false",
+					"cluster_ids":           []string{"${alicloud_cs_kubernetes_node_pool.default.cluster_id}"},
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"mesh_config.#":         "1",
+						"cluster_ids.#":         "1",
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"telemetry": "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled":                   "true",
+									"integrate_clb":             "true",
+									"kiali_service_annotations": "{\\\"${alicloud_cs_kubernetes_node_pool.default.cluster_id}\\\":{\\\"service.beta.kubernetes.io/alicloud-loadbalancer-address-type\\\":\\\"intranet\\\"}}",
+									"kiali_arms_auth_tokens":    "{\\\"${alicloud_cs_kubernetes_node_pool.default.cluster_id}\\\":\\\"abcdefg\\\"}",
+									"auth_strategy":             "ramoauth",
+									"ram_oauth_config": []map[string]interface{}{
+										{
+											"redirect_uris": "http://www.terraformtest.com",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"mesh_config": []map[string]interface{}{
+						{
+							"telemetry": "true",
+							"kiali": []map[string]interface{}{
+								{
+									"enabled":               "true",
+									"auth_strategy":         "openid",
+									"custom_prometheus_url": "https://out.prometheus.url",
+									"open_id_config": []map[string]interface{}{
+										{
+											"client_id":     "testid",
+											"client_secret": "testsecret",
+											"issuer_uri":    "www.terraformtest.com",
+											"scopes":        []string{"openid"},
+										},
+									},
+									"server_config": []map[string]interface{}{
+										{
+											"web_fqdn":   "www.terraformtest.com",
+											"web_root":   "/",
+											"web_port":   "80",
+											"web_schema": "http",
+										},
+									},
+								},
+							},
+						},
+					},
+					"customized_prometheus": "true",
+					"prometheus_url":        "https://out.prometheus.url",
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name,
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": REMOVEKEY,
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cluster_ids.#": "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudServiceMeshServiceMesh_basic8(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.TestSalveRegions)
+	resourceId := "alicloud_service_mesh_service_mesh.default"
+	ra := resourceAttrInit(resourceId, AlicloudServiceMeshServiceMeshMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &ServicemeshService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeServiceMeshServiceMesh")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandInt()
+	name := fmt.Sprintf("tf-testacc-servicemesh%d", rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudServiceMeshServiceMeshBasicDependence1)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}",
+					"edition":           "Pro",
+					"cluster_spec":      "enterprise",
+					"version":           "${local.version_1}",
+					"network": []map[string]interface{}{
+						{
+							"vpc_id":        "${local.vpc_id}",
+							"vswitche_list": []string{"${local.vswitch_id}"},
+						},
+					},
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip": "false",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"customized_zipkin":  "false",
+							"enable_locality_lb": "false",
+							"telemetry":          "true",
+							"tracing":            "false",
+							"pilot": []map[string]interface{}{
+								{
+									"http10_enabled": "true",
+									"trace_sampling": "0",
+								},
+							},
+							"opa": []map[string]interface{}{
+								{
+									"enabled":        "false",
+									"log_level":      "info",
+									"request_cpu":    "1",
+									"request_memory": "512Mi",
+									"limit_cpu":      "2",
+									"limit_memory":   "1024Mi",
+								},
+							},
+							"kiali": []map[string]interface{}{
+								{
+									"enabled": "false",
+								},
+							},
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"project": "${local.log_project_2}",
+								},
+							},
+							"proxy": []map[string]interface{}{
+								{
+									"cluster_domain": "cluster.local",
+									"request_memory": "128Mi",
+									"limit_memory":   "1024Mi",
+									"request_cpu":    "100m",
+									"limit_cpu":      "2000m",
+								},
+							},
+							"sidecar_injector": []map[string]interface{}{
+								{
+									"enable_namespaces_by_default":  "false",
+									"request_memory":                "128Mi",
+									"limit_memory":                  "1024Mi",
+									"request_cpu":                   "100m",
+									"auto_injection_policy_enabled": "true",
+									"limit_cpu":                     "2000m",
+								},
+							},
+							"outbound_traffic_policy": "ALLOW_ANY",
+							"access_log": []map[string]interface{}{
+								{
+									"enabled":         "true",
+									"gateway_enabled": "true",
+									"sidecar_enabled": "true",
+								},
+							},
+						},
+					},
+					"customized_prometheus": "false",
+					"cluster_ids":           []string{"${alicloud_cs_kubernetes_node_pool.default.cluster_id}"},
+					"extra_configuration": []map[string]interface{}{
+						{
+							"cr_aggregation_enabled": "true",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name":     name,
+						"cluster_spec":          "enterprise",
+						"edition":               "Pro",
+						"mesh_config.#":         "1",
+						"cluster_ids.#":         "1",
+						"extra_configuration.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}-m",
+					"cluster_spec":      "ultimate",
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip_id":   "${alicloud_eip.default.id}",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"project": "",
+								},
+							},
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name + "-m",
+						"cluster_spec":      "ultimate",
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"service_mesh_name": "${var.name}-m",
+					"cluster_spec":      "ultimate",
+					"load_balancer": []map[string]interface{}{
+						{
+							"pilot_public_eip_id":   "",
+							"api_server_public_eip": "false",
+						},
+					},
+					"mesh_config": []map[string]interface{}{
+						{
+							"audit": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"project": "",
+								},
+							},
+						},
+					},
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name + "-m",
+						"cluster_spec":      "ultimate",
+						"mesh_config.#":     "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cluster_ids": REMOVEKEY,
+				}),
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"service_mesh_name": name + "-m",
+						"cluster_spec":      "ultimate",
+						"cluster_ids.#":     "0",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force", "customized_prometheus", "prometheus_url"},
+			},
+		},
+	})
 }
