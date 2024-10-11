@@ -2491,6 +2491,63 @@ func TestAccAliCloudRdsDBInstance_Mysql_8_0_PrePaid(t *testing.T) {
 	})
 }
 
+func TestAccAliCloudRdsDBInstance_Mysql_8_0_Cluster(t *testing.T) {
+	var instance map[string]interface{}
+	resourceId := "alicloud_db_instance.default"
+	ra := resourceAttrInit(resourceId, instanceBasicMap6)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &instance, func() interface{} {
+		return &RdsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeDBInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	name := "tf-testAccDBInstanceConfig_Cluster"
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceDBInstanceHighAvailabilityConfigDependence2)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+
+		// module name
+		IDRefreshName: resourceId,
+
+		Providers:    testAccProviders,
+		CheckDestroy: nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"engine":                   "MySQL",
+					"engine_version":           "8.0",
+					"instance_type":            "${data.alicloud_db_instance_classes.default.instance_classes.1.instance_class}",
+					"instance_storage":         "${data.alicloud_db_instance_classes.default.instance_classes.1.storage_range.min}",
+					"instance_charge_type":     "Postpaid",
+					"instance_name":            "${var.name}",
+					"db_instance_storage_type": "cloud_essd",
+					"zone_id":                  "${local.zone_id}",
+					"zone_id_slave_a":          "${local.zone_id}",
+					"zone_id_slave_b":          "${local.zone_id}",
+					"vswitch_id":               "${local.vswitch_id}",
+					"security_ips":             []string{"10.168.1.12", "100.69.7.112"},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"engine":                   "MySQL",
+						"engine_version":           "8.0",
+						"db_instance_storage_type": "cloud_essd",
+						"instance_storage":         CHECKSET,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force_restart", "Postpaid", "encryption_key", "db_is_ignore_case"},
+			},
+		},
+	})
+}
 func TestAccAliCloudRdsDBInstance_MySQL_8_0_ServerlessBasic(t *testing.T) {
 	var instance map[string]interface{}
 	var ips []map[string]interface{}
@@ -3703,6 +3760,52 @@ resource "alicloud_kms_key" "default" {
 `, name)
 }
 
+func resourceDBInstanceHighAvailabilityConfigDependence2(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+   default = "%s"
+}
+data "alicloud_db_zones" "default"{
+   engine = "MySQL"
+   engine_version = "8.0"
+   instance_charge_type = "PostPaid"
+   category = "cluster"
+   db_instance_storage_type = "cloud_essd"
+}
+
+data "alicloud_db_instance_classes" "default" {
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+   engine = "MySQL"
+   engine_version = "8.0"
+    category = "cluster"
+   db_instance_storage_type = "cloud_essd"
+   instance_charge_type = "PostPaid"
+}
+
+data "alicloud_vpcs" "default" {
+    name_regex = "^default-NODELETING$"
+}
+data "alicloud_vswitches" "default" {
+  vpc_id = data.alicloud_vpcs.default.ids.0
+  zone_id = data.alicloud_db_zones.default.zones.0.id
+}
+
+locals {
+  vswitch_id = data.alicloud_vswitches.default.ids.0
+  zone_id = data.alicloud_db_zones.default.ids.0
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {
+   status = "OK"
+}
+
+resource "alicloud_security_group" "default" {
+   name   = var.name
+   vpc_id = data.alicloud_vpcs.default.ids.0
+}
+
+`, name)
+}
 func resourceDBInstanceMysqlAZConfigDependence(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
@@ -3938,6 +4041,19 @@ var instanceBasicMap5 = map[string]string{
 	"port":              CHECKSET,
 	"ssl_action":        "Close",
 }
+
+var instanceBasicMap6 = map[string]string{
+	"engine":            "MySQL",
+	"engine_version":    "8.0",
+	"instance_type":     CHECKSET,
+	"instance_storage":  "20",
+	"instance_name":     "tf-testAccDBInstanceConfig_Cluster",
+	"zone_id":           CHECKSET,
+	"connection_string": CHECKSET,
+	"port":              CHECKSET,
+	"ssl_action":        "Close",
+}
+
 var instanceServerlessMap = map[string]string{
 	"ssl_action": "Close",
 }
