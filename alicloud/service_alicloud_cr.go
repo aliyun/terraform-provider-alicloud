@@ -7,6 +7,12 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
+	cr20181201 "github.com/alibabacloud-go/cr-20181201/v2/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	openapiutil "github.com/alibabacloud-go/openapi-util/service"
+	util "github.com/alibabacloud-go/tea-utils/service"
+	utilv2 "github.com/alibabacloud-go/tea-utils/v2/service"
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -135,6 +141,25 @@ type crTag struct {
 	ImageUpdate int    `json:"imageUpdate"`
 	ImageCreate int    `json:"imageCreate"`
 	ImageSize   int    `json:"imageSize"`
+}
+
+type DeleteArtifactBuildRuleRequest struct {
+	InstanceID   string `json:"InstanceId"`
+	ScopeType    string `json:"ScopeType"`
+	ArtifactType string `json:"ArtifactType"`
+	ScopeID      string `json:"ScopeId"`
+}
+
+type DeleteArtifactBuildRuleResponse struct {
+	Code string `json:"code"`
+	Data struct {
+		IsSuccess bool   `json:"IsSuccess"`
+		RequestId string `json:"RequestId"`
+		Code      string `json:"Code"`
+	} `json:"data"`
+	HTTPStatusCode  int    `json:"httpStatusCode"`
+	RequestID       string `json:"requestId"`
+	SuccessResponse bool   `json:"successResponse"`
 }
 
 func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, error) {
@@ -601,4 +626,54 @@ func (s *CrService) CrVpcEndpointLinkedVpcStateRefreshFunc(id string, failStates
 
 		return object, fmt.Sprint(object["Status"]), nil
 	}
+}
+
+func (s *CrService) DeleteArtifactBuildRule(request *DeleteArtifactBuildRuleRequest) (*DeleteArtifactBuildRuleResponse, error) {
+	if err := util.ValidateModel(request); err != nil {
+		return nil, err
+	}
+	openapiutil.Convert(request, request)
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.ArtifactType)) {
+		query["ArtifactType"] = request.ArtifactType
+	}
+	if !tea.BoolValue(util.IsUnset(request.InstanceID)) {
+		query["InstanceId"] = request.InstanceID
+	}
+	if !tea.BoolValue(util.IsUnset(request.ScopeID)) {
+		query["ScopeId"] = request.ScopeID
+	}
+	if !tea.BoolValue(util.IsUnset(request.ScopeType)) {
+		query["ScopeType"] = request.ScopeType
+	}
+	req := &openapi.OpenApiRequest{
+		Query: openapiutil.Query(query),
+	}
+	params := &openapi.Params{
+		Action:      tea.String("DeleteArtifactBuildRule"),
+		Version:     tea.String("2018-12-01"),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String("/"),
+		Method:      tea.String("POST"),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("RPC"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+	response := &DeleteArtifactBuildRuleResponse{}
+	if _, err := s.client.WithCr20181201Client(func(c *cr20181201.Client) (interface{}, error) {
+		body, err := c.CallApi(params, req, &utilv2.RuntimeOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if err = tea.Convert(body, response); err != nil {
+			return nil, err
+		}
+
+		return response, err
+	}); err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }

@@ -21,6 +21,7 @@ import (
 
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
+	cr20181201 "github.com/alibabacloud-go/cr-20181201/v2/client"
 	roaCS "github.com/alibabacloud-go/cs-20151215/v5/client"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	roa "github.com/alibabacloud-go/tea-roa/client"
@@ -107,6 +108,7 @@ type AliyunClient struct {
 	officalCSConn                *officalCS.Client
 	roaCSConn                    *roaCS.Client
 	cdnconn_new                  *cdn_new.Client
+	cr20181201conn               *cr20181201.Client
 	crconn                       *cr.Client
 	creeconn                     *cr_ee.Client
 	cdnconn                      *cdn.CdnClient
@@ -598,6 +600,34 @@ func (client *AliyunClient) NewRoaCsClient() (*roaCS.Client, error) {
 	}
 
 	return roaCSConn, nil
+}
+
+func (client *AliyunClient) WithCr20181201Client(do func(*cr20181201.Client) (interface{}, error)) (interface{}, error) {
+	// Initialize the CR 20181201 client if necessary
+	if client.cr20181201conn == nil {
+		endpoint := client.config.CrEndpoint
+		if endpoint == "" {
+			endpoint = loadEndpoint(client.config.RegionId, CRCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
+			}
+		}
+		if endpoint != "" {
+			endpoints.AddEndpointMapping(client.config.RegionId, string(CRCode), endpoint)
+		}
+		config, err := client.config.getTeaRoaOpenapiConfig(true)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CR 20181201 client: %#v", err)
+		}
+		config.Endpoint = tea.String(endpoint)
+		cr20181201conn, err := cr20181201.NewClient(&config)
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize the CR 20181201 client: %#v", err)
+		}
+		client.cr20181201conn = cr20181201conn
+	}
+
+	return do(client.cr20181201conn)
 }
 
 func (client *AliyunClient) WithCrClient(do func(*cr.Client) (interface{}, error)) (interface{}, error) {
