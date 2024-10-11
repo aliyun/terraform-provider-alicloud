@@ -65,9 +65,9 @@ resource "alicloud_service_mesh_service_mesh" "default" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cluster_ids` - (Optional, List) List of clusters.
-* `cluster_spec` - (Optional, Computed) Cluster specification
-* `customized_prometheus` - (Optional) Whether to customize Prometheus. Value:
+* `cluster_ids` - (Optional, List, Available since v1.166.0) List of clusters.
+* `cluster_spec` - (Optional, Computed, Available since v1.166.0) Cluster specification
+* `customized_prometheus` - (Optional, Available since v1.211.2) Whether to customize Prometheus. Value:
   -'true': custom Prometheus.
   -'false': Do not customize Prometheus.
 
@@ -82,9 +82,9 @@ The following arguments are supported:
 * `load_balancer` - (Optional, Computed, List) Load balancing information See [`load_balancer`](#load_balancer) below.
 * `mesh_config` - (Optional, Computed, List) Service grid configuration information See [`mesh_config`](#mesh_config) below.
 * `network` - (Required, ForceNew, List) Service grid network configuration information See [`network`](#network) below.
-* `prometheus_url` - (Optional) The Prometheus service address (in non-custom cases, use the ARMS address format).
+* `prometheus_url` - (Optional, Available since v1.211.2) The Prometheus service address (in non-custom cases, use the ARMS address format).
 * `service_mesh_name` - (Optional) ServiceMeshName
-* `tags` - (Optional, Map) The tag of the resource
+* `tags` - (Optional, Map, Available since v1.211.2) The tag of the resource
 * `version` - (Optional) Service grid version number
 
 ### `extra_configuration`
@@ -121,11 +121,11 @@ The mesh_config supports the following:
 
 The mesh_config-access_log supports the following:
 * `enabled` - (Optional) Whether to enable access log
-* `gateway_enabled` - (Optional) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
-* `gateway_lifecycle` - (Optional, Computed, Int) Lifecycle of AccessLog of ASM Gateways which have been collected to Alibaba Cloud SLS
+* `gateway_enabled` - (Optional, Available since v1.223.1) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
+* `gateway_lifecycle` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of AccessLog of ASM Gateways which have been collected to Alibaba Cloud SLS
 * `project` - (Optional) Access the SLS Project of log collection.
-* `sidecar_enabled` - (Optional) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
-* `sidecar_lifecycle` - (Optional, Computed, Int) Lifecycle of AccessLog of ASM Sidecars which have been collected to Alibaba Cloud SLS
+* `sidecar_enabled` - (Optional, Available since v1.223.1) Whether collect AccessLog of ASM Gateway to Alibaba Cloud SLS
+* `sidecar_lifecycle` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of AccessLog of ASM Sidecars which have been collected to Alibaba Cloud SLS
 
 ### `mesh_config-audit`
 
@@ -139,7 +139,7 @@ The mesh_config-control_plane_log supports the following:
 * `enabled` - (Required) Whether to enable control plane log collection. Value:
   -'true': enables control plane log collection.
   -'false': does not enable control plane log collection.
-* `log_ttl_in_day` - (Optional, Computed, Int) Lifecycle of logs has been collected to Alibaba Cloud SLS
+* `log_ttl_in_day` - (Optional, Computed, Int, Available since v1.223.1) Lifecycle of logs has been collected to Alibaba Cloud SLS
 * `project` - (Optional) The name of the SLS Project to which the control plane logs are collected.
 
 ### `mesh_config-kiali`
