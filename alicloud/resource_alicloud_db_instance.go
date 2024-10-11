@@ -411,7 +411,6 @@ func resourceAliCloudDBInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
-				Removed:  "The parameter 'zone_id_slave_b' has been removed from provider version v1.213.1.",
 			},
 			"ca_type": {
 				Type:     schema.TypeString,
