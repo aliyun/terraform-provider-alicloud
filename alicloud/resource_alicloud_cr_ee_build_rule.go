@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"strconv"
 
 	cr20181201 "github.com/alibabacloud-go/cr-20181201/v2/client"
 	"github.com/alibabacloud-go/tea/tea"
@@ -17,7 +18,6 @@ func resourceAlicloudCrEEBuildRule() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-
 		Schema: map[string]*schema.Schema{
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -39,6 +39,11 @@ func resourceAlicloudCrEEBuildRule() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"image_index_only": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
 			"build_rule_id": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -54,12 +59,18 @@ func resourceAlicloudCrEEBuildRuleCreate(d *schema.ResourceData, meta interface{
 	scopeType := d.Get("scope_type").(string)
 	scopeID := d.Get("scope_id").(string)
 	artifactType := d.Get("artifact_type").(string)
+	imageIndexOnly := d.Get("image_index_only").(bool)
 	response := &cr20181201.CreateArtifactBuildRuleResponse{}
 	request := cr20181201.CreateArtifactBuildRuleRequest{
 		ArtifactType: tea.String(artifactType),
 		InstanceId:   tea.String(instanceID),
 		ScopeId:      tea.String(scopeID),
 		ScopeType:    tea.String(scopeType),
+	}
+	if imageIndexOnly {
+		request.Parameters = map[string]interface{}{
+			"ImageIndexOnly": strconv.FormatBool(imageIndexOnly),
+		}
 	}
 	raw, err := crService.client.WithCr20181201Client(func(c *cr20181201.Client) (interface{}, error) {
 		return c.CreateArtifactBuildRule(&request)
@@ -105,18 +116,22 @@ func resourceAlicloudCrEEBuildRuleRead(d *schema.ResourceData, meta interface{})
 		return WrapErrorf(err, DefaultErrorMsg, id, "GetArtifactBuildRule", AlibabaCloudSdkGoERROR)
 	}
 	addDebug("GetArtifactBuildRule", raw, request)
-
 	response, _ = raw.(*cr20181201.GetArtifactBuildRuleResponse)
 	if response.Body == nil || !tea.BoolValue(response.Body.IsSuccess) || tea.StringValue(response.Body.ScopeId) != scopeID ||
 		tea.StringValue(response.Body.BuildRuleId) != buildRuleID || tea.StringValue(response.Body.ScopeType) != scopeType ||
 		tea.StringValue(response.Body.ArtifactType) != artifactType {
 		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, id, "GetArtifactBuildRule", AlibabaCloudSdkGoERROR)
 	}
+	var imageIndexOnly bool
+	if response.Body.Parameters != nil {
+		imageIndexOnly = tea.BoolValue(response.Body.Parameters.ImageIndexOnly)
+	}
 	d.Set("instance_id", instanceID)
 	d.Set("scope_id", response.Body.ScopeId)
 	d.Set("build_rule_id", response.Body.BuildRuleId)
 	d.Set("artifact_type", response.Body.ArtifactType)
 	d.Set("scope_type", response.Body.ScopeType)
+	d.Set("image_index_only", imageIndexOnly)
 
 	return nil
 }

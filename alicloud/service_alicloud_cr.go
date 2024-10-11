@@ -162,6 +162,42 @@ type DeleteArtifactBuildRuleResponse struct {
 	SuccessResponse bool   `json:"successResponse"`
 }
 
+type GetInstanceConfigRequest struct {
+	InstanceID string `json:"InstanceId"`
+}
+
+type GetInstanceConfigResponse struct {
+	Code string `json:"code"`
+	Data struct {
+		IsSuccess                 bool   `json:"IsSuccess"`
+		RequestId                 string `json:"RequestId"`
+		InstanceId                string `json:"InstanceId"`
+		EnablePublicAnonymousPull bool   `json:"EnablePublicAnonymousPull"`
+		Code                      string `json:"Code"`
+		SyncTransAccelerate       bool   `json:"SyncTransAccelerate"`
+	} `json:"data"`
+	HTTPStatusCode  int    `json:"httpStatusCode"`
+	RequestID       string `json:"requestId"`
+	SuccessResponse bool   `json:"successResponse"`
+}
+
+type UpdateInstanceConfigRequest struct {
+	InstanceID          string `json:"InstanceId"`
+	SyncTransAccelerate bool   `json:"SyncTransAccelerate"`
+}
+
+type UpdateInstanceConfigResponse struct {
+	Code string `json:"code"`
+	Data struct {
+		IsSuccess bool   `json:"IsSuccess"`
+		RequestId string `json:"RequestId"`
+		Code      string `json:"Code"`
+	} `json:"data"`
+	HTTPStatusCode  int    `json:"httpStatusCode"`
+	RequestID       string `json:"requestId"`
+	SuccessResponse bool   `json:"successResponse"`
+}
+
 func (c *CrService) DescribeCrNamespace(id string) (*cr.GetNamespaceResponse, error) {
 	response := &cr.GetNamespaceResponse{}
 	request := cr.CreateGetNamespaceRequest()
@@ -661,6 +697,91 @@ func (s *CrService) DeleteArtifactBuildRule(request *DeleteArtifactBuildRuleRequ
 		BodyType:    tea.String("json"),
 	}
 	response := &DeleteArtifactBuildRuleResponse{}
+	if _, err := s.client.WithCr20181201Client(func(c *cr20181201.Client) (interface{}, error) {
+		body, err := c.CallApi(params, req, &utilv2.RuntimeOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if err = tea.Convert(body, response); err != nil {
+			return nil, err
+		}
+
+		return response, err
+	}); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *CrService) GetInstanceConfig(request *GetInstanceConfigRequest) (*GetInstanceConfigResponse, error) {
+	if err := util.ValidateModel(request); err != nil {
+		return nil, err
+	}
+	openapiutil.Convert(request, request)
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.InstanceID)) {
+		query["InstanceId"] = request.InstanceID
+	}
+	req := &openapi.OpenApiRequest{
+		Query: openapiutil.Query(query),
+	}
+	params := &openapi.Params{
+		Action:      tea.String("GetInstanceConfig"),
+		Version:     tea.String("2018-12-01"),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String("/"),
+		Method:      tea.String("POST"),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("RPC"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+	response := &GetInstanceConfigResponse{}
+	if _, err := s.client.WithCr20181201Client(func(c *cr20181201.Client) (interface{}, error) {
+		body, err := c.CallApi(params, req, &utilv2.RuntimeOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if err = tea.Convert(body, response); err != nil {
+			return nil, err
+		}
+
+		return response, err
+	}); err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *CrService) UpdateInstanceConfig(request *UpdateInstanceConfigRequest) (*UpdateInstanceConfigResponse, error) {
+	if err := util.ValidateModel(request); err != nil {
+		return nil, err
+	}
+	openapiutil.Convert(request, request)
+	query := map[string]interface{}{}
+	if !tea.BoolValue(util.IsUnset(request.InstanceID)) {
+		query["InstanceId"] = request.InstanceID
+	}
+	if !tea.BoolValue(util.IsUnset(request.SyncTransAccelerate)) {
+		query["SyncTransAccelerate"] = request.SyncTransAccelerate
+	}
+	req := &openapi.OpenApiRequest{
+		Query: openapiutil.Query(query),
+	}
+	params := &openapi.Params{
+		Action:      tea.String("UpdateInstanceConfig"),
+		Version:     tea.String("2018-12-01"),
+		Protocol:    tea.String("HTTPS"),
+		Pathname:    tea.String("/"),
+		Method:      tea.String("POST"),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("RPC"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
+	response := &UpdateInstanceConfigResponse{}
 	if _, err := s.client.WithCr20181201Client(func(c *cr20181201.Client) (interface{}, error) {
 		body, err := c.CallApi(params, req, &utilv2.RuntimeOptions{})
 		if err != nil {
