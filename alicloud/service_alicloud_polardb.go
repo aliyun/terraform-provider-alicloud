@@ -892,7 +892,7 @@ func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 	var parameters = make(map[string]interface{})
 	for _, i := range object.RunningParameters.Parameter {
 		// 创建集群传入参数模板参数
-		changeParams := []string{"loose_polar_log_bin", "lower_case_table_names", "default_time_zone"}
+		changeParams := []string{"loose_polar_log_bin", "lower_case_table_names", "default_time_zone", "loose_xengine", "loose_xengine_use_memory_pct"}
 		if IsContain(changeParams, i.ParameterName) {
 			if i.ParameterName == "lower_case_table_names" {
 				if _parameterValue, err := strconv.Atoi(i.ParameterValue); err == nil {
@@ -902,6 +902,16 @@ func (s *PolarDBService) RefreshParameters(d *schema.ResourceData) error {
 				// mysql 5.6 loose_polar_log_bin values: ON_WITH_GTID、OFF
 				if i.ParameterValue == "ON_WITH_GTID" {
 					d.Set(i.ParameterName, "ON")
+				}
+			} else if i.ParameterName == "loose_xengine" {
+				if i.ParameterValue == "1" {
+					d.Set("loose_xengine", "ON")
+				} else {
+					d.Set("loose_xengine", "OFF")
+				}
+			} else if i.ParameterName == "loose_xengine_use_memory_pct" {
+				if parameterValue, err := strconv.Atoi(i.ParameterValue); err == nil {
+					d.Set(i.ParameterName, parameterValue)
 				}
 			} else {
 				d.Set(i.ParameterName, i.ParameterValue)
@@ -984,10 +994,17 @@ func (s *PolarDBService) CreateClusterParamsModifyParameters(d *schema.ResourceD
 	request.DBClusterId = d.Id()
 	config := make(map[string]interface{})
 	allConfig := make(map[string]string)
-	changeParams := []string{"loose_polar_log_bin", "default_time_zone"}
+	changeParams := []string{"loose_polar_log_bin", "default_time_zone", "loose_xengine", "loose_xengine_use_memory_pct"}
 	for _, i := range changeParams {
 		if v, ok := d.GetOk(i); ok {
 			if d.HasChange(i) {
+				if i == "loose_xengine" {
+					if v == "ON" {
+						v = "1"
+					} else if v == "OFF" {
+						v = "0"
+					}
+				}
 				config[i] = v
 				allConfig[i] = fmt.Sprint(v)
 			}
