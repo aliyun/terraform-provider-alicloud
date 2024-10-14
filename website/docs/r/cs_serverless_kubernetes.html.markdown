@@ -107,11 +107,11 @@ The following arguments are supported:
 
 * `name` - (Optional) The kubernetes cluster's name. It is the only in one Alicloud account.
 * `name_prefix` - (Optional, ForceNew) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
-* `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.
+* `version` - (Optional, Available since v1.97.0) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used.  Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#cluster_auto_upgrade) for more information. 
 * `vpc_id` - (Optional, ForceNew) The vpc where new kubernetes cluster will be located. Specify one vpc's id, if it is not specified, a new VPC will be built.
 * `vswitch_ids` - (Optional, ForceNew) The vswitches where new kubernetes cluster will be located.
 * `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. SNAT must be configured when a new VPC is automatically created. Default is `true`.
-* `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet eip for API Server. Default to false.
+* `endpoint_public_access_enabled` - (Optional, ForceNew) Whether to create internet eip for API Server. Default to false. Only works for **Create** Operation. 
 * `service_discovery_types` - (Optional, Available since v1.123.1) Service discovery type. Only works for **Create** Operation. If the value is empty, it means that service discovery is not enabled. Valid values are `CoreDNS` and `PrivateZone`.
 * `deletion_protection` - (Optional, ForceNew) Whether enable the deletion protection or not.
     - true: Enable deletion protection.
@@ -124,13 +124,13 @@ The following arguments are supported:
 * `cluster_ca_cert` - (Optional) The path of cluster ca certificate, like `~/.kube/cluster-ca-cert.pem`
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
 * `resource_group_id` - (Optional, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `load_balancer_spec` - (Optional, Deprecated since v1.229.1) The cluster api server load balance instance specification, default `slb.s2.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 
 * `addons` - (Optional, Available since v1.91.0) You can specific network plugin, log component, ingress component and so on. See [`addons`](#addons) below. Only works for **Create** Operation, use [resource cs_kubernetes_addon](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cs_kubernetes_addon) to manage addons if cluster is created.
 * `time_zone` - (Optional, Available since v1.123.1) The time zone of the cluster.
-* `zone_id` - (Optional, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. 
+* `zone_id` - (Optional, Available since v1.123.1) When creating a cluster using automatic VPC creation, you need to specify the zone where the VPC is located. Only works for **Create** Operation.  
 * `service_cidr` - (Optional, ForceNew, Available since v1.123.1) CIDR block of the service network. The specified CIDR block cannot overlap with that of the VPC or those of the ACK clusters that are deployed in the VPC. The CIDR block cannot be modified after the cluster is created.
-* `logging_type` - (Optional, ForceNew, Deprecated since v1.229.1) Enable log service, Valid value `SLS`. 
-* `sls_project_name` - (Optional, ForceNew, Deprecated since v1.229.1) If you use an existing SLS project, you must specify `sls_project_name`.
+* `logging_type` - (Optional, ForceNew, Deprecated since v1.229.1) Enable log service, Valid value `SLS`. Only works for **Create** Operation. 
+* `sls_project_name` - (Optional, ForceNew, Deprecated since v1.229.1) If you use an existing SLS project, you must specify `sls_project_name`. Only works for **Create** Operation. 
 * `retain_resources` - (Optional, Available since v1.141.0) Resources that are automatically created during cluster creation, including NAT gateways, SNAT rules, SLB instances, and RAM Role, will be deleted. Resources that are manually created after you create the cluster, such as SLB instances for Services, will also be deleted. If you need to retain resources, please configure with `retain_resources`. There are several aspects to pay attention to when using `retain_resources` to retain resources. After configuring `retain_resources` into the terraform configuration manifest file, you first need to run `terraform apply`.Then execute `terraform destroy`.
 * `delete_options` - (Optional, Available since v1.229.1) Delete options, only work for deleting resource. Make sure you have run `terraform apply` to make the configuration applied. See [`delete_options`](#delete_options) below.
 * `cluster_spec` - (Optional, ForceNew, Available since v1.162.0) The cluster specifications of serverless kubernetes cluster, which can be empty. Valid values:
@@ -138,6 +138,8 @@ The following arguments are supported:
     - ack.pro.small: Professional serverless clusters.
 * `custom_san` - (Optional, Available since v1.229.1) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
 -> **NOTE:** Make sure you have specified all certificate SANs before updating. Updating this field will lead APIServer to restart.
+* `maintenance_window` - (Optional, Available since v1.232.0) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
+* `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
 
 *Removed params*
 
@@ -145,6 +147,45 @@ The following arguments are supported:
 * `private_zone` - (Deprecated since v1.123.1) Has been deprecated from provider version 1.123.1. `PrivateZone` is used as the enumeration value of `service_discovery_types`.
 * `create_v2_cluster` - (Removed since v1.229.1) whether to create a v2 version cluster.
 * `force_update` - (Removed since v1.229.1) Default false, when you want to change `vpc_id` and `vswitch_id`, you have to set this field to true, then the cluster will be recreated.
+
+### `maintenance_window`
+
+The following arguments are supported in the `maintenance_window` configuration block:
+
+* `enable` - (Optional) Whether to open the maintenance window. The following parameters take effect only `enable = true`.
+* `maintenance_time` - (Optional) Initial maintenance time, RFC3339 format. For example: "2024-10-15T12:31:00.000+08:00".
+* `duration` - (Optional) The maintenance time, values range from 1 to 24,unit is hour. For example: "3h".
+* `weekly_period` - (Optional) Maintenance cycle, you can set the values from Monday to Sunday, separated by commas when the values are multiple. The default is Thursday.
+
+for example:
+```
+  maintenance_window {
+    enable            = true
+    maintenance_time  = "2024-10-15T12:31:00.000+08:00"
+    duration          = "3h"
+    weekly_period     = "Monday,Friday"
+  }
+```
+
+### `operation_policy`
+* `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
+
+### `operation_policy-cluster_auto_upgrade`
+Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.  
+
+* `enabled` - (Optional) Whether to enable automatic cluster upgrade.
+* `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapic`.
+
+for example:
+```
+  operation_policy {
+    cluster_auto_upgrade {
+      enabled = true
+      channel = "stable"
+    }
+  }
+```
+
 
 ### `addons`
 

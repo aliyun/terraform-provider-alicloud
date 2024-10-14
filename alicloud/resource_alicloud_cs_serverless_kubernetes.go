@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"encoding/json"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -186,7 +185,7 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
-				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.229.1. The load balancer has been changed to PayByCLCU so that no spec is need anymore.",
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.229.1. The load balancer has been changed to PayByCLCU so that the spec is no need anymore.",
 			},
 			"logging_type": {
 				Type:       schema.TypeString,
@@ -267,6 +266,63 @@ func resourceAlicloudCSServerlessKubernetes() *schema.Resource {
 							Type:         schema.TypeString,
 							Optional:     true,
 							ValidateFunc: StringInSlice([]string{"delete", "retain"}, false),
+						},
+					},
+				},
+			},
+			"maintenance_window": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"enable": {
+							Type:     schema.TypeBool,
+							Optional: true,
+							Computed: true,
+						},
+						"maintenance_time": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"duration": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"weekly_period": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"operation_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_auto_upgrade": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"channel": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -414,8 +470,25 @@ func resourceAlicloudCSServerlessKubernetesCreate(d *schema.ResourceData, meta i
 	if v, ok := d.GetOk("enable_rrsa"); ok {
 		request.EnableRrsa = tea.Bool(v.(bool))
 	}
+
 	if v, ok := d.GetOk("custom_san"); ok {
 		request.CustomSan = tea.String(v.(string))
+	}
+
+	if v, ok := d.GetOk("maintenance_window"); ok {
+		request.MaintenanceWindow = expandMaintenanceWindowConfigRoa(v.([]interface{}))
+	}
+
+	if v, ok := d.GetOk("operation_policy"); ok {
+		request.OperationPolicy = &roacs.CreateClusterRequestOperationPolicy{}
+		m := v.([]interface{})[0].(map[string]interface{})
+		if vv, ok := m["cluster_auto_upgrade"]; ok {
+			policy := vv.([]interface{})[0].(map[string]interface{})
+			request.OperationPolicy.ClusterAutoUpgrade = &roacs.CreateClusterRequestOperationPolicyClusterAutoUpgrade{
+				Enabled: tea.Bool(policy["enabled"].(bool)),
+				Channel: tea.String(policy["channel"].(string)),
+			}
+		}
 	}
 
 	//set tags
@@ -489,6 +562,10 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	d.Set("resource_group_id", object.ResourceGroupId)
 	d.Set("cluster_spec", object.ClusterSpec)
 
+	if object.Timezone != nil {
+		d.Set("timezone", object.Timezone)
+	}
+
 	if err := d.Set("tags", flattenTags(object.Tags)); err != nil {
 		return WrapError(err)
 	}
@@ -499,8 +576,12 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		d.Set("logging_type", "SLS")
 	}
 
-	if v, ok := object.Parameters["ServiceCIDR"]; ok {
-		d.Set("service_cidr", v)
+	if object.ServiceCidr != nil {
+		d.Set("service_cidr", object.ServiceCidr)
+	} else {
+		if v, ok := object.Parameters["ServiceCIDR"]; ok {
+			d.Set("service_cidr", v)
+		}
 	}
 	capabilities := fetchClusterCapabilities(tea.StringValue(object.MetaData))
 	if v, ok := capabilities["PublicSLB"]; ok {
@@ -510,41 +591,6 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil {
 		l := expandStringList(v.([]interface{}))
 		d.Set("custom_san", strings.Join(l, ","))
-	}
-	if v, ok := metadata["Timezone"]; ok {
-		d.Set("timezone", v)
-	}
-	// get cluster conn certs
-	// If the cluster is failed, there is no need to get cluster certs
-	if tea.StringValue(object.State) == "failed" || tea.StringValue(object.State) == "deleted_failed" || tea.StringValue(object.State) == "deleting" {
-		return nil
-	}
-
-	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
-	if err != nil {
-		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
-	}
-	m := flattenAlicloudCSCertificate(kubeConfig)
-	if len(m) >= 3 {
-		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
-			if err := writeToFile(ce.(string), m["client_cert"]); err != nil {
-				return WrapError(err)
-			}
-		}
-		if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
-			if err := writeToFile(key.(string), m["client_key"]); err != nil {
-				return WrapError(err)
-			}
-		}
-		if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
-			if err := writeToFile(ca.(string), m["cluster_cert"]); err != nil {
-				return WrapError(err)
-			}
-		}
-	}
-	// kube_config
-	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-		writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
 	}
 
 	if data, err := flattenRRSAMetadata(tea.StringValue(object.MetaData)); err != nil {
@@ -556,13 +602,42 @@ func resourceAlicloudCSServerlessKubernetesRead(d *schema.ResourceData, meta int
 		}
 	}
 
+	if object.MaintenanceWindow != nil {
+		d.Set("maintenance_window", flattenMaintenanceWindowConfigRoa(object.MaintenanceWindow))
+	}
+
+	if object.OperationPolicy != nil {
+		m := make([]map[string]interface{}, 0)
+		if object.OperationPolicy.ClusterAutoUpgrade != nil {
+			m = append(m, map[string]interface{}{
+				"cluster_auto_upgrade": []map[string]interface{}{
+					{
+						"enabled": tea.BoolValue(object.OperationPolicy.ClusterAutoUpgrade.Enabled),
+						"channel": tea.StringValue(object.OperationPolicy.ClusterAutoUpgrade.Channel),
+					},
+				},
+			})
+		}
+		d.Set("operation_policy", m)
+	}
+
+	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if tea.StringValue(object.State) == "failed" || tea.StringValue(object.State) == "deleted_failed" || tea.StringValue(object.State) == "deleting" {
+		return nil
+	}
+
+	if err = setCerts(d, meta, false); err != nil {
+		return WrapError(err)
+	}
+
 	return nil
 }
 
 func resourceAlicloudCSServerlessKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
 	invoker := NewInvoker()
 	// modifyCluster
-	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "enable_rrsa") {
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}

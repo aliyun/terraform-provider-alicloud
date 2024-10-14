@@ -226,7 +226,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"master_disk_performance_level":  "PL0",
 					"master_disk_size":               "80",
 					"master_disk_snapshot_policy_id": "${alicloud_ecs_auto_snapshot_policy.default.id}",
-					"key_name":                       name,
+					"key_name":                       "${alicloud_key_pair.default.key_pair_name}",
 					"pod_cidr":                       "10.72.0.0/16",
 					"service_cidr":                   "172.18.0.0/16",
 					"enable_ssh":                     "false",
@@ -234,7 +234,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 					"install_cloud_monitor":          "true",
 					"resource_group_id":              "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
 					"security_group_id":              "${alicloud_security_group.default.id}",
-					"deletion_protection":            "true",
+					"deletion_protection":            "false",
 					"timezone":                       "Asia/Shanghai",
 					"os_type":                        "Linux",
 					"platform":                       "CentOS",
@@ -267,7 +267,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 						"install_cloud_monitor":         "true",
 						"resource_group_id":             CHECKSET,
 						"security_group_id":             CHECKSET,
-						"deletion_protection":           "true",
+						"deletion_protection":           "false",
 						"timezone":                      "Asia/Shanghai",
 						"os_type":                       "Linux",
 						"platform":                      "CentOS",
@@ -291,7 +291,7 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "rds_instances",
 					"cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context", "kms_encrypted_password",
 					"retain_resources", "name_prefix", "enable_ssh", "timezone", "runtime",
-					"api_audiences", "service_account_issuer",
+					"api_audiences", "service_account_issuer", "load_balancer_spec",
 				},
 			},
 			{
@@ -316,6 +316,16 @@ func TestAccAliCloudCSKubernetes_basic(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name": name + "_update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"deletion_protection": "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"deletion_protection": "true",
 					}),
 				),
 			},
@@ -490,6 +500,7 @@ func TestAccAliCloudCSKubernetes_prepaid(t *testing.T) {
 				ImportStateVerifyIgnore: []string{"new_nat_gateway", "password", "user_ca", "runtime",
 					"rds_instances", "cluster_ca_cert", "client_key", "client_cert", "kms_encryption_context",
 					"kms_encrypted_password", "retain_resources", "name_prefix", "enable_ssh", "timezone", "addons",
+					"load_balancer_spec", "pod_vswitch_ids", "slb_internet_enabled",
 				},
 			},
 		},

@@ -2,7 +2,6 @@ package providers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,9 +12,8 @@ import (
 )
 
 type ECSRAMRoleCredentialsProvider struct {
-	roleName                     string
-	metadataTokenDurationSeconds int
-	enableIMDSv2                 bool
+	roleName      string
+	disableIMDSv1 bool
 	// for sts
 	session             *sessionCredentials
 	expirationTimestamp int64
@@ -27,16 +25,8 @@ type ECSRAMRoleCredentialsProviderBuilder struct {
 
 func NewECSRAMRoleCredentialsProviderBuilder() *ECSRAMRoleCredentialsProviderBuilder {
 	return &ECSRAMRoleCredentialsProviderBuilder{
-		provider: &ECSRAMRoleCredentialsProvider{
-			// TBD: 默认启用 IMDS v2
-			// enableIMDSv2: os.Getenv("ALIBABA_CLOUD_IMDSV2_DISABLED") != "true", // 默认启用 v2
-		},
+		provider: &ECSRAMRoleCredentialsProvider{},
 	}
-}
-
-func (builder *ECSRAMRoleCredentialsProviderBuilder) WithMetadataTokenDurationSeconds(metadataTokenDurationSeconds int) *ECSRAMRoleCredentialsProviderBuilder {
-	builder.provider.metadataTokenDurationSeconds = metadataTokenDurationSeconds
-	return builder
 }
 
 func (builder *ECSRAMRoleCredentialsProviderBuilder) WithRoleName(roleName string) *ECSRAMRoleCredentialsProviderBuilder {
@@ -44,26 +34,22 @@ func (builder *ECSRAMRoleCredentialsProviderBuilder) WithRoleName(roleName strin
 	return builder
 }
 
-func (builder *ECSRAMRoleCredentialsProviderBuilder) WithEnableIMDSv2(enableIMDSv2 bool) *ECSRAMRoleCredentialsProviderBuilder {
-	builder.provider.enableIMDSv2 = enableIMDSv2
+func (builder *ECSRAMRoleCredentialsProviderBuilder) WithDisableIMDSv1(disableIMDSv1 bool) *ECSRAMRoleCredentialsProviderBuilder {
+	builder.provider.disableIMDSv1 = disableIMDSv1
 	return builder
 }
 
 const defaultMetadataTokenDuration = 21600 // 6 hours
 
 func (builder *ECSRAMRoleCredentialsProviderBuilder) Build() (provider *ECSRAMRoleCredentialsProvider, err error) {
+
 	// 设置 roleName 默认值
 	if builder.provider.roleName == "" {
 		builder.provider.roleName = os.Getenv("ALIBABA_CLOUD_ECS_METADATA")
 	}
 
-	if builder.provider.metadataTokenDurationSeconds == 0 {
-		builder.provider.metadataTokenDurationSeconds = defaultMetadataTokenDuration
-	}
-
-	if builder.provider.metadataTokenDurationSeconds < 1 || builder.provider.metadataTokenDurationSeconds > 21600 {
-		err = errors.New("the metadata token duration seconds must be 1-21600")
-		return
+	if !builder.provider.disableIMDSv1 {
+		builder.provider.disableIMDSv1 = os.Getenv("ALIBABA_CLOUD_IMDSV1_DISABLED") == "true"
 	}
 
 	provider = builder.provider
@@ -98,11 +84,11 @@ func (provider *ECSRAMRoleCredentialsProvider) getRoleName() (roleName string, e
 		Headers:        map[string]string{},
 	}
 
-	if provider.enableIMDSv2 {
-		metadataToken, err := provider.getMetadataToken()
-		if err != nil {
-			return "", err
-		}
+	metadataToken, err := provider.getMetadataToken()
+	if err != nil {
+		return "", err
+	}
+	if metadataToken != "" {
 		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
 	}
 
@@ -140,11 +126,11 @@ func (provider *ECSRAMRoleCredentialsProvider) getCredentials() (session *sessio
 		Headers:        map[string]string{},
 	}
 
-	if provider.enableIMDSv2 {
-		metadataToken, err := provider.getMetadataToken()
-		if err != nil {
-			return nil, err
-		}
+	metadataToken, err := provider.getMetadataToken()
+	if err != nil {
+		return nil, err
+	}
+	if metadataToken != "" {
 		req.Headers["x-aliyun-ecs-metadata-token"] = metadataToken
 	}
 
@@ -221,14 +207,22 @@ func (provider *ECSRAMRoleCredentialsProvider) getMetadataToken() (metadataToken
 		Host:     "100.100.100.200",
 		Path:     "/latest/api/token",
 		Headers: map[string]string{
-			"X-aliyun-ecs-metadata-token-ttl-seconds": strconv.Itoa(provider.metadataTokenDurationSeconds),
+			"X-aliyun-ecs-metadata-token-ttl-seconds": strconv.Itoa(defaultMetadataTokenDuration),
 		},
 		ConnectTimeout: 5 * time.Second,
 		ReadTimeout:    5 * time.Second,
 	}
-	res, err := httpDo(req)
-	if err != nil {
-		err = fmt.Errorf("get metadata token failed: %s", err.Error())
+	res, _err := httpDo(req)
+	if _err != nil {
+		if provider.disableIMDSv1 {
+			err = fmt.Errorf("get metadata token failed: %s", _err.Error())
+		}
+		return
+	}
+	if res.StatusCode != 200 {
+		if provider.disableIMDSv1 {
+			err = fmt.Errorf("refresh Ecs sts token err, httpStatus: %d, message = %s", res.StatusCode, string(res.Body))
+		}
 		return
 	}
 	metadataToken = string(res.Body)

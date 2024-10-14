@@ -190,9 +190,9 @@ The following arguments are supported:
 * `name_prefix` - (Optional) The kubernetes cluster name's prefix. It is conflict with `name`. If it is specified, terraform will using it to build the only cluster name. Default to "Terraform-Creation".
 * `timezone` - (Optional, ForceNew, Available since v1.103.2) When you create a cluster, set the time zones for the Master and Worker nodes. You can only change the managed node time zone if you create a cluster. Once the cluster is created, you can only change the time zone of the Worker node.
 * `resource_group_id` - (Optional, ForceNew, Available since v1.101.0) The ID of the resource group,by default these cloud resources are automatically assigned to the default resource group.
-* `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK.
+* `version` - (Optional, Available since 1.70.1) Desired Kubernetes version. If you do not specify a value, the latest available version at resource creation is used and no upgrades will occur except you set a higher version number. The value must be configured and increased to upgrade the version when desired. Downgrades are not supported by ACK. Do not specify if cluster auto upgrade is enabled, see [cluster_auto_upgrade](#cluster_auto_upgrade) for more information. 
 * `security_group_id` - (Optional, ForceNew, Available since v1.91.0) The ID of the security group to which the ECS instances in the cluster belong. If it is not specified, a new Security group will be built.
-* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm).
+* `is_enterprise_security_group` - (Optional, ForceNew, Available since v1.91.0) Enable to create advanced security group. default: false. Only works for **Create** Operation. See [Advanced security group](https://www.alibabacloud.com/help/doc-detail/120621.htm). 
 * `proxy_mode` - (Optional, ForceNew) Proxy mode is option of kube-proxy. options: iptables|ipvs. default: ipvs.
 * `cluster_domain` - (Optional, ForceNew, Available since v1.103.2) Cluster local domain name, Default to `cluster.local`. A domain name consists of one or more sections separated by a decimal point (.), each of which is up to 63 characters long, and can be lowercase, numerals, and underscores (-), and must be lowercase or numerals at the beginning and end.
 * `custom_san` - (Optional, Available since v1.103.2) Customize the certificate SAN, multiple IP or domain names are separated by English commas (,).
@@ -208,7 +208,8 @@ The following arguments are supported:
   * ack.pro.small : Professional managed clusters.
 * `encryption_provider_key` - (Optional, ForceNew, Available since v1.103.2) The disk encryption key.
 * `maintenance_window` - (Optional, Available since v1.109.1) The cluster maintenance window，effective only in the professional managed cluster. Managed node pool will use it. See [`maintenance_window`](#maintenance_window) below.
-* `load_balancer_spec` - (Optional, ForceNew, Available since v1.117.0) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html).
+* `operation_policy` - (Optional, Available since v1.232.0) The cluster automatic operation policy. See [`operation_policy`](#operation_policy) below.
+* `load_balancer_spec` - (Optional, Deprecated since v1.232.0) The cluster api server load balance instance specification, default `slb.s1.small`. For more information on how to select a LB instance specification, see [SLB instance overview](https://help.aliyun.com/document_detail/85931.html). Only works for **Create** Operation. 
 * `control_plane_log_ttl` - (Optional, Available since v1.141.0) Control plane log retention duration (unit: day). Default `30`. If control plane logs are to be collected, `control_plane_log_ttl` and `control_plane_log_components` must be specified.
 * `control_plane_log_components` - (Optional, Available since v1.141.0) List of target components for which logs need to be collected. Supports `apiserver`, `kcm`, `scheduler`, `ccm` and `controlplane-events`.
 * `control_plane_log_project` - (Optional, Available since v1.141.0) Control plane log project. If this field is not set, a log service project named k8s-log-{ClusterID} will be automatically created.
@@ -219,8 +220,8 @@ The following arguments are supported:
 *Network params*
 
 * `pod_cidr` - (Optional, ForceNew) - [Flannel Specific] The CIDR block for the pod network when using Flannel.
-* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` but must be in same availability zones.
-* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice.
+* `pod_vswitch_ids` - (Optional) - [Terway Specific] The vswitches for the pod network when using Terway. It is recommended that `pod_vswitch_ids` is not belong to `worker_vswitch_ids` but must be in same availability zones. Only works for **Create** Operation. 
+* `new_nat_gateway` - (Optional) Whether to create a new nat gateway while creating kubernetes cluster. Default to true. Then openapi in Alibaba Cloud are not all on intranet, So turn this option on is a good choice. Only works for **Create** Operation. 
 * `service_cidr` - (Optional, ForceNew) The CIDR block for the service network. It cannot be duplicated with the VPC CIDR and CIDR used by Kubernetes cluster in VPC, cannot be modified after creation.
 * `node_cidr_mask` - (Optional, ForceNew) The node cidr block to specific how many pods can run on single node. 24-28 is allowed. 24 means 2^(32-24)-1=255 and the node can run at most 255 pods. default: 24
 * `slb_internet_enabled` - (Optional) Whether to create internet load balancer for API Server. Default to true.
@@ -280,18 +281,37 @@ If you want to use `Flannel` as CNI network plugin, You need to specify the `pod
 
 The following arguments are supported in the `maintenance_window` configuration block:
 
-* `enable` - (Required) Whether to open the maintenance window. The following parameters take effect only `enable = true`.
-* `maintenance_time` - (Required) Initial maintenance time, For example:"03:00:00Z".
-* `duration` - (Required) The maintenance time, values range from 1 to 24,unit is hour. For example: "3h".
-* `weekly_period` - (Required) Maintenance cycle, you can set the values from Monday to Sunday, separated by commas when the values are multiple. The default is Thursday.
+* `enable` - (Optional) Whether to open the maintenance window. The following parameters take effect only `enable = true`.
+* `maintenance_time` - (Optional) Initial maintenance time, RFC3339 format. For example: "2024-10-15T12:31:00.000+08:00".
+* `duration` - (Optional) The maintenance time, values range from 1 to 24,unit is hour. For example: "3h".
+* `weekly_period` - (Optional) Maintenance cycle, you can set the values from Monday to Sunday, separated by commas when the values are multiple. The default is Thursday.
 
 for example:
 ```
   maintenance_window {
     enable            = true
-    maintenance_time  = "01:00:00Z"
+    maintenance_time  = "2024-10-15T12:31:00.000+08:00"
     duration          = "3h"
     weekly_period     = "Monday,Friday"
+  }
+```
+
+### `operation_policy`
+* `cluster_auto_upgrade` - (Optional) Automatic cluster upgrade policy. See [`cluster_auto_upgrade`](#operation_policy-cluster_auto_upgrade) below.
+
+### `operation_policy-cluster_auto_upgrade`
+Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.  
+
+* `enabled` - (Optional) Whether to enable automatic cluster upgrade.
+* `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapic`.
+
+for example:
+```
+  operation_policy {
+    cluster_auto_upgrade {
+      enabled = true
+      channel = "stable"
+    }
   }
 ```
 

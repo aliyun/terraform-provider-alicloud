@@ -52,7 +52,6 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"name":                    name,
-					"version":                 "1.24.6-aliyun.1",
 					"worker_vswitch_ids":      []string{"${local.vswitch_id}"},
 					"pod_cidr":                "10.93.0.0/16",
 					"service_cidr":            "172.21.0.0/16",
@@ -71,15 +70,31 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 					"cluster_domain":          "cluster.local",
 					"custom_san":              "www.terraform.io",
 					"encryption_provider_key": "${data.alicloud_kms_keys.default.keys.0.id}",
-					"maintenance_window":      []map[string]string{{"enable": "true", "maintenance_time": "03:00:00Z", "duration": "3h", "weekly_period": "Thursday"}},
-					"cluster_ca_cert":         clusterCaCertFile.Name(),
-					"client_key":              clientKeyFile.Name(),
-					"client_cert":             clientCertFile.Name(),
+					"maintenance_window": []map[string]string{
+						{
+							"enable":           "true",
+							"maintenance_time": "2024-10-15T12:31:00.000+08:00",
+							"duration":         "3h",
+							"weekly_period":    "Thursday",
+						},
+					},
+					"operation_policy": []map[string]interface{}{
+						{
+							"cluster_auto_upgrade": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"channel": "patch",
+								},
+							},
+						},
+					},
+					"cluster_ca_cert": clusterCaCertFile.Name(),
+					"client_key":      clientKeyFile.Name(),
+					"client_cert":     clientCertFile.Name(),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"name":                                  name,
-						"version":                               "1.24.6-aliyun.1",
 						"pod_cidr":                              "10.93.0.0/16",
 						"service_cidr":                          "172.21.0.0/16",
 						"slb_internet_enabled":                  "true",
@@ -95,9 +110,13 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 						"custom_san":                            "www.terraform.io",
 						"maintenance_window.#":                  "1",
 						"maintenance_window.0.enable":           "true",
-						"maintenance_window.0.maintenance_time": "03:00:00Z",
+						"maintenance_window.0.maintenance_time": "2024-10-15T12:31:00.000+08:00",
 						"maintenance_window.0.duration":         "3h",
 						"maintenance_window.0.weekly_period":    "Thursday",
+						"operation_policy.#":                    "1",
+						"operation_policy.0.cluster_auto_upgrade.#":         "1",
+						"operation_policy.0.cluster_auto_upgrade.0.enabled": "true",
+						"operation_policy.0.cluster_auto_upgrade.0.channel": "patch",
 					}),
 				),
 			},
@@ -105,7 +124,7 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "timezone", "name_prefix", "api_audiences",
+				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "slb_internet_enabled", "api_audiences",
 					"service_account_issuer", "load_balancer_spec", "encryption_provider_key", "cluster_ca_cert", "client_key", "client_cert",
 				},
 			},
@@ -146,13 +165,13 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"maintenance_window": []map[string]string{{"enable": "true", "maintenance_time": "05:00:00Z", "duration": "5h", "weekly_period": "Monday,Thursday"}},
+					"maintenance_window": []map[string]string{{"enable": "false", "maintenance_time": "2024-10-15T11:31:00.000+08:00", "duration": "5h", "weekly_period": "Monday,Thursday"}},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"maintenance_window.#":                  "1",
-						"maintenance_window.0.enable":           "true",
-						"maintenance_window.0.maintenance_time": "05:00:00Z",
+						"maintenance_window.0.enable":           "false",
+						"maintenance_window.0.maintenance_time": "2024-10-15T11:31:00.000+08:00",
 						"maintenance_window.0.duration":         "5h",
 						"maintenance_window.0.weekly_period":    "Monday,Thursday",
 					}),
@@ -160,15 +179,23 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"maintenance_window": []map[string]string{{"enable": "false", "maintenance_time": "", "duration": "", "weekly_period": ""}},
+					"operation_policy": []map[string]interface{}{
+						{
+							"cluster_auto_upgrade": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"channel": "rapid",
+								},
+							},
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"maintenance_window.#":                  "1",
-						"maintenance_window.0.enable":           "false",
-						"maintenance_window.0.maintenance_time": "",
-						"maintenance_window.0.duration":         "",
-						"maintenance_window.0.weekly_period":    "",
+						"operation_policy.#":                                "1",
+						"operation_policy.0.cluster_auto_upgrade.#":         "1",
+						"operation_policy.0.cluster_auto_upgrade.0.enabled": "false",
+						"operation_policy.0.cluster_auto_upgrade.0.channel": "rapid",
 					}),
 				),
 			},
@@ -207,7 +234,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					// cluster args
 					"name":                name,
-					"version":             "1.24.6-aliyun.1",
+					"version":             "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.2.version}",
 					"pod_cidr":            "10.94.0.0/16",
 					"service_cidr":        "172.22.0.0/16",
 					"deletion_protection": "false",
@@ -223,7 +250,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 					testAccCheck(map[string]string{
 						// cluster args
 						"name":                name,
-						"version":             "1.24.6-aliyun.1",
+						"version":             CHECKSET,
 						"pod_cidr":            "10.94.0.0/16",
 						"service_cidr":        "172.22.0.0/16",
 						"deletion_protection": "false",
@@ -265,11 +292,11 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 			{
 				// upgrade
 				Config: testAccConfig(map[string]interface{}{
-					"version": "1.26.15-aliyun.1",
+					"version": "${data.alicloud_cs_kubernetes_version.kubernetes_versions.metadata.1.version}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"version": "1.26.15-aliyun.1",
+						"version": CHECKSET,
 					}),
 				),
 			},
@@ -277,7 +304,7 @@ func TestAccAliCloudCSManagedKubernetes_essd_migrate_upgrade(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "timezone", "name_prefix"},
+				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "load_balancer_spec", "slb_internet_enabled"},
 			},
 		},
 	})
@@ -383,8 +410,8 @@ func TestAccAliCloudCSManagedKubernetes_controlPlanLog(t *testing.T) {
 				ResourceName:      resourceId,
 				ImportState:       true,
 				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "timezone", "name_prefix", "addons",
-					"is_enterprise_security_group"},
+				ImportStateVerifyIgnore: []string{"new_nat_gateway", "user_ca", "name_prefix", "addons",
+					"is_enterprise_security_group", "pod_vswitch_ids", "slb_internet_enabled", "load_balancer_spec"},
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -454,6 +481,11 @@ variable "name" {
 data "alicloud_enhanced_nat_available_zones" "enhanced" {
 }
 
+data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
+  cluster_type       = "ManagedKubernetes"
+  profile            = "Default"
+}
+
 data "alicloud_instance_types" "default" {
   availability_zone    = data.alicloud_enhanced_nat_available_zones.enhanced.zones.0.zone_id
   cpu_core_count       = 4
@@ -513,6 +545,11 @@ data "alicloud_instance_types" "default" {
   memory_size          = 8
   system_disk_category = "cloud_essd"
   kubernetes_node_role = "Worker"
+}
+
+data "alicloud_cs_kubernetes_version" "kubernetes_versions" {
+  cluster_type       = "ManagedKubernetes"
+  profile            = "Default"
 }
 
 data "alicloud_resource_manager_resource_groups" "default" {}

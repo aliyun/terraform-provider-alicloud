@@ -382,9 +382,9 @@ func resourceAlicloudCSKubernetes() *schema.Resource {
 			"load_balancer_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
 				Default:      "slb.s1.small",
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The load balancer has been changed to PayByCLCU so that the spec is no need anymore.",
 			},
 			"image_id": {
 				Type:     schema.TypeString,
@@ -886,7 +886,7 @@ func resourceAlicloudCSKubernetesUpdate(d *schema.ResourceData, meta interface{}
 	d.Partial(true)
 	invoker := NewInvoker()
 	// modifyCluster
-	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "enable_rrsa") {
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
 		if err := modifyCluster(d, meta, &invoker); err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
 		}
@@ -994,6 +994,21 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 		d.SetPartial("maintenance_window")
 	}
 
+	// modify cluster maintenance window
+	if !d.IsNewResource() && d.HasChange("operation_policy") {
+		if v := d.Get("operation_policy").([]interface{}); len(v) > 0 {
+			request.OperationPolicy = &roacs.ModifyClusterRequestOperationPolicy{}
+			if vv := d.Get("operation_policy.0.cluster_auto_upgrade").([]interface{}); len(vv) > 0 {
+				policy := vv[0].(map[string]interface{})
+				request.OperationPolicy.ClusterAutoUpgrade = &roacs.ModifyClusterRequestOperationPolicyClusterAutoUpgrade{
+					Enabled: tea.Bool(policy["enabled"].(bool)),
+					Channel: tea.String(policy["channel"].(string)),
+				}
+			}
+			updated = true
+		}
+	}
+
 	// modify cluster rrsa policy
 	if d.HasChange("enable_rrsa") {
 		enableRRSA := false
@@ -1052,13 +1067,7 @@ func modifyCluster(d *schema.ResourceData, meta interface{}, invoker *Invoker) e
 
 func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	roaClient, err := client.NewRoaCsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	csService := CsService{client}
-	csClient := CsClient{roaClient}
-	invoker := NewInvoker()
 
 	object, err := csService.DescribeCsKubernetes(d.Id())
 	if err != nil {
@@ -1095,9 +1104,6 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	}
 	if d.Get("cluster_domain") == "" {
 		d.Set("cluster_domain", "cluster.local")
-	}
-	if d.Get("load_balancer_spec") == "" {
-		d.Set("load_balancer_spec", "slb.s1.small")
 	}
 
 	d.Set("maintenance_window", flattenMaintenanceWindowConfig(&object.MaintenanceWindow))
@@ -1267,81 +1273,9 @@ func resourceAlicloudCSKubernetesRead(d *schema.ResourceData, meta interface{}) 
 	if object.State == "failed" || object.State == "deleted_failed" || object.State == "deleting" {
 		return nil
 	}
-	var requestInfo *cs.Client
-	var response interface{}
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			requestInfo = csClient
-			return csClient.GetClusterCerts(d.Id())
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, d.Id(), "GetClusterCerts", DenverdinoAliyungo)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["Id"] = d.Id()
-		addDebug("GetClusterCerts", response, requestInfo, requestMap)
-	}
-	cert, _ := response.(cs.ClusterCerts)
 
-	// write cluster conn authority to local file
-	if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
-		if err := writeToFile(ce.(string), cert.Cert); err != nil {
-			return WrapError(err)
-		}
-	}
-	if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
-		if err := writeToFile(key.(string), cert.Key); err != nil {
-			return WrapError(err)
-		}
-	}
-	if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
-		if err := writeToFile(ca.(string), cert.CA); err != nil {
-			return WrapError(err)
-		}
-	}
-
-	var kubeConfig *roacs.DescribeClusterUserKubeconfigResponseBody
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		kubeConfig, err = csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
-			}
-			return resource.NonRetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
-	} else {
-		if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
-			writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
-		}
-	}
-
-	// write cluster conn authority to tf state
-	if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
-		return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
-	}
-
-	// rrsa metadata only for managed, ignore attributes error
-	if data, err := flattenRRSAMetadata(object.MetaData); err != nil {
+	if err = setCerts(d, meta, true); err != nil {
 		return WrapError(err)
-	} else {
-		d.Set("rrsa_metadata", data)
-		if len(data) > 0 {
-			d.Set("enable_rrsa", data[0]["enabled"].(bool))
-		}
-	}
-
-	if err := checkControlPlaneLogEnable(d, meta); err != nil {
-		return WrapError(fmt.Errorf("error setting controlPlaneLog: %s", err))
 	}
 
 	return nil
@@ -1788,13 +1722,13 @@ func expandMaintenanceWindowConfigRoa(l []interface{}) *roacs.MaintenanceWindow 
 	if v, ok := m["enable"]; ok {
 		config.SetEnable(v.(bool))
 	}
-	if v, ok := m["maintenance_time"]; ok && v != "" {
+	if v, ok := m["maintenance_time"]; ok {
 		config.SetMaintenanceTime(v.(string))
 	}
-	if v, ok := m["duration"]; ok && v != "" {
+	if v, ok := m["duration"]; ok {
 		config.SetDuration(v.(string))
 	}
-	if v, ok := m["weekly_period"]; ok && v != "" {
+	if v, ok := m["weekly_period"]; ok {
 		config.SetWeeklyPeriod(v.(string))
 	}
 
@@ -1802,6 +1736,21 @@ func expandMaintenanceWindowConfigRoa(l []interface{}) *roacs.MaintenanceWindow 
 }
 
 func flattenMaintenanceWindowConfig(config *cs.MaintenanceWindow) (m []map[string]interface{}) {
+	if config == nil {
+		return []map[string]interface{}{}
+	}
+
+	m = append(m, map[string]interface{}{
+		"enable":           config.Enable,
+		"maintenance_time": config.MaintenanceTime,
+		"duration":         config.Duration,
+		"weekly_period":    config.WeeklyPeriod,
+	})
+
+	return
+}
+
+func flattenMaintenanceWindowConfigRoa(config *roacs.MaintenanceWindow) (m []map[string]interface{}) {
 	if config == nil {
 		return []map[string]interface{}{}
 	}
