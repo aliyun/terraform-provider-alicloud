@@ -1,12 +1,15 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aliyun/alibaba-cloud-sdk-go/services/vpc"
 
 	"github.com/alibabacloud-go/tea/tea"
 
@@ -15,7 +18,6 @@ import (
 
 	roacs "github.com/alibabacloud-go/cs-20151215/v5/client"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-	"github.com/denverdino/aliyungo/common"
 	"github.com/denverdino/aliyungo/cs"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -23,8 +25,8 @@ import (
 func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceAlicloudCSManagedKubernetesCreate,
-		Read:   resourceAlicloudCSKubernetesRead,
-		Update: resourceAlicloudCSKubernetesUpdate,
+		Read:   resourceAlicloudCSManagedKubernetesRead,
+		Update: resourceAlicloudCSManagedKubernetesUpdate,
 		Delete: resourceAlicloudCSKubernetesDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
@@ -329,9 +331,9 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"load_balancer_spec": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"slb.s1.small", "slb.s2.small", "slb.s2.medium", "slb.s3.small", "slb.s3.medium", "slb.s3.large"}, false),
 				Default:      "slb.s1.small",
+				Deprecated:   "Field 'load_balancer_spec' has been deprecated from provider version 1.232.0. The load balancer has been changed to PayByCLCU so that the spec is no need anymore.",
 			},
 			"deletion_protection": {
 				Type:     schema.TypeBool,
@@ -350,8 +352,6 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"os_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Default:      "Linux",
-				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Windows", "Linux"}, false),
 				Removed:      "Field 'os_type' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},
@@ -359,15 +359,13 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 				Removed:  "Field 'platform' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes, by using field 'platform' to replace it.",
 			},
 			"node_port_range": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
-				Removed:  "Field 'platform' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
+				Removed:  "Field 'node_port_range' has been removed from provider version 1.212.0. Please use resource 'alicloud_cs_kubernetes_node_pool' to manage cluster nodes.",
 			},
 			"cluster_domain": {
 				Type:        schema.TypeString,
@@ -670,19 +668,50 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"enable": {
 							Type:     schema.TypeBool,
-							Required: true,
+							Optional: true,
+							Computed: true,
 						},
 						"maintenance_time": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
 						},
 						"duration": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
 						},
 						"weekly_period": {
 							Type:     schema.TypeString,
-							Required: true,
+							Optional: true,
+							Computed: true,
+						},
+					},
+				},
+			},
+			"operation_policy": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"cluster_auto_upgrade": {
+							Type:     schema.TypeList,
+							Optional: true,
+							MaxItems: 1,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"enabled": {
+										Type:     schema.TypeBool,
+										Optional: true,
+									},
+									"channel": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -700,7 +729,7 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 			"control_plane_log_components": {
 				Type:     schema.TypeList,
 				Optional: true,
-				MinItems: 1,
+				MinItems: 0,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -761,38 +790,208 @@ func resourceAlicloudCSManagedKubernetes() *schema.Resource {
 
 func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	invoker := NewInvoker()
-	csService := CsService{client}
-	args, err := buildKubernetesArgs(d, meta)
+	roa, _ := client.NewRoaCsClient()
+	csClient := CsClient{roa}
+
+	var clusterName string
+	if v, ok := d.GetOk("name"); ok {
+		clusterName = v.(string)
+	} else {
+		clusterName = resource.PrefixedUniqueId(d.Get("name_prefix").(string))
+	}
+
+	tags := make([]*roacs.Tag, 0)
+	tagsMap, ok := d.Get("tags").(map[string]interface{})
+	if ok {
+		for key, value := range tagsMap {
+			if value != nil {
+				if v, ok := value.(string); ok {
+					tags = append(tags, &roacs.Tag{
+						Key:   tea.String(key),
+						Value: tea.String(v),
+					})
+				}
+			}
+		}
+	}
+	addons := make([]*roacs.Addon, 0)
+	if v, ok := d.GetOk("addons"); ok {
+		all, ok := v.([]interface{})
+		if ok {
+			for _, a := range all {
+				addon, ok := a.(map[string]interface{})
+				if ok {
+					addons = append(addons, &roacs.Addon{
+						Name:     tea.String(addon["name"].(string)),
+						Config:   tea.String(addon["config"].(string)),
+						Version:  tea.String(addon["version"].(string)),
+						Disabled: tea.Bool(addon["disabled"].(bool)),
+					})
+				}
+			}
+		}
+	}
+
+	vpcService := VpcService{client}
+	var vSwitchIds []string
+	if v, ok := d.GetOk("vswitch_ids"); ok {
+		vSwitchIds = expandStringList(v.([]interface{}))
+	} else {
+		if v, ok := d.GetOk("worker_vswitch_ids"); ok {
+			vSwitchIds = expandStringList(v.([]interface{}))
+		}
+	}
+	var vpcId string
+	if len(vSwitchIds) > 0 {
+		vsw, err := vpcService.DescribeVSwitch(vSwitchIds[0])
+		if err != nil {
+			return err
+		}
+		vpcId = vsw.VpcId
+	}
+
+	request := &roacs.CreateClusterRequest{
+		Name:        tea.String(clusterName),
+		RegionId:    tea.String(client.RegionId),
+		ClusterType: tea.String("ManagedKubernetes"),
+		Profile:     tea.String("Default"),
+		Tags:        tags,
+		Addons:      addons,
+		Vpcid:       tea.String(vpcId),
+		VswitchIds:  tea.StringSlice(vSwitchIds),
+	}
+	if v, ok := d.GetOk("version"); ok {
+		request.SetKubernetesVersion(v.(string))
+	}
+
+	if v, ok := d.GetOk("deletion_protection"); ok {
+		request.SetDeletionProtection(v.(bool))
+	}
+
+	if v, ok := d.GetOk("resource_group_id"); ok {
+		request.SetResourceGroupId(v.(string))
+	}
+
+	if v, ok := d.GetOk("vpc_id"); ok {
+		request.SetVpcid(v.(string))
+	}
+
+	if v, ok := d.GetOk("new_nat_gateway"); ok {
+		request.SetSnatEntry(v.(bool))
+	}
+
+	if v, ok := d.GetOk("slb_internet_enabled"); ok {
+		request.SetEndpointPublicAccess(v.(bool))
+	}
+
+	if v, ok := d.GetOk("load_balancer_spec"); ok {
+		request.SetLoadBalancerSpec(v.(string))
+	}
+
+	if v, ok := d.GetOk("is_enterprise_security_group"); ok {
+		request.SetIsEnterpriseSecurityGroup(v.(bool))
+	}
+
+	if v, ok := d.GetOk("security_group_id"); ok {
+		request.SetSecurityGroupId(v.(string))
+	}
+
+	if v, ok := d.GetOk("service_cidr"); ok {
+		request.SetServiceCidr(v.(string))
+	}
+
+	if v, ok := d.GetOk("proxy_mode"); ok {
+		request.SetProxyMode(v.(string))
+	}
+
+	if v, ok := d.GetOk("timezone"); ok {
+		request.SetTimezone(v.(string))
+	}
+
+	if v, ok := d.GetOk("pod_vswitch_ids"); ok {
+		request.SetPodVswitchIds(tea.StringSlice(expandStringList(v.([]interface{}))))
+	}
+
+	if v, ok := d.GetOk("pod_cidr"); ok {
+		request.SetContainerCidr(v.(string))
+	}
+
+	if v, ok := d.GetOk("node_cidr_mask"); ok {
+		request.SetNodeCidrMask(strconv.Itoa(v.(int)))
+	}
+
+	if v, ok := d.GetOk("cluster_spec"); ok {
+		request.SetClusterSpec(v.(string))
+	}
+
+	if v, ok := d.GetOk("service_account_issuer"); ok {
+		request.SetServiceAccountIssuer(v.(string))
+	}
+
+	if v, ok := d.GetOk("api_audiences"); ok {
+		if list := expandStringList(v.([]interface{})); len(list) > 0 {
+			request.SetApiAudiences(strings.Join(list, ","))
+		}
+	}
+
+	if v, ok := d.GetOk("enable_rrsa"); ok {
+		request.SetEnableRrsa(v.(bool))
+	}
+	if v, ok := d.GetOk("custom_san"); ok {
+		request.SetCustomSan(v.(string))
+	}
+
+	if v, ok := d.GetOk("encryption_provider_key"); ok {
+		request.SetEncryptionProviderKey(v.(string))
+	}
+
+	// Configure control plane log. Effective only in the professional managed cluster
+	if v, ok := d.GetOk("control_plane_log_components"); ok {
+		request.SetControlplaneLogComponents(tea.StringSlice(expandStringList(v.([]interface{}))))
+		// ttl default is 30 days
+		request.SetControlplaneLogTtl("30")
+	}
+	if v, ok := d.GetOk("control_plane_log_ttl"); ok {
+		request.SetControlplaneLogTtl(v.(string))
+	}
+	if v, ok := d.GetOk("control_plane_log_project"); ok {
+		request.SetControlplaneLogProject(v.(string))
+	}
+
+	if v, ok := d.GetOk("maintenance_window"); ok {
+		request.SetMaintenanceWindow(expandMaintenanceWindowConfigRoa(v.([]interface{})))
+	}
+	if v, ok := d.GetOk("operation_policy"); ok {
+		request.OperationPolicy = &roacs.CreateClusterRequestOperationPolicy{}
+		m := v.([]interface{})[0].(map[string]interface{})
+		if vv, ok := m["cluster_auto_upgrade"]; ok {
+			policy := vv.([]interface{})[0].(map[string]interface{})
+			request.OperationPolicy.ClusterAutoUpgrade = &roacs.CreateClusterRequestOperationPolicyClusterAutoUpgrade{
+				Enabled: tea.Bool(policy["enabled"].(bool)),
+				Channel: tea.String(policy["channel"].(string)),
+			}
+		}
+	}
+
+	var err error
+	var resp *roacs.CreateClusterResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		resp, err = csClient.client.CreateCluster(request)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
 	if err != nil {
-		return WrapError(err)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_managed_kubernetes", "CreateManagedKubernetesCluster", AlibabaCloudSdkGoERROR)
 	}
-	var requestInfo *cs.Client
-	var response interface{}
-	if err := invoker.Run(func() error {
-		raw, err := client.WithCsClient(func(csClient *cs.Client) (interface{}, error) {
-			requestInfo = csClient
-			args.RegionId = common.Region(client.RegionId)
-			args.ClusterType = cs.ManagedKubernetes
-			return csClient.CreateManagedKubernetesCluster(&cs.ManagedKubernetesClusterCreationRequest{
-				ClusterArgs: args.ClusterArgs,
-				WorkerArgs:  args.WorkerArgs,
-			})
-		})
-		response = raw
-		return err
-	}); err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cs_managed_kubernetes", "CreateKubernetesCluster", response)
-	}
-	if debugOn() {
-		requestMap := make(map[string]interface{})
-		requestMap["RegionId"] = common.Region(client.RegionId)
-		requestMap["Args"] = args
-		addDebug("CreateKubernetesCluster", response, requestInfo, requestMap)
-	}
-	cluster, _ := response.(*cs.ClusterCommonResponse)
-	d.SetId(cluster.ClusterID)
-	taskId := cluster.TaskId
+	d.SetId(tea.StringValue(resp.Body.ClusterId))
+	taskId := tea.StringValue(resp.Body.TaskId)
 	roaCsClient, err := client.NewRoaCsClient()
 	if err == nil {
 		csClient := CsClient{client: roaCsClient}
@@ -802,12 +1001,243 @@ func resourceAlicloudCSManagedKubernetesCreate(d *schema.ResourceData, meta inte
 		}
 	}
 
+	csService := CsService{client}
 	stateConf := BuildStateConf([]string{"initial"}, []string{"running"}, d.Timeout(schema.TimeoutCreate), 10*time.Second, csService.CsKubernetesInstanceStateRefreshFunc(d.Id(), []string{"deleting", "failed"}))
-
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-	return resourceAlicloudCSKubernetesRead(d, meta)
+	return resourceAlicloudCSManagedKubernetesRead(d, meta)
+}
+
+func resourceAlicloudCSManagedKubernetesRead(d *schema.ResourceData, meta interface{}) error {
+	client := meta.(*connectivity.AliyunClient)
+	rosClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, ResourceName, "InitializeClient", err)
+	}
+	csClient := CsClient{rosClient}
+
+	object, err := csClient.DescribeClusterDetail(d.Id())
+	if err != nil {
+		if NotFoundError(err) {
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
+
+	if object.Name != nil {
+		d.Set("name", object.Name)
+	}
+
+	if object.VpcId != nil {
+		d.Set("vpc_id", object.VpcId)
+	}
+
+	if v, ok := object.Parameters["WorkerVSwitchIds"]; ok {
+		d.Set("worker_vswitch_ids", strings.Split(Interface2String(tea.StringValue(v)), ","))
+	}
+
+	if object.SecurityGroupId != nil {
+		d.Set("security_group_id", object.SecurityGroupId)
+	}
+
+	if object.DeletionProtection != nil {
+		d.Set("deletion_protection", object.DeletionProtection)
+	}
+
+	if object.CurrentVersion != nil {
+		d.Set("version", object.CurrentVersion)
+	}
+
+	if object.ResourceGroupId != nil {
+		d.Set("resource_group_id", object.ResourceGroupId)
+	}
+
+	if object.ClusterSpec != nil {
+		d.Set("cluster_spec", object.ClusterSpec)
+	}
+
+	if object.Timezone != nil {
+		d.Set("timezone", object.Timezone)
+	}
+
+	if object.WorkerRamRoleName != nil {
+		d.Set("worker_ram_role_name", object.WorkerRamRoleName)
+	}
+
+	d.Set("cluster_domain", "cluster.local")
+	if object.ClusterDomain != nil {
+		d.Set("cluster_domain", object.ClusterDomain)
+	}
+
+	if err := d.Set("tags", flattenTags(object.Tags)); err != nil {
+		return WrapError(err)
+	}
+
+	slbId, err := getApiServerSlbID(d, meta)
+	if err != nil {
+		log.Printf(DefaultErrorMsg, d.Id(), "DescribeClusterResources", err.Error())
+	}
+	d.Set("slb_id", slbId)
+
+	if object.ServiceCidr != nil {
+		d.Set("service_cidr", object.ServiceCidr)
+	} else {
+		if v, ok := object.Parameters["ServiceCIDR"]; ok {
+			d.Set("service_cidr", v)
+		}
+	}
+	if object.ProxyMode != nil {
+		d.Set("proxy_mode", object.ProxyMode)
+	} else {
+		if v, ok := object.Parameters["ProxyMode"]; ok {
+			d.Set("proxy_mode", Interface2String(v))
+		}
+	}
+	if object.ContainerCidr != nil {
+		d.Set("pod_cidr", object.ContainerCidr)
+	} else {
+		if v, ok := object.Parameters["ContainerCIDR"]; ok {
+			d.Set("pod_cidr", Interface2String(tea.StringValue(v)))
+		}
+	}
+
+	if object.NodeCidrMask != nil {
+		d.Set("node_cidr_mask", formatInt(tea.StringValue(object.NodeCidrMask)))
+	} else {
+		// node_cidr_mask
+		capabilities := fetchClusterCapabilities(tea.StringValue(object.MetaData))
+		if v, ok := capabilities["NodeCIDRMask"]; ok {
+			d.Set("node_cidr_mask", formatInt(v))
+		}
+	}
+
+	metadata := fetchClusterMetaDataMap(tea.StringValue(object.MetaData))
+	if v, ok := metadata["ExtraCertSAN"]; ok && v != nil {
+		l := expandStringList(v.([]interface{}))
+		d.Set("custom_san", strings.Join(l, ","))
+	}
+	// rrsa metadata only for managed, ignore attributes error
+	if data, err := flattenRRSAMetadata(tea.StringValue(object.MetaData)); err != nil {
+		return WrapError(err)
+	} else {
+		d.Set("rrsa_metadata", data)
+		if len(data) > 0 {
+			d.Set("enable_rrsa", data[0]["enabled"].(bool))
+		}
+	}
+
+	if object.MaintenanceWindow != nil {
+		d.Set("maintenance_window", flattenMaintenanceWindowConfigRoa(object.MaintenanceWindow))
+	}
+
+	if object.OperationPolicy != nil {
+		m := make([]map[string]interface{}, 0)
+		if object.OperationPolicy.ClusterAutoUpgrade != nil {
+			m = append(m, map[string]interface{}{
+				"cluster_auto_upgrade": []map[string]interface{}{
+					{
+						"enabled": tea.BoolValue(object.OperationPolicy.ClusterAutoUpgrade.Enabled),
+						"channel": tea.StringValue(object.OperationPolicy.ClusterAutoUpgrade.Channel),
+					},
+				},
+			})
+		}
+		d.Set("operation_policy", m)
+	}
+
+	// Get slb information and set connect
+	connection := make(map[string]string)
+	masterURL := tea.StringValue(object.MasterUrl)
+	endPoint := make(map[string]string)
+	_ = json.Unmarshal([]byte(masterURL), &endPoint)
+	connection["api_server_internet"] = endPoint["api_server_endpoint"]
+	connection["api_server_intranet"] = endPoint["intranet_api_server_endpoint"]
+	if endPoint["api_server_endpoint"] != "" {
+		connection["master_public_ip"] = strings.Split(strings.Split(endPoint["api_server_endpoint"], ":")[1], "/")[2]
+	}
+	connection["service_domain"] = fmt.Sprintf("*.%s.%s.alicontainer.com", d.Id(), tea.StringValue(object.RegionId))
+
+	d.Set("connections", connection)
+	d.Set("slb_internet", connection["master_public_ip"])
+	if endPoint["intranet_api_server_endpoint"] != "" {
+		d.Set("slb_intranet", strings.Split(strings.Split(endPoint["intranet_api_server_endpoint"], ":")[1], "/")[2])
+	}
+
+	// set nat gateway
+	natRequest := vpc.CreateDescribeNatGatewaysRequest()
+	natRequest.VpcId = tea.StringValue(object.VpcId)
+	raw, err := client.WithVpcClient(func(vpcClient *vpc.Client) (interface{}, error) {
+		return vpcClient.DescribeNatGateways(natRequest)
+	})
+	if err != nil {
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), natRequest.GetActionName(), AlibabaCloudSdkGoERROR)
+	}
+	addDebug(natRequest.GetActionName(), raw, natRequest.RpcRequest, natRequest)
+	nat, _ := raw.(*vpc.DescribeNatGatewaysResponse)
+	if nat != nil && len(nat.NatGateways.NatGateway) > 0 {
+		d.Set("nat_gateway_id", nat.NatGateways.NatGateway[0].NatGatewayId)
+	}
+
+	// get cluster conn certs
+	// If the cluster is failed, there is no need to get cluster certs
+	if tea.StringValue(object.State) == "failed" || tea.StringValue(object.State) == "deleted_failed" || tea.StringValue(object.State) == "deleting" {
+		return nil
+	}
+
+	if err = setCerts(d, meta, true); err != nil {
+		return WrapError(err)
+	}
+
+	if err = checkControlPlaneLogEnable(d, meta); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
+
+}
+
+func resourceAlicloudCSManagedKubernetesUpdate(d *schema.ResourceData, meta interface{}) error {
+	d.Partial(true)
+	invoker := NewInvoker()
+	// modifyCluster
+	if !d.IsNewResource() && d.HasChanges("resource_group_id", "name", "name_prefix", "deletion_protection", "custom_san", "maintenance_window", "operation_policy", "enable_rrsa") {
+		if err := modifyCluster(d, meta, &invoker); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "ModifyCluster", AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	// modify cluster tag
+	if d.HasChange("tags") {
+		err := updateKubernetesClusterTag(d, meta)
+		if err != nil {
+			return WrapErrorf(err, ResponseCodeMsg, d.Id(), "ModifyClusterTags", AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	// update control plane config
+	if d.HasChanges([]string{"control_plane_log_ttl", "control_plane_log_project", "control_plane_log_components"}...) {
+		if err := updateControlPlaneLog(d, meta); err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), "UpdateControlPlaneLog", AlibabaCloudSdkGoERROR)
+		}
+	}
+
+	// migrate cluster to pro from standard
+	if d.HasChange("cluster_spec") {
+		err := migrateCluster(d, meta)
+		if err != nil {
+			return WrapError(err)
+		}
+	}
+
+	err := UpgradeAlicloudKubernetesCluster(d, meta)
+	if err != nil {
+		return WrapError(err)
+	}
+
+	d.Partial(false)
+	return resourceAlicloudCSManagedKubernetesRead(d, meta)
 }
 
 func UpgradeAlicloudKubernetesCluster(d *schema.ResourceData, meta interface{}) error {

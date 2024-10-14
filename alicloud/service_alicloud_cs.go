@@ -208,7 +208,22 @@ func (s *CsClient) DescribeClusterDetail(id string) (*client.DescribeClusterDeta
 	if id == "" {
 		return nil, WrapError(fmt.Errorf("cluster id is empty"))
 	}
-	response, err := s.client.DescribeClusterDetail(tea.String(id))
+
+	var err error
+	var response *client.DescribeClusterDetailResponse
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+		response, err = s.client.DescribeClusterDetail(tea.String(id))
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+
 	if err != nil {
 		return nil, WrapError(err)
 	}
@@ -1211,4 +1226,48 @@ func (s *CsClient) DescribeUserPermission(uid string) ([]*client.DescribeUserPer
 	}
 
 	return body.Body, err
+}
+
+func setCerts(d *schema.ResourceData, meta interface{}, setCertificateAuthority bool) error {
+	client := meta.(*connectivity.AliyunClient)
+	roaClient, err := client.NewRoaCsClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	csClient := CsClient{roaClient}
+	kubeConfig, err := csClient.DescribeClusterKubeConfigWithExpiration(d.Id(), 0)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get kubeconfig due to %++v", err)
+	}
+	m := flattenAlicloudCSCertificate(kubeConfig)
+	if len(m) >= 3 {
+		if ce, ok := d.GetOk("client_cert"); ok && ce.(string) != "" {
+			if err := writeToFile(ce.(string), m["client_cert"]); err != nil {
+				return WrapError(err)
+			}
+		}
+		if key, ok := d.GetOk("client_key"); ok && key.(string) != "" {
+			if err := writeToFile(key.(string), m["client_key"]); err != nil {
+				return WrapError(err)
+			}
+		}
+		if ca, ok := d.GetOk("cluster_ca_cert"); ok && ca.(string) != "" {
+			if err := writeToFile(ca.(string), m["cluster_cert"]); err != nil {
+				return WrapError(err)
+			}
+		}
+	}
+	// kube_config
+	if file, ok := d.GetOk("kube_config"); ok && file.(string) != "" {
+		writeToFile(file.(string), tea.StringValue(kubeConfig.Config))
+	}
+
+	if setCertificateAuthority {
+		// write cluster conn authority to tf state
+		if err := d.Set("certificate_authority", flattenAlicloudCSCertificate(kubeConfig)); err != nil {
+			return WrapError(fmt.Errorf("error setting certificate_authority: %s", err))
+		}
+	}
+
+	return nil
 }

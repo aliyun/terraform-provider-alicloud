@@ -1,17 +1,18 @@
 // This file is auto-generated, don't edit it. Thanks.
-/**
- * This is for OpenApi SDK
- */
+// Description:
+//
+// This is for OpenApi SDK
 package client
 
 import (
+	"io"
+
 	spi "github.com/alibabacloud-go/alibabacloud-gateway-spi/client"
 	openapiutil "github.com/alibabacloud-go/openapi-util/service"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	xml "github.com/alibabacloud-go/tea-xml/service"
 	"github.com/alibabacloud-go/tea/tea"
 	credential "github.com/aliyun/credentials-go/credentials"
-	"io"
 )
 
 type GlobalParameters struct {
@@ -37,67 +38,176 @@ func (s *GlobalParameters) SetQueries(v map[string]*string) *GlobalParameters {
 	return s
 }
 
-/**
- * Model for initing client
- */
+// Description:
+//
+// Model for initing client
 type Config struct {
 	// accesskey id
 	AccessKeyId *string `json:"accessKeyId,omitempty" xml:"accessKeyId,omitempty"`
 	// accesskey secret
 	AccessKeySecret *string `json:"accessKeySecret,omitempty" xml:"accessKeySecret,omitempty"`
 	// security token
+	//
+	// example:
+	//
+	// a.txt
 	SecurityToken *string `json:"securityToken,omitempty" xml:"securityToken,omitempty"`
+	// bearer token
+	//
+	// example:
+	//
+	// the-bearer-token
+	BearerToken *string `json:"bearerToken,omitempty" xml:"bearerToken,omitempty"`
 	// http protocol
+	//
+	// example:
+	//
+	// http
 	Protocol *string `json:"protocol,omitempty" xml:"protocol,omitempty"`
 	// http method
+	//
+	// example:
+	//
+	// GET
 	Method *string `json:"method,omitempty" xml:"method,omitempty"`
 	// region id
+	//
+	// example:
+	//
+	// cn-hangzhou
 	RegionId *string `json:"regionId,omitempty" xml:"regionId,omitempty"`
 	// read timeout
+	//
+	// example:
+	//
+	// 10
 	ReadTimeout *int `json:"readTimeout,omitempty" xml:"readTimeout,omitempty"`
 	// connect timeout
+	//
+	// example:
+	//
+	// 10
 	ConnectTimeout *int `json:"connectTimeout,omitempty" xml:"connectTimeout,omitempty"`
 	// http proxy
+	//
+	// example:
+	//
+	// http://localhost
 	HttpProxy *string `json:"httpProxy,omitempty" xml:"httpProxy,omitempty"`
 	// https proxy
+	//
+	// example:
+	//
+	// https://localhost
 	HttpsProxy *string `json:"httpsProxy,omitempty" xml:"httpsProxy,omitempty"`
 	// credential
 	Credential credential.Credential `json:"credential,omitempty" xml:"credential,omitempty"`
 	// endpoint
+	//
+	// example:
+	//
+	// cs.aliyuncs.com
 	Endpoint *string `json:"endpoint,omitempty" xml:"endpoint,omitempty"`
 	// proxy white list
+	//
+	// example:
+	//
+	// http://localhost
 	NoProxy *string `json:"noProxy,omitempty" xml:"noProxy,omitempty"`
 	// max idle conns
+	//
+	// example:
+	//
+	// 3
 	MaxIdleConns *int `json:"maxIdleConns,omitempty" xml:"maxIdleConns,omitempty"`
 	// network for endpoint
+	//
+	// example:
+	//
+	// public
 	Network *string `json:"network,omitempty" xml:"network,omitempty"`
 	// user agent
+	//
+	// example:
+	//
+	// Alibabacloud/1
 	UserAgent *string `json:"userAgent,omitempty" xml:"userAgent,omitempty"`
 	// suffix for endpoint
+	//
+	// example:
+	//
+	// aliyun
 	Suffix *string `json:"suffix,omitempty" xml:"suffix,omitempty"`
 	// socks5 proxy
 	Socks5Proxy *string `json:"socks5Proxy,omitempty" xml:"socks5Proxy,omitempty"`
 	// socks5 network
+	//
+	// example:
+	//
+	// TCP
 	Socks5NetWork *string `json:"socks5NetWork,omitempty" xml:"socks5NetWork,omitempty"`
 	// endpoint type
+	//
+	// example:
+	//
+	// internal
 	EndpointType *string `json:"endpointType,omitempty" xml:"endpointType,omitempty"`
 	// OpenPlatform endpoint
+	//
+	// example:
+	//
+	// openplatform.aliyuncs.com
 	OpenPlatformEndpoint *string `json:"openPlatformEndpoint,omitempty" xml:"openPlatformEndpoint,omitempty"`
 	// Deprecated
+	//
 	// credential type
+	//
+	// example:
+	//
+	// access_key
 	Type *string `json:"type,omitempty" xml:"type,omitempty"`
 	// Signature Version
+	//
+	// example:
+	//
+	// v1
 	SignatureVersion *string `json:"signatureVersion,omitempty" xml:"signatureVersion,omitempty"`
 	// Signature Algorithm
+	//
+	// example:
+	//
+	// ACS3-HMAC-SHA256
 	SignatureAlgorithm *string `json:"signatureAlgorithm,omitempty" xml:"signatureAlgorithm,omitempty"`
 	// Global Parameters
 	GlobalParameters *GlobalParameters `json:"globalParameters,omitempty" xml:"globalParameters,omitempty"`
 	// privite key for client certificate
+	//
+	// example:
+	//
+	// MIIEvQ
 	Key *string `json:"key,omitempty" xml:"key,omitempty"`
 	// client certificate
+	//
+	// example:
+	//
+	// -----BEGIN CERTIFICATE-----
+	//
+	// xxx-----END CERTIFICATE-----
 	Cert *string `json:"cert,omitempty" xml:"cert,omitempty"`
 	// server certificate
+	//
+	// example:
+	//
+	// -----BEGIN CERTIFICATE-----
+	//
+	// xxx-----END CERTIFICATE-----
 	Ca *string `json:"ca,omitempty" xml:"ca,omitempty"`
+	// disable HTTP/2
+	//
+	// example:
+	//
+	// false
+	DisableHttp2 *bool `json:"disableHttp2,omitempty" xml:"disableHttp2,omitempty"`
 }
 
 func (s Config) String() string {
@@ -120,6 +230,11 @@ func (s *Config) SetAccessKeySecret(v string) *Config {
 
 func (s *Config) SetSecurityToken(v string) *Config {
 	s.SecurityToken = &v
+	return s
+}
+
+func (s *Config) SetBearerToken(v string) *Config {
+	s.BearerToken = &v
 	return s
 }
 
@@ -245,6 +360,11 @@ func (s *Config) SetCert(v string) *Config {
 
 func (s *Config) SetCa(v string) *Config {
 	s.Ca = &v
+	return s
+}
+
+func (s *Config) SetDisableHttp2(v bool) *Config {
+	s.DisableHttp2 = &v
 	return s
 }
 
@@ -390,12 +510,14 @@ type Client struct {
 	Key                  *string
 	Cert                 *string
 	Ca                   *string
+	DisableHttp2         *bool
 }
 
-/**
- * Init client with Config
- * @param config config contains the necessary information to create a client
- */
+// Description:
+//
+// # Init client with Config
+//
+// @param config - config contains the necessary information to create a client
 func NewClient(config *Config) (*Client, error) {
 	client := new(Client)
 	err := client.Init(config)
@@ -429,6 +551,16 @@ func (client *Client) Init(config *Config) (_err error) {
 			return _err
 		}
 
+	} else if !tea.BoolValue(util.Empty(config.BearerToken)) {
+		cc := &credential.Config{
+			Type:        tea.String("bearer"),
+			BearerToken: config.BearerToken,
+		}
+		client.Credential, _err = credential.NewCredential(cc)
+		if _err != nil {
+			return _err
+		}
+
 	} else if !tea.BoolValue(util.IsUnset(config.Credential)) {
 		client.Credential = config.Credential
 	}
@@ -455,21 +587,31 @@ func (client *Client) Init(config *Config) (_err error) {
 	client.Key = config.Key
 	client.Cert = config.Cert
 	client.Ca = config.Ca
+	client.DisableHttp2 = config.DisableHttp2
 	return nil
 }
 
-/**
- * Encapsulate the request and invoke the network
- * @param action api name
- * @param version product version
- * @param protocol http or https
- * @param method e.g. GET
- * @param authType authorization type e.g. AK
- * @param bodyType response body type e.g. String
- * @param request object of OpenApiRequest
- * @param runtime which controls some details of call api, such as retry times
- * @return the response
- */
+// Description:
+//
+// # Encapsulate the request and invoke the network
+//
+// @param action - api name
+//
+// @param version - product version
+//
+// @param protocol - http or https
+//
+// @param method - e.g. GET
+//
+// @param authType - authorization type e.g. AK
+//
+// @param bodyType - response body type e.g. String
+//
+// @param request - object of OpenApiRequest
+//
+// @param runtime - which controls some details of call api, such as retry times
+//
+// @return the response
 func (client *Client) DoRPCRequest(action *string, version *string, protocol *string, method *string, authType *string, bodyType *string, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
 	_err = tea.Validate(request)
 	if _err != nil {
@@ -531,6 +673,20 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 
 			}
 
+			extendsHeaders := make(map[string]*string)
+			extendsQueries := make(map[string]*string)
+			if !tea.BoolValue(util.IsUnset(runtime.ExtendsParameters)) {
+				extendsParameters := runtime.ExtendsParameters
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Headers)) {
+					extendsHeaders = extendsParameters.Headers
+				}
+
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Queries)) {
+					extendsQueries = extendsParameters.Queries
+				}
+
+			}
+
 			request_.Query = tea.Merge(map[string]*string{
 				"Action":         action,
 				"Format":         tea.String("json"),
@@ -538,6 +694,7 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 				"Timestamp":      openapiutil.GetTimestamp(),
 				"SignatureNonce": util.GetNonce(),
 			}, globalQueries,
+				extendsQueries,
 				request.Query)
 			headers, _err := client.GetRpcHeaders()
 			if _err != nil {
@@ -551,7 +708,8 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 					"x-acs-version": version,
 					"x-acs-action":  action,
 					"user-agent":    client.GetUserAgent(),
-				}, globalHeaders)
+				}, globalHeaders,
+					extendsHeaders)
 			} else {
 				request_.Headers = tea.Merge(map[string]*string{
 					"host":          client.Endpoint,
@@ -559,6 +717,7 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 					"x-acs-action":  action,
 					"user-agent":    client.GetUserAgent(),
 				}, globalHeaders,
+					extendsHeaders,
 					headers)
 			}
 
@@ -574,40 +733,41 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 			}
 
 			if !tea.BoolValue(util.EqualString(authType, tea.String("Anonymous"))) {
-				accessKeyId, _err := client.GetAccessKeyId()
+				credentialModel, _err := client.Credential.GetCredential()
 				if _err != nil {
 					return _result, _err
 				}
 
-				accessKeySecret, _err := client.GetAccessKeySecret()
-				if _err != nil {
-					return _result, _err
-				}
-
-				securityToken, _err := client.GetSecurityToken()
-				if _err != nil {
-					return _result, _err
-				}
-
-				if !tea.BoolValue(util.Empty(securityToken)) {
-					request_.Query["SecurityToken"] = securityToken
-				}
-
-				request_.Query["SignatureMethod"] = tea.String("HMAC-SHA1")
-				request_.Query["SignatureVersion"] = tea.String("1.0")
-				request_.Query["AccessKeyId"] = accessKeyId
-				var t map[string]interface{}
-				if !tea.BoolValue(util.IsUnset(request.Body)) {
-					t, _err = util.AssertAsMap(request.Body)
-					if _err != nil {
-						return _result, _err
+				credentialType := credentialModel.Type
+				if tea.BoolValue(util.EqualString(credentialType, tea.String("bearer"))) {
+					bearerToken := credentialModel.BearerToken
+					request_.Query["BearerToken"] = bearerToken
+					request_.Query["SignatureType"] = tea.String("BEARERTOKEN")
+				} else {
+					accessKeyId := credentialModel.AccessKeyId
+					accessKeySecret := credentialModel.AccessKeySecret
+					securityToken := credentialModel.SecurityToken
+					if !tea.BoolValue(util.Empty(securityToken)) {
+						request_.Query["SecurityToken"] = securityToken
 					}
 
+					request_.Query["SignatureMethod"] = tea.String("HMAC-SHA1")
+					request_.Query["SignatureVersion"] = tea.String("1.0")
+					request_.Query["AccessKeyId"] = accessKeyId
+					var t map[string]interface{}
+					if !tea.BoolValue(util.IsUnset(request.Body)) {
+						t, _err = util.AssertAsMap(request.Body)
+						if _err != nil {
+							return _result, _err
+						}
+
+					}
+
+					signedParam := tea.Merge(request_.Query,
+						openapiutil.Query(t))
+					request_.Query["Signature"] = openapiutil.GetRPCSignature(signedParam, request_.Method, accessKeySecret)
 				}
 
-				signedParam := tea.Merge(request_.Query,
-					openapiutil.Query(t))
-				request_.Query["Signature"] = openapiutil.GetRPCSignature(signedParam, request_.Method, accessKeySecret)
 			}
 
 			response_, _err := tea.DoRequest(request_, _runtime)
@@ -720,19 +880,29 @@ func (client *Client) DoRPCRequest(action *string, version *string, protocol *st
 	return _resp, _err
 }
 
-/**
- * Encapsulate the request and invoke the network
- * @param action api name
- * @param version product version
- * @param protocol http or https
- * @param method e.g. GET
- * @param authType authorization type e.g. AK
- * @param pathname pathname of every api
- * @param bodyType response body type e.g. String
- * @param request object of OpenApiRequest
- * @param runtime which controls some details of call api, such as retry times
- * @return the response
- */
+// Description:
+//
+// # Encapsulate the request and invoke the network
+//
+// @param action - api name
+//
+// @param version - product version
+//
+// @param protocol - http or https
+//
+// @param method - e.g. GET
+//
+// @param authType - authorization type e.g. AK
+//
+// @param pathname - pathname of every api
+//
+// @param bodyType - response body type e.g. String
+//
+// @param request - object of OpenApiRequest
+//
+// @param runtime - which controls some details of call api, such as retry times
+//
+// @return the response
 func (client *Client) DoROARequest(action *string, version *string, protocol *string, method *string, authType *string, pathname *string, bodyType *string, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
 	_err = tea.Validate(request)
 	if _err != nil {
@@ -794,6 +964,20 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 
 			}
 
+			extendsHeaders := make(map[string]*string)
+			extendsQueries := make(map[string]*string)
+			if !tea.BoolValue(util.IsUnset(runtime.ExtendsParameters)) {
+				extendsParameters := runtime.ExtendsParameters
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Headers)) {
+					extendsHeaders = extendsParameters.Headers
+				}
+
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Queries)) {
+					extendsQueries = extendsParameters.Queries
+				}
+
+			}
+
 			request_.Headers = tea.Merge(map[string]*string{
 				"date":                    util.GetDateUTCString(),
 				"host":                    client.Endpoint,
@@ -805,41 +989,44 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 				"x-acs-action":            action,
 				"user-agent":              util.GetUserAgent(client.UserAgent),
 			}, globalHeaders,
+				extendsHeaders,
 				request.Headers)
 			if !tea.BoolValue(util.IsUnset(request.Body)) {
 				request_.Body = tea.ToReader(util.ToJSONString(request.Body))
 				request_.Headers["content-type"] = tea.String("application/json; charset=utf-8")
 			}
 
-			request_.Query = globalQueries
+			request_.Query = tea.Merge(globalQueries,
+				extendsQueries)
 			if !tea.BoolValue(util.IsUnset(request.Query)) {
 				request_.Query = tea.Merge(request_.Query,
 					request.Query)
 			}
 
 			if !tea.BoolValue(util.EqualString(authType, tea.String("Anonymous"))) {
-				accessKeyId, _err := client.GetAccessKeyId()
+				credentialModel, _err := client.Credential.GetCredential()
 				if _err != nil {
 					return _result, _err
 				}
 
-				accessKeySecret, _err := client.GetAccessKeySecret()
-				if _err != nil {
-					return _result, _err
+				credentialType := credentialModel.Type
+				if tea.BoolValue(util.EqualString(credentialType, tea.String("bearer"))) {
+					bearerToken := credentialModel.BearerToken
+					request_.Headers["x-acs-bearer-token"] = bearerToken
+					request_.Headers["x-acs-signature-type"] = tea.String("BEARERTOKEN")
+				} else {
+					accessKeyId := credentialModel.AccessKeyId
+					accessKeySecret := credentialModel.AccessKeySecret
+					securityToken := credentialModel.SecurityToken
+					if !tea.BoolValue(util.Empty(securityToken)) {
+						request_.Headers["x-acs-accesskey-id"] = accessKeyId
+						request_.Headers["x-acs-security-token"] = securityToken
+					}
+
+					stringToSign := openapiutil.GetStringToSign(request_)
+					request_.Headers["authorization"] = tea.String("acs " + tea.StringValue(accessKeyId) + ":" + tea.StringValue(openapiutil.GetROASignature(stringToSign, accessKeySecret)))
 				}
 
-				securityToken, _err := client.GetSecurityToken()
-				if _err != nil {
-					return _result, _err
-				}
-
-				if !tea.BoolValue(util.Empty(securityToken)) {
-					request_.Headers["x-acs-accesskey-id"] = accessKeyId
-					request_.Headers["x-acs-security-token"] = securityToken
-				}
-
-				stringToSign := openapiutil.GetStringToSign(request_)
-				request_.Headers["authorization"] = tea.String("acs " + tea.StringValue(accessKeyId) + ":" + tea.StringValue(openapiutil.GetROASignature(stringToSign, accessKeySecret)))
 			}
 
 			response_, _err := tea.DoRequest(request_, _runtime)
@@ -961,19 +1148,29 @@ func (client *Client) DoROARequest(action *string, version *string, protocol *st
 	return _resp, _err
 }
 
-/**
- * Encapsulate the request and invoke the network with form body
- * @param action api name
- * @param version product version
- * @param protocol http or https
- * @param method e.g. GET
- * @param authType authorization type e.g. AK
- * @param pathname pathname of every api
- * @param bodyType response body type e.g. String
- * @param request object of OpenApiRequest
- * @param runtime which controls some details of call api, such as retry times
- * @return the response
- */
+// Description:
+//
+// # Encapsulate the request and invoke the network with form body
+//
+// @param action - api name
+//
+// @param version - product version
+//
+// @param protocol - http or https
+//
+// @param method - e.g. GET
+//
+// @param authType - authorization type e.g. AK
+//
+// @param pathname - pathname of every api
+//
+// @param bodyType - response body type e.g. String
+//
+// @param request - object of OpenApiRequest
+//
+// @param runtime - which controls some details of call api, such as retry times
+//
+// @return the response
 func (client *Client) DoROARequestWithForm(action *string, version *string, protocol *string, method *string, authType *string, pathname *string, bodyType *string, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
 	_err = tea.Validate(request)
 	if _err != nil {
@@ -1035,6 +1232,20 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 
 			}
 
+			extendsHeaders := make(map[string]*string)
+			extendsQueries := make(map[string]*string)
+			if !tea.BoolValue(util.IsUnset(runtime.ExtendsParameters)) {
+				extendsParameters := runtime.ExtendsParameters
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Headers)) {
+					extendsHeaders = extendsParameters.Headers
+				}
+
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Queries)) {
+					extendsQueries = extendsParameters.Queries
+				}
+
+			}
+
 			request_.Headers = tea.Merge(map[string]*string{
 				"date":                    util.GetDateUTCString(),
 				"host":                    client.Endpoint,
@@ -1046,6 +1257,7 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 				"x-acs-action":            action,
 				"user-agent":              util.GetUserAgent(client.UserAgent),
 			}, globalHeaders,
+				extendsHeaders,
 				request.Headers)
 			if !tea.BoolValue(util.IsUnset(request.Body)) {
 				m, _err := util.AssertAsMap(request.Body)
@@ -1057,35 +1269,37 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 				request_.Headers["content-type"] = tea.String("application/x-www-form-urlencoded")
 			}
 
-			request_.Query = globalQueries
+			request_.Query = tea.Merge(globalQueries,
+				extendsQueries)
 			if !tea.BoolValue(util.IsUnset(request.Query)) {
 				request_.Query = tea.Merge(request_.Query,
 					request.Query)
 			}
 
 			if !tea.BoolValue(util.EqualString(authType, tea.String("Anonymous"))) {
-				accessKeyId, _err := client.GetAccessKeyId()
+				credentialModel, _err := client.Credential.GetCredential()
 				if _err != nil {
 					return _result, _err
 				}
 
-				accessKeySecret, _err := client.GetAccessKeySecret()
-				if _err != nil {
-					return _result, _err
+				credentialType := credentialModel.Type
+				if tea.BoolValue(util.EqualString(credentialType, tea.String("bearer"))) {
+					bearerToken := credentialModel.BearerToken
+					request_.Headers["x-acs-bearer-token"] = bearerToken
+					request_.Headers["x-acs-signature-type"] = tea.String("BEARERTOKEN")
+				} else {
+					accessKeyId := credentialModel.AccessKeyId
+					accessKeySecret := credentialModel.AccessKeySecret
+					securityToken := credentialModel.SecurityToken
+					if !tea.BoolValue(util.Empty(securityToken)) {
+						request_.Headers["x-acs-accesskey-id"] = accessKeyId
+						request_.Headers["x-acs-security-token"] = securityToken
+					}
+
+					stringToSign := openapiutil.GetStringToSign(request_)
+					request_.Headers["authorization"] = tea.String("acs " + tea.StringValue(accessKeyId) + ":" + tea.StringValue(openapiutil.GetROASignature(stringToSign, accessKeySecret)))
 				}
 
-				securityToken, _err := client.GetSecurityToken()
-				if _err != nil {
-					return _result, _err
-				}
-
-				if !tea.BoolValue(util.Empty(securityToken)) {
-					request_.Headers["x-acs-accesskey-id"] = accessKeyId
-					request_.Headers["x-acs-security-token"] = securityToken
-				}
-
-				stringToSign := openapiutil.GetStringToSign(request_)
-				request_.Headers["authorization"] = tea.String("acs " + tea.StringValue(accessKeyId) + ":" + tea.StringValue(openapiutil.GetROASignature(stringToSign, accessKeySecret)))
 			}
 
 			response_, _err := tea.DoRequest(request_, _runtime)
@@ -1205,18 +1419,27 @@ func (client *Client) DoROARequestWithForm(action *string, version *string, prot
 	return _resp, _err
 }
 
-/**
- * Encapsulate the request and invoke the network
- * @param action api name
- * @param version product version
- * @param protocol http or https
- * @param method e.g. GET
- * @param authType authorization type e.g. AK
- * @param bodyType response body type e.g. String
- * @param request object of OpenApiRequest
- * @param runtime which controls some details of call api, such as retry times
- * @return the response
- */
+// Description:
+//
+// # Encapsulate the request and invoke the network
+//
+// @param action - api name
+//
+// @param version - product version
+//
+// @param protocol - http or https
+//
+// @param method - e.g. GET
+//
+// @param authType - authorization type e.g. AK
+//
+// @param bodyType - response body type e.g. String
+//
+// @param request - object of OpenApiRequest
+//
+// @param runtime - which controls some details of call api, such as retry times
+//
+// @return the response
 func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
 	_err = tea.Validate(params)
 	if _err != nil {
@@ -1283,15 +1506,21 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 			}
 
 			extendsHeaders := make(map[string]*string)
+			extendsQueries := make(map[string]*string)
 			if !tea.BoolValue(util.IsUnset(runtime.ExtendsParameters)) {
 				extendsParameters := runtime.ExtendsParameters
 				if !tea.BoolValue(util.IsUnset(extendsParameters.Headers)) {
 					extendsHeaders = extendsParameters.Headers
 				}
 
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Queries)) {
+					extendsQueries = extendsParameters.Queries
+				}
+
 			}
 
 			request_.Query = tea.Merge(globalQueries,
+				extendsQueries,
 				request.Query)
 			// endpoint is setted in product client
 			request_.Headers = tea.Merge(map[string]*string{
@@ -1371,6 +1600,12 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 				if tea.BoolValue(util.EqualString(authType, tea.String("bearer"))) {
 					bearerToken := credentialModel.BearerToken
 					request_.Headers["x-acs-bearer-token"] = bearerToken
+					if tea.BoolValue(util.EqualString(params.Style, tea.String("RPC"))) {
+						request_.Query["SignatureType"] = tea.String("BEARERTOKEN")
+					} else {
+						request_.Headers["x-acs-signature-type"] = tea.String("BEARERTOKEN")
+					}
+
 				} else {
 					accessKeyId := credentialModel.AccessKeyId
 					accessKeySecret := credentialModel.AccessKeySecret
@@ -1516,18 +1751,27 @@ func (client *Client) DoRequest(params *Params, request *OpenApiRequest, runtime
 	return _resp, _err
 }
 
-/**
- * Encapsulate the request and invoke the network
- * @param action api name
- * @param version product version
- * @param protocol http or https
- * @param method e.g. GET
- * @param authType authorization type e.g. AK
- * @param bodyType response body type e.g. String
- * @param request object of OpenApiRequest
- * @param runtime which controls some details of call api, such as retry times
- * @return the response
- */
+// Description:
+//
+// # Encapsulate the request and invoke the network
+//
+// @param action - api name
+//
+// @param version - product version
+//
+// @param protocol - http or https
+//
+// @param method - e.g. GET
+//
+// @param authType - authorization type e.g. AK
+//
+// @param bodyType - response body type e.g. String
+//
+// @param request - object of OpenApiRequest
+//
+// @param runtime - which controls some details of call api, such as retry times
+//
+// @return the response
 func (client *Client) Execute(params *Params, request *OpenApiRequest, runtime *util.RuntimeOptions) (_result map[string]interface{}, _err error) {
 	_err = tea.Validate(params)
 	if _err != nil {
@@ -1562,7 +1806,8 @@ func (client *Client) Execute(params *Params, request *OpenApiRequest, runtime *
 			"policy": tea.StringValue(util.DefaultString(runtime.BackoffPolicy, tea.String("no"))),
 			"period": tea.IntValue(util.DefaultNumber(runtime.BackoffPeriod, tea.Int(1))),
 		},
-		"ignoreSSL": tea.BoolValue(runtime.IgnoreSSL),
+		"ignoreSSL":    tea.BoolValue(runtime.IgnoreSSL),
+		"disableHttp2": DefaultAny(client.DisableHttp2, tea.Bool(false)),
 	}
 
 	_resp := make(map[string]interface{})
@@ -1596,11 +1841,27 @@ func (client *Client) Execute(params *Params, request *OpenApiRequest, runtime *
 
 			}
 
+			extendsHeaders := make(map[string]*string)
+			extendsQueries := make(map[string]*string)
+			if !tea.BoolValue(util.IsUnset(runtime.ExtendsParameters)) {
+				extendsParameters := runtime.ExtendsParameters
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Headers)) {
+					extendsHeaders = extendsParameters.Headers
+				}
+
+				if !tea.BoolValue(util.IsUnset(extendsParameters.Queries)) {
+					extendsQueries = extendsParameters.Queries
+				}
+
+			}
+
 			requestContext := &spi.InterceptorContextRequest{
 				Headers: tea.Merge(globalHeaders,
+					extendsHeaders,
 					request.Headers,
 					headers),
 				Query: tea.Merge(globalQueries,
+					extendsQueries,
 					request.Query),
 				Body:               request.Body,
 				Stream:             request.Stream,
@@ -1726,20 +1987,22 @@ func (client *Client) CallApi(params *Params, request *OpenApiRequest, runtime *
 
 }
 
-/**
- * Get user agent
- * @return user agent
- */
+// Description:
+//
+// # Get user agent
+//
+// @return user agent
 func (client *Client) GetUserAgent() (_result *string) {
 	userAgent := util.GetUserAgent(client.UserAgent)
 	_result = userAgent
 	return _result
 }
 
-/**
- * Get accesskey id by using credential
- * @return accesskey id
- */
+// Description:
+//
+// # Get accesskey id by using credential
+//
+// @return accesskey id
 func (client *Client) GetAccessKeyId() (_result *string, _err error) {
 	if tea.BoolValue(util.IsUnset(client.Credential)) {
 		_result = tea.String("")
@@ -1755,10 +2018,11 @@ func (client *Client) GetAccessKeyId() (_result *string, _err error) {
 	return _result, _err
 }
 
-/**
- * Get accesskey secret by using credential
- * @return accesskey secret
- */
+// Description:
+//
+// # Get accesskey secret by using credential
+//
+// @return accesskey secret
 func (client *Client) GetAccessKeySecret() (_result *string, _err error) {
 	if tea.BoolValue(util.IsUnset(client.Credential)) {
 		_result = tea.String("")
@@ -1774,10 +2038,11 @@ func (client *Client) GetAccessKeySecret() (_result *string, _err error) {
 	return _result, _err
 }
 
-/**
- * Get security token by using credential
- * @return security token
- */
+// Description:
+//
+// # Get security token by using credential
+//
+// @return security token
 func (client *Client) GetSecurityToken() (_result *string, _err error) {
 	if tea.BoolValue(util.IsUnset(client.Credential)) {
 		_result = tea.String("")
@@ -1793,10 +2058,11 @@ func (client *Client) GetSecurityToken() (_result *string, _err error) {
 	return _result, _err
 }
 
-/**
- * Get bearer token by credential
- * @return bearer token
- */
+// Description:
+//
+// # Get bearer token by credential
+//
+// @return bearer token
 func (client *Client) GetBearerToken() (_result *string, _err error) {
 	if tea.BoolValue(util.IsUnset(client.Credential)) {
 		_result = tea.String("")
@@ -1808,10 +2074,11 @@ func (client *Client) GetBearerToken() (_result *string, _err error) {
 	return _result, _err
 }
 
-/**
- * Get credential type by credential
- * @return credential type e.g. access_key
- */
+// Description:
+//
+// # Get credential type by credential
+//
+// @return credential type e.g. access_key
 func (client *Client) GetType() (_result *string, _err error) {
 	if tea.BoolValue(util.IsUnset(client.Credential)) {
 		_result = tea.String("")
@@ -1823,12 +2090,15 @@ func (client *Client) GetType() (_result *string, _err error) {
 	return _result, _err
 }
 
-/**
- * If inputValue is not null, return it or return defaultValue
- * @param inputValue  users input value
- * @param defaultValue default value
- * @return the final result
- */
+// Description:
+//
+// # If inputValue is not null, return it or return defaultValue
+//
+// @param inputValue - users input value
+//
+// @param defaultValue - default value
+//
+// @return the final result
 func DefaultAny(inputValue interface{}, defaultValue interface{}) (_result interface{}) {
 	if tea.BoolValue(util.IsUnset(inputValue)) {
 		_result = defaultValue
@@ -1839,10 +2109,11 @@ func DefaultAny(inputValue interface{}, defaultValue interface{}) (_result inter
 	return _result
 }
 
-/**
- * If the endpointRule and config.endpoint are empty, throw error
- * @param config config contains the necessary information to create a client
- */
+// Description:
+//
+// # If the endpointRule and config.endpoint are empty, throw error
+//
+// @param config - config contains the necessary information to create a client
 func (client *Client) CheckConfig(config *Config) (_err error) {
 	if tea.BoolValue(util.Empty(client.EndpointRule)) && tea.BoolValue(util.Empty(config.Endpoint)) {
 		_err = tea.NewSDKError(map[string]interface{}{
@@ -1855,27 +2126,29 @@ func (client *Client) CheckConfig(config *Config) (_err error) {
 	return _err
 }
 
-/**
- * set gateway client
- * @param spi.
- */
+// Description:
+//
+// set gateway client
+//
+// @param spi - .
 func (client *Client) SetGatewayClient(spi spi.ClientInterface) (_err error) {
 	client.Spi = spi
 	return _err
 }
 
-/**
- * set RPC header for debug
- * @param headers headers for debug, this header can be used only once.
- */
+// Description:
+//
+// set RPC header for debug
+//
+// @param headers - headers for debug, this header can be used only once.
 func (client *Client) SetRpcHeaders(headers map[string]*string) (_err error) {
 	client.Headers = headers
 	return _err
 }
 
-/**
- * get RPC header for debug
- */
+// Description:
+//
+// get RPC header for debug
 func (client *Client) GetRpcHeaders() (_result map[string]*string, _err error) {
 	headers := client.Headers
 	client.Headers = nil

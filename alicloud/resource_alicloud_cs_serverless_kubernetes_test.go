@@ -92,23 +92,43 @@ func TestAccAliCloudCSServerlessKubernetes_basic(t *testing.T) {
 							"disabled": "false",
 						},
 					},
+					"maintenance_window": []map[string]string{{"enable": "true", "maintenance_time": "2024-10-15T12:31:00.000+08:00", "duration": "3h", "weekly_period": "Thursday"}},
+					"operation_policy": []map[string]interface{}{
+						{
+							"cluster_auto_upgrade": []map[string]interface{}{
+								{
+									"enabled": "true",
+									"channel": "patch",
+								},
+							},
+						},
+					},
 					"cluster_ca_cert": clusterCaCertFile.Name(),
 					"client_key":      clientKeyFile.Name(),
 					"client_cert":     clientCertFile.Name(),
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"name":                           name,
-						"version":                        CHECKSET,
-						"deletion_protection":            "false",
-						"enable_rrsa":                    "false",
-						"new_nat_gateway":                "true",
-						"endpoint_public_access_enabled": "true",
-						"resource_group_id":              CHECKSET,
-						"security_group_id":              CHECKSET,
-						"vswitch_ids.#":                  "1",
-						"cluster_spec":                   "ack.standard",
-						"custom_san":                     "www.terraform.io,1.1.1.1",
+						"name":                                      name,
+						"version":                                   CHECKSET,
+						"deletion_protection":                       "false",
+						"enable_rrsa":                               "false",
+						"new_nat_gateway":                           "true",
+						"endpoint_public_access_enabled":            "true",
+						"resource_group_id":                         CHECKSET,
+						"security_group_id":                         CHECKSET,
+						"vswitch_ids.#":                             "1",
+						"cluster_spec":                              "ack.standard",
+						"custom_san":                                "www.terraform.io,1.1.1.1",
+						"maintenance_window.#":                      "1",
+						"maintenance_window.0.enable":               "true",
+						"maintenance_window.0.maintenance_time":     "2024-10-15T12:31:00.000+08:00",
+						"maintenance_window.0.duration":             "3h",
+						"maintenance_window.0.weekly_period":        "Thursday",
+						"operation_policy.#":                        "1",
+						"operation_policy.0.cluster_auto_upgrade.#": "1",
+						"operation_policy.0.cluster_auto_upgrade.0.enabled": "true",
+						"operation_policy.0.cluster_auto_upgrade.0.channel": "patch",
 					}),
 				),
 			},
@@ -183,6 +203,42 @@ func TestAccAliCloudCSServerlessKubernetes_basic(t *testing.T) {
 						"tags.Platform":       "TF",
 						"tags.Env":            "Pre",
 						"deletion_protection": "false",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"maintenance_window": []map[string]string{{"enable": "false", "maintenance_time": "2024-10-15T11:31:00.000+08:00", "duration": "5h", "weekly_period": "Monday,Thursday"}},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"maintenance_window.#":                  "1",
+						"maintenance_window.0.enable":           "false",
+						"maintenance_window.0.maintenance_time": "2024-10-15T11:31:00.000+08:00",
+						"maintenance_window.0.duration":         "5h",
+						"maintenance_window.0.weekly_period":    "Monday,Thursday",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"operation_policy": []map[string]interface{}{
+						{
+							"cluster_auto_upgrade": []map[string]interface{}{
+								{
+									"enabled": "false",
+									"channel": "rapid",
+								},
+							},
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"operation_policy.#":                                "1",
+						"operation_policy.0.cluster_auto_upgrade.#":         "1",
+						"operation_policy.0.cluster_auto_upgrade.0.enabled": "false",
+						"operation_policy.0.cluster_auto_upgrade.0.channel": "rapid",
 					}),
 				),
 			},

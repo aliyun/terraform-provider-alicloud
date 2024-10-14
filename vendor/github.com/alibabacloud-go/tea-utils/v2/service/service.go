@@ -26,6 +26,7 @@ var defaultUserAgent = fmt.Sprintf("AlibabaCloud (%s; %s) Golang/%s Core/%s TeaD
 
 type ExtendsParameters struct {
 	Headers map[string]*string `json:"headers,omitempty" xml:"headers,omitempty"`
+	Queries map[string]*string `json:"queries,omitempty" xml:"queries,omitempty"`
 }
 
 func (s ExtendsParameters) String() string {
@@ -38,6 +39,11 @@ func (s ExtendsParameters) GoString() string {
 
 func (s *ExtendsParameters) SetHeaders(v map[string]*string) *ExtendsParameters {
 	s.Headers = v
+	return s
+}
+
+func (s *ExtendsParameters) SetQueries(v map[string]*string) *ExtendsParameters {
+	s.Queries = v
 	return s
 }
 
