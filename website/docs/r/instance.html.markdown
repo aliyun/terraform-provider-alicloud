@@ -233,6 +233,10 @@ The following arguments are supported:
   - `HighPerformance`: Uses the remote direct memory access (RDMA) communication mode with Elastic RDMA Interface (ERI) enabled.
 * `network_card_index` - (Optional, ForceNew, Int, Available since v1.227.1)  The index of the network card for Primary ENI.
 * `queue_pair_number` - (Optional, ForceNew, Int, Available since v1.227.1) The number of queues supported by the ERI.
+* `password_inherit` - (Optional, Bool, Available since v1.231.1) Specifies whether to use the password preset in the image. Default value: `false`. Valid values:
+  - `true`: Uses the preset password.
+  - `false`: Does not use the preset password.
+-> **NOTE:** If you set `password_inherit` to `true`, make sure that you have not specified `password` or `kms_encrypted_password` and the selected image has a preset password.
 
 -> **NOTE:** System disk category `cloud` has been outdated and it only can be used none I/O Optimized ECS instances. Recommend `cloud_efficiency` and `cloud_ssd` disk.
 
@@ -315,6 +319,9 @@ The following attributes are exported:
 * `system_disk_id` - (Available since v1.210.0) The ID of system disk.
 * `primary_ip_address` - The primary private IP address of the ENI.
 * `deployment_set_group_no` - The group number of the instance in a deployment set when the deployment set is use.
+* `create_time` - (Available since v1.231.1) The time when the instance was created.
+* `start_time` - (Available since v1.231.1) The time when the instance was last started.
+* `expired_time` - (Available since v1.231.1) The expiration time of the instance.
 
 ## Timeouts
 
@@ -326,8 +333,6 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
   `Note`: There are extra at most 2 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
 * `update` - (Defaults to 10 mins) Used when stopping and starting the instance when necessary during update - e.g. when changing instance type, password, image, vswitch and private IP.
 * `delete` - (Defaults to 20 mins) Used when terminating the instance. `Note`: There are extra at most 5 minutes used to retry to avoid some needless API errors, and it is not in the timeouts configure.
-
-
 
 ## Import
 

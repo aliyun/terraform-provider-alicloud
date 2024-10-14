@@ -136,6 +136,10 @@ func resourceAliCloudInstance() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
+			"password_inherit": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"io_optimized": {
 				Type:       schema.TypeString,
 				Optional:   true,
@@ -667,6 +671,18 @@ func resourceAliCloudInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"start_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"expired_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -794,6 +810,10 @@ func resourceAliCloudInstanceCreate(d *schema.ResourceData, meta interface{}) er
 			return WrapError(err)
 		}
 		request["Password"] = decryptResp
+	}
+
+	if v, ok := d.GetOkExists("password_inherit"); ok {
+		request["PasswordInherit"] = v
 	}
 
 	vswitchValue := d.Get("vswitch_id")
@@ -1198,6 +1218,9 @@ func resourceAliCloudInstanceRead(d *schema.ResourceData, meta interface{}) erro
 	d.Set("os_name", instance.OSName)
 	d.Set("os_type", instance.OSType)
 	d.Set("dedicated_host_id", instance.DedicatedHostAttribute.DedicatedHostId)
+	d.Set("create_time", instance.CreationTime)
+	d.Set("start_time", instance.StartTime)
+	d.Set("expired_time", instance.ExpiredTime)
 
 	if len(instance.VpcAttributes.PrivateIpAddress.IpAddress) > 0 {
 		d.Set("private_ip", instance.VpcAttributes.PrivateIpAddress.IpAddress[0])
@@ -2154,6 +2177,9 @@ func modifyInstanceImage(d *schema.ResourceData, meta interface{}, run bool) (bo
 		}
 		if v, ok := d.GetOk("password"); ok {
 			request.Password = v.(string)
+		}
+		if v, ok := d.GetOkExists("password_inherit"); ok {
+			request.PasswordInherit = requests.NewBoolean(v.(bool))
 		}
 		if v, ok := d.GetOk("system_disk_kms_key_id"); ok {
 			request.KMSKeyId = v.(string)

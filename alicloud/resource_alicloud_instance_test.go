@@ -2510,6 +2510,7 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 					"security_enhancement_strategy": "Active",
 					"user_data":                     "I_am_user_data",
 					"vswitch_id":                    "${alicloud_vswitch.vswitch.id}",
+					"password_inherit":              "true",
 					"ipv6_addresses":                []string{"${cidrhost(alicloud_vswitch.vswitch.ipv6_cidr_block, 64)}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2534,7 +2535,7 @@ func TestAccAliCloudECSInstanceIpv6Addresses(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "dry_run"},
+				ImportStateVerifyIgnore: []string{"security_enhancement_strategy", "password_inherit", "dry_run"},
 			},
 		},
 	})
@@ -3144,6 +3145,9 @@ var testAccInstanceCheckMap = map[string]string{
 	"include_data_disks": NOSET,
 	"dry_run":            "false",
 	"system_disk_id":     CHECKSET,
+	"create_time":        CHECKSET,
+	"start_time":         CHECKSET,
+	"expired_time":       CHECKSET,
 }
 
 func TestAccAliCloudECSInstance_OperatorType(t *testing.T) {
