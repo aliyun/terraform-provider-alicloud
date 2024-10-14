@@ -11,8 +11,7 @@ description: |-
 
 Provides a Elastic Cloud Phone (ECP) Instance resource.
 
-For information about Elastic Cloud Phone (ECP) Instance and how to use it,
-see [What is Instance](https://www.alibabacloud.com/help/en/cloudphone/latest/api-cloudphone-2020-12-30-runinstances).
+For information about Elastic Cloud Phone (ECP) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/cloudphone/latest/api-cloudphone-2020-12-30-runinstances).
 
 -> **NOTE:** Available since v1.158.0.
 
@@ -27,17 +26,12 @@ Basic Usage
 </div></div>
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 provider "alicloud" {
   region = "cn-hangzhou"
-}
-
-variable "name" {
-  default = "tf-example"
-}
-
-resource "random_integer" "default" {
-  min = 10000
-  max = 99999
 }
 
 data "alicloud_ecp_zones" "default" {
@@ -46,25 +40,26 @@ data "alicloud_ecp_zones" "default" {
 data "alicloud_ecp_instance_types" "default" {
 }
 
-locals {
-  count_size               = length(data.alicloud_ecp_zones.default.zones)
-  zone_id                  = data.alicloud_ecp_zones.default.zones[local.count_size - 1].zone_id
-  instance_type_count_size = length(data.alicloud_ecp_instance_types.default.instance_types)
-  instance_type            = data.alicloud_ecp_instance_types.default.instance_types[local.instance_type_count_size - 1].instance_type
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
 }
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+  vpc_name   = "${var.name}-${random_integer.default.result}"
+  cidr_block = "192.168.0.0/16"
 }
 
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = local.zone_id
+resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}-${random_integer.default.result}"
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_ecp_zones.default.zones.0.zone_id
 }
 
-resource "alicloud_security_group" "group" {
-  name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids.0
+resource "alicloud_security_group" "default" {
+  name   = "${var.name}-${random_integer.default.result}"
+  vpc_id = alicloud_vpc.default.id
 }
 
 resource "alicloud_ecp_key_pair" "default" {
@@ -73,15 +68,15 @@ resource "alicloud_ecp_key_pair" "default" {
 }
 
 resource "alicloud_ecp_instance" "default" {
-  instance_name     = var.name
-  description       = var.name
+  instance_type     = data.alicloud_ecp_instance_types.default.instance_types.0.instance_type
+  image_id          = "android-image-release5501072_a11_20240530.raw"
+  vswitch_id        = alicloud_vswitch.default.id
+  security_group_id = alicloud_security_group.default.id
   key_pair_name     = alicloud_ecp_key_pair.default.key_pair_name
-  security_group_id = alicloud_security_group.group.id
-  vswitch_id        = data.alicloud_vswitches.default.ids.0
-  image_id          = "android_9_0_0_release_2851157_20211201.vhd"
-  instance_type     = data.alicloud_ecp_instance_types.default.instance_types.1.instance_type
   vnc_password      = "Ecp123"
   payment_type      = "PayAsYouGo"
+  instance_name     = var.name
+  description       = var.name
   force             = "true"
 }
 ```
@@ -90,31 +85,32 @@ resource "alicloud_ecp_instance" "default" {
 
 The following arguments are supported:
 
-* `auto_pay` - (Optional) The auto pay.
-* `auto_renew` - (Optional) The auto renew.
-* `payment_type` - (Optional) The payment type.Valid values: `PayAsYouGo`,`Subscription`
-* `description` - (Optional) Description of the instance. 2 to 256 English or Chinese characters in length and cannot
-  start with `http://` and `https`.
-* `eip_bandwidth` - (Optional) The eip bandwidth.
-* `force` - (Optional) The force.
-* `image_id` - (Required, ForceNew) The ID Of The Image.
-* `instance_name` - (Optional) The name of the instance. It must be 2 to 128 characters in length and must start with an
-  uppercase letter or Chinese. It cannot start with http:// or https. It can contain Chinese, English, numbers,
-  half-width colons (:), underscores (_), half-width periods (.), or dashes (-). The default value is the InstanceId of
-  the instance.
-* `instance_type` - (Required, ForceNew) Instance Type.
-* `key_pair_name` - (Optional) The name of the key pair of the mobile phone instance.
-* `period` - (Optional) The period. It is valid when `period_unit` is 'Year'. Valid value: `1`, `2`, `3`, `4`, `5`. It
-  is valid when `period_unit` is 'Month'. Valid value: `1`, `2`, `3`, `5`
-* `period_unit` - (Optional) The duration unit that you will buy the resource. Valid value: `Year`,`Month`. Default
-  to `Month`.
-* `resolution` - (Optional, ForceNew) The selected resolution for the cloud mobile phone instance.
-* `security_group_id` - (Required, ForceNew) The ID of the security group. The security group is the same as that of the
-  ECS instance.
-* `status` - (Optional) Instance status. Valid values: `Running`, `Stopped`.
-* `vnc_password` - (Optional) Cloud mobile phone VNC password. The password must be six characters in length and must
-  contain only uppercase, lowercase English letters and Arabic numerals.
-* `vswitch_id` - (Required, ForceNew) The vswitch id.
+* `instance_type` - (Required, ForceNew) The specifications of the ECP instance.
+* `image_id` - (Required, ForceNew) The ID of the image.
+* `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
+* `security_group_id` - (Required, ForceNew) The ID of the security group.
+* `eip_bandwidth` - (Optional, ForceNew, Int) The bandwidth of the elastic IP address (EIP). **NOTE:** From version 1.231.1, `eip_bandwidth` cannot be modified.
+* `resolution` - (Optional) The resolution that you want to select for the ECP instance. **NOTE:** From version 1.231.1, `resolution` can be modified.
+* `key_pair_name` - (Optional) The name of the key pair that you want to use to connect to the instance.
+* `vnc_password` - (Optional) The VNC password of the instance. The password must be `6` characters in length and can contain only uppercase letters, lowercase letters, and digits.
+* `payment_type` - (Optional, ForceNew) The billing method of the ECP instance. Default value: `PayAsYouGo`. Valid values: `PayAsYouGo`,`Subscription`. **NOTE:** From version 1.231.1, `payment_type` cannot be modified.
+* `auto_pay` - (Optional, Bool) Specifies whether to enable the auto-payment feature. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `period` - (Optional) The subscription duration. Default value: `1`. Valid values:
+  - If `period_unit` is set to `Month`. Valid values: `1`, `2`, `3`, and `6`.
+  - If `period_unit` is set to `Year`. Valid values: `1` to `5`.
+* `period_unit` - (Optional) The unit of the subscription duration. Default value: `Month`. Valid values: `Month`, `Year`.
+* `auto_renew` - (Optional, Bool) Specifies whether to enable the auto-renewal feature. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+* `instance_name` - (Optional) The name of the ECP instance. The name must be `2` to `128` characters in length. It must start with a letter but cannot start with `http://` or `https://`. It can contain letters, digits, colons (:), underscores (_), periods (.), and hyphens (-).
+* `description` - (Optional) The description of the ECP instance. The description must be `2` to `256` characters in length and cannot start with `http://` or `https://`.
+* `force` - (Optional, Bool) Specifies whether to forcefully stop and release the instance. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
+-> **NOTE:** If you want to destroy `alicloud_ecp_instance`, `force` must be set to `true`, and if `force` set to `true`, when `status` is set to `Stopped`， cache data that is not written to storage in the instance will be lost, which is similar to the effect of a power-off action.
+* `status` - (Optional) The status of the Instance. Valid values: `Running`, `Stopped`.
 
 ## Attributes Reference
 
@@ -124,11 +120,11 @@ The following attributes are exported:
 
 ## Timeouts
 
-The `timeouts` block allows you to
-specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 3 mins) Used when create the Instance.
 * `update` - (Defaults to 3 mins) Used when update the Instance.
+* `delete` - (Defaults to 3 mins) Used when delete the Instance.
 
 ## Import
 
