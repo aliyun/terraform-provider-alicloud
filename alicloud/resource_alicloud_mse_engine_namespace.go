@@ -33,19 +33,32 @@ func resourceAlicloudMseEngineNamespace() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringInSlice([]string{"zh", "en"}, false),
 			},
+			"instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"cluster_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"namespace_id": {
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
 				ForceNew: true,
 			},
 			"namespace_show_name": {
 				Type:     schema.TypeString,
 				Required: true,
+			},
+			"namespace_desc": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -53,6 +66,7 @@ func resourceAlicloudMseEngineNamespace() *schema.Resource {
 
 func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
+	mseService := MseService{client}
 	var response map[string]interface{}
 	action := "CreateEngineNamespace"
 	request := make(map[string]interface{})
@@ -63,10 +77,24 @@ func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta inter
 	if v, ok := d.GetOk("accept_language"); ok {
 		request["AcceptLanguage"] = v
 	}
-	request["ClusterId"] = d.Get("cluster_id")
-	request["InstanceId"] = d.Get("cluster_id")
+
+	if v, ok := d.GetOk("namespace_desc"); ok {
+		request["Desc"] = v
+	}
+	var instanceId = d.Get("instance_id")
+	var clusterId = d.Get("cluster_id").(string)
+	if instanceId == nil {
+		object, err := mseService.GetInstanceIdBYClusterId(clusterId)
+		if err != nil {
+			instanceId = object["InstanceId"]
+		} else {
+			return WrapErrorf(err, DefaultErrorMsg, "alicloud_mse_engine_namespace", action, AlibabaCloudSdkGoERROR)
+		}
+	}
 	request["Id"] = d.Get("namespace_id")
 	request["Name"] = d.Get("namespace_show_name")
+	request["InstanceId"] = instanceId
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -87,6 +115,7 @@ func resourceAlicloudMseEngineNamespaceCreate(d *schema.ResourceData, meta inter
 	if fmt.Sprint(response["Success"]) == "false" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
+
 	d.SetId(fmt.Sprint(request["InstanceId"], ":", request["Id"]))
 
 	return resourceAlicloudMseEngineNamespaceRead(d, meta)
@@ -107,9 +136,25 @@ func resourceAlicloudMseEngineNamespaceRead(d *schema.ResourceData, meta interfa
 		}
 		return WrapError(err)
 	}
+	clusterObject, err := mseService.DescribeMseCluster(parts[0])
+	if err != nil {
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_mse_engine_namespace mseService.DescribeMseCluster Failed!!! %s", err)
+			d.SetId("")
+			return nil
+		}
+		return WrapError(err)
+	}
 	d.Set("namespace_id", object["Namespace"])
-	d.Set("cluster_id", parts[0])
+	d.Set("cluster_id", clusterObject["ClusterId"])
+	d.Set("instance_id", parts[0])
 	d.Set("namespace_show_name", object["NamespaceShowName"])
+	d.Set("namespace_desc", object["NamespaceDesc"])
+	d.Set("quota", object["Quota"])
+	d.Set("config_count", object["ConfigCount"])
+	d.Set("service_count", object["ServiceCount"])
+	d.Set("source_type", object["SourceType"])
+	d.Set("type", object["Type"])
 	return nil
 }
 func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta interface{}) error {
@@ -130,10 +175,13 @@ func resourceAlicloudMseEngineNamespaceUpdate(d *schema.ResourceData, meta inter
 		"Id":         parts[1],
 	}
 
-	if d.HasChange("namespace_show_name") {
+	if d.HasChanges("namespace_show_name", "dsec") {
 		update = true
 		if v, ok := d.GetOk("namespace_show_name"); ok {
 			request["Name"] = v
+		}
+		if v, ok := d.GetOk("namespace_desc"); ok {
+			request["Desc"] = v
 		}
 	}
 	if update {
@@ -175,7 +223,6 @@ func resourceAlicloudMseEngineNamespaceDelete(d *schema.ResourceData, meta inter
 	request := map[string]interface{}{
 		"Id":         parts[1],
 		"InstanceId": parts[0],
-		"ClusterId":  parts[0],
 	}
 
 	if v, ok := d.GetOk("accept_language"); ok {

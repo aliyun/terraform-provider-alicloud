@@ -11,7 +11,7 @@ description: |-
 
 Provides a MSE Cluster resource. It is a one-stop microservice platform for the industry's mainstream open source microservice frameworks Spring Cloud and Dubbo, providing governance center, managed registry and managed configuration center.
 
--> **NOTE:** Available in 1.94.0+.
+-> **NOTE:** Available since v1.94.0.
 
 ## Example Usage
 
@@ -22,9 +22,7 @@ Provides a MSE Cluster resource. It is a one-stop microservice platform for the 
 </div></div>
 
 ```terraform
-provider "alicloud" {
-  region = "cn-hangzhou"
-}
+# Create resource
 data "alicloud_zones" "example" {
   available_resource_creation = "VSwitch"
 }
@@ -45,12 +43,12 @@ resource "alicloud_mse_cluster" "example" {
   cluster_specification = "MSE_SC_1_2_60_c"
   cluster_type          = "Nacos-Ans"
   cluster_version       = "NACOS_2_0_0"
-  instance_count        = 1
+  instance_count        = 3
   net_type              = "privatenet"
   pub_network_flow      = "1"
   connection_type       = "slb"
   cluster_alias_name    = "terraform-example"
-  mse_version           = "mse_dev"
+  mse_version           = "mse_pro"
   vswitch_id            = alicloud_vswitch.example.id
   vpc_id                = alicloud_vpc.example.id
 }
@@ -68,36 +66,50 @@ You can resume managing the subscription instance via the AlibabaCloud Console.
 The following arguments are supported:
 
 * `acl_entry_list` - (Optional) The whitelist. **NOTE:** This attribute is invalid when the value of `pub_network_flow` is `0` and the value of `net_type` is `privatenet`.
-* `cluster_alias_name` - (Optional) The alias of MSE Cluster.
-* `cluster_specification` - (Required) The engine specification of MSE Cluster. **NOTE:** From version 1.188.0, `cluster_specification` can be modified. Valid values:
-  - `MSE_SC_1_2_60_c`: 1C2G
-  - `MSE_SC_2_4_60_c`: 2C4G
-  - `MSE_SC_4_8_60_c`: 4C8G
-  - `MSE_SC_8_16_60_c`: 8C16G
-* `cluster_type` - (Required, ForceNew) The type of MSE Cluster.
+* `cluster_alias_name` - (Optional, Computed) The alias of MSE Cluster.
+* `cluster_specification` - (Required) The engine specification of MSE Cluster. **NOTE:** From version 1.188.0, `cluster_specification` can be modified. If you were an international user, please use the specification version ending with `_200_c`.Valid values:
+  - Professional Edition
+     - `MSE_SC_1_2_60_c`: 1C2G
+     - `MSE_SC_2_4_60_c`: 2C4G
+     - `MSE_SC_4_8_60_c`: 4C8G
+     - `MSE_SC_8_16_60_c`: 8C16G
+     - `MSE_SC_16_32_60_c`:16C32G
+     - `MSE_SC_1_2_200_c`: 1C2G
+     - `MSE_SC_2_4_200_c`: 2C4G
+     - `MSE_SC_4_8_200_c`: 4C8G
+     - `MSE_SC_8_16_200_c`: 8C16G
+     - `MSE_SC_16_32_200_c`:16C32G
+  - Developer Edition
+     - `MSE_SC_1_2_60_c`: 1C2G
+     - `MSE_SC_2_4_60_c`: 2C4G
+     - `MSE_SC_1_2_200_c`: 1C2G
+     - `MSE_SC_2_4_200_c`: 2C4G
+  - Serverless Edition
+    - `MSE_SC_SERVERLESS`: Available since v1.232.0
+* `cluster_type` - (Required, ForceNew) The type of MSE Cluster. 
 * `cluster_version` - (Required, ForceNew) The version of MSE Cluster. See [details](https://www.alibabacloud.com/help/en/mse/developer-reference/api-mse-2019-05-31-createcluster)
-* `disk_type` - (Optional, ForceNew) The type of Disk.
+* `disk_type` - (Optional) The type of Disk.
 * `instance_count` - (Required) The count of instance. **NOTE:** From version 1.188.0, `instance_count` can be modified.
-* `net_type` - (Required, ForceNew) The type of network. Valid values: "privatenet" and "pubnet".
+* `net_type` - (Required, ForceNew) The type of network. Valid values: `privatenet` and `pubnet` and `both`(Available since v1.232.0).
 * `payment_type` - (Optional, ForceNew, Computed, Available since v1.220.0) Payment type: Subscription (prepaid), PayAsYouGo (postpaid). Default PayAsYouGo.
 * `tags` - (Optional, Map, Computed, Available since v1.220.0) The tag of the resource.
 * `resource_group_id` - (Optional, Computed, Available since v1.220.0) The resource group of the resource.
-* `private_slb_specification` - (Optional, ForceNew) The specification of private network SLB.
-* `pub_network_flow` - (Required from 1.173.0, ForceNew) The public network bandwidth. `0` means no access to the public network.
-* `pub_slb_specification` - (Optional, ForceNew) The specification of public network SLB.
-* `vswitch_id` - (Optional, ForceNew) The id of VSwitch.
-* `mse_version` - (Optional, ForceNew, Computed, Available in v1.177.0+) The version of MSE. Valid values: `mse_dev` or `mse_pro`.
-* `connection_type` - (Optional, ForceNew, Available in v1.183.0+) The connection type. Valid values: `slb`.
-* `request_pars` - (Optional, Available in v1.183.0+) The extended request parameters in the JSON format.
-* `vpc_id` - (Optional, ForceNew, Available in v1.185.0+) The id of the VPC.
+* `private_slb_specification` - (Optional) The specification of private network SLB.
+* `pub_network_flow` - (Required from 1.173.0) The public network bandwidth.
+* `pub_slb_specification` - (Optional) The specification of public network SLB. Serverless Instance could ignore this parameter.
+* `vswitch_id` - (Optional) The id of VSwitch.
+* `mse_version` - (Optional, ForceNew, Computed, Available since v1.177.0) The version of MSE. Valid values: `mse_dev` or `mse_pro` or `mse_serverless`(Available since v1.232.0).
+* `connection_type` - (Optional, ForceNew, Available since v1.183.0) The connection type. Valid values: `slb`,`single_eni`(Available since v1.232.0). If your region is one of `ap-southeast-6、us-west-1、eu-central-1、us-east-1、ap-southeast-1`,and your cluster's mse_version is `mse_dev`,please use `single_eni`. 
+* `request_pars` - (Optional, Available since v1.183.0) The extended request parameters in the JSON format.
+* `vpc_id` - (Optional, Available since v1.185.0) The id of the VPC.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The id of the resource.
-* `cluster_id` - (Available in v1.162.0+) The id of Cluster.
-* `app_version` - (Available in v1.205.0+) The application version.
+* `id` - The id of the resource.The instance id of cluster.
+* `cluster_id` - (Available since v1.162.0) The cluster id of Cluster.
+* `app_version` - (Available since v1.205.0) The application version.
 * `status` - The status of MSE Cluster.
 
 ## Timeouts

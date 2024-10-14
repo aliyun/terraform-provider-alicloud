@@ -19,7 +19,6 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: validation.ValidateRegexp,
-				ForceNew:     true,
 			},
 			"cluster_alias_name": {
 				Type:     schema.TypeString,
@@ -41,12 +40,10 @@ func dataSourceAlicloudMseClusters() *schema.Resource {
 			"request_pars": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"status": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"DESTROY_FAILED", "DESTROY_ING", "DESTROY_SUCCESS", "INIT_FAILED", "INIT_ING", "INIT_SUCCESS", "INIT_TIME_OUT", "RESTART_FAILED", "RESTART_ING", "RESTART_SUCCESS", "SCALE_FAILED", "SCALE_ING", "SCALE_SUCCESS"}, false),
 			},
 			"output_file": {
