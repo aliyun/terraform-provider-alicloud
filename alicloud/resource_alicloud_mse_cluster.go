@@ -43,11 +43,12 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"cluster_alias_name": {
 				Type:     schema.TypeString,
 				Optional: true,
+				Computed: true,
 			},
 			"cluster_specification": {
 				Type:         schema.TypeString,
 				Required:     true,
-				ValidateFunc: StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c"}, false),
+				ValidateFunc: StringInSlice([]string{"MSE_SC_1_2_60_c", "MSE_SC_2_4_60_c", "MSE_SC_4_8_60_c", "MSE_SC_8_16_60_c", "MSE_SC_16_32_60_c", "MSE_SC_1_2_200_c", "MSE_SC_2_4_200_c", "MSE_SC_4_8_200_c", "MSE_SC_8_16_200_c", "MSE_SC_16_32_200_c", "MSE_SC_SERVERLESS"}, false),
 			},
 			"cluster_type": {
 				Type:         schema.TypeString,
@@ -65,12 +66,11 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Optional:     true,
 				ForceNew:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"slb"}, false),
+				ValidateFunc: StringInSlice([]string{"slb", "single_eni"}, false),
 			},
 			"disk_type": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"instance_count": {
 				Type:     schema.TypeInt,
@@ -80,7 +80,7 @@ func resourceAlicloudMseCluster() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"privatenet", "pubnet"}, false),
+				ValidateFunc: StringInSlice([]string{"privatenet", "pubnet", "both"}, false),
 			},
 			"payment_type": {
 				Type:         schema.TypeString,
@@ -98,17 +98,14 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"private_slb_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"pub_network_flow": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: true,
 			},
 			"pub_slb_specification": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"request_pars": {
 				Type:     schema.TypeString,
@@ -117,20 +114,18 @@ func resourceAlicloudMseCluster() *schema.Resource {
 			"vswitch_id": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"mse_version": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro"}, false),
+				ValidateFunc: StringInSlice([]string{"mse_dev", "mse_basic", "mse_pro", "mse_serverless"}, false),
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
-				ForceNew: true,
 			},
 			"cluster_id": {
 				Type:     schema.TypeString,
@@ -233,7 +228,6 @@ func resourceAlicloudMseClusterCreate(d *schema.ResourceData, meta interface{}) 
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
-
 	return resourceAlicloudMseClusterUpdate(d, meta)
 }
 
@@ -438,6 +432,80 @@ func resourceAlicloudMseClusterUpdate(d *schema.ResourceData, meta interface{}) 
 			return WrapError(err)
 		}
 		d.SetPartial("tags")
+	}
+
+	if !d.IsNewResource() && d.HasChanges("vpc_id", "vswitch_id") {
+		update = true
+		request := map[string]interface{}{
+			"InstanceId": d.Id(),
+		}
+		request["VpcId"] = d.Get("vpc_id")
+		request["VswId"] = d.Get("vswitch_id")
+		action := "UpdateClusterNetwork"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("vpc_id")
+		d.SetPartial("vswitch_id")
+	}
+
+	if !d.IsNewResource() && d.HasChange("pub_network_flow") {
+		update = true
+		updateNetworkFlowRequest := map[string]interface{}{
+			"InstanceId": d.Id(),
+		}
+		updateNetworkFlowRequest["PubNetworkFlow"] = d.Get("pub_network_flow")
+		updateNetworkFlowRequest["AutoPay"] = true
+
+		action := "UpdateClusterSpec"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, updateNetworkFlowRequest, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, updateNetworkFlowRequest)
+			return nil
+		})
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		if fmt.Sprint(response["Success"]) == "false" {
+			return WrapErrorf(fmt.Errorf("%s failed, response: %v", action, response), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"SCALE_SUCCESS"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, mseService.MseClusterStateRefreshFunc(d.Id(), []string{"INIT_FAILED"}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("pub_network_flow")
 	}
 
 	d.Partial(false)

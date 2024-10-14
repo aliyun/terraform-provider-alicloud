@@ -2,14 +2,13 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudMseEngineNamespacesDataSource(t *testing.T) {
+func TestAccAliCloudMseEngineNamespacesDataSource(t *testing.T) {
 	rand := acctest.RandInt()
 	checkoutSupportedRegions(t, true, connectivity.MSESupportRegions)
 	idsConf := dataSourceTestAccConfig{
@@ -25,8 +24,8 @@ func TestAccAlicloudMseEngineNamespacesDataSource(t *testing.T) {
 			"ids.#":                            "1",
 			"namespaces.#":                     "1",
 			"namespaces.0.namespace_desc":      "",
-			"namespaces.0.namespace_show_name": fmt.Sprintf("tf-testAccEngineNamespace-%d", rand),
-			"namespaces.0.namespace_id":        fmt.Sprintf("tf-testAccEngineNamespace-%d", rand),
+			"namespaces.0.namespace_show_name": "public",
+			"namespaces.0.namespace_id":        "",
 			"namespaces.0.service_count":       CHECKSET,
 			"namespaces.0.quota":               CHECKSET,
 			"namespaces.0.type":                CHECKSET,
@@ -36,7 +35,7 @@ func TestAccAlicloudMseEngineNamespacesDataSource(t *testing.T) {
 	}
 	var fakeAlicloudMseEngineNamespacesDataSourceNameMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"ids.#": "0",
+			"ids.#": "2",
 		}
 	}
 	var alicloudMseEngineNamespacesCheckInfo = dataSourceAttr{
@@ -58,23 +57,49 @@ func testAccCheckAlicloudMseEngineNamespacesDataSourceName(rand int, attrMap map
 
 	config := fmt.Sprintf(`
 
-variable "name" {	
-	default = "tf-testAccEngineNamespace-%d"
-}
+	variable "name" {	
+			default = "tf-testAccEngineNamespace-%d"
+	}
+	
+	data "alicloud_zones" "default" {
+	  available_resource_creation = "VSwitch"
+	}
+	
+	resource "alicloud_vpc" "default" {
+	  vpc_name   = "default"
+	  cidr_block = "172.17.3.0/24"
+	}
+	
+	resource "alicloud_vswitch" "default" {
+	  vswitch_name = "default"
+	  cidr_block   = "172.17.3.0/24"
+	  vpc_id       = alicloud_vpc.default.id
+	  zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+	
+	resource "alicloud_mse_cluster" "default" {
+	  cluster_specification = "MSE_SC_1_2_60_c"
+	  cluster_type          = "Nacos-Ans"
+	  cluster_version       = "NACOS_2_0_0"
+	  instance_count        = 3
+	  net_type              = "privatenet"
+	  vswitch_id            = alicloud_vswitch.default.id
+	  connection_type       = "slb"
+	  pub_network_flow      = "1"
+	  mse_version           = "mse_pro"
+	  vpc_id                = alicloud_vpc.default.id
+	}
 
-data "alicloud_mse_clusters" "default" {
-	name_regex = "default-NODELETING"
-}
-resource "alicloud_mse_engine_namespace" "default" {
-	cluster_id = data.alicloud_mse_clusters.default.clusters.0.cluster_id
-	namespace_show_name = var.name
-	namespace_id = var.name
-}
+	resource "alicloud_mse_engine_namespace" "default" {
+		instance_id = alicloud_mse_cluster.default.id
+		namespace_show_name = var.name
+		namespace_id = var.name
+	}
+	
+	data "alicloud_mse_engine_namespaces" "default" {
+	   instance_id = alicloud_mse_cluster.default.id
+	}
 
-data "alicloud_mse_engine_namespaces" "default" {	
-	cluster_id = data.alicloud_mse_clusters.default.clusters.0.cluster_id
-	%s
-}
-`, rand, strings.Join(pairs, " \n "))
+`, rand)
 	return config
 }
