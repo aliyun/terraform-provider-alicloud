@@ -108,50 +108,58 @@ func (s *HbrServiceV2) DescribeHbrPolicyBinding(id string) (object map[string]in
 	query = make(map[string]interface{})
 	request["PolicyId"] = parts[0]
 	query["SourceType"] = parts[1]
+	request["MaxResults"] = PageSizeLarge
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
-	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-08"), StringPointer("AK"), query, request, &runtime)
-
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			addDebug(action, response, request)
+			return nil
+		})
+		if err != nil {
+			addDebug(action, response, request)
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(action, response, request)
-		return nil
-	})
-	if err != nil {
-		addDebug(action, response, request)
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
-	}
 
-	v, err := jsonpath.Get("$.PolicyBindings[*]", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PolicyBindings[*]", response)
-	}
+		v, err := jsonpath.Get("$.PolicyBindings[*]", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.PolicyBindings[*]", response)
+		}
 
-	if len(v.([]interface{})) == 0 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("PolicyBinding", id)), NotFoundMsg, response)
-	}
+		if len(v.([]interface{})) == 0 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("PolicyBinding", id)), NotFoundMsg, response)
+		}
 
-	result, _ := v.([]interface{})
-	for _, v := range result {
-		item := v.(map[string]interface{})
-		if fmt.Sprint(item["DataSourceId"]) != parts[2] {
-			continue
+		result, _ := v.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if fmt.Sprint(item["DataSourceId"]) != parts[2] {
+				continue
+			}
+			if fmt.Sprint(item["PolicyId"]) != parts[0] {
+				continue
+			}
+			if fmt.Sprint(item["SourceType"]) != parts[1] {
+				continue
+			}
+			return item, nil
 		}
-		if fmt.Sprint(item["PolicyId"]) != parts[0] {
-			continue
+
+		if nextToken, ok := response["NextToken"].(string); ok && nextToken != "" {
+			request["NextToken"] = nextToken
+		} else {
+			break
 		}
-		if fmt.Sprint(item["SourceType"]) != parts[1] {
-			continue
-		}
-		return item, nil
 	}
 	return object, WrapErrorf(Error(GetNotFoundMessage("PolicyBinding", id)), NotFoundMsg, response)
 }
