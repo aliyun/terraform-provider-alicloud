@@ -659,7 +659,8 @@ The following arguments are supported:
 -> **NOTE:** For more information about minor engine versions, see Release notes of minor AliPG versions, Release notes of minor AliSQL versions, and Release notes of minor engine versions of ApsaraDB RDS for SQL Server.
 * `zone_id_slave_a` - (Optional, ForceNew, Available since 1.101.0) The region ID of the secondary instance if you create a secondary instance. If you set this parameter to the same value as the ZoneId parameter, the instance is deployed in a single zone. Otherwise, the instance is deployed in multiple zones.
 * `zone_id_slave_b` - (Optional, ForceNew, Available since 1.230.1) RDS MySQL Cluster series instances support creating 1 to 2 secondary nodes at the same time when establishing a new instance. If you have this requirement, you can use this parameter to specify the availability zone for the second secondary node.
-  `Open`: turn on SSL encryption; 
+* * `ssl_action` - (Optional, Available since v1.90.0) Actions performed on SSL functions. Valid values:
+`Open`: turn on SSL encryption; 
   `Close`: turn off SSL encryption; 
   `Update`: update SSL certificate. 
   See more [engine and engineVersion limitation](https://www.alibabacloud.com/help/zh/doc-detail/26254.htm).
