@@ -111,12 +111,17 @@ func resourceAliCloudGaEndpointGroup() *schema.Resource {
 						"type": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: StringInSlice([]string{"Domain", "Ip", "PublicIp", "ECS", "SLB"}, false),
+							ValidateFunc: StringInSlice([]string{"Domain", "Ip", "PublicIp", "ECS", "SLB", "ALB", "NLB", "ENI", "OSS"}, false),
 						},
 						"weight": {
 							Type:         schema.TypeInt,
 							Required:     true,
 							ValidateFunc: IntBetween(0, 255),
+						},
+						"sub_address": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
 						},
 						"enable_proxy_protocol": {
 							Type:     schema.TypeBool,
@@ -235,6 +240,10 @@ func resourceAliCloudGaEndpointGroupCreate(d *schema.ResourceData, meta interfac
 		endpointConfigurationsMap["Type"] = endpointConfigurationsArg["type"]
 		endpointConfigurationsMap["Weight"] = endpointConfigurationsArg["weight"]
 
+		if subAddress, ok := endpointConfigurationsArg["sub_address"]; ok {
+			endpointConfigurationsMap["SubAddress"] = subAddress
+		}
+
 		if enableProxyProtocol, ok := endpointConfigurationsArg["enable_proxy_protocol"]; ok {
 			endpointConfigurationsMap["EnableProxyProtocol"] = enableProxyProtocol
 		}
@@ -344,6 +353,10 @@ func resourceAliCloudGaEndpointGroupRead(d *schema.ResourceData, meta interface{
 
 			if weight, ok := endpointConfigurationsArg["Weight"]; ok {
 				endpointConfigurationsMap["weight"] = weight
+			}
+
+			if subAddress, ok := endpointConfigurationsArg["SubAddress"]; ok {
+				endpointConfigurationsMap["sub_address"] = subAddress
 			}
 
 			if enableProxyProtocol, ok := endpointConfigurationsArg["EnableProxyProtocol"]; ok {
@@ -511,6 +524,10 @@ func resourceAliCloudGaEndpointGroupUpdate(d *schema.ResourceData, meta interfac
 		endpointConfigurationsMap["Endpoint"] = endpointConfigurationsArg["endpoint"]
 		endpointConfigurationsMap["Type"] = endpointConfigurationsArg["type"]
 		endpointConfigurationsMap["Weight"] = endpointConfigurationsArg["weight"]
+
+		if subAddress, ok := endpointConfigurationsArg["sub_address"]; ok {
+			endpointConfigurationsMap["SubAddress"] = subAddress
+		}
 
 		if enableProxyProtocol, ok := endpointConfigurationsArg["enable_proxy_protocol"]; ok {
 			endpointConfigurationsMap["EnableProxyProtocol"] = enableProxyProtocol

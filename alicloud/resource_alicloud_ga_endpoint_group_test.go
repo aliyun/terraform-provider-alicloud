@@ -211,11 +211,54 @@ func TestAccAliCloudGaEndpointGroup_basic0(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"endpoint_configurations": []map[string]interface{}{
 						{
-							"endpoint":                     "www.alicloud-provider.cn",
-							"type":                         "Domain",
+							"endpoint": "${alicloud_ecs_network_interface.default.id}",
+							"type":     "ENI",
+							"weight":   "30",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "${alicloud_ecs_network_interface.default.id}",
+							"type":                         "ENI",
 							"weight":                       "30",
+							"sub_address":                  "${tolist(alicloud_ecs_network_interface.default.private_ip_addresses).0}",
 							"enable_proxy_protocol":        "true",
 							"enable_clientip_preservation": "false",
+						},
+						{
+							"endpoint":                     "${alicloud_ecs_network_interface.update.id}",
+							"type":                         "ENI",
+							"weight":                       "30",
+							"sub_address":                  "${tolist(alicloud_ecs_network_interface.update.private_ip_addresses).0}",
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"endpoint_configurations.#": "2",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"endpoint_configurations": []map[string]interface{}{
+						{
+							"endpoint":                     "www.alicloud-provider.cn",
+							"type":                         "Domain",
+							"weight":                       "50",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
 						},
 					},
 				}),
@@ -309,6 +352,21 @@ func TestAccAliCloudGaEndpointGroup_basic0_twin(t *testing.T) {
 							"enable_proxy_protocol":        "true",
 							"enable_clientip_preservation": "false",
 						},
+						{
+							"endpoint":                     "${alicloud_ecs_network_interface.default.id}",
+							"type":                         "ENI",
+							"weight":                       "30",
+							"sub_address":                  "${tolist(alicloud_ecs_network_interface.default.private_ip_addresses).0}",
+							"enable_proxy_protocol":        "true",
+							"enable_clientip_preservation": "false",
+						},
+						{
+							"endpoint":                     "www.alicloud-provider.cn",
+							"type":                         "Domain",
+							"weight":                       "50",
+							"enable_proxy_protocol":        "false",
+							"enable_clientip_preservation": "true",
+						},
 					},
 					"port_overrides": []map[string]interface{}{
 						{
@@ -337,7 +395,7 @@ func TestAccAliCloudGaEndpointGroup_basic0_twin(t *testing.T) {
 						"traffic_percentage":            "30",
 						"name":                          name,
 						"description":                   name,
-						"endpoint_configurations.#":     "1",
+						"endpoint_configurations.#":     "3",
 						"port_overrides.#":              "1",
 						"tags.%":                        "2",
 						"tags.Created":                  "TF",
@@ -715,9 +773,48 @@ func AliCloudGaEndpointGroupBasicDependence0(name string) string {
   		default = "%s"
 	}
 
+	data "alicloud_zones" "default" {
+	}
+
 	data "alicloud_ga_accelerators" "default" {
   		status                 = "active"
   		bandwidth_billing_type = "BandwidthPackage"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+
+	resource "alicloud_vswitch" "default" {
+  		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
+
+	resource "alicloud_eip_address" "default" {
+  		count                = 2
+  		bandwidth            = "10"
+  		internet_charge_type = "PayByBandwidth"
+  		address_name         = var.name
+	}
+
+	resource "alicloud_ecs_network_interface" "default" {
+  		vswitch_id           = alicloud_vswitch.default.id
+  		security_group_ids   = [alicloud_security_group.default.id]
+  		private_ip_addresses = [cidrhost(alicloud_vswitch.default.cidr_block, 26)]
+	}
+
+	resource "alicloud_ecs_network_interface" "update" {
+  		vswitch_id           = alicloud_vswitch.default.id
+  		security_group_ids   = [alicloud_security_group.default.id]
+  		private_ip_addresses = [cidrhost(alicloud_vswitch.default.cidr_block, 28)]
 	}
 
 	resource "alicloud_ga_bandwidth_package" "default" {
@@ -745,13 +842,6 @@ func AliCloudGaEndpointGroupBasicDependence0(name string) string {
     		to_port   = "60"
   		}
 	}
-
-	resource "alicloud_eip_address" "default" {
-  		count                = 2
-  		bandwidth            = "10"
-  		internet_charge_type = "PayByBandwidth"
-  		address_name         = var.name
-	}
 `, name)
 }
 
@@ -766,19 +856,11 @@ func AliCloudGaEndpointGroupBasicDependence1(name string) string {
   		bandwidth_billing_type = "BandwidthPackage"
 	}
 
-	resource "alicloud_ga_bandwidth_package" "default" {
-  		bandwidth              = 100
-  		type                   = "Basic"
-  		bandwidth_type         = "Enhanced"
-  		payment_type           = "PayAsYouGo"
-  		billing_type           = "PayBy95"
-  		ratio                  = 30
-  		bandwidth_package_name = var.name
-	}
-
-	resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
-  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	resource "alicloud_eip_address" "default" {
+  		count                = 2
+  		bandwidth            = "10"
+  		internet_charge_type = "PayByBandwidth"
+  		address_name         = var.name
 	}
 
 	resource "alicloud_ssl_certificates_service_certificate" "default" {
@@ -840,6 +922,21 @@ QF3BEXMcNMGWlpPrd8PaxCAzR4MyU///ekJri2icS9lrQhGSz2TtYhdED4pv1Aag
 EOF
 	}
 
+	resource "alicloud_ga_bandwidth_package" "default" {
+  		bandwidth              = 100
+  		type                   = "Basic"
+  		bandwidth_type         = "Enhanced"
+  		payment_type           = "PayAsYouGo"
+  		billing_type           = "PayBy95"
+  		ratio                  = 30
+  		bandwidth_package_name = var.name
+	}
+
+	resource "alicloud_ga_bandwidth_package_attachment" "default" {
+  		accelerator_id       = data.alicloud_ga_accelerators.default.ids.0
+  		bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
+	}
+
 	resource "alicloud_ga_listener" "default" {
   		accelerator_id = alicloud_ga_bandwidth_package_attachment.default.accelerator_id
   		name           = var.name
@@ -851,13 +948,6 @@ EOF
   		certificates {
     		id = join("-", [alicloud_ssl_certificates_service_certificate.default.id, "%s"])
   		}
-	}
-
-	resource "alicloud_eip_address" "default" {
-  		count                = 2
-  		bandwidth            = "10"
-  		internet_charge_type = "PayByBandwidth"
-  		address_name         = var.name
 	}
 `, name, defaultRegionToTest)
 }

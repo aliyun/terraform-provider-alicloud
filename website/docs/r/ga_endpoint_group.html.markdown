@@ -138,14 +138,20 @@ The endpoint_configurations supports the following:
 
 * `endpoint` - (Required) The IP address or domain name of Endpoint N in the endpoint group.
 * `type` - (Required) The type of Endpoint N in the endpoint group. Valid values:
-  - `Domain`: a custom domain name.
-  - `Ip`: a custom IP address.
-  - `PublicIp`: an Alibaba Cloud public IP address.
-  - `ECS`: an Alibaba Cloud Elastic Compute Service (ECS) instance.
-  - `SLB`: an Alibaba Cloud Server Load Balancer (SLB) instance.
--> **NOTE:** When the terminal node type is ECS or SLB, if the service association role does not exist, the system will automatically create a service association role named aliyunserviceroleforgavpcndpoint.
+  - `Domain`: A custom domain name.
+  - `Ip`: A custom IP address.
+  - `PublicIp`: An Alibaba Cloud public IP address.
+  - `ECS`: An Elastic Compute Service (ECS) instance.
+  - `SLB`: A Classic Load Balancer (CLB) instance.
+  - `ALB`: An Application Load Balancer (ALB) instance.
+  - `NLB`: A Network Load Balancer (NLB) instance.
+  - `ENI`: An Elastic Network Interface (ENI).
+  - `OSS`: An Object Storage Service (OSS) bucket.
+-> **NOTE:** From version 1.231.1, `type` can be set to `ALB`, `NLB`, `ENI`, `OSS`.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
--> **NOTE:** If the weight of a terminal node is set to 0, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+-> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
+* `sub_address` - (Optional, Available since v1.231.1) The private IP address of the ENI.
+-> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.
   - `false`: does not preserve client IP addresses by using the ProxyProtocol module.
