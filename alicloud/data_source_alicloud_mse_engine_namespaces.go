@@ -25,6 +25,7 @@ func dataSourceAlicloudMseEngineNamespaces() *schema.Resource {
 			"cluster_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,

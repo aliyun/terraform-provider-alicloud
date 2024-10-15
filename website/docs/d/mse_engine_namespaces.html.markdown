@@ -75,8 +75,8 @@ The following arguments are supported:
 
 * `accept_language` - (Optional) The language type of the returned information. Valid values: `zh`, `en`.
 * `ids` - (Optional, ForceNew, Computed)  A list of Engine Namespace IDs. It is formatted to `<instance_id>:<namespace_id>`.
-* `cluster_id` - (Optional)  The ID of the cluster.
-* `instance_id` - (Optional, ForceNew) The ID of the MSE Cluster Instance.It is formatted to `mse-cn-xxxxxxxxxxx`
+* `cluster_id` - (Optional, ForceNew)  The ID of the cluster.
+* `instance_id` - (Optional, ForceNew) The ID of the MSE Cluster Instance.It is formatted to `mse-cn-xxxxxxxxxxx`.Available since v1.232.0
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 **NOTE:** You must set `cluster_id` or `instance_id` or both.
