@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/aliyun/credentials-go/credentials"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/aliyun/credentials-go/credentials"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
@@ -165,7 +166,7 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-"alicloud_gpdb_data_backups": dataSourceAliCloudGpdbDataBackups(),
+			"alicloud_gpdb_data_backups":      dataSourceAliCloudGpdbDataBackups(),
 			"alicloud_gpdb_log_backups":       dataSourceAliCloudGpdbLogbackups(),
 			"alicloud_governance_baselines":   dataSourceAliCloudGovernanceBaselines(),
 			"alicloud_vpn_gateway_zones":      dataSourceAliCloudVPNGatewayZones(),
@@ -869,6 +870,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
 			"alicloud_gpdb_db_instance_ip_array":                            resourceAliCloudGpdbDBInstanceIPArray(),
 			"alicloud_quotas_template_service":                              resourceAliCloudQuotasTemplateService(),
 			"alicloud_fcv3_vpc_binding":                                     resourceAliCloudFcv3VpcBinding(),

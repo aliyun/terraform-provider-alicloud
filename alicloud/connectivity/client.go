@@ -2,7 +2,6 @@ package connectivity
 
 import (
 	"fmt"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	util "github.com/alibabacloud-go/tea-utils/service"
 
 	ossclient "github.com/alibabacloud-go/alibabacloud-gateway-oss/client"
 	gatewayclient "github.com/alibabacloud-go/alibabacloud-gateway-sls/client"
