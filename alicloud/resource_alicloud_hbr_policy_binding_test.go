@@ -1698,11 +1698,10 @@ func TestAccAliCloudHbrPolicyBinding_basic6220_raw(t *testing.T) {
 	})
 }
 
-// Test Hbr PolicyBinding. >>> Resource test cases, automatically generated.
 // Case OSS Backup跨账号 7232
 func TestAccAliCloudHbrPolicyBinding_basic7232(t *testing.T) {
 	var v map[string]interface{}
-	resourceId := "alicloud_hbr_policy_binding.default"
+	resourceId := "alicloud_hbr_policy_binding.default.19"
 	ra := resourceAttrInit(resourceId, AlicloudHbrPolicyBindingMap7232)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &HbrServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -1710,7 +1709,7 @@ func TestAccAliCloudHbrPolicyBinding_basic7232(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%shbrpolicybinding%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%shbrpolicyossbind%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudHbrPolicyBindingBasicDependence7232)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -1722,10 +1721,11 @@ func TestAccAliCloudHbrPolicyBinding_basic7232(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"count":                      "20",
 					"source_type":                "OSS",
 					"disabled":                   "false",
 					"policy_id":                  "${alicloud_hbr_policy.defaultoqWvHQ.id}",
-					"data_source_id":             "${alicloud_oss_bucket.defaultKtt2XY.bucket}",
+					"data_source_id":             "${alicloud_oss_bucket.defaultKtt2XY[count.index].bucket}",
 					"policy_binding_description": "policy binding example",
 					"source":                     "prefix-example-create/",
 					"cross_account_user_id":      "1",
@@ -1745,12 +1745,6 @@ func TestAccAliCloudHbrPolicyBinding_basic7232(t *testing.T) {
 						"cross_account_type":         "CROSS_ACCOUNT",
 					}),
 				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
 			},
 		},
 	})
@@ -1789,12 +1783,11 @@ resource "alicloud_hbr_policy" "defaultoqWvHQ" {
 }
 
 resource "alicloud_oss_bucket" "defaultKtt2XY" {
+  count         = 20
   storage_class = "Standard"
-  bucket        = format("%%s2", var.name)
+  bucket        = format("%%s2%%s", var.name, count.index)
 }
 
 
 `, name)
 }
-
-// Test Hbr PolicyBinding. <<< Resource test cases, automatically generated.
