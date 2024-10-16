@@ -182,7 +182,7 @@ var loadSdkfromRemoteMutex = sync.Mutex{}
 var loadSdkEndpointMutex = sync.Mutex{}
 
 // The main version number that is being run at the moment.
-var providerVersion = "1.236.0"
+var providerVersion = "1.234.0"
 
 // Temporarily maintain map for old ecs client methods and store special endpoint information
 var EndpointMap = map[string]string{
@@ -602,66 +602,6 @@ func (client *AliyunClient) WithEssClient(do func(*ess.Client) (interface{}, err
 	}
 
 	return do(client.essconn)
-}
-
-type ossCredentials struct {
-	client *AliyunClient
-}
-
-func (defCre *ossCredentials) GetAccessKeyID() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.AccessKey
-}
-
-func (defCre *ossCredentials) GetAccessKeySecret() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.SecretKey
-}
-
-func (defCre *ossCredentials) GetSecurityToken() string {
-	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
-	if err == nil && value != nil {
-		return *value
-	}
-	return defCre.client.config.SecurityToken
-}
-
-type ossCredentialsProvider struct {
-	client *AliyunClient
-}
-
-func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
-	return &ossCredentials{client: defBuild.client}
-}
-
-func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
-
-	maxRetryTimeout := client.config.MaxRetryTimeout
-	if maxRetryTimeout != 0 {
-		return time.Duration(maxRetryTimeout) * time.Second
-	}
-
-	return defaultTimeout
-}
-
-func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
-	return &openapi.Params{
-		Action:      tea.String(action),
-		Version:     tea.String(version),
-		Protocol:    tea.String(client.config.Protocol),
-		Pathname:    tea.String(path),
-		Method:      tea.String(method),
-		AuthType:    tea.String("AK"),
-		Style:       tea.String("ROA"),
-		ReqBodyType: tea.String("formData"),
-		BodyType:    tea.String("json"),
-	}
 }
 
 func (client *AliyunClient) WithOssClient(do func(*oss.Client) (interface{}, error)) (interface{}, error) {
@@ -1158,28 +1098,17 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the DDS client if necessary
-	productCode := "dds"
-	endpoint := ""
-
 	if client.ddsconn == nil {
+		endpoint := client.config.DdsEndpoint
 		if endpoint == "" {
-			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-				if err := client.loadEndpoint(productCode); err != nil {
-					endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
-					client.config.Endpoints.Store(productCode, endpoint)
-					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-				}
-			}
-
-			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-				endpoint = v.(string)
+			endpoint = loadEndpoint(client.config.RegionId, DDSCode)
+			if endpoint == "" {
+				endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
 			}
 		}
 
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(DDSCode), endpoint)
-		} else {
-			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 		}
 
 		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
@@ -2269,7 +2198,7 @@ func (client *AliyunClient) WithDcdnClient(do func(*dcdn.Client) (interface{}, e
 }
 
 func (client *AliyunClient) WithRKvstoreClient(do func(*r_kvstore.Client) (interface{}, error)) (interface{}, error) {
-	productCode := "redisa"
+	productCode := "r_kvstore"
 	endpoint := ""
 	if client.r_kvstoreConn == nil {
 		if endpoint == "" {
@@ -2383,7 +2312,7 @@ func (client *AliyunClient) NewConfigClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewWafClient() (*rpc.Client, error) {
-	productCode := "waf"
+	productCode := "waf_openapi"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2552,7 +2481,7 @@ func (client *AliyunClient) NewDcdnClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewOdpsClient() (*roa.Client, error) {
-	productCode := "odps"
+	productCode := "maxcompute"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2575,7 +2504,7 @@ func (client *AliyunClient) NewOdpsClient() (*roa.Client, error) {
 }
 
 func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
-	productCode := "ressharing"
+	productCode := "resourcesharing"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2598,7 +2527,7 @@ func (client *AliyunClient) NewRessharingClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewGaplusClient() (*rpc.Client, error) {
-	productCode := "gaplus"
+	productCode := "ga"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2715,7 +2644,7 @@ func (client *AliyunClient) NewHitsdbClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewAistudioClient() (*rpc.Client, error) {
-	productCode := "aistudio"
+	productCode := "brain_industrial"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2939,7 +2868,7 @@ func (client *AliyunClient) NewNasClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
-	productCode := "dmsenterprise"
+	productCode := "dms_enterprise"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -2964,7 +2893,7 @@ func (client *AliyunClient) NewDmsenterpriseClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
-	productCode := "hcs_sgw"
+	productCode := "sgw"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3175,7 +3104,7 @@ func (client *AliyunClient) NewEventbridgeClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewOnsproxyClient() (*rpc.Client, error) {
-	productCode := "onsproxy"
+	productCode := "amqp"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3198,7 +3127,7 @@ func (client *AliyunClient) NewOnsproxyClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewCdsClient() (*rpc.Client, error) {
-	productCode := "cds"
+	productCode := "cassandra"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3326,7 +3255,7 @@ func (client *AliyunClient) NewCloudfwClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewServerlessClient() (*roa.Client, error) {
-	productCode := "serverless"
+	productCode := "sae"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3374,7 +3303,7 @@ func (client *AliyunClient) NewAlbClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
-	productCode := "redisa"
+	productCode := "r_kvstore"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3399,7 +3328,7 @@ func (client *AliyunClient) NewRedisaClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewGwsecdClient() (*rpc.Client, error) {
-	productCode := "gwsecd"
+	productCode := "ecd"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3474,7 +3403,7 @@ func (client *AliyunClient) NewScdnClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewDataworkspublicClient() (*rpc.Client, error) {
-	productCode := "dataworkspublic"
+	productCode := "dataworks_public"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3550,7 +3479,7 @@ func (client *AliyunClient) NewCddcClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewMscopensubscriptionClient() (*rpc.Client, error) {
-	productCode := "mscsub"
+	productCode := "mscopensubscription"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3649,7 +3578,7 @@ func (client *AliyunClient) NewSasClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewAlidfsClient() (*rpc.Client, error) {
-	productCode := "alidfs"
+	productCode := "dfs"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3899,7 +3828,7 @@ func (client *AliyunClient) NewCloudssoClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewSwasClient() (*rpc.Client, error) {
-	productCode := "swas"
+	productCode := "swas_open"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3949,7 +3878,7 @@ func (client *AliyunClient) NewVsClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewQuickbiClient() (*rpc.Client, error) {
-	productCode := "quickbi"
+	productCode := "quickbi_public"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -3974,7 +3903,7 @@ func (client *AliyunClient) NewQuickbiClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewDevopsrdcClient() (*rpc.Client, error) {
-	productCode := "rdcdevops"
+	productCode := "devops_rdc"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4049,7 +3978,7 @@ func (client *AliyunClient) NewOpensearchClient() (*roa.Client, error) {
 }
 
 func (client *AliyunClient) NewGdsClient() (*rpc.Client, error) {
-	productCode := "gds"
+	productCode := "gdb"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4174,7 +4103,7 @@ func (client *AliyunClient) NewImpClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewMhubClient() (*rpc.Client, error) {
-	productCode := "emas"
+	productCode := "mhub"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4221,12 +4150,11 @@ func (client *AliyunClient) NewServicemeshClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
-	productCode := "acr"
-	endpoint := client.config.CrEndpoint
-
+	productCode := "cr"
+	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
+			endpoint = fmt.Sprintf("acr.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
@@ -4247,7 +4175,7 @@ func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewEdsuserClient() (*rpc.Client, error) {
-	productCode := "eds-user"
+	productCode := "eds_user"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4379,7 +4307,7 @@ func (client *AliyunClient) NewEssClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewDdosbasicClient() (*rpc.Client, error) {
-	productCode := "ddosbasic"
+	productCode := "antiddos_public"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4480,7 +4408,7 @@ func (client *AliyunClient) NewEdasClient() (*roa.Client, error) {
 }
 
 func (client *AliyunClient) NewEdasschedulerxClient() (*rpc.Client, error) {
-	productCode := "edasschedulerx"
+	productCode := "schedulerx2"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4506,7 +4434,7 @@ func (client *AliyunClient) NewEdasschedulerxClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewEhsClient() (*rpc.Client, error) {
-	productCode := "ehs"
+	productCode := "ehpc"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4531,7 +4459,7 @@ func (client *AliyunClient) NewEhsClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewDysmsClient() (*rpc.Client, error) {
-	productCode := "dysms"
+	productCode := "sms"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4556,7 +4484,7 @@ func (client *AliyunClient) NewDysmsClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewFcClient() (*roa.Client, error) {
-	productCode := "fc"
+	productCode := "fc_open"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4663,7 +4591,7 @@ func (client *AliyunClient) NewVpcpeerClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewCbsClient() (*rpc.Client, error) {
-	productCode := "cbs"
+	productCode := "dbs"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4738,7 +4666,7 @@ func (client *AliyunClient) NewEbsClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewMnsClient() (*rpc.Client, error) {
-	productCode := "mns"
+	productCode := "mns_open"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4815,7 +4743,7 @@ func (client *AliyunClient) NewDasClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewCloudfirewallClient() (*rpc.Client, error) {
-	productCode := "cloudfirewall"
+	productCode := "cloudfw"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4867,7 +4795,7 @@ func (client *AliyunClient) NewThreatdetectionClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewSrvcatalogClient() (*rpc.Client, error) {
-	productCode := "srvcatalog"
+	productCode := "servicecatalog"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4893,7 +4821,7 @@ func (client *AliyunClient) NewSrvcatalogClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewVpcPeerClient() (*rpc.Client, error) {
-	productCode := "VpcPeer"
+	productCode := "vpcpeer"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4945,7 +4873,7 @@ func (client *AliyunClient) NewEfloClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewOceanbaseClient() (*rpc.Client, error) {
-	productCode := "oceanbase"
+	productCode := "oceanbasepro"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -4970,7 +4898,7 @@ func (client *AliyunClient) NewOceanbaseClient() (*rpc.Client, error) {
 }
 
 func (client *AliyunClient) NewBeebotClient() (*rpc.Client, error) {
-	productCode := "beebot"
+	productCode := "chatbot"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5024,7 +4952,7 @@ func (client *AliyunClient) NewComputenestClient() (*rpc.Client, error) {
 	return conn, nil
 }
 func (client *AliyunClient) NewRedisClient() (*rpc.Client, error) {
-	productCode := "redisa"
+	productCode := "r_kvstore"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5205,7 +5133,7 @@ func (client *AliyunClient) NewSlsClient() (*openapi.Client, error) {
 	return openapiClient, nil
 }
 func (client *AliyunClient) NewRocketmqClient() (*roa.Client, error) {
-	productCode := "rmq"
+	productCode := "rocketmq"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5445,7 +5373,7 @@ func (client *AliyunClient) NewCloudmonitorserviceClient() (*rpc.Client, error) 
 	return conn, nil
 }
 func (client *AliyunClient) NewWafv3Client() (*rpc.Client, error) {
-	productCode := "waf"
+	productCode := "waf_openapi"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5469,7 +5397,7 @@ func (client *AliyunClient) NewWafv3Client() (*rpc.Client, error) {
 	return conn, nil
 }
 func (client *AliyunClient) NewDfsClient() (*rpc.Client, error) {
-	productCode := "alidfs"
+	productCode := "dfs"
 	endpoint := ""
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
@@ -5492,30 +5420,7 @@ func (client *AliyunClient) NewDfsClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-func (client *AliyunClient) NewAmqpClient() (*rpc.Client, error) {
-	productCode := "onsproxy"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("amqp-open.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
+
 func (client *AliyunClient) NewCenClient() (*rpc.Client, error) {
 	productCode := "cbn"
 	endpoint := ""
@@ -5613,21 +5518,32 @@ func (client *AliyunClient) NewGovernanceClient() (*rpc.Client, error) {
 	return conn, nil
 }
 
-func (client *AliyunClient) loadApiEndpoint(locationCode string) (string, error) {
-	if v, ok := client.config.Endpoints.Load(locationCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(locationCode); err != nil {
-			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", locationCode, err)
+func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) {
+	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+		if err := client.loadEndpoint(productCode); err != nil {
+			return "", fmt.Errorf("[ERROR] loading %s endpoint got an error: %#v.", productCode, err)
 		}
 	} else {
 		return v.(string), nil
 	}
-	if v, ok := client.config.Endpoints.Load(locationCode); ok && v.(string) != "" {
+	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
 		return v.(string), nil
 	}
-	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", locationCode)
+	return "", fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 }
-func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	endpoint, err := client.loadApiEndpoint(locationCode)
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
 		return nil, err
 	}
@@ -5642,7 +5558,7 @@ func (client *AliyunClient) RpcPost(locationCode string, apiVersion string, apiN
 	sdkConfig.SetSecurityToken(*credential.SecurityToken)
 	conn, err := rpc.NewClient(&sdkConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", locationCode, err)
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
 	}
 	runtime := &util.RuntimeOptions{}
 	runtime.SetAutoretry(autoRetry)
@@ -5813,4 +5729,64 @@ func (client *AliyunClient) NewEsaClient() (*rpc.Client, error) {
 		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
 	}
 	return conn, nil
+}
+
+type ossCredentials struct {
+	client *AliyunClient
+}
+
+func (defCre *ossCredentials) GetAccessKeyID() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.AccessKey
+}
+
+func (defCre *ossCredentials) GetAccessKeySecret() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecretKey
+}
+
+func (defCre *ossCredentials) GetSecurityToken() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
+	if err == nil && value != nil {
+		return *value
+	}
+	return defCre.client.config.SecurityToken
+}
+
+type ossCredentialsProvider struct {
+	client *AliyunClient
+}
+
+func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{client: defBuild.client}
+}
+
+func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
+
+	maxRetryTimeout := client.config.MaxRetryTimeout
+	if maxRetryTimeout != 0 {
+		return time.Duration(maxRetryTimeout) * time.Second
+	}
+
+	return defaultTimeout
+}
+
+func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String(client.config.Protocol),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
 }
