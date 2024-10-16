@@ -5669,29 +5669,65 @@ func (client *AliyunClient) NewPaiworkspaceClient() (*roa.Client, error) {
 	}
 	return conn, nil
 }
-func (client *AliyunClient) NewVpcipamClient() (*rpc.Client, error) {
-	productCode := "vpcipam"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("vpcipam.%s.aliyuncs.com", client.config.RegionId)
-			client.config.Endpoints.Store(productCode, endpoint)
-			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
-		}
+
+type ossCredentials struct {
+	client *AliyunClient
+}
+
+func (defCre *ossCredentials) GetAccessKeyID() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeyId()
+	if err == nil && value != nil {
+		return *value
 	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
+	return defCre.client.config.AccessKey
+}
+
+func (defCre *ossCredentials) GetAccessKeySecret() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetAccessKeySecret()
+	if err == nil && value != nil {
+		return *value
 	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
+	return defCre.client.config.SecretKey
+}
+
+func (defCre *ossCredentials) GetSecurityToken() string {
+	value, err := defCre.client.teaSdkConfig.Credential.GetSecurityToken()
+	if err == nil && value != nil {
+		return *value
 	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
+	return defCre.client.config.SecurityToken
+}
+
+type ossCredentialsProvider struct {
+	client *AliyunClient
+}
+
+func (defBuild *ossCredentialsProvider) GetCredentials() oss.Credentials {
+	return &ossCredentials{client: defBuild.client}
+}
+
+func (client *AliyunClient) GetRetryTimeout(defaultTimeout time.Duration) time.Duration {
+
+	maxRetryTimeout := client.config.MaxRetryTimeout
+	if maxRetryTimeout != 0 {
+		return time.Duration(maxRetryTimeout) * time.Second
 	}
-	return conn, nil
+
+	return defaultTimeout
+}
+
+func (client *AliyunClient) GenRoaParam(action, method, version, path string) *openapi.Params {
+	return &openapi.Params{
+		Action:      tea.String(action),
+		Version:     tea.String(version),
+		Protocol:    tea.String(client.config.Protocol),
+		Pathname:    tea.String(path),
+		Method:      tea.String(method),
+		AuthType:    tea.String("AK"),
+		Style:       tea.String("ROA"),
+		ReqBodyType: tea.String("formData"),
+		BodyType:    tea.String("json"),
+	}
 }
 func (client *AliyunClient) NewGwlbClient() (*rpc.Client, error) {
 	productCode := "gwlb"
