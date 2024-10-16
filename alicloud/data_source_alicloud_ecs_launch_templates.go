@@ -318,6 +318,18 @@ func dataSourceAlicloudEcsLaunchTemplates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"http_endpoint": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"http_tokens": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"http_put_response_hop_limit": {
+							Type:     schema.TypeInt,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -540,6 +552,9 @@ func dataSourceAlicloudEcsLaunchTemplatesRead(d *schema.ResourceData, meta inter
 		mapping["version_description"] = describeLaunchTemplateVersionsObject["VersionDescription"]
 		mapping["vpc_id"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["VpcId"]
 		mapping["zone_id"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["ZoneId"]
+		mapping["http_endpoint"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpEndpoint"]
+		mapping["http_tokens"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpTokens"]
+		mapping["http_put_response_hop_limit"] = describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpPutResponseHopLimit"]
 		ids = append(ids, fmt.Sprint(object["LaunchTemplateId"]))
 		names = append(names, object["LaunchTemplateName"])
 		s = append(s, mapping)

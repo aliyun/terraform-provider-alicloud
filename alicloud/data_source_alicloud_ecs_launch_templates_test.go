@@ -98,6 +98,9 @@ func TestAccAlicloudECSLaunchTemplatesDataSource(t *testing.T) {
 			"templates.0.vswitch_id":                             CHECKSET,
 			"templates.0.vpc_id":                                 CHECKSET,
 			"templates.0.zone_id":                                "cn-hangzhou-i",
+			"templates.0.http_endpoint":                          "enabled",
+			"templates.0.http_tokens":                            "optional",
+			"templates.0.http_put_response_hop_limit":            "3",
 			"templates.0.template_tags.%":                        "2",
 			"templates.0.template_tags.tag1":                     "hello",
 			"templates.0.template_tags.tag2":                     "world",
@@ -178,6 +181,9 @@ func dataSourceEcsLaunchTemplatesDependence(name string) string {
 			vswitch_id           =   "${data.alicloud_vswitches.default.vswitches.0.id}"
 			vpc_id               =   "vpc-asdfnbg0as8dfk1nb2"
 			zone_id              =   "cn-hangzhou-i"
+			http_endpoint               =   "enabled"
+			http_tokens                 =   "optional"
+			http_put_response_hop_limit =   "3"
 
 			template_tags = {
 				tag1 = "hello"
