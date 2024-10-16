@@ -836,6 +836,9 @@ func TestAccAliCloudECSLaunchTemplateBasic2(t *testing.T) {
 					"system_disk_size":              "40",
 					"resource_group_id":             "rg-zkdfjahg9zxncv0",
 					"userdata":                      "xxxxxxx",
+					"http_endpoint":                 "enabled",
+					"http_tokens":                   "optional",
+					"http_put_response_hop_limit":   "3",
 					"vswitch_id":                    "${alicloud_vswitch.shareVswitch1.id}",
 					"tags": map[string]string{
 						"tag1": "hello",

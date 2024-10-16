@@ -363,6 +363,24 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"http_endpoint": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"http_tokens": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"http_put_response_hop_limit": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
 			"system_disk_category": {
 				Type:          schema.TypeString,
 				Optional:      true,
@@ -680,6 +698,16 @@ func resourceAliCloudEcsLaunchTemplateCreate(d *schema.ResourceData, meta interf
 			request["ZoneId"] = vsw["ZoneId"]
 		}
 	}
+	if v, ok := d.GetOk("http_endpoint"); ok {
+		request["HttpEndpoint"] = v
+	}
+	if v, ok := d.GetOk("http_tokens"); ok {
+		request["HttpTokens"] = v
+	}
+	if v, ok := d.GetOk("http_put_response_hop_limit"); ok {
+		request["HttpPutResponseHopLimit"] = v
+	}
+
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
@@ -833,6 +861,9 @@ func resourceAliCloudEcsLaunchTemplateRead(d *schema.ResourceData, meta interfac
 	d.Set("vpc_id", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["VpcId"])
 	d.Set("zone_id", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["ZoneId"])
 	d.Set("tags", tagsToMap(describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["Tags"].(map[string]interface{})["InstanceTag"]))
+	d.Set("http_endpoint", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpEndpoint"])
+	d.Set("http_tokens", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpTokens"])
+	d.Set("http_put_response_hop_limit", describeLaunchTemplateVersionsObject["LaunchTemplateData"].(map[string]interface{})["HttpPutResponseHopLimit"])
 	return nil
 }
 
