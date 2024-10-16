@@ -13,49 +13,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func dataSourceAlicloudSslCertificatesServiceCertificates() *schema.Resource {
+func dataSourceAliCloudSslCertificatesServiceCertificates() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceAlicloudSslCertificatesServiceCertificatesRead,
+		Read: dataSourceAliCloudSslCertificatesServiceCertificatesRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
 				ForceNew: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
 				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"name_regex": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.ValidateRegexp,
 				ForceNew:     true,
+				ValidateFunc: validation.ValidateRegexp,
 			},
-			"names": {
-				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				Computed: true,
-			},
-			"lang": {
+			"keyword": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+			},
+			"enable_details": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  false,
 			},
 			"output_file": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"names": {
+				Type:     schema.TypeList,
+				Computed: true,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"certificates": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"buy_in_aliyun": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"cert": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
 						"id": {
 							Type:     schema.TypeString,
 							Computed: true,
@@ -68,12 +66,7 @@ func dataSourceAlicloudSslCertificatesServiceCertificates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"name": {
-							Type:       schema.TypeString,
-							Deprecated: "Field 'name' has been deprecated from provider version 1.129.0 and it will be removed in the future version. Please use the new attribute 'certificate_name' instead.",
-							Computed:   true,
-						},
-						"city": {
+						"fingerprint": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -81,27 +74,7 @@ func dataSourceAlicloudSslCertificatesServiceCertificates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"country": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"end_date": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"expired": {
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"fingerprint": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"issuer": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"key": {
+						"sans": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
@@ -109,50 +82,77 @@ func dataSourceAlicloudSslCertificatesServiceCertificates() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"issuer": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"country": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
 						"province": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
-						"sans": {
+						"city": {
 							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"expired": {
+							Type:     schema.TypeBool,
 							Computed: true,
 						},
 						"start_date": {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"end_date": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"cert": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"key": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"buy_in_aliyun": {
+							Type:     schema.TypeBool,
+							Computed: true,
+						},
+						"name": {
+							Type:       schema.TypeString,
+							Computed:   true,
+							Deprecated: "Field `name` has been deprecated from provider version 1.129.0. New field `certificate_name` instead.",
+						},
 					},
 				},
 			},
-			"enable_details": {
-				Type:     schema.TypeBool,
-				Optional: true,
-				Default:  false,
+			"lang": {
+				Type:       schema.TypeString,
+				Optional:   true,
+				Deprecated: "Field `lang` has been deprecated from provider version 1.231.1.",
 			},
 		},
 	}
 }
 
-func dataSourceAlicloudSslCertificatesServiceCertificatesRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceAliCloudSslCertificatesServiceCertificatesRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 
-	action := "DescribeUserCertificateList"
+	action := "ListUserCertificateOrder"
 	request := make(map[string]interface{})
-	if v, ok := d.GetOk("lang"); ok {
-		request["Lang"] = v
-	}
+	request["OrderType"] = "CERT"
 	request["ShowSize"] = PageSizeLarge
 	request["CurrentPage"] = 1
-	var objects []map[string]interface{}
-	var certificateNameRegex *regexp.Regexp
-	if v, ok := d.GetOk("name_regex"); ok {
-		r, err := regexp.Compile(v.(string))
-		if err != nil {
-			return WrapError(err)
-		}
-		certificateNameRegex = r
+
+	if v, ok := d.GetOk("keyword"); ok {
+		request["Keyword"] = v
 	}
 
+	var objects []map[string]interface{}
 	idsMap := make(map[string]string)
 	if v, ok := d.GetOk("ids"); ok {
 		for _, vv := range v.([]interface{}) {
@@ -162,17 +162,28 @@ func dataSourceAlicloudSslCertificatesServiceCertificatesRead(d *schema.Resource
 			idsMap[vv.(string)] = vv.(string)
 		}
 	}
+
+	var certificateNameRegex *regexp.Regexp
+	if v, ok := d.GetOk("name_regex"); ok {
+		r, err := regexp.Compile(v.(string))
+		if err != nil {
+			return WrapError(err)
+		}
+		certificateNameRegex = r
+	}
+
 	var response map[string]interface{}
 	conn, err := client.NewCasClient()
 	if err != nil {
 		return WrapError(err)
 	}
+
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-07"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -183,74 +194,86 @@ func dataSourceAlicloudSslCertificatesServiceCertificatesRead(d *schema.Resource
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ssl_certificates_service_certificates", action, AlibabaCloudSdkGoERROR)
 		}
-		resp, err := jsonpath.Get("$.CertificateList", response)
+
+		resp, err := jsonpath.Get("$.CertificateOrderList", response)
 		if err != nil {
-			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CertificateList", response)
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.CertificateOrderList", response)
 		}
+
 		result, _ := resp.([]interface{})
 		for _, v := range result {
 			item := v.(map[string]interface{})
-			if certificateNameRegex != nil && !certificateNameRegex.MatchString(fmt.Sprint(item["name"])) {
-				continue
-			}
 			if len(idsMap) > 0 {
-				if _, ok := idsMap[fmt.Sprint(item["id"])]; !ok {
+				if _, ok := idsMap[fmt.Sprint(item["CertificateId"])]; !ok {
 					continue
 				}
 			}
+
+			if certificateNameRegex != nil && !certificateNameRegex.MatchString(fmt.Sprint(item["Name"])) {
+				continue
+			}
+
 			objects = append(objects, item)
 		}
-		if len(result) < PageSizeLarge {
+
+		if len(result) < request["ShowSize"].(int) {
 			break
 		}
+
 		request["CurrentPage"] = request["CurrentPage"].(int) + 1
 	}
+
 	ids := make([]string, 0)
 	names := make([]interface{}, 0)
 	s := make([]map[string]interface{}, 0)
 	for _, object := range objects {
 		mapping := map[string]interface{}{
-			"buy_in_aliyun":    object["buyInAliyun"],
-			"id":               fmt.Sprint(object["id"]),
-			"cert_id":          fmt.Sprint(object["id"]),
-			"certificate_name": object["name"],
-			"city":             object["city"],
-			"common":           object["common"],
-			"country":          object["country"],
-			"end_date":         object["endDate"],
-			"expired":          object["expired"],
-			"name":             object["name"],
-			"fingerprint":      object["fingerprint"],
-			"issuer":           object["issuer"],
-			"org_name":         object["orgName"],
-			"province":         object["province"],
-			"sans":             object["sans"],
-			"start_date":       object["startDate"],
+			"id":               fmt.Sprint(object["CertificateId"]),
+			"cert_id":          fmt.Sprint(object["CertificateId"]),
+			"certificate_name": object["Name"],
+			"fingerprint":      object["Fingerprint"],
+			"common":           object["CommonName"],
+			"sans":             object["Sans"],
+			"org_name":         object["OrgName"],
+			"issuer":           object["Issuer"],
+			"country":          object["Country"],
+			"province":         object["Province"],
+			"city":             object["City"],
+			"expired":          object["Expired"],
+			"start_date":       object["StartDate"],
+			"end_date":         object["EndDate"],
+			"name":             object["Name"],
 		}
+
+		ids = append(ids, fmt.Sprint(mapping["id"]))
+		names = append(names, object["Name"])
+
 		if detailedEnabled := d.Get("enable_details"); !detailedEnabled.(bool) {
-			ids = append(ids, fmt.Sprint(object["id"]))
-			names = append(names, object["name"])
 			s = append(s, mapping)
 			continue
 		}
 
+		id := fmt.Sprint(object["CertificateId"])
 		casService := CasService{client}
-		id := fmt.Sprint(formatInt(object["id"]))
-		getResp, err := casService.DescribeSslCertificatesServiceCertificate(id)
+
+		describeUserCertificateDetail, err := casService.DescribeSslCertificatesServiceCertificate(id)
 		if err != nil {
 			return WrapError(err)
 		}
-		mapping["cert"] = getResp["Cert"]
-		mapping["key"] = getResp["Key"]
-		ids = append(ids, fmt.Sprint(mapping["id"]))
-		names = append(names, object["name"])
+
+		mapping["cert"] = describeUserCertificateDetail["Cert"]
+		mapping["key"] = describeUserCertificateDetail["Key"]
+		mapping["buy_in_aliyun"] = describeUserCertificateDetail["BuyInAliyun"]
+
 		s = append(s, mapping)
 	}
 
 	d.SetId(dataResourceIdHash(ids))
+
 	if err := d.Set("ids", ids); err != nil {
 		return WrapError(err)
 	}
@@ -262,6 +285,7 @@ func dataSourceAlicloudSslCertificatesServiceCertificatesRead(d *schema.Resource
 	if err := d.Set("certificates", s); err != nil {
 		return WrapError(err)
 	}
+
 	if output, ok := d.GetOk("output_file"); ok && output.(string) != "" {
 		writeToFile(output.(string), s)
 	}

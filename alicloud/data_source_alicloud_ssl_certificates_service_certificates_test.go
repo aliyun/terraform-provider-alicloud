@@ -2,87 +2,213 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudSslCertificatesDataSource_basic(t *testing.T) {
-	rand := acctest.RandInt()
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ssl_certificates_service_certificate.default.certificate_name}"`,
+func TestAccAliCloudSslCertificatesDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+	resourceId := "data.alicloud_ssl_certificates_service_certificates.default"
+	name := fmt.Sprintf("tf-testacc%ssslcertificatesservicecertificate%d", defaultRegionToTest, rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAliCloudSslCertificatesConfig)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ssl_certificates_service_certificate.default.id}"},
 		}),
-		fakeConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_ssl_certificates_service_certificate.default.id}_fake"},
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ssl_certificates_service_certificate.default.id}"]`,
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ssl_certificates_service_certificate.default.certificate_name}",
 		}),
-		fakeConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_ssl_certificates_service_certificate.default.id}_fake"]`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake",
+		}),
+	}
+
+	keyWordConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"keyword": "${alicloud_ssl_certificates_service_certificate.default.id}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"keyword": "${alicloud_ssl_certificates_service_certificate.default.id}0_fake",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ssl_certificates_service_certificate.default.certificate_name}"`,
-			"ids":        `["${alicloud_ssl_certificates_service_certificate.default.id}"]`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_ssl_certificates_service_certificate.default.id}"},
+			"name_regex": "${alicloud_ssl_certificates_service_certificate.default.certificate_name}",
+			"keyword":    "${alicloud_ssl_certificates_service_certificate.default.id}",
 		}),
-		fakeConfig: testAccCheckAlicloudSslCertificatesDataSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake"`,
-			"ids":        `["${alicloud_ssl_certificates_service_certificate.default.id}_fake"]`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":        []string{"${alicloud_ssl_certificates_service_certificate.default.id}_fake"},
+			"name_regex": "${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake",
+			"keyword":    "${alicloud_ssl_certificates_service_certificate.default.id}0_fake",
 		}),
 	}
 
-	var existSslCertificateMapFunc = func(rand int) map[string]string {
+	var existAliCloudSslCertificatesDataSourceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"certificates.#":                  "1",
 			"ids.#":                           "1",
 			"names.#":                         "1",
+			"certificates.#":                  "1",
 			"certificates.0.id":               CHECKSET,
-			"certificates.0.certificate_name": fmt.Sprintf("tf-testAccSslCertificatesDataSourceBasic-%d", rand),
+			"certificates.0.cert_id":          CHECKSET,
+			"certificates.0.certificate_name": CHECKSET,
 			"certificates.0.fingerprint":      CHECKSET,
+			"certificates.0.common":           CHECKSET,
+			"certificates.0.sans":             CHECKSET,
+			"certificates.0.org_name":         CHECKSET,
+			"certificates.0.issuer":           CHECKSET,
+			"certificates.0.country":          CHECKSET,
+			"certificates.0.province":         CHECKSET,
+			"certificates.0.city":             CHECKSET,
+			"certificates.0.expired":          CHECKSET,
 			"certificates.0.start_date":       CHECKSET,
+			"certificates.0.end_date":         CHECKSET,
+			"certificates.0.cert":             "",
+			"certificates.0.key":              "",
+			"certificates.0.name":             CHECKSET,
 		}
 	}
 
-	var fakeSslCertificateMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudSslCertificatesDataSourceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"certificates.#": "0",
 			"ids.#":          "0",
 			"names.#":        "0",
+			"certificates.#": "0",
 		}
 	}
 
-	var slbServerCertificatesCheckInfo = dataSourceAttr{
+	var aliCloudSslCertificatesCheckInfo = dataSourceAttr{
 		resourceId:   "data.alicloud_ssl_certificates_service_certificates.default",
-		existMapFunc: existSslCertificateMapFunc,
-		fakeMapFunc:  fakeSslCertificateMapFunc,
+		existMapFunc: existAliCloudSslCertificatesDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudSslCertificatesDataSourceMapFunc,
 	}
 
-	slbServerCertificatesCheckInfo.dataSourceTestCheck(t, rand, nameRegexConf, idsConf, allConf)
-
-}
-
-func testAccCheckAlicloudSslCertificatesDataSourceConfig(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
+	preCheck := func() {
+		testAccPreCheck(t)
 	}
 
-	config := fmt.Sprintf(`
-variable "name" {
-	default = "tf-testAccSslCertificatesDataSourceBasic-%d"
+	aliCloudSslCertificatesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, keyWordConf, allConf)
 }
 
-resource "alicloud_ssl_certificates_service_certificate" "default" {
-  certificate_name = var.name
-  cert = <<EOF
+func TestAccAliCloudSslCertificatesDataSource_basic1(t *testing.T) {
+	rand := acctest.RandIntRange(10000, 99999)
+	resourceId := "data.alicloud_ssl_certificates_service_certificates.default"
+	name := fmt.Sprintf("tf-testacc%ssslcertificatesservicecertificate%d", defaultRegionToTest, rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceAliCloudSslCertificatesConfig)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_ssl_certificates_service_certificate.default.id}"},
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_ssl_certificates_service_certificate.default.id}_fake"},
+			"enable_details": "true",
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_ssl_certificates_service_certificate.default.certificate_name}",
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake",
+			"enable_details": "true",
+		}),
+	}
+
+	keyWordConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"keyword":        "${alicloud_ssl_certificates_service_certificate.default.id}",
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"keyword":        "${alicloud_ssl_certificates_service_certificate.default.id}0_fake",
+			"enable_details": "true",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_ssl_certificates_service_certificate.default.id}"},
+			"name_regex":     "${alicloud_ssl_certificates_service_certificate.default.certificate_name}",
+			"keyword":        "${alicloud_ssl_certificates_service_certificate.default.id}",
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_ssl_certificates_service_certificate.default.id}_fake"},
+			"name_regex":     "${alicloud_ssl_certificates_service_certificate.default.certificate_name}_fake",
+			"keyword":        "${alicloud_ssl_certificates_service_certificate.default.id}0_fake",
+			"enable_details": "true",
+		}),
+	}
+
+	var existAliCloudSslCertificatesDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                           "1",
+			"names.#":                         "1",
+			"certificates.#":                  "1",
+			"certificates.0.id":               CHECKSET,
+			"certificates.0.cert_id":          CHECKSET,
+			"certificates.0.certificate_name": CHECKSET,
+			"certificates.0.fingerprint":      CHECKSET,
+			"certificates.0.common":           CHECKSET,
+			"certificates.0.sans":             CHECKSET,
+			"certificates.0.org_name":         CHECKSET,
+			"certificates.0.issuer":           CHECKSET,
+			"certificates.0.country":          CHECKSET,
+			"certificates.0.province":         CHECKSET,
+			"certificates.0.city":             CHECKSET,
+			"certificates.0.expired":          CHECKSET,
+			"certificates.0.start_date":       CHECKSET,
+			"certificates.0.end_date":         CHECKSET,
+			"certificates.0.cert":             CHECKSET,
+			"certificates.0.key":              CHECKSET,
+			"certificates.0.buy_in_aliyun":    CHECKSET,
+			"certificates.0.name":             CHECKSET,
+		}
+	}
+
+	var fakeAliCloudSslCertificatesDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":          "0",
+			"names.#":        "0",
+			"certificates.#": "0",
+		}
+	}
+
+	var aliCloudSslCertificatesCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_ssl_certificates_service_certificates.default",
+		existMapFunc: existAliCloudSslCertificatesDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudSslCertificatesDataSourceMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudSslCertificatesCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, keyWordConf, allConf)
+}
+
+func dataSourceAliCloudSslCertificatesConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_ssl_certificates_service_certificate" "default" {
+  		certificate_name = var.name
+  		cert             = <<EOF
 -----BEGIN CERTIFICATE-----
 MIIDRjCCAq+gAwIBAgIJAJn3ox4K13PoMA0GCSqGSIb3DQEBBQUAMHYxCzAJBgNV
 BAYTAkNOMQswCQYDVQQIEwJCSjELMAkGA1UEBxMCQkoxDDAKBgNVBAoTA0FMSTEP
@@ -104,7 +230,7 @@ Ofi6hVgErtHaXJheuPVeW6eAW8mHBoEfvDAfU3y9waYrtUevSl07643bzKL6v+Qd
 DUBTxOAvSYfXTtI90EAxEG/bJJyOm5LqoiA=
 -----END CERTIFICATE-----
 EOF
-  key = <<EOF
+  		key              = <<EOF
 -----BEGIN RSA PRIVATE KEY-----
 MIICXAIBAAKBgQDO0kt3vfjY9BygLEbiAzUrEt1Cum/utmEG9rroSq6dRzKzsetV
 kg0dqpAJwXKBtNFM9/BBPvQy2DVFUASu2koCz+TNQJOMK+BqhsgoI3o884dw7IVM
@@ -121,11 +247,6 @@ zWX931YQeACcwhxvHQJBAN5mTzzJD4w4Ma6YTaNHyXakdYfyAWrOkPIWZxfhMfXe
 DrlNdiysTI4Dd1dLeErVpjsckAaOW/JDG5PCSwkaMxk=
 -----END RSA PRIVATE KEY-----
 EOF
-}
-
-data "alicloud_ssl_certificates_service_certificates" "default" {
-  %s
-}
-`, rand, strings.Join(pairs, "\n  "))
-	return config
+	}
+`, name)
 }
