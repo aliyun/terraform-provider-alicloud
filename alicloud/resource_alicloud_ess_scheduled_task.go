@@ -1,6 +1,7 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ess"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -118,20 +119,58 @@ func resourceAliyunEssScheduledTaskRead(d *schema.ResourceData, meta interface{}
 		}
 		return WrapError(err)
 	}
-
-	d.Set("scheduled_action", object.ScheduledAction)
-	d.Set("launch_time", object.LaunchTime)
-	d.Set("scheduled_task_name", object.ScheduledTaskName)
-	d.Set("description", object.Description)
-	d.Set("launch_expiration_time", object.LaunchExpirationTime)
-	d.Set("recurrence_type", object.RecurrenceType)
-	d.Set("recurrence_value", object.RecurrenceValue)
-	d.Set("recurrence_end_time", object.RecurrenceEndTime)
-	d.Set("task_enabled", object.TaskEnabled)
-	d.Set("min_value", object.MinValue)
-	d.Set("max_value", object.MaxValue)
-	d.Set("desired_capacity", object.DesiredCapacity)
-	d.Set("scaling_group_id", object.ScalingGroupId)
+	val, ok := object["ScheduledAction"]
+	if ok {
+		d.Set("scheduled_action", val)
+	}
+	val, ok = object["LaunchTime"]
+	if ok {
+		d.Set("launch_time", val)
+	}
+	val, ok = object["ScheduledTaskName"]
+	if ok {
+		d.Set("scheduled_task_name", val)
+	}
+	val, ok = object["Description"]
+	if ok {
+		d.Set("description", val)
+	}
+	val, ok = object["LaunchExpirationTime"]
+	if ok {
+		d.Set("launch_expiration_time", val)
+	}
+	val, ok = object["RecurrenceType"]
+	if ok {
+		d.Set("recurrence_type", val)
+	}
+	val, ok = object["RecurrenceValue"]
+	if ok {
+		d.Set("recurrence_value", val)
+	}
+	val, ok = object["RecurrenceEndTime"]
+	if ok {
+		d.Set("recurrence_end_time", val)
+	}
+	val, ok = object["TaskEnabled"]
+	if ok {
+		d.Set("task_enabled", val.(bool))
+	}
+	val, ok = object["MinValue"]
+	if ok {
+		d.Set("min_value", val.(json.Number))
+	}
+	val, ok = object["MaxValue"]
+	if ok {
+		d.Set("max_value", val.(json.Number))
+	}
+	val, ok = object["DesiredCapacity"]
+	if ok {
+		d.Set("desired_capacity", val.(json.Number))
+	}
+	val, ok = object["ScalingGroupId"]
+	if ok {
+		d.Set("scaling_group_id", val)
+	}
 
 	return nil
 }
