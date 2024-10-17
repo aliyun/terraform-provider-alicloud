@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,13 +76,9 @@ func resourceAliCloudAdbResourceGroup() *schema.Resource {
 func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "CreateDBResourceGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	request["DBClusterId"] = d.Get("db_cluster_id")
 	request["GroupName"] = d.Get("group_name")
 
@@ -95,11 +90,9 @@ func resourceAliCloudAdbResourceGroupCreate(d *schema.ResourceData, meta interfa
 		request["NodeNum"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"ResourceNotEnough"}) || NeedRetry(err) {
 				wait()
@@ -190,16 +183,9 @@ func resourceAliCloudAdbResourceGroupUpdate(d *schema.ResourceData, meta interfa
 
 	if update {
 		action := "ModifyDBResourceGroup"
-		conn, err := client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"ResourceNotEnough"}) || NeedRetry(err) {
 					wait()
@@ -223,12 +209,6 @@ func resourceAliCloudAdbResourceGroupDelete(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBResourceGroup"
 	var response map[string]interface{}
-
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -239,11 +219,9 @@ func resourceAliCloudAdbResourceGroupDelete(d *schema.ResourceData, meta interfa
 		"GroupName":   parts[1],
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

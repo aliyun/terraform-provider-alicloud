@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -99,18 +98,13 @@ func dataSourceAlicloudAdbResourceGroupsRead(d *schema.ResourceData, meta interf
 		}
 	}
 
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var objects []interface{}
 	var response map[string]interface{}
+	var err error
 	action := "DescribeDBResourceGroup"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,7 +112,6 @@ func dataSourceAlicloudAdbResourceGroupsRead(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -313,14 +312,9 @@ func dataSourceAlicloudAdbDbClustersRead(d *schema.ResourceData, meta interface{
 		}
 	}
 	var response map[string]interface{}
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, AlibabaCloudSdkGoERROR)
 		}
