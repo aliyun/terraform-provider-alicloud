@@ -8,7 +8,9 @@ description: |-
 
 # alicloud_privatelink_vpc_endpoint_zone
 
-Provides a Private Link Vpc Endpoint Zone resource. 
+Provides a Private Link Vpc Endpoint Zone resource.
+
+
 
 For information about Private Link Vpc Endpoint Zone and how to use it, see [What is Vpc Endpoint Zone](https://www.alibabacloud.com/help/en/privatelink/latest/api-privatelink-2020-04-15-addzonetovpcendpoint).
 
@@ -17,12 +19,6 @@ For information about Private Link Vpc Endpoint Zone and how to use it, see [Wha
 ## Example Usage
 
 Basic Usage
-
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_privatelink_vpc_endpoint_zone&exampleId=002be05b-cddb-26ee-e297-a2349d72c10955d7a11d&activeTab=example&spm=docs.r.privatelink_vpc_endpoint_zone.0.002be05bcd&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
 
 ```terraform
 variable "name" {
@@ -86,11 +82,11 @@ resource "alicloud_privatelink_vpc_endpoint_zone" "example" {
 
 The following arguments are supported:
 * `dry_run` - (Optional) Specifies whether to perform only a dry run, without performing the actual request. Valid values:
-  - **true**: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
+  - `true`: performs only a dry run. The system checks the request for potential issues, including missing parameter values, incorrect request syntax, and service limits. If the request fails the dry run, an error message is returned. If the request passes the dry run, the DryRunOperation error code is returned.
   - **false (default)**: performs a dry run and performs the actual request. If the request passes the dry run, a 2xx HTTP status code is returned and the operation is performed.
 * `endpoint_id` - (Required, ForceNew) The endpoint ID.
 * `eni_ip` - (Optional, ForceNew, Computed, Available since v1.212.0) The IP address of the endpoint ENI.
-* `vswitch_id` - (Required, ForceNew) The ID of the vSwitch in the zone. .
+* `vswitch_id` - (Required, ForceNew) The ID of the vSwitch in the zone.
 * `zone_id` - (Optional, ForceNew) The zone ID.
 
 ## Attributes Reference
