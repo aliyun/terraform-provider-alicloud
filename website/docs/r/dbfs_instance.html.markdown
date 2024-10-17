@@ -12,6 +12,8 @@ Provides a DBFS Dbfs Instance resource. An instance of a database file system is
 
 For information about DBFS Dbfs Instance and how to use it, see [What is Dbfs Instance](https://next.api.alibabacloud.com/document/DBFS/2020-04-18/CreateDbfs).
 
+-> **NOTE:** Need to contact us open whitelist before you can use the resource.
+
 -> **NOTE:** Available since v1.136.0.
 
 ## Example Usage
@@ -50,7 +52,7 @@ The following arguments are supported:
 * `delete_snapshot` - (Optional) Whether to delete the original snapshot after creating DBFS using the snapshot.
 * `enable_raid` - (Optional, ForceNew) Whether to create DBFS in RAID mode. If created in RAID mode, the capacity is at least 66GB.Valid values: true or false. Default value: false.
 * `encryption` - (Optional, ForceNew) Whether to encrypt DBFS.Valid values: true or false. Default value: false.
-* `fs_name` - (Required, Available since v1.212.0) Database file system name.
+* `fs_name` - (Optional, Available since v1.212.0) Database file system name.
 * `instance_type` - (Optional, Available since v1.212.0) Instance type. Value range:
   - dbfs.small
   - dbfs.medium
@@ -72,13 +74,13 @@ The following arguments are supported:
 * `ecs_list` - (Optional, Deprecated from v1.156.0) The collection of ECS instances mounted to the Database file system. See [`ecs_list`](#ecs_list) below.  **NOTE:** Field 'ecs_list' has been deprecated from provider version 1.156.0 and it will be removed in the future version. Please use the new resource 'alicloud_dbfs_instance_attachment' to attach ECS and DBFS. See [`ecs_list`](#ecs_list) below.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 
+The following arguments will be discarded. Please use new fields as soon as possible:
+* `instance_name` - (Deprecated since v1.212.0). Field 'instance_name' has been deprecated from provider version 1.212.0. New field 'fs_name' instead.
+
 ### `ecs_list`
 
 The ecs_list supports the following:
 * `ecs_id` - (Optional) The ID of the ECS instance.
-
-The following arguments will be discarded. Please use new fields as soon as possible:
-* `instance_name` - (Deprecated since v1.212.0). Field 'instance_name' has been deprecated from provider version 1.212.0. New field 'fs_name' instead.
 
 ## Attributes Reference
 
