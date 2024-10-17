@@ -48,8 +48,6 @@ resource "alicloud_cloud_firewall_control_policy" "default" {
 The following arguments are supported:
 
 * `direction` - (Required, ForceNew) The direction of the traffic to which the access control policy applies. Valid values: `in`, `out`.
-* `application_name` - (Required) The application type supported by the access control policy. Valid values: `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
--> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
 * `description` - (Required) The description of the access control policy.
 * `acl_action` - (Required) The action that Cloud Firewall performs on the traffic. Valid values: `accept`, `drop`, `log`.
 * `source` - (Required) The source address in the access control policy.
@@ -57,12 +55,36 @@ The following arguments are supported:
 * `destination` - (Required) The destination address in the access control policy.
 * `destination_type` - (Required) The type of the destination address in the access control policy. Valid values: `net`, `group`, `domain`, `location`.
 * `proto` - (Required) The protocol type supported by the access control policy. Valid values: `ANY`, ` TCP`, `UDP`, `ICMP`.
+* `application_name` - (Optional) The application type supported by the access control policy. Valid values: `ANY`, `HTTP`, `HTTPS`, `MQTT`, `Memcache`, `MongoDB`, `MySQL`, `RDP`, `Redis`, `SMTP`, `SMTPS`, `SSH`, `SSL`, `VNC`.
+-> **NOTE:** If `proto` is set to `TCP`, you can set `application_name` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name` to `ANY`.
 * `dest_port` - (Optional) The destination port in the access control policy. **Note:** If `dest_port_type` is set to `port`, you must specify `dest_port`.
 * `dest_port_group` - (Optional) The name of the destination port address book in the access control policy. **Note:** If `dest_port_type` is set to `group`, you must specify `dest_port_group`.
 * `dest_port_type` - (Optional) The type of the destination port in the access control policy. Valid values: `port`, `group`.
 * `ip_version` - (Optional, ForceNew) The IP version supported by the access control policy. Default value: `4`. Valid values:
   - `4`: IPv4.
   - `6`: IPv6.
+* `domain_resolve_type` - (Optional, Available since v1.231.1) The domain name resolution method of the access control policy. Valid values:
+  - `FQDN`: Fully qualified domain name (FQDN)-based resolution.
+  - `DNS`: DNS-based dynamic resolution.
+  - `FQDN_AND_DNS`: FQDN and DNS-based dynamic resolution.
+* `repeat_type` - (Optional, Available since v1.231.1) The recurrence type for the access control policy to take effect. Default value: `Permanent`. Valid values:
+  - `Permanent`: The policy always takes effect.
+  - `None`: The policy takes effect for only once.
+  - `Daily`: The policy takes effect on a daily basis.
+  - `Weekly`: The policy takes effect on a weekly basis.
+  - `Monthly`: The policy takes effect on a monthly basis.
+* `start_time` - (Optional, Int, Available since v1.231.1) The time when the access control policy starts to take effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
+* `end_time` - (Optional, Int, Available since v1.231.1) The time when the access control policy stops taking effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes later than the start time.
+-> **NOTE:** If `repeat_type` is set to `None`, `Daily`, `Weekly`, or `Monthly`, `start_time` and `end_time` must be set.
+* `repeat_start_time` - (Optional, Available since v1.231.1) The point in time when the recurrence starts. Example: `08:00`. The start time must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
+* `repeat_end_time` - (Optional, Available since v1.231.1) The point in time when the recurrence ends. Example: `23:30`. The end time must be on the hour or on the half hour, and at least 30 minutes later than the start time.
+-> **NOTE:** If `repeat_type` is set to `Daily`, `Weekly`, or `Monthly`, `repeat_start_time` and `repeat_end_time` must be set.
+* `repeat_days` - (Optional, List, Available since v1.231.1) The days of a week or of a month on which the access control policy takes effect. Valid values:
+  - If `repeat_type` is set to `Weekly`. Valid values: `0` to `6`.
+  - If `repeat_type` is set to `Monthly`. Valid values: `1` to `31`.
+-> **NOTE:** If `repeat_type` is set to `Weekly`, or `Monthly`, `repeat_days` must be set.
+* `application_name_list` - (Optional, List, Available since v1.231.1) The application types supported by the access control policy.
+-> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.231.1, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
 * `release` - (Optional) The status of the access control policy. Valid values: `true`, `false`.
 * `source_ip` - (Optional) The source IP address of the request.
 * `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.
@@ -73,6 +95,17 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Control Policy. It formats as `<acl_uuid>:<direction>`.
 * `acl_uuid` - (Available since v1.148.0) The unique ID of the access control policy.
+* `create_time` - (Available since v1.231.1) The time when the access control policy was created.
+
+## Timeouts
+
+-> **NOTE:** Available since v1.231.1.
+
+The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
+
+* `create` - (Defaults to 5 mins) Used when create the Control Policy.
+* `update` - (Defaults to 5 mins) Used when update the Control Policy.
+* `delete` - (Defaults to 5 mins) Used when delete the Control Policy.
 
 ## Import
 
