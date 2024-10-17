@@ -127,6 +127,14 @@ type resourceAttr struct {
 }
 
 func resourceAttrInit(resourceId string, checkMap map[string]string) *resourceAttr {
+	var resourceName = resourceId
+	for _, s := range strings.Split(resourceId, ".") {
+		if strings.Contains(s, "alicloud_") {
+			resourceName = s
+		}
+	}
+	testAccSetTerraformTraceId(resourceName)
+
 	if checkMap == nil {
 		checkMap = make(map[string]string)
 	}
