@@ -217,7 +217,8 @@ The following arguments are supported:
 * `db_node_id` - (Optional, Available since v1.211.2) The ID of the node or node subscript. Node subscript values: 1 to 15.
 * `hot_replica_mode` - (Optional, Available since v1.211.2) Indicates whether the hot standby feature is enabled. Valid values are `ON`, `OFF`. Only MySQL supports.
 * `target_db_revision_version_code` - (Optional, Available since v1.216.0) The Version Code of the target version, whose parameter values can be obtained from the [DescribeDBClusterVersion](https://www.alibabacloud.com/help/en/polardb/latest/describedbclusterversion) interface.
-
+* `compress_storage` - (Optional, Available since v1.231.1) Enable storage compression function. The value of this parameter is `ON`. Only MySQL supports.
+  -> **NOTE:** When the value of db_type is not MySQL, the value of creation_option is neither empty nor Normal, and the value of storage_type is not PSL4, this field will be ignored.
 ### `db_cluster_ip_array`
 
 The db_cluster_ip_array supports the following:

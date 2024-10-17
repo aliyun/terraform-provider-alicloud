@@ -420,6 +420,14 @@ func polardbAndCreationDiffSuppressFunc(k, old, new string, d *schema.ResourceDa
 	return true
 }
 
+func polardbCompressStorageDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
+	creationOption, optionOk := d.GetOk("creation_option")
+	if dbType, ok := d.GetOk("db_type"); ok && dbType.(string) == "MySQL" && (creationOption == "Normal" || !optionOk) && d.Get("storage_type").(string) == "PSL4" {
+		return false
+	}
+	return true
+}
+
 func adbPostPaidAndRenewDiffSuppressFunc(k, old, new string, d *schema.ResourceData) bool {
 	if v, ok := d.GetOk("pay_type"); ok && v.(string) == "PrePaid" && d.Get("renewal_status").(string) != string(RenewNotRenewal) {
 		return false
