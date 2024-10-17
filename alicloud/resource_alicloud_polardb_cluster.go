@@ -480,6 +480,13 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 					},
 				},
 			},
+			"compress_storage": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				Computed:         true,
+				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
+				DiffSuppressFunc: polardbCompressStorageDiffSuppressFunc,
+			},
 		},
 	}
 }
@@ -1090,6 +1097,39 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 		}
 	}
 
+	if d.HasChange("compress_storage") {
+		action := "ModifyDBCluster"
+		compressStorage := d.Get("compress_storage").(string)
+		request := map[string]interface{}{
+			"DBClusterId":     d.Id(),
+			"CompressStorage": compressStorage,
+		}
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-08-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				addDebug(action, response, request)
+			}
+			return nil
+		})
+		if err != nil {
+			if IsExpectedErrors(err, []string{"InvalidDBCluster.NotFound"}) {
+				return nil
+			}
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, ProviderERROR)
+		}
+		// wait cluster status change from StorageExpanding to running
+		stateConf := BuildStateConf([]string{"ConfigSwitching"}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 4*time.Minute, polarDBService.PolarDBClusterStateRefreshFunc(d.Id(), []string{""}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+		d.SetPartial("compress_storage")
+	}
+
 	if d.IsNewResource() {
 		d.Partial(false)
 		return resourceAlicloudPolarDBClusterRead(d, meta)
@@ -1587,6 +1627,7 @@ func resourceAlicloudPolarDBClusterRead(d *schema.ResourceData, meta interface{}
 	}
 	d.Set("db_revision_version_list", DBRevisionVersionList)
 	d.Set("target_db_revision_version_code", d.Get("target_db_revision_version_code"))
+	d.Set("compress_storage", clusterAttribute.CompressStorageMode)
 	return nil
 }
 
