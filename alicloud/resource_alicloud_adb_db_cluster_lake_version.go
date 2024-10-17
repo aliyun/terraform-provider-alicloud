@@ -150,13 +150,9 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	var response map[string]interface{}
+	var err error
 	action := "CreateDBCluster"
 	request := make(map[string]interface{})
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	request["RegionId"] = client.RegionId
 	request["DBClusterVersion"] = d.Get("db_cluster_version")
 	request["VPCId"] = d.Get("vpc_id")
@@ -194,11 +190,9 @@ func resourceAliCloudAdbDbClusterLakeVersionCreate(d *schema.ResourceData, meta 
 		request["RestoreToTime"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -277,6 +271,7 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	adbService := AdbService{client}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	update := false
@@ -297,18 +292,11 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyDBCluster"
-		conn, err := client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
 			if err != nil {
-				if NeedRetry(err) {
+				if NeedRetry(err) || IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -345,16 +333,9 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyClusterAccessWhiteList"
-		conn, err := client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, modifyClusterAccessWhiteListReq, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyClusterAccessWhiteListReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -392,16 +373,9 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyDBClusterDescription"
-		conn, err := client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, modifyDBClusterDescriptionReq, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterDescriptionReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -439,16 +413,9 @@ func resourceAliCloudAdbDbClusterLakeVersionUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "ModifyDBClusterResourceGroup"
-		conn, err := client.NewAdsClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, modifyDBClusterResourceGroupReq, &runtime)
+			response, err = client.RpcPost("adb", "2021-12-01", action, nil, modifyDBClusterResourceGroupReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -481,12 +448,7 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDBCluster"
 	var response map[string]interface{}
-
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	request := map[string]interface{}{
 		"DBClusterId": d.Id(),
 		"RegionId":    client.RegionId,
@@ -496,7 +458,7 @@ func resourceAliCloudAdbDbClusterLakeVersionDelete(d *schema.ResourceData, meta 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-12-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2021-12-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

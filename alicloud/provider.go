@@ -1908,7 +1908,7 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	for _, endpointsSetI := range endpointsSet.List() {
 		endpoints := endpointsSetI.(map[string]interface{})
 		for key, val := range endpoints {
-			// 兼容已经弃用的endpoint key
+			// Compatible with the deprecated endpoint setting
 			if val == nil || val.(string) == "" {
 				if v, ok := deprecatedEndpointMap[key]; ok {
 					val = endpoints[v]

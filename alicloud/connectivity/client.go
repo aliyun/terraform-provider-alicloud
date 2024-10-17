@@ -2885,30 +2885,6 @@ func (client *AliyunClient) NewHcsSgwClient() (*rpc.Client, error) {
 	}
 	return conn, nil
 }
-
-func (client *AliyunClient) NewAdsClient() (*rpc.Client, error) {
-	productCode := "adb"
-	endpoint := ""
-	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
-		if err := client.loadEndpoint(productCode); err != nil {
-			return nil, err
-		}
-	}
-	if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
-		endpoint = v.(string)
-	}
-	if endpoint == "" {
-		return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
-	}
-	sdkConfig := client.teaSdkConfig
-	sdkConfig.SetEndpoint(endpoint)
-	conn, err := rpc.NewClient(&sdkConfig)
-	if err != nil {
-		return nil, fmt.Errorf("unable to initialize the %s client: %#v", productCode, err)
-	}
-	return conn, nil
-}
-
 func (client *AliyunClient) NewDdoscooClient() (*rpc.Client, error) {
 	productCode := "ddoscoo"
 	endpoint := ""
@@ -5513,7 +5489,7 @@ func (client *AliyunClient) loadApiEndpoint(productCode string) (string, error) 
 //	body - API parameters in body
 //	autoRetry - whether to auto retry while the runtime has a 5xx error
 func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool) (map[string]interface{}, error) {
-	apiProductCode = ConvertKebabToSnake(apiProductCode)
+	apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
 	endpoint, err := client.loadApiEndpoint(apiProductCode)
 	if err != nil {
 		return nil, err

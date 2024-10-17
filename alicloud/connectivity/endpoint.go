@@ -419,9 +419,10 @@ var regularProductEndpoint = map[string]string{
 // NOTE: The productCode must be lower.
 func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Firstly, load endpoint from environment variables
-	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
+	endpoint := strings.TrimSpace(os.Getenv(fmt.Sprintf("ALIBABA_CLOUD_ENDPOINT_%s", strings.ToUpper(productCode))))
 	if endpoint == "" {
-		endpoint = strings.TrimSpace(os.Getenv(fmt.Sprintf("ALIBABA_CLOUD_ENDPOINT_%s", strings.ToUpper(productCode))))
+		// Compatible with the previous implementation method
+		endpoint = strings.TrimSpace(os.Getenv(fmt.Sprintf("%s_ENDPOINT", strings.ToUpper(productCode))))
 	}
 	if endpoint != "" {
 		client.config.Endpoints.Store(productCode, endpoint)

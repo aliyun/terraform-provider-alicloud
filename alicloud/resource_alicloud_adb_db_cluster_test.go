@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -40,14 +39,8 @@ func testSweepAdbDbInstances(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 	var response map[string]interface{}
-	conn, err := client.NewAdsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 		if err != nil {
 			log.Println(WrapErrorf(err, DataDefaultErrorMsg, "alicloud_adb_db_clusters", action, AlibabaCloudSdkGoERROR))
 			break
@@ -78,17 +71,12 @@ func testSweepAdbDbInstances(region string) error {
 			}
 			log.Printf("[INFO] Deleting adb Instance: %s (%s)", name, id)
 			action := "DeleteDBCluster"
-			conn, err := client.NewAdsClient()
-			if err != nil {
-				log.Println(WrapError(err))
-				break
-			}
 			request := map[string]interface{}{
 				"DBClusterId": id,
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-				_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-03-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				_, err = client.RpcPost("adb", "2019-03-15", action, nil, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

@@ -109,17 +109,16 @@ variable "name" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+data "alicloud_adb_zones" "default" {
 }
 
 data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
+	name_regex = "^default-NODELETING$"
 }
 
 data "alicloud_vswitches" "default" {
-  vpc_id = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
+	vpc_id  = data.alicloud_vpcs.default.ids.0
+	zone_id = data.alicloud_adb_zones.default.ids.0
 }
 
 resource "alicloud_adb_db_cluster_lake_version" "default" {
@@ -129,7 +128,7 @@ resource "alicloud_adb_db_cluster_lake_version" "default" {
 	storage_resource = "0ACU"
 	vswitch_id = data.alicloud_vswitches.default.ids.0
 	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 1]
+	zone_id = data.alicloud_adb_zones.default.ids.0
 }
 
 data "alicloud_adb_db_cluster_lake_versions" "default" {

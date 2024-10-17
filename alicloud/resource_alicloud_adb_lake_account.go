@@ -125,7 +125,7 @@ func resourceAliCloudAdbLakeAccountCreate(d *schema.ResourceData, meta interface
 	request["AccountPassword"] = d.Get("account_password")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -230,7 +230,7 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -266,7 +266,7 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -322,7 +322,7 @@ func resourceAliCloudAdbLakeAccountUpdate(d *schema.ResourceData, meta interface
 	if update {
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
+			response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -358,7 +358,7 @@ func resourceAliCloudAdbLakeAccountDelete(d *schema.ResourceData, meta interface
 
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, true)
+		response, err = client.RpcPost("adb", "2021-12-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
