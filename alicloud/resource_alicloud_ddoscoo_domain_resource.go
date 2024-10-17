@@ -117,11 +117,8 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 	action := "CreateDomainResource"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("domain"); ok {
 		query["Domain"] = v
@@ -153,11 +150,9 @@ func resourceAliCloudDdosCooDomainResourceCreate(d *schema.ResourceData, meta in
 	if v, ok := d.GetOk("https_ext"); ok {
 		request["HttpsExt"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -268,10 +263,7 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	update := false
 	d.Partial(true)
 	action := "ModifyDomainResource"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Domain"] = d.Id()
@@ -317,11 +309,9 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -338,10 +328,6 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	}
 	update = false
 	action = "ModifyOcspStatus"
-	conn, err = client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Domain"] = d.Id()
@@ -351,11 +337,9 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	}
 	request["Enable"] = convertDdosCooDomainResourceEnableRequest(d.Get("ocsp_enabled").(bool))
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -372,10 +356,6 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 	}
 	update = false
 	action = "AssociateWebCert"
-	conn, err = client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["Domain"] = d.Id()
@@ -408,7 +388,7 @@ func resourceAliCloudDdosCooDomainResourceUpdate(d *schema.ResourceData, meta in
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -434,19 +414,14 @@ func resourceAliCloudDdosCooDomainResourceDelete(d *schema.ResourceData, meta in
 	action := "DeleteDomainResource"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["Domain"] = d.Id()
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

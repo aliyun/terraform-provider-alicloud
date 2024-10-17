@@ -36,10 +36,6 @@ func testSweepDdoscooInstances(region string) error {
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -52,13 +48,10 @@ func testSweepDdoscooInstances(region string) error {
 	var insts []map[string]interface{}
 
 	for {
-
 		action := "DescribeInstances"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -112,7 +105,7 @@ func testSweepDdoscooInstances(region string) error {
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -140,7 +133,7 @@ func testSweepDdoscooInstances(region string) error {
 
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					_, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -166,7 +159,7 @@ func testSweepDdoscooInstances(region string) error {
 
 		wait = incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -186,10 +179,6 @@ func testSweepDdoscooInstances(region string) error {
 			result, _ := resp.([]interface{})
 			for _, v := range result {
 				action := "DeletePort"
-				conn, err := client.NewDdoscooClient()
-				if err != nil {
-					return WrapError(err)
-				}
 				request := map[string]interface{}{
 					"FrontendPort":     v.(map[string]interface{})["FrontendPort"],
 					"FrontendProtocol": v.(map[string]interface{})["FrontendProtocol"],
@@ -198,7 +187,7 @@ func testSweepDdoscooInstances(region string) error {
 
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					_, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) {
 							wait()
@@ -226,7 +215,7 @@ func testSweepDdoscooInstances(region string) error {
 			"InstanceId": fmt.Sprint(v["InstanceId"]),
 			"RegionId":   "cn-hangzhou",
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Deleting Instance %s got an error: %#v.", fmt.Sprint(v["InstanceId"]), err)
 		}
