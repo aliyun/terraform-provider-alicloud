@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -75,8 +74,9 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 				Optional: true,
 			},
 			"rasp_count": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringLenBetween(1, 100000000),
 			},
 			"renew_period": {
 				Type:     schema.TypeInt,
@@ -114,7 +114,7 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 			"sas_cspm": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Cloud platform configuration check scan times, interval type, value range:[1000,9999999999].> You must have sas_cspm_switch = 1 to purchase this module. The step size is 100, that is, only multiples of 10 can be filled in."),
+				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Cloud platform configuration check scan times, interval type, value range:[15000,9999999999].> You must have sas_cspm_switch = 1 to purchase this module. The step size is 55000, that is, only multiples of 55000 can be filled in."),
 			},
 			"sas_cspm_switch": {
 				Type:         schema.TypeString,
@@ -162,7 +162,23 @@ func resourceAliCloudThreatDetectionInstance() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[0-9]*$"), "Threat Analysis log storage capacity. Interval type, value interval:[0,9999999999].> This module can only be purchased when Threat_analysis_switch = 1. The step size is 10, that is, only multiples of 10 can be filled in."),
 			},
+			"threat_analysis_flow": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^\\d+$"), "Threat analysis and response log access traffic. After ThreatAnalysisSwitch1 is selected, it must be selected. Interval type, value interval:[0,9999999999].> Step size is 1."),
+			},
+			"threat_analysis_sls_storage": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringMatch(regexp.MustCompile("^\\d+$"), "Threat analysis and response log storage capacity. Interval type, value interval:[0,9999999999].> The step size is 10, that is, only multiples of 10 can be filled in."),
+			},
 			"threat_analysis_switch": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"0", "1"}, false),
+			},
+			"threat_analysis_switch1": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
@@ -198,6 +214,7 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 	action := "CreateInstance"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	query := make(map[string]interface{})
 	conn, err := client.NewBssopenapiClient()
 	if err != nil {
 		return WrapError(err)
@@ -206,13 +223,13 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 
 	request["ClientToken"] = buildClientToken(action)
 
-	if v, ok := d.GetOk("period"); ok {
+	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
 		request["RenewalStatus"] = v
 	}
-	if v, ok := d.GetOk("renew_period"); ok {
+	if v, ok := d.GetOkExists("renew_period"); ok {
 		request["RenewPeriod"] = v
 	}
 	request["SubscriptionType"] = d.Get("payment_type")
@@ -343,15 +360,33 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 			"Value": v,
 		})
 	}
+	if v, ok := d.GetOk("threat_analysis_switch1"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_switch_1",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis_flow"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_flow",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis_sls_storage"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_sls_storage",
+			"Value": v,
+		})
+	}
 	request["Parameter"] = parameterMapList
 
 	request["ProductType"] = "sas"
 	request["ProductCode"] = "sas"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-		request["ClientToken"] = buildClientToken(action)
-
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -372,6 +407,7 @@ func resourceAliCloudThreatDetectionInstanceCreate(d *schema.ResourceData, meta 
 
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_threat_detection_instance", action, AlibabaCloudSdkGoERROR)
@@ -405,43 +441,102 @@ func resourceAliCloudThreatDetectionInstanceRead(d *schema.ResourceData, meta in
 	if instanceComponentValue1RawObj != nil {
 		instanceComponentValue1Raw = instanceComponentValue1RawObj.(map[string]interface{})
 	}
-	d.Set("buy_number", instanceComponentValue1Raw["BuyNumber"])
-	d.Set("container_image_scan", instanceComponentValue1Raw["ContainerImageScan"])
-	d.Set("container_image_scan_new", instanceComponentValue1Raw["ContainerImageScanNew"])
-	d.Set("honeypot", instanceComponentValue1Raw["Honeypot"])
-	d.Set("honeypot_switch", instanceComponentValue1Raw["HoneypotSwitch"])
-	d.Set("rasp_count", instanceComponentValue1Raw["RaspCount"])
-	d.Set("sas_anti_ransomware", instanceComponentValue1Raw["SasAntiRansomware"])
-	d.Set("sas_cspm", instanceComponentValue1Raw["SasCspm"])
-	d.Set("sas_cspm_switch", instanceComponentValue1Raw["SasCspmSwitch"])
+	if instanceComponentValue1Raw["BuyNumber"] != nil {
+		d.Set("buy_number", instanceComponentValue1Raw["BuyNumber"])
+	}
+	if instanceComponentValue1Raw["ContainerImageScan"] != nil {
+		d.Set("container_image_scan", instanceComponentValue1Raw["ContainerImageScan"])
+	}
+	if instanceComponentValue1Raw["ContainerImageScanNew"] != nil {
+		d.Set("container_image_scan_new", instanceComponentValue1Raw["ContainerImageScanNew"])
+	}
+	if instanceComponentValue1Raw["Honeypot"] != nil {
+		d.Set("honeypot", instanceComponentValue1Raw["Honeypot"])
+	}
+	if instanceComponentValue1Raw["HoneypotSwitch"] != nil {
+		d.Set("honeypot_switch", instanceComponentValue1Raw["HoneypotSwitch"])
+	}
+	if instanceComponentValue1Raw["RaspCount"] != nil {
+		d.Set("rasp_count", instanceComponentValue1Raw["RaspCount"])
+	}
+	if instanceComponentValue1Raw["SasAntiRansomware"] != nil {
+		d.Set("sas_anti_ransomware", instanceComponentValue1Raw["SasAntiRansomware"])
+	}
+	if instanceComponentValue1Raw["SasCspm"] != nil {
+		d.Set("sas_cspm", instanceComponentValue1Raw["SasCspm"])
+	}
+	if instanceComponentValue1Raw["SasCspmSwitch"] != nil {
+		d.Set("sas_cspm_switch", instanceComponentValue1Raw["SasCspmSwitch"])
+	}
 	if instanceComponentValue1Raw["SasSc"] != nil && instanceComponentValue1Raw["SasSc"] != "" {
 		d.Set("sas_sc", convertStringToBool(instanceComponentValue1Raw["SasSc"].(string)))
 	}
-	d.Set("sas_sdk", instanceComponentValue1Raw["SasSdk"])
-	d.Set("sas_sdk_switch", instanceComponentValue1Raw["SasSdkSwitch"])
-	d.Set("sas_sls_storage", instanceComponentValue1Raw["SasSlsStorage"])
-	d.Set("sas_webguard_boolean", instanceComponentValue1Raw["SasWebguardBoolean"])
-	d.Set("sas_webguard_order_num", instanceComponentValue1Raw["SasWebguardOrderNum"])
-	d.Set("threat_analysis", instanceComponentValue1Raw["ThreatAnalysis"])
-	d.Set("threat_analysis_switch", instanceComponentValue1Raw["ThreatAnalysisSwitch"])
-	d.Set("v_core", instanceComponentValue1Raw["VCore"])
-	d.Set("version_code", instanceComponentValue1Raw["VersionCode"])
-	d.Set("vul_count", instanceComponentValue1Raw["VulCount"])
-	d.Set("vul_switch", instanceComponentValue1Raw["VulSwitch"])
+	if instanceComponentValue1Raw["SasSdk"] != nil {
+		d.Set("sas_sdk", instanceComponentValue1Raw["SasSdk"])
+	}
+	if instanceComponentValue1Raw["SasSdkSwitch"] != nil {
+		d.Set("sas_sdk_switch", instanceComponentValue1Raw["SasSdkSwitch"])
+	}
+	if instanceComponentValue1Raw["SasSlsStorage"] != nil {
+		d.Set("sas_sls_storage", instanceComponentValue1Raw["SasSlsStorage"])
+	}
+	if instanceComponentValue1Raw["SasWebguardBoolean"] != nil {
+		d.Set("sas_webguard_boolean", instanceComponentValue1Raw["SasWebguardBoolean"])
+	}
+	if instanceComponentValue1Raw["SasWebguardOrderNum"] != nil {
+		d.Set("sas_webguard_order_num", instanceComponentValue1Raw["SasWebguardOrderNum"])
+	}
+	if instanceComponentValue1Raw["ThreatAnalysis"] != nil {
+		d.Set("threat_analysis", instanceComponentValue1Raw["ThreatAnalysis"])
+	}
+	if instanceComponentValue1Raw["ThreatAnalysisFlow"] != nil {
+		d.Set("threat_analysis_flow", instanceComponentValue1Raw["ThreatAnalysisFlow"])
+	}
+	if instanceComponentValue1Raw["ThreatAnalysisSlsStorage"] != nil {
+		d.Set("threat_analysis_sls_storage", instanceComponentValue1Raw["ThreatAnalysisSlsStorage"])
+	}
+	if instanceComponentValue1Raw["ThreatAnalysisSwitch"] != nil {
+		d.Set("threat_analysis_switch", instanceComponentValue1Raw["ThreatAnalysisSwitch"])
+	}
+	if instanceComponentValue1Raw["ThreatAnalysisSwitch1"] != nil {
+		d.Set("threat_analysis_switch1", instanceComponentValue1Raw["ThreatAnalysisSwitch1"])
+	}
+	if instanceComponentValue1Raw["VCore"] != nil {
+		d.Set("v_core", instanceComponentValue1Raw["VCore"])
+	}
+	if instanceComponentValue1Raw["VersionCode"] != nil {
+		d.Set("version_code", instanceComponentValue1Raw["VersionCode"])
+	}
+	if instanceComponentValue1Raw["VulCount"] != nil {
+		d.Set("vul_count", instanceComponentValue1Raw["VulCount"])
+	}
+	if instanceComponentValue1Raw["VulSwitch"] != nil {
+		d.Set("vul_switch", instanceComponentValue1Raw["VulSwitch"])
+	}
 
 	objectRaw, err = threatDetectionServiceV2.DescribeQueryAvailableInstances(d.Id())
 	if err != nil {
 		return WrapError(err)
 	}
 
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("payment_type", objectRaw["SubscriptionType"])
-	if v, ok := objectRaw["RenewalDuration"]; ok && formatInt(v) != 0 {
-		d.Set("renew_period", formatInt(v))
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
 	}
-	d.Set("renewal_period_unit", objectRaw["RenewalDurationUnit"])
-	d.Set("renewal_status", objectRaw["RenewStatus"])
-	d.Set("status", objectRaw["Status"])
+	if objectRaw["SubscriptionType"] != nil {
+		d.Set("payment_type", objectRaw["SubscriptionType"])
+	}
+	if v, ok := objectRaw["RenewalDuration"]; ok && formatInt(v) != 0 {
+		d.Set("renew_period", formatInt(objectRaw["RenewalDuration"]))
+	}
+	if objectRaw["RenewalDurationUnit"] != nil {
+		d.Set("renewal_period_unit", objectRaw["RenewalDurationUnit"])
+	}
+	if objectRaw["RenewStatus"] != nil {
+		d.Set("renewal_status", objectRaw["RenewStatus"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
 
 	return nil
 }
@@ -450,6 +545,7 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var query map[string]interface{}
 	update := false
 	d.Partial(true)
 	action := "ModifyInstance"
@@ -458,14 +554,16 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["InstanceId"] = d.Id()
+	query = make(map[string]interface{})
+	query["InstanceId"] = d.Id()
+
 	request["ClientToken"] = buildClientToken(action)
 	request["ModifyType"] = d.Get("modify_type")
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
 	}
 	request["SubscriptionType"] = d.Get("payment_type")
-	if !d.IsNewResource() && d.HasChanges("version_code", "buy_number", "v_core", "threat_analysis", "threat_analysis_switch", "sas_sdk", "sas_sdk_switch", "honeypot", "honeypot_switch", "sas_anti_ransomware", "sas_sc", "sas_sls_storage", "sas_webguard_order_num", "sas_webguard_boolean", "container_image_scan", "vul_switch", "vul_count", "sas_cspm_switch", "sas_cspm", "rasp_count", "container_image_scan_new") {
+	if !d.IsNewResource() && d.HasChanges("version_code", "buy_number", "v_core", "threat_analysis", "threat_analysis_switch", "sas_sdk", "sas_sdk_switch", "honeypot", "honeypot_switch", "sas_anti_ransomware", "sas_sc", "sas_sls_storage", "sas_webguard_order_num", "sas_webguard_boolean", "container_image_scan", "vul_switch", "vul_count", "sas_cspm_switch", "sas_cspm", "rasp_count", "container_image_scan_new", "threat_analysis_switch1", "threat_analysis_flow", "threat_analysis_sls_storage") {
 		update = true
 	}
 	parameterMapList := make([]map[string]interface{}, 0)
@@ -595,16 +693,34 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 			"Value": v,
 		})
 	}
+	if v, ok := d.GetOk("threat_analysis_switch1"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_switch_1",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis_flow"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_flow",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("threat_analysis_sls_storage"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "Threat_analysis_sls_storage",
+			"Value": v,
+		})
+	}
 	request["Parameter"] = parameterMapList
 
 	request["ProductType"] = "sas"
 	request["ProductCode"] = "sas"
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-			request["ClientToken"] = buildClientToken(action)
-
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -617,7 +733,6 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 
 			if fmt.Sprint(response["Code"]) != "Success" {
 				return resource.NonRetryableError(WrapError(fmt.Errorf("%s failed, response: %v", action, response)))
@@ -625,6 +740,7 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -636,7 +752,9 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["InstanceIDs"] = d.Id()
+	query = make(map[string]interface{})
+	query["InstanceIDs"] = d.Id()
+
 	request["ProductType"] = "sas"
 	if d.HasChange("renewal_status") {
 		update = true
@@ -654,12 +772,15 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 	request["RenewalPeriodUnit"] = d.Get("renewal_period_unit")
 
 	request["ProductCode"] = "sas"
-	request["SubscriptionType"] = d.Get("payment_type")
+	if v, ok := d.GetOk("subscription_type"); ok {
+		request["SubscriptionType"] = v
+	}
 	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
-
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -683,9 +804,6 @@ func resourceAliCloudThreatDetectionInstanceUpdate(d *schema.ResourceData, meta 
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		d.SetPartial("renewal_status")
-		d.SetPartial("renew_period")
-		d.SetPartial("renewal_period_unit")
 	}
 
 	d.Partial(false)
