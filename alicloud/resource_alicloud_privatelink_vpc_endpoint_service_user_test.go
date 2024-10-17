@@ -287,7 +287,7 @@ func TestUnitAlicloudPrivatelinkVpcEndpointServiceUser(t *testing.T) {
 }
 
 // Test PrivateLink VpcEndpointServiceUser. >>> Resource test cases, automatically generated.
-// Case 4876
+// Case 生命周期测试- VpcEndpointServiceUser 4876
 func TestAccAliCloudPrivateLinkVpcEndpointServiceUser_basic4876(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_privatelink_vpc_endpoint_service_user.default"
@@ -311,12 +311,16 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceUser_basic4876(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"user_id":    "1419992691371925",
+					"dry_run":    "false",
 					"service_id": "${alicloud_privatelink_vpc_endpoint_service.defaultSaMoag.id}",
+					"user_arn":   "acs:ram:*:1419992691371925:*",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"user_id":    "1419992691371925",
+						"user_id":    CHECKSET,
+						"dry_run":    "false",
 						"service_id": CHECKSET,
+						"user_arn":   CHECKSET,
 					}),
 				),
 			},
@@ -324,7 +328,7 @@ func TestAccAliCloudPrivateLinkVpcEndpointServiceUser_basic4876(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"dry_run"},
+				ImportStateVerifyIgnore: []string{"dry_run", "user_arn"},
 			},
 		},
 	})
@@ -336,6 +340,9 @@ func AlicloudPrivateLinkVpcEndpointServiceUserBasicDependence4876(name string) s
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
+}
+
+data "alicloud_account" "current" {
 }
 
 resource "alicloud_privatelink_vpc_endpoint_service" "defaultSaMoag" {

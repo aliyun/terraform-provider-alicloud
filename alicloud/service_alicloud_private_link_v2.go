@@ -231,6 +231,7 @@ func (s *PrivateLinkServiceV2) SetResourceTags(d *schema.ResourceData, resourceT
 }
 
 // SetResourceTags >>> tag function encapsulated.
+
 // DescribePrivateLinkVpcEndpointServiceUser <<< Encapsulated get interface for PrivateLink VpcEndpointServiceUser.
 
 func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceUser(id string) (object map[string]interface{}, err error) {
@@ -251,7 +252,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceUser(id stri
 	query = make(map[string]interface{})
 	query["ServiceId"] = parts[0]
 	query["UserId"] = parts[1]
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -266,10 +267,9 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointServiceUser(id stri
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointServiceUser", id)), NotFoundMsg, response)
@@ -306,6 +306,7 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceUserStateRefreshFunc
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
