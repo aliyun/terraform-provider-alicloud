@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/ddoscoo"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -19,14 +18,9 @@ type DdoscooService struct {
 }
 
 func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstances"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceIds": []string{id},
 		"PageSize":    PageSizeLarge,
@@ -35,11 +29,9 @@ func (s *DdoscooService) DescribeDdoscooInstance(id string) (object map[string]i
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -109,24 +101,17 @@ func (s *DdoscooService) DdosStateRefreshFunc(id string, failStates []string) re
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceSpecs"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceIds": []string{id},
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -169,14 +154,9 @@ func (s *DdoscooService) DescribeDdoscooInstanceSpec(id string) (object map[stri
 }
 
 func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
 	action := "DescribeInstanceExt"
-
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 		"PageSize":   PageSizeLarge,
@@ -185,11 +165,9 @@ func (s *DdoscooService) DescribeDdoscooInstanceExt(id string) (object map[strin
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -300,11 +278,8 @@ func (s *DdoscooService) UpdateInstanceSpec(schemaName string, specName string, 
 }
 
 func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeSchedulerRules"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -313,11 +288,9 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 		"PageSize":   10,
 	}
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -353,11 +326,8 @@ func (s *DdoscooService) DescribeDdoscooSchedulerRule(id string) (object map[str
 }
 
 func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribeDomainResource"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
@@ -365,11 +335,9 @@ func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[st
 		"PageNumber": 1,
 		"PageSize":   10,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -399,11 +367,8 @@ func (s *DdoscooService) DescribeDdoscooDomainResource(id string) (object map[st
 }
 
 func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDdoscooClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "DescribePort"
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
@@ -418,11 +383,9 @@ func (s *DdoscooService) DescribeDdoscooPort(id string) (object map[string]inter
 		"PageNumber":       1,
 		"PageSize":         10,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

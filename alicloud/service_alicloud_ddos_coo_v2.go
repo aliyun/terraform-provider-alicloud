@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/tidwall/sjson"
@@ -30,21 +29,15 @@ func (s *DdosCooServiceV2) DescribeDdosCooPort(id string) (object map[string]int
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribePort"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FrontendPort"] = parts[1]
 	query["FrontendProtocol"] = parts[2]
 	query["InstanceId"] = parts[0]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
@@ -82,10 +75,6 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 3, len(parts)))
 	}
 	action := "DescribeNetworkRuleAttributes"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	jsonString := "{}"
@@ -99,11 +88,9 @@ func (s *DdosCooServiceV2) DescribeDescribeNetworkRuleAttributes(id string) (obj
 	}
 	request["NetworkRules"] = convertObjectToJsonString(request["NetworkRules"])
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"anycast_controller3006"}) || NeedRetry(err) {
@@ -164,19 +151,13 @@ func (s *DdosCooServiceV2) DescribeDdosCooDomainResource(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDomainResource"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Domain"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -215,19 +196,13 @@ func (s *DdosCooServiceV2) DescribeDescribeWebRules(id string) (object map[strin
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeWebRules"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["Domain"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
