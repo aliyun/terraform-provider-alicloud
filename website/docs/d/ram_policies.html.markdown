@@ -55,12 +55,12 @@ resource "alicloud_ram_group_policy_attachment" "attach" {
   group_name  = alicloud_ram_group.group.name
 }
 data "alicloud_ram_policies" "policies_ds" {
-  group_name  = alicloud_ram_group_policy_attachment.attach.group_name
-  type        = "Custom"
+  group_name = alicloud_ram_group_policy_attachment.attach.group_name
+  type       = "Custom"
 }
 
 output "first_policy_name" {
-  value = "${data.alicloud_ram_policies.policies_ds.policies.0.name}"
+  value = data.alicloud_ram_policies.policies_ds.policies.0.name
 }
 ```
 
