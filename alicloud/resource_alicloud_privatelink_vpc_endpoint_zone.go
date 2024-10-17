@@ -75,7 +75,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	request = make(map[string]interface{})
 	query["EndpointId"] = d.Get("endpoint_id")
 	query["ZoneId"] = d.Get("zone_id")
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken(action)
 
 	request["VSwitchId"] = d.Get("vswitch_id")
@@ -98,8 +98,6 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EndpointLocked", "EndpointConnectionOperationDenied", "EndpointOperationDenied", "ConcurrentCallNotSupported"}) || NeedRetry(err) {
 				wait()
@@ -107,9 +105,9 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneCreate(d *schema.ResourceData, me
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_zone", action, AlibabaCloudSdkGoERROR)
@@ -140,15 +138,22 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneRead(d *schema.ResourceData, meta
 		return WrapError(err)
 	}
 
-	d.Set("eni_ip", objectRaw["EniIp"])
-	d.Set("status", objectRaw["ZoneStatus"])
-	d.Set("vswitch_id", objectRaw["VSwitchId"])
-	parts, err := ParseResourceId(d.Id(), 2)
-	if err != nil {
-		return WrapError(err)
+	if objectRaw["EniIp"] != nil {
+		d.Set("eni_ip", objectRaw["EniIp"])
 	}
+	if objectRaw["ZoneStatus"] != nil {
+		d.Set("status", objectRaw["ZoneStatus"])
+	}
+	if objectRaw["VSwitchId"] != nil {
+		d.Set("vswitch_id", objectRaw["VSwitchId"])
+	}
+	if objectRaw["ZoneId"] != nil {
+		d.Set("zone_id", objectRaw["ZoneId"])
+	}
+
+	parts := strings.Split(d.Id(), ":")
 	d.Set("endpoint_id", parts[0])
-	d.Set("zone_id", parts[1])
+
 	return nil
 }
 
@@ -172,7 +177,7 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 	request = make(map[string]interface{})
 	query["EndpointId"] = parts[0]
 	query["ZoneId"] = parts[1]
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	request["ClientToken"] = buildClientToken(action)
 
@@ -193,12 +198,12 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) {
+		if IsExpectedErrors(err, []string{"EndpointZoneNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -209,5 +214,6 @@ func resourceAliCloudPrivateLinkVpcEndpointZoneDelete(d *schema.ResourceData, me
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }

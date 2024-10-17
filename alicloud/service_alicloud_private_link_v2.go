@@ -403,6 +403,7 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointServiceResourceStateRefresh
 }
 
 // DescribePrivateLinkVpcEndpointServiceResource >>> Encapsulated.
+
 // DescribePrivateLinkVpcEndpointZone <<< Encapsulated get interface for PrivateLink VpcEndpointZone.
 
 func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (object map[string]interface{}, err error) {
@@ -422,7 +423,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["EndpointId"] = parts[0]
-	request["RegionId"] = client.RegionId
+	query["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -437,10 +438,9 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("VpcEndpointZone", id)), NotFoundMsg, response)
@@ -460,7 +460,7 @@ func (s *PrivateLinkServiceV2) DescribePrivateLinkVpcEndpointZone(id string) (ob
 	result, _ := v.([]interface{})
 	for _, v := range result {
 		item := v.(map[string]interface{})
-		if item["ZoneId"] != parts[1] {
+		if fmt.Sprint(item["ZoneId"]) != parts[1] {
 			continue
 		}
 		return item, nil
@@ -480,6 +480,7 @@ func (s *PrivateLinkServiceV2) PrivateLinkVpcEndpointZoneStateRefreshFunc(id str
 
 		v, err := jsonpath.Get(field, object)
 		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
