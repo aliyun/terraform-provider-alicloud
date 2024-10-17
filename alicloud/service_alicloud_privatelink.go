@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -13,18 +12,12 @@ type PrivatelinkService struct {
 
 func (s *PrivatelinkService) ListVpcEndpointServiceResources(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointServiceResources"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ServiceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointService", id)), NotFoundMsg, ProviderERROR)
@@ -44,18 +37,12 @@ func (s *PrivatelinkService) ListVpcEndpointServiceResources(id string) (object 
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointService(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "GetVpcEndpointServiceAttribute"
 	request := map[string]interface{}{
 		"RegionId":  s.client.RegionId,
 		"ServiceId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointService", id)), NotFoundMsg, ProviderERROR)
@@ -95,10 +82,6 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointServiceStateRefreshFunc(id st
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointConnections"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -110,9 +93,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointConnection(id string)
 		"EndpointId": parts[1],
 		"ServiceId":  parts[0],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointConnection", id)), NotFoundMsg, ProviderERROR)
@@ -155,18 +136,12 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointConnectionStateRefreshFunc(id
 
 func (s *PrivatelinkService) ListVpcEndpointSecurityGroups(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointSecurityGroups"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"EndpointId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
@@ -186,18 +161,12 @@ func (s *PrivatelinkService) ListVpcEndpointSecurityGroups(id string) (object ma
 
 func (s *PrivatelinkService) ListVpcEndpointZones(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointZones"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"EndpointId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
@@ -217,19 +186,13 @@ func (s *PrivatelinkService) ListVpcEndpointZones(id string) (object map[string]
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpoint(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "GetVpcEndpointAttribute"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"EndpointId": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	request["ClientToken"] = buildClientToken("GetVpcEndpointAttribute")
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpoint", id)), NotFoundMsg, ProviderERROR)
@@ -269,10 +232,6 @@ func (s *PrivatelinkService) PrivatelinkVpcEndpointStateRefreshFunc(id string, f
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointServiceResources"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -284,9 +243,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id st
 		"ServiceId": parts[0],
 	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 				err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointServiceResource", id)), NotFoundMsg, ProviderERROR)
@@ -321,10 +278,6 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceResource(id st
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceUser(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointServiceUsers"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -336,9 +289,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceUser(id string
 		"ServiceId": parts[0],
 		"UserId":    parts[1],
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EndpointServiceNotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointServiceUser", id)), NotFoundMsg, ProviderERROR)
@@ -361,10 +312,6 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointServiceUser(id string
 
 func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointZone(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewPrivatelinkClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "ListVpcEndpointZones"
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
@@ -376,9 +323,7 @@ func (s *PrivatelinkService) DescribePrivatelinkVpcEndpointZone(id string) (obje
 		"EndpointId": parts[0],
 	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = s.client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"EndpointNotFound"}) {
 				err = WrapErrorf(Error(GetNotFoundMessage("PrivatelinkVpcEndpointZone", id)), NotFoundMsg, ProviderERROR)

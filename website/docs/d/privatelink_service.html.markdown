@@ -7,13 +7,13 @@ description: |-
     Provides a datasource to open the Privatelink service automatically.
 ---
 
-# alicloud\_privatelink\_service
+# alicloud_privatelink_service
 
 Using this data source can open Privatelink service automatically. If the service has been opened, it will return opened.
 
 For information about Privatelink and how to use it, see [What is Privatelink](https://www.alibabacloud.com/help/en/product/120462.htm).
 
--> **NOTE:** Available in v1.113.0+
+-> **NOTE:** Available since v1.113.0.
 
 ## Example Usage
 
