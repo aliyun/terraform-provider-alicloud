@@ -243,3 +243,87 @@ func (s *CloudFirewallServiceV2) CloudFirewallVpcCenTrFirewallStateRefreshFunc(i
 }
 
 // DescribeCloudFirewallVpcCenTrFirewall >>> Encapsulated.
+
+// DescribeCloudFirewallVpcCenTrFirewall >>> Encapsulated.
+
+// DescribeCloudFirewallControlPolicy <<< Encapsulated get interface for CloudFirewall ControlPolicy.
+
+func (s *CloudFirewallServiceV2) DescribeCloudFirewallControlPolicy(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeControlPolicy"
+
+	conn, err := s.client.NewCloudfirewallClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	parts, err := ParseResourceId(id, 2)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"AclUuid":     parts[0],
+		"CurrentPage": 1,
+		"PageSize":    PageSizeLarge,
+	}
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+
+			if fmt.Sprint(response["Message"]) == "not buy user" {
+				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				return resource.RetryableError(fmt.Errorf("%s", response))
+			}
+
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.Policys", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Policys", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["AclUuid"]) == parts[0] && fmt.Sprint(v.(map[string]interface{})["Direction"]) == parts[1] {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["CurrentPage"] = request["CurrentPage"].(int) + 1
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("CloudFirewall:ControlPolicy", id)), NotFoundWithResponse, response)
+	}
+
+	return object, nil
+}
+
+// DescribeCloudFirewallControlPolicy >>> Encapsulated.
