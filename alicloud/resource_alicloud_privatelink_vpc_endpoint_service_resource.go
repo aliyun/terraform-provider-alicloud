@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -187,7 +186,7 @@ func resourceAliCloudPrivateLinkVpcEndpointServiceResourceDelete(d *schema.Resou
 		request["ClientToken"] = buildClientToken(action)
 
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EndpointServiceConnectionDependence"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
