@@ -52,14 +52,10 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 	}
 	var response map[string]interface{}
 	action := "ListVpcEndpointServices"
-	conn, err := client.NewPrivatelinkClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_privatelink_vpc_endpoint_service", action, AlibabaCloudSdkGoERROR)
 		}
@@ -86,7 +82,7 @@ func testSweepPrivatelinkVpcEndpointService(region string) error {
 			request := map[string]interface{}{
 				"ServiceId": item["ServiceId"],
 			}
-			_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-04-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			_, err = client.RpcPost("Privatelink", "2020-04-15", action, nil, request, true)
 			if err != nil {
 				log.Printf("[ERROR] Failed to delete Privatelink VpcEndpoint Service (%s): %s", item["ServiceId"].(string), err)
 			}
@@ -569,16 +565,17 @@ func TestAccAliCloudPrivateLinkVpcEndpointService_basic4837(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"service_support_ipv6": "true",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"service_support_ipv6": "true",
-					}),
-				),
-			},
+			// The field 'service_support_ipv6' has been deprecated in API docs, and will not work when setting it to true anymore.
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"service_support_ipv6": "true",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"service_support_ipv6": "true",
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"zone_affinity_enabled": "false",

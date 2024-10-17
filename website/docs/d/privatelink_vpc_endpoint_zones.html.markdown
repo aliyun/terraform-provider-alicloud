@@ -7,11 +7,11 @@ description: |-
   Provides a list of Privatelink Vpc Endpoint Zones to the user.
 ---
 
-# alicloud\_privatelink\_vpc\_endpoint\_zones
+# alicloud_privatelink_vpc_endpoint_zones
 
 This data source provides the Privatelink Vpc Endpoint Zones of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.111.0+.
+-> **NOTE:** Available since v1.111.0.
 
 ## Example Usage
 
@@ -35,16 +35,16 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The Status of Vpc Endpoint Zone. Valid Values: `Connected`, `Connecting`, `Creating`, `Deleted`, `Deleting`, `Disconnected`, `Disconnecting` and `Wait`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `ids` - A list of Vpc Endpoint Zone IDs.
 * `zones` - A list of Privatelink Vpc Endpoint Zones. Each element contains the following attributes:
-	* `eni_id` - Terminal node network card.
-	* `eni_ip` - IP address of the terminal node network card.
-	* `id` - The ID of the Vpc Endpoint Zone.
-	* `status` - The Status of Vpc Endpoint Zone..
-	* `vswitch_id` - The vSwitch id.
-	* `zone_domain` - The Zone Domain.
-	* `zone_id` - The Zone Id.
+  * `eni_id` - Terminal node network card.
+  * `eni_ip` - IP address of the terminal node network card.
+  * `id` - The ID of the Vpc Endpoint Zone.
+  * `status` - The Status of Vpc Endpoint Zone..
+  * `vswitch_id` - The vSwitch id.
+  * `zone_domain` - The Zone Domain.
+  * `zone_id` - The Zone Id.
