@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	r_kvstore "github.com/aliyun/alibaba-cloud-sdk-go/services/r-kvstore"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -434,12 +432,9 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
 	var response map[string]interface{}
+	var err error
 	action := "CreateInstance"
 	request := make(map[string]interface{})
-	conn, err := client.NewRedisClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	request["RegionId"] = client.RegionId
 	request["NetworkType"] = "CLASSIC"
@@ -587,11 +582,9 @@ func resourceAliCloudKvstoreInstanceCreate(d *schema.ResourceData, meta interfac
 		}
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 		if err != nil {
 			if NoCodeRegexRetry(err) {
 				wait()
@@ -797,11 +790,8 @@ func resourceAliCloudKvstoreInstanceRead(d *schema.ResourceData, meta interface{
 func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	r_kvstoreService := R_kvstoreService{client}
-	conn, err := client.NewRedisaClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
+	var err error
 	d.Partial(true)
 
 	if d.HasChange("tags") {
@@ -904,16 +894,9 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "TransformInstanceChargeType"
-		conn, err := client.NewRedisClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, transformInstanceChargeTypeReq, &runtime)
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, transformInstanceChargeTypeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1441,7 +1424,7 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 		action := "ModifyInstanceTDE"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err := resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyInstanceTDERequest, &util.RuntimeOptions{})
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyInstanceTDERequest, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1480,18 +1463,12 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if removed > 0 {
 			action := "DeleteShardingNode"
-			conn, err = client.NewRedisClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request := make(map[string]interface{})
 			request["InstanceId"] = d.Id()
 			request["ShardCount"] = removed
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, false)
 
 				if err != nil {
 					if NeedRetry(err) {
@@ -1522,19 +1499,13 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 		if added > 0 {
 			action := "AddShardingNode"
-			conn, err = client.NewRedisClient()
-			if err != nil {
-				return WrapError(err)
-			}
 			request := make(map[string]interface{})
 			request["InstanceId"] = d.Id()
 			request["ClientToken"] = buildClientToken(action)
 			request["ShardCount"] = added
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, true)
 				request["ClientToken"] = buildClientToken(action)
 				if err != nil {
 					if NeedRetry(err) {
@@ -1607,16 +1578,9 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "ModifyInstanceSpec"
-		conn, err := client.NewRedisClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifySlaveReadOnlyCountReq, &runtime)
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifySlaveReadOnlyCountReq, false)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"MissingRedisUsedmemoryUnsupportPerfItem", "Task.Conflict"}) || NeedRetry(err) {
 					wait()
@@ -1659,16 +1623,9 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "ModifyDBInstanceAutoUpgrade"
-		conn, err := client.NewRedisClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyDBInstanceAutoUpgradeReq, &runtime)
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyDBInstanceAutoUpgradeReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -1702,16 +1659,9 @@ func resourceAliCloudKvstoreInstanceUpdate(d *schema.ResourceData, meta interfac
 
 	if update {
 		action := "ModifyInstanceBandwidth"
-		conn, err := client.NewRedisClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, modifyInstanceBandwidthReq, &runtime)
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, modifyInstanceBandwidthReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
