@@ -19,7 +19,6 @@ type ThreatDetectionServiceV2 struct {
 // DescribeThreatDetectionInstance <<< Encapsulated get interface for ThreatDetection Instance.
 
 func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -34,9 +33,11 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 	query["InstanceId"] = id
 
 	request["CommodityCode"] = "sas"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-03"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -54,7 +55,7 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
@@ -64,13 +65,12 @@ func (s *ThreatDetectionServiceV2) DescribeThreatDetectionInstance(id string) (o
 
 	currentStatus := response["InstanceId"]
 	if currentStatus == nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, response)
 	}
 
 	return response, nil
 }
 func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (object map[string]interface{}, err error) {
-
 	client := s.client
 	var request map[string]interface{}
 	var response map[string]interface{}
@@ -86,9 +86,11 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 
 	request["ProductCode"] = "sas"
 	request["ProductType"] = "sas"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &util.RuntimeOptions{})
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -102,10 +104,9 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
-
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
@@ -115,7 +116,7 @@ func (s *ThreatDetectionServiceV2) DescribeQueryAvailableInstances(id string) (o
 
 	v, err := jsonpath.Get("$.Data.InstanceList[*]", response)
 	if err != nil {
-		return object, WrapErrorf(Error(GetNotFoundMessage("Instance", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Data.InstanceList[*]", response)
 	}
 
 	if len(v.([]interface{})) == 0 {
@@ -140,7 +141,9 @@ func (s *ThreatDetectionServiceV2) ThreatDetectionInstanceStateRefreshFunc(id st
 			return nil, "", WrapError(err)
 		}
 
-		currentStatus := fmt.Sprint(object[field])
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
 		for _, failState := range failStates {
 			if currentStatus == failState {
 				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
