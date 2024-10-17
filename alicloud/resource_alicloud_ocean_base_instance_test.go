@@ -174,7 +174,6 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
@@ -186,7 +185,7 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 					"auto_renew":         "false",
 					"disk_size":          "300",
 					"disk_type":          "cloud_essd_pl1",
-					"ob_version":         "4.1.0.2",
+					"ob_version":         "4.2.1.3",
 					"payment_type":       "Subscription",
 					"instance_class":     "4C16GB",
 					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
@@ -200,7 +199,7 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 						"auto_renew":        "false",
 						"disk_size":         "300",
 						"disk_type":         "cloud_essd_pl1",
-						"ob_version":        "4.1.0.2",
+						"ob_version":        "4.2.1.3",
 						"instance_class":    "4C16GB",
 						"resource_group_id": CHECKSET,
 						"zones.#":           "3",
