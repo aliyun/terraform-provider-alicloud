@@ -2,9 +2,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -44,7 +45,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip"}, true),
+				ValidateFunc: StringInSlice([]string{"professional", "enterprise", "vip", "serverless"}, true),
 			},
 			"max_connections": {
 				Type:     schema.TypeInt,
@@ -304,7 +305,7 @@ func resourceAliCloudAmqpInstanceRead(d *schema.ResourceData, meta interface{}) 
 	d.Set("support_tracing", objectRaw["SupportTracing"])
 	d.Set("tracing_storage_time", objectRaw["TracingStorageTime"])
 
-	if convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]) == "SERVERLESS" {
+	if convertAmqpInstanceDataInstanceTypeResponse(objectRaw["InstanceType"]) == "serverless" {
 		d.Set("payment_type", "PayAsYouGo")
 		return nil
 	}
@@ -445,7 +446,7 @@ func resourceAliCloudAmqpInstanceUpdate(d *schema.ResourceData, meta interface{}
 	if d.HasChange("instance_type") {
 		update = true
 	}
-	if v, ok := d.GetOk("instance_type"); ok && fmt.Sprint(v) != "SERVERLESS" {
+	if v, ok := d.GetOk("instance_type"); ok && fmt.Sprint(v) != "serverless" {
 		request["InstanceType"] = v
 	}
 
@@ -662,6 +663,8 @@ func convertAmqpInstanceDataInstanceTypeResponse(source interface{}) interface{}
 		return "vip"
 	case "ENTERPRISE":
 		return "enterprise"
+	case "SERVERLESS":
+		return "serverless"
 	}
 	return source
 }
