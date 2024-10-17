@@ -337,6 +337,22 @@ var irregularProductEndpoint = map[string]string{
 	"market":              "market.aliyuncs.com",
 }
 
+// irregularProductEndpointForIntl specially records those product codes that
+// cannot be parsed out by the location service and for international region or account.
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is higher than location service, lower than user environment variable configuration
+var irregularProductEndpointForIntl = map[string]string{
+	"ddoscoo":        "ddoscoo.ap-southeast-1.aliyuncs.com",
+	"dcdn":           "dcdn.aliyuncs.com",
+	"config":         "config.ap-southeast-1.aliyuncs.com",
+	"cas":            "cas.ap-southeast-1.aliyuncs.com",
+	"cdn":            "cdn.ap-southeast-1.aliyuncs.com",
+	"eds_user":       "eds-user.ap-southeast-1.aliyuncs.com",
+	"computenest":    "computenest.ap-southeast-1.aliyuncs.com",
+	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
+}
+
 // regularProductEndpoint specially records those product codes that have been confirmed to be
 // regional or central endpoints.
 // Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
@@ -431,6 +447,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 
 	// Secondly, load endpoint from known rules
 	if endpointFmt, ok := irregularProductEndpoint[productCode]; ok {
+		if v, ok := irregularProductEndpointForIntl[productCode]; ok && !strings.HasPrefix(client.RegionId, "cn-") {
+			endpointFmt = v
+		}
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
