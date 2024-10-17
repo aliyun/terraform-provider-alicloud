@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/alibabacloud-go/tea-rpc/client"
@@ -20,18 +21,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudECSStorageCapacityUnit_basic0(t *testing.T) {
+func TestAccAliCloudEcsStorageCapacityUnit_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_storage_capacity_unit.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap0)
+	ra := resourceAttrInit(resourceId, AliCloudEcsStorageCapacityUnitMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsStorageCapacityUnit")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secsstoragecapacityunit%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsStorageCapacityUnitBasicDependence0)
+	name := fmt.Sprintf("tf-testacc%sEcsStorageCapacityUnit%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsStorageCapacityUnitBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -42,125 +43,107 @@ func TestAccAlicloudECSStorageCapacityUnit_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description":                name,
-					"capacity":                   "20",
-					"period":                     "1",
-					"period_unit":                "Month",
+					"capacity": "20",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity": "20",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"storage_capacity_unit_name": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description":                CHECKSET,
-						"capacity":                   "20",
-						"storage_capacity_unit_name": CHECKSET,
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period_unit", "period"},
-			},
-		},
-	})
-}
-
-var AlicloudEcsStorageCapacityUnitMap0 = map[string]string{}
-
-func AlicloudEcsStorageCapacityUnitBasicDependence0(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-`, name)
-}
-
-func TestAccAlicloudECSStorageCapacityUnit_basic1(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ecs_storage_capacity_unit.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsStorageCapacityUnitMap1)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEcsStorageCapacityUnit")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secsstoragecapacityunit%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsStorageCapacityUnitBasicDependence1)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  nil,
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"storage_capacity_unit_name": name,
-					"capacity":                   "20",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"storage_capacity_unit_name": CHECKSET,
-						"capacity":                   "20",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"storage_capacity_unit_name": name + "update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"storage_capacity_unit_name": name + "update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":                name,
-					"storage_capacity_unit_name": name,
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":                name,
 						"storage_capacity_unit_name": name,
 					}),
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period_unit", "period"},
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
 			},
 		},
 	})
 }
 
-var AlicloudEcsStorageCapacityUnitMap1 = map[string]string{}
-
-func AlicloudEcsStorageCapacityUnitBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
+func TestAccAliCloudEcsStorageCapacityUnit_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_storage_capacity_unit.default"
+	ra := resourceAttrInit(resourceId, AliCloudEcsStorageCapacityUnitMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsStorageCapacityUnit")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%sEcsStorageCapacityUnit%d", defaultRegionToTest, rand)
+	startTime := time.Now().Add(8 * time.Hour).Format("2006-01-02T15Z")
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsStorageCapacityUnitBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"capacity":                   "20",
+					"start_time":                 startTime,
+					"storage_capacity_unit_name": name,
+					"description":                name,
+					"period":                     "1",
+					"period_unit":                "Month",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"capacity":                   "20",
+						"start_time":                 CHECKSET,
+						"storage_capacity_unit_name": name,
+						"description":                name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"period", "period_unit"},
+			},
+		},
+	})
 }
+
+var AliCloudEcsStorageCapacityUnitMap0 = map[string]string{
+	"start_time": CHECKSET,
+	"status":     CHECKSET,
+}
+
+func AliCloudEcsStorageCapacityUnitBasicDependence0(name string) string {
+	return fmt.Sprintf(` 
+	variable "name" {
+  		default = "%s"
+	}
 `, name)
 }
 
-func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
+func TestUnitAliCloudEcsStorageCapacityUnit(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	d, _ := schema.InternalMap(p["alicloud_ecs_storage_capacity_unit"].Schema).Data(nil, nil)
 	dCreate, _ := schema.InternalMap(p["alicloud_ecs_storage_capacity_unit"].Schema).Data(nil, nil)
@@ -252,7 +235,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 				StatusCode: tea.Int(400),
 			}
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitCreate(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -269,7 +252,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitCreate(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -286,7 +269,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitCreate(dCreate, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitCreate(dCreate, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -302,7 +285,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 			return responseMock["CreateNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitCreate(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitCreate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -318,7 +301,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 		})
 
-		err := resourceAlicloudEcsStorageCapacityUnitUpdate(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitUpdate(d, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -356,7 +339,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.NotNil(t, err)
 	})
@@ -384,7 +367,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 		patcheDescribe := gomonkey.ApplyMethod(reflect.TypeOf(&EcsService{}), "DescribeEcsStorageCapacityUnit", func(*EcsService, string) (map[string]interface{}, error) {
 			return responseMock["NoRetryError"]("NoRetryError")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitUpdate(resourceData, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitUpdate(resourceData, rawClient)
 		patches.Reset()
 		patcheDescribe.Reset()
 		assert.NotNil(t, err)
@@ -410,7 +393,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 		patches := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["UpdateNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitUpdate(resourceData1, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitUpdate(resourceData1, rawClient)
 		patches.Reset()
 		assert.Nil(t, err)
 	})
@@ -427,7 +410,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 			}
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitRead(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitRead(d, rawClient)
 		patchRequest.Reset()
 		assert.Nil(t, err)
 	})
@@ -435,7 +418,7 @@ func TestUnitAlicloudECSStorageCapacityUnit(t *testing.T) {
 		patcheDorequest := gomonkey.ApplyMethod(reflect.TypeOf(&client.Client{}), "DoRequest", func(_ *client.Client, _ *string, _ *string, _ *string, _ *string, _ *string, _ map[string]interface{}, _ map[string]interface{}, _ *util.RuntimeOptions) (map[string]interface{}, error) {
 			return responseMock["ReadNormal"]("")
 		})
-		err := resourceAlicloudEcsStorageCapacityUnitRead(d, rawClient)
+		err := resourceAliCloudEcsStorageCapacityUnitRead(d, rawClient)
 		patcheDorequest.Reset()
 		assert.Nil(t, err)
 	})
