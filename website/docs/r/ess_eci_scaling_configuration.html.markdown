@@ -126,6 +126,10 @@ The following arguments are supported:
       a null string.
 * `image_registry_credentials` - (Optional)  The image registry credential.   See [`image_registry_credentials`](#image_registry_credentials) below for
   details.
+* `security_context_sysctls` - (Optional, Available since v1.232.0)  The system information about the security context in which the elastic container instance is run.   See [`security_context_sysctls`](#security_context_sysctls) below for
+  details.
+* `dns_config_options` - (Optional, Available since v1.232.0)  The options. Each option is a name-value pair. The value in the name-value pair is optional.   See [`dns_config_options`](#dns_config_options) below for
+  details.
 * `containers` - (Optional) The list of containers. See [`containers`](#containers) below for details.
 * `init_containers` - (Optional) The list of initContainers. See [`init_containers`](#init_containers) below for details.
 * `volumes` - (Optional) The list of volumes. See [`volumes`](#volumes) below for details.
@@ -141,12 +145,19 @@ The following arguments are supported:
 * `ephemeral_storage` - (Optional) The size of ephemeral storage.
 * `load_balancer_weight` - (Optional) The weight of an ECI instance attached to the Server Group.
 * `instance_types` - (Optional, Available since v1.223.0) The specified ECS instance types. You can specify up to five ECS instance types.
+* `cost_optimization` - (Optional, Available since v1.232.0) Indicates whether the Cost Optimization feature is enabled. Valid values: true,false.
+* `instance_family_level` - (Optional, Available since v1.232.0) The level of the instance family, which is used to filter instance types that meet the specified criteria. This parameter takes effect only if you set CostOptimization to true. Valid values: EntryLevel, EnterpriseLevel, CreditEntryLevel.
 
 ### `volumes`
 
 The volume supports the following:
 
 * `name` - (Optional) The name of the volume.
+* `host_path_volume_type` - (Optional, Available since v1.232.0) The type of the host path. Examples: File, Directory, and Socket.
+* `host_path_volume_path` - (Optional, Available since v1.232.0) The absolute path on the host.
+* `config_file_volume_default_mode` - (Optional, Available since v1.232.0) The default permissions on the ConfigFileVolume.
+* `empty_dir_volume_medium` - (Optional, Available since v1.232.0) The storage medium of the EmptyDirVolume. If you leave this parameter empty, the file system of the node is used as the storage medium. If you set this parameter to memory, the memory is used as the storage medium.
+* `empty_dir_volume_size_limit` - (Optional, Available since v1.232.0) The storage size of the EmptyDirVolume. Unit: GiB or MiB.
 * `type` - (Optional) The type of the volume.
 * `config_file_volume_config_file_to_paths` - (Optional) ConfigFileVolumeConfigFileToPaths.
   See [`config_file_volume_config_file_to_paths`](#volumes-config_file_volume_config_file_to_paths) below for details.
@@ -170,6 +181,7 @@ The config_file_volume_config_file_to_path supports the following:
 
 * `content` - (Optional) The content of the configuration file. Maximum size: 32 KB.
 * `path` - (Optional) The relative file path.
+* `mode` - (Optional, Available since v1.232.0) The permissions on the ConfigFileVolume directory.
 
 ### `init_containers`
 
@@ -219,6 +231,8 @@ The volume_mount supports the following:
   data in the volume.
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
+* `sub_path` - (Optional, Available since 1.232.0) The subdirectory of volume N.
+* `mount_propagation` - (Optional, Available since 1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional.
 
 ### `image_registry_credentials`
 
@@ -230,6 +244,20 @@ The image_registry_credential supports the following:
   configured.
 * `username` - (Optional) The username used to log on to the image repository. It is required
   when `image_registry_credential` is configured.
+
+### `security_context_sysctls`
+
+The security_context_sysctl supports the following:
+
+* `name` - (Optional, Available since v1.232.0) The system name of the security context in which the elastic container instance is run.
+* `value` - (Optional, Available since v1.232.0) The system value of the security context in which the elastic container instance is run.
+
+### `dns_config_options`
+
+The dns_config_option supports the following:
+
+* `name` - (Optional, Available since v1.232.0) The option name.
+* `value` - (Optional, Available since v1.232.0) The option value.
 
 ### `host_aliases`
 
@@ -282,6 +310,8 @@ The container supports the following:
 * `lifecycle_pre_stop_handler_execs` - (Optional, Available since 1.216.0) The commands to be executed in containers when you use the CLI to specify the preStop callback function.
 * `security_context_read_only_root_file_system` - (Optional, Available since 1.215.0) Mounts the container's root filesystem as read-only.
 * `security_context_run_as_user` - (Optional, Available since 1.215.0) Specifies user ID  under which all processes run.
+* `tty` - (Optional, Available since v1.232.0) Specifies whether to enable the Interaction feature. Valid values: true, false.
+* `stdin` - (Optional, Available since v1.232.0) Specifies whether container N allocates buffer resources to standard input streams during its active runtime. If you do not specify this parameter, an end-of-file (EOF) error occurs.
 
 ### `containers-environment_vars`
 
@@ -308,6 +338,8 @@ The volume_mount supports the following:
   data in the volume.
 * `name` - (Optional) The name of the mounted volume.
 * `read_only` - (Optional) Default to `false`.
+* `sub_path` - (Optional, Available since v1.232.0) The subdirectory of volume N.
+* `mount_propagation` - (Optional, Available since v1.232.0) The mount propagation settings of volume N. Mount propagation enables volumes mounted on one container to be shared among other containers within the same pod or across distinct pods residing on the same node. Valid values: None, HostToCotainer, Bidirectional. 
 
 ### `acr_registry_infos`
 

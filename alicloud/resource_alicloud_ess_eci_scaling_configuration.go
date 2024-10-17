@@ -80,8 +80,16 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"cost_optimization": {
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 			"enable_sls": {
 				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"instance_family_level": {
+				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"image_snapshot_id": {
@@ -203,6 +211,38 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 					},
 				},
 			},
+			"dns_config_options": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
+			"security_context_sysctls": {
+				Type:     schema.TypeSet,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+					},
+				},
+			},
 			"containers": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -223,6 +263,14 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"security_context_read_only_root_file_system": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"tty": {
+							Type:     schema.TypeBool,
+							Optional: true,
+						},
+						"stdin": {
 							Type:     schema.TypeBool,
 							Optional: true,
 						},
@@ -310,6 +358,15 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"mount_propagation": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"sub_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 									"name": {
 										Type:     schema.TypeString,
 										Optional: true,
@@ -334,9 +391,8 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"liveness_probe_period_seconds": {
-							Type:         schema.TypeInt,
-							Optional:     true,
-							ValidateFunc: validation.IntAtLeast(1),
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"liveness_probe_http_get_path": {
 							Type:     schema.TypeString,
@@ -364,14 +420,12 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"liveness_probe_success_threshold": {
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntInSlice([]int{1}),
-							Optional:     true,
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"liveness_probe_timeout_seconds": {
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntAtLeast(1),
-							Optional:     true,
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"readiness_probe_exec_commands": {
 							Type:     schema.TypeList,
@@ -379,9 +433,8 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"readiness_probe_period_seconds": {
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntAtLeast(1),
-							Optional:     true,
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"readiness_probe_http_get_path": {
 							Type:     schema.TypeString,
@@ -409,14 +462,12 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 							Optional: true,
 						},
 						"readiness_probe_success_threshold": {
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntInSlice([]int{1}),
-							Optional:     true,
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 						"readiness_probe_timeout_seconds": {
-							Type:         schema.TypeInt,
-							ValidateFunc: validation.IntAtLeast(1),
-							Optional:     true,
+							Type:     schema.TypeInt,
+							Optional: true,
 						},
 					},
 				},
@@ -529,6 +580,15 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"mount_propagation": {
+										Type:     schema.TypeString,
+										Optional: true,
+										Computed: true,
+									},
+									"sub_path": {
+										Type:     schema.TypeString,
+										Optional: true,
+									},
 									"name": {
 										Type:     schema.TypeString,
 										Optional: true,
@@ -568,10 +628,35 @@ func resourceAlicloudEssEciScalingConfiguration() *schema.Resource {
 										Type:     schema.TypeString,
 										Optional: true,
 									},
+									"mode": {
+										Type:     schema.TypeInt,
+										Optional: true,
+									},
 								},
 							},
 						},
 						"disk_volume_disk_id": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"host_path_volume_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"host_path_volume_path": {
+							Type:     schema.TypeString,
+							Optional: true,
+						},
+						"config_file_volume_default_mode": {
+							Type:     schema.TypeInt,
+							Optional: true,
+						},
+						"empty_dir_volume_medium": {
+							Type:     schema.TypeString,
+							Optional: true,
+							Computed: true,
+						},
+						"empty_dir_volume_size_limit": {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
@@ -676,8 +761,14 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 	if v, ok := d.GetOkExists("cpu_options_core"); ok {
 		request["CpuOptionsCore"] = requests.NewInteger(v.(int))
 	}
+	if v, ok := d.GetOk("instance_family_level"); ok {
+		request["InstanceFamilyLevel"] = v
+	}
 	if v, ok := d.GetOkExists("cpu_options_threads_per_core"); ok {
 		request["CpuOptionsThreadsPerCore"] = requests.NewInteger(v.(int))
+	}
+	if v, ok := d.GetOkExists("cost_optimization"); ok {
+		request["CostOptimization"] = v.(bool)
 	}
 	request["EphemeralStorage"] = d.Get("ephemeral_storage")
 	request["LoadBalancerWeight"] = d.Get("load_balancer_weight")
@@ -709,6 +800,30 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			})
 		}
 		request["ImageRegistryCredential"] = imageRegisryCredentialMaps
+	}
+
+	if v, ok := d.GetOk("dns_config_options"); ok {
+		dnsConfigOptionMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.(*schema.Set).List() {
+			obj := raw.(map[string]interface{})
+			dnsConfigOptionMaps = append(dnsConfigOptionMaps, map[string]interface{}{
+				"Name":  obj["name"],
+				"Value": obj["value"],
+			})
+		}
+		request["DnsConfigOption"] = dnsConfigOptionMaps
+	}
+
+	if v, ok := d.GetOk("security_context_sysctls"); ok {
+		securityContextSysctlMaps := make([]map[string]interface{}, 0)
+		for _, raw := range v.(*schema.Set).List() {
+			obj := raw.(map[string]interface{})
+			securityContextSysctlMaps = append(securityContextSysctlMaps, map[string]interface{}{
+				"Name":  obj["name"],
+				"Value": obj["value"],
+			})
+		}
+		request["SecurityContextSysctl"] = securityContextSysctlMaps
 	}
 
 	if v, ok := d.GetOk("acr_registry_infos"); ok {
@@ -758,10 +873,12 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
 		Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_execs"]
 		Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
+		Containers[i]["Tty"] = ContainersMap["tty"]
+		Containers[i]["Stdin"] = ContainersMap["stdin"]
 		Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 
 		Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
-		if ContainersMap["readiness_probe_period_seconds"] != 0 {
+		if ContainersMap["readiness_probe_period_seconds"] != nil && ContainersMap["readiness_probe_period_seconds"] != 0 {
 			Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
 		}
 		Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
@@ -778,15 +895,15 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		if ContainersMap["readiness_probe_tcp_socket_port"] != 0 {
 			Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
 		}
-		if ContainersMap["readiness_probe_success_threshold"] != 0 {
+		if ContainersMap["readiness_probe_success_threshold"] != nil && ContainersMap["readiness_probe_success_threshold"] != 0 {
 			Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
 		}
-		if ContainersMap["readiness_probe_timeout_seconds"] != 0 {
+		if ContainersMap["readiness_probe_timeout_seconds"] != nil && ContainersMap["readiness_probe_timeout_seconds"] != 0 {
 			Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
 		}
 
 		Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
-		if ContainersMap["liveness_probe_period_seconds"] != 0 {
+		if ContainersMap["liveness_probe_period_seconds"] != nil && ContainersMap["liveness_probe_period_seconds"] != 0 {
 			Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
 		}
 		Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
@@ -803,10 +920,10 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 		if ContainersMap["liveness_probe_tcp_socket_port"] != 0 {
 			Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
 		}
-		if ContainersMap["liveness_probe_success_threshold"] != 0 {
+		if ContainersMap["liveness_probe_success_threshold"] != nil && ContainersMap["liveness_probe_success_threshold"] != 0 {
 			Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
 		}
-		if ContainersMap["liveness_probe_timeout_seconds"] != 0 {
+		if ContainersMap["liveness_probe_timeout_seconds"] != nil && ContainersMap["liveness_probe_timeout_seconds"] != 0 {
 			Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
 		}
 
@@ -817,8 +934,10 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 			VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 			VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 			VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
-			VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 			VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+			if VolumeMountsMap["mount_propagation"] != nil && VolumeMountsMap["mount_propagation"] != "" {
+				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+			}
 		}
 		Containers[i]["VolumeMount"] = VolumeMounts
 		Containers[i]["Command"] = ContainersMap["commands"]
@@ -871,8 +990,10 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
-				VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
 				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+				if VolumeMountsMap["mount_propagation"] != nil && VolumeMountsMap["mount_propagation"] != "" {
+					VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+				}
 			}
 			InitContainers[i]["InitContainerVolumeMount"] = VolumeMounts
 			InitContainers[i]["Command"] = InitContainersMap["commands"]
@@ -891,9 +1012,20 @@ func resourceAliyunEssEciScalingConfigurationCreate(d *schema.ResourceData, meta
 				ConfigFileVolumeConfigFileToPaths[i] = make(map[string]interface{})
 				ConfigFileVolumeConfigFileToPaths[i]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
 				ConfigFileVolumeConfigFileToPaths[i]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
+				if ConfigFileVolumeConfigFileToPathsMap["mode"] != nil && ConfigFileVolumeConfigFileToPathsMap["mode"] != 0 {
+					ConfigFileVolumeConfigFileToPaths[i]["Mode"] = ConfigFileVolumeConfigFileToPathsMap["mode"]
+				}
 			}
 			Volumes[i]["ConfigFileVolumeConfigFileToPath"] = ConfigFileVolumeConfigFileToPaths
 			Volumes[i]["DiskVolume.DiskId"] = VolumesMap["disk_volume_disk_id"]
+			Volumes[i]["HostPathVolume.Type"] = VolumesMap["host_path_volume_type"]
+			Volumes[i]["HostPathVolume.Path"] = VolumesMap["host_path_volume_path"]
+			Volumes[i]["EmptyDirVolume.SizeLimit"] = VolumesMap["empty_dir_volume_size_limit"]
+			if VolumesMap["config_file_volume_default_mode"] != nil && VolumesMap["config_file_volume_default_mode"] != 0 {
+				Volumes[i]["ConfigFileVolumeDefaultMode"] = VolumesMap["config_file_volume_default_mode"]
+			}
+			Volumes[i]["EmptyDirVolume.Medium"] = VolumesMap["empty_dir_volume_medium"]
+
 			Volumes[i]["DiskVolume.FsType"] = VolumesMap["disk_volume_fs_type"]
 			Volumes[i]["DiskVolume.DiskSize"] = VolumesMap["disk_volume_disk_size"]
 			Volumes[i]["FlexVolume.Driver"] = VolumesMap["flex_volume_driver"]
@@ -956,14 +1088,25 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	d.Set("resource_group_id", o["ResourceGroupId"])
 	d.Set("dns_policy", o["DnsPolicy"])
 	d.Set("enable_sls", o["SlsEnable"])
+	d.Set("cost_optimization", o["CostOptimization"])
 	d.Set("image_snapshot_id", o["ImageSnapshotId"])
+	if o["InstanceFamilyLevel"] != nil && o["InstanceFamilyLevel"] != "" {
+		d.Set("instance_family_level", o["InstanceFamilyLevel"])
+	}
 	d.Set("ram_role_name", o["RamRoleName"])
 	d.Set("termination_grace_period_seconds", o["TerminationGracePeriodSeconds"])
 	d.Set("auto_match_image_cache", o["AutoMatchImageCache"])
 	d.Set("ipv6_address_count", o["Ipv6AddressCount"])
-	d.Set("cpu_options_core", o["CpuOptionsCore"])
-	d.Set("cpu_options_threads_per_core", o["CpuOptionsThreadsPerCore"])
-	d.Set("active_deadline_seconds", o["ActiveDeadlineSeconds"])
+	if o["CpuOptionsCore"] != nil && o["CpuOptionsCore"] != 0 {
+		d.Set("cpu_options_core", o["CpuOptionsCore"])
+	}
+	if o["CpuOptionsThreadsPerCore"] != nil && o["CpuOptionsThreadsPerCore"] != 0 {
+		d.Set("cpu_options_threads_per_core", o["CpuOptionsThreadsPerCore"])
+
+	}
+	if o["ActiveDeadlineSeconds"] != nil && o["ActiveDeadlineSeconds"] != 0 {
+		d.Set("active_deadline_seconds", o["ActiveDeadlineSeconds"])
+	}
 	d.Set("auto_create_eip", o["AutoCreateEip"])
 	d.Set("eip_bandwidth", o["EipBandwidth"])
 	d.Set("host_name", o["HostName"])
@@ -993,6 +1136,34 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 	}
 	d.Set("image_registry_credentials", credentials)
 
+	options := make([]map[string]interface{}, 0)
+	if optionList, ok := o["DnsConfigOptions"].([]interface{}); ok {
+		for _, v := range optionList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"name":  m1["Name"],
+					"value": m1["Value"],
+				}
+				options = append(options, temp1)
+			}
+		}
+	}
+	d.Set("dns_config_options", options)
+
+	sysctls := make([]map[string]interface{}, 0)
+	if sysctlList, ok := o["SecurityContextSysCtls"].([]interface{}); ok {
+		for _, v := range sysctlList {
+			if m1, ok := v.(map[string]interface{}); ok {
+				temp1 := map[string]interface{}{
+					"name":  m1["Name"],
+					"value": m1["Value"],
+				}
+				sysctls = append(sysctls, temp1)
+			}
+		}
+	}
+	d.Set("security_context_sysctls", sysctls)
+
 	acrRegistryInfos := make([]map[string]interface{}, 0)
 	if acrRegistryInfoList, ok := o["AcrRegistryInfos"].([]interface{}); ok {
 		for _, v := range acrRegistryInfoList {
@@ -1017,38 +1188,53 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 					"security_context_capability_adds":            m1["SecurityContextCapabilityAdds"],
 					"lifecycle_pre_stop_handler_execs":            m1["LifecyclePreStopHandlerExecs"],
 					"security_context_read_only_root_file_system": m1["SecurityContextReadOnlyRootFilesystem"],
-					"security_context_run_as_user":                m1["SecurityContextRunAsUser"],
-					"working_dir":                                 m1["WorkingDir"],
-					"args":                                        m1["Args"],
-					"cpu":                                         m1["Cpu"],
-					"gpu":                                         m1["Gpu"],
-					"memory":                                      m1["Memory"],
-					"name":                                        m1["Name"],
-					"image":                                       m1["Image"],
-					"image_pull_policy":                           m1["ImagePullPolicy"],
-					"commands":                                    m1["Commands"],
+					"tty":                          m1["Tty"],
+					"stdin":                        m1["Stdin"],
+					"security_context_run_as_user": m1["SecurityContextRunAsUser"],
+					"working_dir":                  m1["WorkingDir"],
+					"args":                         m1["Args"],
+					"cpu":                          m1["Cpu"],
+					"gpu":                          m1["Gpu"],
+					"memory":                       m1["Memory"],
+					"name":                         m1["Name"],
+					"image":                        m1["Image"],
+					"image_pull_policy":            m1["ImagePullPolicy"],
+					"commands":                     m1["Commands"],
 
 					"readiness_probe_exec_commands":         m1["ReadinessProbeExecCommands"],
-					"readiness_probe_period_seconds":        m1["ReadinessProbePeriodSeconds"],
 					"readiness_probe_http_get_path":         m1["ReadinessProbeHttpGetPath"],
 					"readiness_probe_failure_threshold":     m1["ReadinessProbeFailureThreshold"],
 					"readiness_probe_initial_delay_seconds": m1["ReadinessProbeInitialDelaySeconds"],
 					"readiness_probe_http_get_port":         m1["ReadinessProbeHttpGetPort"],
 					"readiness_probe_http_get_scheme":       m1["ReadinessProbeHttpGetScheme"],
 					"readiness_probe_tcp_socket_port":       m1["ReadinessProbeTcpSocketPort"],
-					"readiness_probe_success_threshold":     m1["ReadinessProbeSuccessThreshold"],
-					"readiness_probe_timeout_seconds":       m1["ReadinessProbeTimeoutSeconds"],
 
 					"liveness_probe_exec_commands":         m1["LivenessProbeExecCommands"],
-					"liveness_probe_period_seconds":        m1["LivenessProbePeriodSeconds"],
 					"liveness_probe_http_get_path":         m1["LivenessProbeHttpGetPath"],
 					"liveness_probe_failure_threshold":     m1["LivenessProbeFailureThreshold"],
 					"liveness_probe_initial_delay_seconds": m1["LivenessProbeInitialDelaySeconds"],
 					"liveness_probe_http_get_port":         m1["LivenessProbeHttpGetPort"],
 					"liveness_probe_http_get_scheme":       m1["LivenessProbeHttpGetScheme"],
 					"liveness_probe_tcp_socket_port":       m1["LivenessProbeTcpSocketPort"],
-					"liveness_probe_success_threshold":     m1["LivenessProbeSuccessThreshold"],
-					"liveness_probe_timeout_seconds":       m1["LivenessProbeTimeoutSeconds"],
+				}
+				if m1["LivenessProbeTimeoutSeconds"] != nil && m1["LivenessProbeTimeoutSeconds"] != 0 {
+					temp1["liveness_probe_timeout_seconds"] = m1["LivenessProbeTimeoutSeconds"]
+				}
+				if m1["LivenessProbeSuccessThreshold"] != nil && m1["LivenessProbeSuccessThreshold"] != 0 {
+					temp1["liveness_probe_success_threshold"] = m1["LivenessProbeSuccessThreshold"]
+				}
+				if m1["LivenessProbePeriodSeconds"] != nil && m1["LivenessProbePeriodSeconds"] != 0 {
+					temp1["liveness_probe_period_seconds"] = m1["LivenessProbePeriodSeconds"]
+				}
+				if m1["ReadinessProbeTimeoutSeconds"] != nil && m1["ReadinessProbeTimeoutSeconds"] != 0 {
+					temp1["readiness_probe_timeout_seconds"] = m1["ReadinessProbeTimeoutSeconds"]
+				}
+				if m1["ReadinessProbeSuccessThreshold"] != nil && m1["ReadinessProbeSuccessThreshold"] != 0 {
+					temp1["readiness_probe_success_threshold"] = m1["ReadinessProbeSuccessThreshold"]
+				}
+
+				if m1["ReadinessProbePeriodSeconds"] != nil && m1["ReadinessProbePeriodSeconds"] != 0 {
+					temp1["readiness_probe_period_seconds"] = m1["ReadinessProbePeriodSeconds"]
 				}
 				if m1["EnvironmentVars"] != nil {
 					environmentVarsMaps := make([]map[string]interface{}, 0)
@@ -1083,6 +1269,10 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 							"mount_path": volumeMounts["MountPath"],
 							"name":       volumeMounts["Name"],
 							"read_only":  volumeMounts["ReadOnly"],
+							"sub_path":   volumeMounts["SubPath"],
+						}
+						if volumeMounts["MountPropagation"] != nil && volumeMounts["MountPropagation"] != "" {
+							volumeMountsMap["mount_propagation"] = volumeMounts["MountPropagation"]
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1148,6 +1338,10 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 							"mount_path": volumeMounts["MountPath"],
 							"name":       volumeMounts["Name"],
 							"read_only":  volumeMounts["ReadOnly"],
+							"sub_path":   volumeMounts["SubPath"],
+						}
+						if volumeMounts["MountPropagation"] != nil && volumeMounts["MountPropagation"] != "" {
+							volumeMountsMap["mount_propagation"] = volumeMounts["MountPropagation"]
 						}
 						volumeMountsMaps = append(volumeMountsMaps, volumeMountsMap)
 					}
@@ -1167,17 +1361,30 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 		for _, v := range volumesList {
 			if m1, ok := v.(map[string]interface{}); ok {
 				temp1 := map[string]interface{}{
-					"disk_volume_disk_id":   m1["DiskVolumeDiskId"],
-					"disk_volume_fs_type":   m1["DiskVolumeFsType"],
-					"disk_volume_disk_size": m1["DiskVolumeDiskSize"],
-					"flex_volume_driver":    m1["FlexVolumeDriver"],
-					"flex_volume_fs_type":   m1["FlexVolumeFsType"],
-					"flex_volume_options":   m1["FlexVolumeOptions"],
-					"nfs_volume_path":       m1["NFSVolumePath"],
-					"nfs_volume_read_only":  m1["NFSVolumeReadOnly"],
-					"nfs_volume_server":     m1["NFSVolumeServer"],
-					"name":                  m1["Name"],
-					"type":                  m1["Type"],
+					"disk_volume_disk_id":     m1["DiskVolumeDiskId"],
+					"disk_volume_fs_type":     m1["DiskVolumeFsType"],
+					"disk_volume_disk_size":   m1["DiskVolumeDiskSize"],
+					"flex_volume_driver":      m1["FlexVolumeDriver"],
+					"flex_volume_fs_type":     m1["FlexVolumeFsType"],
+					"flex_volume_options":     m1["FlexVolumeOptions"],
+					"nfs_volume_path":         m1["NFSVolumePath"],
+					"nfs_volume_read_only":    m1["NFSVolumeReadOnly"],
+					"nfs_volume_server":       m1["NFSVolumeServer"],
+					"name":                    m1["Name"],
+					"type":                    m1["Type"],
+					"empty_dir_volume_medium": m1["EmptyDirVolumeMedium"],
+				}
+				if m1["HostPathVolumeType"] != nil && m1["HostPathVolumeType"] != "" {
+					temp1["host_path_volume_type"] = m1["HostPathVolumeType"]
+				}
+				if m1["EmptyDirVolumeSizeLimit"] != nil && m1["EmptyDirVolumeSizeLimit"] != "" {
+					temp1["empty_dir_volume_size_limit"] = m1["EmptyDirVolumeSizeLimit"]
+				}
+				if m1["HostPathVolumePath"] != nil && m1["HostPathVolumePath"] != "" {
+					temp1["host_path_volume_path"] = m1["HostPathVolumePath"]
+				}
+				if m1["ConfigFileVolumeDefaultMode"] != nil && m1["ConfigFileVolumeDefaultMode"] != 0 {
+					temp1["config_file_volume_default_mode"] = m1["ConfigFileVolumeDefaultMode"]
 				}
 				if m1["ConfigFileVolumeConfigFileToPaths"] != nil {
 					configFileVolumeConfigFileToPathsMaps := make([]map[string]interface{}, 0)
@@ -1186,6 +1393,9 @@ func resourceAliyunEssEciScalingConfigurationRead(d *schema.ResourceData, meta i
 						configFileVolumeConfigFileToPathsMap := map[string]interface{}{
 							"content": configFileVolumeConfigFileToPaths["Content"],
 							"path":    configFileVolumeConfigFileToPaths["Path"],
+						}
+						if configFileVolumeConfigFileToPaths["Mode"] != nil && configFileVolumeConfigFileToPaths["Mode"] != 0 {
+							configFileVolumeConfigFileToPathsMap["mode"] = configFileVolumeConfigFileToPaths["Mode"]
 						}
 						configFileVolumeConfigFileToPathsMaps = append(configFileVolumeConfigFileToPathsMaps, configFileVolumeConfigFileToPathsMap)
 					}
@@ -1309,6 +1519,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		update = true
 		request["DnsPolicy"] = d.Get("dns_policy")
 	}
+	if d.HasChange("cost_optimization") {
+		update = true
+		request["CostOptimization"] = d.Get("cost_optimization")
+	}
 	if d.HasChange("enable_sls") {
 		update = true
 		request["EnableSls"] = d.Get("enable_sls")
@@ -1316,6 +1530,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 	if d.HasChange("image_snapshot_id") {
 		update = true
 		request["ImageSnapshotId"] = d.Get("image_snapshot_id")
+	}
+	if d.HasChange("instance_family_level") {
+		update = true
+		request["InstanceFamilyLevel"] = d.Get("instance_family_level")
 	}
 	if d.HasChange("ram_role_name") {
 		update = true
@@ -1416,6 +1634,36 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 		}
 	}
 
+	if d.HasChange("dns_config_options") {
+		update = true
+		if v, ok := d.GetOk("dns_config_options"); ok {
+			dnsConfigOptionMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+				dnsConfigOptionMaps = append(dnsConfigOptionMaps, map[string]interface{}{
+					"Name":  obj["name"],
+					"Value": obj["value"],
+				})
+			}
+			request["DnsConfigOption"] = dnsConfigOptionMaps
+		}
+	}
+
+	if d.HasChange("security_context_sysctls") {
+		update = true
+		if v, ok := d.GetOk("security_context_sysctls"); ok {
+			securityContextSysctlMaps := make([]map[string]interface{}, 0)
+			for _, raw := range v.(*schema.Set).List() {
+				obj := raw.(map[string]interface{})
+				securityContextSysctlMaps = append(securityContextSysctlMaps, map[string]interface{}{
+					"Name":  obj["name"],
+					"Value": obj["value"],
+				})
+			}
+			request["SecurityContextSysctl"] = securityContextSysctlMaps
+		}
+	}
+
 	if d.HasChange("acr_registry_infos") {
 		update = true
 		if v, ok := d.GetOk("acr_registry_infos"); ok {
@@ -1443,6 +1691,8 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i]["SecurityContext.Capability.Add"] = ContainersMap["security_context_capability_adds"]
 			Containers[i]["LifecyclePreStopHandlerExec"] = ContainersMap["lifecycle_pre_stop_handler_execs"]
 			Containers[i]["SecurityContext.ReadOnlyRootFilesystem"] = ContainersMap["security_context_read_only_root_file_system"]
+			Containers[i]["Tty"] = ContainersMap["tty"]
+			Containers[i]["Stdin"] = ContainersMap["stdin"]
 			Containers[i]["SecurityContext.RunAsUser"] = ContainersMap["security_context_run_as_user"]
 			Containers[i]["WorkingDir"] = ContainersMap["working_dir"]
 			Containers[i]["Arg"] = ContainersMap["args"]
@@ -1455,7 +1705,7 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			Containers[i]["Command"] = ContainersMap["commands"]
 
 			Containers[i]["ReadinessProbe.Exec.Command"] = ContainersMap["readiness_probe_exec_commands"]
-			if ContainersMap["readiness_probe_period_seconds"] != 0 {
+			if ContainersMap["readiness_probe_period_seconds"] != nil && ContainersMap["readiness_probe_period_seconds"] != 0 {
 				Containers[i]["ReadinessProbe.PeriodSeconds"] = ContainersMap["readiness_probe_period_seconds"]
 			}
 			Containers[i]["ReadinessProbe.HttpGet.Path"] = ContainersMap["readiness_probe_http_get_path"]
@@ -1472,15 +1722,15 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			if ContainersMap["readiness_probe_tcp_socket_port"] != 0 {
 				Containers[i]["ReadinessProbe.TcpSocket.Port"] = ContainersMap["readiness_probe_tcp_socket_port"]
 			}
-			if ContainersMap["readiness_probe_success_threshold"] != 0 {
+			if ContainersMap["readiness_probe_success_threshold"] != nil && ContainersMap["readiness_probe_success_threshold"] != 0 {
 				Containers[i]["ReadinessProbe.SuccessThreshold"] = ContainersMap["readiness_probe_success_threshold"]
 			}
-			if ContainersMap["readiness_probe_timeout_seconds"] != 0 {
+			if ContainersMap["readiness_probe_timeout_seconds"] != nil && ContainersMap["readiness_probe_timeout_seconds"] != 0 {
 				Containers[i]["ReadinessProbe.TimeoutSeconds"] = ContainersMap["readiness_probe_timeout_seconds"]
 			}
 
 			Containers[i]["LivenessProbe.Exec.Command"] = ContainersMap["liveness_probe_exec_commands"]
-			if ContainersMap["liveness_probe_period_seconds"] != 0 {
+			if ContainersMap["liveness_probe_period_seconds"] != nil && ContainersMap["liveness_probe_period_seconds"] != 0 {
 				Containers[i]["LivenessProbe.PeriodSeconds"] = ContainersMap["liveness_probe_period_seconds"]
 			}
 			Containers[i]["LivenessProbe.HttpGet.Path"] = ContainersMap["liveness_probe_http_get_path"]
@@ -1497,10 +1747,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 			if ContainersMap["liveness_probe_tcp_socket_port"] != 0 {
 				Containers[i]["LivenessProbe.TcpSocket.Port"] = ContainersMap["liveness_probe_tcp_socket_port"]
 			}
-			if ContainersMap["liveness_probe_success_threshold"] != 0 {
+			if ContainersMap["liveness_probe_success_threshold"] != nil && ContainersMap["liveness_probe_success_threshold"] != 0 {
 				Containers[i]["LivenessProbe.SuccessThreshold"] = ContainersMap["liveness_probe_success_threshold"]
 			}
-			if ContainersMap["liveness_probe_timeout_seconds"] != 0 {
+			if ContainersMap["liveness_probe_timeout_seconds"] != nil && ContainersMap["liveness_probe_timeout_seconds"] != 0 {
 				Containers[i]["LivenessProbe.TimeoutSeconds"] = ContainersMap["liveness_probe_timeout_seconds"]
 			}
 
@@ -1530,6 +1780,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+				if VolumeMountsMap["mount_propagation"] != nil && VolumeMountsMap["mount_propagation"] != "" {
+					VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+				}
 			}
 			Containers[i]["VolumeMount"] = VolumeMounts
 		}
@@ -1581,6 +1835,10 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				VolumeMounts[i]["MountPath"] = VolumeMountsMap["mount_path"]
 				VolumeMounts[i]["Name"] = VolumeMountsMap["name"]
 				VolumeMounts[i]["ReadOnly"] = VolumeMountsMap["read_only"]
+				VolumeMounts[i]["SubPath"] = VolumeMountsMap["sub_path"]
+				if VolumeMountsMap["mount_propagation"] != nil && VolumeMountsMap["mount_propagation"] != "" {
+					VolumeMounts[i]["MountPropagation"] = VolumeMountsMap["mount_propagation"]
+				}
 			}
 			InitContainers[i]["InitContainerVolumeMount"] = VolumeMounts
 		}
@@ -1599,9 +1857,19 @@ func resourceAliyunEssEciScalingConfigurationUpdate(d *schema.ResourceData, meta
 				ConfigFileVolumeConfigFileToPaths[i] = make(map[string]interface{})
 				ConfigFileVolumeConfigFileToPaths[i]["Content"] = ConfigFileVolumeConfigFileToPathsMap["content"]
 				ConfigFileVolumeConfigFileToPaths[i]["Path"] = ConfigFileVolumeConfigFileToPathsMap["path"]
+				if ConfigFileVolumeConfigFileToPathsMap["mode"] != nil && ConfigFileVolumeConfigFileToPathsMap["mode"] != 0 {
+					ConfigFileVolumeConfigFileToPaths[i]["Mode"] = ConfigFileVolumeConfigFileToPathsMap["mode"]
+				}
 			}
 			Volumes[i]["ConfigFileVolumeConfigFileToPath"] = ConfigFileVolumeConfigFileToPaths
 			Volumes[i]["DiskVolume.DiskId"] = VolumesMap["disk_volume_disk_id"]
+			Volumes[i]["HostPathVolume.Type"] = VolumesMap["host_path_volume_type"]
+			Volumes[i]["EmptyDirVolume.SizeLimit"] = VolumesMap["empty_dir_volume_size_limit"]
+			Volumes[i]["EmptyDirVolume.Medium"] = VolumesMap["empty_dir_volume_medium"]
+			Volumes[i]["HostPathVolume.Path"] = VolumesMap["host_path_volume_path"]
+			if VolumesMap["config_file_volume_default_mode"] != nil && VolumesMap["config_file_volume_default_mode"] != 0 {
+				Volumes[i]["ConfigFileVolumeDefaultMode"] = VolumesMap["config_file_volume_default_mode"]
+			}
 			Volumes[i]["DiskVolume.FsType"] = VolumesMap["disk_volume_fs_type"]
 			Volumes[i]["DiskVolume.DiskSize"] = VolumesMap["disk_volume_disk_size"]
 			Volumes[i]["FlexVolume.Driver"] = VolumesMap["flex_volume_driver"]
