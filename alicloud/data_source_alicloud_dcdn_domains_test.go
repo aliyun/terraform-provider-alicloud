@@ -110,6 +110,7 @@ resource "alicloud_dcdn_domain" "default" {
     port = "80"
     priority = "20"
     type = "ipaddr"
+	weight   = 10
   }
   resource_group_id = data.alicloud_resource_manager_resource_groups.default.ids.0
   scope  = "overseas"
