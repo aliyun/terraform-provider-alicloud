@@ -7,15 +7,15 @@ description: |-
   Provides a list of Bss Open Api Pricing Module owned by an Alibaba Cloud account.
 ---
 
-# alicloud_bssopenapi_pricing_modules
+# alicloud_bss_open_api_pricing_modules
 
-This data source provides Bss Open Api Pricing Module available to the user.[What is Pricing Module](https://www.alibabacloud.com/help/en/bss-openapi/latest/describepricingmodule#doc-api-BssOpenApi-DescribePricingModule)
+This data source provides Bss Open Api Pricing Module available to the user.[What is Pricing Module](https://www.alibabacloud.com/help/en/boa/latest/api-bssopenapi-2017-12-14-describepricingmodule)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_bss_open_api_pricing_modules" "default" {
   name_regex        = "国内月均日峰值带宽"
   product_code      = "cdn"
@@ -31,9 +31,9 @@ output "alicloud_bss_openapi_pricing_module_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `product_code` - (Required,ForceNew) The product code. 
-* `product_type` - (ForceNew,Optional) The product type. 
-* `subscription_type` - (Required,ForceNew) Subscription type. Value:
+* `product_code` - (Required, ForceNew) The product code. 
+* `product_type` - (Optional, ForceNew) The product type. 
+* `subscription_type` - (Required, ForceNew) Subscription type. Value:
   * Subscription: Prepaid.
   * PayAsYouGo: postpaid.
 * `id` - (Optional, ForceNew) A list of Price Module IDs.

@@ -1,5 +1,5 @@
 ---
-subcategory: "Network Attached Storage (NAS)"
+subcategory: "Apsara File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_zones"
 sidebar_current: "docs-alicloud-datasource-nas-zones"

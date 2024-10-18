@@ -10,7 +10,7 @@ description: |-
 
 Provides a ENS Disk Instance Attachment resource. Disk instance mount.
 
-For information about ENS Disk Instance Attachment and how to use it, see [What is Disk Instance Attachment](https://www.alibabacloud.com/help/en/).
+For information about ENS Disk Instance Attachment and how to use it, see [What is Disk Instance Attachment](https://www.alibabacloud.com/help/en/ens/developer-reference/api-ens-2017-11-10-attachdisk).
 
 -> **NOTE:** Available since v1.216.0.
 

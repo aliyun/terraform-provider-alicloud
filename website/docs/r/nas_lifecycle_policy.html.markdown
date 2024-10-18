@@ -1,17 +1,17 @@
 ---
-subcategory: "Network Attached Storage (NAS)"
+subcategory: "Apsara File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_lifecycle_policy"
 sidebar_current: "docs-alicloud-resource-nas-lifecycle-policy"
 description: |-
-  Provides a Alicloud Network Attached Storage (NAS) Lifecycle Policy resource.
+  Provides a Alicloud Apsara File Storage (NAS) Lifecycle Policy resource.
 ---
 
 # alicloud\_nas\_lifecycle\_policy
 
-Provides a Network Attached Storage (NAS) Lifecycle Policy resource.
+Provides a Apsara File Storage (NAS) Lifecycle Policy resource.
 
-For information about Network Attached Storage (NAS) Lifecycle Policy and how to use it, see [What is Lifecycle Policy](https://www.alibabacloud.com/help/en/doc-detail/169362.html).
+For information about Apsara File Storage (NAS) Lifecycle Policy and how to use it, see [What is Lifecycle Policy](https://www.alibabacloud.com/help/en/doc-detail/169362.html).
 
 -> **NOTE:** Available in v1.153.0+.
 
@@ -58,7 +58,7 @@ The following attributes are exported:
 
 ## Import
 
-Network Attached Storage (NAS) Lifecycle Policy can be imported using the id, e.g.
+Apsara File Storage (NAS) Lifecycle Policy can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_lifecycle_policy.example <file_system_id>:<lifecycle_policy_name>
