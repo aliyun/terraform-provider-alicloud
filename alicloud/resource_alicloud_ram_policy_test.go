@@ -132,7 +132,6 @@ func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
 						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d", defaultRegionToTest, rand),
-						"force":       "true",
 					}),
 				),
 			},
@@ -148,7 +147,6 @@ func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
 					testAccCheck(map[string]string{
 						"name":        fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
 						"policy_name": fmt.Sprintf("tf-testAcc%sRamPolicyConfig-%d-N", defaultRegionToTest, rand),
-						"force":       "true",
 					}),
 				),
 			},
@@ -173,7 +171,6 @@ func TestAccAliCloudRAMPolicy_basic(t *testing.T) {
 						"type":        "Custom",
 						"description": "this is a policy test",
 						"version":     "1",
-						"force":       "true",
 					}),
 				),
 			},
@@ -246,7 +243,6 @@ func testAccRamPolicyCreateConfig(rand int) string {
 		}
 	  EOF
 	  description = "this is a policy test"
-	  force = true
 	}`, defaultRegionToTest, rand)
 }
 
@@ -273,7 +269,6 @@ func testAccRamPolicyNameConfig(rand int) string {
 		}
 	  EOF
 	  description = "this is a policy test"
-	  force = true
 	}`, defaultRegionToTest, rand)
 }
 
@@ -300,7 +295,6 @@ func testAccRamPolicyDescriptionConfig(rand int) string {
 		}
 	  EOF
 	  description = "this is a policy description test"
-	  force = true
 	}`, defaultRegionToTest, rand)
 }
 func testAccRamPolicyStatementConfig(rand int) string {
@@ -326,7 +320,6 @@ func testAccRamPolicyStatementConfig(rand int) string {
 		}
 	  EOF
 	  description = "this is a policy description test"
-	  force = true
 	}`, defaultRegionToTest, rand)
 }
 
@@ -353,7 +346,6 @@ func testAccRamPolicyMultiConfig(rand int) string {
 		}
 	  EOF
 	  description = "this is a policy test"
-	  force = true
 	  count = 10
 	}`, defaultRegionToTest, rand)
 }
