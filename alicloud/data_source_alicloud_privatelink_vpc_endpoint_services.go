@@ -61,6 +61,7 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"tags": tagsSchema(),
 			"services": {
 				Type:     schema.TypeList,
 				Computed: true,
@@ -102,6 +103,10 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServices() *schema.Resource {
 							Type:     schema.TypeString,
 							Computed: true,
 						},
+						"tags": {
+							Type:     schema.TypeMap,
+							Computed: true,
+						},
 					},
 				},
 			},
@@ -126,6 +131,16 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 	}
 	if v, ok := d.GetOk("vpc_endpoint_service_name"); ok {
 		request["ServiceName"] = v
+	}
+	if v, ok := d.GetOk("tags"); ok {
+		tags := make([]map[string]interface{}, 0)
+		for key, value := range v.(map[string]interface{}) {
+			tags = append(tags, map[string]interface{}{
+				"Key":   key,
+				"Value": value.(string),
+			})
+		}
+		request["Tag"] = tags
 	}
 	request["MaxResults"] = PageSizeLarge
 	var objects []map[string]interface{}
@@ -201,6 +216,20 @@ func dataSourceAlicloudPrivatelinkVpcEndpointServicesRead(d *schema.ResourceData
 			"status":                    object["ServiceStatus"],
 			"vpc_endpoint_service_name": object["ServiceName"],
 		}
+
+		tags := make(map[string]interface{})
+		t, _ := jsonpath.Get("$.Tags.Tag", object)
+		if t != nil {
+			for _, t := range t.([]interface{}) {
+				key := t.(map[string]interface{})["Key"].(string)
+				value := t.(map[string]interface{})["Value"].(string)
+				if !ignoredTags(key, value) {
+					tags[key] = value
+				}
+			}
+		}
+		mapping["tags"] = tags
+
 		ids = append(ids, fmt.Sprint(object["ServiceId"]))
 		names = append(names, object["ServiceName"])
 		s = append(s, mapping)

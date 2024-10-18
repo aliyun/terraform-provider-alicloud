@@ -51,6 +51,14 @@ func TestAccAlicloudPrivatelinkVpcEndpointServicesDataSource(t *testing.T) {
 			"ids": []string{"${alicloud_privatelink_vpc_endpoint_service.default.id}-fake"},
 		}),
 	}
+	tagsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{"Created": "TF", "For": "Test"},
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"tags": map[string]string{"Created": "TF", "For": "Test-fake"},
+		}),
+	}
 
 	allConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
@@ -102,7 +110,7 @@ func TestAccAlicloudPrivatelinkVpcEndpointServicesDataSource(t *testing.T) {
 		testAccPreCheckWithRegions(t, true, connectivity.PrivateLinkRegions)
 	}
 
-	PrivatelinkVpcEndpointServicesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, statusConf, serviceBusinessStatusConf, idsConf, allConf)
+	PrivatelinkVpcEndpointServicesInfo.dataSourceTestCheckWithPreCheck(t, 0, preCheck, nameRegexConf, statusConf, serviceBusinessStatusConf, idsConf, tagsConf, allConf)
 }
 
 func dataSourcePrivatelinkVpcEndpointServicesDependence(name string) string {
@@ -111,6 +119,10 @@ func dataSourcePrivatelinkVpcEndpointServicesDependence(name string) string {
 	  service_description = "%s"
 	  connect_bandwidth = 103
       auto_accept_connection = false
+	  tags = {
+		Created = "TF",
+		For     = "Test",
+	  }
 	}
 	`, name)
 }
