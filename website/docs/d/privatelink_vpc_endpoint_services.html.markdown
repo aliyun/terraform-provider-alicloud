@@ -7,20 +7,25 @@ description: |-
   Provides a list of Privatelink Vpc Endpoint Services to the user.
 ---
 
-# alicloud\_privatelink\_vpc\_endpoint\_services
+# alicloud_privatelink_vpc_endpoint_services
 
 This data source provides the Privatelink Vpc Endpoint Services of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.109.0+.
+-> **NOTE:** Available since v1.109.0.
 
 ## Example Usage
 
 Basic Usage
 
 ```terraform
+resource "alicloud_privatelink_vpc_endpoint_service" "example" {
+  service_description    = "terraform-example"
+  connect_bandwidth      = 103
+  auto_accept_connection = false
+}
+
 data "alicloud_privatelink_vpc_endpoint_services" "example" {
-  ids        = ["example_value"]
-  name_regex = "the_resource_name"
+  ids = [alicloud_privatelink_vpc_endpoint_service.example.id]
 }
 
 output "first_privatelink_vpc_endpoint_service_id" {
@@ -39,8 +44,9 @@ The following arguments are supported:
 * `service_business_status` - (Optional, ForceNew) The business status of the terminal node service. Valid Value: `Normal`, `FinancialLocked` and `SecurityLocked`.
 * `status` - (Optional, ForceNew) The Status of Vpc Endpoint Service. Valid Value: `Active`, `Creating`, `Deleted`, `Deleting` and `Pending`.
 * `vpc_endpoint_service_name` - (Optional, ForceNew) The name of Vpc Endpoint Service.
+* `tags` - (Optional, Available since v1.232.0) The tags of Vpc Endpoint Service.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
@@ -55,3 +61,4 @@ The following attributes are exported in addition to the arguments listed above:
 	* `service_id` - The ID of the Vpc Endpoint Service.
 	* `status` - The Status of Vpc Endpoint Service.
 	* `vpc_endpoint_service_name` - The name of Vpc Endpoint Service.
+	* `tags` - The tags of Vpc Endpoint Service.
