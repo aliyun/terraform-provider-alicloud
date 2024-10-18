@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -50,10 +49,7 @@ func resourceAlicloudDcdnKvNamespace() *schema.Resource {
 func resourceAlicloudDcdnKvNamespaceCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("description"); ok {
 		request["Description"] = v
@@ -66,7 +62,7 @@ func resourceAlicloudDcdnKvNamespaceCreate(d *schema.ResourceData, meta interfac
 	action := "PutDcdnKvNamespace"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -74,7 +70,6 @@ func resourceAlicloudDcdnKvNamespaceCreate(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -113,10 +108,7 @@ func resourceAlicloudDcdnKvNamespaceRead(d *schema.ResourceData, meta interface{
 
 func resourceAlicloudDcdnKvNamespaceDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	dcdnService := DcdnService{client}
 
 	request := map[string]interface{}{
@@ -126,7 +118,7 @@ func resourceAlicloudDcdnKvNamespaceDelete(d *schema.ResourceData, meta interfac
 	action := "DeleteDcdnKvNamespace"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -134,7 +126,7 @@ func resourceAlicloudDcdnKvNamespaceDelete(d *schema.ResourceData, meta interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

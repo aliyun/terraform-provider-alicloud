@@ -2,11 +2,11 @@ package alicloud
 
 import (
 	"fmt"
+	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"strings"
 	"testing"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/dcdn"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -29,50 +29,63 @@ func testSweepDcdnDomain(region string) error {
 		return WrapError(err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
-	queryRequest := dcdn.CreateDescribeDcdnUserDomainsRequest()
-	var allDomains []dcdn.PageData
-	queryRequest.PageSize = requests.NewInteger(PageSizeLarge)
-	queryRequest.PageNumber = requests.NewInteger(1)
-	for {
-		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-			return dcdnClient.DescribeDcdnUserDomains(queryRequest)
-		})
-		if err != nil {
-			log.Printf("[ERROR] %s get an error %#v", queryRequest.GetActionName(), err)
-		}
-		addDebug(queryRequest.GetActionName(), raw)
-		response, _ := raw.(*dcdn.DescribeDcdnUserDomainsResponse)
-		domains := response.Domains.PageData
 
-		for _, domain := range domains {
-			if strings.HasPrefix(domain.DomainName, "tf-testacc") {
-				allDomains = append(allDomains, domain)
+	action := "DescribeDcdnUserDomains"
+	request := make(map[string]interface{})
+	request["PageSize"] = PageSizeLarge
+	request["PageNumber"] = 1
+
+	var allDomains []string
+	var response map[string]interface{}
+	for {
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
+		if err != nil {
+			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_dcdn_domains", action, AlibabaCloudSdkGoERROR)
+		}
+		addDebug(action, response, request)
+
+		resp, err := jsonpath.Get("$.Domains.PageData", response)
+		if err != nil {
+			return WrapErrorf(err, FailedGetAttributeMsg, action, "$.Domains.PageData", response)
+		}
+		result, _ := resp.([]interface{})
+		for _, v := range result {
+			item := v.(map[string]interface{})
+			if strings.HasPrefix(item["DomainName"].(string), "tf-testacc") {
+				allDomains = append(allDomains, item["DomainName"].(string))
 			} else {
-				log.Printf("Skip %#v", domain)
+				log.Printf("Skip %#v", item["DomainName"].(string))
 			}
 		}
-
-		if len(domains) < PageSizeLarge {
+		if len(result) < PageSizeLarge {
 			break
 		}
-		if page, err := getNextpageNumber(queryRequest.PageNumber); err != nil {
-			return WrapError(err)
-		} else {
-			queryRequest.PageNumber = page
-		}
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	removeRequest := dcdn.CreateDeleteDcdnDomainRequest()
-	removeRequest.DomainName = ""
+
+	action = "DeleteDcdnDomain"
 	for _, domain := range allDomains {
-		removeRequest.DomainName = domain.DomainName
-		raw, err := client.WithDcdnClient(func(dcdnClient *dcdn.Client) (interface{}, error) {
-			return dcdnClient.DeleteDcdnDomain(removeRequest)
+		query := make(map[string]interface{})
+		request = make(map[string]interface{})
+		query["DomainName"] = domain
+
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+			response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, false)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			addDebug(action, response, request)
+			return nil
 		})
 
 		if err != nil {
-			log.Printf("[ERROR] %s get an error %s", removeRequest.GetActionName(), err)
+			return WrapErrorf(err, DefaultErrorMsg, domain, action, AlibabaCloudSdkGoERROR)
 		}
-		addDebug(removeRequest.GetActionName(), raw)
 	}
 
 	return nil
