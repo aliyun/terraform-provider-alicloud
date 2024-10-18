@@ -870,6 +870,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
 			"alicloud_gpdb_db_instance_ip_array":                            resourceAliCloudGpdbDBInstanceIPArray(),
 			"alicloud_quotas_template_service":                              resourceAliCloudQuotasTemplateService(),
