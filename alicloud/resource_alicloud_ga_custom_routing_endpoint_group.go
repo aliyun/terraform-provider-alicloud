@@ -64,10 +64,7 @@ func resourceAliCloudGaCustomRoutingEndpointGroupCreate(d *schema.ResourceData, 
 	var response map[string]interface{}
 	action := "CreateCustomRoutingEndpointGroups"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateCustomRoutingEndpointGroups")
@@ -93,7 +90,7 @@ func resourceAliCloudGaCustomRoutingEndpointGroupCreate(d *schema.ResourceData, 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
@@ -175,16 +172,13 @@ func resourceAliCloudGaCustomRoutingEndpointGroupUpdate(d *schema.ResourceData, 
 
 	if update {
 		action := "UpdateCustomRoutingEndpointGroupAttribute"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator"}) || NeedRetry(err) {
 					wait()
@@ -215,10 +209,7 @@ func resourceAliCloudGaCustomRoutingEndpointGroupDelete(d *schema.ResourceData, 
 	action := "DeleteCustomRoutingEndpointGroups"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RegionId":         client.RegionId,
@@ -230,7 +221,7 @@ func resourceAliCloudGaCustomRoutingEndpointGroupDelete(d *schema.ResourceData, 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator"}) || NeedRetry(err) {
 				wait()

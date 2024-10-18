@@ -62,10 +62,7 @@ func resourceAliCloudGaBasicIpSetCreate(d *schema.ResourceData, meta interface{}
 	var response map[string]interface{}
 	action := "CreateBasicIpSet"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateBasicIpSet")
@@ -84,7 +81,7 @@ func resourceAliCloudGaBasicIpSetCreate(d *schema.ResourceData, meta interface{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()
@@ -151,16 +148,13 @@ func resourceAliCloudGaBasicIpSetUpdate(d *schema.ResourceData, meta interface{}
 
 	if update {
 		action := "UpdateBasicIpSet"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 					wait()
@@ -191,10 +185,7 @@ func resourceAliCloudGaBasicIpSetDelete(d *schema.ResourceData, meta interface{}
 	action := "DeleteBasicIpSet"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RegionId":    client.RegionId,
@@ -206,7 +197,7 @@ func resourceAliCloudGaBasicIpSetDelete(d *schema.ResourceData, meta interface{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotActive.IpSet", "NotExist.BasicBandwidthPackage", "ExistBoundAccelerateIp.IpSet"}) || NeedRetry(err) {
 				wait()

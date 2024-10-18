@@ -157,10 +157,7 @@ func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 	var response map[string]interface{}
 	action := "CreateForwardingRules"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateForwardingRules")
@@ -271,7 +268,7 @@ func resourceAliCloudGaForwardingRuleCreate(d *schema.ResourceData, meta interfa
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
@@ -553,16 +550,13 @@ func resourceAliCloudGaForwardingRuleUpdate(d *schema.ResourceData, meta interfa
 
 	if update {
 		action := "UpdateForwardingRules"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) || NeedRetry(err) {
 					wait()
@@ -593,10 +587,7 @@ func resourceAliCloudGaForwardingRuleDelete(d *schema.ResourceData, meta interfa
 	action := "DeleteForwardingRules"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -615,7 +606,7 @@ func resourceAliCloudGaForwardingRuleDelete(d *schema.ResourceData, meta interfa
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.ForwardingRule"}) || NeedRetry(err) {
 				wait()

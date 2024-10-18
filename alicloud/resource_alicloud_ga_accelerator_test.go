@@ -50,15 +50,11 @@ func testSweepGaAccelerator(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		action := "ListAccelerators"
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
 			break
@@ -93,18 +89,13 @@ func testSweepGaAccelerator(region string) error {
 			request["PageSize"] = PageSizeLarge
 			request["PageNumber"] = 1
 
-			conn, err := client.NewGaplusClient()
-			if err != nil {
-				return WrapError(err)
-			}
+			var err error
 			for {
 				action := "ListIpSets"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				var resp interface{}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+					response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 							wait()
@@ -127,7 +118,7 @@ func testSweepGaAccelerator(region string) error {
 					wait := incrementalWait(3*time.Second, 3*time.Second)
 					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
 						request["ClientToken"] = buildClientToken("DeleteIpSet")
-						resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+						response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 						if err != nil {
 							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 								wait()
@@ -147,12 +138,10 @@ func testSweepGaAccelerator(region string) error {
 
 			for {
 				action := "ListEndpointGroups"
-				runtime := util.RuntimeOptions{}
-				runtime.SetAutoretry(true)
 				var resp interface{}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+					response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) {
 							wait()
@@ -169,12 +158,10 @@ func testSweepGaAccelerator(region string) error {
 						"EndpointGroupId": v.(map[string]interface{})["EndpointGroupId"],
 						"AcceleratorId":   acceleratorId,
 					}
-					runtime := util.RuntimeOptions{}
-					runtime.SetAutoretry(true)
 					action := "DeleteEndpointGroup"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
 					err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-						resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+						response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 						if err != nil {
 							if NeedRetry(err) || IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) {
 								wait()
@@ -208,7 +195,7 @@ func testSweepGaAccelerator(region string) error {
 				}
 				wait := incrementalWait(3*time.Second, 3*time.Second)
 				err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-					response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+					response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 					if err != nil {
 						if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
 							wait()
@@ -231,7 +218,7 @@ func testSweepGaAccelerator(region string) error {
 					"RegionId":           client.RegionId,
 				}
 				request["ClientToken"] = buildClientToken("DeleteBandwidthPackage")
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 				addDebug(action, response, request)
 				if err != nil {
 					log.Printf("[ERROR] Deleting bandwidth package %s got an error: %s", bandwidthPackageId, err)

@@ -175,14 +175,11 @@ func dataSourceAlicloudGaAcceleratorsRead(d *schema.ResourceData, meta interface
 	status, statusOk := d.GetOk("status")
 	bandwidthBillingType, BandwidthBillingTypeOk := d.GetOk("bandwidth_billing_type")
 	var response map[string]interface{}
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	for {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_ga_accelerators", action, AlibabaCloudSdkGoERROR)
 		}

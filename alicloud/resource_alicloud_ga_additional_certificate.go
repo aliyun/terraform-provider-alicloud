@@ -55,10 +55,7 @@ func resourceAliCloudGaAdditionalCertificateCreate(d *schema.ResourceData, meta 
 	var response map[string]interface{}
 	action := "AssociateAdditionalCertificatesWithListener"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("AssociateAdditionalCertificatesWithListener")
@@ -71,7 +68,7 @@ func resourceAliCloudGaAdditionalCertificateCreate(d *schema.ResourceData, meta 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.Listener", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
@@ -154,16 +151,13 @@ func resourceAliCloudGaAdditionalCertificateUpdate(d *schema.ResourceData, meta 
 
 	if update {
 		action := "UpdateAdditionalCertificateWithListener"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.Listener", "NotActive.Listener"}) || NeedRetry(err) {
 					wait()
@@ -199,10 +193,7 @@ func resourceAliCloudGaAdditionalCertificateDelete(d *schema.ResourceData, meta 
 	action := "DissociateAdditionalCertificatesFromListener"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -221,7 +212,7 @@ func resourceAliCloudGaAdditionalCertificateDelete(d *schema.ResourceData, meta 
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.Listener", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()

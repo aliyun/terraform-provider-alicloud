@@ -67,10 +67,7 @@ func resourceAlicloudGaAccessLogCreate(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "AttachLogStoreToEndpointGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("AttachLogStoreToEndpointGroup")
@@ -85,7 +82,7 @@ func resourceAlicloudGaAccessLogCreate(d *schema.ResourceData, meta interface{})
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) || NeedRetry(err) {
 				wait()
@@ -139,10 +136,7 @@ func resourceAlicloudGaAccessLogDelete(d *schema.ResourceData, meta interface{})
 	var response map[string]interface{}
 	action := "DetachLogStoreFromEndpointGroup"
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -161,7 +155,7 @@ func resourceAlicloudGaAccessLogDelete(d *schema.ResourceData, meta interface{})
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup"}) || NeedRetry(err) {
 				wait()

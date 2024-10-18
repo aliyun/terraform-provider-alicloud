@@ -52,10 +52,7 @@ func resourceAlicloudGaBasicAccelerateIpEndpointRelationCreate(d *schema.Resourc
 	var response map[string]interface{}
 	action := "CreateBasicAccelerateIpEndpointRelation"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateBasicAccelerateIpEndpointRelation")
@@ -67,7 +64,7 @@ func resourceAlicloudGaBasicAccelerateIpEndpointRelationCreate(d *schema.Resourc
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.IpSet", "StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
@@ -120,10 +117,7 @@ func resourceAlicloudGaBasicAccelerateIpEndpointRelationDelete(d *schema.Resourc
 	action := "DeleteBasicAccelerateIpEndpointRelation"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 3)
 	if err != nil {
@@ -142,7 +136,7 @@ func resourceAlicloudGaBasicAccelerateIpEndpointRelationDelete(d *schema.Resourc
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.IpSet", "StateError.Accelerator"}) || NeedRetry(err) {
 				wait()
