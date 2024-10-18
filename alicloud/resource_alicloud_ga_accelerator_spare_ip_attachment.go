@@ -52,10 +52,7 @@ func resourceAlicloudGaAcceleratorSpareIpAttachmentCreate(d *schema.ResourceData
 	var response map[string]interface{}
 	action := "CreateSpareIps"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["AcceleratorId"] = d.Get("accelerator_id")
 	if v, ok := d.GetOkExists("dry_run"); ok {
 		request["DryRun"] = v
@@ -67,7 +64,7 @@ func resourceAlicloudGaAcceleratorSpareIpAttachmentCreate(d *schema.ResourceData
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,10 +115,7 @@ func resourceAlicloudGaAcceleratorSpareIpAttachmentUpdate(d *schema.ResourceData
 }
 func resourceAlicloudGaAcceleratorSpareIpAttachmentDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -143,7 +137,7 @@ func resourceAlicloudGaAcceleratorSpareIpAttachmentDelete(d *schema.ResourceData
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

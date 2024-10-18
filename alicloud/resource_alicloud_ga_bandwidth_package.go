@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -139,10 +138,7 @@ func resourceAliCloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	action := "CreateBandwidthPackage"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateBandwidthPackage")
@@ -197,11 +193,9 @@ func resourceAliCloudGaBandwidthPackageCreate(d *schema.ResourceData, meta inter
 		request["ResourceGroupId"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -311,16 +305,11 @@ func resourceAliCloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "UpdateBandwidthPackagaAutoRenewAttribute"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -376,16 +365,11 @@ func resourceAliCloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 		}
 
 		action := "UpdateBandwidthPackage"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, updateBandwidthPackageReq, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, updateBandwidthPackageReq, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"NotExist.BandwidthPackage", "StateError.Accelerator", "StateError.BandwidthPackage", "UpgradeError.BandwidthPackage", "GreaterThanGa.IpSetBandwidth", "BandwidthIllegal.BandwidthPackage"}) || NeedRetry(err) {
 					wait()
@@ -429,16 +413,11 @@ func resourceAliCloudGaBandwidthPackageUpdate(d *schema.ResourceData, meta inter
 
 	if update {
 		action := "ChangeResourceGroup"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, changeResourceGroupReq, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, changeResourceGroupReq, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -473,10 +452,7 @@ func resourceAliCloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 	action := "DeleteBandwidthPackage"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"RegionId":           client.RegionId,
@@ -484,11 +460,9 @@ func resourceAliCloudGaBandwidthPackageDelete(d *schema.ResourceData, meta inter
 		"BandwidthPackageId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "BindExist.BandwidthPackage"}) || NeedRetry(err) {
 				wait()
