@@ -1,17 +1,17 @@
 ---
-subcategory: "Network Attached Storage (NAS)"
+subcategory: "Apsara File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_fileset"
 sidebar_current: "docs-alicloud-resource-nas-fileset"
 description: |-
-  Provides a Alicloud Network Attached Storage (NAS) Fileset resource.
+  Provides a Alicloud Apsara File Storage (NAS) Fileset resource.
 ---
 
 # alicloud\_nas\_fileset
 
-Provides a Network Attached Storage (NAS) Fileset resource.
+Provides a Apsara File Storage (NAS) Fileset resource.
 
-For information about Network Attached Storage (NAS) Fileset and how to use it, see [What is Fileset](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
+For information about Apsara File Storage (NAS) Fileset and how to use it, see [What is Fileset](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
 
 -> **NOTE:** Available in v1.153.0+.
 
@@ -89,7 +89,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Network Attached Storage (NAS) Fileset can be imported using the id, e.g.
+Apsara File Storage (NAS) Fileset can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_fileset.example <file_system_id>:<fileset_id>

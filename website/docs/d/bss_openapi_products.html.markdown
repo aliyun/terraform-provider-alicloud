@@ -7,15 +7,15 @@ description: |-
   Provides a list of Bss Open Api Product owned by an Alibaba Cloud account.
 ---
 
-# alicloud_bssopenapi_products
+# alicloud_bss_openapi_products
 
-This data source provides Bss Open Api Product available to the user.[What is Product](https://www.alibabacloud.com/help/en/bss-openapi/latest/api-bssopenapi-2017-12-14-queryproductlist)
+This data source provides Bss Open Api Product available to the user.[What is Product](https://www.alibabacloud.com/help/en/boa/latest/api-bssopenapi-2017-12-14-queryproductlist)
 
--> **NOTE:** Available in 1.195.0+
+-> **NOTE:** Available since v1.195.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_bss_openapi_products" "default" {
   name_regex = "内容分发网络CDN"
 }
@@ -28,7 +28,7 @@ output "alicloud_bssopenapi_product_example_id" {
 ## Argument Reference
 
 The following arguments are supported:
-* `ids` - (Optional, ForceNew, Computed) A list of product IDs.
+* `ids` - (Optional, ForceNew, List) A list of product IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Product name.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 

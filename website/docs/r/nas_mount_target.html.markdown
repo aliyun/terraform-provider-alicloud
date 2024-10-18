@@ -1,5 +1,5 @@
 ---
-subcategory: "Network Attached Storage (NAS)"
+subcategory: "Apsara File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_mount_target"
 sidebar_current: "docs-alicloud-resource-nas-mount-target"
