@@ -41,10 +41,6 @@ func testSweepConfigAggregateCompliancePack(region string) error {
 		"tf-testAcc",
 		"tf_testAcc",
 	}
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	// Get all AggregatorId
 	aggregatorIds := make([]string, 0)
@@ -54,11 +50,9 @@ func testSweepConfigAggregateCompliancePack(region string) error {
 	}
 	var response map[string]interface{}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+			response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -111,11 +105,9 @@ func testSweepConfigAggregateCompliancePack(region string) error {
 		}
 		compliancePackIds := make([]string, 0)
 		for {
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2020-09-07"), StringPointer("AK"), request, nil, &runtime)
+				response, err = client.RpcGet("Config", "2020-09-07", action, request, nil)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -163,7 +155,7 @@ func testSweepConfigAggregateCompliancePack(region string) error {
 			}
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(time.Minute*10, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, deleteRequest, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Config", "2020-09-07", action, nil, deleteRequest, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
@@ -58,18 +57,16 @@ func resourceAlicloudConfigConfigurationRecorder() *schema.Resource {
 func resourceAlicloudConfigConfigurationRecorderCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "StartConfigurationRecorder"
 	request := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	if v, ok := d.GetOkExists("enterprise_edition"); ok {
 		request["EnterpriseEdition"] = v
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -111,6 +108,7 @@ func resourceAlicloudConfigConfigurationRecorderUpdate(d *schema.ResourceData, m
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := make(map[string]interface{})
 	if !d.IsNewResource() && d.HasChange("resource_types") {
@@ -119,13 +117,9 @@ func resourceAlicloudConfigConfigurationRecorderUpdate(d *schema.ResourceData, m
 	request["ResourceTypes"] = convertListToCommaSeparate(d.Get("resource_types").(*schema.Set).List())
 	if update {
 		action := "PutConfigurationRecorder"
-		conn, err := client.NewConfigClient()
-		if err != nil {
-			return WrapError(err)
-		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
