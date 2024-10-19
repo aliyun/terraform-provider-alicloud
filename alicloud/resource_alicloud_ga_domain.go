@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -45,10 +44,7 @@ func resourceAlicloudGaDomain() *schema.Resource {
 func resourceAlicloudGaDomainCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	if v, ok := d.GetOk("accelerator_id"); ok {
 		request["AcceleratorIds.1"] = v
@@ -61,7 +57,7 @@ func resourceAlicloudGaDomainCreate(d *schema.ResourceData, meta interface{}) er
 	action := "CreateDomain"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -69,7 +65,6 @@ func resourceAlicloudGaDomainCreate(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -108,10 +103,7 @@ func resourceAlicloudGaDomainRead(d *schema.ResourceData, meta interface{}) erro
 
 func resourceAlicloudGaDomainDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
 		return WrapError(err)
@@ -125,7 +117,7 @@ func resourceAlicloudGaDomainDelete(d *schema.ResourceData, meta interface{}) er
 	action := "DeleteDomainAcceleratorRelation"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -133,7 +125,7 @@ func resourceAlicloudGaDomainDelete(d *schema.ResourceData, meta interface{}) er
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {

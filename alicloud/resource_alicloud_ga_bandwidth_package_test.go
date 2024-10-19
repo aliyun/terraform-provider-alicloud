@@ -51,15 +51,9 @@ func testSweepGaBandwidthPackage(region string) error {
 	request["PageSize"] = PageSizeLarge
 	request["PageNumber"] = 1
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
 		action := "ListBandwidthPackages"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err := client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] %s got an error: %v", action, err)
 			break
@@ -96,7 +90,7 @@ func testSweepGaBandwidthPackage(region string) error {
 			request["ClientToken"] = buildClientToken("DeleteBandwidthPackage")
 			wait := incrementalWait(3*time.Second, 3*time.Second)
 			err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+				response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 				if err != nil {
 					if IsExpectedErrors(err, []string{"StateError.BandwidthPackage", "StateError.Accelerator"}) || NeedRetry(err) {
 						wait()

@@ -11,7 +11,7 @@ description: |-
 
 This data source provides Ga Domain available to the user.[What is Domain](https://www.alibabacloud.com/help/en/global-accelerator/latest/createdomain)
 
--> **NOTE:** Available in 1.197.0+
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 
@@ -44,9 +44,9 @@ output "alicloud_ga_domain_example_id" {
 
 The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed) A list of Ga Domain IDs.
-* `accelerator_id` - (ForceNew,Optional) The ID of the global acceleration instance.
-* `domain` - (ForceNew,Optional) The accelerated domain name to be added. only top-level domain names are supported, such as 'example.com'.
-* `status` - (ForceNew,Optional) The status of the resource. Valid values: `illegal`, `inactive`, `active`, `unknown`.
+* `accelerator_id` - (Optional, ForceNew) The ID of the global acceleration instance.
+* `domain` - (Optional, ForceNew) The accelerated domain name to be added. only top-level domain names are supported, such as 'example.com'.
+* `status` - (Optional, ForceNew) The status of the resource. Valid values: `illegal`, `inactive`, `active`, `unknown`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Global Accelerator (GA) Basic Accelerate IPs to the user.
 ---
 
-# alicloud\_ga\_basic\_accelerate\_ips
+# alicloud_ga_basic_accelerate_ips
 
 This data source provides the Global Accelerator (GA) Basic Accelerate IPs of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
@@ -44,10 +44,10 @@ The following arguments are supported:
 The following attributes are exported in addition to the arguments listed above:
 
 * `ips` - A list of Global Accelerator Basic Accelerate IPs. Each element contains the following attributes:
-	* `id` - The id of the Basic Accelerate IP.
-	* `accelerate_ip_id` - The id of the Basic Accelerate IP.
-	* `accelerate_ip_address` - The address of the Basic Accelerate IP.
-	* `accelerator_id` - The id of the Global Accelerator Basic Accelerator instance.
-	* `ip_set_id` - The ID of the Basic Ip Set.
-	* `status` - The status of the Basic Accelerate IP instance.
+  * `id` - The id of the Basic Accelerate IP.
+  * `accelerate_ip_id` - The id of the Basic Accelerate IP.
+  * `accelerate_ip_address` - The address of the Basic Accelerate IP.
+  * `accelerator_id` - The id of the Global Accelerator Basic Accelerator instance.
+  * `ip_set_id` - The ID of the Basic Ip Set.
+  * `status` - The status of the Basic Accelerate IP instance.
 	
