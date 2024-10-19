@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
@@ -116,12 +115,7 @@ func dataSourceAlicloudConfigDeliveryChannelsRead(d *schema.ResourceData, meta i
 		}
 	}
 	status, statusOk := d.GetOkExists("status")
-	var response map[string]interface{}
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2019-01-08"), StringPointer("AK"), request, nil, &util.RuntimeOptions{})
+	response, err := client.RpcGet("Config", "2019-01-08", action, request, nil)
 	if err != nil {
 		return WrapErrorf(err, DataDefaultErrorMsg, "alicloud_config_delivery_channels", action, AlibabaCloudSdkGoERROR)
 	}

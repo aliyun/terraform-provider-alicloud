@@ -4,16 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_config_rules"
 sidebar_current: "docs-alicloud-datasource-config-rules"
 description: |-
-    Provides a list of Config Rules to the user.
+  Provides a list of Config Rules to the user.
 ---
 
-# alicloud\_config\_rules
+# alicloud_config_rules
 
 This data source provides the Config Rules of the current Alibaba Cloud user.
 
--> **NOTE:**  Available in 1.99.0+.
-
--> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-southeast-1`.
+-> **NOTE:**  Available since 1.99.0.
 
 ## Example Usage
 
@@ -51,32 +49,32 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Config Rule IDs.
 * `names` - A list of Config Rule names.
 * `rules` - A list of Config Rules. Each element contains the following attributes:
-    * `id` - The ID of the Config Rule.
-    * `account_id`- The ID of the Alicloud account.
-    * `config_rule_arn`- The ARN of the Config Rule.
-    * `config_rule_id`- The ID of the Config Rule.
-    * `config_rule_state`- The state of the Config Rule.
-    * `description`- The description of the Config Rule.
-    * `input_parameters`- The input parameters of the Config Rule.
-    * `modified_timestamp`- the timestamp of the Config Rule modified.
-    * `risk_level`- The risk level of the Config Rule.
-    * `rule_name`- The name of the Config Rule.
-    * `event_source` - Event source of the Config Rule.
-    * `scope_compliance_resource_id` - (Removed)  Field `scope_compliance_resource_id` has been removed from provider version 1.124.1. Please use 'exclude_resource_ids_scope' instead. 
-    * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
-    * `source_detail_message_type` - Rule trigger mechanism.
-    * `source_maximum_execution_frequency` - Rule execution cycle. 
-    * `source_identifier`- The identifier of the managed rule or the arn of the custom function.
-    * `source_owner`- The source owner of the Config Rule.
-    * `compliance` - The information about the compliance evaluations based on the rule.
-        * `compliance_type` - The compliance evaluation result of the target resources.
-        * `count` - The number of resources with the specified compliance evaluation result.
-    * `config_rule_trigger_types` - (Available in 1.124.1+) A list of trigger types of config rule.
-    * `exclude_resource_ids_scope` - (Available in 1.124.1+) The scope of exclude of resource ids.
-    * `maximum_execution_frequency` - (Available in 1.124.1+) The frequency of maximum execution.
-    * `region_ids_scope` - (Available in 1.124.1+) The scope of region ids.
-    * `resource_group_ids_scope` - (Available in 1.124.1+) The scope of resource group ids.
-    * `resource_types_scope` - (Available in 1.124.1+) The scope of resource types.
-    * `status` - (Available in 1.124.1+) The status of config rule.
-    * `tag_key_scope` - (Available in 1.124.1+) The scope of tag key.
-    * `tag_value_scope` - (Available in 1.124.1+) The scope of tag value.
+  * `id` - The ID of the Config Rule.
+  * `account_id`- The ID of the Alicloud account.
+  * `config_rule_arn`- The ARN of the Config Rule.
+  * `config_rule_id`- The ID of the Config Rule.
+  * `compliance_pack_id` - The compliance package ID.
+  * `config_rule_state`- The state of the Config Rule.
+  * `description`- The description of the Config Rule.
+  * `input_parameters`- The input parameters of the Config Rule.
+  * `modified_timestamp`- the timestamp of the Config Rule modified.
+  * `risk_level`- The risk level of the Config Rule.
+  * `rule_name`- The name of the Config Rule.
+  * `event_source` - Event source of the Config Rule.
+  * `scope_compliance_resource_types` - The types of the resources to be evaluated against the rule.
+  * `source_detail_message_type` - Rule trigger mechanism.
+  * `source_maximum_execution_frequency` - Rule execution cycle. 
+  * `source_identifier`- The identifier of the managed rule or the arn of the custom function.
+  * `source_owner`- The source owner of the Config Rule.
+  * `compliance` - The information about the compliance evaluations based on the rule.
+    * `compliance_type` - The compliance evaluation result of the target resources.
+    * `count` - The number of resources with the specified compliance evaluation result.
+  * `config_rule_trigger_types` - (Available in 1.124.1+) A list of trigger types of config rule.
+  * `exclude_resource_ids_scope` - (Available in 1.124.1+) The scope of exclude of resource ids.
+  * `maximum_execution_frequency` - (Available in 1.124.1+) The frequency of maximum execution.
+  * `region_ids_scope` - (Available in 1.124.1+) The scope of region ids.
+  * `resource_group_ids_scope` - (Available in 1.124.1+) The scope of resource group ids.
+  * `resource_types_scope` - (Available in 1.124.1+) The scope of resource types.
+  * `status` - (Available in 1.124.1+) The status of config rule.
+  * `tag_key_scope` - (Available in 1.124.1+) The scope of tag key.
+  * `tag_value_scope` - (Available in 1.124.1+) The scope of tag value.

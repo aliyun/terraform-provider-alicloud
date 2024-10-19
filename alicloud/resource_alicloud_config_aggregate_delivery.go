@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -91,11 +90,9 @@ func resourceAliCloudConfigAggregateDeliveryCreate(d *schema.ResourceData, meta 
 	action := "CreateAggregateConfigDeliveryChannel"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query["AggregatorId"] = d.Get("aggregator_id")
 
@@ -124,11 +121,9 @@ func resourceAliCloudConfigAggregateDeliveryCreate(d *schema.ResourceData, meta 
 	if v, ok := d.GetOk("oversized_data_oss_target_arn"); ok {
 		request["OversizedDataOSSTargetArn"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -211,14 +206,12 @@ func resourceAliCloudConfigAggregateDeliveryUpdate(d *schema.ResourceData, meta 
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	parts := strings.Split(d.Id(), ":")
 	action := "UpdateAggregateConfigDeliveryChannel"
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["AggregatorId"] = parts[0]
@@ -270,11 +263,9 @@ func resourceAliCloudConfigAggregateDeliveryUpdate(d *schema.ResourceData, meta 
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("Config", "2020-09-07", action, query, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -300,20 +291,16 @@ func resourceAliCloudConfigAggregateDeliveryDelete(d *schema.ResourceData, meta 
 	action := "DeleteAggregateConfigDeliveryChannel"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request = make(map[string]interface{})
 	query["AggregatorId"] = parts[0]
 	query["DeliveryChannelId"] = parts[1]
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {

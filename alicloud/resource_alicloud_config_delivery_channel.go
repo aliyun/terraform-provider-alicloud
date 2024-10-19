@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -68,12 +67,10 @@ func resourceAlicloudConfigDeliveryChannel() *schema.Resource {
 func resourceAlicloudConfigDeliveryChannelCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "PutDeliveryChannel"
 	request := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request["DeliveryChannelAssumeRoleArn"] = d.Get("delivery_channel_assume_role_arn")
 	if v, ok := d.GetOk("delivery_channel_condition"); ok {
 		request["DeliveryChannelCondition"] = v
@@ -93,11 +90,9 @@ func resourceAlicloudConfigDeliveryChannelCreate(d *schema.ResourceData, meta in
 		request["Status"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2019-01-08", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
 				wait()
@@ -139,11 +134,7 @@ func resourceAlicloudConfigDeliveryChannelRead(d *schema.ResourceData, meta inte
 }
 func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-	var response map[string]interface{}
+
 	update := false
 	request := map[string]interface{}{
 		"DeliveryChannelId": d.Id(),
@@ -175,11 +166,9 @@ func resourceAlicloudConfigDeliveryChannelUpdate(d *schema.ResourceData, meta in
 	}
 	if update {
 		action := "PutDeliveryChannel"
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-08"), StringPointer("AK"), nil, request, &runtime)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("Config", "2019-01-08", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) || IsExpectedErrors(err, []string{"DeliveryChannelSlsUnreachableError"}) {
 					wait()

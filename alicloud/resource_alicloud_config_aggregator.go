@@ -73,10 +73,6 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 	client := meta.(*connectivity.AliyunClient)
 	configService := ConfigService{client}
 	request := make(map[string]interface{})
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
 
 	aggregatorAccountsMaps := make([]map[string]interface{}, 0)
 	for _, aggregatorAccounts := range d.Get("aggregator_accounts").(*schema.Set).List() {
@@ -106,10 +102,11 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	var response map[string]interface{}
+	var err error
 	action := "CreateAggregator"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -117,8 +114,7 @@ func resourceAlicloudConfigAggregatorCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
@@ -170,11 +166,6 @@ func resourceAlicloudConfigAggregatorRead(d *schema.ResourceData, meta interface
 }
 func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	update := false
 	request := map[string]interface{}{
 		"AggregatorId": d.Id(),
@@ -212,11 +203,9 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 	if update {
 		action := "UpdateAggregator"
 		request["ClientToken"] = buildClientToken("UpdateAggregator")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+		err := resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err := client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -224,7 +213,7 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -235,10 +224,7 @@ func resourceAlicloudConfigAggregatorUpdate(d *schema.ResourceData, meta interfa
 }
 func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewConfigClient()
-	if err != nil {
-		return WrapError(err)
-	}
+
 	request := map[string]interface{}{
 		"AggregatorIds": d.Id(),
 	}
@@ -248,8 +234,8 @@ func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interfa
 	runtime.SetAutoretry(true)
 	action := "DeleteAggregators"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-09-07"), StringPointer("AK"), nil, request, &runtime)
+	err := resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err := client.RpcPost("Config", "2020-09-07", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -257,7 +243,7 @@ func resourceAlicloudConfigAggregatorDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
