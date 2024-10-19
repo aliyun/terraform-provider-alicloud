@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -22,19 +21,13 @@ func (s *DcdnServiceV2) DescribeDcdnDomain(id string) (object map[string]interfa
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDcdnDomainDetail"
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DomainName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -67,19 +60,13 @@ func (s *DcdnServiceV2) DescribeDescribeDcdnDomainCertificateInfo(id string) (ob
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDcdnDomainCertificateInfo"
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["DomainName"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -116,20 +103,14 @@ func (s *DcdnServiceV2) DescribeDescribeDcdnTagResources(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "DescribeDcdnTagResources"
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["ResourceId.1"] = id
 
 	request["ResourceType"] = "DOMAIN"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -43,15 +42,12 @@ func resourceAlicloudDcdnWafPolicyDomainAttachmentCreate(d *schema.ResourceData,
 	var response map[string]interface{}
 	action := "ModifyDcdnWafPolicyDomains"
 	request := make(map[string]interface{})
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["BindDomains"] = d.Get("domain_name")
 	request["PolicyId"] = d.Get("policy_id")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -99,17 +95,13 @@ func resourceAlicloudDcdnWafPolicyDomainAttachmentDelete(d *schema.ResourceData,
 		return WrapError(err)
 	}
 	var response map[string]interface{}
-	conn, err := client.NewDcdnClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request := map[string]interface{}{
 		"PolicyId":      parts[0],
 		"UnbindDomains": parts[1],
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
