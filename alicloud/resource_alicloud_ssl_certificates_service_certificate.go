@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,13 +55,9 @@ func resourceAliCloudSslCertificatesServiceCertificate() *schema.Resource {
 func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "CreateUserCertificate"
 	request := make(map[string]interface{})
-	conn, err := client.NewCasClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
 	request["Cert"] = d.Get("cert")
 	request["Key"] = d.Get("key")
 
@@ -78,11 +73,9 @@ func resourceAliCloudSslCertificatesServiceCertificateCreate(d *schema.ResourceD
 		request["Lang"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -135,12 +128,7 @@ func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 	casService := CasService{client}
 	action := "DeleteUserCertificate"
 	var response map[string]interface{}
-
-	conn, err := client.NewCasClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	request := map[string]interface{}{
 		"CertId": d.Id(),
 	}
@@ -149,11 +137,9 @@ func resourceAliCloudSslCertificatesServiceCertificateDelete(d *schema.ResourceD
 		request["Lang"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

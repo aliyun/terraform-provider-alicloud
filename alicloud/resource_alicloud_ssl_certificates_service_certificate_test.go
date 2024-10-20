@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -39,16 +37,10 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 	request["CurrentPage"] = 1
 	ids := make([]string, 0)
 	var response map[string]interface{}
-	conn, err := client.NewCasClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -97,7 +89,7 @@ func testSweepSslCertificatesServiceCertificate(region string) error {
 		}
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("cas", "2018-07-13", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
