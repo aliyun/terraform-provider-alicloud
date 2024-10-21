@@ -7,11 +7,11 @@ description: |-
   Provides a list of Ga Accelerator Spare Ip Attachments to the user.
 ---
 
-# alicloud\_ga\_accelerator\_spare\_ip\_attachments
+# alicloud_ga_accelerator_spare_ip_attachments
 
 This data source provides the Ga Accelerator Spare Ip Attachments of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.167.0+.
+-> **NOTE:** Available since v1.167.0.
 
 ## Example Usage
 
@@ -36,12 +36,12 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `status` - (Optional, ForceNew) The status of the standby CNAME IP address. Valid values: `active`, `inuse`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `attachments` - A list of Ga Accelerator Spare Ip Attachments. Each element contains the following attributes:
-	* `accelerator_id` - The ID of the global acceleration instance.
-	* `id` - The ID of the Accelerator Spare Ip Attachment.
-	* `spare_ip` - The standby IP address of CNAME. When the acceleration area is abnormal, the traffic is switched to the standby IP address.
-	* `status` - The status of the standby CNAME IP address. Valid values: `active`, `inuse`.
+  * `accelerator_id` - The ID of the global acceleration instance.
+  * `id` - The ID of the Accelerator Spare Ip Attachment.
+  * `spare_ip` - The standby IP address of CNAME. When the acceleration area is abnormal, the traffic is switched to the standby IP address.
+  * `status` - The status of the standby CNAME IP address. Valid values: `active`, `inuse`.

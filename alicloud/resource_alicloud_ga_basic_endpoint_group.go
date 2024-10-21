@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -77,10 +76,7 @@ func resourceAliCloudGaBasicEndpointGroupCreate(d *schema.ResourceData, meta int
 	var response map[string]interface{}
 	action := "CreateBasicEndpointGroup"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateBasicEndpointGroup")
@@ -107,11 +103,9 @@ func resourceAliCloudGaBasicEndpointGroupCreate(d *schema.ResourceData, meta int
 		request["Description"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()
@@ -197,16 +191,11 @@ func resourceAliCloudGaBasicEndpointGroupUpdate(d *schema.ResourceData, meta int
 
 	if update {
 		action := "UpdateBasicEndpointGroup"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 					wait()
@@ -237,21 +226,16 @@ func resourceAliCloudGaBasicEndpointGroupDelete(d *schema.ResourceData, meta int
 	action := "DeleteBasicEndpointGroup"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request := map[string]interface{}{
 		"ClientToken":     buildClientToken("DeleteBasicEndpointGroup"),
 		"EndpointGroupId": d.Id(),
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.EndPointGroup", "ExistBoundEndpoint.EndpointGroup", "NotExist.BasicBandwidthPackage"}) || NeedRetry(err) {
 				wait()

@@ -7,11 +7,11 @@ description: |-
   Provides a list of Global Accelerator (GA) Custom Routing Endpoint Traffic Policies to the user.
 ---
 
-# alicloud\_ga\_custom\_routing\_endpoint\_traffic\_policies
+# alicloud_ga_custom_routing_endpoint_traffic_policies
 
 This data source provides the Global Accelerator (GA) Custom Routing Endpoint Traffic Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.197.0+
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 

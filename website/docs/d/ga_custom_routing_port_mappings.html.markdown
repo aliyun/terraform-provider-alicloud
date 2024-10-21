@@ -7,11 +7,11 @@ description: |-
   Provides a list of Global Accelerator (GA) Custom Routing Port Mappings to the user.
 ---
 
-# alicloud\_ga\_custom\_routing\_port\_mappings
+# alicloud_ga_custom_routing_port_mappings
 
 This data source provides the Global Accelerator (GA) Custom Routing Port Mappings of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.197.0+
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 
