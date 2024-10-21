@@ -693,6 +693,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
 					"lower_case_table_names": "0",
 					"backup_retention_policy_on_cluster_deletion": "NONE",
+					"loose_xengine": "OFF",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -701,16 +702,7 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 						"lower_case_table_names": CHECKSET,
 						"loose_polar_log_bin":    CHECKSET,
 						"default_time_zone":      CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"creation_category": "Normal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"creation_category": "Normal",
+						"loose_xengine":          "OFF",
 					}),
 				),
 			},
@@ -727,6 +719,28 @@ func TestAccAliCloudPolarDBCluster_CreateNormal(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"loose_polar_log_bin": "OFF",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"loose_xengine":                "ON",
+					"loose_xengine_use_memory_pct": "50",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"loose_xengine":                "ON",
+						"loose_xengine_use_memory_pct": "50",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"loose_xengine_use_memory_pct": "60",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"loose_xengine_use_memory_pct": "60",
 					}),
 				),
 			},
@@ -1743,7 +1757,7 @@ func resourcePolarDBClusterConfigDependence(name string) string {
 	}
 
 	data "alicloud_vpcs" "default" {
-		name_regex = "^default-NODELETING$"
+		is_default = true
 	}
 
 	resource "alicloud_vpc" "default" {
