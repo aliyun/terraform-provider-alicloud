@@ -2,106 +2,216 @@ package alicloud
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
-func TestAccAlicloudResourceManagerFoldersDataSource(t *testing.T) {
-	rand := acctest.RandIntRange(1000000, 9999999)
+func TestAccAliCloudResourceManagerFoldersDataSource_basic0(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "data.alicloud_resource_manager_folders.default"
+	name := fmt.Sprintf("tf-testAcc-ResourceManagerFolder%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceResourceManagerFoldersConfig)
 
-	nameRegexConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_resource_manager_folder.example.folder_name}"`,
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_resource_manager_folder.default.id}"},
 		}),
-		fakeConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex": `"${alicloud_resource_manager_folder.example.folder_name}_fake"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids": []string{"${alicloud_resource_manager_folder.default.id}_fake"},
 		}),
 	}
 
-	idsConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_resource_manager_folder.example.id}"]`,
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_resource_manager_folder.default.folder_name}",
 		}),
-		fakeConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"ids": `["${alicloud_resource_manager_folder.example.id}_fake"]`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex": "${alicloud_resource_manager_folder.default.folder_name}_fake",
 		}),
 	}
 
 	parentFolderIdConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex":       `"${alicloud_resource_manager_folder.example.folder_name}"`,
-			"parent_folder_id": `"${alicloud_resource_manager_folder.example.parent_folder_id}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.id}",
 		}),
-		fakeConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex":       `"${alicloud_resource_manager_folder.example.folder_name}_fake"`,
-			"parent_folder_id": `"${alicloud_resource_manager_folder.example.parent_folder_id}"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.id}",
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}_fake"},
+		}),
+	}
+
+	queryKeywordConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"query_keyword": "${alicloud_resource_manager_folder.default.folder_name}",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"query_keyword": "${alicloud_resource_manager_folder.default.folder_name}_fake",
 		}),
 	}
 
 	allConf := dataSourceTestAccConfig{
-		existConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex":       `"${alicloud_resource_manager_folder.example.folder_name}"`,
-			"ids":              `["${alicloud_resource_manager_folder.example.id}"]`,
-			"parent_folder_id": `"${alicloud_resource_manager_folder.example.parent_folder_id}"`,
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}"},
+			"name_regex":       "${alicloud_resource_manager_folder.default.folder_name}",
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.parent_folder_id}",
+			"query_keyword":    "${alicloud_resource_manager_folder.default.folder_name}",
 		}),
-		fakeConfig: testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand, map[string]string{
-			"name_regex":       `"${alicloud_resource_manager_folder.example.folder_name}_fake"`,
-			"ids":              `["${alicloud_resource_manager_folder.example.id}"]`,
-			"parent_folder_id": `"${alicloud_resource_manager_folder.example.parent_folder_id}"`,
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}_fake"},
+			"name_regex":       "${alicloud_resource_manager_folder.default.folder_name}_fake",
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.parent_folder_id}",
+			"query_keyword":    "${alicloud_resource_manager_folder.default.folder_name}_fake",
 		}),
 	}
 
-	var existResourceManagerFoldersRecordsMapFunc = func(rand int) map[string]string {
+	var existAliCloudResourceManagerFoldersDefaultDataSourceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"folders.#":                  "1",
-			"names.#":                    "1",
 			"ids.#":                      "1",
+			"names.#":                    "1",
+			"folders.#":                  "1",
 			"folders.0.id":               CHECKSET,
 			"folders.0.folder_id":        CHECKSET,
-			"folders.0.folder_name":      fmt.Sprintf("tf-testAcc-%d", rand),
+			"folders.0.folder_name":      CHECKSET,
+			"folders.0.parent_folder_id": "",
+		}
+	}
+
+	var fakeAliCloudResourceManagerFoldersDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":     "0",
+			"names.#":   "0",
+			"folders.#": "0",
+		}
+	}
+
+	var aliCloudResourceManagerFoldersCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_resource_manager_folders.default",
+		existMapFunc: existAliCloudResourceManagerFoldersDefaultDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudResourceManagerFoldersDefaultDataSourceMapFunc,
+	}
+
+	preCheck := func() {
+		testAccPreCheck(t)
+	}
+
+	aliCloudResourceManagerFoldersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, parentFolderIdConf, queryKeywordConf, allConf)
+}
+
+func TestAccAliCloudResourceManagerFoldersDataSource_basic1(t *testing.T) {
+	rand := acctest.RandIntRange(1000, 9999)
+	resourceId := "data.alicloud_resource_manager_folders.default"
+	name := fmt.Sprintf("tf-testAcc-ResourceManagerFolder%d", rand)
+	testAccConfig := dataSourceTestAccConfigFunc(resourceId, name, dataSourceResourceManagerFoldersConfig)
+
+	idsConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_resource_manager_folder.default.id}"},
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":            []string{"${alicloud_resource_manager_folder.default.id}_fake"},
+			"enable_details": "true",
+		}),
+	}
+
+	nameRegexConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_resource_manager_folder.default.folder_name}",
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"name_regex":     "${alicloud_resource_manager_folder.default.folder_name}_fake",
+			"enable_details": "true",
+		}),
+	}
+
+	parentFolderIdConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.id}",
+			"enable_details":   "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.id}",
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}_fake"},
+			"enable_details":   "true",
+		}),
+	}
+
+	queryKeywordConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"query_keyword":  "${alicloud_resource_manager_folder.default.folder_name}",
+			"enable_details": "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"query_keyword":  "${alicloud_resource_manager_folder.default.folder_name}_fake",
+			"enable_details": "true",
+		}),
+	}
+
+	allConf := dataSourceTestAccConfig{
+		existConfig: testAccConfig(map[string]interface{}{
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}"},
+			"name_regex":       "${alicloud_resource_manager_folder.default.folder_name}",
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.parent_folder_id}",
+			"query_keyword":    "${alicloud_resource_manager_folder.default.folder_name}",
+			"enable_details":   "true",
+		}),
+		fakeConfig: testAccConfig(map[string]interface{}{
+			"ids":              []string{"${alicloud_resource_manager_folder.default.id}_fake"},
+			"name_regex":       "${alicloud_resource_manager_folder.default.folder_name}_fake",
+			"parent_folder_id": "${alicloud_resource_manager_folder.default.parent_folder_id}",
+			"query_keyword":    "${alicloud_resource_manager_folder.default.folder_name}_fake",
+			"enable_details":   "true",
+		}),
+	}
+
+	var existAliCloudResourceManagerFoldersDefaultDataSourceMapFunc = func(rand int) map[string]string {
+		return map[string]string{
+			"ids.#":                      "1",
+			"names.#":                    "1",
+			"folders.#":                  "1",
+			"folders.0.id":               CHECKSET,
+			"folders.0.folder_id":        CHECKSET,
+			"folders.0.folder_name":      CHECKSET,
 			"folders.0.parent_folder_id": CHECKSET,
 		}
 	}
 
-	var fakeResourceManagerFoldersRecordsMapFunc = func(rand int) map[string]string {
+	var fakeAliCloudResourceManagerFoldersDefaultDataSourceMapFunc = func(rand int) map[string]string {
 		return map[string]string{
-			"folders.#": "0",
 			"ids.#":     "0",
 			"names.#":   "0",
+			"folders.#": "0",
 		}
 	}
 
-	var foldersRecordsCheckInfo = dataSourceAttr{
-		resourceId:   "data.alicloud_resource_manager_folders.example",
-		existMapFunc: existResourceManagerFoldersRecordsMapFunc,
-		fakeMapFunc:  fakeResourceManagerFoldersRecordsMapFunc,
+	var aliCloudResourceManagerFoldersCheckInfo = dataSourceAttr{
+		resourceId:   "data.alicloud_resource_manager_folders.default",
+		existMapFunc: existAliCloudResourceManagerFoldersDefaultDataSourceMapFunc,
+		fakeMapFunc:  fakeAliCloudResourceManagerFoldersDefaultDataSourceMapFunc,
 	}
 
 	preCheck := func() {
-		testAccPreCheckEnterpriseAccountEnabled(t)
+		testAccPreCheck(t)
 	}
 
-	foldersRecordsCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, nameRegexConf, idsConf, parentFolderIdConf, allConf)
-
+	aliCloudResourceManagerFoldersCheckInfo.dataSourceTestCheckWithPreCheck(t, rand, preCheck, idsConf, nameRegexConf, parentFolderIdConf, queryKeywordConf, allConf)
 }
 
-func testAccCheckAlicloudResourceManagerFoldersSourceConfig(rand int, attrMap map[string]string) string {
-	var pairs []string
-	for k, v := range attrMap {
-		pairs = append(pairs, k+" = "+v)
+func dataSourceResourceManagerFoldersConfig(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+		default = "%s"
 	}
-	config := fmt.Sprintf(`
-resource "alicloud_resource_manager_folder" "example"{
-	folder_name = "tf-testAcc-%d"
-}
 
-data "alicloud_resource_manager_folders" "example"{
-	enable_details = true
-%s
-}
+	resource "alicloud_resource_manager_folder" "default" {
+  		folder_name = "${var.name}-default"
+	}
 
-`, rand, strings.Join(pairs, "\n   "))
-	return config
+	resource "alicloud_resource_manager_folder" "sub" {
+  		folder_name      = "${var.name}-sub"
+  		parent_folder_id = alicloud_resource_manager_folder.default.id
+	}
+`, name)
 }
