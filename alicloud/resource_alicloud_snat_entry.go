@@ -96,7 +96,7 @@ func resourceAlicloudSnatEntryCreate(d *schema.ResourceData, meta interface{}) e
 		request["ClientToken"] = buildClientToken("CreateSnatEntry")
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-04-28"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "InternalError", "OperationFailed.Throttling", "OperationUnsupported.EipInBinding", "OperationUnsupported.EipNatBWPCheck", "OperationConflict"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"EIP_NOT_IN_GATEWAY", "InternalError", "OperationFailed.Throttling", "OperationUnsupported.EipInBinding", "OperationUnsupported.EipNatBWPCheck", "OperationConflict", "OperationUnsupported.EipNatGWCheck"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
