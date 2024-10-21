@@ -371,7 +371,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_edas_applications":                                dataSourceAlicloudEdasApplications(),
 			"alicloud_edas_deploy_groups":                               dataSourceAlicloudEdasDeployGroups(),
 			"alicloud_edas_clusters":                                    dataSourceAlicloudEdasClusters(),
-			"alicloud_resource_manager_folders":                         dataSourceAlicloudResourceManagerFolders(),
+			"alicloud_resource_manager_folders":                         dataSourceAliCloudResourceManagerFolders(),
 			"alicloud_dns_instances":                                    dataSourceAlicloudAlidnsInstances(),
 			"alicloud_resource_manager_policies":                        dataSourceAlicloudResourceManagerPolicies(),
 			"alicloud_resource_manager_resource_groups":                 dataSourceAlicloudResourceManagerResourceGroups(),
