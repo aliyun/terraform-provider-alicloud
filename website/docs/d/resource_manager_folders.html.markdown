@@ -4,26 +4,34 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_resource_manager_folders"
 sidebar_current: "docs-alicloud-datasource-resource-manager-folders"
 description: |-
-    Provides a list of resource manager folders to the user.
+    Provides a list of Resource Manager Folders to the user.
 ---
 
-# alicloud\_resource\_manager\_folders
+# alicloud_resource_manager_folders
 
-This data source provides the resource manager folders of the current Alibaba Cloud user.
+This data source provides the Resource Manager Folders of the current Alibaba Cloud user.
 
--> **NOTE:**  Available in 1.84.0+.
-
--> **NOTE:**  You can view only the information of the first-level child folders of the specified folder.
+-> **NOTE:** Available since v1.84.0.
 
 ## Example Usage
 
+Basic Usage
+
 ```terraform
-data "alicloud_resource_manager_folders" "example" {
-  name_regex = "tftest"
+variable "name" {
+  default = "terraform-example"
 }
 
-output "first_folder_id" {
-  value = "${data.alicloud_resource_manager_folders.example.folders.0.id}"
+resource "alicloud_resource_manager_folder" "default" {
+  folder_name = var.name
+}
+
+data "alicloud_resource_manager_folders" "ids" {
+  ids = [alicloud_resource_manager_folder.default.id]
+}
+
+output "resource_manager_folder_id_0" {
+  value = data.alicloud_resource_manager_folders.ids.folders.0.id
 }
 ```
 
@@ -31,22 +39,20 @@ output "first_folder_id" {
 
 The following arguments are supported:
 
-* `ids` - (Optional) A list of resource manager folders IDs.
-* `name_regex` - (Optional) A regex string to filter results by folder name.
+* `ids` - (Optional, ForceNew, List) A list of Folders IDs.
+* `name_regex` - (Optional, ForceNew) A regex string to filter results by Folder name.
+* `parent_folder_id` (Optional, ForceNew) The ID of the parent folder. **NOTE:** If `parent_folder_id` is not set, the information of the first-level subfolders of the Root folder is queried.
+* `query_keyword` (Optional, ForceNew, Available since v1.114.0) The keyword used for the query, such as a folder name. Fuzzy match is supported.
+* `enable_details` -(Optional, Bool, Available since v1.114.0) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `parent_folder_id` (Optional) The ID of the parent folder.
-* `query_keyword` (Optional, ForceNew, Available in 1.114.0+) The query keyword.
-* `enable_details` -(Optional, Available in v1.114.0+) Default to `false`. Set it to true can output more details.
 
 ## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
-* `ids` - A list of folder IDs.
-* `names` - A list of folder names.
-* `folders` - A list of folders. Each element contains the following attributes:
-    * `id` - The ID of the folder.
-    * `folder_id`- The ID of the folder.
-    * `folder_name`- The name of the folder.
-    * `parent_folder_id`- (Available in v1.114.0+)The ID of the parent folder.
-    
+* `names` - A list of Folder names.
+* `folders` - A list of Folder. Each element contains the following attributes:
+  * `id` - The ID of the Resource Manager Folder.
+  * `folder_id`- The ID of the Folder.
+  * `folder_name`- The Name of the Folder.
+  * `parent_folder_id`- (Available since v1.114.0) The ID of the parent folder. **Note:** `parent_folder_id` takes effect only if `enable_details` is set to `true`.
