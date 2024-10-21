@@ -466,11 +466,15 @@ func TestAccAliCloudPolarDBCluster_UpdatePrePaid(t *testing.T) {
 					"vswitch_id":        "${local.vswitch_id}",
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"storage_type":      "PSL4",
+					"compress_storage":  "ON",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
 						"zone_id":           CHECKSET,
+						"storage_type":      "PSL4",
+						"compress_storage":  "ON",
 					}),
 				),
 			},
@@ -1564,6 +1568,7 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 					"parameter_group_id":     "${data.alicloud_polardb_parameter_groups.default.groups.0.id}",
 					"lower_case_table_names": "0",
 					"backup_retention_policy_on_cluster_deletion": "NONE",
+					"storage_type": "PSL4",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -1571,6 +1576,7 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 						"zone_id":                CHECKSET,
 						"lower_case_table_names": CHECKSET,
 						"default_time_zone":      CHECKSET,
+						"storage_type":           "PSL4",
 					}),
 				),
 			},
@@ -1581,6 +1587,16 @@ func TestAccAliCloudPolarDBCluster_CreateDBCluster(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"creation_category": "Normal",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"compress_storage": "ON",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"compress_storage": "ON",
 					}),
 				),
 			},
