@@ -249,7 +249,7 @@ func resourceAliCloudInstance() *schema.Resource {
 						"category": {
 							Type:         schema.TypeString,
 							Optional:     true,
-							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto"}, false),
+							ValidateFunc: StringInSlice([]string{"all", "cloud", "ephemeral_ssd", "cloud_essd", "cloud_efficiency", "cloud_ssd", "local_disk", "cloud_auto","cloud_essd_entry"}, false),
 							Default:      DiskCloudEfficiency,
 							ForceNew:     true,
 						},
