@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -81,10 +80,7 @@ func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyCreate(d *schema.Resour
 	var response map[string]interface{}
 	action := "CreateCustomRoutingEndpointTrafficPolicies"
 	request := make(map[string]interface{})
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["RegionId"] = client.RegionId
 	request["ClientToken"] = buildClientToken("CreateCustomRoutingEndpointTrafficPolicies")
@@ -117,11 +113,9 @@ func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyCreate(d *schema.Resour
 	policyConfigurationsMaps = append(policyConfigurationsMaps, policyConfigurationsMap)
 	request["PolicyConfigurations"] = policyConfigurationsMaps
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator", "StateError.EndPointGroup"}) || NeedRetry(err) {
 				wait()
@@ -251,16 +245,11 @@ func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyUpdate(d *schema.Resour
 
 	if update {
 		action := "UpdateCustomRoutingEndpointTrafficPolicies"
-		conn, err := client.NewGaplusClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 			if err != nil {
 				if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator", "StateError.EndPointGroup"}) || NeedRetry(err) {
 					wait()
@@ -291,10 +280,7 @@ func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyDelete(d *schema.Resour
 	action := "DeleteCustomRoutingEndpointTrafficPolicies"
 	var response map[string]interface{}
 
-	conn, err := client.NewGaplusClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -308,11 +294,9 @@ func resourceAliCloudGaCustomRoutingEndpointTrafficPolicyDelete(d *schema.Resour
 		"PolicyIds":   []string{parts[1]},
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Ga", "2019-11-20", action, nil, request, true)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"NotActive.Listener", "StateError.Accelerator", "StateError.EndPointGroup"}) || NeedRetry(err) {
 				wait()

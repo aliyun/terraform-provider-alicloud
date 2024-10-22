@@ -7,11 +7,11 @@ description: |-
   Provides a list of Global Accelerator (GA) Custom Routing Endpoint Group Destinations to the user.
 ---
 
-# alicloud\_ga\_custom\_routing\_endpoint\_group\_destinations
+# alicloud_ga_custom_routing_endpoint_group_destinations
 
 This data source provides the Global Accelerator (GA) Custom Routing Endpoint Group Destinations of the current Alibaba Cloud user.
 
--> **NOTE:** Available in 1.197.0+
+-> **NOTE:** Available since v1.197.0.
 
 ## Example Usage
 
@@ -32,7 +32,7 @@ output "ga_custom_routing_endpoint_group_destinations_id_1" {
 The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed) A list of Custom Routing Endpoint Group Destination IDs.
-* `accelerator_id` - (Required,ForceNew) The ID of the GA instance.
+* `accelerator_id` - (Required, ForceNew) The ID of the GA instance.
 * `listener_id` - (Optional, ForceNew) The ID of the listener.
 * `endpoint_group_id` - (Optional, ForceNew) The ID of the endpoint group.
 * `protocols` - (Optional, ForceNew) The backend service protocol of the endpoint group. Valid values: `TCP`, `UDP`, `TCP, UDP`.
