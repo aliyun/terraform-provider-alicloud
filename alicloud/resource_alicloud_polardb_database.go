@@ -51,6 +51,12 @@ func resourceAlicloudPolarDBDatabase() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+
+			"account_privilege": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
 		},
 	}
 }
@@ -73,6 +79,7 @@ func resourceAlicloudPolarDBDatabaseCreate(d *schema.ResourceData, meta interfac
 
 	if cluster.DBType == "PostgreSQL" || cluster.DBType == "Oracle" {
 		request.AccountName = d.Get("account_name").(string)
+		request.AccountPrivilege = d.Get("account_privilege").(string)
 		request.Collate = "C"
 		request.Ctype = "C"
 	}
