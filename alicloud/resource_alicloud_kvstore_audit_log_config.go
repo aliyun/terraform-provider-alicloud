@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -53,12 +52,9 @@ func resourceAlicloudKvstoreAuditLogConfig() *schema.Resource {
 func resourceAlicloudKvstoreAuditLogConfigCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "ModifyAuditLogConfig"
 	request := make(map[string]interface{})
-	conn, err := client.NewRedisaClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	if v, ok := d.GetOkExists("db_audit"); ok {
 		request["DbAudit"] = v
 	}
@@ -70,7 +66,7 @@ func resourceAlicloudKvstoreAuditLogConfigCreate(d *schema.ResourceData, meta in
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -123,11 +119,8 @@ func resourceAlicloudKvstoreAuditLogConfigRead(d *schema.ResourceData, meta inte
 func resourceAlicloudKvstoreAuditLogConfigUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	rKvstoreService := RKvstoreService{client}
-	conn, err := client.NewRedisaClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	var response map[string]interface{}
+	var err error
 	update := false
 	request := map[string]interface{}{
 		"InstanceId": d.Id(),
@@ -150,7 +143,7 @@ func resourceAlicloudKvstoreAuditLogConfigUpdate(d *schema.ResourceData, meta in
 		action := "ModifyAuditLogConfig"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("R-kvstore", "2015-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
