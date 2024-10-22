@@ -207,6 +207,10 @@ The following arguments are supported:
   -> **NOTE:** This parameter is valid only for standard edition clusters.
 * `loose_polar_log_bin` - (Optional, Computed, Available since 1.210.0) Enable the Binlog function. Default value: `OFF`. Valid values are `OFF`, `ON`.
   -> **NOTE:** This parameter is valid only MySQL Engine supports.
+* `loose_xengine` - (Optional, Available since v1.231.1) Specifies whether to enable X-Engine. Valid values are `ON`, `OFF`.
+  -> **NOTE:** This parameter takes effect only if you do not set `creation_option` to CreateGdnStandby and you set `db_type` to MySQL and `db_version` to 8.0. To enable X-Engine on a node, make sure that the memory of the node is greater than or equal to 8 GB in size.
+* `loose_xengine_use_memory_pct` - (Optional, Available since v1.231.1) Set the ratio to enable the X-Engine storage engine. Valid values: 10 to 90.
+  -> **NOTE:** When the parameter `loose_xengine` is ON, `loose_xengine_use_memory_pct` takes effect.
 * `db_node_num` - (Optional, Available since 1.210.0) The number of Standard Edition nodes. Default value: `1`. Valid values are `1`, `2`.
 * `parameter_group_id` - (Optional, Available since 1.210.0) The ID of the parameter template
   -> **NOTE:** You can call the [DescribeParameterGroups](https://www.alibabacloud.com/help/en/polardb/latest/describeparametergroups) operation to query the details of all parameter templates of a specified region, such as the ID of a parameter template.
