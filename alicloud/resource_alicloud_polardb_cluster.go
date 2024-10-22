@@ -440,6 +440,19 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 					"+12:00", "+13:00", "SYSTEM"}, false),
 				DiffSuppressFunc: polardbDiffSuppressFunc,
 			},
+			"loose_xengine": {
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     StringInSlice([]string{"ON", "OFF"}, false),
+				DiffSuppressFunc: polardbXengineDiffSuppressFunc,
+				Computed:         true,
+			},
+			"loose_xengine_use_memory_pct": {
+				Type:         schema.TypeInt,
+				Optional:     true,
+				ValidateFunc: IntBetween(10, 90),
+				Computed:     true,
+			},
 			"hot_replica_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -562,7 +575,7 @@ func resourceAlicloudPolarDBClusterUpdate(d *schema.ResourceData, meta interface
 	polarDBService := PolarDBService{client}
 	d.Partial(true)
 
-	if !d.IsNewResource() && (d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin")) {
+	if !d.IsNewResource() && (d.HasChange("default_time_zone") || d.HasChange("lower_case_table_names") || d.HasChange("loose_polar_log_bin") || d.HasChange("loose_xengine") || d.HasChange("loose_xengine_use_memory_pct")) {
 		if err := polarDBService.CreateClusterParamsModifyParameters(d); err != nil {
 			return WrapError(err)
 		}
@@ -1885,6 +1898,14 @@ func buildPolarDBCreateRequest(d *schema.ResourceData, meta interface{}) (map[st
 		ipList := expandStringList(v.(*schema.Set).List())
 		ipstr := strings.Join(ipList[:], COMMA_SEPARATED)
 		request["SecurityIPList"] = ipstr
+	}
+
+	if v, ok := d.GetOk("loose_xengine"); ok {
+		request["LooseXEngine"] = v.(string)
+		if l, ok := d.GetOk("loose_xengine_use_memory_pct"); ok && v.(string) == "ON" {
+			looseXEngineUseMemoryPct := l.(int)
+			request["LooseXEngineUseMemoryPct"] = strconv.Itoa(looseXEngineUseMemoryPct)
+		}
 	}
 
 	return request, nil
