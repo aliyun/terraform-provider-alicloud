@@ -113,9 +113,10 @@ The following arguments are supported:
 * `drop_metrics` - (Optional) List of abandoned indicators.
 * `environment_name` - (Optional) The name of the resource.
 * `environment_sub_type` - (Required, ForceNew) Subtype of environment:
-  - Type of CS: ACK is currently supported.
+  - Type of ACK: ACK is currently supported.
   - Type of ECS: currently supports ECS.
   - Type of Cloud: currently supports Cloud.
+  - Type of ManagedKubernetes: currently supports ManagedKubernetes.
 * `environment_type` - (Required, ForceNew) Type of environment.
 * `managed_type` - (Optional, ForceNew) Hosting type:
   - none: unmanaged. The default value of the ACK cluster.
