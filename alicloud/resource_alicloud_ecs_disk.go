@@ -11,25 +11,24 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
-func resourceAlicloudEcsDisk() *schema.Resource {
+func resourceAliCloudEcsDisk() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudEcsDiskCreate,
-		Read:   resourceAlicloudEcsDiskRead,
-		Update: resourceAlicloudEcsDiskUpdate,
-		Delete: resourceAlicloudEcsDiskDelete,
+		Create: resourceAliCloudEcsDiskCreate,
+		Read:   resourceAliCloudEcsDiskRead,
+		Update: resourceAliCloudEcsDiskUpdate,
+		Delete: resourceAliCloudEcsDiskDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
 			Create: schema.DefaultTimeout(2 * time.Minute),
-			Delete: schema.DefaultTimeout(2 * time.Minute),
 			Update: schema.DefaultTimeout(15 * time.Minute),
+			Delete: schema.DefaultTimeout(2 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
 			"advanced_features": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"category": {
 				Type:         schema.TypeString,
@@ -83,13 +82,12 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 			"encrypt_algorithm": {
 				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
 			},
 			"encrypted": {
-				Type:          schema.TypeBool,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"snapshot_id"},
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"instance_id": {
 				Type:     schema.TypeString,
@@ -127,10 +125,10 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 				Computed: true,
 			},
 			"snapshot_id": {
-				Type:          schema.TypeString,
-				Optional:      true,
-				ForceNew:      true,
-				ConflictsWith: []string{"encrypted"},
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
 			},
 			"status": {
 				Type:     schema.TypeString,
@@ -171,7 +169,7 @@ func resourceAlicloudEcsDisk() *schema.Resource {
 	}
 }
 
-func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	var response map[string]interface{}
@@ -284,9 +282,9 @@ func resourceAlicloudEcsDiskCreate(d *schema.ResourceData, meta interface{}) err
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
-	return resourceAlicloudEcsDiskUpdate(d, meta)
+	return resourceAliCloudEcsDiskUpdate(d, meta)
 }
-func resourceAlicloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	object, err := ecsService.DescribeEcsDisk(d.Id())
@@ -321,7 +319,7 @@ func resourceAlicloudEcsDiskRead(d *schema.ResourceData, meta interface{}) error
 	d.Set("availability_zone", object["ZoneId"])
 	return nil
 }
-func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	conn, err := client.NewEcsClient()
@@ -533,9 +531,9 @@ func resourceAlicloudEcsDiskUpdate(d *schema.ResourceData, meta interface{}) err
 		d.SetPartial("enable_auto_snapshot")
 	}
 	d.Partial(false)
-	return resourceAlicloudEcsDiskRead(d, meta)
+	return resourceAliCloudEcsDiskRead(d, meta)
 }
-func resourceAlicloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudEcsDiskDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	ecsService := EcsService{client}
 	object, err := ecsService.DescribeEcsDisk(d.Id())

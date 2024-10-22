@@ -25,14 +25,14 @@ import (
 func init() {
 	resource.AddTestSweepers("alicloud_ecs_disk", &resource.Sweeper{
 		Name: "alicloud_ecs_disk",
-		F:    testAlicloudEcsDisk,
+		F:    testAliCloudEcsDisk,
 	})
 }
 
-func testAlicloudEcsDisk(region string) error {
+func testAliCloudEcsDisk(region string) error {
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return WrapErrorf(err, "Error getting Alicloud client.")
+		return WrapErrorf(err, "Error getting AliCloud client.")
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -98,10 +98,10 @@ func testAlicloudEcsDisk(region string) error {
 	return nil
 }
 
-func TestAccAliCloudECSDisk_basic(t *testing.T) {
+func TestAccAliCloudEcsDisk_basic(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -109,7 +109,7 @@ func TestAccAliCloudECSDisk_basic(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasicDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasicDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -279,10 +279,10 @@ func TestAccAliCloudECSDisk_basic(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSDisk_basic1(t *testing.T) {
+func TestAccAliCloudEcsDisk_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -290,7 +290,7 @@ func TestAccAliCloudECSDisk_basic1(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic1Dependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasic1Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -357,10 +357,10 @@ func TestAccAliCloudECSDisk_basic1(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSDisk_basic2(t *testing.T) {
+func TestAccAliCloudEcsDisk_basic2(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -368,7 +368,7 @@ func TestAccAliCloudECSDisk_basic2(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic1Dependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasic1Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -437,7 +437,7 @@ func TestAccAliCloudECSDisk_basic2(t *testing.T) {
 	})
 }
 
-var AlicloudEcsDiskMap = map[string]string{
+var AliCloudEcsDiskMap = map[string]string{
 	"payment_type":         "PayAsYouGo",
 	"performance_level":    "",
 	"delete_with_instance": "false",
@@ -451,10 +451,10 @@ var AlicloudEcsDiskMap = map[string]string{
 	"availability_zone":    CHECKSET,
 }
 
-func TestAccAliCloudECSDisk_basic3(t *testing.T) {
+func TestAccAliCloudEcsDisk_basic3(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -462,7 +462,7 @@ func TestAccAliCloudECSDisk_basic3(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic2Dependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasic2Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -538,10 +538,10 @@ func TestAccAliCloudECSDisk_basic3(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudECSDisk_basic4(t *testing.T) {
+func TestAccAliCloudEcsDisk_basic4(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_disk.default.2"
-	ra := resourceAttrInit(resourceId, AlicloudEcsDiskMap)
+	ra := resourceAttrInit(resourceId, AliCloudEcsDiskMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsDisk")
@@ -549,7 +549,7 @@ func TestAccAliCloudECSDisk_basic4(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsdisk%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsDiskBasic2Dependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEcsDiskBasic2Dependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -661,143 +661,150 @@ func TestAccAliCloudECSDisk_basic4(t *testing.T) {
 	})
 }
 
-func AlicloudEcsDiskBasicDependence(name string) string {
+func AliCloudEcsDiskBasicDependence(name string) string {
 	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
-data "alicloud_zones" "default" {
-	available_resource_creation= "VSwitch"
-}
-resource "alicloud_kms_key" "key" {
-	description             = var.name
-	pending_window_in_days  = "7"
-	key_state               = "Enabled"
-}
-`, name)
-}
-
-func AlicloudEcsDiskBasic1Dependence(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
-data "alicloud_instance_types" "default" {
-  cpu_core_count       = 2
-  memory_size          = 4
-  instance_charge_type = "PrePaid"
-  instance_type_family = "ecs.sn1ne"
-}
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  owners      = "system"
-  instance_type = data.alicloud_instance_types.default.instance_types.0.id
-}
-data "alicloud_vpcs" "default" {
-    name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids.0
-  zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-}
-resource "alicloud_security_group" "default" {
-  name        = var.name
-  vpc_id      = data.alicloud_vswitches.default.vswitches.0.vpc_id
-}
-resource "alicloud_instance" "default" {
-  image_id                      = data.alicloud_images.default.images.0.id
-  security_groups               = [alicloud_security_group.default.id]
-  instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
-  system_disk_category          = "cloud_efficiency"
-  instance_name                 = var.name
-  spot_strategy                 = "NoSpot"
-  spot_price_limit              = "0"
-  security_enhancement_strategy = "Active"
-  user_data                     = "I_am_user_data"
-  instance_charge_type          = "PrePaid"
-  period                        = 1
-  vswitch_id                    = data.alicloud_vswitches.default.ids.0
-  force_delete                  = true
-}
-`, name)
-}
-
-func AlicloudEcsDiskBasic2Dependence(name string) string {
-	return fmt.Sprintf(`
-variable "name" {
-			default = "%s"
-		}
-
-data "alicloud_zones" default {
-  available_resource_creation = "Instance"
-}
-
-data "alicloud_instance_types" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_type_family = "ecs.sn1ne"
-}
-
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
-}
-
-data "alicloud_vswitches" "default" {
- vpc_id = data.alicloud_vpcs.default.ids.0
- zone_id = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_security_group" "default" {
-  name = "${var.name}"
-  description = "New security group"
-  vpc_id = data.alicloud_vpcs.default.ids.0
-}
-
-resource "alicloud_disk" "default" {
-  count = "2"
-  name = "${var.name}"
-  availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
-  category          = "cloud_efficiency"
-  size              = "20"
-}
-
-data "alicloud_images" "default" {
-  name_regex  = "^ubuntu_[0-9]+_[0-9]+_x64*"
-  owners      = "system"
-  instance_type = data.alicloud_instance_types.default.instance_types.0.id
-}
-
-resource "alicloud_instance" "default" {
-  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
-  instance_name   = "${var.name}"
-  host_name       = "tf-testAcc"
-  image_id        = data.alicloud_images.default.images.0.id
-  instance_type   = data.alicloud_instance_types.default.instance_types.0.id
-  security_groups = [alicloud_security_group.default.id]
-  vswitch_id      = data.alicloud_vswitches.default.ids.0
-}
-
-resource "alicloud_disk_attachment" "default" {
-  count = "2"
-  disk_id     = "${element(alicloud_disk.default.*.id,count.index)}"
-  instance_id = alicloud_instance.default.id
-}
-
-resource "alicloud_ecs_snapshot" "default" {
-	category = "standard"
-	description = "Test For Terraform"
-	disk_id = alicloud_disk_attachment.default.0.disk_id
-	retention_days = "20"
-	snapshot_name = var.name
-	tags 				 = {
-		Created = "TF"
-		For 	= "Acceptance-test"
+	variable "name" {
+  		default = "%s"
 	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "VSwitch"
+	}
+
+	resource "alicloud_kms_key" "key" {
+  		description            = var.name
+  		pending_window_in_days = "7"
+  		key_state              = "Enabled"
+	}
+`, name)
 }
 
-data "alicloud_resource_manager_resource_groups" "default"{
-status = "OK"
+func AliCloudEcsDiskBasic1Dependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		cpu_core_count       = 2
+  		memory_size          = 4
+  		instance_charge_type = "PrePaid"
+  		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = data.alicloud_vswitches.default.vswitches.0.vpc_id
+	}
+
+	resource "alicloud_instance" "default" {
+  		image_id                      = data.alicloud_images.default.images.0.id
+  		security_groups               = [alicloud_security_group.default.id]
+  		instance_type                 = data.alicloud_instance_types.default.instance_types.0.id
+  		system_disk_category          = "cloud_efficiency"
+  		instance_name                 = var.name
+  		spot_strategy                 = "NoSpot"
+  		spot_price_limit              = "0"
+  		security_enhancement_strategy = "Active"
+  		user_data                     = "I_am_user_data"
+  		instance_charge_type          = "PrePaid"
+  		period                        = 1
+  		vswitch_id                    = data.alicloud_vswitches.default.ids.0
+  		force_delete                  = true
+	}
+`, name)
 }
+
+func AliCloudEcsDiskBasic2Dependence(name string) string {
+	return fmt.Sprintf(`
+	variable "name" {
+  		default = "%s"
+	}
+
+	data "alicloud_resource_manager_resource_groups" "default" {
+  		status = "OK"
+	}
+
+	data "alicloud_zones" "default" {
+  		available_resource_creation = "Instance"
+	}
+
+	data "alicloud_instance_types" "default" {
+  		availability_zone    = data.alicloud_zones.default.zones.0.id
+  		instance_type_family = "ecs.sn1ne"
+	}
+
+	data "alicloud_vpcs" "default" {
+  		name_regex = "^default-NODELETING$"
+	}
+
+	data "alicloud_vswitches" "default" {
+  		vpc_id  = data.alicloud_vpcs.default.ids.0
+  		zone_id = data.alicloud_zones.default.zones.0.id
+	}
+
+	resource "alicloud_security_group" "default" {
+  		name        = var.name
+  		description = "New security group"
+  		vpc_id      = data.alicloud_vpcs.default.ids.0
+	}
+
+	resource "alicloud_disk" "default" {
+  		count             = "2"
+  		name              = var.name
+  		availability_zone = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  		category          = "cloud_efficiency"
+  		size              = "20"
+	}
+
+	data "alicloud_images" "default" {
+  		name_regex    = "^ubuntu_[0-9]+_[0-9]+_x64*"
+  		owners        = "system"
+  		instance_type = data.alicloud_instance_types.default.instance_types.0.id
+	}
+
+	resource "alicloud_instance" "default" {
+  		availability_zone = data.alicloud_zones.default.zones.0.id
+  		instance_name     = var.name
+  		host_name         = "tf-testAcc"
+  		image_id          = data.alicloud_images.default.images.0.id
+  		instance_type     = data.alicloud_instance_types.default.instance_types.0.id
+  		security_groups   = [alicloud_security_group.default.id]
+  		vswitch_id        = data.alicloud_vswitches.default.ids.0
+	}
+
+	resource "alicloud_disk_attachment" "default" {
+  		count       = "2"
+  		disk_id     = element(alicloud_disk.default.*.id, count.index)
+  		instance_id = alicloud_instance.default.id
+	}
+
+	resource "alicloud_ecs_snapshot" "default" {
+  		category       = "standard"
+  		description    = "Test For Terraform"
+  		disk_id        = alicloud_disk_attachment.default.0.disk_id
+  		retention_days = "20"
+  		snapshot_name  = var.name
+  		tags = {
+    		Created = "TF"
+    		For     = "Acceptance-test"
+  		}
+	}
 `, name)
 }
 
@@ -914,7 +921,7 @@ func TestUnitECSDisk(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEcsDiskCreate(dInit, rawClient)
+	err = resourceAliCloudEcsDiskCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	ReadMockResponseDiff := map[string]interface{}{
@@ -940,7 +947,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskCreate(dInit, rawClient)
+		err := resourceAliCloudEcsDiskCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -967,7 +974,7 @@ func TestUnitECSDisk(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+	err = resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	// ResizeDisk
@@ -1008,7 +1015,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1062,7 +1069,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1119,7 +1126,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1175,7 +1182,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1238,7 +1245,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1306,7 +1313,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1375,7 +1382,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskUpdate(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskUpdate(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1420,7 +1427,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskRead(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -1439,7 +1446,7 @@ func TestUnitECSDisk(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEcsDiskDelete(dExisted, rawClient)
+	err = resourceAliCloudEcsDiskDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	attributesDiff = map[string]interface{}{}
@@ -1475,7 +1482,7 @@ func TestUnitECSDisk(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEcsDiskDelete(dExisted, rawClient)
+		err := resourceAliCloudEcsDiskDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
