@@ -523,20 +523,15 @@ func (s *RamService) WaitForRamAccessKey(id, useName string, status Status, time
 }
 
 func (s *RamService) DescribeRamPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewRamClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "GetPolicy"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"PolicyName": id,
 		"PolicyType": "Custom",
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("RamPolicy", id)), NotFoundMsg, ProviderERROR)

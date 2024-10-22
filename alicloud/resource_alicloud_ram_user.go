@@ -117,8 +117,8 @@ func resourceAlicloudRamUserCreate(d *schema.ResourceData, meta interface{}) err
 func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	update := false
-
 	request := map[string]interface{}{
 		"UserName":    d.Get("name"),
 		"NewUserName": d.Get("name"),
@@ -173,16 +173,9 @@ func resourceAlicloudRamUserUpdate(d *schema.ResourceData, meta interface{}) err
 
 	if update {
 		action := "UpdateUser"
-		conn, err := client.NewRamClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("Ram", "2015-05-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
