@@ -289,6 +289,64 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 	if err != nil {
 		return WrapError(err)
 	}
+
+	listVersionsRequest := map[string]interface{}{
+		"PolicyName": d.Id(),
+		"PolicyType": "Custom",
+	}
+	listVersionsAction := "ListPolicyVersions"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 3*time.Second)
+	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(listVersionsAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listVersionsRequest, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	if err != nil {
+		if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+	versionsResp, er := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
+	if er != nil {
+		return WrapErrorf(er, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
+	}
+	// More than one means there are other versions besides the default version
+	if versionsResp != nil && len(versionsResp.([]interface{})) > 1 {
+		for _, v := range versionsResp.([]interface{}) {
+			if !v.(map[string]interface{})["IsDefaultVersion"].(bool) {
+				versionAction := "DeletePolicyVersion"
+				versionRequest := map[string]interface{}{
+					"PolicyName": d.Id(),
+					"VersionId":  v.(map[string]interface{})["VersionId"],
+				}
+				runtime := util.RuntimeOptions{}
+				runtime.SetAutoretry(true)
+				wait := incrementalWait(3*time.Second, 3*time.Second)
+				err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+					response, err = conn.DoRequest(StringPointer(versionAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, versionRequest, &util.RuntimeOptions{})
+					if err != nil {
+						if NeedRetry(err) {
+							wait()
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					addDebug(versionAction, response, versionRequest)
+					return nil
+				})
+			}
+		}
+	}
+
 	request := map[string]interface{}{
 		"PolicyName": d.Id(),
 	}
@@ -424,67 +482,12 @@ func resourceAlicloudRamPolicyDelete(d *schema.ResourceData, meta interface{}) e
 			}
 		}
 
-		listVersionsRequest := map[string]interface{}{
-			"PolicyName": d.Id(),
-			"PolicyType": "Custom",
-		}
-		listVersionsAction := "ListPolicyVersions"
-		runtime = util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
-		wait = incrementalWait(3*time.Second, 3*time.Second)
-		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(listVersionsAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, listVersionsRequest, &runtime)
-			if err != nil {
-				if NeedRetry(err) {
-					wait()
-					return resource.RetryableError(err)
-				}
-				return resource.NonRetryableError(err)
-			}
-			return nil
-		})
-		if err != nil {
-			if IsExpectedErrors(err, []string{"EntityNotExist.Policy"}) {
-				return nil
-			}
-			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
-		versionsResp, er := jsonpath.Get("$.PolicyVersions.PolicyVersion", response)
-		if er != nil {
-			return WrapErrorf(er, FailedGetAttributeMsg, action, "$.PolicyVersions.PolicyVersion", response)
-		}
-		// More than one means there are other versions besides the default version
-		if versionsResp != nil && len(versionsResp.([]interface{})) > 1 {
-			for _, v := range versionsResp.([]interface{}) {
-				if !v.(map[string]interface{})["IsDefaultVersion"].(bool) {
-					versionAction := "DeletePolicyVersion"
-					versionRequest := map[string]interface{}{
-						"PolicyName": d.Id(),
-						"VersionId":  v.(map[string]interface{})["VersionId"],
-					}
-					runtime := util.RuntimeOptions{}
-					runtime.SetAutoretry(true)
-					wait := incrementalWait(3*time.Second, 3*time.Second)
-					err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(versionAction), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, versionRequest, &util.RuntimeOptions{})
-						if err != nil {
-							if NeedRetry(err) {
-								wait()
-								return resource.RetryableError(err)
-							}
-							return resource.NonRetryableError(err)
-						}
-						addDebug(versionAction, response, versionRequest)
-						return nil
-					})
-				}
-			}
-		}
+		
 	}
 
-	runtime := util.RuntimeOptions{}
+	runtime = util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 5*time.Second)
+	wait = incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-05-01"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
