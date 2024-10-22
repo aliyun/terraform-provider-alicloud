@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -189,7 +190,7 @@ func dataSourceAlicloudSimpleApplicationServerDisksRead(d *schema.ResourceData, 
 			if statusOk && status.(string) != "" && status.(string) != item["Status"].(string) {
 				continue
 			}
-			if diskTypeOk && diskType.(string) != "" && diskType.(string) != item["DiskType"].(string) {
+			if diskTypeOk && diskType.(string) != "" && !strings.EqualFold(diskType.(string), item["DiskType"].(string)) {
 				continue
 			}
 			objects = append(objects, item)
