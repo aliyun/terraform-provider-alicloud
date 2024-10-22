@@ -54,7 +54,7 @@ func resourceAliCloudAmqpInstance() *schema.Resource {
 			"max_eip_tps": {
 				Type:     schema.TypeString,
 				Optional: true,
-				//Computed: true,
+				Computed: true,
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOkExists("support_eip"); ok && v.(bool) {
 						return false

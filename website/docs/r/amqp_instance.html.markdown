@@ -60,9 +60,9 @@ The following arguments are supported:
 * `instance_name` - (Optional, Computed) The instance name.
 * `instance_type` - (Optional, Computed) Instance type. Valid values are as follows:  professional: professional Edition enterprise: enterprise Edition vip: Platinum Edition.
 * `max_connections` - (Optional, Computed, Available since v1.129.0) The maximum number of connections, according to the value given on the purchase page of the cloud message queue RabbitMQ version console.
-* `max_eip_tps` - (Optional) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
+* `max_eip_tps` - (Optional, Computed) Peak TPS traffic of the public network, which must be a multiple of 128, unit: times per second.
 * `max_tps` - (Optional, Computed) Configure the private network TPS traffic peak, please set the value according to the cloud message queue RabbitMQ version of the console purchase page given.
-* `modify_type` - (Optional) Type of instance lifting and lowering:
+* `modify_type` - (Optional) This parameter must be provided while you change the instance specification. Type of instance lifting and lowering:
   - Upgrade: Upgrade
   - Downgrade: Downgrading.
 * `payment_type` - (Required, ForceNew) The Payment type. Valid value: Subscription: prepaid. PayAsYouGo: Post-paid.
