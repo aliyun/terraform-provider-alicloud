@@ -7,7 +7,7 @@ description: |-
     Provides a list of Config Delivery Channels to the user.
 ---
 
-# alicloud\_config\_delivery\_channels
+# alicloud_config_delivery_channels
 
 -> **DEPRECATED:**  This resource is based on Config's old version OpenAPI, and it has been deprecated from version `1.173.0`.
 Please use new datasource [alicloud_config_deliveries](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/data-sources/config_deliveries) instead.
@@ -15,8 +15,6 @@ Please use new datasource [alicloud_config_deliveries](https://registry.terrafor
 This data source provides the Config Delivery Channels of the current Alibaba Cloud user.
 
 -> **NOTE:**  Available in 1.99.0+.
-
--> **NOTE:** The Cloud Config region only support `cn-shanghai` and `ap-southeast-1`.
 
 ## Example Usage
 
@@ -47,12 +45,12 @@ The following attributes are exported in addition to the arguments listed above:
 * `ids` - A list of Config Delivery Channel IDs.
 * `names` - A list of Config Delivery Channel names.
 * `channels` - A list of Config Delivery Channels. Each element contains the following attributes:
-    * `id` - The ID of the Config Delivery Channel.
-    * `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role assumed by delivery method.
-    * `delivery_channel_condition` - The rule attached to the delivery method. This parameter is applicable only to delivery methods of the Message Service (MNS) type.
-    * `delivery_channel_id` - The ID of the delivery channel.
-    * `delivery_channel_name` - The name of the delivery channel.
-    * `delivery_channel_target_arn` - The ARN of the delivery destination.
-    * `delivery_channel_type` - The type of the delivery channel.
-    * `description` - The description of the delivery channel.
-    * `status` - The status of the delivery channel.
+  * `id` - The ID of the Config Delivery Channel.
+  * `delivery_channel_assume_role_arn` - The Alibaba Cloud Resource Name (ARN) of the role assumed by delivery method.
+  * `delivery_channel_condition` - The rule attached to the delivery method. This parameter is applicable only to delivery methods of the Message Service (MNS) type.
+  * `delivery_channel_id` - The ID of the delivery channel.
+  * `delivery_channel_name` - The name of the delivery channel.
+  * `delivery_channel_target_arn` - The ARN of the delivery destination.
+  * `delivery_channel_type` - The type of the delivery channel.
+  * `description` - The description of the delivery channel.
+  * `status` - The status of the delivery channel.

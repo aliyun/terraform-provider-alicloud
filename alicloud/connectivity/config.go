@@ -31,6 +31,7 @@ type Config struct {
 	SecurityToken        string
 	OtsInstanceName      string
 	AccountId            string
+	AccountType          string
 	Protocol             string
 	ClientReadTimeout    int
 	ClientConnectTimeout int
