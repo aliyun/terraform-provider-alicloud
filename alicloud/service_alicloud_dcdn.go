@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -39,18 +38,13 @@ func (s *DcdnService) convertSourcesToString(v []interface{}) (string, error) {
 
 func (s *DcdnService) DescribeDcdnDomainCertificateInfo(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnDomainCertificateInfo"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 	if err != nil {
 		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		return
@@ -73,18 +67,13 @@ func (s *DcdnService) DescribeDcdnDomainCertificateInfo(id string) (object map[s
 
 func (s *DcdnService) DescribeDcdnDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnDomainDetail"
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+	response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
 			err = WrapErrorf(Error(GetNotFoundMessage("DcdnDomain", id)), NotFoundMsg, ProviderERROR)
@@ -125,12 +114,7 @@ func (s *DcdnService) DcdnDomainStateRefreshFunc(id string, failStates []string)
 func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
 	action := "DescribeDcdnDomainConfigs"
-
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
+	client := s.client
 	parts, err := ParseResourceId(id, 3)
 	if err != nil {
 		return nil, WrapError(err)
@@ -143,11 +127,9 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -158,7 +140,6 @@ func (s *DcdnService) DescribeDcdnDomainConfig(id string) (object map[string]int
 		return nil
 	})
 	addDebug(action, response, request)
-
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidDomain.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Dcdn:DomainConfig", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
@@ -211,19 +192,14 @@ func (s *DcdnService) DcdnDomainConfigStateRefreshFunc(id string, failStates []s
 
 func (s *DcdnService) DescribeDcdnIpaDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnIpaDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -271,21 +247,16 @@ func (s *DcdnService) DcdnIpaDomainStateRefreshFunc(id string, failStates []stri
 
 func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnWafPolicies"
 	request := map[string]interface{}{
 		"QueryArgs":  fmt.Sprintf("{\"PolicyIds\":\"%s\"}", id),
 		"PageNumber": 1,
 		"PageSize":   PageSizeLarge,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -313,10 +284,7 @@ func (s *DcdnService) DescribeDcdnWafPolicy(id string) (object map[string]interf
 
 func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnWafDomains"
 	request := map[string]interface{}{
 		"PageNumber": 1,
@@ -324,11 +292,9 @@ func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interf
 	}
 
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -364,19 +330,14 @@ func (s *DcdnService) DescribeDcdnWafDomain(id string) (object map[string]interf
 
 func (s *DcdnService) DescribeDcdnWafDomainDefenseScenes(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnWafDomainDetail"
 	request := map[string]interface{}{
 		"DomainName": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -400,10 +361,7 @@ func (s *DcdnService) DescribeDcdnWafDomainDefenseScenes(id string) (object map[
 
 func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -413,11 +371,9 @@ func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object m
 		"PolicyId": parts[0],
 	}
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -452,10 +408,7 @@ func (s *DcdnService) DescribeDcdnWafPolicyDomainAttachment(id string) (object m
 }
 
 func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -468,11 +421,9 @@ func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, 
 
 	var response map[string]interface{}
 	action := "GetDcdnKv"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-01-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -480,7 +431,6 @@ func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, 
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -498,10 +448,7 @@ func (s *DcdnService) DescribeDcdnKv(id string) (object map[string]interface{}, 
 }
 
 func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Namespace": id,
@@ -509,11 +456,9 @@ func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]inte
 
 	var response map[string]interface{}
 	action := "DescribeDcdnKvNamespace"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-01-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -521,7 +466,6 @@ func (s *DcdnService) DescribeDcdnKvNamespace(id string) (object map[string]inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -558,18 +502,13 @@ func (s *DcdnService) DcdnKvNamespaceStateRefreshFunc(id string, failStates []st
 
 func (s *DcdnService) DescribeDcdnKvAccountStatus() (object map[string]interface{}, err error) {
 	var response map[string]interface{}
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnKvAccountStatus"
 	request := map[string]interface{}{}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("GET"), StringPointer("2018-01-15"), StringPointer("AK"), request, nil, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, request, nil, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -593,22 +532,16 @@ func (s *DcdnService) DescribeDcdnKvAccountStatus() (object map[string]interface
 }
 
 func (s *DcdnService) DescribeDcdnWafRule(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
 	request := map[string]interface{}{
 		"RuleId": id,
 	}
 
 	var response map[string]interface{}
 	action := "DescribeDcdnWafRule"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) || IsExpectedErrors(err, []string{"InternalError"}) {
 				wait()
@@ -616,7 +549,6 @@ func (s *DcdnService) DescribeDcdnWafRule(id string) (object map[string]interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
 		addDebug(action, response, request)
 		return nil
 	})
@@ -639,20 +571,15 @@ func (s *DcdnService) DescribeDcdnEr(id string) (object map[string]interface{}, 
 	var response map[string]interface{}
 	action := "DescribeRoutine"
 
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
+	client := s.client
 
 	request := map[string]interface{}{
 		"Name": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -682,12 +609,8 @@ func (s *DcdnService) DescribeDcdnEr(id string) (object map[string]interface{}, 
 }
 
 func (s *DcdnService) ListTagResources(id string, resourceType string) (object interface{}, err error) {
-	conn, err := s.client.NewDcdnClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
+	client := s.client
 	action := "DescribeDcdnTagResources"
-
 	request := map[string]interface{}{
 		"ResourceType": resourceType,
 	}
@@ -707,12 +630,9 @@ func (s *DcdnService) ListTagResources(id string, resourceType string) (object i
 
 	tags := make([]interface{}, 0)
 	var response map[string]interface{}
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -721,7 +641,6 @@ func (s *DcdnService) ListTagResources(id string, resourceType string) (object i
 			return resource.NonRetryableError(err)
 		}
 		addDebug(action, response, request)
-
 		resp, err := jsonpath.Get("$.TagResources", response)
 		if err != nil {
 			return resource.NonRetryableError(WrapErrorf(err, FailedGetAttributeMsg, id, "$.TagResources", response))
@@ -743,16 +662,12 @@ func (s *DcdnService) ListTagResources(id string, resourceType string) (object i
 }
 
 func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType string) error {
-
+	client := s.client
 	resourceIdNum := strings.Count(d.Id(), ":")
-
+	var response map[string]interface{}
+	var err error
 	if d.HasChange("tags") {
 		added, removed := parsingTags(d)
-		conn, err := s.client.NewDcdnClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
 		removedTagKeys := make([]string, 0)
 		for _, v := range removed {
 			if !ignoredTags(v, "") {
@@ -781,11 +696,9 @@ func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType strin
 				request[fmt.Sprintf("TagKey.%d", i+1)] = key
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -825,11 +738,9 @@ func (s *DcdnService) SetResourceTags(d *schema.ResourceData, resourceType strin
 				count++
 			}
 
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(2*time.Second, 1*time.Second)
 			err := resource.Retry(10*time.Minute, func() *resource.RetryError {
-				response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-01-15"), StringPointer("AK"), nil, request, &runtime)
+				response, err = client.RpcPost("dcdn", "2018-01-15", action, nil, request, false)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()

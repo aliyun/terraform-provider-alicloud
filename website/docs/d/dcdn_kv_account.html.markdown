@@ -4,7 +4,7 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_dcdn_kv_account"
 sidebar_current: "docs-alicloud-datasource-dcdn-kv-account"
 description: |-
-    Provides a datasource to open the DCDN kv account automatically.
+  Provides a datasource to open the DCDN kv account automatically.
 ---
 
 # alicloud_dcdn_kv_account

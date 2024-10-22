@@ -7,11 +7,11 @@ description: |-
   Provides a list of Dcdn Waf Domains to the user.
 ---
 
-# alicloud\_dcdn\_waf\_domains
+# alicloud_dcdn_waf_domains
 
 This data source provides the Dcdn Waf Domains of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.185.0+.
+-> **NOTE:** Available since v1.185.0.
 
 ## Example Usage
 
@@ -33,7 +33,7 @@ The following arguments are supported:
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 * `query_args` - (Optional, ForceNew) The query conditions. You can filter domain names by name. Fuzzy match is supported `QueryArgs={"DomainName":"Accelerated domain name"}`.
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
