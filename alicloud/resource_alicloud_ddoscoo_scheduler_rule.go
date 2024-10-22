@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -93,10 +92,7 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 	var response map[string]interface{}
 	action := "CreateSchedulerRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
 	}
@@ -128,7 +124,7 @@ func resourceAlicloudDdoscooSchedulerRuleCreate(d *schema.ResourceData, meta int
 	request["RuleType"] = d.Get("rule_type")
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -182,10 +178,7 @@ func resourceAlicloudDdoscooSchedulerRuleRead(d *schema.ResourceData, meta inter
 }
 func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	request := map[string]interface{}{}
 	request["RuleName"] = d.Id()
@@ -233,7 +226,7 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 		action := "ModifySchedulerRule"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -253,10 +246,7 @@ func resourceAlicloudDdoscooSchedulerRuleUpdate(d *schema.ResourceData, meta int
 }
 func resourceAlicloudDdoscooSchedulerRuleDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	action := "DeleteSchedulerRule"
 	var response map[string]interface{}
 	request := map[string]interface{}{}
@@ -266,7 +256,7 @@ func resourceAlicloudDdoscooSchedulerRuleDelete(d *schema.ResourceData, meta int
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

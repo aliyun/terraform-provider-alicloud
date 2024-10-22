@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -80,10 +79,7 @@ func resourceAliCloudDdosCooPortCreate(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["InstanceId"] = d.Get("instance_id")
 	query["FrontendPort"] = d.Get("frontend_port")
@@ -97,11 +93,9 @@ func resourceAliCloudDdosCooPortCreate(d *schema.ResourceData, meta interface{})
 		request["RealServers"] = realServersMaps
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -205,10 +199,7 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyPort"
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["FrontendPort"] = parts[1]
@@ -228,11 +219,9 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request["BackendPort"] = d.Get("backend_port")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -250,10 +239,6 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ModifyNetworkRuleAttribute"
-	conn, err = client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = parts[0]
@@ -275,11 +260,9 @@ func resourceAliCloudDdosCooPortUpdate(d *schema.ResourceData, meta interface{})
 	}
 
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -307,10 +290,7 @@ func resourceAliCloudDdosCooPortDelete(d *schema.ResourceData, meta interface{})
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewDdoscooClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["FrontendPort"] = parts[1]
 	query["InstanceId"] = parts[0]
@@ -324,11 +304,9 @@ func resourceAliCloudDdosCooPortDelete(d *schema.ResourceData, meta interface{})
 	if v, ok := d.GetOk("backend_port"); ok {
 		request["BackendPort"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2020-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ddoscoo", "2020-01-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
