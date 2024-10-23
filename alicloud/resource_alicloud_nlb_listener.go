@@ -529,6 +529,9 @@ func resourceAliCloudNlbListenerDelete(d *schema.ResourceData, meta interface{})
 	})
 
 	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotFound.listener"}) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
