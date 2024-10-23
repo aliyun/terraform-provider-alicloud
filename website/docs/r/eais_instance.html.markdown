@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_eais_instance"
 sidebar_current: "docs-alicloud-resource-eais-instance"
 description: |-
-  Provides a Alicloud EAIS Instance resource.
+  Provides a Alicloud Elastic Accelerated Computing Instances (EAIS) Instance resource.
 ---
 
 # alicloud_eais_instance
 
-Provides a EAIS Instance resource.
+Provides a Elastic Accelerated Computing Instances (EAIS) Instance resource.
 
-For information about EAIS Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/resource-orchestration-service/latest/aliyun-eais-instance).
+For information about Elastic Accelerated Computing Instances (EAIS) Instance and how to use it, see [What is Instance](https://www.alibabacloud.com/help/en/resource-orchestration-service/latest/aliyun-eais-instance).
 
 -> **NOTE:** Available since v1.137.0.
 
@@ -27,40 +27,39 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 locals {
   zone_id = "cn-hangzhou-h"
-}
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
 }
 
 resource "alicloud_vpc" "default" {
   vpc_name   = var.name
-  cidr_block = "10.0.0.0/8"
-}
-resource "alicloud_vswitch" "default" {
-  vswitch_name = var.name
-  cidr_block   = "10.1.0.0/16"
-  vpc_id       = alicloud_vpc.default.id
-  zone_id      = local.zone_id
+  cidr_block = "192.168.0.0/16"
 }
 
+resource "alicloud_vswitch" "default" {
+  vswitch_name = var.name
+  vpc_id       = alicloud_vpc.default.id
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = local.zone_id
+}
 
 resource "alicloud_security_group" "default" {
   name   = var.name
   vpc_id = alicloud_vpc.default.id
 }
+
 resource "alicloud_eais_instance" "default" {
   instance_type     = "eais.ei-a6.2xlarge"
-  instance_name     = var.name
-  security_group_id = alicloud_security_group.default.id
   vswitch_id        = alicloud_vswitch.default.id
+  security_group_id = alicloud_security_group.default.id
+  instance_name     = var.name
 }
 ```
 
@@ -68,28 +67,31 @@ resource "alicloud_eais_instance" "default" {
 
 The following arguments are supported:
 
-* `force` - (Optional) Whether to force deletion when the instance status does not meet the deletion conditions. Valid values: `true` and `false`.
-* `instance_name` - (Optional, ForceNew) The name of the instance.
-* `instance_type` - (Required, ForceNew) The type of the resource. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
-* `security_group_id` - (Required) The ID of the security group.
-* `vswitch_id` - (Required) The ID of the vswitch.
+* `instance_type` - (Required, ForceNew) The type of the Instance. Valid values: `eais.ei-a6.4xlarge`, `eais.ei-a6.2xlarge`, `eais.ei-a6.xlarge`, `eais.ei-a6.large`, `eais.ei-a6.medium`.
+* `vswitch_id` - (Required, ForceNew) The ID of the vSwitch.
+* `security_group_id` - (Required, ForceNew) The ID of the security group.
+* `instance_name` - (Optional, ForceNew) The name of the Instance.
+* `force` - (Optional, Bool) Specifies whether to force delete the Instance. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The resource ID in terraform of Instance.
-* `status` - The status of the resource. Valid values: `Attaching`, `Available`, `Detaching`, `InUse`, `Starting`, `Unavailable`.
+* `status` - The status of the Instance.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
 * `create` - (Defaults to 5 mins) Used when create the Instance.
+* `delete` - (Defaults to 5 mins) Used when delete the Instance.
 
 ## Import
 
-EAIS Instance can be imported using the id, e.g.
+Elastic Accelerated Computing Instances (EAIS) Instance can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_eais_instance.example <id>

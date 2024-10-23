@@ -1479,7 +1479,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_arms_prometheus_alert_rule":                            resourceAlicloudArmsPrometheusAlertRule(),
 			"alicloud_dbfs_instance":                                         resourceAliCloudDbfsDbfsInstance(),
 			"alicloud_rdc_organization":                                      resourceAlicloudRdcOrganization(),
-			"alicloud_eais_instance":                                         resourceAlicloudEaisInstance(),
+			"alicloud_eais_instance":                                         resourceAliCloudEaisInstance(),
 			"alicloud_sae_ingress":                                           resourceAlicloudSaeIngress(),
 			"alicloud_cloudauth_face_config":                                 resourceAlicloudCloudauthFaceConfig(),
 			"alicloud_imp_app_template":                                      resourceAlicloudImpAppTemplate(),
