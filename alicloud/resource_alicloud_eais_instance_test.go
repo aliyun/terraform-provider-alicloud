@@ -36,7 +36,7 @@ func testSweepEaisInstance(region string) error {
 
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
-		return fmt.Errorf("error getting Alicloud client: %s", err)
+		return fmt.Errorf("error getting AliCloud client: %s", err)
 	}
 	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
@@ -119,10 +119,11 @@ func testSweepEaisInstance(region string) error {
 	return nil
 }
 
-func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
+func TestAccAliCloudEaisInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	resourceId := "alicloud_eais_instance.default"
-	ra := resourceAttrInit(resourceId, AlicloudEaisInstanceMap0)
+	ra := resourceAttrInit(resourceId, AliCloudEaisInstanceMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EaisService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEaisInstance")
@@ -130,11 +131,10 @@ func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%seaisinstance%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEaisInstanceBasicDependence0)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEaisInstanceBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithRegions(t, true, connectivity.EAISSystemSupportRegions)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -142,15 +142,15 @@ func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name":     name,
 					"instance_type":     "eais.ei-a6.2xlarge",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
 					"security_group_id": "${alicloud_security_group.default.id}",
-					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name,
-						"instance_type": "eais.ei-a6.2xlarge",
+						"instance_type":     "eais.ei-a6.2xlarge",
+						"vswitch_id":        CHECKSET,
+						"security_group_id": CHECKSET,
 					}),
 				),
 			},
@@ -158,42 +158,95 @@ func TestAccAlicloudEaisInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"vswitch_id", "force", "security_group_id"},
+				ImportStateVerifyIgnore: []string{"force"},
 			},
 		},
 	})
 }
 
-var AlicloudEaisInstanceMap0 = map[string]string{}
+func TestAccAliCloudEaisInstance_basic0_twin(t *testing.T) {
+	var v map[string]interface{}
+	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
+	resourceId := "alicloud_eais_instance.default"
+	ra := resourceAttrInit(resourceId, AliCloudEaisInstanceMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EaisService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEaisInstance")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%seaisinstance%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudEaisInstanceBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"instance_type":     "eais.ei-a6.2xlarge",
+					"vswitch_id":        "${alicloud_vswitch.default.id}",
+					"security_group_id": "${alicloud_security_group.default.id}",
+					"instance_name":     name,
+					"force":             "true",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"instance_type":     "eais.ei-a6.2xlarge",
+						"vswitch_id":        CHECKSET,
+						"security_group_id": CHECKSET,
+						"instance_name":     name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"force"},
+			},
+		},
+	})
+}
 
-func AlicloudEaisInstanceBasicDependence0(name string) string {
+var AliCloudEaisInstanceMap0 = map[string]string{
+	"instance_name": CHECKSET,
+	"status":        CHECKSET,
+}
+
+func AliCloudEaisInstanceBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-		variable "name" {
-		  default = "%s"
-		}
-		data "alicloud_zones" "default" {
-			available_resource_creation = "VSwitch"
-		}
-		locals {
-		  zone_id = "cn-hangzhou-h"
-		}
-		data "alicloud_vpcs" "default"{
-			name_regex = "default-NODELETING"
-		}
-		data "alicloud_vswitches" "default" {
-		  vpc_id  = data.alicloud_vpcs.default.ids.0
-          zone_id = local.zone_id
-		}
-		
-		resource "alicloud_security_group" "default" {
-		  name        = var.name
-		  description = "tf test"
-		  vpc_id      = data.alicloud_vpcs.default.ids.0
-		}
+	variable "name" {
+  		default = "%s"
+	}
+
+	locals {
+  		zone_id = "cn-hangzhou-h"
+	}
+
+	resource "alicloud_vpc" "default" {
+  		vpc_name   = var.name
+  		cidr_block = "192.168.0.0/16"
+	}
+	
+	resource "alicloud_vswitch" "default" {
+		vswitch_name = var.name
+  		vpc_id       = alicloud_vpc.default.id
+  		cidr_block   = "192.168.192.0/24"
+  		zone_id      = local.zone_id
+	}
+	
+	resource "alicloud_security_group" "default" {
+  		name   = var.name
+  		vpc_id = alicloud_vpc.default.id
+	}
 `, name)
 }
 
-func TestUnitAlicloudEaisInstance(t *testing.T) {
+func TestUnitAliCloudEaisInstance(t *testing.T) {
 	p := Provider().(*schema.Provider).ResourcesMap
 	checkoutSupportedRegions(t, true, connectivity.EAISSystemSupportRegions)
 	dInit, _ := schema.InternalMap(p["alicloud_eais_instance"].Schema).Data(nil, nil)
@@ -267,7 +320,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEaisInstanceCreate(dInit, rawClient)
+	err = resourceAliCloudEaisInstanceCreate(dInit, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes := []string{"NonRetryableError", "Throttling", "nil"}
@@ -289,7 +342,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEaisInstanceCreate(dInit, rawClient)
+		err := resourceAliCloudEaisInstanceCreate(dInit, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -308,7 +361,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 	}
 
 	// Update
-	err = resourceAlicloudEaisInstanceUpdate(dExisted, rawClient)
+	err = resourceAliCloudEaisInstanceUpdate(dExisted, rawClient)
 	assert.NotNil(t, err)
 
 	// Read
@@ -332,7 +385,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEaisInstanceRead(dExisted, rawClient)
+		err := resourceAliCloudEaisInstanceRead(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
@@ -351,7 +404,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 			StatusCode: tea.Int(400),
 		}
 	})
-	err = resourceAlicloudEaisInstanceDelete(dExisted, rawClient)
+	err = resourceAliCloudEaisInstanceDelete(dExisted, rawClient)
 	patches.Reset()
 	assert.NotNil(t, err)
 	errorCodes = []string{"NonRetryableError", "Throttling", "nil"}
@@ -373,7 +426,7 @@ func TestUnitAlicloudEaisInstance(t *testing.T) {
 			}
 			return ReadMockResponse, nil
 		})
-		err := resourceAlicloudEaisInstanceDelete(dExisted, rawClient)
+		err := resourceAliCloudEaisInstanceDelete(dExisted, rawClient)
 		patches.Reset()
 		switch errorCode {
 		case "NonRetryableError":
