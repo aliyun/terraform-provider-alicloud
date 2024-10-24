@@ -147,10 +147,10 @@ The endpoint_configurations supports the following:
   - `NLB`: A Network Load Balancer (NLB) instance.
   - `ENI`: An Elastic Network Interface (ENI).
   - `OSS`: An Object Storage Service (OSS) bucket.
--> **NOTE:** From version 1.231.1, `type` can be set to `ALB`, `NLB`, `ENI`, `OSS`.
+-> **NOTE:** From version 1.232.0, `type` can be set to `ALB`, `NLB`, `ENI`, `OSS`.
 * `weight` - (Required, Int) The weight of Endpoint N in the endpoint group. Valid values: `0` to `255`.
 -> **NOTE:** If the weight of a terminal node is set to `0`, global acceleration will terminate the distribution of traffic to the terminal node. Please be careful.
-* `sub_address` - (Optional, Available since v1.231.1) The private IP address of the ENI.
+* `sub_address` - (Optional, Available since v1.232.0) The private IP address of the ENI.
 -> **NOTE:** `sub_address` is valid only when `type` is set to `ENI`.
 * `enable_proxy_protocol` - (Optional, Bool, Available since v1.207.1) Specifies whether to preserve client IP addresses by using the ProxyProtocol module. Default Value: `false`. Valid values:
   - `true`: preserves client IP addresses by using the ProxyProtocol module.

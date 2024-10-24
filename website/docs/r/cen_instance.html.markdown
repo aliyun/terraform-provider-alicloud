@@ -40,7 +40,7 @@ resource "alicloud_cen_instance" "default" {
 The following arguments are supported:
 
 * `protection_level` - (Optional, Available since v1.76.0) The level of CIDR block overlapping. Default value: `REDUCE`.
-* `resource_group_id` - (Optional, Available since v1.231.1) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
+* `resource_group_id` - (Optional, Available since v1.232.0) The ID of the resource group. **Note:** Once you set a value of this property, you cannot set it to an empty string anymore.
 * `cen_instance_name` - (Optional, Available since v1.98.0) The name of the CEN Instance. The name can be empty or `1` to `128` characters in length and cannot start with `http://` or `https://`.
 * `description` - (Optional) The description of the CEN Instance. The description can be empty or `1` to `256` characters in length and cannot start with `http://` or `https://`.
 * `tags` - (Optional, Available since v1.80.0) A mapping of tags to assign to the resource.

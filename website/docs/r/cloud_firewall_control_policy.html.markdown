@@ -63,28 +63,28 @@ The following arguments are supported:
 * `ip_version` - (Optional, ForceNew) The IP version supported by the access control policy. Default value: `4`. Valid values:
   - `4`: IPv4.
   - `6`: IPv6.
-* `domain_resolve_type` - (Optional, Available since v1.231.1) The domain name resolution method of the access control policy. Valid values:
+* `domain_resolve_type` - (Optional, Available since v1.232.0) The domain name resolution method of the access control policy. Valid values:
   - `FQDN`: Fully qualified domain name (FQDN)-based resolution.
   - `DNS`: DNS-based dynamic resolution.
   - `FQDN_AND_DNS`: FQDN and DNS-based dynamic resolution.
-* `repeat_type` - (Optional, Available since v1.231.1) The recurrence type for the access control policy to take effect. Default value: `Permanent`. Valid values:
+* `repeat_type` - (Optional, Available since v1.232.0) The recurrence type for the access control policy to take effect. Default value: `Permanent`. Valid values:
   - `Permanent`: The policy always takes effect.
   - `None`: The policy takes effect for only once.
   - `Daily`: The policy takes effect on a daily basis.
   - `Weekly`: The policy takes effect on a weekly basis.
   - `Monthly`: The policy takes effect on a monthly basis.
-* `start_time` - (Optional, Int, Available since v1.231.1) The time when the access control policy starts to take effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
-* `end_time` - (Optional, Int, Available since v1.231.1) The time when the access control policy stops taking effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes later than the start time.
+* `start_time` - (Optional, Int, Available since v1.232.0) The time when the access control policy starts to take effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
+* `end_time` - (Optional, Int, Available since v1.232.0) The time when the access control policy stops taking effect. The value is a UNIX timestamp. Unit: seconds. The value must be on the hour or on the half hour, and at least 30 minutes later than the start time.
 -> **NOTE:** If `repeat_type` is set to `None`, `Daily`, `Weekly`, or `Monthly`, `start_time` and `end_time` must be set.
-* `repeat_start_time` - (Optional, Available since v1.231.1) The point in time when the recurrence starts. Example: `08:00`. The start time must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
-* `repeat_end_time` - (Optional, Available since v1.231.1) The point in time when the recurrence ends. Example: `23:30`. The end time must be on the hour or on the half hour, and at least 30 minutes later than the start time.
+* `repeat_start_time` - (Optional, Available since v1.232.0) The point in time when the recurrence starts. Example: `08:00`. The start time must be on the hour or on the half hour, and at least 30 minutes earlier than the end time.
+* `repeat_end_time` - (Optional, Available since v1.232.0) The point in time when the recurrence ends. Example: `23:30`. The end time must be on the hour or on the half hour, and at least 30 minutes later than the start time.
 -> **NOTE:** If `repeat_type` is set to `Daily`, `Weekly`, or `Monthly`, `repeat_start_time` and `repeat_end_time` must be set.
-* `repeat_days` - (Optional, List, Available since v1.231.1) The days of a week or of a month on which the access control policy takes effect. Valid values:
+* `repeat_days` - (Optional, List, Available since v1.232.0) The days of a week or of a month on which the access control policy takes effect. Valid values:
   - If `repeat_type` is set to `Weekly`. Valid values: `0` to `6`.
   - If `repeat_type` is set to `Monthly`. Valid values: `1` to `31`.
 -> **NOTE:** If `repeat_type` is set to `Weekly`, or `Monthly`, `repeat_days` must be set.
-* `application_name_list` - (Optional, List, Available since v1.231.1) The application types supported by the access control policy.
--> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.231.1, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
+* `application_name_list` - (Optional, List, Available since v1.232.0) The application types supported by the access control policy.
+-> **NOTE:** If `proto` is set to `TCP`, you can set `application_name_list` to any valid value. If `proto` is set to `UDP`, `ICMP`, or `ANY`, you can only set `application_name_list` to `["ANY"]`. From version 1.232.0, You must specify at least one of the `application_name_list` and `application_name`. If you specify both `application_name_list` and `application_name`, only the `application_name_list` takes effect.
 * `release` - (Optional) The status of the access control policy. Valid values: `true`, `false`.
 * `source_ip` - (Optional) The source IP address of the request.
 * `lang` - (Optional) The language of the content within the request and response. Valid values: `zh`, `en`.
@@ -95,11 +95,11 @@ The following attributes are exported:
 
 * `id` - The resource ID in terraform of Control Policy. It formats as `<acl_uuid>:<direction>`.
 * `acl_uuid` - (Available since v1.148.0) The unique ID of the access control policy.
-* `create_time` - (Available since v1.231.1) The time when the access control policy was created.
+* `create_time` - (Available since v1.232.0) The time when the access control policy was created.
 
 ## Timeouts
 
--> **NOTE:** Available since v1.231.1.
+-> **NOTE:** Available since v1.232.0.
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 

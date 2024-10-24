@@ -113,9 +113,9 @@ The following arguments are supported:
 * `image_id` - (Optional) ID of an image file, indicating the image resource selected when an instance is enabled.
 * `image_name` - (Optional, Available since v1.92.0) Name of an image file, indicating the image resource selected when an instance is enabled.
 * `instance_type` - (Optional) Resource type of an ECS instance.
-* `security_enhancement_strategy` - (Optional, ForceNew, Available since v1.231.1) Specifies whether to enable Security Hardening. Valid values: Active, Deactive.
-* `instance_description` - (Optional, Available since v1.231.1) The description of ECS instances. The description must be 2 to 256 characters in length. It can contain letters but cannot start with http:// or https://.
-* `spot_duration` - (Optional, Available since v1.231.1) The protection period of preemptible instances. Unit: hours. Valid values: 1, 0.
+* `security_enhancement_strategy` - (Optional, ForceNew, Available since v1.232.0) Specifies whether to enable Security Hardening. Valid values: Active, Deactive.
+* `instance_description` - (Optional, Available since v1.232.0) The description of ECS instances. The description must be 2 to 256 characters in length. It can contain letters but cannot start with http:// or https://.
+* `spot_duration` - (Optional, Available since v1.232.0) The protection period of preemptible instances. Unit: hours. Valid values: 1, 0.
 * `instance_types` - (Optional, Available since v1.46.0) Resource types of an ECS instance.
 * `instance_name` - (Optional) Name of an ECS instance. Default to "ESS-Instance". It is valid from version 1.7.1.
 * `io_optimized` - (Deprecated) It has been deprecated on instance resource. All the launched alicloud instances will be I/O optimized.
@@ -134,11 +134,11 @@ The following arguments are supported:
 * `system_disk_auto_snapshot_policy_id` - (Optional, Available since v1.92.0) The id of auto snapshot policy for system disk.
 * `system_disk_performance_level` - (Optional, Available since v1.124.3) The performance level of the ESSD used as the system disk.
 * `system_disk_encrypted` - (Optional, Available since v1.199.0) Whether to encrypt the system disk.
-* `system_disk_kms_key_id` - (Optional, Available since v1.231.1) The ID of the KMS key that you want to use to encrypt the system disk.
-* `system_disk_encrypt_algorithm` - (Optional, Available since v1.231.1) The algorithm that you want to use to encrypt the system disk. Valid values: AES-256, SM4-128.
-* `system_disk_provisioned_iops` - (Optional, Available since v1.231.1) IOPS measures the number of read and write operations that an EBS device can process per second. 
-* `image_options_login_as_non_root` - (Optional, Available since v1.231.1) Specifies whether to use ecs-user to log on to an ECS instance. For more information, see Manage the username used to log on to an ECS instance. Valid values: true, false. Default value: false.
-* `deletion_protection` - (Optional, Available since v1.231.1) Specifies whether to enable the Release Protection feature for ECS instances. This parameter is applicable to only pay-as-you-go instances. You can use this parameter to specify whether an ECS instance can be directly released by using the ECS console or calling the DeleteInstance operation. Valid values: true, false. Default value: false.
+* `system_disk_kms_key_id` - (Optional, Available since v1.232.0) The ID of the KMS key that you want to use to encrypt the system disk.
+* `system_disk_encrypt_algorithm` - (Optional, Available since v1.232.0) The algorithm that you want to use to encrypt the system disk. Valid values: AES-256, SM4-128.
+* `system_disk_provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an EBS device can process per second. 
+* `image_options_login_as_non_root` - (Optional, Available since v1.232.0) Specifies whether to use ecs-user to log on to an ECS instance. For more information, see Manage the username used to log on to an ECS instance. Valid values: true, false. Default value: false.
+* `deletion_protection` - (Optional, Available since v1.232.0) Specifies whether to enable the Release Protection feature for ECS instances. This parameter is applicable to only pay-as-you-go instances. You can use this parameter to specify whether an ECS instance can be directly released by using the ECS console or calling the DeleteInstance operation. Valid values: true, false. Default value: false.
 * `enable` - (Optional) Whether enable the specified scaling group(make it active) to which the current scaling configuration belongs.
 * `active` - (Optional) Whether active current scaling configuration in the specified scaling group. Default to `false`.
 * `substitute` - (Optional) The another scaling configuration which will be active automatically and replace current configuration when setting `active` to 'false'. It is invalid when `active` is 'true'.
@@ -183,7 +183,7 @@ The following arguments are supported:
 The datadisk mapping supports the following:
 
 * `size` - (Optional) Size of data disk, in GB. The value ranges [5,2000] for a cloud disk, [5,1024] for an ephemeral disk, [5,800] for an ephemeral_ssd disk, [20,32768] for cloud_efficiency, cloud_ssd, cloud_essd disk. 
-* `provisioned_iops` - (Optional, Available since v1.231.1) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
+* `provisioned_iops` - (Optional, Available since v1.232.0) IOPS measures the number of read and write operations that an Elastic Block Storage (EBS) device can process per second.
 * `device` - (Optional, Deprecated, Available since v1.92.0) The mount point of data disk N. Valid values of N: 1 to 16. If this parameter is not specified, the system automatically allocates a mount point to created ECS instances. The name of the mount point ranges from /dev/xvdb to /dev/xvdz in alphabetical order.
 * `category` - (Optional) Category of data disk. The parameter value options are `ephemeral_ssd`, `cloud_efficiency`, `cloud_ssd` , `cloud_essd` and `cloud`.
 * `snapshot_id` - (Optional) Snapshot used for creating the data disk. If this parameter is specified, the size parameter is neglected, and the size of the created disk is the size of the snapshot. 
