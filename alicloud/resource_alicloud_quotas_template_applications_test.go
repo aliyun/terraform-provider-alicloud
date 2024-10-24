@@ -109,7 +109,7 @@ func TestAccAliCloudQuotasTemplateApplications_basic5284(t *testing.T) {
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%squotastemplateapplications%d", defaultRegionToTest, rand)
+	name := fmt.Sprintf("tf-testacc%squotas%d", defaultRegionToTest, rand)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudQuotasTemplateApplicationsBasicDependence5284)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -164,7 +164,7 @@ variable "name" {
 }
 
 resource "alicloud_resource_manager_account" "account" {
-  display_name = "tf-testacc-777"
+  display_name = var.name
 }
 
 
