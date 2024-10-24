@@ -94,10 +94,10 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, List) A list of Ssl Certificates IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Ssl Certificates name.
-* `keyword` - (Optional, ForceNew, Available since v1.231.1) The domain name that is bound or the ID of the resource. Fuzzy match is supported.
+* `keyword` - (Optional, ForceNew, Available since v1.232.0) The domain name that is bound or the ID of the resource. Fuzzy match is supported.
 * `enable_details` - (Optional, Bool) Whether to query the detailed list of resource attributes. Default value: `false`.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
-* `lang` - (Optional, ForceNew, Deprecated since v1.231.1) The language of the content within the request and response. **Note:** Field `lang` has been deprecated from provider version 1.231.1.
+* `lang` - (Optional, ForceNew, Deprecated since v1.232.0) The language of the content within the request and response. **Note:** Field `lang` has been deprecated from provider version 1.232.0.
 
 ## Attributes Reference
 
@@ -121,5 +121,5 @@ The following attributes are exported in addition to the arguments listed above:
   * `end_date` - The time at which the certificate expires.
   * `cert` - The Cert of the certificate. **Note:** `cert` takes effect only if `enable_details` is set to `true`.
   * `key` - The Key of the certificate. **Note:** `key` takes effect only if `enable_details` is set to `true`.
-  * `buy_in_aliyun` - Whether the certificate was purchased from Aliyun. **Note:** From version 1.231.1, `buy_in_aliyun` takes effect only if `enable_details` is set to `true`.
+  * `buy_in_aliyun` - Whether the certificate was purchased from Aliyun. **Note:** From version 1.232.0, `buy_in_aliyun` takes effect only if `enable_details` is set to `true`.
   * `name` - (Deprecated since v1.129.0) The name of the certificate. **Note:** Field `name` has been deprecated from provider version 1.129.0. New field `certificate_name` instead.

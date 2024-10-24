@@ -71,8 +71,8 @@ The following arguments are supported:
 * `modify_type` - (Optional) The type of modification. Valid values: `Upgrade`, `Downgrade`. **NOTE:** The `modify_type` is required when you execute an update operation.
 * `cfw_service` - (Removed since v1.209.1) Attribute `cfw_service` does not support longer, and it has been removed since v1.209.1.
 * `spec` - (Optional) Current version. Valid values: `premium_version`, `enterprise_version`,`ultimate_version`.
-* `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`. **NOTE:** From version 1.231.1, When `payment_type` is set to `PayAsYouGo`, `cfw_log` can only be set to `true`, `cfw_log` cannot be modified to `false`.
-* `cfw_log_storage` - (Optional) The log storage capacity. **NOTE:** From version 1.231.1, When `payment_type` is set to `PayAsYouGo`, or `cfw_log` is set to `false`, `cfw_log_storage` will be ignored.
+* `cfw_log` - (Optional) Whether to use log audit. Valid values: `true`, `false`. **NOTE:** From version 1.232.0, When `payment_type` is set to `PayAsYouGo`, `cfw_log` can only be set to `true`, `cfw_log` cannot be modified to `false`.
+* `cfw_log_storage` - (Optional) The log storage capacity. **NOTE:** From version 1.232.0, When `payment_type` is set to `PayAsYouGo`, or `cfw_log` is set to `false`, `cfw_log_storage` will be ignored.
   * `premium_version` - The valid cfw_log_storage is [1000, 500000] with the step size 1000. Default Value: `1000`. Unit: GB.
   * `enterprise_version` - The valid cfw_log_storage is [3000, 500000] with the step size 1000. Default Value: `3000`. Unit: GB.
   * `ultimate_version` - The valid cfw_log_storage is [5000, 500000] with the step size 1000. Default Value: `5000`. Unit: GB.
@@ -98,7 +98,7 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `user_status` - (Available since v1.231.1) The user status of Cloud Firewall Instance.
+* `user_status` - (Available since v1.232.0) The user status of Cloud Firewall Instance.
 * `status` - The status of Cloud Firewall Instance.
 * `create_time` - The creation time.
 * `end_time` - The end time.

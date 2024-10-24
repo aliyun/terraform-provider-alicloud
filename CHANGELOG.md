@@ -1,4 +1,57 @@
-## 1.231.1 (Unreleased)
+## 1.232.0 (Unreleased)
+
+- **New Resource:** `alicloud_sls_collection_policy` [GH-7727]
+- **New Resource:** `alicloud_gpdb_database` [GH-7753]
+
+ENHANCEMENTS:
+
+- client: Updates credential for supportting it refresh sts token automatically. [GH-7715]
+- client: Improved dds client. [GH-7719]
+- resource/alicloud_service_mesh_service_mesh: Add attributes related to Kiali. [GH-7674]
+- resource/alicloud_eci_container_group: Support dns policy. [GH-7682]
+- resource/alicloud_ess_eci_scaling_configuration: add attributes of cost_optimization, instance_family_level, security_context_sysctls.N.name, security_context_sysctls.N.value, dns_config_options.N.name, dns_config_options.N.value, empty_dir_volume_size_limit, empty_dir_volume_medium, config_file_volume_default_mode, host_path_volume_path, host_path_volume_type, config_file_volume_config_file_to_path.mode, container.N.volume_mounts.N.mount_propagation, container.N.volume_mounts.N.sub_path, init_container.N.volume_mounts.N.mount_propagation, init_container.N.volume_mounts.N.sub_path, container.N.tty and container.N.stdin. [GH-7689]
+- resource/alicloud_ess_scaling_configuration: add security_enhancement_strategy, instance_description, system_disk_kms_key_id, spot_duration, system_disk_encrypt_algorithm, image_options_login_as_non_root, deletion_protection, system_disk_provisioned_iops and provisioned_iops of data_disk. [GH-7691]
+- resource/alicloud_cloud_firewall_instance: Supported for new action CreateSlsLogDispatch, DescribeUserBuyVersion. [GH-7717]
+- resource/alicloud_kvstore_instance: Supported for new action ModifyInstanceBandwidth. [GH-7720]
+- resource/alicloud_polardb_cluster: modified support compress_storage. [GH-7722]
+- resource/alicloud_polardb_cluster: modified support loose_xengine and loose_xengine_use_memory_pct. [GH-7724]
+- resource/alicloud_instance: Added the field password_inherit, create_time, start_time, expired_time. [GH-7728]
+- resource/alicloud_ga_endpoint_group: Added the field sub_address; Supported type set to ALB, NLB, ENI, OSS. [GH-7730]
+- resource/alicloud_db_instance: Restoring the usage of a three node RDS. [GH-7733]
+- resource/alicloud_ecs_launch_template: add new attribute http_endpoint, http_tokens and http_put_response_hop_limit; data-source/alicloud_ecs_launch_templates: add new attributes http_endpoint, http_tokens and http_put_response_hop_limit. [GH-7735]
+- resource/alicloud_privatelink_vpc_endpoint_zone: add retry code for create and delete operation. [GH-7743]
+- resource/alicloud_threat_detection_instance: add new attributes threat_analysis_flow, threat_analysis_sls_storage and threat_analysis_switch1. [GH-7744]
+- resource/alicloud_privatelink_vpc_endpoint_service_user: add new attribute user_arn. [GH-7747]
+- resource/alicloud_cloud_firewall_control_policy: Added the field domain_resolve_type, repeat_type, start_time, end_time, repeat_start_time, repeat_end_time, repeat_days, application_name_list, create_time. [GH-7748]
+- resource/alicloud_privatelink_vpc_endpoint_service_resource: add retry code for delete operation. [GH-7749]
+- resource/alicloud_gpdb_instance: Add computed tag for description. [GH-7752]
+- resource/alicloud_snat_entry: add retry for CreateSnatEntry. [GH-7760]
+- resource/alicloud_ecs_disk: Removed the ConflictsWith for encrypted, snapshot_id; Improved the document ecs_disk. [GH-7764]
+- resource/alicloud_cs_managed_kubernetes: support operation_policy, update maintenance_window attributes, deprecated load_balancer_spec; resource/alicloud_cs_serverless_kubernetes: support operation_policy, maintenance_window; resource/alicloud_cs_kubernetes: deprecated load_balancer_spec. [GH-7766]
+- resource/alicloud_amqp_instance: Mark max_eip_tps as Computed and improve doc. [GH-7767]
+- resource/alicloud_amqp_instance: Mark max_eip_tps as Computed and improve doc. [GH-7768]
+- resource/alicloud_cs_kubernetes_node_pool: support pre_user_data. [GH-7769]
+- resource/alicloud_alb_rule: Added retry strategy for error code -21013. [GH-7771]
+- resource/alicloud_cen_instance: Added the field resource_group_id; Improved alicloud_cen_instance testcase. [GH-7772]
+- data-source/alicloud_mse_clusters: update datasource test and docs;resource/alicloud_mse_cluster: add new mse_version mse_serverless and connection_type single_eni; resource/alicloud_mse_engine_namespace: add new attribute cluster_id and update docs; data-source/alicloud_mse_engine_namespaces: add new attribute instance_id and update docs. [GH-7671]
+- data-source/alicloud_mse_engine_namespaces: recover cluster_id forcenew. [GH-7731]
+- data-source/alicloud_ssl_certificates_service_certificates: Added the field keyword; Deprecated the field lang; Updated action DescribeUserCertificateList to ListUserCertificateOrder to improve the read. [GH-7741]
+- data-source/alicloud_privatelink_vpc_endpoint_services: support attribute tags. [GH-7756]
+- data-source/alicloud_resource_manager_folders: Added retry strategy; Improved alicloud_resource_manager_folders testcase and document. [GH-7763]
+- docs: Improves available version for service_mesh. [GH-7721]
+- docs: add whitelist note for alicloud_dbfs_instance. [GH-7742]
+- docs: Fixed invalid links; Improved subcategory for NAS. [GH-7754]
+- docs: Fix invalid argument name for cs_serverless_kubernetes_clusters. [GH-7765]
+- testcase: Add cases for sls_collection_policy. [GH-7773]
+- testcase: Fix case for quotas_template_applications. [GH-7774]
+
+BUG FIXES:
+
+- resource/alicloud_ecp_instance: Fixed the read error; Added the ForceNew for field eip_bandwidth, payment_type; Removed the ForceNew for field resolution; Improved alicloud_ecp_instance testcase. [GH-7726]
+- resource/alicloud_hbr_policy_binding: resolve pagesize bug for hbr_policy_bingding. [GH-7729]
+- resource/alicloud_privatelink_vpc_endpoint_zone: Silent error reporting while delete unexist instance. [GH-7746]
+- resource/alicloud_eais_instance: Fixed the import error caused by field vswitch_id and security_group_id no value; Fixed the diff error caused by field instance_name. [GH-7770]
+
 ## 1.231.0 (September 27, 2024)
 
 - **New Resource:** `alicloud_gpdb_streaming_job` ([#7699](https://github.com/aliyun/terraform-provider-alicloud/issues/7699))
