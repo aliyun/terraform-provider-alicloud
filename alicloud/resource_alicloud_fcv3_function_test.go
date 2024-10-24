@@ -686,11 +686,13 @@ func TestAccAliCloudFcv3Function_basic6950_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 						},
@@ -993,11 +995,13 @@ func TestAccAliCloudFcv3Function_basic6917_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 						},
@@ -1076,11 +1080,13 @@ func TestAccAliCloudFcv3Function_basic6927_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 						},
@@ -1216,11 +1222,13 @@ func TestAccAliCloudFcv3Function_basic6936_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 						},
@@ -1487,11 +1495,13 @@ func TestAccAliCloudFcv3Function_basic6938_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 						},
@@ -1629,11 +1639,13 @@ func TestAccAliCloudFcv3Function_basic7025_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.init",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.stop",
 								},
 							},
 						},
