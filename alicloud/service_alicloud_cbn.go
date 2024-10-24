@@ -81,48 +81,76 @@ func (s *CbnService) WaitForCenFlowlog(id string, expected map[string]interface{
 }
 
 func (s *CbnService) DescribeCenInstance(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeCens"
+
 	conn, err := s.client.NewCbnClient()
 	if err != nil {
-		return object, WrapError(err)
+		return nil, WrapError(err)
 	}
 
-	request := map[string]interface{}{}
 	filterMaps := make([]map[string]interface{}, 0)
 	filterMaps = append(filterMaps, map[string]interface{}{
 		"Key":   "CenId",
 		"Value": []string{id},
 	})
-	request["Filter"] = filterMaps
 
-	var response map[string]interface{}
-	action := "DescribeCens"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
-	wait := incrementalWait(3*time.Second, 3*time.Second)
-	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
-		if err != nil {
-			if NeedRetry(err) {
-				wait()
-				return resource.RetryableError(err)
+	request := map[string]interface{}{
+		"Filter":     filterMaps,
+		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
+	}
+
+	idExist := false
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-09-12"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
 			}
-			return resource.NonRetryableError(err)
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		response = resp
-		addDebug(action, resp, request)
-		return nil
-	})
-	if err != nil {
-		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+
+		resp, err := jsonpath.Get("$.Cens.Cen", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Cens.Cen", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Cen:Instance", id)), NotFoundWithResponse, response)
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["CenId"]) == id {
+				idExist = true
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
-	v, err := jsonpath.Get("$.Cens.Cen", response)
-	if err != nil {
-		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Cens.Cen", response)
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Cen:Instance", id)), NotFoundWithResponse, response)
 	}
-	if len(v.([]interface{})) < 1 {
-		return object, WrapErrorf(Error(GetNotFoundMessage("CenInstance", id)), NotFoundWithResponse, response)
-	}
-	return v.([]interface{})[0].(map[string]interface{}), nil
+
+	return object, nil
 }
 
 func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failStates []string) resource.StateRefreshFunc {
@@ -134,11 +162,13 @@ func (s *CbnService) CenInstanceStateRefreshFunc(d *schema.ResourceData, failSta
 			}
 			return nil, "", WrapError(err)
 		}
+
 		for _, failState := range failStates {
 			if fmt.Sprint(object["Status"]) == failState {
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
