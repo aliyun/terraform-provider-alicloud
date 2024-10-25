@@ -103,7 +103,7 @@ func resourceAliCloudGaIpSetCreate(d *schema.ResourceData, meta interface{}) err
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotExist.BasicBandwidthPackage", "NotSuitable.RegionSelection"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotExist.BasicBandwidthPackage", "NotSuitable.RegionSelection", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
@@ -186,7 +186,7 @@ func resourceAliCloudGaIpSetUpdate(d *schema.ResourceData, meta interface{}) err
 			request["ClientToken"] = buildClientToken("UpdateIpSet")
 			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 			if err != nil {
-				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth"}) || NeedRetry(err) {
+				if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "GreaterThanGa.IpSetBandwidth", "NotActive.Listener"}) || NeedRetry(err) {
 					wait()
 					return resource.RetryableError(err)
 				}
@@ -230,7 +230,7 @@ func resourceAliCloudGaIpSetDelete(d *schema.ResourceData, meta interface{}) err
 		request["ClientToken"] = buildClientToken("DeleteIpSet")
 		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-11-20"), StringPointer("AK"), nil, request, &runtime)
 		if err != nil {
-			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet"}) || NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"StateError.Accelerator", "StateError.IpSet", "NotActive.Listener"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}
