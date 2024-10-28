@@ -246,7 +246,7 @@ func resourceAlicloudPolarDBCluster() *schema.Resource {
 			},
 			"creation_option": {
 				Type:         schema.TypeString,
-				ValidateFunc: StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby"}, false),
+				ValidateFunc: StringInSlice([]string{"Normal", "CloneFromPolarDB", "CloneFromRDS", "MigrationFromRDS", "CreateGdnStandby", "RecoverFromRecyclebin"}, false),
 				Optional:     true,
 				Computed:     true,
 			},
