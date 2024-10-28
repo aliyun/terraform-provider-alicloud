@@ -1,5 +1,5 @@
 ---
-subcategory: "Elastic_High_Performance_Computing(Ehpc)"
+subcategory: "Elastic High Performance Computing (Ehpc)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_ehpc_job_templates"
 sidebar_current: "docs-alicloud-datasource-ehpc-job-templates"
