@@ -114,20 +114,24 @@ resource "alicloud_vswitch" "foo" {
 ## Argument Reference
 
 The following arguments are supported:
-* `cidr_block` - (Required, ForceNew) The IPv4 CIDR block of the VSwitch.
+
+* `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. **NOTE:** From version 1.232.1, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
 * `description` - (Optional) The description of VSwitch.
-* `zone_id` - (Optional, ForceNew, Available in 1.119.0+) The AZ for the VSwitch. **Note:** Required for a VPC VSwitch.
-* `enable_ipv6` - (Optional, Available in v1.201.1+) Whether the IPv6 function is enabled in the switch. Value:
-  - **true**: enables IPv6.
-  - **false** (default): IPv6 is not enabled.
-* `ipv6_cidr_block_mask` - (Optional, Computed, Available in v1.115+) The IPv6 CIDR block of the VSwitch.
-* `tags` - (Optional, Map, Available in v1.55.3+) The tags of VSwitch.
-* `vswitch_name` - (Optional, Available in v1.119.0+) The name of the VSwitch.
-* `vpc_id` - (Required, ForceNew) The VPC ID.
+* `zone_id` - (Optional, ForceNew, Available since v1.119.0) The AZ for the VSwitch. **Note:** Required for a VPC VSwitch.
+* `enable_ipv6` - (Optional, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
+  - `true`: enables IPv6.
+  - `false` (default): IPv6 is not enabled.
+* `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The IPv6 CIDR block of the VSwitch.
+* `tags` - (Optional, Map, Available since v1.55.3) The tags of VSwitch.
+* `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch.
+* `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.232.1, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
+* `is_default` - (Optional, Bool, Available since v1.232.1) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
+  - `true`: Creates a default vSwitch.
+  - `false`: Creates a vSwitch.
 
 The following arguments will be discarded. Please use new fields as soon as possible:
-* `name` - (Deprecated from v1.119.0+) Field 'name' has been deprecated from provider version 1.119.0. New field 'vswitch_name' instead.
-* `availability_zone` - (Deprecated from v1.119.0+) Field 'availability_zone' has been deprecated from provider version 1.119.0. New field 'zone_id' instead.
+* `name` - (Deprecated since v1.119.0) Field `name` has been deprecated from provider version 1.119.0. New field `vswitch_name` instead.
+* `availability_zone` - (Deprecated since v1.119.0) Field `availability_zone` has been deprecated from provider version 1.119.0. New field `zone_id` instead.
 
 
 ## Attributes Reference
