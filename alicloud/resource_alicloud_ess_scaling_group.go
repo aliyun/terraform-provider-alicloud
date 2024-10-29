@@ -49,7 +49,7 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 			"health_check_type": {
 				Type:          schema.TypeString,
 				Computed:      true,
-				ValidateFunc:  StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER", "ECI"}, false),
+				ValidateFunc:  StringInSlice([]string{"ECS", "NONE", "LOAD_BALANCER"}, false),
 				Optional:      true,
 				ConflictsWith: []string{"health_check_types"},
 			},
@@ -76,6 +76,11 @@ func resourceAlicloudEssScalingGroup() *schema.Resource {
 				Deprecated: "Field 'vswitch_id' has been deprecated from provider version 1.7.1, and new field 'vswitch_ids' can replace it.",
 			},
 			"instance_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"container_group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -682,6 +687,14 @@ func buildAlicloudEssScalingGroupArgs(d *schema.ResourceData, meta interface{}) 
 
 	if v, ok := d.GetOk("resource_group_id"); ok {
 		request["ResourceGroupId"] = v
+	}
+
+	if v, ok := d.GetOk("instance_id"); ok {
+		request["InstanceId"] = v
+	}
+
+	if v, ok := d.GetOk("container_group_id"); ok {
+		request["ContainerGroupId"] = v
 	}
 
 	if v, ok := d.GetOk("vswitch_ids"); ok {
