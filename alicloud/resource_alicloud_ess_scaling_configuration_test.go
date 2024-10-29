@@ -459,16 +459,18 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"scaling_group_id":  "${alicloud_ess_scaling_group.default.id}",
-					"image_name":        "${data.alicloud_images.default1.images.0.name}",
-					"instance_type":     "${data.alicloud_instance_types.c6.instance_types.0.id}",
-					"security_group_id": "${alicloud_security_group.default.id}",
-					"force_delete":      "true",
+					"scaling_group_id":          "${alicloud_ess_scaling_group.default.id}",
+					"image_name":                "${data.alicloud_images.default1.images.0.name}",
+					"instance_type":             "${data.alicloud_instance_types.c6.instance_types.0.id}",
+					"security_group_id":         "${alicloud_security_group.default.id}",
+					"force_delete":              "true",
+					"internet_max_bandwidth_in": "200",
 					//"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"password_inherit": "false",
+						"password_inherit":          "false",
+						"internet_max_bandwidth_in": "200",
 					}),
 				),
 			},
@@ -605,16 +607,6 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"instance_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"internet_max_bandwidth_in": "200",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"internet_max_bandwidth_in": "200",
 					}),
 				),
 			},
@@ -1265,7 +1257,7 @@ func TestAccAliCloudEssScalingConfiguration_Multi(t *testing.T) {
 
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	name := fmt.Sprintf("tf-testAccEssScalingConfiguration-%d", rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigDependence)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, resourceEssScalingConfigurationConfigMutilDependence)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -1379,6 +1371,36 @@ func resourceEssScalingConfigurationConfigDependence(name string) string {
 		description             = var.name
 		pending_window_in_days  = "7"
 		key_state               = "Enabled"
+	}
+	resource "alicloud_ess_scaling_group" "default" {
+		min_size = 1
+		max_size = 1
+		scaling_group_name = "${var.name}"
+		removal_policies = ["OldestInstance", "NewestInstance"]
+		vswitch_ids = ["${alicloud_vswitch.default.id}"]
+	}`, EcsInstanceCommonTestCase, name)
+}
+
+func resourceEssScalingConfigurationConfigMutilDependence(name string) string {
+	return fmt.Sprintf(`
+	%s
+	
+	variable "name" {
+		default = "%s"
+	}
+
+	resource "alicloud_security_group" "default1" {
+	  name   = "${var.name}"
+	  vpc_id = "${alicloud_vpc.default.id}"
+	}
+
+	data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
+    data "alicloud_instance_types" "c6" {
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1

@@ -135,7 +135,7 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_max_bandwidth_in": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				Computed: true,
+				ForceNew: true,
 			},
 			"spot_duration": {
 				Type:         schema.TypeInt,
