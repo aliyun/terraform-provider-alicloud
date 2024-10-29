@@ -2083,7 +2083,7 @@ func TestAccAliCloudEssScalingGroup_eciInstance(t *testing.T) {
 					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
 					"group_type":         "ECI",
-					"instance_id":        "${alicloud_eci_container_group.default.id}",
+					"container_group_id": "${alicloud_eci_container_group.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(nil),
@@ -2106,7 +2106,7 @@ func TestAccAliCloudEssScalingGroup_ecsInstance(t *testing.T) {
 		"scaling_group_name": fmt.Sprintf("tf-testAccEssScalingGroup-%d", rand),
 		"vswitch_ids.#":      "1",
 		"removal_policies.#": "2",
-		"group_type":         "ECI",
+		"group_type":         "ECS",
 	}
 
 	ra := resourceAttrInit(resourceId, basicMap)
@@ -2137,7 +2137,7 @@ func TestAccAliCloudEssScalingGroup_ecsInstance(t *testing.T) {
 					"scaling_group_name": "${var.name}",
 					"vswitch_ids":        []string{"${alicloud_vswitch.tmpVs.id}"},
 					"removal_policies":   []string{"OldestInstance", "NewestInstance"},
-					"group_type":         "ECI",
+					"group_type":         "ECS",
 					"instance_id":        "${alicloud_instance.default.id}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -2473,7 +2473,7 @@ func resourceEssScalingGroupInstance(name string) string {
   		owners      = "system"
 	}
 	data "alicloud_instance_types" "c6" {
-      instance_type_family = "ecs.c6"
+      //instance_type_family = "ecs.c6"
 	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
 	}
 
