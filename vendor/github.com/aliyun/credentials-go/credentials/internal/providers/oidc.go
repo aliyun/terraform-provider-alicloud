@@ -128,6 +128,8 @@ func (b *OIDCCredentialsProviderBuilder) Build() (provider *OIDCCredentialsProvi
 	if b.provider.stsEndpoint == "" {
 		if b.provider.stsRegionId != "" {
 			b.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", b.provider.stsRegionId)
+		} else if region := os.Getenv("ALIBABA_CLOUD_STS_REGION"); region != "" {
+			b.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", region)
 		} else {
 			b.provider.stsEndpoint = "sts.aliyuncs.com"
 		}

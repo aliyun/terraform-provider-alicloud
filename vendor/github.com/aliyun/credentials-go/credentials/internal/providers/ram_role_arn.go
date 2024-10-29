@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -146,6 +147,8 @@ func (builder *RAMRoleARNCredentialsProviderBuilder) Build() (provider *RAMRoleA
 	if builder.provider.stsEndpoint == "" {
 		if builder.provider.stsRegionId != "" {
 			builder.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", builder.provider.stsRegionId)
+		} else if region := os.Getenv("ALIBABA_CLOUD_STS_REGION"); region != "" {
+			builder.provider.stsEndpoint = fmt.Sprintf("sts.%s.aliyuncs.com", region)
 		} else {
 			builder.provider.stsEndpoint = "sts.aliyuncs.com"
 		}

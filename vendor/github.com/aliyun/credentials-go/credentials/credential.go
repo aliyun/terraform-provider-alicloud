@@ -55,7 +55,7 @@ type Config struct {
 	PrivateKeyFile        *string  `json:"private_key_file"`
 	BearerToken           *string  `json:"bearer_token"`
 	SecurityToken         *string  `json:"security_token"`
-	RoleSessionExpiration *int     `json:"role_session_expiratioon"`
+	RoleSessionExpiration *int     `json:"role_session_expiration"`
 	Policy                *string  `json:"policy"`
 	Host                  *string  `json:"host"`
 	Timeout               *int     `json:"timeout"`
@@ -195,6 +195,11 @@ func (s *Config) SetURLCredential(v string) *Config {
 
 func (s *Config) SetSTSEndpoint(v string) *Config {
 	s.STSEndpoint = &v
+	return s
+}
+
+func (s *Config) SetExternalId(v string) *Config {
+	s.ExternalId = &v
 	return s
 }
 
