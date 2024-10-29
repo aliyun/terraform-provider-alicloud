@@ -11,7 +11,7 @@ description: |-
 
 Provides a Cloud Storage Gateway Gateway resource.
 
-For information about Cloud Storage Gateway Gateway and how to use it, see [What is Gateway](https://www.alibabacloud.com/help/en/cloud-storage-gateway/latest/deploygateway).
+For information about Cloud Storage Gateway Gateway and how to use it, see [What is Gateway](https://www.alibabacloud.com/help/en/csg/developer-reference/api-mnz46x).
 
 -> **NOTE:** Available since v1.132.0.
 
@@ -27,40 +27,43 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
 
-resource "random_uuid" "default" {
+data "alicloud_zones" "default" {
 }
+
+resource "random_integer" "default" {
+  min = 10000
+  max = 99999
+}
+
 resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = substr("tf-example-${replace(random_uuid.default.result, "-", "")}", 0, 16)
+  storage_bundle_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = var.name
-  cidr_block = "172.16.0.0/12"
+  vpc_name   = "${var.name}-${random_integer.default.result}"
+  cidr_block = "192.168.0.0/16"
 }
-data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
-}
+
 resource "alicloud_vswitch" "default" {
+  vswitch_name = "${var.name}-${random_integer.default.result}"
   vpc_id       = alicloud_vpc.default.id
-  cidr_block   = "172.16.0.0/21"
-  zone_id      = data.alicloud_zones.default.zones[0].id
-  vswitch_name = var.name
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_zones.default.zones.0.id
 }
 
 resource "alicloud_cloud_storage_gateway_gateway" "default" {
-  gateway_name             = var.name
-  description              = var.name
-  gateway_class            = "Standard"
-  type                     = "File"
-  payment_type             = "PayAsYouGo"
-  vswitch_id               = alicloud_vswitch.default.id
-  release_after_expiration = false
-  public_network_bandwidth = 40
   storage_bundle_id        = alicloud_cloud_storage_gateway_storage_bundle.default.id
+  type                     = "File"
   location                 = "Cloud"
+  gateway_name             = var.name
+  gateway_class            = "Standard"
+  vswitch_id               = alicloud_vswitch.default.id
+  public_network_bandwidth = 50
+  payment_type             = "PayAsYouGo"
+  description              = var.name
 }
 ```
 
@@ -68,18 +71,21 @@ resource "alicloud_cloud_storage_gateway_gateway" "default" {
 
 The following arguments are supported:
 
-* `location` - (Required, ForceNew) The location of the gateway. Valid values: `Cloud`, `On_Premise`.
 * `storage_bundle_id` - (Required, ForceNew) The ID of the gateway cluster.
 * `type` - (Required, ForceNew) The type of the gateway. Valid values: `File`, `Iscsi`.
-* `gateway_name` - (Required) The name of the gateway.
+* `location` - (Required, ForceNew) The location of the gateway. Valid values: `Cloud`, `On_Premise`.
+* `gateway_name` - (Required) The name of the gateway. The name must be `1` to `60` characters in length and can contain letters, digits, periods (.), underscores (_), and hyphens (-). It must start with a letter.
+* `gateway_class` - (Optional) The specification of the gateway. Valid values: `Basic`, `Standard`, `Enhanced`, `Advanced`. **NOTE:** If `location` is set to `Cloud`, `gateway_class` is required. Otherwise, `gateway_class` will be ignored. If `payment_type` is set to `Subscription`, `gateway_class` cannot be modified.
+* `vswitch_id` - (Optional, ForceNew) The ID of the VSwitch. **NOTE:** If `location` is set to `Cloud`, `vswitch_id` is required. Otherwise, `vswitch_id` will be ignored.
+* `public_network_bandwidth` - (Optional, Int) The public bandwidth of the gateway. Default value: `5`. Valid values: `5` to `200`. **NOTE:** `public_network_bandwidth` is only valid when `location` is `Cloud`. If `payment_type` is set to `Subscription`, `public_network_bandwidth` cannot be modified.
+* `payment_type` - (Optional, ForceNew) The Payment type of gateway. Valid values: `PayAsYouGo`, `Subscription`. **NOTE:** From version 1.232.1, `payment_type` can be set to `Subscription`.
 * `description` - (Optional) The description of the gateway.
-* `gateway_class` - (Optional) The specification of the gateway. Valid values: `Basic`, `Standard`,`Enhanced`,`Advanced`.
-* `payment_type` - (Optional, ForceNew) The Payment type of gateway. Valid values: `PayAsYouGo`.
-* `public_network_bandwidth` - (Optional, Int) The public network bandwidth of gateway. Default value: `5`. Valid values: `5` to `200`.
-* `reason_detail` - (Optional) The reason detail of gateway.
-* `reason_type` - (Optional) The reason type when user deletes the gateway.
-* `release_after_expiration` - (Optional, Bool) Whether to release the gateway due to expiration.
-* `vswitch_id` - (Optional, ForceNew) The ID of the vSwitch.
+* `release_after_expiration` - (Optional, Bool, ForceNew) Specifies whether to release the gateway after the subscription expires. Valid values:
+  - `true`: The gateway is released after it expires. The gateway becomes unavailable seven days after the gateway expires.
+  - `false`: The gateway is not released after it expires. After the gateway expires, its billing method is changed to `PayAsYouGo`.
+-> **NOTE:** `release_after_expiration` is only valid when `payment_type` is `Subscription`.
+* `reason_type` - (Optional) The type of the reason why you want to delete the gateway.
+* `reason_detail` - (Optional) The detailed reason why you want to delete the gateway.
 
 ## Attributes Reference
 
@@ -92,7 +98,9 @@ The following attributes are exported:
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 1 mins) Used when create the Gateway.
+* `create` - (Defaults to 5 mins) Used when create the Gateway.
+* `update` - (Defaults to 5 mins) Used when update the Gateway.
+* `delete` - (Defaults to 5 mins) Used when delete the Gateway.
 
 ## Import
 
