@@ -9,18 +9,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayMap0)
-	var rand = acctest.RandIntRange(10000, 99999)
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudStorageGatewayGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc%scloudstoragegatewaygateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudStorageGatewayGatewayBasicDependence0)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -31,23 +31,31 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"storage_bundle_id": "${alicloud_cloud_storage_gateway_storage_bundle.default.id}",
-					"vswitch_id":        "${local.vswitch_id}",
+					"storage_bundle_id": "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
 					"type":              "Iscsi",
-					"payment_type":      "PayAsYouGo",
 					"location":          "Cloud",
-					"description":       "Description",
-					"gateway_class":     "Basic",
 					"gateway_name":      name,
+					"gateway_class":     "Basic",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"type":          "Iscsi",
-						"payment_type":  "PayAsYouGo",
-						"location":      "Cloud",
-						"description":   "Description",
-						"gateway_class": "Basic",
-						"gateway_name":  name,
+						"storage_bundle_id": CHECKSET,
+						"type":              "Iscsi",
+						"location":          "Cloud",
+						"gateway_name":      name,
+						"gateway_class":     "Basic",
+						"vswitch_id":        CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name": name + "-update",
 					}),
 				),
 			},
@@ -83,17 +91,6 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"type": "File",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"type": "File",
-					}),
-				),
-			},
-
-			{
-				Config: testAccConfig(map[string]interface{}{
 					"public_network_bandwidth": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -104,40 +101,11 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"description": "DescriptionAlone",
+					"description": name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"description": "DescriptionAlone",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_name": "gateway_name_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_name": "gateway_name_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":              "DescriptionAll",
-					"public_network_bandwidth": "20",
-					"location":                 "Cloud",
-					"gateway_name":             "gateway_nameAll",
-					"gateway_class":            "Basic",
-					"type":                     "Iscsi",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":              "DescriptionAll",
-						"public_network_bandwidth": "20",
-						"gateway_name":             "gateway_nameAll",
-						"gateway_class":            "Basic",
-						"type":                     "Iscsi",
+						"description": name,
 					}),
 				),
 			},
@@ -145,24 +113,24 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"reason_type", "payment_type", "reason_detail", "release_after_expiration"},
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
 			},
 		},
 	})
 }
 
-func TestAccAlicloudCloudStorageGatewayGateway_basic1(t *testing.T) {
+func TestAccAliCloudCloudStorageGatewayGateway_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
-	ra := resourceAttrInit(resourceId, AlicloudCloudStorageGatewayGatewayMap1)
-	var rand = acctest.RandIntRange(10000, 99999)
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeCloudStorageGatewayGateway")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("tf-testacc%scloudstoragegatewaygateway%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudCloudStorageGatewayGatewayBasicDependence1)
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
@@ -173,62 +141,29 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"storage_bundle_id": "${alicloud_cloud_storage_gateway_storage_bundle.default.id}",
-					"type":              "Iscsi",
-					"payment_type":      "PayAsYouGo",
-					"location":          "On_Premise",
-					"gateway_name":      name,
+					"storage_bundle_id":        "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
+					"type":                     "Iscsi",
+					"location":                 "Cloud",
+					"gateway_name":             name,
+					"gateway_class":            "Basic",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"public_network_bandwidth": "10",
+					"payment_type":             "PayAsYouGo",
+					"description":              name,
+					"reason_type":              "REASON2",
+					"reason_detail":            name,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"type":         "Iscsi",
-						"payment_type": "PayAsYouGo",
-						"location":     "On_Premise",
-						"gateway_name": name,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"type": "File",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"type": "File",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description": "DescriptionAlone",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description": "DescriptionAlone",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"gateway_name": "gateway_name_update",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"gateway_name": "gateway_name_update",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"description":  "DescriptionAll",
-					"gateway_name": "gateway_nameAll",
-					"type":         "Iscsi",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"description":  "DescriptionAll",
-						"gateway_name": "gateway_nameAll",
-						"type":         "Iscsi",
+						"storage_bundle_id":        CHECKSET,
+						"type":                     "Iscsi",
+						"location":                 "Cloud",
+						"gateway_name":             name,
+						"gateway_class":            "Basic",
+						"vswitch_id":               CHECKSET,
+						"public_network_bandwidth": "10",
+						"payment_type":             "PayAsYouGo",
+						"description":              name,
 					}),
 				),
 			},
@@ -236,75 +171,286 @@ func TestAccAlicloudCloudStorageGatewayGateway_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"reason_type", "payment_type", "reason_detail", "release_after_expiration"},
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
 			},
 		},
 	})
 }
 
-var AlicloudCloudStorageGatewayGatewayMap0 = map[string]string{
+func TestAccAliCloudCloudStorageGatewayGateway_basic1(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudStorageGatewayGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_bundle_id": "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
+					"type":              "File",
+					"location":          "On_Premise",
+					"gateway_name":      name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_bundle_id": CHECKSET,
+						"type":              "File",
+						"location":          "On_Premise",
+						"gateway_name":      name,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudStorageGatewayGateway_basic1_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap1)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudStorageGatewayGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_bundle_id": "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
+					"type":              "File",
+					"location":          "On_Premise",
+					"gateway_name":      name,
+					"payment_type":      "PayAsYouGo",
+					"description":       name,
+					"reason_type":       "REASON2",
+					"reason_detail":     name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_bundle_id": CHECKSET,
+						"type":              "File",
+						"location":          "On_Premise",
+						"gateway_name":      name,
+						"payment_type":      "PayAsYouGo",
+						"description":       name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudStorageGatewayGateway_basic2(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudStorageGatewayGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_bundle_id": "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
+					"type":              "Iscsi",
+					"location":          "Cloud",
+					"gateway_name":      name,
+					"gateway_class":     "Basic",
+					"vswitch_id":        "${data.alicloud_vswitches.default.ids.0}",
+					"payment_type":      "Subscription",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_bundle_id": CHECKSET,
+						"type":              "Iscsi",
+						"location":          "Cloud",
+						"gateway_name":      name,
+						"gateway_class":     "Basic",
+						"vswitch_id":        CHECKSET,
+						"payment_type":      "Subscription",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"gateway_name": name + "-update",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"gateway_name": name + "-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"description": name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"description": name,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
+			},
+		},
+	})
+}
+
+func TestAccAliCloudCloudStorageGatewayGateway_basic2_twin(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_cloud_storage_gateway_gateway.default"
+	ra := resourceAttrInit(resourceId, AliCloudCloudStorageGatewayGatewayMap0)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &SgwService{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeCloudStorageGatewayGateway")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testAcc%sCloudStorageGatewayGateway%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AliCloudCloudStorageGatewayGatewayBasicDependence0)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  nil,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"storage_bundle_id":        "${data.alicloud_cloud_storage_gateway_storage_bundles.default.bundles.0.id}",
+					"type":                     "Iscsi",
+					"location":                 "Cloud",
+					"gateway_name":             name,
+					"gateway_class":            "Basic",
+					"vswitch_id":               "${data.alicloud_vswitches.default.ids.0}",
+					"public_network_bandwidth": "10",
+					"payment_type":             "Subscription",
+					"description":              name,
+					"release_after_expiration": "true",
+					"reason_type":              "REASON2",
+					"reason_detail":            name,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"storage_bundle_id":        CHECKSET,
+						"type":                     "Iscsi",
+						"location":                 "Cloud",
+						"gateway_name":             name,
+						"gateway_class":            "Basic",
+						"vswitch_id":               CHECKSET,
+						"public_network_bandwidth": "10",
+						"payment_type":             "Subscription",
+						"description":              name,
+						"release_after_expiration": "true",
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"reason_type", "reason_detail"},
+			},
+		},
+	})
+}
+
+var AliCloudCloudStorageGatewayGatewayMap0 = map[string]string{
 	"public_network_bandwidth": CHECKSET,
-	"reason_type":              NOSET,
 	"status":                   CHECKSET,
-	"type":                     CHECKSET,
-	"location":                 CHECKSET,
-	"storage_bundle_id":        CHECKSET,
-	"vswitch_id":               CHECKSET,
 }
 
-func AlicloudCloudStorageGatewayGatewayBasicDependence0(name string) string {
+var AliCloudCloudStorageGatewayGatewayMap1 = map[string]string{
+	"status": CHECKSET,
+}
+
+func AliCloudCloudStorageGatewayGatewayBasicDependence0(name string) string {
 	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
+	variable "name" {
+  		default = "%s"
+	}
 
+	data "alicloud_vpcs" "default" {
+  		name_regex = "default-NODELETING"
+	}
 
-data "alicloud_zones" "default"{
-  available_resource_creation = "VSwitch"
-}
+	data "alicloud_vswitches" "default" {
+	}
 
-data "alicloud_vpcs" "default" {
-  name_regex = "^default-NODELETING$"
-}
-data "alicloud_vswitches" "default" {
-	vpc_id = data.alicloud_vpcs.default.ids.0
-	zone_id = data.alicloud_zones.default.zones[1].id
-}
-
-resource "alicloud_vswitch" "vswitch" {
-  count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-  vpc_id            = data.alicloud_vpcs.default.ids.0
-  cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-  zone_id           = data.alicloud_zones.default.zones[1].id
-  vswitch_name      = var.name
-}
-
-locals {
-  vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
-}
-
-resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = var.name
-}
-`, name)
-}
-
-func AlicloudCloudStorageGatewayGatewayBasicDependence1(name string) string {
-	return fmt.Sprintf(` 
-variable "name" {
-  default = "%s"
-}
-
-resource "alicloud_cloud_storage_gateway_storage_bundle" "default" {
-  storage_bundle_name = var.name
-}
-`, name)
-}
-
-var AlicloudCloudStorageGatewayGatewayMap1 = map[string]string{
-	"reason_type":       NOSET,
-	"status":            CHECKSET,
-	"type":              CHECKSET,
-	"location":          CHECKSET,
-	"storage_bundle_id": CHECKSET,
+	data "alicloud_cloud_storage_gateway_storage_bundles" "default" {
+  		backend_bucket_region_id = "%s"
+	}
+`, name, defaultRegionToTest)
 }
