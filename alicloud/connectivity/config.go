@@ -263,14 +263,13 @@ func (c *Config) setAuthByAssumeRole() (err error) {
 		SetRoleArn(c.RamRoleArn).
 		SetRoleSessionName(c.RamRoleSessionName).
 		SetPolicy(c.RamRolePolicy).
-		SetExternalId(c.RamRoleExternalId).
+		//SetExternalId(c.RamRoleExternalId).
 		SetRoleSessionExpiration(c.RamRoleSessionExpiration)
 	if c.SecurityToken != "" {
 		config.SetSecurityToken(c.SecurityToken)
 	}
-	if c.StsEndpoint != "" {
-		config.SetSTSEndpoint(c.StsEndpoint)
-	}
+	// TODO: change to SetExternalId
+	config.ExternalId = tea.String(c.RamRoleExternalId)
 	provider, err := credential.NewCredential(config)
 	if err != nil {
 		return
@@ -324,9 +323,6 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 			SetPolicy(c.AssumeRoleWithOidc.Policy).
 			SetRoleArn(c.AssumeRoleWithOidc.RoleARN).
 			SetSessionExpiration(c.AssumeRoleWithOidc.DurationSeconds)
-		if c.StsEndpoint != "" {
-			credConfig.SetSTSEndpoint(c.StsEndpoint)
-		}
 	} else {
 		conf := &openapi.Config{
 			RegionId:  tea.String(c.RegionId),
