@@ -77,7 +77,9 @@ func testAccEssScalingGroupSuspendProcess(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-	
+	data "alicloud_instance_types" "default1" {
+	  availability_zone = "${data.alicloud_zones.default.zones.0.id}"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 	  min_size = "0"
 	  max_size = "2"
@@ -90,7 +92,7 @@ func testAccEssScalingGroupSuspendProcess(name string) string {
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = alicloud_ess_scaling_group.default.id
 		image_id = data.alicloud_images.default.images[0].id
-		instance_type = "ecs.f1-c8f1.2xlarge"
+		instance_type = data.alicloud_instance_types.default1.instance_types.0.id
 		security_group_id = alicloud_security_group.default.id
 		force_delete = true
 		active = true
