@@ -35,7 +35,6 @@ func TestAccAlicloudKMSSecretsDataSource(t *testing.T) {
 	}
 	tagsConf := dataSourceTestAccConfig{
 		existConfig: testAccConfig(map[string]interface{}{
-			"fetch_tags": "true",
 			"name_regex": "^${alicloud_kms_secret.default.secret_name}",
 			"tags": map[string]interface{}{
 				"Created": "TF",
@@ -43,7 +42,6 @@ func TestAccAlicloudKMSSecretsDataSource(t *testing.T) {
 			},
 		}),
 		fakeConfig: testAccConfig(map[string]interface{}{
-			"fetch_tags": "true",
 			"name_regex": "^${alicloud_kms_secret.default.secret_name}",
 			"tags": map[string]interface{}{
 				"Created": "TF_fake",
