@@ -79,7 +79,7 @@ func resourceAliCloudFcv3AsyncInvokeConfig() *schema.Resource {
 			"max_async_event_age_in_seconds": {
 				Type:         schema.TypeInt,
 				Optional:     true,
-				ValidateFunc: IntBetween(0, 3600),
+				ValidateFunc: IntBetween(0, 86400),
 			},
 			"max_async_retry_attempts": {
 				Type:     schema.TypeInt,
@@ -108,25 +108,27 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["functionName"] = d.Get("function_name")
+	if v, ok := d.GetOk("function_name"); ok {
+		request["functionName"] = v
+	}
 
-	if v, ok := d.GetOk("async_task"); ok {
+	if v, ok := d.GetOkExists("async_task"); ok {
 		request["asyncTask"] = v
 	}
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("destination_config"); !IsNil(v) {
 		onFailure := make(map[string]interface{})
-		nodeNative, _ := jsonpath.Get("$[0].on_failure[0].destination", d.Get("destination_config"))
-		if nodeNative != nil && nodeNative != "" {
-			onFailure["destination"] = nodeNative
+		destination1, _ := jsonpath.Get("$[0].on_failure[0].destination", d.Get("destination_config"))
+		if destination1 != nil && destination1 != "" {
+			onFailure["destination"] = destination1
 		}
 
 		objectDataLocalMap["onFailure"] = onFailure
 		onSuccess := make(map[string]interface{})
-		nodeNative1, _ := jsonpath.Get("$[0].on_success[0].destination", d.Get("destination_config"))
-		if nodeNative1 != nil && nodeNative1 != "" {
-			onSuccess["destination"] = nodeNative1
+		destination3, _ := jsonpath.Get("$[0].on_success[0].destination", d.Get("destination_config"))
+		if destination3 != nil && destination3 != "" {
+			onSuccess["destination"] = destination3
 		}
 
 		objectDataLocalMap["onSuccess"] = onSuccess
@@ -134,10 +136,10 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 		request["destinationConfig"] = objectDataLocalMap
 	}
 
-	if v, ok := d.GetOk("max_async_event_age_in_seconds"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("max_async_event_age_in_seconds"); ok && v.(int) > 0 {
 		request["maxAsyncEventAgeInSeconds"] = v
 	}
-	if v, ok := d.GetOk("max_async_retry_attempts"); ok {
+	if v, ok := d.GetOkExists("max_async_retry_attempts"); ok {
 		request["maxAsyncRetryAttempts"] = v
 	}
 	if v, ok := d.GetOk("qualifier"); ok {
@@ -157,9 +159,9 @@ func resourceAliCloudFcv3AsyncInvokeConfigCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_async_invoke_config", action, AlibabaCloudSdkGoERROR)
@@ -262,46 +264,43 @@ func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta in
 
 	if d.HasChange("async_task") {
 		update = true
+		request["asyncTask"] = d.Get("async_task")
 	}
-	if v, ok := d.GetOk("async_task"); ok || d.HasChange("async_task") {
-		request["asyncTask"] = v
-	}
+
 	if d.HasChange("destination_config") {
 		update = true
-	}
-	objectDataLocalMap := make(map[string]interface{})
+		objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("destination_config"); !IsNil(v) || d.HasChange("destination_config") {
-		onFailure := make(map[string]interface{})
-		nodeNative, _ := jsonpath.Get("$[0].on_failure[0].destination", v)
-		if nodeNative != nil && (d.HasChange("destination_config.0.on_failure.0.destination") || nodeNative != "") {
-			onFailure["destination"] = nodeNative
+		if v := d.Get("destination_config"); !IsNil(v) {
+			onFailure := make(map[string]interface{})
+			destination1, _ := jsonpath.Get("$[0].on_failure[0].destination", v)
+			if destination1 != nil && (d.HasChange("destination_config.0.on_failure.0.destination") || destination1 != "") {
+				onFailure["destination"] = destination1
+			}
+
+			objectDataLocalMap["onFailure"] = onFailure
+			onSuccess := make(map[string]interface{})
+			destination3, _ := jsonpath.Get("$[0].on_success[0].destination", v)
+			if destination3 != nil && (d.HasChange("destination_config.0.on_success.0.destination") || destination3 != "") {
+				onSuccess["destination"] = destination3
+			}
+
+			objectDataLocalMap["onSuccess"] = onSuccess
+
+			request["destinationConfig"] = objectDataLocalMap
 		}
-
-		objectDataLocalMap["onFailure"] = onFailure
-		onSuccess := make(map[string]interface{})
-		nodeNative1, _ := jsonpath.Get("$[0].on_success[0].destination", v)
-		if nodeNative1 != nil && (d.HasChange("destination_config.0.on_success.0.destination") || nodeNative1 != "") {
-			onSuccess["destination"] = nodeNative1
-		}
-
-		objectDataLocalMap["onSuccess"] = onSuccess
-
-		request["destinationConfig"] = objectDataLocalMap
 	}
 
 	if d.HasChange("max_async_event_age_in_seconds") {
 		update = true
+		request["maxAsyncEventAgeInSeconds"] = d.Get("max_async_event_age_in_seconds")
 	}
-	if v, ok := d.GetOk("max_async_event_age_in_seconds"); (ok || d.HasChange("max_async_event_age_in_seconds")) && v.(int) > 0 {
-		request["maxAsyncEventAgeInSeconds"] = v
-	}
+
 	if d.HasChange("max_async_retry_attempts") {
 		update = true
+		request["maxAsyncRetryAttempts"] = d.Get("max_async_retry_attempts")
 	}
-	if v, ok := d.GetOk("max_async_retry_attempts"); ok || d.HasChange("max_async_retry_attempts") {
-		request["maxAsyncRetryAttempts"] = v
-	}
+
 	if v, ok := d.GetOk("qualifier"); ok {
 		query["qualifier"] = StringPointer(v.(string))
 	}
@@ -320,9 +319,9 @@ func resourceAliCloudFcv3AsyncInvokeConfigUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -339,7 +338,6 @@ func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
@@ -351,12 +349,11 @@ func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta in
 		query["qualifier"] = StringPointer(v.(string))
 	}
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -365,11 +362,14 @@ func resourceAliCloudFcv3AsyncInvokeConfigDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 

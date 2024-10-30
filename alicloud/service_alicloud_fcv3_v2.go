@@ -293,6 +293,7 @@ func (s *Fcv3ServiceV2) Fcv3AliasStateRefreshFunc(id string, field string, failS
 }
 
 // DescribeFcv3Alias >>> Encapsulated.
+
 // DescribeFcv3AsyncInvokeConfig <<< Encapsulated get interface for Fcv3 AsyncInvokeConfig.
 
 func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[string]interface{}, err error) {
@@ -323,18 +324,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3AsyncInvokeConfig(id string) (object map[str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AsyncConfigNotExists"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("AsyncInvokeConfig", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
