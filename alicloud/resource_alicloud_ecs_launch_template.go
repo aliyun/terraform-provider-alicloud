@@ -137,10 +137,9 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"PayByBandwidth", "PayByTraffic"}, false),
 			},
 			"internet_max_bandwidth_in": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ValidateFunc: IntBetween(1, 200),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
 			},
 			"internet_max_bandwidth_out": {
 				Type:         schema.TypeInt,
@@ -315,7 +314,6 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 							Type:          schema.TypeInt,
 							Optional:      true,
 							Computed:      true,
-							ValidateFunc:  IntBetween(20, 500),
 							ConflictsWith: []string{"system_disk_size"},
 						},
 						"encrypted": {
@@ -409,7 +407,6 @@ func resourceAliCloudEcsLaunchTemplate() *schema.Resource {
 				Type:          schema.TypeInt,
 				Optional:      true,
 				Computed:      true,
-				ValidateFunc:  IntBetween(20, 500),
 				Deprecated:    "Field 'system_disk_size' has been deprecated from provider version 1.120.0. New field 'system_disk' instead.",
 				ConflictsWith: []string{"system_disk"},
 			},
