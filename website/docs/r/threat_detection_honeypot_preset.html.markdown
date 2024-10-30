@@ -45,6 +45,7 @@ resource "alicloud_threat_detection_honeypot_preset" "default" {
   meta {
     portrait_option = true
     burp            = "open"
+    trojan_git      = "open"
   }
 }
 ```
