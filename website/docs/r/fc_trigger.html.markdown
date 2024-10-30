@@ -427,23 +427,31 @@ resource "alicloud_fc_trigger" "oss_trigger" {
   function = alicloud_fc_function.default.name
   name     = "terraform-example-oss"
   type     = "eventbridge"
-  config   = <<EOF
+  config = jsonencode(
     {
-        "triggerEnable": false,
-        "asyncInvocationType": false,
-        "eventRuleFilterPattern": {
-          "source":[
-            "acs.oss"
-            ],
-            "type":[
-              "oss:BucketCreated:PutBucket"
-            ]
-        },
-        "eventSourceConfig": {
-            "eventSourceType": "Default"
+      "triggerEnable" : false,
+      "asyncInvocationType" : false,
+      "eventSourceConfig" : {
+        "eventSourceType" : "Default"
+      },
+      "eventRuleFilterPattern" : "{\"source\":[\"acs.oss\"],\"type\":[\"oss:BucketCreated:PutBucket\"]}",
+      "eventSinkConfig" : {
+        "deliveryOption" : {
+          "mode" : "event-driven",
+          "eventSchema" : "CloudEvents"
         }
+      },
+      "runOptions" : {
+        "retryStrategy" : {
+          "PushRetryStrategy" : "BACKOFF_RETRY"
+        },
+        "errorsTolerance" : "ALL",
+        "mode" : "event-driven"
+      }
     }
-EOF
+  )
+
+
 }
 
 resource "alicloud_fc_trigger" "mns_trigger" {
@@ -451,23 +459,36 @@ resource "alicloud_fc_trigger" "mns_trigger" {
   function = alicloud_fc_function.default.name
   name     = "terraform-example-mns"
   type     = "eventbridge"
-  config   = <<EOF
+  config = jsonencode(
     {
-        "triggerEnable": false,
-        "asyncInvocationType": false,
-        "eventRuleFilterPattern": "{}",
-        "eventSourceConfig": {
-            "eventSourceType": "MNS",
-            "eventSourceParameters": {
-                "sourceMNSParameters": {
-                    "RegionId": "cn-hangzhou",
-                    "QueueName": "mns-queue",
-                    "IsBase64Decode": true
-                }
-            }
+      "triggerEnable" : false,
+      "asyncInvocationType" : false,
+      "eventSourceConfig" : {
+        "eventSourceType" : "MNS",
+        "eventSourceParameters" : {
+          "sourceMNSParameters" : {
+            "RegionId" : "${data.alicloud_regions.default.regions.0.id}",
+            "QueueName" : "mns-queue",
+            "IsBase64Decode" : true
+          }
         }
+      },
+      "eventRuleFilterPattern" : "{}",
+      "eventSinkConfig" : {
+        "deliveryOption" : {
+          "mode" : "event-driven",
+          "eventSchema" : "CloudEvents"
+        }
+      },
+      "runOptions" : {
+        "retryStrategy" : {
+          "PushRetryStrategy" : "BACKOFF_RETRY"
+        },
+        "errorsTolerance" : "ALL",
+        "mode" : "event-driven"
+      }
     }
-EOF
+  )
 }
 
 resource "alicloud_ons_instance" "default" {
@@ -491,27 +512,40 @@ resource "alicloud_fc_trigger" "rocketmq_trigger" {
   function = alicloud_fc_function.default.name
   name     = "terraform-example-rocketmq"
   type     = "eventbridge"
-  config   = <<EOF
+  config = jsonencode(
     {
-        "triggerEnable": false,
-        "asyncInvocationType": false,
-        "eventRuleFilterPattern": "{}",
-        "eventSourceConfig": {
-            "eventSourceType": "RocketMQ",
-            "eventSourceParameters": {
-                "sourceRocketMQParameters": {
-                    "RegionId": "${data.alicloud_regions.default.regions.0.id}",
-                    "InstanceId": "${alicloud_ons_instance.default.id}",
-                    "GroupID": "${alicloud_ons_group.default.group_name}",
-                    "Topic": "${alicloud_ons_topic.default.topic_name}",
-                    "Timestamp": 1686296162,
-                    "Tag": "example-tag",
-                    "Offset": "CONSUME_FROM_LAST_OFFSET"
-                }
-            }
+      "triggerEnable" : false,
+      "asyncInvocationType" : false,
+      "eventRuleFilterPattern" : "{}",
+      "eventSinkConfig" : {
+        "deliveryOption" : {
+          "mode" : "event-driven",
+          "eventSchema" : "CloudEvents"
         }
+      },
+      "eventSourceConfig" : {
+        "eventSourceType" : "RocketMQ",
+        "eventSourceParameters" : {
+          "sourceRocketMQParameters" : {
+            "RegionId" : "${data.alicloud_regions.default.regions.0.id}",
+            "InstanceId" : "${alicloud_ons_instance.default.id}",
+            "GroupID" : "${alicloud_ons_group.default.group_name}",
+            "Topic" : "${alicloud_ons_topic.default.topic_name}",
+            "Timestamp" : 1686296162,
+            "Tag" : "example-tag",
+            "Offset" : "CONSUME_FROM_LAST_OFFSET"
+          }
+        }
+      },
+      "runOptions" : {
+        "retryStrategy" : {
+          "PushRetryStrategy" : "BACKOFF_RETRY"
+        },
+        "errorsTolerance" : "ALL",
+        "mode" : "event-driven"
+      }
     }
-EOF
+  )
 }
 
 resource "alicloud_amqp_instance" "default" {
@@ -541,24 +575,37 @@ resource "alicloud_fc_trigger" "rabbitmq_trigger" {
   function = alicloud_fc_function.default.name
   name     = "terraform-example-rabbitmq"
   type     = "eventbridge"
-  config   = <<EOF
+  config = jsonencode(
     {
-        "triggerEnable": false,
-        "asyncInvocationType": false,
-        "eventRuleFilterPattern": "{}",
-        "eventSourceConfig": {
-            "eventSourceType": "RabbitMQ",
-            "eventSourceParameters": {
-                "sourceRabbitMQParameters": {
-                    "RegionId": "${data.alicloud_regions.default.regions.0.id}",
-                    "InstanceId": "${alicloud_amqp_instance.default.id}",
-                    "VirtualHostName": "${alicloud_amqp_virtual_host.default.virtual_host_name}",
-                    "QueueName": "${alicloud_amqp_queue.default.queue_name}"
-                }
-            }
+      "triggerEnable" : false,
+      "asyncInvocationType" : false,
+      "eventRuleFilterPattern" : "{}",
+      "eventSourceConfig" : {
+        "eventSourceType" : "RabbitMQ",
+        "eventSourceParameters" : {
+          "sourceRabbitMQParameters" : {
+            "RegionId" : "${data.alicloud_regions.default.regions.0.id}",
+            "InstanceId" : "${alicloud_amqp_instance.default.id}",
+            "VirtualHostName" : "${alicloud_amqp_virtual_host.default.virtual_host_name}",
+            "QueueName" : "${alicloud_amqp_queue.default.queue_name}"
+          }
         }
+      },
+      "eventSinkConfig" : {
+        "deliveryOption" : {
+          "mode" : "event-driven",
+          "eventSchema" : "CloudEvents"
+        }
+      },
+      "runOptions" : {
+        "retryStrategy" : {
+          "PushRetryStrategy" : "BACKOFF_RETRY"
+        },
+        "errorsTolerance" : "ALL",
+        "mode" : "event-driven"
+      }
     }
-EOF
+  )
 }
 ```
 
