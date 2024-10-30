@@ -354,6 +354,53 @@ func (s *MseService) DescribeMseZnode(id string) (object map[string]interface{},
 	object = v.(map[string]interface{})
 	return object, nil
 }
+func (s *MseService) DescribeMseNacosConfig(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	conn, err := s.client.NewMseClient()
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	parts, err := ParseResourceId(id, 4)
+	if err != nil {
+		return nil, WrapError(err)
+	}
+	action := "GetNacosConfig"
+	request := map[string]interface{}{
+		"InstanceId":  parts[0],
+		"NamespaceId": parts[1],
+		"DataId":      parts[2],
+		"Group":       parts[3],
+	}
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-05-31"), StringPointer("AK"), nil, request, &runtime)
+	// For delete check
+	if IsExpectedErrors(err, []string{"InternalError"}) {
+		return object, WrapErrorf(Error(GetNotFoundMessage("MSE:MseNacosConfig", id)), NotFoundMsg, ProviderERROR)
+	}
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"mse-200-021"}) {
+			err = WrapErrorf(Error(GetNotFoundMessage("MseNacosConfig", id)), NotFoundMsg, ProviderERROR)
+			return object, err
+		}
+		err = WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		return object, err
+	}
+	if fmt.Sprint(response["Success"]) == "false" {
+		return object, WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	addDebug(action, response, request)
+	v, err := jsonpath.Get("$.Configuration", response)
+	if err != nil {
+		if err.Error() == "unknown key Configuration" {
+			return object, WrapErrorf(Error(GetNotFoundMessage("MSE", id)), NotFoundWithResponse, response)
+		}
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Configuration", response)
+	}
+	object = v.(map[string]interface{})
+	return object, nil
+}
 
 func (s *MseService) DescribeMseEngineNamespace(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
