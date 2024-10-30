@@ -49,7 +49,7 @@ resource "alicloud_ocean_base_instance" "default" {
   auto_renew         = "false"
   disk_size          = "100"
   payment_type       = "PayAsYouGo"
-  instance_class     = "8C32GB"
+  instance_class     = "8C32G"
   backup_retain_mode = "delete_all"
   series             = "normal"
   instance_name      = var.name

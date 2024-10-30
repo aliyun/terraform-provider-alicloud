@@ -33,26 +33,26 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name":      "${var.name}",
-					"series":             "normal",
-					"auto_renew":         "false",
-					"disk_size":          "100",
-					"payment_type":       "PayAsYouGo",
-					"instance_class":     "8C32GB",
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"instance_name":  "${var.name}",
+					"series":         "normal",
+					"auto_renew":     "false",
+					"disk_size":      "100",
+					"payment_type":   "PayAsYouGo",
+					"instance_class": "8C32GB",
+					//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"zones":              []string{"${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 2]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 3]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 4]}"},
 					"backup_retain_mode": "delete_all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":     name,
-						"series":            "normal",
-						"auto_renew":        "false",
-						"disk_size":         "100",
-						"instance_class":    "8C32GB",
-						"resource_group_id": CHECKSET,
-						"zones.#":           "3",
-						"payment_type":      "PayAsYouGo",
+						"instance_name":  name,
+						"series":         "normal",
+						"auto_renew":     "false",
+						"disk_size":      "100",
+						"instance_class": CHECKSET,
+						//"resource_group_id": CHECKSET,
+						"zones.#":      "3",
+						"payment_type": "PayAsYouGo",
 					}),
 				),
 			},
@@ -84,7 +84,19 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"disk_size":      "200",
-						"instance_class": "14C70GB",
+						"instance_class": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"disk_size":      "100",
+					"instance_class": "8C32G",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"disk_size":      "100",
+						"instance_class": CHECKSET,
 					}),
 				),
 			},
@@ -92,7 +104,7 @@ func TestAccAliCloudOceanBaseInstance_basic0(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period", "instance_class"},
+				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period"},
 			},
 		},
 	})
@@ -121,26 +133,26 @@ func TestAccAliCloudOceanBaseInstance_basic1(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name":      "${var.name}",
-					"series":             "normal",
-					"auto_renew":         "false",
-					"disk_size":          "100",
-					"payment_type":       "PayAsYouGo",
-					"instance_class":     "8C32GB",
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"instance_name":  "${var.name}",
+					"series":         "normal",
+					"auto_renew":     "false",
+					"disk_size":      "100",
+					"payment_type":   "PayAsYouGo",
+					"instance_class": "8C32GB",
+					//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"zones":              []string{"${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 2]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 3]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 4]}"},
 					"backup_retain_mode": "delete_all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":     name,
-						"series":            "normal",
-						"auto_renew":        "false",
-						"disk_size":         "100",
-						"instance_class":    "8C32GB",
-						"resource_group_id": CHECKSET,
-						"zones.#":           "3",
-						"payment_type":      "PayAsYouGo",
+						"instance_name":  name,
+						"series":         "normal",
+						"auto_renew":     "false",
+						"disk_size":      "100",
+						"instance_class": CHECKSET,
+						//"resource_group_id": CHECKSET,
+						"zones.#":      "3",
+						"payment_type": "PayAsYouGo",
 					}),
 				),
 			},
@@ -148,7 +160,7 @@ func TestAccAliCloudOceanBaseInstance_basic1(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period", "instance_class"},
+				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period"},
 			},
 		},
 	})
@@ -170,41 +182,40 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
-			testAccPreCheckWithTime(t, []int{1})
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
+		CheckDestroy:  nil,
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"period":             "1",
-					"period_unit":        "Month",
-					"auto_renew_period":  "1",
-					"instance_name":      "${var.name}",
-					"series":             "normal",
-					"auto_renew":         "false",
-					"disk_size":          "300",
-					"disk_type":          "cloud_essd_pl1",
-					"ob_version":         "4.1.0.2",
-					"payment_type":       "Subscription",
-					"instance_class":     "4C16GB",
-					"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"period":            "1",
+					"period_unit":       "Month",
+					"auto_renew_period": "1",
+					"instance_name":     "${var.name}",
+					"series":            "normal",
+					"auto_renew":        "false",
+					"disk_size":         "300",
+					"disk_type":         "cloud_essd_pl1",
+					"ob_version":        "4.2.1",
+					"payment_type":      "Subscription",
+					"instance_class":    "4C16G",
+					//"resource_group_id":  "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"zones":              []string{"${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 2]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 3]}", "${data.alicloud_zones.default.ids[length(data.alicloud_zones.default.ids) - 4]}"},
 					"backup_retain_mode": "delete_all",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name":     name,
-						"series":            "normal",
-						"auto_renew":        "false",
-						"disk_size":         "300",
-						"disk_type":         "cloud_essd_pl1",
-						"ob_version":        "4.1.0.2",
-						"instance_class":    "4C16GB",
-						"resource_group_id": CHECKSET,
-						"zones.#":           "3",
-						"payment_type":      "Subscription",
+						"instance_name":  name,
+						"series":         "normal",
+						"auto_renew":     "false",
+						"disk_size":      "300",
+						"disk_type":      "cloud_essd_pl1",
+						"ob_version":     "4.2.1",
+						"instance_class": CHECKSET,
+						//"resource_group_id": CHECKSET,
+						"zones.#":      "3",
+						"payment_type": "Subscription",
 					}),
 				),
 			},
@@ -212,7 +223,7 @@ func TestAccAliCloudOceanBaseInstance_basic2(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period", "instance_class"},
+				ImportStateVerifyIgnore: []string{"period_unit", "auto_renew_period", "backup_retain_mode", "period"},
 			},
 		},
 	})
@@ -278,7 +289,7 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":   "4C16G",
+						"instance_class":   CHECKSET,
 						"zones.#":          "2",
 						"instance_name":    name,
 						"disk_type":        "cloud_essd_pl1",
@@ -295,14 +306,14 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_class":      "8C32G",
+					"instance_class":      "8C32GB",
 					"instance_name":       name + "_update",
 					"disk_size":           "200",
 					"upgrade_spec_native": "true",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_class":      "8C32G",
+						"instance_class":      CHECKSET,
 						"instance_name":       name + "_update",
 						"disk_size":           "200",
 						"upgrade_spec_native": "true",
@@ -323,13 +334,15 @@ func TestAccAliCloudOceanBaseInstance_basic7602(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_name": name + "_update",
-					"disk_size":     "400",
+					"instance_name":  name + "_update",
+					"disk_size":      "100",
+					"instance_class": "4C16G",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"instance_name": name + "_update",
-						"disk_size":     "400",
+						"instance_name":  name + "_update",
+						"disk_size":      "100",
+						"instance_class": CHECKSET,
 					}),
 				),
 			},

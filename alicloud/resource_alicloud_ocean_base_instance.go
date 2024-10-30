@@ -3,6 +3,8 @@ package alicloud
 import (
 	"fmt"
 	"log"
+	"reflect"
+	"strings"
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
@@ -76,6 +78,15 @@ func resourceAliCloudOceanBaseInstance() *schema.Resource {
 			"instance_class": {
 				Type:     schema.TypeString,
 				Required: true,
+				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
+					if old != "" && new != "" && old != new {
+						oldInstanceClass := strings.TrimSuffix(strings.TrimSpace(old), "B")
+						newInstanceClass := strings.TrimSuffix(strings.TrimSpace(new), "B")
+
+						return reflect.DeepEqual(oldInstanceClass, newInstanceClass)
+					}
+					return false
+				},
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
@@ -263,11 +274,7 @@ func resourceAliCloudOceanBaseInstanceRead(d *schema.ResourceData, meta interfac
 		d.Set("disk_type", objectRaw["DiskType"])
 	}
 	if objectRaw["InstanceClass"] != nil {
-		if v, ok := d.GetOk("instance_class"); ok {
-			d.Set("instance_class", v)
-		} else {
-			d.Set("instance_class", objectRaw["InstanceClass"])
-		}
+		d.Set("instance_class", objectRaw["InstanceClass"])
 	}
 	if objectRaw["InstanceName"] != nil {
 		d.Set("instance_name", objectRaw["InstanceName"])
@@ -459,6 +466,11 @@ func resourceAliCloudOceanBaseInstanceUpdate(d *schema.ResourceData, meta interf
 
 func resourceAliCloudOceanBaseInstanceDelete(d *schema.ResourceData, meta interface{}) error {
 
+	if v, ok := d.GetOk("payment_type"); ok && fmt.Sprint(v) == "Subscription" {
+		log.Printf("[WARN] Cannot destroy resource alicloud_ocean_base_instance which payment_type valued Subscription. Terraform will remove this resource from the state file, however resources may remain.")
+		return nil
+	}
+
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteInstances"
 	var request map[string]interface{}
@@ -530,6 +542,7 @@ func convertOceanBaseInstanceInstancePayTypeResponse(source interface{}) interfa
 	}
 	return source
 }
+
 func convertOceanBaseInstanceInstanceSeriesResponse(source interface{}) interface{} {
 	switch source {
 	case "NORMAL":
@@ -541,6 +554,7 @@ func convertOceanBaseInstanceInstanceSeriesResponse(source interface{}) interfac
 	}
 	return source
 }
+
 func convertOceanBaseInstanceChargeTypeRequest(source interface{}) interface{} {
 	switch source {
 	case "PayAsYouGo":
@@ -550,6 +564,7 @@ func convertOceanBaseInstanceChargeTypeRequest(source interface{}) interface{} {
 	}
 	return source
 }
+
 func convertOceanBaseInstanceSeriesResponse(source interface{}) interface{} {
 	switch source {
 	case "NORMAL":
