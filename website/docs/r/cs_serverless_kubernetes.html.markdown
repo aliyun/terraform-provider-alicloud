@@ -174,7 +174,7 @@ for example:
 Automatic cluster upgrade policy. If `enabled` is set to `true`, ACK will automatically upgrade cluster depends on the `channel` value. The `version` field may show diffs if set in config, please remove the field or ignore it.  
 
 * `enabled` - (Optional) Whether to enable automatic cluster upgrade.
-* `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapic`.
+* `channel` - (Optional) The automatic cluster upgrade channel. Valid values: `patch`, `stable`, `rapid`.
 
 for example:
 ```
