@@ -7,13 +7,13 @@ description: |-
   Provides a list of Arms Remote Writes to the user.
 ---
 
-# alicloud\_arms\_remote\_writes
+# alicloud_arms_remote_writes
 
 This data source provides the Arms Remote Writes of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.204.0+.
+-> **NOTE:** Available since v1.204.0.
 
--> **NOTE:** deprecated since v1.228.0.
+-> **DEPRECATED:** This resource has been deprecated since v1.228.0.
 
 ## Example Usage
 
@@ -45,7 +45,7 @@ The following arguments are supported:
 
 * `ids` - (Optional, ForceNew, Computed) A list of Remote Write IDs.
 * `name_regex` - (Optional, ForceNew) A regex string to filter results by Remote Write name.
-* `cluster_id` - (Required,ForceNew) The ID of the Prometheus instance.
+* `cluster_id` - (Required, ForceNew) The ID of the Prometheus instance.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
 ## Attributes Reference
