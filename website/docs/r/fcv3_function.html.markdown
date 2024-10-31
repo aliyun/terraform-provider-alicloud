@@ -278,7 +278,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `create_time` - The creation time of the function.
 * `custom_container_config` - The configuration of the custom container runtime. After the configuration is successful, the function can use the custom container image to execute the function. code and customContainerConfig.
-  * `acceleration_info` - Image Acceleration Information (Obsolete).
+  * `acceleration_info` - (Deprecated) Image Acceleration Information (Obsolete).
     * `status` - Image Acceleration Status (Deprecated).
   * `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
 
