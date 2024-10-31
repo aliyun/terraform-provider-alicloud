@@ -1,4 +1,32 @@
 ## 1.233.0 (Unreleased)
+
+- **New Resource:** `alicloud_pai_workspace_workspace` [GH-7780]
+- **New Resource:** `alicloud_mse_nacos_config` [GH-7796]
+- **New Data Source:** `alicloud_mse_nacos_configs` [GH-7796]
+
+ENHANCEMENTS:
+
+- client: Fixes the assume_role error caused by invalid sts endpoint. [GH-7788]
+- resource/alicloud_polardb_cluster: modified support the enumeration value RecoverFromRecyclebin to creation_option. [GH-7778]
+- resource/alicloud_vswitch: Added the field is_default; Changed the field vpc_id, cidr_block from Required to Optional; Supported for new action CreateDefaultVSwitch. [GH-7781]
+- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in and fix TestAccAliCloudEssScalingConfiguration_Multi and TestAccAliCloudEssScalingConfiguration_Update testcase. [GH-7787]
+- resource/alicloud_ess_scaling_group: add attribute of container_group_id, update health_check_type values range and supplement instance_id. [GH-7789]
+- resource/alicloud_cloud_storage_gateway_gateway: Supported payment_type set to Subscription; Fixed the panic error caused by payment_type. [GH-7790]
+- resource/alicloud_fcv3_async_invoke_config: Modify validation for max_async_event_age_in_seconds. [GH-7793]
+- resource/alicloud_fcv3_function: Optimize update. [GH-7795]
+- resource/alicloud_ecs_launch_template: Removed the internet_max_bandwidth_in, system_disk.size, system_disk_size enums limitation. [GH-7797]
+- data-source/alicloud_kms_secrets: Improves the fetching secrets tags by setting tags or fetch_tags. [GH-7791]
+- docs: improve the subcategory for ehpc. [GH-7779]
+- docs: Fixed error link. [GH-7784]
+- docs: fix typo for cs_managed_kubernetes and cs_serverless_kubernetes. [GH-7798]
+- testcase: fix TestAccAliCloudEssAlbServerGroupAttachment_basic and TestAccAliCloudEssAlbServerGroupAttachment_nonForceAttach testcase. [GH-7785]
+- testcase: fix TestAccAliCloudEssAlbServerGroupSuspendProcess testcase. [GH-7786]
+- testcase: Improved alicloud_alb_load_balancer_security_group_attachment testcase. [GH-7800]
+
+BUG FIXES:
+
+- resource/alicloud_ocean_base_instance: Fixed the diff error caused by field instance_class. [GH-7794]
+
 ## 1.232.0 (October 25, 2024)
 
 - **New Resource:** `alicloud_sls_collection_policy` ([#7727](https://github.com/aliyun/terraform-provider-alicloud/issues/7727))

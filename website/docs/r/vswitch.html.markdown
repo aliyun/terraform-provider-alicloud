@@ -115,7 +115,7 @@ resource "alicloud_vswitch" "foo" {
 
 The following arguments are supported:
 
-* `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. **NOTE:** From version 1.232.1, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
+* `cidr_block` - (Optional, ForceNew) The IPv4 CIDR block of the VSwitch. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `cidr_block` is required.
 * `description` - (Optional) The description of VSwitch.
 * `zone_id` - (Optional, ForceNew, Available since v1.119.0) The AZ for the VSwitch. **Note:** Required for a VPC VSwitch.
 * `enable_ipv6` - (Optional, Available since v1.201.0) Whether the IPv6 function is enabled in the switch. Value:
@@ -124,8 +124,8 @@ The following arguments are supported:
 * `ipv6_cidr_block_mask` - (Optional, Available since v1.201.0) The IPv6 CIDR block of the VSwitch.
 * `tags` - (Optional, Map, Available since v1.55.3) The tags of VSwitch.
 * `vswitch_name` - (Optional, Available since v1.119.0) The name of the VSwitch.
-* `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.232.1, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
-* `is_default` - (Optional, Bool, Available since v1.232.1) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
+* `vpc_id` - (Optional, ForceNew) The VPC ID. **NOTE:** From version 1.233.0, if you do not set `is_default`, or set `is_default` to `false`, `vpc_id` is required.
+* `is_default` - (Optional, Bool, Available since v1.233.0) Specifies whether to create the default VSwitch. Default value: `false`. Valid values:
   - `true`: Creates a default vSwitch.
   - `false`: Creates a vSwitch.
 
