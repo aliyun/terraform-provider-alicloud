@@ -540,15 +540,17 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["functionName"] = d.Get("function_name")
+	if v, ok := d.GetOk("function_name"); ok {
+		request["functionName"] = v
+	}
 
 	if v, ok := d.GetOk("description"); ok {
 		request["description"] = v
 	}
-	if v, ok := d.GetOk("timeout"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("timeout"); ok && v.(int) > 0 {
 		request["timeout"] = v
 	}
-	if v, ok := d.GetOk("memory_size"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("memory_size"); ok && v.(int) > 0 {
 		request["memorySize"] = v
 	}
 	request["runtime"] = d.Get("runtime")
@@ -558,21 +560,21 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("code"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].zip_file", d.Get("code"))
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["zipFile"] = nodeNative
+		zipFile1, _ := jsonpath.Get("$[0].zip_file", d.Get("code"))
+		if zipFile1 != nil && zipFile1 != "" {
+			objectDataLocalMap["zipFile"] = zipFile1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].checksum", d.Get("code"))
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["checksum"] = nodeNative1
+		checksum1, _ := jsonpath.Get("$[0].checksum", d.Get("code"))
+		if checksum1 != nil && checksum1 != "" {
+			objectDataLocalMap["checksum"] = checksum1
 		}
-		nodeNative2, _ := jsonpath.Get("$[0].oss_bucket_name", d.Get("code"))
-		if nodeNative2 != nil && nodeNative2 != "" {
-			objectDataLocalMap["ossBucketName"] = nodeNative2
+		ossBucketName1, _ := jsonpath.Get("$[0].oss_bucket_name", d.Get("code"))
+		if ossBucketName1 != nil && ossBucketName1 != "" {
+			objectDataLocalMap["ossBucketName"] = ossBucketName1
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].oss_object_name", d.Get("code"))
-		if nodeNative3 != nil && nodeNative3 != "" {
-			objectDataLocalMap["ossObjectName"] = nodeNative3
+		ossObjectName1, _ := jsonpath.Get("$[0].oss_object_name", d.Get("code"))
+		if ossObjectName1 != nil && ossObjectName1 != "" {
+			objectDataLocalMap["ossObjectName"] = ossObjectName1
 		}
 
 		request["code"] = objectDataLocalMap
@@ -584,44 +586,44 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	objectDataLocalMap1 := make(map[string]interface{})
 
 	if v := d.Get("custom_runtime_config"); !IsNil(v) {
-		nodeNative4, _ := jsonpath.Get("$[0].args", v)
-		if nodeNative4 != nil && nodeNative4 != "" {
-			objectDataLocalMap1["args"] = nodeNative4
+		args1, _ := jsonpath.Get("$[0].args", v)
+		if args1 != nil && args1 != "" {
+			objectDataLocalMap1["args"] = args1
 		}
-		nodeNative5, _ := jsonpath.Get("$[0].command", v)
-		if nodeNative5 != nil && nodeNative5 != "" {
-			objectDataLocalMap1["command"] = nodeNative5
+		command1, _ := jsonpath.Get("$[0].command", v)
+		if command1 != nil && command1 != "" {
+			objectDataLocalMap1["command"] = command1
 		}
 		healthCheckConfig := make(map[string]interface{})
-		nodeNative6, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_runtime_config"))
-		if nodeNative6 != nil && nodeNative6 != "" && nodeNative6.(int) > 0 {
-			healthCheckConfig["failureThreshold"] = nodeNative6
+		failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_runtime_config"))
+		if failureThreshold1 != nil && failureThreshold1 != "" && failureThreshold1.(int) > 0 {
+			healthCheckConfig["failureThreshold"] = failureThreshold1
 		}
-		nodeNative7, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_runtime_config"))
-		if nodeNative7 != nil && nodeNative7 != "" {
-			healthCheckConfig["httpGetUrl"] = nodeNative7
+		httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_runtime_config"))
+		if httpGetUrl1 != nil && httpGetUrl1 != "" {
+			healthCheckConfig["httpGetUrl"] = httpGetUrl1
 		}
-		nodeNative8, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_runtime_config"))
-		if nodeNative8 != nil && nodeNative8 != "" {
-			healthCheckConfig["initialDelaySeconds"] = nodeNative8
+		initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_runtime_config"))
+		if initialDelaySeconds1 != nil && initialDelaySeconds1 != "" {
+			healthCheckConfig["initialDelaySeconds"] = initialDelaySeconds1
 		}
-		nodeNative9, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_runtime_config"))
-		if nodeNative9 != nil && nodeNative9 != "" && nodeNative9.(int) > 0 {
-			healthCheckConfig["periodSeconds"] = nodeNative9
+		periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_runtime_config"))
+		if periodSeconds1 != nil && periodSeconds1 != "" && periodSeconds1.(int) > 0 {
+			healthCheckConfig["periodSeconds"] = periodSeconds1
 		}
-		nodeNative10, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_runtime_config"))
-		if nodeNative10 != nil && nodeNative10 != "" && nodeNative10.(int) > 0 {
-			healthCheckConfig["successThreshold"] = nodeNative10
+		successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_runtime_config"))
+		if successThreshold1 != nil && successThreshold1 != "" && successThreshold1.(int) > 0 {
+			healthCheckConfig["successThreshold"] = successThreshold1
 		}
-		nodeNative11, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_runtime_config"))
-		if nodeNative11 != nil && nodeNative11 != "" && nodeNative11.(int) > 0 {
-			healthCheckConfig["timeoutSeconds"] = nodeNative11
+		timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_runtime_config"))
+		if timeoutSeconds1 != nil && timeoutSeconds1 != "" && timeoutSeconds1.(int) > 0 {
+			healthCheckConfig["timeoutSeconds"] = timeoutSeconds1
 		}
 
 		objectDataLocalMap1["healthCheckConfig"] = healthCheckConfig
-		nodeNative12, _ := jsonpath.Get("$[0].port", d.Get("custom_runtime_config"))
-		if nodeNative12 != nil && nodeNative12 != "" && nodeNative12.(int) > 0 {
-			objectDataLocalMap1["port"] = nodeNative12
+		port1, _ := jsonpath.Get("$[0].port", d.Get("custom_runtime_config"))
+		if port1 != nil && port1 != "" && port1.(int) > 0 {
+			objectDataLocalMap1["port"] = port1
 		}
 
 		request["customRuntimeConfig"] = objectDataLocalMap1
@@ -632,34 +634,34 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["layers"] = layersMaps
 	}
 
-	if v, ok := d.GetOk("disk_size"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("disk_size"); ok && v.(int) > 0 {
 		request["diskSize"] = v
 	}
-	if v, ok := d.GetOk("instance_concurrency"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("instance_concurrency"); ok && v.(int) > 0 {
 		request["instanceConcurrency"] = v
 	}
 	objectDataLocalMap2 := make(map[string]interface{})
 
 	if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
 		initializer := make(map[string]interface{})
-		nodeNative13, _ := jsonpath.Get("$[0].initializer[0].handler", d.Get("instance_lifecycle_config"))
-		if nodeNative13 != nil && nodeNative13 != "" {
-			initializer["handler"] = nodeNative13
+		handler1, _ := jsonpath.Get("$[0].initializer[0].handler", d.Get("instance_lifecycle_config"))
+		if handler1 != nil && handler1 != "" {
+			initializer["handler"] = handler1
 		}
-		nodeNative14, _ := jsonpath.Get("$[0].initializer[0].timeout", d.Get("instance_lifecycle_config"))
-		if nodeNative14 != nil && nodeNative14 != "" && nodeNative14.(int) > 0 {
-			initializer["timeout"] = nodeNative14
+		timeout1, _ := jsonpath.Get("$[0].initializer[0].timeout", d.Get("instance_lifecycle_config"))
+		if timeout1 != nil && timeout1 != "" && timeout1.(int) > 0 {
+			initializer["timeout"] = timeout1
 		}
 
 		objectDataLocalMap2["initializer"] = initializer
 		preStop := make(map[string]interface{})
-		nodeNative15, _ := jsonpath.Get("$[0].pre_stop[0].timeout", d.Get("instance_lifecycle_config"))
-		if nodeNative15 != nil && nodeNative15 != "" && nodeNative15.(int) > 0 {
-			preStop["timeout"] = nodeNative15
+		timeout3, _ := jsonpath.Get("$[0].pre_stop[0].timeout", d.Get("instance_lifecycle_config"))
+		if timeout3 != nil && timeout3 != "" && timeout3.(int) > 0 {
+			preStop["timeout"] = timeout3
 		}
-		nodeNative16, _ := jsonpath.Get("$[0].pre_stop[0].handler", d.Get("instance_lifecycle_config"))
-		if nodeNative16 != nil && nodeNative16 != "" {
-			preStop["handler"] = nodeNative16
+		handler3, _ := jsonpath.Get("$[0].pre_stop[0].handler", d.Get("instance_lifecycle_config"))
+		if handler3 != nil && handler3 != "" {
+			preStop["handler"] = handler3
 		}
 
 		objectDataLocalMap2["preStop"] = preStop
@@ -667,31 +669,31 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 		request["instanceLifecycleConfig"] = objectDataLocalMap2
 	}
 
-	if v, ok := d.GetOk("internet_access"); ok {
+	if v, ok := d.GetOkExists("internet_access"); ok {
 		request["internetAccess"] = v
 	}
 	objectDataLocalMap3 := make(map[string]interface{})
 
 	if v := d.Get("log_config"); !IsNil(v) {
-		nodeNative17, _ := jsonpath.Get("$[0].enable_instance_metrics", d.Get("log_config"))
-		if nodeNative17 != nil && nodeNative17 != "" {
-			objectDataLocalMap3["enableInstanceMetrics"] = nodeNative17
+		enableInstanceMetrics1, _ := jsonpath.Get("$[0].enable_instance_metrics", d.Get("log_config"))
+		if enableInstanceMetrics1 != nil && enableInstanceMetrics1 != "" {
+			objectDataLocalMap3["enableInstanceMetrics"] = enableInstanceMetrics1
 		}
-		nodeNative18, _ := jsonpath.Get("$[0].enable_request_metrics", d.Get("log_config"))
-		if nodeNative18 != nil && nodeNative18 != "" {
-			objectDataLocalMap3["enableRequestMetrics"] = nodeNative18
+		enableRequestMetrics1, _ := jsonpath.Get("$[0].enable_request_metrics", d.Get("log_config"))
+		if enableRequestMetrics1 != nil && enableRequestMetrics1 != "" {
+			objectDataLocalMap3["enableRequestMetrics"] = enableRequestMetrics1
 		}
-		nodeNative19, _ := jsonpath.Get("$[0].log_begin_rule", d.Get("log_config"))
-		if nodeNative19 != nil && nodeNative19 != "" {
-			objectDataLocalMap3["logBeginRule"] = nodeNative19
+		logBeginRule1, _ := jsonpath.Get("$[0].log_begin_rule", d.Get("log_config"))
+		if logBeginRule1 != nil && logBeginRule1 != "" {
+			objectDataLocalMap3["logBeginRule"] = logBeginRule1
 		}
-		nodeNative20, _ := jsonpath.Get("$[0].logstore", d.Get("log_config"))
-		if nodeNative20 != nil && nodeNative20 != "" {
-			objectDataLocalMap3["logstore"] = nodeNative20
+		logstore1, _ := jsonpath.Get("$[0].logstore", d.Get("log_config"))
+		if logstore1 != nil && logstore1 != "" {
+			objectDataLocalMap3["logstore"] = logstore1
 		}
-		nodeNative21, _ := jsonpath.Get("$[0].project", d.Get("log_config"))
-		if nodeNative21 != nil && nodeNative21 != "" {
-			objectDataLocalMap3["project"] = nodeNative21
+		project1, _ := jsonpath.Get("$[0].project", d.Get("log_config"))
+		if project1 != nil && project1 != "" {
+			objectDataLocalMap3["project"] = project1
 		}
 
 		request["logConfig"] = objectDataLocalMap3
@@ -732,17 +734,17 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	objectDataLocalMap5 := make(map[string]interface{})
 
 	if v := d.Get("vpc_config"); !IsNil(v) {
-		nodeNative27, _ := jsonpath.Get("$[0].vpc_id", d.Get("vpc_config"))
-		if nodeNative27 != nil && nodeNative27 != "" {
-			objectDataLocalMap5["vpcId"] = nodeNative27
+		vpcId1, _ := jsonpath.Get("$[0].vpc_id", d.Get("vpc_config"))
+		if vpcId1 != nil && vpcId1 != "" {
+			objectDataLocalMap5["vpcId"] = vpcId1
 		}
-		nodeNative28, _ := jsonpath.Get("$[0].vswitch_ids", v)
-		if nodeNative28 != nil && nodeNative28 != "" {
-			objectDataLocalMap5["vSwitchIds"] = nodeNative28
+		vSwitchIds1, _ := jsonpath.Get("$[0].vswitch_ids", v)
+		if vSwitchIds1 != nil && vSwitchIds1 != "" {
+			objectDataLocalMap5["vSwitchIds"] = vSwitchIds1
 		}
-		nodeNative29, _ := jsonpath.Get("$[0].security_group_id", d.Get("vpc_config"))
-		if nodeNative29 != nil && nodeNative29 != "" {
-			objectDataLocalMap5["securityGroupId"] = nodeNative29
+		securityGroupId1, _ := jsonpath.Get("$[0].security_group_id", d.Get("vpc_config"))
+		if securityGroupId1 != nil && securityGroupId1 != "" {
+			objectDataLocalMap5["securityGroupId"] = securityGroupId1
 		}
 
 		request["vpcConfig"] = objectDataLocalMap5
@@ -751,54 +753,54 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	objectDataLocalMap6 := make(map[string]interface{})
 
 	if v := d.Get("custom_container_config"); !IsNil(v) {
-		nodeNative30, _ := jsonpath.Get("$[0].image", d.Get("custom_container_config"))
-		if nodeNative30 != nil && nodeNative30 != "" {
-			objectDataLocalMap6["image"] = nodeNative30
+		image1, _ := jsonpath.Get("$[0].image", d.Get("custom_container_config"))
+		if image1 != nil && image1 != "" {
+			objectDataLocalMap6["image"] = image1
 		}
-		nodeNative31, _ := jsonpath.Get("$[0].port", d.Get("custom_container_config"))
-		if nodeNative31 != nil && nodeNative31 != "" {
-			objectDataLocalMap6["port"] = nodeNative31
+		port3, _ := jsonpath.Get("$[0].port", d.Get("custom_container_config"))
+		if port3 != nil && port3 != "" {
+			objectDataLocalMap6["port"] = port3
 		}
-		nodeNative32, _ := jsonpath.Get("$[0].entrypoint", v)
-		if nodeNative32 != nil && nodeNative32 != "" {
-			objectDataLocalMap6["entrypoint"] = nodeNative32
+		entrypoint1, _ := jsonpath.Get("$[0].entrypoint", v)
+		if entrypoint1 != nil && entrypoint1 != "" {
+			objectDataLocalMap6["entrypoint"] = entrypoint1
 		}
-		nodeNative33, _ := jsonpath.Get("$[0].command", v)
-		if nodeNative33 != nil && nodeNative33 != "" {
-			objectDataLocalMap6["command"] = nodeNative33
+		command3, _ := jsonpath.Get("$[0].command", v)
+		if command3 != nil && command3 != "" {
+			objectDataLocalMap6["command"] = command3
 		}
-		nodeNative34, _ := jsonpath.Get("$[0].acr_instance_id", d.Get("custom_container_config"))
-		if nodeNative34 != nil && nodeNative34 != "" {
-			objectDataLocalMap6["acrInstanceId"] = nodeNative34
+		acrInstanceId1, _ := jsonpath.Get("$[0].acr_instance_id", d.Get("custom_container_config"))
+		if acrInstanceId1 != nil && acrInstanceId1 != "" {
+			objectDataLocalMap6["acrInstanceId"] = acrInstanceId1
 		}
-		nodeNative35, _ := jsonpath.Get("$[0].acceleration_type", d.Get("custom_container_config"))
-		if nodeNative35 != nil && nodeNative35 != "" {
-			objectDataLocalMap6["accelerationType"] = nodeNative35
+		accelerationType1, _ := jsonpath.Get("$[0].acceleration_type", d.Get("custom_container_config"))
+		if accelerationType1 != nil && accelerationType1 != "" {
+			objectDataLocalMap6["accelerationType"] = accelerationType1
 		}
 		healthCheckConfig1 := make(map[string]interface{})
-		nodeNative36, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_container_config"))
-		if nodeNative36 != nil && nodeNative36 != "" && nodeNative36.(int) > 0 {
-			healthCheckConfig1["failureThreshold"] = nodeNative36
+		failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", d.Get("custom_container_config"))
+		if failureThreshold3 != nil && failureThreshold3 != "" && failureThreshold3.(int) > 0 {
+			healthCheckConfig1["failureThreshold"] = failureThreshold3
 		}
-		nodeNative37, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_container_config"))
-		if nodeNative37 != nil && nodeNative37 != "" {
-			healthCheckConfig1["httpGetUrl"] = nodeNative37
+		httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", d.Get("custom_container_config"))
+		if httpGetUrl3 != nil && httpGetUrl3 != "" {
+			healthCheckConfig1["httpGetUrl"] = httpGetUrl3
 		}
-		nodeNative38, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_container_config"))
-		if nodeNative38 != nil && nodeNative38 != "" {
-			healthCheckConfig1["initialDelaySeconds"] = nodeNative38
+		initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", d.Get("custom_container_config"))
+		if initialDelaySeconds3 != nil && initialDelaySeconds3 != "" {
+			healthCheckConfig1["initialDelaySeconds"] = initialDelaySeconds3
 		}
-		nodeNative39, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_container_config"))
-		if nodeNative39 != nil && nodeNative39 != "" && nodeNative39.(int) > 0 {
-			healthCheckConfig1["periodSeconds"] = nodeNative39
+		periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", d.Get("custom_container_config"))
+		if periodSeconds3 != nil && periodSeconds3 != "" && periodSeconds3.(int) > 0 {
+			healthCheckConfig1["periodSeconds"] = periodSeconds3
 		}
-		nodeNative40, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_container_config"))
-		if nodeNative40 != nil && nodeNative40 != "" && nodeNative40.(int) > 0 {
-			healthCheckConfig1["successThreshold"] = nodeNative40
+		successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", d.Get("custom_container_config"))
+		if successThreshold3 != nil && successThreshold3 != "" && successThreshold3.(int) > 0 {
+			healthCheckConfig1["successThreshold"] = successThreshold3
 		}
-		nodeNative41, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_container_config"))
-		if nodeNative41 != nil && nodeNative41 != "" && nodeNative41.(int) > 0 {
-			healthCheckConfig1["timeoutSeconds"] = nodeNative41
+		timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", d.Get("custom_container_config"))
+		if timeoutSeconds3 != nil && timeoutSeconds3 != "" && timeoutSeconds3.(int) > 0 {
+			healthCheckConfig1["timeoutSeconds"] = timeoutSeconds3
 		}
 
 		objectDataLocalMap6["healthCheckConfig"] = healthCheckConfig1
@@ -809,13 +811,13 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 	objectDataLocalMap7 := make(map[string]interface{})
 
 	if v := d.Get("gpu_config"); !IsNil(v) {
-		nodeNative42, _ := jsonpath.Get("$[0].gpu_type", d.Get("gpu_config"))
-		if nodeNative42 != nil && nodeNative42 != "" {
-			objectDataLocalMap7["gpuType"] = nodeNative42
+		gpuType1, _ := jsonpath.Get("$[0].gpu_type", d.Get("gpu_config"))
+		if gpuType1 != nil && gpuType1 != "" {
+			objectDataLocalMap7["gpuType"] = gpuType1
 		}
-		nodeNative43, _ := jsonpath.Get("$[0].gpu_memory_size", d.Get("gpu_config"))
-		if nodeNative43 != nil && nodeNative43 != "" {
-			objectDataLocalMap7["gpuMemorySize"] = nodeNative43
+		gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", d.Get("gpu_config"))
+		if gpuMemorySize1 != nil && gpuMemorySize1 != "" {
+			objectDataLocalMap7["gpuMemorySize"] = gpuMemorySize1
 		}
 
 		request["gpuConfig"] = objectDataLocalMap7
@@ -834,9 +836,9 @@ func resourceAliCloudFcv3FunctionCreate(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_function", action, AlibabaCloudSdkGoERROR)
@@ -1229,199 +1231,191 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 
 	if !d.IsNewResource() && d.HasChange("description") {
 		update = true
+		request["description"] = d.Get("description")
 	}
-	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
-		request["description"] = v
-	}
+
 	if !d.IsNewResource() && d.HasChange("timeout") {
 		update = true
+		request["timeout"] = d.Get("timeout")
 	}
-	if v, ok := d.GetOk("timeout"); (ok || d.HasChange("timeout")) && v.(int) > 0 {
-		request["timeout"] = v
-	}
+
 	if !d.IsNewResource() && d.HasChange("memory_size") {
 		update = true
+		request["memorySize"] = d.Get("memory_size")
 	}
-	if v, ok := d.GetOk("memory_size"); (ok || d.HasChange("memory_size")) && v.(int) > 0 {
-		request["memorySize"] = v
-	}
+
 	if !d.IsNewResource() && d.HasChange("runtime") {
 		update = true
 	}
 	request["runtime"] = d.Get("runtime")
 	if !d.IsNewResource() && d.HasChange("environment_variables") {
 		update = true
+		request["environmentVariables"] = d.Get("environment_variables")
 	}
-	if v, ok := d.GetOk("environment_variables"); ok || d.HasChange("environment_variables") {
-		request["environmentVariables"] = v
-	}
-	if d.HasChange("code") {
+
+	if !d.IsNewResource() && d.HasChange("code") {
 		update = true
-	}
-	objectDataLocalMap := make(map[string]interface{})
+		objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("code"); !IsNil(v) || d.HasChange("code") {
-		nodeNative, _ := jsonpath.Get("$[0].zip_file", v)
-		if nodeNative != nil && (d.HasChange("code.0.zip_file") || nodeNative != "") {
-			objectDataLocalMap["zipFile"] = nodeNative
-		}
-		nodeNative1, _ := jsonpath.Get("$[0].checksum", v)
-		if nodeNative1 != nil && (d.HasChange("code.0.checksum") || nodeNative1 != "") {
-			objectDataLocalMap["checksum"] = nodeNative1
-		}
-		nodeNative2, _ := jsonpath.Get("$[0].oss_bucket_name", v)
-		if nodeNative2 != nil && (d.HasChange("code.0.oss_bucket_name") || nodeNative2 != "") {
-			objectDataLocalMap["ossBucketName"] = nodeNative2
-		}
-		nodeNative3, _ := jsonpath.Get("$[0].oss_object_name", v)
-		if nodeNative3 != nil && (d.HasChange("code.0.oss_object_name") || nodeNative3 != "") {
-			objectDataLocalMap["ossObjectName"] = nodeNative3
-		}
+		if v := d.Get("code"); !IsNil(v) {
+			zipFile1, _ := jsonpath.Get("$[0].zip_file", v)
+			if zipFile1 != nil && (d.HasChange("code.0.zip_file") || zipFile1 != "") {
+				objectDataLocalMap["zipFile"] = zipFile1
+			}
+			checksum1, _ := jsonpath.Get("$[0].checksum", v)
+			if checksum1 != nil && (d.HasChange("code.0.checksum") || checksum1 != "") {
+				objectDataLocalMap["checksum"] = checksum1
+			}
+			ossBucketName1, _ := jsonpath.Get("$[0].oss_bucket_name", v)
+			if ossBucketName1 != nil && (d.HasChange("code.0.oss_bucket_name") || ossBucketName1 != "") {
+				objectDataLocalMap["ossBucketName"] = ossBucketName1
+			}
+			ossObjectName1, _ := jsonpath.Get("$[0].oss_object_name", v)
+			if ossObjectName1 != nil && (d.HasChange("code.0.oss_object_name") || ossObjectName1 != "") {
+				objectDataLocalMap["ossObjectName"] = ossObjectName1
+			}
 
-		request["code"] = objectDataLocalMap
+			request["code"] = objectDataLocalMap
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("cpu") {
 		update = true
+		request["cpu"] = d.Get("cpu")
 	}
-	if v, ok := d.GetOk("cpu"); (ok || d.HasChange("cpu")) && v.(float64) > 0 {
-		request["cpu"] = v
-	}
+
 	if !d.IsNewResource() && d.HasChange("layers") {
 		update = true
-	}
-	if v, ok := d.GetOk("layers"); ok || d.HasChange("layers") {
-		layersMaps := v.([]interface{})
-		request["layers"] = layersMaps
+		if v, ok := d.GetOk("layers"); ok || d.HasChange("layers") {
+			layersMaps := v.([]interface{})
+			request["layers"] = layersMaps
+		}
 	}
 
 	if d.HasChange("custom_runtime_config") {
 		update = true
-	}
-	objectDataLocalMap1 := make(map[string]interface{})
+		objectDataLocalMap1 := make(map[string]interface{})
 
-	if v := d.Get("custom_runtime_config"); !IsNil(v) || d.HasChange("custom_runtime_config") {
-		healthCheckConfig := make(map[string]interface{})
-		nodeNative4, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
-		if nodeNative4 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.failure_threshold") || nodeNative4 != "") && nodeNative4.(int) > 0 {
-			healthCheckConfig["failureThreshold"] = nodeNative4
-		}
-		nodeNative5, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
-		if nodeNative5 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.http_get_url") || nodeNative5 != "") {
-			healthCheckConfig["httpGetUrl"] = nodeNative5
-		}
-		nodeNative6, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
-		if nodeNative6 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.initial_delay_seconds") || nodeNative6 != "") {
-			healthCheckConfig["initialDelaySeconds"] = nodeNative6
-		}
-		nodeNative7, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
-		if nodeNative7 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.period_seconds") || nodeNative7 != "") && nodeNative7.(int) > 0 {
-			healthCheckConfig["periodSeconds"] = nodeNative7
-		}
-		nodeNative8, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
-		if nodeNative8 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.success_threshold") || nodeNative8 != "") && nodeNative8.(int) > 0 {
-			healthCheckConfig["successThreshold"] = nodeNative8
-		}
-		nodeNative9, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
-		if nodeNative9 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.timeout_seconds") || nodeNative9 != "") && nodeNative9.(int) > 0 {
-			healthCheckConfig["timeoutSeconds"] = nodeNative9
-		}
+		if v := d.Get("custom_runtime_config"); !IsNil(v) {
+			healthCheckConfig := make(map[string]interface{})
+			failureThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
+			if failureThreshold1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.failure_threshold") || failureThreshold1 != "") && failureThreshold1.(int) > 0 {
+				healthCheckConfig["failureThreshold"] = failureThreshold1
+			}
+			httpGetUrl1, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
+			if httpGetUrl1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.http_get_url") || httpGetUrl1 != "") {
+				healthCheckConfig["httpGetUrl"] = httpGetUrl1
+			}
+			initialDelaySeconds1, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
+			if initialDelaySeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.initial_delay_seconds") || initialDelaySeconds1 != "") {
+				healthCheckConfig["initialDelaySeconds"] = initialDelaySeconds1
+			}
+			periodSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
+			if periodSeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.period_seconds") || periodSeconds1 != "") && periodSeconds1.(int) > 0 {
+				healthCheckConfig["periodSeconds"] = periodSeconds1
+			}
+			successThreshold1, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
+			if successThreshold1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.success_threshold") || successThreshold1 != "") && successThreshold1.(int) > 0 {
+				healthCheckConfig["successThreshold"] = successThreshold1
+			}
+			timeoutSeconds1, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
+			if timeoutSeconds1 != nil && (d.HasChange("custom_runtime_config.0.health_check_config.0.timeout_seconds") || timeoutSeconds1 != "") && timeoutSeconds1.(int) > 0 {
+				healthCheckConfig["timeoutSeconds"] = timeoutSeconds1
+			}
 
-		objectDataLocalMap1["healthCheckConfig"] = healthCheckConfig
-		nodeNative10, _ := jsonpath.Get("$[0].port", v)
-		if nodeNative10 != nil && (d.HasChange("custom_runtime_config.0.port") || nodeNative10 != "") && nodeNative10.(int) > 0 {
-			objectDataLocalMap1["port"] = nodeNative10
-		}
-		nodeNative11, _ := jsonpath.Get("$[0].command", d.Get("custom_runtime_config"))
-		if nodeNative11 != nil && (d.HasChange("custom_runtime_config.0.command") || nodeNative11 != "") {
-			objectDataLocalMap1["command"] = nodeNative11
-		}
-		nodeNative12, _ := jsonpath.Get("$[0].args", d.Get("custom_runtime_config"))
-		if nodeNative12 != nil && (d.HasChange("custom_runtime_config.0.args") || nodeNative12 != "") {
-			objectDataLocalMap1["args"] = nodeNative12
-		}
+			objectDataLocalMap1["healthCheckConfig"] = healthCheckConfig
+			port1, _ := jsonpath.Get("$[0].port", v)
+			if port1 != nil && (d.HasChange("custom_runtime_config.0.port") || port1 != "") && port1.(int) > 0 {
+				objectDataLocalMap1["port"] = port1
+			}
+			command1, _ := jsonpath.Get("$[0].command", d.Get("custom_runtime_config"))
+			if command1 != nil && (d.HasChange("custom_runtime_config.0.command") || command1 != "") {
+				objectDataLocalMap1["command"] = command1
+			}
+			args1, _ := jsonpath.Get("$[0].args", d.Get("custom_runtime_config"))
+			if args1 != nil && (d.HasChange("custom_runtime_config.0.args") || args1 != "") {
+				objectDataLocalMap1["args"] = args1
+			}
 
-		request["customRuntimeConfig"] = objectDataLocalMap1
+			request["customRuntimeConfig"] = objectDataLocalMap1
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("disk_size") {
 		update = true
+		request["diskSize"] = d.Get("disk_size")
 	}
-	if v, ok := d.GetOk("disk_size"); (ok || d.HasChange("disk_size")) && v.(int) > 0 {
-		request["diskSize"] = v
-	}
+
 	if !d.IsNewResource() && d.HasChange("instance_concurrency") {
 		update = true
+		request["instanceConcurrency"] = d.Get("instance_concurrency")
 	}
-	if v, ok := d.GetOk("instance_concurrency"); (ok || d.HasChange("instance_concurrency")) && v.(int) > 0 {
-		request["instanceConcurrency"] = v
-	}
+
 	if d.HasChange("instance_lifecycle_config") {
 		update = true
-	}
-	objectDataLocalMap2 := make(map[string]interface{})
+		objectDataLocalMap2 := make(map[string]interface{})
 
-	if v := d.Get("instance_lifecycle_config"); !IsNil(v) || d.HasChange("instance_lifecycle_config") {
-		initializer := make(map[string]interface{})
-		nodeNative13, _ := jsonpath.Get("$[0].initializer[0].handler", v)
-		if nodeNative13 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.handler") || nodeNative13 != "") {
-			initializer["handler"] = nodeNative13
-		}
-		nodeNative14, _ := jsonpath.Get("$[0].initializer[0].timeout", v)
-		if nodeNative14 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.timeout") || nodeNative14 != "") && nodeNative14.(int) > 0 {
-			initializer["timeout"] = nodeNative14
-		}
+		if v := d.Get("instance_lifecycle_config"); !IsNil(v) {
+			initializer := make(map[string]interface{})
+			handler1, _ := jsonpath.Get("$[0].initializer[0].handler", v)
+			if handler1 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.handler") || handler1 != "") {
+				initializer["handler"] = handler1
+			}
+			timeout1, _ := jsonpath.Get("$[0].initializer[0].timeout", v)
+			if timeout1 != nil && (d.HasChange("instance_lifecycle_config.0.initializer.0.timeout") || timeout1 != "") && timeout1.(int) > 0 {
+				initializer["timeout"] = timeout1
+			}
 
-		objectDataLocalMap2["initializer"] = initializer
-		preStop := make(map[string]interface{})
-		nodeNative15, _ := jsonpath.Get("$[0].pre_stop[0].timeout", v)
-		if nodeNative15 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.timeout") || nodeNative15 != "") && nodeNative15.(int) > 0 {
-			preStop["timeout"] = nodeNative15
-		}
-		nodeNative16, _ := jsonpath.Get("$[0].pre_stop[0].handler", v)
-		if nodeNative16 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.handler") || nodeNative16 != "") {
-			preStop["handler"] = nodeNative16
-		}
+			objectDataLocalMap2["initializer"] = initializer
+			preStop := make(map[string]interface{})
+			timeout3, _ := jsonpath.Get("$[0].pre_stop[0].timeout", v)
+			if timeout3 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.timeout") || timeout3 != "") && timeout3.(int) > 0 {
+				preStop["timeout"] = timeout3
+			}
+			handler3, _ := jsonpath.Get("$[0].pre_stop[0].handler", v)
+			if handler3 != nil && (d.HasChange("instance_lifecycle_config.0.pre_stop.0.handler") || handler3 != "") {
+				preStop["handler"] = handler3
+			}
 
-		objectDataLocalMap2["preStop"] = preStop
+			objectDataLocalMap2["preStop"] = preStop
 
-		request["instanceLifecycleConfig"] = objectDataLocalMap2
+			request["instanceLifecycleConfig"] = objectDataLocalMap2
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("internet_access") {
 		update = true
+		request["internetAccess"] = d.Get("internet_access")
 	}
-	if v, ok := d.GetOk("internet_access"); ok || d.HasChange("internet_access") {
-		request["internetAccess"] = v
-	}
-	if d.HasChange("log_config") {
+
+	if !d.IsNewResource() && d.HasChange("log_config") {
 		update = true
-	}
-	objectDataLocalMap3 := make(map[string]interface{})
+		objectDataLocalMap3 := make(map[string]interface{})
 
-	if v := d.Get("log_config"); !IsNil(v) || d.HasChange("log_config") {
-		nodeNative17, _ := jsonpath.Get("$[0].enable_instance_metrics", v)
-		if nodeNative17 != nil && (d.HasChange("log_config.0.enable_instance_metrics") || nodeNative17 != "") {
-			objectDataLocalMap3["enableInstanceMetrics"] = nodeNative17
-		}
-		nodeNative18, _ := jsonpath.Get("$[0].enable_request_metrics", v)
-		if nodeNative18 != nil && (d.HasChange("log_config.0.enable_request_metrics") || nodeNative18 != "") {
-			objectDataLocalMap3["enableRequestMetrics"] = nodeNative18
-		}
-		nodeNative19, _ := jsonpath.Get("$[0].log_begin_rule", v)
-		if nodeNative19 != nil && (d.HasChange("log_config.0.log_begin_rule") || nodeNative19 != "") {
-			objectDataLocalMap3["logBeginRule"] = nodeNative19
-		}
-		nodeNative20, _ := jsonpath.Get("$[0].logstore", v)
-		if nodeNative20 != nil && (d.HasChange("log_config.0.logstore") || nodeNative20 != "") {
-			objectDataLocalMap3["logstore"] = nodeNative20
-		}
-		nodeNative21, _ := jsonpath.Get("$[0].project", v)
-		if nodeNative21 != nil && (d.HasChange("log_config.0.project") || nodeNative21 != "") {
-			objectDataLocalMap3["project"] = nodeNative21
-		}
+		if v := d.Get("log_config"); !IsNil(v) {
+			enableInstanceMetrics1, _ := jsonpath.Get("$[0].enable_instance_metrics", v)
+			if enableInstanceMetrics1 != nil && (d.HasChange("log_config.0.enable_instance_metrics") || enableInstanceMetrics1 != "") {
+				objectDataLocalMap3["enableInstanceMetrics"] = enableInstanceMetrics1
+			}
+			enableRequestMetrics1, _ := jsonpath.Get("$[0].enable_request_metrics", v)
+			if enableRequestMetrics1 != nil && (d.HasChange("log_config.0.enable_request_metrics") || enableRequestMetrics1 != "") {
+				objectDataLocalMap3["enableRequestMetrics"] = enableRequestMetrics1
+			}
+			logBeginRule1, _ := jsonpath.Get("$[0].log_begin_rule", v)
+			if logBeginRule1 != nil && (d.HasChange("log_config.0.log_begin_rule") || logBeginRule1 != "") {
+				objectDataLocalMap3["logBeginRule"] = logBeginRule1
+			}
+			logstore1, _ := jsonpath.Get("$[0].logstore", v)
+			if logstore1 != nil && (d.HasChange("log_config.0.logstore") || logstore1 != "") {
+				objectDataLocalMap3["logstore"] = logstore1
+			}
+			project1, _ := jsonpath.Get("$[0].project", v)
+			if project1 != nil && (d.HasChange("log_config.0.project") || project1 != "") {
+				objectDataLocalMap3["project"] = project1
+			}
 
-		request["logConfig"] = objectDataLocalMap3
+			request["logConfig"] = objectDataLocalMap3
+		}
 	}
 
 	if !d.IsNewResource() && d.HasChange("handler") {
@@ -1430,213 +1424,212 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 	request["handler"] = d.Get("handler")
 	if !d.IsNewResource() && d.HasChange("role") {
 		update = true
+		request["role"] = d.Get("role")
 	}
-	if v, ok := d.GetOk("role"); ok || d.HasChange("role") {
-		request["role"] = v
-	}
-	if d.HasChange("oss_mount_config") {
+
+	if !d.IsNewResource() && d.HasChange("oss_mount_config") {
 		update = true
-	}
-	objectDataLocalMap4 := make(map[string]interface{})
+		objectDataLocalMap4 := make(map[string]interface{})
 
-	if v := d.Get("oss_mount_config"); !IsNil(v) || d.HasChange("oss_mount_config") {
-		if v, ok := d.GetOk("oss_mount_config"); ok {
-			localData1, err := jsonpath.Get("$[0].mount_points", v)
-			if err != nil {
-				localData1 = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop1 := range localData1.([]interface{}) {
-				dataLoop1Tmp := make(map[string]interface{})
-				if dataLoop1 != nil {
-					dataLoop1Tmp = dataLoop1.(map[string]interface{})
+		if v := d.Get("oss_mount_config"); !IsNil(v) {
+			if v, ok := d.GetOk("oss_mount_config"); ok {
+				localData1, err := jsonpath.Get("$[0].mount_points", v)
+				if err != nil {
+					localData1 = make([]interface{}, 0)
 				}
-				dataLoop1Map := make(map[string]interface{})
-				dataLoop1Map["bucketName"] = dataLoop1Tmp["bucket_name"]
-				dataLoop1Map["bucketPath"] = dataLoop1Tmp["bucket_path"]
-				dataLoop1Map["endpoint"] = dataLoop1Tmp["endpoint"]
-				dataLoop1Map["mountDir"] = dataLoop1Tmp["mount_dir"]
-				dataLoop1Map["readOnly"] = dataLoop1Tmp["read_only"]
-				localMaps = append(localMaps, dataLoop1Map)
+				localMaps := make([]interface{}, 0)
+				for _, dataLoop1 := range localData1.([]interface{}) {
+					dataLoop1Tmp := make(map[string]interface{})
+					if dataLoop1 != nil {
+						dataLoop1Tmp = dataLoop1.(map[string]interface{})
+					}
+					dataLoop1Map := make(map[string]interface{})
+					dataLoop1Map["bucketName"] = dataLoop1Tmp["bucket_name"]
+					dataLoop1Map["bucketPath"] = dataLoop1Tmp["bucket_path"]
+					dataLoop1Map["endpoint"] = dataLoop1Tmp["endpoint"]
+					dataLoop1Map["mountDir"] = dataLoop1Tmp["mount_dir"]
+					dataLoop1Map["readOnly"] = dataLoop1Tmp["read_only"]
+					localMaps = append(localMaps, dataLoop1Map)
+				}
+				objectDataLocalMap4["mountPoints"] = localMaps
 			}
-			objectDataLocalMap4["mountPoints"] = localMaps
-		}
 
-		request["ossMountConfig"] = objectDataLocalMap4
+			request["ossMountConfig"] = objectDataLocalMap4
+		}
 	}
 
 	if d.HasChange("custom_dns") {
 		update = true
-	}
-	objectDataLocalMap5 := make(map[string]interface{})
+		objectDataLocalMap5 := make(map[string]interface{})
 
-	if v := d.Get("custom_dns"); !IsNil(v) || d.HasChange("custom_dns") {
-		nodeNative27, _ := jsonpath.Get("$[0].name_servers", d.Get("custom_dns"))
-		if nodeNative27 != nil && (d.HasChange("custom_dns.0.name_servers") || nodeNative27 != "") {
-			objectDataLocalMap5["nameServers"] = nodeNative27
-		}
-		nodeNative28, _ := jsonpath.Get("$[0].searches", d.Get("custom_dns"))
-		if nodeNative28 != nil && (d.HasChange("custom_dns.0.searches") || nodeNative28 != "") {
-			objectDataLocalMap5["searches"] = nodeNative28
-		}
-		if v, ok := d.GetOk("custom_dns"); ok {
-			localData2, err := jsonpath.Get("$[0].dns_options", v)
-			if err != nil {
-				localData2 = make([]interface{}, 0)
+		if v := d.Get("custom_dns"); !IsNil(v) {
+			nameServers1, _ := jsonpath.Get("$[0].name_servers", d.Get("custom_dns"))
+			if nameServers1 != nil && (d.HasChange("custom_dns.0.name_servers") || nameServers1 != "") {
+				objectDataLocalMap5["nameServers"] = nameServers1
 			}
-			localMaps1 := make([]interface{}, 0)
-			for _, dataLoop2 := range localData2.([]interface{}) {
-				dataLoop2Tmp := make(map[string]interface{})
-				if dataLoop2 != nil {
-					dataLoop2Tmp = dataLoop2.(map[string]interface{})
+			searches1, _ := jsonpath.Get("$[0].searches", d.Get("custom_dns"))
+			if searches1 != nil && (d.HasChange("custom_dns.0.searches") || searches1 != "") {
+				objectDataLocalMap5["searches"] = searches1
+			}
+			if v, ok := d.GetOk("custom_dns"); ok {
+				localData2, err := jsonpath.Get("$[0].dns_options", v)
+				if err != nil {
+					localData2 = make([]interface{}, 0)
 				}
-				dataLoop2Map := make(map[string]interface{})
-				dataLoop2Map["name"] = dataLoop2Tmp["name"]
-				dataLoop2Map["value"] = dataLoop2Tmp["value"]
-				localMaps1 = append(localMaps1, dataLoop2Map)
+				localMaps1 := make([]interface{}, 0)
+				for _, dataLoop2 := range localData2.([]interface{}) {
+					dataLoop2Tmp := make(map[string]interface{})
+					if dataLoop2 != nil {
+						dataLoop2Tmp = dataLoop2.(map[string]interface{})
+					}
+					dataLoop2Map := make(map[string]interface{})
+					dataLoop2Map["name"] = dataLoop2Tmp["name"]
+					dataLoop2Map["value"] = dataLoop2Tmp["value"]
+					localMaps1 = append(localMaps1, dataLoop2Map)
+				}
+				objectDataLocalMap5["dnsOptions"] = localMaps1
 			}
-			objectDataLocalMap5["dnsOptions"] = localMaps1
-		}
 
-		request["customDNS"] = objectDataLocalMap5
+			request["customDNS"] = objectDataLocalMap5
+		}
 	}
 
-	if d.HasChange("vpc_config") {
+	if !d.IsNewResource() && d.HasChange("vpc_config") {
 		update = true
+		objectDataLocalMap6 := make(map[string]interface{})
+
+		if v := d.Get("vpc_config"); !IsNil(v) {
+			vpcId1, _ := jsonpath.Get("$[0].vpc_id", v)
+			if vpcId1 != nil && (d.HasChange("vpc_config.0.vpc_id") || vpcId1 != "") {
+				objectDataLocalMap6["vpcId"] = vpcId1
+			}
+			vSwitchIds1, _ := jsonpath.Get("$[0].vswitch_ids", d.Get("vpc_config"))
+			if vSwitchIds1 != nil && (d.HasChange("vpc_config.0.vswitch_ids") || vSwitchIds1 != "") {
+				objectDataLocalMap6["vSwitchIds"] = vSwitchIds1
+			}
+			securityGroupId1, _ := jsonpath.Get("$[0].security_group_id", v)
+			if securityGroupId1 != nil && (d.HasChange("vpc_config.0.security_group_id") || securityGroupId1 != "") {
+				objectDataLocalMap6["securityGroupId"] = securityGroupId1
+			}
+
+			request["vpcConfig"] = objectDataLocalMap6
+		}
 	}
-	objectDataLocalMap6 := make(map[string]interface{})
 
-	if v := d.Get("vpc_config"); !IsNil(v) || d.HasChange("vpc_config") {
-		nodeNative31, _ := jsonpath.Get("$[0].vpc_id", v)
-		if nodeNative31 != nil && (d.HasChange("vpc_config.0.vpc_id") || nodeNative31 != "") {
-			objectDataLocalMap6["vpcId"] = nodeNative31
-		}
-		nodeNative32, _ := jsonpath.Get("$[0].vswitch_ids", d.Get("vpc_config"))
-		if nodeNative32 != nil && (d.HasChange("vpc_config.0.vswitch_ids") || nodeNative32 != "") {
-			objectDataLocalMap6["vSwitchIds"] = nodeNative32
-		}
-		nodeNative33, _ := jsonpath.Get("$[0].security_group_id", v)
-		if nodeNative33 != nil && (d.HasChange("vpc_config.0.security_group_id") || nodeNative33 != "") {
-			objectDataLocalMap6["securityGroupId"] = nodeNative33
-		}
-
-		request["vpcConfig"] = objectDataLocalMap6
-	}
-
-	if d.HasChange("custom_container_config") {
+	if !d.IsNewResource() && d.HasChange("custom_container_config") {
 		update = true
+		objectDataLocalMap7 := make(map[string]interface{})
+
+		if v := d.Get("custom_container_config"); !IsNil(v) {
+			image1, _ := jsonpath.Get("$[0].image", v)
+			if image1 != nil && (d.HasChange("custom_container_config.0.image") || image1 != "") {
+				objectDataLocalMap7["image"] = image1
+			}
+			port3, _ := jsonpath.Get("$[0].port", v)
+			if port3 != nil && (d.HasChange("custom_container_config.0.port") || port3 != "") {
+				objectDataLocalMap7["port"] = port3
+			}
+			entrypoint1, _ := jsonpath.Get("$[0].entrypoint", d.Get("custom_container_config"))
+			if entrypoint1 != nil && (d.HasChange("custom_container_config.0.entrypoint") || entrypoint1 != "") {
+				objectDataLocalMap7["entrypoint"] = entrypoint1
+			}
+			command3, _ := jsonpath.Get("$[0].command", d.Get("custom_container_config"))
+			if command3 != nil && (d.HasChange("custom_container_config.0.command") || command3 != "") {
+				objectDataLocalMap7["command"] = command3
+			}
+			healthCheckConfig1 := make(map[string]interface{})
+			failureThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
+			if failureThreshold3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.failure_threshold") || failureThreshold3 != "") && failureThreshold3.(int) > 0 {
+				healthCheckConfig1["failureThreshold"] = failureThreshold3
+			}
+			httpGetUrl3, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
+			if httpGetUrl3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.http_get_url") || httpGetUrl3 != "") {
+				healthCheckConfig1["httpGetUrl"] = httpGetUrl3
+			}
+			initialDelaySeconds3, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
+			if initialDelaySeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.initial_delay_seconds") || initialDelaySeconds3 != "") {
+				healthCheckConfig1["initialDelaySeconds"] = initialDelaySeconds3
+			}
+			periodSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
+			if periodSeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.period_seconds") || periodSeconds3 != "") && periodSeconds3.(int) > 0 {
+				healthCheckConfig1["periodSeconds"] = periodSeconds3
+			}
+			successThreshold3, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
+			if successThreshold3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.success_threshold") || successThreshold3 != "") && successThreshold3.(int) > 0 {
+				healthCheckConfig1["successThreshold"] = successThreshold3
+			}
+			timeoutSeconds3, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
+			if timeoutSeconds3 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.timeout_seconds") || timeoutSeconds3 != "") && timeoutSeconds3.(int) > 0 {
+				healthCheckConfig1["timeoutSeconds"] = timeoutSeconds3
+			}
+
+			objectDataLocalMap7["healthCheckConfig"] = healthCheckConfig1
+			acrInstanceId1, _ := jsonpath.Get("$[0].acr_instance_id", v)
+			if acrInstanceId1 != nil && (d.HasChange("custom_container_config.0.acr_instance_id") || acrInstanceId1 != "") {
+				objectDataLocalMap7["acrInstanceId"] = acrInstanceId1
+			}
+			accelerationType1, _ := jsonpath.Get("$[0].acceleration_type", v)
+			if accelerationType1 != nil && (d.HasChange("custom_container_config.0.acceleration_type") || accelerationType1 != "") {
+				objectDataLocalMap7["accelerationType"] = accelerationType1
+			}
+
+			request["customContainerConfig"] = objectDataLocalMap7
+		}
 	}
-	objectDataLocalMap7 := make(map[string]interface{})
 
-	if v := d.Get("custom_container_config"); !IsNil(v) || d.HasChange("custom_container_config") {
-		nodeNative34, _ := jsonpath.Get("$[0].image", v)
-		if nodeNative34 != nil && (d.HasChange("custom_container_config.0.image") || nodeNative34 != "") {
-			objectDataLocalMap7["image"] = nodeNative34
-		}
-		nodeNative35, _ := jsonpath.Get("$[0].port", v)
-		if nodeNative35 != nil && (d.HasChange("custom_container_config.0.port") || nodeNative35 != "") {
-			objectDataLocalMap7["port"] = nodeNative35
-		}
-		nodeNative36, _ := jsonpath.Get("$[0].entrypoint", d.Get("custom_container_config"))
-		if nodeNative36 != nil && (d.HasChange("custom_container_config.0.entrypoint") || nodeNative36 != "") {
-			objectDataLocalMap7["entrypoint"] = nodeNative36
-		}
-		nodeNative37, _ := jsonpath.Get("$[0].command", d.Get("custom_container_config"))
-		if nodeNative37 != nil && (d.HasChange("custom_container_config.0.command") || nodeNative37 != "") {
-			objectDataLocalMap7["command"] = nodeNative37
-		}
-		healthCheckConfig1 := make(map[string]interface{})
-		nodeNative38, _ := jsonpath.Get("$[0].health_check_config[0].failure_threshold", v)
-		if nodeNative38 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.failure_threshold") || nodeNative38 != "") && nodeNative38.(int) > 0 {
-			healthCheckConfig1["failureThreshold"] = nodeNative38
-		}
-		nodeNative39, _ := jsonpath.Get("$[0].health_check_config[0].http_get_url", v)
-		if nodeNative39 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.http_get_url") || nodeNative39 != "") {
-			healthCheckConfig1["httpGetUrl"] = nodeNative39
-		}
-		nodeNative40, _ := jsonpath.Get("$[0].health_check_config[0].initial_delay_seconds", v)
-		if nodeNative40 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.initial_delay_seconds") || nodeNative40 != "") {
-			healthCheckConfig1["initialDelaySeconds"] = nodeNative40
-		}
-		nodeNative41, _ := jsonpath.Get("$[0].health_check_config[0].period_seconds", v)
-		if nodeNative41 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.period_seconds") || nodeNative41 != "") && nodeNative41.(int) > 0 {
-			healthCheckConfig1["periodSeconds"] = nodeNative41
-		}
-		nodeNative42, _ := jsonpath.Get("$[0].health_check_config[0].success_threshold", v)
-		if nodeNative42 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.success_threshold") || nodeNative42 != "") && nodeNative42.(int) > 0 {
-			healthCheckConfig1["successThreshold"] = nodeNative42
-		}
-		nodeNative43, _ := jsonpath.Get("$[0].health_check_config[0].timeout_seconds", v)
-		if nodeNative43 != nil && (d.HasChange("custom_container_config.0.health_check_config.0.timeout_seconds") || nodeNative43 != "") && nodeNative43.(int) > 0 {
-			healthCheckConfig1["timeoutSeconds"] = nodeNative43
-		}
-
-		objectDataLocalMap7["healthCheckConfig"] = healthCheckConfig1
-		nodeNative44, _ := jsonpath.Get("$[0].acr_instance_id", v)
-		if nodeNative44 != nil && (d.HasChange("custom_container_config.0.acr_instance_id") || nodeNative44 != "") {
-			objectDataLocalMap7["acrInstanceId"] = nodeNative44
-		}
-		nodeNative45, _ := jsonpath.Get("$[0].acceleration_type", v)
-		if nodeNative45 != nil && (d.HasChange("custom_container_config.0.acceleration_type") || nodeNative45 != "") {
-			objectDataLocalMap7["accelerationType"] = nodeNative45
-		}
-
-		request["customContainerConfig"] = objectDataLocalMap7
-	}
-
-	if d.HasChange("gpu_config") {
+	if !d.IsNewResource() && d.HasChange("gpu_config") {
 		update = true
-	}
-	objectDataLocalMap8 := make(map[string]interface{})
+		objectDataLocalMap8 := make(map[string]interface{})
 
-	if v := d.Get("gpu_config"); !IsNil(v) || d.HasChange("gpu_config") {
-		nodeNative46, _ := jsonpath.Get("$[0].gpu_type", v)
-		if nodeNative46 != nil && (d.HasChange("gpu_config.0.gpu_type") || nodeNative46 != "") {
-			objectDataLocalMap8["gpuType"] = nodeNative46
-		}
-		nodeNative47, _ := jsonpath.Get("$[0].gpu_memory_size", v)
-		if nodeNative47 != nil && (d.HasChange("gpu_config.0.gpu_memory_size") || nodeNative47 != "") {
-			objectDataLocalMap8["gpuMemorySize"] = nodeNative47
-		}
+		if v := d.Get("gpu_config"); !IsNil(v) {
+			gpuType1, _ := jsonpath.Get("$[0].gpu_type", v)
+			if gpuType1 != nil && (d.HasChange("gpu_config.0.gpu_type") || gpuType1 != "") {
+				objectDataLocalMap8["gpuType"] = gpuType1
+			}
+			gpuMemorySize1, _ := jsonpath.Get("$[0].gpu_memory_size", v)
+			if gpuMemorySize1 != nil && (d.HasChange("gpu_config.0.gpu_memory_size") || gpuMemorySize1 != "") {
+				objectDataLocalMap8["gpuMemorySize"] = gpuMemorySize1
+			}
 
-		request["gpuConfig"] = objectDataLocalMap8
+			request["gpuConfig"] = objectDataLocalMap8
+		}
 	}
 
 	if d.HasChange("nas_config") {
 		update = true
-	}
-	objectDataLocalMap9 := make(map[string]interface{})
+		objectDataLocalMap9 := make(map[string]interface{})
 
-	if v := d.Get("nas_config"); !IsNil(v) || d.HasChange("nas_config") {
-		nodeNative48, _ := jsonpath.Get("$[0].group_id", v)
-		if nodeNative48 != nil && (d.HasChange("nas_config.0.group_id") || nodeNative48 != "") {
-			objectDataLocalMap9["groupId"] = nodeNative48
-		}
-		nodeNative49, _ := jsonpath.Get("$[0].user_id", v)
-		if nodeNative49 != nil && (d.HasChange("nas_config.0.user_id") || nodeNative49 != "") {
-			objectDataLocalMap9["userId"] = nodeNative49
-		}
-		if v, ok := d.GetOk("nas_config"); ok {
-			localData3, err := jsonpath.Get("$[0].mount_points", v)
-			if err != nil {
-				localData3 = make([]interface{}, 0)
+		if v := d.Get("nas_config"); !IsNil(v) {
+			groupId1, _ := jsonpath.Get("$[0].group_id", v)
+			if groupId1 != nil && (d.HasChange("nas_config.0.group_id") || groupId1 != "") {
+				objectDataLocalMap9["groupId"] = groupId1
 			}
-			localMaps2 := make([]interface{}, 0)
-			for _, dataLoop3 := range localData3.([]interface{}) {
-				dataLoop3Tmp := make(map[string]interface{})
-				if dataLoop3 != nil {
-					dataLoop3Tmp = dataLoop3.(map[string]interface{})
+			userId1, _ := jsonpath.Get("$[0].user_id", v)
+			if userId1 != nil && (d.HasChange("nas_config.0.user_id") || userId1 != "") {
+				objectDataLocalMap9["userId"] = userId1
+			}
+			if v, ok := d.GetOk("nas_config"); ok {
+				localData3, err := jsonpath.Get("$[0].mount_points", v)
+				if err != nil {
+					localData3 = make([]interface{}, 0)
 				}
-				dataLoop3Map := make(map[string]interface{})
-				dataLoop3Map["serverAddr"] = dataLoop3Tmp["server_addr"]
-				dataLoop3Map["mountDir"] = dataLoop3Tmp["mount_dir"]
-				dataLoop3Map["enableTLS"] = dataLoop3Tmp["enable_tls"]
-				localMaps2 = append(localMaps2, dataLoop3Map)
+				localMaps2 := make([]interface{}, 0)
+				for _, dataLoop3 := range localData3.([]interface{}) {
+					dataLoop3Tmp := make(map[string]interface{})
+					if dataLoop3 != nil {
+						dataLoop3Tmp = dataLoop3.(map[string]interface{})
+					}
+					dataLoop3Map := make(map[string]interface{})
+					dataLoop3Map["serverAddr"] = dataLoop3Tmp["server_addr"]
+					dataLoop3Map["mountDir"] = dataLoop3Tmp["mount_dir"]
+					dataLoop3Map["enableTLS"] = dataLoop3Tmp["enable_tls"]
+					localMaps2 = append(localMaps2, dataLoop3Map)
+				}
+				objectDataLocalMap9["mountPoints"] = localMaps2
 			}
-			objectDataLocalMap9["mountPoints"] = localMaps2
-		}
 
-		request["nasConfig"] = objectDataLocalMap9
+			request["nasConfig"] = objectDataLocalMap9
+		}
 	}
 
 	body = request
@@ -1653,9 +1646,9 @@ func resourceAliCloudFcv3FunctionUpdate(d *schema.ResourceData, meta interface{}
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -1672,7 +1665,6 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
@@ -1680,12 +1672,11 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 	request = make(map[string]interface{})
 	request["functionName"] = d.Id()
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
@@ -1694,12 +1685,12 @@ func resourceAliCloudFcv3FunctionDelete(d *schema.ResourceData, meta interface{}
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"FunctionNotFound"}) {
+		if IsExpectedErrors(err, []string{"FunctionNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

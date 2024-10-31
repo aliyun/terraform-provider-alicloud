@@ -613,11 +613,13 @@ func TestAccAliCloudFcv3Function_basic6916_raw(t *testing.T) {
 							"initializer": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.start",
 								},
 							},
 							"pre_stop": []map[string]interface{}{
 								{
 									"timeout": "3",
+									"handler": "index.prestop",
 								},
 							},
 						},
