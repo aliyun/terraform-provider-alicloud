@@ -14,12 +14,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudNatGateway() *schema.Resource {
+func resourceAliCloudNatGateway() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudNatGatewayCreate,
-		Read:   resourceAlicloudNatGatewayRead,
-		Update: resourceAlicloudNatGatewayUpdate,
-		Delete: resourceAlicloudNatGatewayDelete,
+		Create: resourceAliCloudNatGatewayCreate,
+		Read:   resourceAliCloudNatGatewayRead,
+		Update: resourceAliCloudNatGatewayUpdate,
+		Delete: resourceAliCloudNatGatewayDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -48,9 +48,9 @@ func resourceAlicloudNatGateway() *schema.Resource {
 			"internet_charge_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"PayByLcu", "PayBySpec"}, false),
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"PayByLcu", "PayBySpec"}, false),
 			},
 			"nat_gateway_name": {
 				Type:          schema.TypeString,
@@ -63,28 +63,30 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Optional:      true,
 				Computed:      true,
 				ConflictsWith: []string{"nat_gateway_name"},
+				Deprecated:    "Field `name` has been deprecated from provider version 1.121.0. New field `nat_gateway_name` instead.",
 			},
 			"nat_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Enhanced", "Normal"}, false),
 				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Enhanced", "Normal"}, false),
 			},
 			"payment_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
+				Computed:      true,
+				ValidateFunc:  StringInSlice([]string{"PayAsYouGo", "Subscription"}, false),
 				ConflictsWith: []string{"instance_charge_type"},
 			},
 			"instance_charge_type": {
 				Type:          schema.TypeString,
 				Optional:      true,
-				Computed:      true,
 				ForceNew:      true,
-				ValidateFunc:  validation.StringInSlice([]string{"PostPaid", "PrePaid"}, false),
+				Computed:      true,
+				ValidateFunc:  StringInSlice([]string{"PostPaid", "PrePaid"}, false),
 				ConflictsWith: []string{"payment_type"},
+				Deprecated:    "Field `instance_charge_type` has been deprecated from provider version 1.121.0. New field `payment_type` instead.",
 			},
 			"period": {
 				Type:             schema.TypeInt,
@@ -100,36 +102,40 @@ func resourceAlicloudNatGateway() *schema.Resource {
 					Schema: map[string]*schema.Schema{
 						"ip_count": {
 							Type:     schema.TypeInt,
-							Required: true,
+							Optional: true,
+							Removed:  "Field `ip_count` has been removed from provider version 1.121.0.",
 						},
 						"bandwidth": {
 							Type:     schema.TypeInt,
-							Required: true,
+							Optional: true,
+							Removed:  "Field `bandwidth` has been removed from provider version 1.121.0.",
 						},
 						"zone": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
+							Removed:  "Field `zone` has been removed from provider version 1.121.0.",
 						},
 						"public_ip_addresses": {
 							Type:     schema.TypeString,
 							Computed: true,
+							Removed:  "Field `public_ip_addresses` has been removed from provider version 1.121.0.",
 						},
 					},
 				},
 				MaxItems: 4,
 				Optional: true,
-				Removed:  "Field 'bandwidth_packages' has been removed from provider version 1.121.0.",
+				Removed:  "Field `bandwidth_packages` has been removed from provider version 1.121.0.",
 			},
 			"bandwidth_package_ids": {
 				Type:     schema.TypeString,
 				Computed: true,
-				Removed:  "Field 'bandwidth_package_ids' has been removed from provider version 1.121.0.",
+				Removed:  "Field `bandwidth_package_ids` has been removed from provider version 1.121.0.",
 			},
 			"spec": {
 				Type:     schema.TypeString,
 				Optional: true,
-				Removed:  "Field 'spec' has been removed from provider version 1.121.0, replace by 'specification'.",
+				Removed:  "Field `spec` has been removed from provider version 1.121.0. New field `specification` instead.",
 			},
 			"snat_table_ids": {
 				Type:     schema.TypeString,
@@ -138,8 +144,8 @@ func resourceAlicloudNatGateway() *schema.Resource {
 			"specification": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
 				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Large", "Middle", "Small", "XLarge.1"}, false),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					return d.Get("internet_charge_type").(string) == "PayByLcu"
 				},
@@ -170,19 +176,52 @@ func resourceAlicloudNatGateway() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"internet", "intranet"}, false),
+				ValidateFunc: StringInSlice([]string{"internet", "intranet"}, false),
 			},
 			"eip_bind_mode": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
-				ValidateFunc: validation.StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
+				ValidateFunc: StringInSlice([]string{"MULTI_BINDED", "NAT"}, false),
+			},
+			"icmp_reply_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Computed: true,
+			},
+			"private_link_enabled": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+			},
+			"access_mode": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+				MaxItems: 1,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"mode_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+						"tunnel_type": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+						},
+					},
+				},
 			},
 		},
 	}
 }
 
-func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	var response map[string]interface{}
@@ -238,6 +277,37 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 	if v, ok := d.GetOk("eip_bind_mode"); ok {
 		request["EipBindMode"] = v
 	}
+
+	if v, ok := d.GetOkExists("icmp_reply_enabled"); ok {
+		request["IcmpReplyEnabled"] = v
+	}
+
+	if v, ok := d.GetOkExists("private_link_enabled"); ok {
+		request["PrivateLinkEnabled"] = v
+	}
+
+	if v, ok := d.GetOk("access_mode"); ok {
+		accessModeMap := map[string]interface{}{}
+		for _, accessModeList := range v.([]interface{}) {
+			accessModeArg := accessModeList.(map[string]interface{})
+
+			if modeValue, ok := accessModeArg["mode_value"]; ok && modeValue.(string) != "" {
+				accessModeMap["ModeValue"] = modeValue
+			}
+
+			if tunnelType, ok := accessModeArg["tunnel_type"]; ok && tunnelType.(string) != "" {
+				accessModeMap["TunnelType"] = tunnelType
+			}
+		}
+
+		accessModeJson, err := convertMaptoJsonString(accessModeMap)
+		if err != nil {
+			return WrapError(err)
+		}
+
+		request["AccessMode"] = accessModeJson
+	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -251,34 +321,38 @@ func resourceAlicloudNatGatewayCreate(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_nat_gateway", action, AlibabaCloudSdkGoERROR)
 	}
 
 	d.SetId(fmt.Sprint(response["NatGatewayId"]))
+
 	stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutCreate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudNatGatewayUpdate(d, meta)
+	return resourceAliCloudNatGatewayUpdate(d, meta)
 }
 
-func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
+
 	object, err := vpcService.DescribeNatGateway(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
+		if !d.IsNewResource() && NotFoundError(err) {
 			log.Printf("[DEBUG] Resource alicloud_nat_gateway vpcService.DescribeNatGateway Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
+
 	d.Set("description", object["Description"])
 	if v, ok := object["ForwardTableIds"].(map[string]interface{})["ForwardTableId"].([]interface{}); ok {
 		ids := []string{}
@@ -318,12 +392,34 @@ func resourceAlicloudNatGatewayRead(d *schema.ResourceData, meta interface{}) er
 	if err != nil {
 		return WrapError(err)
 	}
+
 	d.Set("tags", tagsToMap(listTagResourcesObject))
 	d.Set("deletion_protection", object["DeletionProtection"])
+	d.Set("icmp_reply_enabled", object["IcmpReplyEnabled"])
+	d.Set("private_link_enabled", object["PrivateLinkEnabled"])
+
+	if accessMode, ok := object["AccessMode"]; ok {
+		accessModeMaps := make([]map[string]interface{}, 0)
+		accessModeArg := accessMode.(map[string]interface{})
+		accessModeMap := make(map[string]interface{})
+
+		if modeValue, ok := accessModeArg["ModeValue"]; ok {
+			accessModeMap["mode_value"] = modeValue
+		}
+
+		if tunnelType, ok := accessModeArg["TunnelType"]; ok {
+			accessModeMap["tunnel_type"] = tunnelType
+		}
+
+		accessModeMaps = append(accessModeMaps, accessModeMap)
+
+		d.Set("access_mode", accessModeMaps)
+	}
+
 	return nil
 }
 
-func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	var response map[string]interface{}
@@ -335,6 +431,7 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		}
 		d.SetPartial("tags")
 	}
+
 	if d.HasChange("deletion_protection") {
 		var response map[string]interface{}
 		action := "DeletionProtection"
@@ -362,15 +459,17 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 		d.SetPartial("deletion_protection")
 	}
+
 	update := false
 	request := map[string]interface{}{
 		"NatGatewayId": d.Id(),
@@ -392,6 +491,15 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 		update = true
 		request["EipBindMode"] = d.Get("eip_bind_mode")
 	}
+
+	if !d.IsNewResource() && d.HasChange("icmp_reply_enabled") {
+		update = true
+
+		if v, ok := d.GetOkExists("icmp_reply_enabled"); ok {
+			request["IcmpReplyEnabled"] = v
+		}
+	}
+
 	if update {
 		action := "ModifyNatGatewayAttribute"
 		conn, err := client.NewVpcClient()
@@ -408,20 +516,24 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("description")
 		d.SetPartial("name")
 		d.SetPartial("nat_gateway_name")
 	}
+
 	if !d.IsNewResource() && d.HasChange("specification") {
 		request := map[string]interface{}{
 			"NatGatewayId": d.Id(),
@@ -443,16 +555,19 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("specification")
 	}
 	update = false
@@ -490,29 +605,35 @@ func resourceAlicloudNatGatewayUpdate(d *schema.ResourceData, meta interface{}) 
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, updateNatGatewayNatTypeReq)
 			return nil
 		})
+		addDebug(action, response, updateNatGatewayNatTypeReq)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Available"}, d.Timeout(schema.TimeoutUpdate), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("nat_type")
 		d.SetPartial("vswitch_id")
 		d.SetPartial("dry_run")
 	}
+
 	d.Partial(false)
-	return resourceAlicloudNatGatewayRead(d, meta)
+
+	return resourceAliCloudNatGatewayRead(d, meta)
 }
 
-func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) error {
 	if d.Get("payment_type").(string) == "Subscription" || d.Get("instance_charge_type").(string) == "Prepaid" {
 		log.Printf("[WARN] Cannot destroy Subscription resource: alicloud_nat_gateway. Terraform will remove this resource from the state file, however resources may remain.")
 		return nil
 	}
+
 	client := meta.(*connectivity.AliyunClient)
 	vpcService := VpcService{client}
 	action := "DeleteNatGateway"
@@ -539,19 +660,22 @@ func resourceAlicloudNatGatewayDelete(d *schema.ResourceData, meta interface{}) 
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"INSTANCE_NOT_EXISTS", "IncorrectStatus.NatGateway", "InvalidNatGatewayId.NotFound", "InvalidRegionId.NotFound"}) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
+
 	stateConf := BuildStateConf([]string{}, []string{}, d.Timeout(schema.TimeoutDelete), 5*time.Second, vpcService.NatGatewayStateRefreshFunc(d.Id(), []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
+
 	return nil
 }
 
