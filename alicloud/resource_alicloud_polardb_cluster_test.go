@@ -1060,13 +1060,13 @@ func TestAccAliCloudPolarDBCluster_VpcId(t *testing.T) {
 					"description":       "${var.name}",
 					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 					"vpc_id":            "${local.vpc_id}",
-					"security_ips":      []string{"10.168.1.12", "100.69.7.112"},
+					"security_ips":      []string{"10.168.1.12", "100.69.7.112", "127.0.0.1"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
 						"vpc_id":            CHECKSET,
-						"security_ips.#":    "2",
+						"security_ips.#":    "3",
 					}),
 				),
 			},
@@ -1824,28 +1824,26 @@ func resourcePolarDBClusterPrePaidConfigDependence(name string) string {
 	data "alicloud_vpcs" "default" {
 		name_regex = "^default-NODELETING$"
 	}
-	data "alicloud_vswitches" "default" {
-		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vpc_id = data.alicloud_vpcs.default.ids.0
-	}
-
-	resource "alicloud_vswitch" "vswitch" {
-		count             = length(data.alicloud_vswitches.default.ids) > 0 ? 0 : 1
-		vpc_id            = data.alicloud_vpcs.default.ids.0
-		cidr_block        = cidrsubnet(data.alicloud_vpcs.default.vpcs[0].cidr_block, 8, 8)
-		zone_id           = data.alicloud_polardb_node_classes.this.classes.0.zone_id
-		vswitch_name      = var.name
-	}
+	resource "alicloud_vpc" "default" {
+			vpc_name = var.name
+		}
 	
-	locals {
-		vswitch_id = length(data.alicloud_vswitches.default.ids) > 0 ? data.alicloud_vswitches.default.ids[0] : concat(alicloud_vswitch.vswitch.*.id, [""])[0]
+	resource "alicloud_vswitch" "default" {
+		zone_id = data.alicloud_polardb_node_classes.this.classes.0.zone_id
+		vpc_id = alicloud_vpc.default.id
+		cidr_block = cidrsubnet(alicloud_vpc.default.cidr_block, 8, 4)
 	}
 
 	data "alicloud_polardb_node_classes" "this" {
-	  db_type    = "MySQL"
-	  db_version = "8.0"
-      pay_type   = "PrePaid"
-	  category   = "Normal"
+		  db_type    = "MySQL"
+		  db_version = "8.0"
+		  pay_type   = "PrePaid"
+		  category   = "Normal"
+	}
+
+	locals {
+		vpc_id = alicloud_vpc.default.id
+		vswitch_id = concat(alicloud_vswitch.default.*.id, [""])[0]
 	}
 
 	data "alicloud_resource_manager_resource_groups" "default" {
