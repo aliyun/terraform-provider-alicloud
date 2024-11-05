@@ -7,13 +7,13 @@ description: |-
   Provides a Alicloud VPN Gateway Vco Route resource.
 ---
 
-# alicloud\_vpn\_gateway\_vco\_route
+# alicloud_vpn_gateway_vco_route
 
 Provides a VPN Gateway Vco Route resource.
 
 For information about VPN Gateway Vco Route and how to use it, see [What is Vco Route](https://www.alibabacloud.com/help/zh/virtual-private-cloud/latest/createvcorouteentry).
 
--> **NOTE:** Available in v1.183.0+.
+-> **NOTE:** Available since v1.183.0+.
 
 ## Example Usage
 
@@ -26,6 +26,10 @@ Basic Usage
 </div></div>
 
 ```terraform
+variable "name" {
+  default = "tf-example"
+}
+
 resource "alicloud_cen_instance" "default" {
   cen_instance_name = var.name
 }
@@ -35,11 +39,12 @@ resource "alicloud_cen_transit_router" "default" {
   transit_router_name        = var.name
 }
 data "alicloud_cen_transit_router_available_resources" "default" {}
+
 resource "alicloud_vpn_customer_gateway" "default" {
-  name        = "${var.name}"
-  ip_address  = "42.104.22.210"
-  asn         = "45014"
-  description = "testAccVpnConnectionDesc"
+  customer_gateway_name = var.name
+  ip_address            = "42.104.22.210"
+  asn                   = "45014"
+  description           = var.name
 }
 resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   customer_gateway_id = alicloud_vpn_customer_gateway.default.id
@@ -82,12 +87,21 @@ resource "alicloud_vpn_gateway_vpn_attachment" "default" {
   enable_nat_traversal = true
   vpn_attachment_name  = var.name
 }
+
+resource "alicloud_cen_transit_router_cidr" "default" {
+  transit_router_id        = alicloud_cen_transit_router.default.transit_router_id
+  cidr                     = "192.168.0.0/16"
+  transit_router_cidr_name = var.name
+  description              = var.name
+  publish_cidr_route       = true
+}
+
 resource "alicloud_cen_transit_router_vpn_attachment" "default" {
   auto_publish_route_enabled            = false
   transit_router_attachment_description = var.name
   transit_router_attachment_name        = var.name
   cen_id                                = alicloud_cen_transit_router.default.cen_id
-  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_id                     = alicloud_cen_transit_router_cidr.default.transit_router_id
   vpn_id                                = alicloud_vpn_gateway_vpn_attachment.default.id
   zone {
     zone_id = data.alicloud_cen_transit_router_available_resources.default.resources.0.master_zones.0
@@ -118,7 +132,7 @@ The following attributes are exported:
 * `id` - The resource ID of Vco Route. The value formats as `<vpn_connection_id>:<route_dest>:<next_hop>:<weight>`.
 * `status` - The status of the vpn route entry.
 
-### Timeouts
+## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
