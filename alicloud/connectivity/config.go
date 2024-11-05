@@ -271,6 +271,12 @@ func (c *Config) setAuthByAssumeRole() (err error) {
 	if c.StsEndpoint != "" {
 		config.SetSTSEndpoint(c.StsEndpoint)
 	}
+	if c.ClientConnectTimeout != 0 {
+		config.SetConnectTimeout(c.ClientConnectTimeout)
+	}
+	if c.ClientReadTimeout != 0 {
+		config.SetTimeout(c.ClientReadTimeout)
+	}
 	provider, err := credential.NewCredential(config)
 	if err != nil {
 		return
@@ -326,6 +332,12 @@ func (c *Config) setAuthCredentialByOidc() (err error) {
 			SetSessionExpiration(c.AssumeRoleWithOidc.DurationSeconds)
 		if c.StsEndpoint != "" {
 			credConfig.SetSTSEndpoint(c.StsEndpoint)
+		}
+		if c.ClientConnectTimeout != 0 {
+			credConfig.SetConnectTimeout(c.ClientConnectTimeout)
+		}
+		if c.ClientReadTimeout != 0 {
+			credConfig.SetTimeout(c.ClientReadTimeout)
 		}
 	} else {
 		conf := &openapi.Config{
