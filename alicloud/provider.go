@@ -1205,7 +1205,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cen_transit_router_route_table":                        resourceAlicloudCenTransitRouterRouteTable(),
 			"alicloud_cen_transit_router_route_table_association":            resourceAlicloudCenTransitRouterRouteTableAssociation(),
 			"alicloud_cen_transit_router_route_table_propagation":            resourceAlicloudCenTransitRouterRouteTablePropagation(),
-			"alicloud_cen_transit_router_vbr_attachment":                     resourceAlicloudCenTransitRouterVbrAttachment(),
+			"alicloud_cen_transit_router_vbr_attachment":                     resourceAliCloudCenTransitRouterVbrAttachment(),
 			"alicloud_cen_transit_router_vpc_attachment":                     resourceAliCloudCenTransitRouterVpcAttachment(),
 			"alicloud_kvstore_instance":                                      resourceAliCloudKvstoreInstance(),
 			"alicloud_kvstore_backup_policy":                                 resourceAlicloudKVStoreBackupPolicy(),

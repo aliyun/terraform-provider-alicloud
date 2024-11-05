@@ -4,12 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_cen_transit_router_vbr_attachment"
 sidebar_current: "docs-alicloud-resource-cen-transit_router_vbr_attachment"
 description: |-
-  Provides a Alicloud CEN transit router VBR attachment resource.
+  Provides a Alicloud Cloud Enterprise Network (CEN) Transit Router VBR Attachment resource.
 ---
 
 # alicloud_cen_transit_router_vbr_attachment
 
-Provides a CEN transit router VBR attachment resource that associate the VBR with the CEN instance.[What is Cen Transit Router VBR Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervbrattachment)
+Provides a Cloud Enterprise Network (CEN) Transit Router VBR Attachment resource.
+
+For information about Cloud Enterprise Network (CEN) Transit Router VBR Attachment and how to use it, see [What is Transit Router VBR Attachment](https://www.alibabacloud.com/help/en/cen/developer-reference/api-cbn-2017-09-12-createtransitroutervbrattachment)
 
 -> **NOTE:** Available since v1.126.0.
 
@@ -24,12 +26,16 @@ Basic Usage
 </div></div>
 
 ```terraform
+variable "name" {
+  default = "terraform-example"
+}
+
 provider "alicloud" {
   region = "cn-hangzhou"
 }
 
-variable "name" {
-  default = "terraform-example"
+data "alicloud_express_connect_physical_connections" "nameRegex" {
+  name_regex = "^preserved-NODELETING"
 }
 
 resource "alicloud_cen_instance" "default" {
@@ -39,10 +45,6 @@ resource "alicloud_cen_instance" "default" {
 
 resource "alicloud_cen_transit_router" "default" {
   cen_id = alicloud_cen_instance.default.id
-}
-
-data "alicloud_express_connect_physical_connections" "nameRegex" {
-  name_regex = "^preserved-NODELETING"
 }
 
 resource "alicloud_express_connect_virtual_border_router" "default" {
@@ -58,29 +60,31 @@ resource "alicloud_express_connect_virtual_border_router" "default" {
 }
 
 resource "alicloud_cen_transit_router_vbr_attachment" "default" {
-  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
-  transit_router_attachment_name        = "example"
-  transit_router_attachment_description = "example"
-  vbr_id                                = alicloud_express_connect_virtual_border_router.default.id
   cen_id                                = alicloud_cen_instance.default.id
+  vbr_id                                = alicloud_express_connect_virtual_border_router.default.id
+  transit_router_id                     = alicloud_cen_transit_router.default.transit_router_id
+  transit_router_attachment_name        = var.name
+  transit_router_attachment_description = var.name
 }
 ```
 ## Argument Reference
 
 The following arguments are supported:
 
-* `vbr_id` - (Required, ForceNew) The ID of the VBR.
 * `cen_id` - (Required, ForceNew) The ID of the CEN.
+* `vbr_id` - (Required, ForceNew) The ID of the VBR.
 * `transit_router_id` - (Optional, ForceNew) The ID of the transit router.
-* `auto_publish_route_enabled` - (Optional) Auto publish route enabled.Default value is `false`.
+* `resource_type` - (Optional, ForceNew) The resource type of the transit router vbr attachment. Default value: `VBR`. Valid values: `VBR`.
+* `vbr_owner_id` - (Optional, ForceNew) The owner id of the vbr.
+* `auto_publish_route_enabled` - (Optional, Bool) Specifies whether to enable the Enterprise Edition transit router to automatically advertise routes to the VBR. Default value: `false`. Valid values:
+  - `true`: Enable.
+  - `false`: Disable.
 * `transit_router_attachment_name` - (Optional) The name of the transit router vbr attachment.
 * `transit_router_attachment_description` - (Optional) The description of the transit router vbr attachment.
-* `route_table_association_enabled` - (Optional, ForceNew) Whether to enabled route table association. The system default value is `true`.
-* `route_table_propagation_enabled` - (Optional, ForceNew) Whether to enabled route table propagation. The system default value is `true`.  
-* `dry_run` - (Optional) The dry run.
-* `tags` - (Optional, Available in v1.193.1+) A mapping of tags to assign to the resource.
-* `vbr_owner_id` - (Optional, ForceNew) The owner id of the transit router vbr attachment.
-* `resource_type` - (Optional) The resource type of the transit router vbr attachment.  Valid values: `VPC`, `CCN`, `VBR`, `TR`.
+* `tags` - (Optional, Available since v1.193.1) A mapping of tags to assign to the resource.
+* `dry_run` - (Optional, Bool) Specifies whether to perform a dry run. Default value: `false`. Valid values: `true`, `false`.
+* `route_table_association_enabled` - (Optional, Bool, Deprecated since v1.234.0) Whether to enabled route table association. **NOTE:** "Field `route_table_association_enabled` has been deprecated from provider version 1.234.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead, [how to use alicloud_cen_transit_router_route_table_association](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_association)."
+* `route_table_propagation_enabled` - (Optional, Bool, Deprecated since v1.234.0) Whether to enabled route table propagation. **NOTE:** "Field `route_table_propagation_enabled` has been deprecated from provider version 1.234.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead, [how to use alicloud_cen_transit_router_route_table_propagation](https://registry.terraform.io/providers/aliyun/alicloud/latest/docs/resources/cen_transit_router_route_table_propagation)."
 
 ->**NOTE:** Ensure that the vbr is not used in Express Connect.
 
@@ -88,22 +92,22 @@ The following arguments are supported:
 
 The following attributes are exported:
 
-* `id` - ID of the resource, It is formatted to `<transit_router_id>:<transit_router_attachment_id>`. 
-* `status` - The associating status of the network.
-* `transit_router_attachment_id` - The id of the transit router vbr attachment.
+* `id` - The resource ID in terraform of Transit Router VBR Attachment. It formats as `<cen_id>:<transit_router_attachment_id>`.
+* `transit_router_attachment_id` - The ID of the VBR connection.
+* `status` - The status of the Transit Router VBR Attachment.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 10 mins) Used when creating the cen transit router vbr attachment (until it reaches the initial `Attached` status).
-* `update` - (Defaults to 10 mins) Used when update the cen transit router vbr attachment.
-* `delete` - (Defaults to 10 mins) Used when delete the cen transit router vbr attachment.
+* `create` - (Defaults to 10 mins) Used when create the Transit Router VBR Attachment.
+* `update` - (Defaults to 10 mins) Used when update the Transit Router VBR Attachment.
+* `delete` - (Defaults to 10 mins) Used when delete the Transit Router VBR Attachment.
 
 ## Import
 
-CEN transit router VBR attachment can be imported using the id, e.g.
+Cloud Enterprise Network (CEN) Transit Router VBR Attachment can be imported using the id, e.g.
 
 ```shell
-$ terraform import alicloud_cen_transit_router_vbr_attachment.example tr-********:tr-attach-********
+$ terraform import alicloud_cen_transit_router_vbr_attachment.example <cen_id>:<transit_router_attachment_id>
 ```
