@@ -901,3 +901,85 @@ func (s *GpdbService) GpdbDbInstancePlanStateRefreshFunc(id string, failStates [
 		return object, fmt.Sprint(object["PlanStatus"]), nil
 	}
 }
+
+func (s *GpdbService) DescribeGpdbDbInstanceDataShareStatus(id string) (object map[string]interface{}, err error) {
+	var response map[string]interface{}
+	action := "DescribeDataShareInstances"
+
+	conn, err := s.client.NewGpdbClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+
+	request := map[string]interface{}{
+		"RegionId":    s.client.RegionId,
+		"SearchValue": id,
+		"PageSize":    PageSizeLarge,
+		"PageNumber":  1,
+	}
+
+	for {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+
+		if err != nil {
+			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+		}
+
+		resp, err := jsonpath.Get("$.Items.DBInstance", response)
+		if err != nil {
+			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Items.DBInstance", response)
+		}
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, nil
+		}
+
+		for _, v := range resp.([]interface{}) {
+			if fmt.Sprint(v.(map[string]interface{})["DBInstanceId"]) == id {
+				return v.(map[string]interface{}), nil
+			}
+		}
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
+			break
+		}
+
+		request["PageNumber"] = request["PageNumber"].(int) + 1
+	}
+
+	return object, nil
+}
+
+func (s *GpdbService) GpdbDbInstanceDataShareStatusStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeGpdbDbInstanceDataShareStatus(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		for _, failState := range failStates {
+			if fmt.Sprint(object["DataShareStatus"]) == failState {
+				return object, fmt.Sprint(object["DataShareStatus"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["DataShareStatus"])))
+			}
+		}
+
+		return object, fmt.Sprint(object["DataShareStatus"]), nil
+	}
+}

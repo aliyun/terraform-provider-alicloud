@@ -135,6 +135,14 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			"seg_storage_type": {
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"seg_disk_performance_level": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"pl0", "pl1", "pl2"}, false),
 			},
 			"create_sample_data": {
 				Type:     schema.TypeBool,
@@ -174,6 +182,25 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"serverless_mode": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ForceNew:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"Manual", "Auto"}, false),
+			},
+			"prod_type": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Computed: true,
+			},
+			"data_share_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ValidateFunc: StringInSlice([]string{"opened", "closed"}, false),
+			},
 			"used_time": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -185,9 +212,10 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 			},
 			"tags": tagsSchema(),
 			"ip_whitelist": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Computed: true,
+				Type:          schema.TypeList,
+				Optional:      true,
+				Computed:      true,
+				ConflictsWith: []string{"security_ip_list"},
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"ip_group_attribute": {
@@ -217,7 +245,44 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 						},
 					},
 				},
-				ConflictsWith: []string{"security_ip_list"},
+			},
+			"parameters": {
+				Type:     schema.TypeSet,
+				Set:      parameterToHash,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"value": {
+							Type:     schema.TypeString,
+							Required: true,
+						},
+						"default_value": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"is_changeable_config": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"force_restart_instance": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"optional_range": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+						"parameter_description": {
+							Type:     schema.TypeString,
+							Computed: true,
+						},
+					},
+				},
 			},
 			"security_ip_list": {
 				Type:          schema.TypeSet,
@@ -254,44 +319,6 @@ func resourceAliCloudGpdbInstance() *schema.Resource {
 				Type:       schema.TypeString,
 				Optional:   true,
 				Deprecated: "Field `private_ip_address` has been deprecated from provider version 1.213.0.",
-			},
-			"parameters": {
-				Type: schema.TypeSet,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"name": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"value": {
-							Type:     schema.TypeString,
-							Required: true,
-						},
-						"default_value": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"is_changeable_config": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"force_restart_instance": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"optional_range": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"parameter_description": {
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-					},
-				},
-				Set:      parameterToHash,
-				Optional: true,
-				Computed: true,
 			},
 			"connection_string": {
 				Type:     schema.TypeString,
@@ -388,6 +415,10 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 		request["SegStorageType"] = v
 	}
 
+	if v, ok := d.GetOk("seg_disk_performance_level"); ok {
+		request["SegDiskPerformanceLevel"] = v
+	}
+
 	if v, ok := d.GetOkExists("create_sample_data"); ok {
 		request["CreateSampleData"] = v
 	}
@@ -402,6 +433,14 @@ func resourceAliCloudGpdbDbInstanceCreate(d *schema.ResourceData, meta interface
 
 	if v, ok := d.GetOk("vector_configuration_status"); ok {
 		request["VectorConfigurationStatus"] = v
+	}
+
+	if v, ok := d.GetOk("serverless_mode"); ok {
+		request["ServerlessMode"] = v
+	}
+
+	if v, ok := d.GetOk("prod_type"); ok {
+		request["ProdType"] = v
 	}
 
 	if v, ok := d.GetOk("used_time"); ok {
@@ -505,11 +544,15 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	d.Set("resource_group_id", object["ResourceGroupId"])
 	d.Set("master_cu", formatInt(object["MasterCU"]))
 	d.Set("seg_node_num", formatInt(object["SegNodeNum"]))
+	d.Set("seg_storage_type", object["StorageType"])
+	d.Set("seg_disk_performance_level", convertGpdbDbInstanceSegDiskPerformanceLevelResponse(object["SegDiskPerformanceLevel"]))
 	d.Set("encryption_type", object["EncryptionType"])
 	d.Set("encryption_key", object["EncryptionKey"])
 	d.Set("vector_configuration_status", object["VectorConfigurationStatus"])
 	d.Set("maintain_start_time", object["MaintainStartTime"])
 	d.Set("maintain_end_time", object["MaintainEndTime"])
+	d.Set("serverless_mode", object["ServerlessMode"])
+	d.Set("prod_type", object["ProdType"])
 	d.Set("description", object["DBInstanceDescription"])
 	d.Set("connection_string", object["ConnectionString"])
 	d.Set("port", object["Port"])
@@ -566,6 +609,15 @@ func resourceAliCloudGpdbDbInstanceRead(d *schema.ResourceData, meta interface{}
 	}
 	if v, ok := resourceManagementModeObject["ResourceManagementMode"]; ok {
 		d.Set("resource_management_mode", v)
+	}
+
+	dataShareStatusObject, err := gpdbService.DescribeGpdbDbInstanceDataShareStatus(d.Id())
+	if err != nil {
+		return WrapError(err)
+	}
+
+	if dataShareStatus, ok := dataShareStatusObject["DataShareStatus"]; ok {
+		d.Set("data_share_status", dataShareStatus)
 	}
 
 	parameterObject, err := gpdbService.DescribeParameters(d.Id())
@@ -813,22 +865,26 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			if err != nil {
 				return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 			}
+
 			d.SetPartial("security_ip_list")
 		}
 	}
 
 	update = false
 	request = map[string]interface{}{
+		"RegionId":     client.RegionId,
 		"DBInstanceId": d.Id(),
 	}
-	request["RegionId"] = client.RegionId
+
 	if !d.IsNewResource() && d.HasChange("seg_node_num") {
 		update = true
-		if v, ok := d.GetOk("seg_node_num"); ok {
+
+		if v, ok := d.GetOkExists("seg_node_num"); ok {
 			request["UpgradeType"] = 0
 			request["SegNodeNum"] = v
 		}
 	}
+
 	if update {
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -844,21 +900,24 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("seg_node_num")
-		d.SetPartial("storage_size")
 	}
 
 	update = false
 	request = map[string]interface{}{
 		"DBInstanceId": d.Id(),
 	}
+
 	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("master_node_num") {
 		update = true
@@ -867,6 +926,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["MasterNodeNum"] = v
 		}
 	}
+
 	if update {
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -882,13 +942,16 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("master_node_num")
 	}
 
@@ -941,6 +1004,7 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			request["StorageSize"] = v
 		}
 	}
+
 	if update {
 		action := "UpgradeDBInstance"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -959,11 +1023,59 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		d.SetPartial("storage_size")
+	}
+
+	update = false
+	modifySegDiskPerformanceLevelReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"DBInstanceId": d.Id(),
+		"UpgradeType":  3,
+	}
+
+	if v, ok := d.GetOk("seg_storage_type"); ok {
+		modifySegDiskPerformanceLevelReq["SegStorageType"] = v
+	}
+
+	if !d.IsNewResource() && d.HasChange("seg_disk_performance_level") {
+		update = true
+	}
+	if v, ok := d.GetOk("seg_disk_performance_level"); ok {
+		modifySegDiskPerformanceLevelReq["SegDiskPerformanceLevel"] = v
+	}
+
+	if update {
+		action := "UpgradeDBInstance"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, modifySegDiskPerformanceLevelReq, &runtime)
+			if err != nil {
+				if IsExpectedErrors(err, []string{"OperationDenied.OrderProcessing"}) || NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, modifySegDiskPerformanceLevelReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("seg_disk_performance_level")
 	}
 
 	update = false
@@ -1151,13 +1263,63 @@ func resourceAliCloudGpdbDbInstanceUpdate(d *schema.ResourceData, meta interface
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
+
 		stateConf := BuildStateConf([]string{}, []string{"Running", "IDLE"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+	}
+
+	update = false
+	dataShareStatus := ""
+	setDataShareInstanceReq := map[string]interface{}{
+		"RegionId":     client.RegionId,
+		"InstanceList": "[\"" + d.Id() + "\"]",
+	}
+
+	if d.HasChange("data_share_status") {
+		update = true
+	}
+	if v, ok := d.GetOk("data_share_status"); ok {
+		setDataShareInstanceReq["OperationType"] = convertGpdbDbInstanceDataShareStatusRequest(v.(string))
+		dataShareStatus = v.(string)
+	}
+
+	if update {
+		action := "SetDataShareInstance"
+		wait := incrementalWait(3*time.Second, 3*time.Second)
+		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2016-05-03"), StringPointer("AK"), nil, setDataShareInstanceReq, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, setDataShareInstanceReq)
+
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+
+		stateConf := BuildStateConf([]string{}, []string{"Running"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, gpdbService.GpdbDbInstanceStateRefreshFunc(d.Id(), "DBInstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		dataShareStatusStateConf := BuildStateConf([]string{}, []string{dataShareStatus}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, gpdbService.GpdbDbInstanceDataShareStatusStateRefreshFunc(d.Id(), []string{}))
+		if _, err := dataShareStatusStateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+
+		d.SetPartial("data_share_status")
 	}
 
 	d.Partial(false)
@@ -1267,6 +1429,30 @@ func convertGpdbDbInstanceSSLEnabledResponse(source interface{}) interface{} {
 		return 0
 	case true:
 		return 1
+	}
+
+	return source
+}
+
+func convertGpdbDbInstanceDataShareStatusRequest(source interface{}) interface{} {
+	switch source {
+	case "opened":
+		return "add"
+	case "closed":
+		return "remove"
+	}
+
+	return source
+}
+
+func convertGpdbDbInstanceSegDiskPerformanceLevelResponse(source interface{}) interface{} {
+	switch source {
+	case "PL0":
+		return "pl0"
+	case "PL1":
+		return "pl1"
+	case "PL2":
+		return "pl2"
 	}
 
 	return source

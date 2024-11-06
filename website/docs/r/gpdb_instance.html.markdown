@@ -96,8 +96,8 @@ The following arguments are supported:
 * `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
 * `seg_node_num` - (Optional, Int) Calculate the number of nodes. Valid values: `2` to `512`. The value range of the high-availability version of the storage elastic mode is `4` to `512`, and the value must be a multiple of `4`. The value range of the basic version of the storage elastic mode is `2` to `512`, and the value must be a multiple of `2`. The-Serverless version has a value range of `2` to `512`. The value must be a multiple of `2`.
 -> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
-* `seg_storage_type` - (Optional) The seg storage type. Valid values: `cloud_essd`, `cloud_efficiency`.
--> **NOTE:** This parameter must be passed in to create a storage elastic mode instance. Storage Elastic Mode Basic Edition instances only support ESSD cloud disks.
+* `seg_storage_type` - (Optional, ForceNew) The seg storage type. Valid values: `cloud_essd`. **NOTE:** If `db_instance_mode` is set to `StorageElastic`, `seg_storage_type` is required. From version 1.234.0, `seg_storage_type` cannot be modified, or set to `cloud_efficiency`. `seg_storage_type` can only be set to `cloud_essd`.
+* `seg_disk_performance_level` - (Optional, Available since v1.234.0) The ESSD cloud disk performance level. Valid values: `pl0`, `pl1`, `pl2`.
 * `create_sample_data` - (Optional, Bool) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
 * `ssl_enabled` - (Optional, Int, Available since v1.188.0) Enable or disable SSL. Valid values: `0` and `1`.
 * `encryption_type` - (Optional, ForceNew, Available since v1.207.2) The encryption type. Valid values: `CloudDisk`.
@@ -107,18 +107,25 @@ The following arguments are supported:
 * `vector_configuration_status` - (Optional, Available since v1.207.2) Specifies whether to enable vector engine optimization. Default value: `disabled`. Valid values: `enabled` and `disabled`.
 * `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
+* `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
+* `serverless_mode` - (Optional, ForceNew, Available since v1.234.0) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
+* `prod_type` - (Optional, ForceNew, Available since v1.234.0) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
+* `data_share_status` - (Optional, Available since v1.234.0) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
+  - `opened`: Enables data sharing.
+  - `closed`: Disables data sharing.
+-> **NOTE:** `data_share_status` is valid only when `db_instance_mode` is set to `Serverless`.
 * `used_time` - (Optional) The used time. When the parameter `period` is `Year`, the `used_time` value is `1` to `3`. When the parameter `period` is `Month`, the `used_time` value is `1` to `9`.
 * `description` - (Optional) The description of the instance.
 * `tags` - (Optional) A mapping of tags to assign to the resource.
 * `ip_whitelist` - (Optional, Set, Available since v1.187.0) The ip whitelist. See [`ip_whitelist`](#ip_whitelist) below.
   Default to creating a whitelist group with the group name "default" and security_ip_list "127.0.0.1".
+* `parameters` - (Optional, Set, Available since v1.231.0) The parameters. See [`parameters`](#parameters) below.
 * `security_ip_list` - (Optional, List, Deprecated since v1.187.0) Field `security_ip_list` has been deprecated from provider version 1.187.0. New field `ip_whitelist` instead.
 * `instance_charge_type` - (Optional, ForceNew, Deprecated since v1.187.0) Field `instance_charge_type` has been deprecated from provider version 1.187.0. New field `payment_type` instead.
 * `availability_zone` - (Optional, ForceNew, Deprecated since v1.187.0) Field `availability_zone` has been deprecated from provider version 1.187.0. New field `zone_id` instead.
 * `master_node_num` - (Optional, Int, Deprecated since v1.213.0) The number of Master nodes. **NOTE:** Field `master_node_num` has been deprecated from provider version 1.213.0.
 * `private_ip_address` - (Optional, Deprecated since v1.213.0) The private ip address. **NOTE:** Field `private_ip_address` has been deprecated from provider version 1.213.0.
-* `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
-* `parameters` - (Optional, Set, Available since v1.231.0) The parameters. See [`parameters`](#parameters) below.
+
 
 ### `ip_whitelist`
 
