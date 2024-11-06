@@ -174,17 +174,21 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                  "${var.name}",
-					"engine":                "hbaseue",
-					"engine_version":        "2.0",
-					"master_instance_type":  "hbase.sn2.2xlarge",
-					"core_instance_type":    "hbase.sn2.2xlarge",
-					"core_disk_type":        "cloud_ssd",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":            "${local.vswitch_id}",
-					"immediate_delete_flag": "true",
-					"ip_white":              "192.168.0.1",
-					"cold_storage_size":     "800",
+					"name":                   "${var.name}",
+					"engine":                 "hbaseue",
+					"engine_version":         "2.0",
+					"master_instance_type":   "hbase.sn2.2xlarge",
+					"core_instance_type":     "hbase.sn2.2xlarge",
+					"core_disk_type":         "cloud_ssd",
+					"vpc_id":                 "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":             "${local.vswitch_id}",
+					"immediate_delete_flag":  "true",
+					"ip_white":               "192.168.0.1",
+					"cold_storage_size":      "800",
+					"auto_renew":             "1",
+					"core_instance_quantity": "2",
+					"pay_type":               "PostPaid",
+					"duration":               "1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -293,6 +297,40 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 					testAccCheck(map[string]string{
 						"account":  "admin",
 						"password": "YourPassword@123",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"core_instance_type":   "hbase.sn1.4xlarge",
+					"master_instance_type": "hbase.sn1.4xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"core_instance_type":   "hbase.sn1.4xlarge",
+						"master_instance_type": "hbase.sn1.4xlarge",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"core_instance_quantity": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"core_instance_quantity": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pay_type": "PostPaid",
+					"duration": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pay_type": "PostPaid",
+						"duration": "1",
 					}),
 				),
 			},
