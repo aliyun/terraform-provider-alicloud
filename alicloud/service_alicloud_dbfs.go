@@ -104,16 +104,19 @@ func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []strin
 
 func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListSnapshot"
+
 	conn, err := s.client.NewDbfsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListSnapshot"
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
-		"PageSize":   PageSizeMedium,
+		"PageSize":   PageSizeLarge,
 		"PageNumber": 1,
 	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -131,31 +134,39 @@ func (s *DbfsService) DescribeDbfsSnapshot(id string) (object map[string]interfa
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.Snapshots", response)
+
+		resp, err := jsonpath.Get("$.Snapshots", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Snapshots", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DBFS", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Snapshot", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
+
+		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["SnapshotId"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DBFS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Snapshot", id)), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
 
 func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []string) resource.StateRefreshFunc {
@@ -174,6 +185,7 @@ func (s *DbfsService) DbfsSnapshotStateRefreshFunc(id string, failStates []strin
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }

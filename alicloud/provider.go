@@ -1587,7 +1587,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_nas_data_flow":                                         resourceAlicloudNasDataFlow(),
 			"alicloud_ecs_storage_capacity_unit":                             resourceAlicloudEcsStorageCapacityUnit(),
 			"alicloud_nas_recycle_bin":                                       resourceAlicloudNasRecycleBin(),
-			"alicloud_dbfs_snapshot":                                         resourceAlicloudDbfsSnapshot(),
+			"alicloud_dbfs_snapshot":                                         resourceAliCloudDbfsSnapshot(),
 			"alicloud_dbfs_instance_attachment":                              resourceAlicloudDbfsInstanceAttachment(),
 			"alicloud_dts_migration_job":                                     resourceAlicloudDtsMigrationJob(),
 			"alicloud_dts_migration_instance":                                resourceAlicloudDtsMigrationInstance(),
