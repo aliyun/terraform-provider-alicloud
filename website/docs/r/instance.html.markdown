@@ -219,7 +219,7 @@ The following arguments are supported:
   - optional: does not forcefully use the security-enhanced mode (IMDSv2).
   - required: forcefully uses the security-enhanced mode (IMDSv2). After you set this parameter to required, you cannot access instance metadata in normal mode.
 * `http_endpoint` - (Optional, Available since v1.192.0) Specifies whether to enable the access channel for instance metadata. Valid values: `enabled`, `disabled`. Default value: `enabled`.
-* `http_put_response_hop_limit` - (Optional, ForceNew, Available since v1.192.0) The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
+* `http_put_response_hop_limit` - (Optional, ForceNew) **NOTE:**: This parameter is not available for use yet. The HTTP PUT response hop limit for accessing instance metadata. Valid values: 1 to 64. Default value: 1.
 * `ipv6_address_count` - (Optional, ForceNew, Available since v1.193.0) The number of IPv6 addresses to randomly generate for the primary ENI. Valid values: 1 to 10. **NOTE:** You cannot specify both the `ipv6_addresses` and `ipv6_address_count` parameters.
 * `ipv6_addresses` - (Optional, ForceNew, Available since v1.193.0) A list of IPv6 address to be assigned to the primary ENI. Support up to 10.
 * `dedicated_host_id` - (Optional, ForceNew, Available since v1.201.0) The ID of the dedicated host on which to create the instance. If you set the DedicatedHostId parameter, the `spot_strategy` and `spot_price_limit` parameters cannot be set. This is because preemptible instances cannot be created on dedicated hosts.

@@ -30,18 +30,23 @@ variable "name" {
   default = "tf-example"
 }
 
+resource "random_integer" "default" {
+  min = 100000
+  max = 999999
+}
+
 resource "alicloud_cr_ee_instance" "default" {
   payment_type   = "Subscription"
   period         = 1
   renew_period   = 0
   renewal_status = "ManualRenewal"
   instance_type  = "Advanced"
-  instance_name  = var.name
+  instance_name  = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cr_ee_namespace" "default" {
   instance_id        = alicloud_cr_ee_instance.default.id
-  name               = var.name
+  name               = "${var.name}-${random_integer.default.result}"
   auto_create        = false
   default_visibility = "PUBLIC"
 }
@@ -49,14 +54,14 @@ resource "alicloud_cr_ee_namespace" "default" {
 resource "alicloud_cr_ee_repo" "default" {
   instance_id = alicloud_cr_ee_instance.default.id
   namespace   = alicloud_cr_ee_namespace.default.name
-  name        = var.name
+  name        = "${var.name}-${random_integer.default.result}"
   summary     = "this is summary of my new repo"
   repo_type   = "PUBLIC"
   detail      = "this is a public repo"
 }
 
 resource "alicloud_cr_chain" "default" {
-  chain_name          = var.name
+  chain_name          = "${var.name}-${random_integer.default.result}"
   description         = var.name
   instance_id         = alicloud_cr_ee_namespace.default.instance_id
   repo_name           = alicloud_cr_ee_repo.default.name
