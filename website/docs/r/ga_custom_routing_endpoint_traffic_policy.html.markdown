@@ -34,26 +34,28 @@ provider "alicloud" {
   region = var.region
 }
 
+variable "name" {
+  default = "tf-example"
+}
+
 data "alicloud_zones" "default" {
-  available_resource_creation = "VSwitch"
+}
+
+data "alicloud_ga_accelerators" "default" {
+  status                 = "active"
+  bandwidth_billing_type = "BandwidthPackage"
 }
 
 resource "alicloud_vpc" "default" {
-  vpc_name   = "terraform-example"
-  cidr_block = "172.17.3.0/24"
+  vpc_name   = var.name
+  cidr_block = "192.168.0.0/16"
 }
 
 resource "alicloud_vswitch" "default" {
-  vswitch_name = "terraform-example"
-  cidr_block   = "172.17.3.0/24"
+  vswitch_name = var.name
   vpc_id       = alicloud_vpc.default.id
-  zone_id      = data.alicloud_zones.default.zones.0.id
-}
-
-resource "alicloud_ga_accelerator" "default" {
-  duration        = 1
-  auto_use_coupon = true
-  spec            = "1"
+  cidr_block   = "192.168.192.0/24"
+  zone_id      = data.alicloud_zones.default.ids.0
 }
 
 resource "alicloud_ga_bandwidth_package" "default" {
@@ -65,8 +67,12 @@ resource "alicloud_ga_bandwidth_package" "default" {
   ratio          = 30
 }
 
+data "alicloud_regions" "default" {
+  current = true
+}
+
 resource "alicloud_ga_bandwidth_package_attachment" "default" {
-  accelerator_id       = alicloud_ga_accelerator.default.id
+  accelerator_id       = data.alicloud_ga_accelerators.default.accelerators.1.id
   bandwidth_package_id = alicloud_ga_bandwidth_package.default.id
 }
 
@@ -75,23 +81,16 @@ resource "alicloud_ga_listener" "default" {
   listener_type  = "CustomRouting"
   port_ranges {
     from_port = 10000
-    to_port   = 16000
+    to_port   = 26000
   }
 }
 
 resource "alicloud_ga_custom_routing_endpoint_group" "default" {
   accelerator_id                     = alicloud_ga_listener.default.accelerator_id
   listener_id                        = alicloud_ga_listener.default.id
-  endpoint_group_region              = var.region
-  custom_routing_endpoint_group_name = "terraform-example"
-  description                        = "terraform-example"
-}
-
-resource "alicloud_ga_custom_routing_endpoint" "default" {
-  endpoint_group_id          = alicloud_ga_custom_routing_endpoint_group.default.id
-  endpoint                   = alicloud_vswitch.default.id
-  type                       = "PrivateSubNet"
-  traffic_to_endpoint_policy = "AllowCustom"
+  endpoint_group_region              = data.alicloud_regions.default.regions.0.id
+  custom_routing_endpoint_group_name = var.name
+  description                        = var.name
 }
 
 resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
@@ -101,12 +100,19 @@ resource "alicloud_ga_custom_routing_endpoint_group_destination" "default" {
   to_port           = 10
 }
 
+resource "alicloud_ga_custom_routing_endpoint" "default" {
+  endpoint_group_id          = alicloud_ga_custom_routing_endpoint_group_destination.default.endpoint_group_id
+  endpoint                   = alicloud_vswitch.default.id
+  type                       = "PrivateSubNet"
+  traffic_to_endpoint_policy = "AllowAll"
+}
+
 resource "alicloud_ga_custom_routing_endpoint_traffic_policy" "default" {
   endpoint_id = alicloud_ga_custom_routing_endpoint.default.custom_routing_endpoint_id
-  address     = "172.17.3.0"
+  address     = "192.168.192.2"
   port_ranges {
     from_port = 1
-    to_port   = 10
+    to_port   = 2
   }
 }
 ```
