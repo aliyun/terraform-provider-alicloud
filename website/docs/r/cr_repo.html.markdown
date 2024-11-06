@@ -39,8 +39,8 @@ resource "alicloud_cr_repo" "example" {
   namespace = alicloud_cr_namespace.example.name
   name      = var.name
   summary   = "this is summary of my new repo"
-  repo_type = "PUBLIC"
-  detail    = "this is a public repo"
+  repo_type = "PRIVATE"
+  detail    = "this is a private repo"
 }
 ```
 
@@ -53,16 +53,16 @@ The following arguments are supported:
 * `summary` - (Required) The repository general information. It can contain 1 to 80 characters.
 * `repo_type` - (Required) `PUBLIC` or `PRIVATE`, repo's visibility.
 * `detail` - (Optional) The repository specific information. MarkDown format is supported, and the length limit is 2000.
-* `domain_list` - (Optional) The repository domain list.
-  * `public` - Domain of public endpoint.
-  * `internal` - Domain of internal endpoint, only in some regions.
-  * `vpc` - Domain of vpc endpoint.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
 * `id` - The id of Container Registry repository. The value is in format `namespace/repository`.
+* `domain_list` - (Optional) The repository domain list.
+  * `public` - Domain of public endpoint.
+  * `internal` - Domain of internal endpoint, only in some regions.
+  * `vpc` - Domain of vpc endpoint.
 
 ## Import
 

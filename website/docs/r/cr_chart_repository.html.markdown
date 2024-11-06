@@ -29,24 +29,30 @@ Basic Usage
 variable "name" {
   default = "tf-example"
 }
+
+resource "random_integer" "default" {
+  min = 100000
+  max = 999999
+}
+
 resource "alicloud_cr_ee_instance" "example" {
   payment_type   = "Subscription"
   period         = 1
   renew_period   = 0
   renewal_status = "ManualRenewal"
   instance_type  = "Advanced"
-  instance_name  = var.name
+  instance_name  = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cr_chart_namespace" "example" {
   instance_id    = alicloud_cr_ee_instance.example.id
-  namespace_name = var.name
+  namespace_name = "${var.name}-${random_integer.default.result}"
 }
 
 resource "alicloud_cr_chart_repository" "example" {
   repo_namespace_name = alicloud_cr_chart_namespace.example.namespace_name
   instance_id         = alicloud_cr_chart_namespace.example.instance_id
-  repo_name           = var.name
+  repo_name           = "${var.name}-${random_integer.default.result}"
 }
 ```
 
