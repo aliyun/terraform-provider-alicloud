@@ -135,7 +135,6 @@ func resourceAlicloudEssScalingConfiguration() *schema.Resource {
 			"internet_max_bandwidth_in": {
 				Type:     schema.TypeInt,
 				Optional: true,
-				ForceNew: true,
 			},
 			"spot_duration": {
 				Type:         schema.TypeInt,
@@ -819,6 +818,11 @@ func modifyEssScalingConfiguration(d *schema.ResourceData, meta interface{}) err
 
 	if d.HasChange("system_disk_category") {
 		request["SystemDisk.Category"] = d.Get("system_disk_category")
+		update = true
+	}
+
+	if d.HasChange("internet_max_bandwidth_in") {
+		request["InternetMaxBandwidthIn"] = d.Get("internet_max_bandwidth_in")
 		update = true
 	}
 
