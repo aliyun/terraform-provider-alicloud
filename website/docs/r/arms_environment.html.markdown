@@ -87,19 +87,19 @@ resource "alicloud_key_pair" "default" {
 }
 
 resource "alicloud_cs_kubernetes_node_pool" "default" {
-  name                 = "desired_size"
+  node_pool_name       = "desired_size"
   cluster_id           = alicloud_cs_managed_kubernetes.default.id
   vswitch_ids          = [alicloud_vswitch.vswitch.id]
   instance_types       = [data.alicloud_instance_types.default.instance_types.0.id]
   system_disk_category = "cloud_efficiency"
   system_disk_size     = 40
-  key_name             = alicloud_key_pair.default.key_name
+  key_name             = alicloud_key_pair.default.key_pair_name
   desired_size         = 2
 }
 
 resource "alicloud_arms_environment" "default" {
   bind_resource_id     = alicloud_cs_kubernetes_node_pool.default.cluster_id
-  environment_sub_type = "ACK"
+  environment_sub_type = "ManagedKubernetes"
   environment_type     = "CS"
   environment_name     = "terraform-example-${random_integer.default.result}"
 }
@@ -113,7 +113,7 @@ The following arguments are supported:
 * `drop_metrics` - (Optional) List of abandoned indicators.
 * `environment_name` - (Optional) The name of the resource.
 * `environment_sub_type` - (Required, ForceNew) Subtype of environment:
-  - Type of CS: ACK is currently supported.
+  - Type of CS: ACK is currently supported. ManagedKubernetes, Kubernetes, ExternalKubernetes, and One are also supported.
   - Type of ECS: currently supports ECS.
   - Type of Cloud: currently supports Cloud.
 * `environment_type` - (Required, ForceNew) Type of environment.
