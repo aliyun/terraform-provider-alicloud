@@ -464,13 +464,13 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 					"instance_type":             "${data.alicloud_instance_types.c6.instance_types.0.id}",
 					"security_group_id":         "${alicloud_security_group.default.id}",
 					"force_delete":              "true",
-					"internet_max_bandwidth_in": "200",
+					"internet_max_bandwidth_in": "1",
 					//"password":          "123-abcABC",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"password_inherit":          "false",
-						"internet_max_bandwidth_in": "200",
+						"internet_max_bandwidth_in": "1",
 					}),
 				),
 			},
@@ -491,6 +491,16 @@ func TestAccAliCloudEssScalingConfiguration_Update(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"system_disk_encrypted": "true",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_max_bandwidth_in": "2",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_max_bandwidth_in": "2",
 					}),
 				),
 			},
@@ -813,6 +823,16 @@ func TestAccAliCloudEssScalingConfiguration_PerformanceLevel(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"system_disk_performance_level": "PL1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"internet_max_bandwidth_in": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"internet_max_bandwidth_in": "3",
 					}),
 				),
 			},
