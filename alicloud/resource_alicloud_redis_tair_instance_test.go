@@ -165,7 +165,7 @@ func TestAccAliCloudRedisTairInstance_basic3314(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -243,14 +243,16 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"instance_type":      "tair_rdb",
-					"zone_id":            "${local.zone_id}",
-					"instance_class":     "tair.rdb.2g",
-					"shard_count":        "2",
-					"vswitch_id":         "${local.vswitch_id}",
-					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
-					"tair_instance_name": name,
-					"payment_type":       "PayAsYouGo",
+					"instance_type":       "tair_rdb",
+					"zone_id":             "${local.zone_id}",
+					"instance_class":      "tair.rdb.2g",
+					"shard_count":         "2",
+					"vswitch_id":          "${local.vswitch_id}",
+					"vpc_id":              "${data.alicloud_vpcs.default.ids.0}",
+					"tair_instance_name":  name,
+					"payment_type":        "PayAsYouGo",
+					"global_instance_id":  "true",
+					"recover_config_mode": "whitelist,config",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -362,6 +364,16 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"intranet_bandwidth": "200",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"intranet_bandwidth": "200",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"auto_renew":         "false",
 					"port":               "6379",
 					"payment_type":       "PayAsYouGo",
@@ -407,7 +419,7 @@ func TestAccAliCloudRedisTairInstance_basic3340(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -492,6 +504,7 @@ func TestAccAliCloudRedisTairInstance_basic3549(t *testing.T) {
 					"vpc_id":             "${data.alicloud_vpcs.default.ids.0}",
 					"tair_instance_name": name,
 					"payment_type":       "PayAsYouGo",
+					"intranet_bandwidth": "200",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -502,6 +515,7 @@ func TestAccAliCloudRedisTairInstance_basic3549(t *testing.T) {
 						"vpc_id":             CHECKSET,
 						"tair_instance_name": name,
 						"payment_type":       "PayAsYouGo",
+						"intranet_bandwidth": "200",
 					}),
 				),
 			},
@@ -633,7 +647,7 @@ func TestAccAliCloudRedisTairInstance_basic3549(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -763,7 +777,7 @@ func TestAccAliCloudRedisTairInstance_basic3314_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -833,7 +847,7 @@ func TestAccAliCloudRedisTairInstance_basic3340_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -900,7 +914,7 @@ func TestAccAliCloudRedisTairInstance_basic3549_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "password", "period"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -971,7 +985,7 @@ func TestAccAliCloudRedisTairInstance_basic4491_twin(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "effective_time", "force_upgrade", "period", "force_upgrade"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -1257,7 +1271,7 @@ func TestAccAliCloudRedisTairInstance_basic6500_raw(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "cluster_backup_id", "effective_time", "force_upgrade", "password", "period", "read_only_count", "slave_read_only_count"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -1341,7 +1355,7 @@ func TestAccAliCloudRedisTairInstance_basic6639_raw(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "cluster_backup_id", "effective_time", "force_upgrade", "password", "period", "read_only_count", "slave_read_only_count"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -1440,7 +1454,7 @@ func TestAccAliCloudRedisTairInstance_basic6473_raw(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "cluster_backup_id", "effective_time", "force_upgrade", "password", "period", "read_only_count", "slave_read_only_count"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
@@ -1587,7 +1601,7 @@ func TestAccAliCloudRedisTairInstance_basic6823_raw(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "cluster_backup_id", "effective_time", "force_upgrade", "password", "period", "read_only_count", "slave_read_only_count"},
+				ImportStateVerifyIgnore: []string{"auto_renew", "auto_renew_period", "backup_id", "cluster_backup_id", "effective_time", "force_upgrade", "global_instance_id", "password", "period", "read_only_count", "recover_config_mode", "slave_read_only_count", "src_db_instance_id"},
 			},
 		},
 	})
