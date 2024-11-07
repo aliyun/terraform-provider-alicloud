@@ -4,14 +4,14 @@ layout: "alicloud"
 page_title: "Alicloud: alicloud_dbfs_instance_attachment"
 sidebar_current: "docs-alicloud-resource-dbfs-instance-attachment"
 description: |-
-  Provides a Alicloud DBFS Instance Attachment resource.
+  Provides a Alicloud Database File System (DBFS) Instance Attachment resource.
 ---
 
 # alicloud_dbfs_instance_attachment
 
-Provides a DBFS Instance Attachment resource.
+Provides a Database File System (DBFS) Instance Attachment resource.
 
-For information about DBFS Instance Attachment and how to use it.
+For information about Database File System (DBFS) Instance Attachment and how to use it, see [What is Snapshot](https://help.aliyun.com/zh/dbfs/developer-reference/api-dbfs-2020-04-18-attachdbfs).
 
 -> **NOTE:** Available since v1.156.0.
 
@@ -27,56 +27,61 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-hangzhou"
 }
+
 locals {
   zone_id = "cn-hangzhou-i"
 }
-data "alicloud_instance_types" "example" {
+
+data "alicloud_dbfs_instances" "default" {
+}
+
+data "alicloud_instance_types" "default" {
   availability_zone    = local.zone_id
   instance_type_family = "ecs.g7se"
 }
-data "alicloud_images" "example" {
-  instance_type = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
-  name_regex    = "^aliyun_2_1903_x64_20G_alibase_20240628.vhd"
+
+data "alicloud_images" "default" {
+  instance_type = data.alicloud_instance_types.default.instance_types.0.id
+  name_regex    = "^aliyun_2_19"
   owners        = "system"
 }
 
 data "alicloud_vpcs" "default" {
   name_regex = "^default-NODELETING$"
 }
+
 data "alicloud_vswitches" "default" {
-  vpc_id  = data.alicloud_vpcs.default.ids[0]
+  vpc_id  = data.alicloud_vpcs.default.ids.0
   zone_id = local.zone_id
 }
 
-resource "alicloud_security_group" "example" {
+resource "alicloud_security_group" "default" {
   name   = var.name
-  vpc_id = data.alicloud_vpcs.default.ids[0]
+  vpc_id = data.alicloud_vpcs.default.ids.0
 }
 
 resource "alicloud_instance" "default" {
-  availability_zone    = local.zone_id
-  instance_name        = var.name
-  image_id             = data.alicloud_images.example.images.0.id
-  instance_type        = data.alicloud_instance_types.example.instance_types[length(data.alicloud_instance_types.example.instance_types) - 1].id
-  security_groups      = [alicloud_security_group.example.id]
-  vswitch_id           = data.alicloud_vswitches.default.ids.0
-  system_disk_category = "cloud_essd"
+  image_id                   = data.alicloud_images.default.images.0.id
+  instance_type              = data.alicloud_instance_types.default.instance_types.0.id
+  security_groups            = alicloud_security_group.default.*.id
+  internet_charge_type       = "PayByTraffic"
+  internet_max_bandwidth_out = "10"
+  availability_zone          = data.alicloud_instance_types.default.instance_types.0.availability_zones.0
+  instance_charge_type       = "PostPaid"
+  system_disk_category       = "cloud_essd"
+  vswitch_id                 = data.alicloud_vswitches.default.ids.0
+  instance_name              = var.name
 }
-resource "alicloud_dbfs_instance" "default" {
-  category          = "enterprise"
-  zone_id           = alicloud_instance.default.availability_zone
-  performance_level = "PL1"
-  fs_name           = var.name
-  size              = 100
-}
-resource "alicloud_dbfs_instance_attachment" "example" {
+
+resource "alicloud_dbfs_instance_attachment" "default" {
+  instance_id = data.alicloud_dbfs_instances.default.instances.0.id
   ecs_id      = alicloud_instance.default.id
-  instance_id = alicloud_dbfs_instance.default.id
 }
 ```
 
@@ -84,26 +89,26 @@ resource "alicloud_dbfs_instance_attachment" "example" {
 
 The following arguments are supported:
 
+* `instance_id` - (Required, ForceNew) The ID of the Database File System.
 * `ecs_id` - (Required, ForceNew) The ID of the ECS instance.
-* `instance_id` - (Required, ForceNew) The ID of the database file system.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID in terraform of Instance Attachment. The value formats as `<instance_id>:<ecs_id>`.
-* `status` -The status of Database file system. Valid values: `attached`, `attaching`, `unattached`, `detaching`.
+* `id` - The resource ID in terraform of Instance Attachment. It formats as `<instance_id>:<ecs_id>`.
+* `status` -The status of Instance Attachment.
 
 ## Timeouts
 
 The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/docs/configuration-0-11/resources.html#timeouts) for certain actions:
 
-* `create` - (Defaults to 5 mins) Used when create the Instance.
-* `delete` - (Defaults to 5 mins) Used when delete the Instance.
+* `create` - (Defaults to 5 mins) Used when create the Instance Attachment .
+* `delete` - (Defaults to 5 mins) Used when delete the Instance Attachment .
 
 ## Import
 
-DBFS Instance Attachment can be imported using the id, e.g.
+Database File System (DBFS) Instance Attachment can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_dbfs_instance_attachment.example <instance_id>:<ecs_id>
