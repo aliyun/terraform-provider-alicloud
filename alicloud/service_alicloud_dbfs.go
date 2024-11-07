@@ -16,16 +16,19 @@ type DbfsService struct {
 
 func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListDbfs"
+
 	conn, err := s.client.NewDbfsClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListDbfs"
+
 	request := map[string]interface{}{
 		"RegionId":   s.client.RegionId,
-		"PageNumber": 1,
 		"PageSize":   PageSizeLarge,
+		"PageNumber": 1,
 	}
+
 	idExist := false
 	for {
 		runtime := util.RuntimeOptions{}
@@ -43,31 +46,39 @@ func (s *DbfsService) DescribeDbfsInstance(id string) (object map[string]interfa
 			return nil
 		})
 		addDebug(action, response, request)
+
 		if err != nil {
 			return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 		}
-		v, err := jsonpath.Get("$.DBFSInfo", response)
+
+		resp, err := jsonpath.Get("$.DBFSInfo", response)
 		if err != nil {
 			return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.DBFSInfo", response)
 		}
-		if len(v.([]interface{})) < 1 {
-			return object, WrapErrorf(Error(GetNotFoundMessage("DBFS", id)), NotFoundWithResponse, response)
+
+		if v, ok := resp.([]interface{}); !ok || len(v) < 1 {
+			return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Instance", id)), NotFoundWithResponse, response)
 		}
-		for _, v := range v.([]interface{}) {
+
+		for _, v := range resp.([]interface{}) {
 			if fmt.Sprint(v.(map[string]interface{})["FsId"]) == id {
 				idExist = true
 				return v.(map[string]interface{}), nil
 			}
 		}
-		if len(v.([]interface{})) < request["PageSize"].(int) {
+
+		if len(resp.([]interface{})) < request["PageSize"].(int) {
 			break
 		}
+
 		request["PageNumber"] = request["PageNumber"].(int) + 1
 	}
+
 	if !idExist {
-		return object, WrapErrorf(Error(GetNotFoundMessage("DBFS", id)), NotFoundWithResponse, response)
+		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:Instance", id)), NotFoundWithResponse, response)
 	}
-	return
+
+	return object, nil
 }
 
 func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[string]interface{}, err error) {
@@ -75,10 +86,28 @@ func (s *DbfsService) DescribeDbfsInstanceAttachment(id string) (object map[stri
 	if err != nil {
 		return object, WrapError(err)
 	}
+
 	object, err = s.DescribeDbfsInstance(parts[0])
 	if err != nil {
 		return object, WrapError(err)
 	}
+
+	idExist := false
+	if ecsList, ok := object["EcsList"]; ok {
+		for _, ecs := range ecsList.([]interface{}) {
+			ecsArg := ecs.(map[string]interface{})
+
+			if ecsId, ok := ecsArg["EcsId"]; ok && fmt.Sprint(ecsId) == parts[1] {
+				idExist = true
+				return object, nil
+			}
+		}
+	}
+
+	if !idExist {
+		return object, WrapErrorf(Error(GetNotFoundMessage("Dbfs:InstanceAttachment", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(object["RequestId"]))
+	}
+
 	return object, nil
 }
 
@@ -98,6 +127,7 @@ func (s *DbfsService) DbfsInstanceStateRefreshFunc(id string, failStates []strin
 				return object, fmt.Sprint(object["Status"]), WrapError(Error(FailedToReachTargetStatus, fmt.Sprint(object["Status"])))
 			}
 		}
+
 		return object, fmt.Sprint(object["Status"]), nil
 	}
 }
