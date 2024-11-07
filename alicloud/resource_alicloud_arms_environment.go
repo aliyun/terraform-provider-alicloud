@@ -3,9 +3,10 @@ package alicloud
 
 import (
 	"fmt"
-	"github.com/PaesslerAG/jsonpath"
 	"log"
 	"time"
+
+	"github.com/PaesslerAG/jsonpath"
 
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -53,7 +54,7 @@ func resourceAliCloudArmsEnvironment() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud"}, true),
+				ValidateFunc: StringInSlice([]string{"ECS", "ACK", "Cloud","ManagedKubernetes","Kubernetes","ExternalKubernetes","One"}, true),
 			},
 			"environment_type": {
 				Type:         schema.TypeString,
