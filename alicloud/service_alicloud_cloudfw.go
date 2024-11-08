@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -17,14 +16,10 @@ type CloudfwService struct {
 }
 
 func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeControlPolicy"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return nil, WrapError(err)
@@ -38,11 +33,9 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -52,7 +45,7 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 			}
 
 			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
@@ -95,14 +88,10 @@ func (s *CloudfwService) DescribeCloudFirewallControlPolicy(id string) (object m
 }
 
 func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeAddressBook"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"GroupType":   "all",
 		"CurrentPage": 1,
@@ -111,11 +100,9 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 
 	idExist := false
 	for {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -125,7 +112,7 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 			}
 
 			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
@@ -168,22 +155,17 @@ func (s *CloudfwService) DescribeCloudFirewallAddressBook(id string) (object map
 }
 
 func (s *CloudfwService) DescribeCloudFirewallInstanceMember(id string) (object map[string]interface{}, err error) {
-	conn, err := s.client.NewCloudfirewallClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
+	client := s.client
+	var endpoint string
+	var response map[string]interface{}
+	action := "DescribeInstanceMembers"
 	request := map[string]interface{}{
 		"MemberUid": id,
 	}
 
-	var response map[string]interface{}
-	action := "DescribeInstanceMembers"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -191,7 +173,10 @@ func (s *CloudfwService) DescribeCloudFirewallInstanceMember(id string) (object 
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
+		if fmt.Sprint(response["Message"]) == "not buy user" {
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
+			return resource.RetryableError(fmt.Errorf("%s", response))
+		}
 		addDebug(action, response, request)
 		return nil
 	})
@@ -231,23 +216,17 @@ func (s *CloudfwService) CloudFirewallInstanceMemberStateRefreshFunc(d *schema.R
 }
 
 func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeVpcFirewallCenDetail"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"VpcFirewallId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -257,7 +236,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -290,23 +269,17 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallCen(id string) (object 
 }
 
 func (s *CloudfwService) DescribeVpcFirewallCenList(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeVpcFirewallCenList"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"VpcFirewallId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -316,7 +289,7 @@ func (s *CloudfwService) DescribeVpcFirewallCenList(id string) (object map[strin
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -361,23 +334,17 @@ func (s *CloudfwService) CloudFirewallVpcFirewallCenStateRefreshFunc(d *schema.R
 }
 
 func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeVpcFirewallDetail"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"VpcFirewallId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -387,7 +354,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -422,23 +389,17 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewall(id string) (object map
 }
 
 func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeVpcFirewallList"
-
-	conn, err := s.client.NewCloudfwClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"VpcFirewallId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -448,7 +409,7 @@ func (s *CloudfwService) DescribeVpcFirewallList(id string) (object map[string]i
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -496,14 +457,10 @@ func (s *CloudfwService) CloudFirewallVpcFirewallStateRefreshFunc(d *schema.Reso
 }
 
 func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeVpcFirewallControlPolicy"
-
-	conn, err := s.client.NewCloudfirewallClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
 		return object, WrapError(err)
@@ -517,11 +474,9 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 	}
 
 	idExist := false
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -531,7 +486,7 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -567,23 +522,17 @@ func (s *CloudfwService) DescribeCloudFirewallVpcFirewallControlPolicy(id string
 }
 
 func (s *CloudfwService) DescribeCloudFirewallInstanceUserBuyVersion(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var endpoint string
 	var response map[string]interface{}
 	action := "DescribeUserBuyVersion"
-
-	conn, err := s.client.NewCloudfirewallClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
-
 	request := map[string]interface{}{
 		"InstanceId": id,
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, true, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -593,7 +542,7 @@ func (s *CloudfwService) DescribeCloudFirewallInstanceUserBuyVersion(id string) 
 		}
 
 		if fmt.Sprint(response["Message"]) == "not valid instanceId" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
