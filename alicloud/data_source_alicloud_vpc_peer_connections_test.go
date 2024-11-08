@@ -120,8 +120,8 @@ variable "name" {
 }
 data "alicloud_account" "default" {}
 
-data "alicloud_vpcs" "default" {
-	name_regex = "^default-NODELETING$"
+resource "alicloud_vpc" "default" {
+	vpc_name = var.name
 }
 
 resource "alicloud_vpc_peer_connection" "default" {
@@ -129,7 +129,7 @@ resource "alicloud_vpc_peer_connection" "default" {
   vpc_id              = data.alicloud_vpcs.default.ids.0
   accepting_ali_uid   = data.alicloud_account.default.id
   accepting_region_id = "%s"
-  accepting_vpc_id    = data.alicloud_vpcs.default.ids.1
+  accepting_vpc_id    = alicloud_vpc.default.id
   description         = var.name
 }
 
