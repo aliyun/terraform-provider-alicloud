@@ -202,23 +202,23 @@ func resourceAliyunEssScalingRuleCreate(d *schema.ResourceData, meta interface{}
 	}
 	addDebug(request.GetActionName(), raw, request.RpcRequest, request)
 	response, _ := raw.(*ess.CreateScalingRuleResponse)
-	d.SetId(response.ScalingRuleId)
 
+	d.SetId(response.ScalingRuleId)
 	return resourceAliyunEssScalingRuleRead(d, meta)
 }
 
 func resourceAliyunEssScalingRuleRead(d *schema.ResourceData, meta interface{}) error {
 
-	//Compatible with older versions id
-	if strings.Contains(d.Id(), COLON_SEPARATED) {
-		parts, _ := ParseResourceId(d.Id(), 2)
-		d.SetId(parts[1])
-	}
-
 	client := meta.(*connectivity.AliyunClient)
 	essService := EssService{client}
-
-	object, err := essService.DescribeEssScalingRule(d.Id())
+	_, ok := d.GetOk("alarm_dimension")
+	var object ess.ScalingRule
+	var err error
+	if !ok {
+		object, err = essService.DescribeEssScalingRule(d.Id())
+	} else {
+		object, err = essService.DescribeEssScalingRuleWithAlarm(d.Id())
+	}
 	if err != nil {
 		if NotFoundError(err) {
 			d.SetId("")
