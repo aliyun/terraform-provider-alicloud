@@ -849,6 +849,7 @@ func testAccCheckEssScalingRuleDestroy(s *terraform.State) error {
 		if rs.Type != "alicloud_ess_scaling_rule" {
 			continue
 		}
+
 		_, err := essService.DescribeEssScalingRule(rs.Primary.ID)
 
 		// Verify the error is what we want
@@ -870,7 +871,11 @@ func testAccEssScalingRuleConfig(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
+	data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
@@ -882,7 +887,7 @@ func testAccEssScalingRuleConfig(name string) string {
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
+		image_id = "${data.alicloud_images.default1.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
@@ -896,7 +901,11 @@ func testAccEssScalingRuleConfigMulti(name string) string {
 	variable "name" {
 		default = "%s"
 	}
-
+    data "alicloud_images" "default1" {
+		name_regex  = "^centos.*_64"
+  		most_recent = true
+  		owners      = "system"
+	}
 	resource "alicloud_ess_scaling_group" "default" {
 		min_size = 1
 		max_size = 1
@@ -908,7 +917,7 @@ func testAccEssScalingRuleConfigMulti(name string) string {
 	resource "alicloud_ess_scaling_configuration" "default" {
 		scaling_group_id = "${alicloud_ess_scaling_group.default.id}"
 
-		image_id = "${data.alicloud_images.default.images.0.id}"
+		image_id = "${data.alicloud_images.default1.images.0.id}"
 		instance_type = "${data.alicloud_instance_types.default.instance_types.0.id}"
 		security_group_id = "${alicloud_security_group.default.id}"
 		force_delete = "true"
