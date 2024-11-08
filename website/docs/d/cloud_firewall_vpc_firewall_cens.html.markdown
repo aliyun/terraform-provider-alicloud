@@ -11,14 +11,14 @@ description: |-
 
 This data source provides Cloud Firewall Vpc Firewall Cen available to the user.[What is Vpc Firewall Cen](https://www.alibabacloud.com/help/en/cloud-firewall/latest/describevpcfirewallcenlist)
 
--> **NOTE:** Available in 1.194.0+
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
-```
+```terraform
 data "alicloud_cloud_firewall_vpc_firewall_cens" "default" {
-  ids    = ["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]
-  cen_id = "cen-cjok7uyb5w2b27573v"
+  ids               = ["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]
+  cen_id            = "cen-cjok7uyb5w2b27573v"
   member_uid        = "1415189284827022"
   status            = "closed"
   vpc_firewall_name = "tf-test"

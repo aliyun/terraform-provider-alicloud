@@ -149,10 +149,8 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyCreate(d *schema.Resou
 	var response map[string]interface{}
 	action := "CreateVpcFirewallControlPolicy"
 	request := make(map[string]interface{})
-	conn, err := client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	var endpoint string
 
 	request["VpcFirewallId"] = d.Get("vpc_firewall_id")
 	request["ApplicationName"] = d.Get("application_name")
@@ -189,11 +187,9 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyCreate(d *schema.Resou
 		request["Lang"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -203,7 +199,7 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyCreate(d *schema.Resou
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
@@ -366,16 +362,10 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyUpdate(d *schema.Resou
 		}
 
 		action := "ModifyVpcFirewallControlPolicy"
-		conn, err := client.NewCloudfirewallClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var endpoint string
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -385,7 +375,7 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyUpdate(d *schema.Resou
 			}
 
 			if fmt.Sprint(response["Message"]) == "not buy user" {
-				conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+				endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 				return resource.RetryableError(fmt.Errorf("%s", response))
 			}
 
@@ -405,11 +395,8 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyDelete(d *schema.Resou
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteVpcFirewallControlPolicy"
 	var response map[string]interface{}
-
-	conn, err := client.NewCloudfirewallClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
+	var endpoint string
 
 	parts, err := ParseResourceId(d.Id(), 2)
 	if err != nil {
@@ -429,7 +416,7 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyDelete(d *schema.Resou
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-07"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPostWithEndpoint("Cloudfw", "2017-12-07", action, nil, request, false, endpoint)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -439,7 +426,7 @@ func resourceAliCloudCloudFirewallVpcFirewallControlPolicyDelete(d *schema.Resou
 		}
 
 		if fmt.Sprint(response["Message"]) == "not buy user" {
-			conn.Endpoint = String(connectivity.CloudFirewallOpenAPIEndpointControlPolicy)
+			endpoint = connectivity.CloudFirewallOpenAPIEndpointControlPolicy
 			return resource.RetryableError(fmt.Errorf("%s", response))
 		}
 
