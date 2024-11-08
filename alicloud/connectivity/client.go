@@ -5564,6 +5564,42 @@ func (client *AliyunClient) RpcPost(apiProductCode string, apiVersion string, ap
 	runtime.SetAutoretry(autoRetry)
 	return conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
 }
+
+// RpcPost invoking RPC API request with POST method
+// parameters:
+//
+//	apiProductCode: API Product code, its value equals to the gateway code of the API
+//	apiVersion - API version
+//	apiName - API Name
+//	query - API parameters in query
+//	body - API parameters in body
+//	autoRetry - whether to auto retry while the runtime has a 5xx error
+func (client *AliyunClient) RpcPostWithEndpoint(apiProductCode string, apiVersion string, apiName string, query map[string]interface{}, body map[string]interface{}, autoRetry bool, endpoint string) (map[string]interface{}, error) {
+	var err error
+	if endpoint == "" {
+		apiProductCode = strings.ToLower(ConvertKebabToSnake(apiProductCode))
+		endpoint, err = client.loadApiEndpoint(apiProductCode)
+		if err != nil {
+			return nil, err
+		}
+	}
+	sdkConfig := client.teaSdkConfig
+	sdkConfig.SetEndpoint(endpoint)
+	credential, err := client.config.Credential.GetCredential()
+	if err != nil || credential == nil {
+		return nil, fmt.Errorf("get credential failed. Error: %#v", err)
+	}
+	sdkConfig.SetAccessKeyId(*credential.AccessKeyId)
+	sdkConfig.SetAccessKeySecret(*credential.AccessKeySecret)
+	sdkConfig.SetSecurityToken(*credential.SecurityToken)
+	conn, err := rpc.NewClient(&sdkConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize the %s api client: %#v", apiProductCode, err)
+	}
+	runtime := &util.RuntimeOptions{}
+	runtime.SetAutoretry(autoRetry)
+	return conn.DoRequest(tea.String(apiName), nil, tea.String("POST"), tea.String(apiVersion), tea.String("AK"), query, body, runtime)
+}
 func (client *AliyunClient) NewPaiworkspaceClient() (*roa.Client, error) {
 	productCode := "paiworkspace"
 	endpoint := ""
