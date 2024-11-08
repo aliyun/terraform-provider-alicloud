@@ -7,11 +7,11 @@ description: |-
   Provides a list of Cloud Firewall Vpc Firewall Control Policies to the user.
 ---
 
-# alicloud\_cloud\_firewall\_vpc\_firewall\_control\_policies
+# alicloud_cloud_firewall_vpc_firewall_control_policies
 
 This data source provides the Cloud Firewall Vpc Firewall Control Policies of the current Alibaba Cloud user.
 
--> **NOTE:** Available in v1.194.0+.
+-> **NOTE:** Available since v1.194.0.
 
 ## Example Usage
 
@@ -48,32 +48,32 @@ The following arguments are supported:
 * `ids` - (Optional, ForceNew, Computed)  A list of Vpc Firewall Control Policy IDs.
 * `output_file` - (Optional) File name where to save data source results (after running `terraform plan`).
 
-## Argument Reference
+## Attributes Reference
 
 The following attributes are exported in addition to the arguments listed above:
 
 * `policies` - A list of Cloud Firewall Vpc Firewall Control Policies. Each element contains the following attributes:
-	* `acl_action` - Access control over VPC firewalls are set in the access traffic via Alibaba cloud firewall way (ACT).
-	* `acl_uuid` - Access control over VPC firewalls strategy unique identifier.
-	* `application_id` - Policy specifies the application ID.
-	* `application_name` - Access control over VPC firewalls policies support the application types.
-	* `description` - Access control over VPC firewalls description of the strategy information.
-	* `dest_port` - Access control over VPC firewalls strategy access traffic of the destination port.
-	* `dest_port_group` - Access control policy in the access traffic of the destination port address book name.
-	* `dest_port_group_ports` - Port Address Book port list.
-	* `dest_port_type` - Access control over VPC firewalls strategy access traffic of the destination port type.
-	* `destination` - Access control over VPC firewalls strategy the destination address in.
-	* `destination_group_cidrs` - Destination address book defined in the address list.
-	* `destination_group_type` - The destination address book type in the access control policy. Value: `ip`, `domain`.
-	* `destination_type` - Access control over VPC firewalls strategy in the destination address of the type.
-	* `hit_times` - Control strategy of hits per second.
-	* `member_uid` - The UID of the member account of the current Alibaba cloud account.
-	* `order` - Access control over VPC firewalls policies will go into effect of priority. The priority value starts from 1, the smaller the priority number, the higher the priority. -1 represents the lowest priority.
-	* `proto` - Access control over VPC firewalls strategy access traffic of the protocol type.
-	* `release` - The enabled status of the access control policy. The policy is enabled by default after it is created. Value:
-	* `source` - Access control over VPC firewalls strategy in the source address.
-	* `source_group_cidrs` - SOURCE address of the address list.
-	* `source_group_type` - The source address type in the access control policy. Unique value: **ip**. The IP address book contains one or more IP address segments.
-	* `source_type` - Access control over VPC firewalls policy source address type.
-	* `vpc_firewall_id` - The ID of the VPC firewall instance.
-	* `id` - The ID of the Cloud Firewall Vpc Firewall Control Policy.
+  * `acl_action` - Access control over VPC firewalls are set in the access traffic via Alibaba cloud firewall way (ACT).
+  * `acl_uuid` - Access control over VPC firewalls strategy unique identifier.
+  * `application_id` - Policy specifies the application ID.
+  * `application_name` - Access control over VPC firewalls policies support the application types.
+  * `description` - Access control over VPC firewalls description of the strategy information.
+  * `dest_port` - Access control over VPC firewalls strategy access traffic of the destination port.
+  * `dest_port_group` - Access control policy in the access traffic of the destination port address book name.
+  * `dest_port_group_ports` - Port Address Book port list.
+  * `dest_port_type` - Access control over VPC firewalls strategy access traffic of the destination port type.
+  * `destination` - Access control over VPC firewalls strategy the destination address in.
+  * `destination_group_cidrs` - Destination address book defined in the address list.
+  * `destination_group_type` - The destination address book type in the access control policy. Value: `ip`, `domain`.
+  * `destination_type` - Access control over VPC firewalls strategy in the destination address of the type.
+  * `hit_times` - Control strategy of hits per second.
+  * `member_uid` - The UID of the member account of the current Alibaba cloud account.
+  * `order` - Access control over VPC firewalls policies will go into effect of priority. The priority value starts from 1, the smaller the priority number, the higher the priority. -1 represents the lowest priority.
+  * `proto` - Access control over VPC firewalls strategy access traffic of the protocol type.
+  * `release` - The enabled status of the access control policy. The policy is enabled by default after it is created. Value:
+  * `source` - Access control over VPC firewalls strategy in the source address.
+  * `source_group_cidrs` - SOURCE address of the address list.
+  * `source_group_type` - The source address type in the access control policy. Unique value: **ip**. The IP address book contains one or more IP address segments.
+  * `source_type` - Access control over VPC firewalls policy source address type.
+  * `vpc_firewall_id` - The ID of the VPC firewall instance.
+  * `id` - The ID of the Cloud Firewall Vpc Firewall Control Policy.
