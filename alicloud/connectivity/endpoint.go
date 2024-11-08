@@ -297,6 +297,7 @@ var productCodeToLocationCode = map[string]string{
 	"ots":                  "ots",             // OTS
 	"tablestore":           "ots",             // OTS
 	"ram":                  "ram",             //RAM
+	"quotas":               "quotas",          //Quotas
 	"market":               "market",          //Market
 }
 
@@ -306,35 +307,26 @@ var productCodeToLocationCode = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpoint = map[string]string{
-	"tablestore":          "tablestore.%s.aliyuncs.com",
-	"bssopenapi":          BssOpenAPIEndpointDomestic,
-	"ram":                 "ram.aliyuncs.com",
-	"ddoscoo":             "ddoscoo.cn-hangzhou.aliyuncs.com",
-	"dcdn":                "dcdn.aliyuncs.com",
-	"config":              "config.cn-shanghai.aliyuncs.com",
-	"ga":                  "ga.cn-hangzhou.aliyuncs.com",
-	"brain_industrial":    "brain-industrial.cn-hangzhou.aliyuncs.com",
-	"eipanycast":          "eipanycast.cn-hangzhou.aliyuncs.com",
-	"ims":                 "ims.aliyuncs.com",
-	"resourcemanager":     "resourcemanager.aliyuncs.com",
-	"quotas":              "quotas.aliyuncs.com",
-	"cassandra":           "cassandra.aliyuncs.com",
-	"cas":                 "cas.aliyuncs.com",
-	"cloudfw":             "cloudfw.aliyuncs.com",
-	"scdn":                "scdn.aliyuncs.com",
-	"cdn":                 "cdn.aliyuncs.com",
-	"mscopensubscription": "mscopensubscription.aliyuncs.com",
-	"cloudauth":           "cloudauth.aliyuncs.com",
-	"imp":                 "imp.aliyuncs.com",
-	"mhub":                "mhub.cn-shanghai.aliyuncs.com",
-	"eds_user":            "eds-user.cn-shanghai.aliyuncs.com", //eds-user.ap-southeast-1.aliyuncs.com
-	"vpcpeer":             "vpcpeer.aliyuncs.com",
-	"das":                 "das.cn-shanghai.aliyuncs.com",
-	"servicecatalog":      "servicecatalog.cn-hangzhou.aliyuncs.com",
-	"chatbot":             "chatbot.cn-shanghai.aliyuncs.com",
-	"computenest":         "computenest.cn-hangzhou.aliyuncs.com",
-	"resourcecenter":      "resourcecenter.aliyuncs.com", //resourcecenter-intl.aliyuncs.com
-	"market":              "market.aliyuncs.com",
+	"tablestore":       "tablestore.%s.aliyuncs.com",
+	"ram":              "ram.aliyuncs.com",
+	"brain_industrial": "brain-industrial.cn-hangzhou.aliyuncs.com",
+	"cassandra":        "cassandra.aliyuncs.com",
+	"cas":              "cas.aliyuncs.com",
+	"cloudfw":          "cloudfw.aliyuncs.com",
+	"scdn":             "scdn.aliyuncs.com",
+	"vpcpeer":          "vpcpeer.aliyuncs.com",
+	"resourcecenter":   "resourcecenter.aliyuncs.com", //resourcecenter-intl.aliyuncs.com
+	"market":           "market.aliyuncs.com",
+}
+
+// irregularProductEndpointForIntlAccount specially records those product codes that
+// cannot be parsed out by the location service and sensitive to account type.
+// These products adapt to international account.
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is higher than location service, lower than user environment variable configuration
+var irregularProductEndpointForIntlAccount = map[string]string{
+	"cas": "cas.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
@@ -405,15 +397,61 @@ var regularProductEndpoint = map[string]string{
 	"hologram":             "hologram.%s.aliyuncs.com",
 	"foasconsole":          "foasconsole.aliyuncs.com",
 	"cs":                   "cs.%s.aliyuncs.com",
-	"waf_openapi":          "wafopenapi.cn-hangzhou.aliyuncs.com", // wafopenapi.ap-southeast-1.aliyuncs.com
+	"waf_openapi":          "wafopenapi.cn-hangzhou.aliyuncs.com",
 	"dfs":                  "dfs.%s.aliyuncs.com",
 	"amqp":                 "amqp-open.%s.aliyuncs.com",
 	"cbn":                  "cbn.aliyuncs.com",
 	"expressconnectrouter": "expressconnectrouter.cn-shanghai.aliyuncs.com",
 	"green":                "green.%s.aliyuncs.com",
-	"governance":           "governance.cn-hangzhou.aliyuncs.com", // governance.ap-southeast-1.aliyuncs.com
-	"sms":                  "dysmsapi.aliyuncs.com",               // dysmsapi.ap-southeast-1.aliyuncs.com
-	"sddp":                 "sddp.cn-zhangjiakou.aliyuncs.com",    // sddp.ap-southeast-1.aliyuncs.com
+	"governance":           "governance.cn-hangzhou.aliyuncs.com",
+	"sms":                  "dysmsapi.aliyuncs.com",
+	"sddp":                 "sddp.cn-zhangjiakou.aliyuncs.com",
+	"ddoscoo":              "ddoscoo.cn-hangzhou.aliyuncs.com",
+	"config":               "config.cn-shanghai.aliyuncs.com",
+	"ga":                   "ga.cn-hangzhou.aliyuncs.com",
+	"dcdn":                 "dcdn.aliyuncs.com",
+	"cdn":                  "cdn.aliyuncs.com",
+	"cloudauth":            "cloudauth.aliyuncs.com",
+	"ims":                  "ims.aliyuncs.com",
+	"mhub":                 "mhub.cn-shanghai.aliyuncs.com",
+	"eds_user":             "eds-user.cn-shanghai.aliyuncs.com",
+	"eipanycast":           "eipanycast.cn-hangzhou.aliyuncs.com",
+	"mscopensubscription":  "mscopensubscription.aliyuncs.com",
+	"resourcemanager":      "resourcemanager.aliyuncs.com",
+	"quotas":               "quotas.aliyuncs.com",
+	"imp":                  "imp.aliyuncs.com",
+	"das":                  "das.cn-shanghai.aliyuncs.com",
+	"servicecatalog":       "servicecatalog.cn-hangzhou.aliyuncs.com",
+	"chatbot":              "chatbot.cn-shanghai.aliyuncs.com",
+	"computenest":          "computenest.cn-hangzhou.aliyuncs.com",
+	"bssopenapi":           BssOpenAPIEndpointDomestic,
+}
+
+// regularProductEndpointForIntlAccount specially records those product codes that have been confirmed to be
+// regional or central endpoints. But the endpoints are sensitive to account type.
+// These products adapt to international account.
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is lower than location service, and as a backup endpoint
+var regularProductEndpointForIntlAccount = map[string]string{
+	"config": "config.ap-southeast-1.aliyuncs.com",
+}
+
+// regularProductEndpointForIntlRegion specially records those product codes that have been confirmed to be
+// regional or central endpoints. But the endpoints are sensitive to region.
+// These products adapt to international region, and conflict with regularProductEndpointForIntlAccount
+// Key: product code, its value equals to the gateway code of the API after converting it to lowercase and using underscores
+// Value: product endpoint
+// The priority of this configuration is lower than location service, and as a backup endpoint
+var regularProductEndpointForIntlRegion = map[string]string{
+	"ddoscoo":             "ddoscoo.ap-southeast-1.aliyuncs.com",
+	"mscopensubscription": "mscopensubscription.aliyuncs.com",
+	"eds_user":            "eds-user.ap-southeast-1.aliyuncs.com",
+	"bssopenapi":          BssOpenAPIEndpointInternational,
+	"sms":                 "dysmsapi.ap-southeast-1.aliyuncs.com",
+	"sddp":                "sddp.ap-southeast-1.aliyuncs.com",
+	"governance":          "governance.ap-southeast-1.aliyuncs.com",
+	"waf_openapi":         "wafopenapi.ap-southeast-1.aliyuncs.com",
 }
 
 // NOTE: The productCode must be lower.
@@ -431,6 +469,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 
 	// Secondly, load endpoint from known rules
 	if endpointFmt, ok := irregularProductEndpoint[productCode]; ok {
+		if v, ok := irregularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+			endpointFmt = v
+		}
 		if strings.Contains(endpointFmt, "%s") {
 			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
 		}
@@ -442,12 +483,18 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	endpoint, err := client.describeEndpointForService(productCode)
 	if err == nil {
 		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
-	} else if v, ok := regularProductEndpoint[productCode]; ok {
-		if strings.Contains(v, "%s") {
-			v = fmt.Sprintf(v, client.RegionId)
+	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
+		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+			endpointFmt = v
 		}
-		client.config.Endpoints.Store(productCode, v)
-		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, v)
+		if v, ok := regularProductEndpointForIntlRegion[productCode]; ok && !strings.HasPrefix(client.RegionId, "cn-") {
+			endpointFmt = v
+		}
+		if strings.Contains(endpointFmt, "%s") {
+			endpointFmt = fmt.Sprintf(endpointFmt, client.RegionId)
+		}
+		client.config.Endpoints.Store(productCode, endpointFmt)
+		log.Printf("[WARN] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpointFmt)
 		return nil
 	}
 	return err
