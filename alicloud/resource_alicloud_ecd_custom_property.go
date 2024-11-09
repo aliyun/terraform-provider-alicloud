@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -56,10 +55,7 @@ func resourceAlicloudEcdCustomPropertyCreate(d *schema.ResourceData, meta interf
 	var response map[string]interface{}
 	action := "CreateProperty"
 	request := make(map[string]interface{})
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request["PropertyKey"] = d.Get("property_key")
 
 	if v, ok := d.GetOk("property_values"); ok {
@@ -73,7 +69,7 @@ func resourceAlicloudEcdCustomPropertyCreate(d *schema.ResourceData, meta interf
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -122,10 +118,7 @@ func resourceAlicloudEcdCustomPropertyRead(d *schema.ResourceData, meta interfac
 }
 func resourceAlicloudEcdCustomPropertyUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	var response map[string]interface{}
 	update := false
 	request := map[string]interface{}{
@@ -149,7 +142,7 @@ func resourceAlicloudEcdCustomPropertyUpdate(d *schema.ResourceData, meta interf
 		action := "UpdateProperty"
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -170,17 +163,14 @@ func resourceAlicloudEcdCustomPropertyDelete(d *schema.ResourceData, meta interf
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveProperty"
 	var response map[string]interface{}
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"PropertyId": d.Id(),
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

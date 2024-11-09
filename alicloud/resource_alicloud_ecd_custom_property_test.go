@@ -41,7 +41,7 @@ func testSweepEcdCustomProperty(region string) error {
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
 	}
-	aliyunClient := rawClient.(*connectivity.AliyunClient)
+	client := rawClient.(*connectivity.AliyunClient)
 	prefixes := []string{
 		"tf-testAcc",
 		"tf_testAcc",
@@ -50,16 +50,9 @@ func testSweepEcdCustomProperty(region string) error {
 	request := map[string]interface{}{}
 
 	var response map[string]interface{}
-	conn, err := aliyunClient.NewEdsuserClient()
-	if err != nil {
-		log.Printf("[ERROR] %s get an error: %#v", action, err)
-		return nil
-	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -104,7 +97,7 @@ func testSweepEcdCustomProperty(region string) error {
 		request := map[string]interface{}{
 			"PropertyId": item["PropertyId"],
 		}
-		_, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		_, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, true)
 		if err != nil {
 			log.Printf("[ERROR] Failed to delete Ecd Custom Property (%s): %s", item["PropertyKey"].(string), err)
 		}
