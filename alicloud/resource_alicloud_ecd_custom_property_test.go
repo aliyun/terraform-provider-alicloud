@@ -32,11 +32,6 @@ func init() {
 }
 
 func testSweepEcdCustomProperty(region string) error {
-	if testSweepPreCheckWithRegions(region, true, connectivity.EcdUserSupportRegions) {
-		log.Printf("[INFO] Skipping Ecd Custom Property unsupported region: %s", region)
-		return nil
-	}
-
 	rawClient, err := sharedClientForRegion(region)
 	if err != nil {
 		return fmt.Errorf("error getting Alicloud client: %s", err)
@@ -110,7 +105,6 @@ func testSweepEcdCustomProperty(region string) error {
 func TestAccAlicloudECDCustomProperty_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_custom_property.default"
-	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudECDCustomPropertyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EdsUserService{testAccProvider.Meta().(*connectivity.AliyunClient)}
@@ -191,7 +185,6 @@ func TestAccAlicloudECDCustomProperty_basic0(t *testing.T) {
 func TestAccAlicloudECDCustomProperty_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecd_custom_property.default"
-	checkoutSupportedRegions(t, true, connectivity.EcdUserSupportRegions)
 	ra := resourceAttrInit(resourceId, AlicloudECDCustomPropertyMap0)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EdsUserService{testAccProvider.Meta().(*connectivity.AliyunClient)}
