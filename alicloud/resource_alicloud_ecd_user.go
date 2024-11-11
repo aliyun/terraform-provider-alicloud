@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -59,10 +58,7 @@ func resourceAlicloudEcdUserCreate(d *schema.ResourceData, meta interface{}) err
 	var response map[string]interface{}
 	action := "CreateUsers"
 	request := make(map[string]interface{})
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	requestUsers := make(map[string]interface{})
 	requestUsersMap := make([]interface{}, 0)
@@ -80,14 +76,10 @@ func resourceAlicloudEcdUserCreate(d *schema.ResourceData, meta interface{}) err
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"Forbidden"}) {
-				conn.Endpoint = String(connectivity.EcdOpenAPIEndpointUser)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
@@ -130,10 +122,6 @@ func resourceAlicloudEcdUserRead(d *schema.ResourceData, meta interface{}) error
 }
 func resourceAlicloudEcdUserUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	edsUserService := EdsUserService{client}
 	var response map[string]interface{}
 	d.Partial(true)
@@ -152,14 +140,10 @@ func resourceAlicloudEcdUserUpdate(d *schema.ResourceData, meta interface{}) err
 					action := "UnlockUsers"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
 					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+						response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 						if err != nil {
 							if NeedRetry(err) {
 								wait()
-								return resource.RetryableError(err)
-							}
-							if IsExpectedErrors(err, []string{"Forbidden"}) {
-								conn.Endpoint = String(connectivity.EcdOpenAPIEndpointUser)
 								return resource.RetryableError(err)
 							}
 							return resource.NonRetryableError(err)
@@ -178,14 +162,10 @@ func resourceAlicloudEcdUserUpdate(d *schema.ResourceData, meta interface{}) err
 					action := "LockUsers"
 					wait := incrementalWait(3*time.Second, 3*time.Second)
 					err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-						response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+						response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 						if err != nil {
 							if NeedRetry(err) {
 								wait()
-								return resource.RetryableError(err)
-							}
-							if IsExpectedErrors(err, []string{"Forbidden"}) {
-								conn.Endpoint = String(connectivity.EcdOpenAPIEndpointUser)
 								return resource.RetryableError(err)
 							}
 							return resource.NonRetryableError(err)
@@ -209,24 +189,17 @@ func resourceAlicloudEcdUserDelete(d *schema.ResourceData, meta interface{}) err
 	client := meta.(*connectivity.AliyunClient)
 	action := "RemoveUsers"
 	var response map[string]interface{}
-	conn, err := client.NewEdsuserClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Users": []string{d.Id()},
 	}
 
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-03-08"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("eds-user", "2021-03-08", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
-				return resource.RetryableError(err)
-			}
-			if IsExpectedErrors(err, []string{"Forbidden"}) {
-				conn.Endpoint = String(connectivity.EcdOpenAPIEndpointUser)
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
