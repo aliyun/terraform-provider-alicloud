@@ -81,6 +81,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_ID", "ALIBABA_CLOUD_ACCOUNT_ID"}, nil),
 				Description: descriptions["account_id"],
 			},
+			"account_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"Domestic", "International"}, true),
+				DefaultFunc:  schema.MultiEnvDefaultFunc([]string{"ALICLOUD_ACCOUNT_TYPE", "ALIBABA_CLOUD_ACCOUNT_TYPE"}, nil),
+			},
 			"assume_role":           assumeRoleSchema(),
 			"sign_version":          signVersionSchema(),
 			"assume_role_with_oidc": assumeRoleWithOidcSchema(),
@@ -1872,6 +1878,12 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 		}
 		config.Credential = credential
 	}
+	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
+		config.AccountId = strings.TrimSpace(account.(string))
+	}
+	if v, ok := d.GetOk("account_type"); ok && v.(string) != "" {
+		config.AccountType = v.(string)
+	}
 	if v, ok := d.GetOk("security_transport"); config.SecureTransport == "" && ok && v.(string) != "" {
 		config.SecureTransport = v.(string)
 	}
@@ -2087,10 +2099,6 @@ func providerConfigure(d *schema.ResourceData, p *schema.Provider) (interface{},
 	}
 	if mnsEndpoint, ok := d.GetOk("mns_endpoint"); ok && mnsEndpoint.(string) != "" {
 		config.MnsEndpoint = strings.TrimSpace(mnsEndpoint.(string))
-	}
-
-	if account, ok := d.GetOk("account_id"); ok && account.(string) != "" {
-		config.AccountId = strings.TrimSpace(account.(string))
 	}
 
 	if fcEndpoint, ok := d.GetOk("fc"); ok && fcEndpoint.(string) != "" {
@@ -2684,11 +2692,11 @@ func endpointsSchema() *schema.Schema {
 					Default:     "",
 					Description: descriptions["dysms_endpoint"],
 				},
-				"sms": {
+				"dysmsapi": {
 					Type:        schema.TypeString,
 					Optional:    true,
 					Default:     "",
-					Description: descriptions["dysms_endpoint"],
+					Description: descriptions["dysmsapi_endpoint"],
 				},
 
 				"edas": {
@@ -3720,7 +3728,7 @@ var deprecatedEndpointMap = map[string]string{
 	"antiddos_public":  "ddosbasic",
 	"schedulerx2":      "edasschedulerx",
 	"ehpc":             "ehs",
-	"sms":              "dysms",
+	"dysmsapi":         "dysms",
 	"dbs":              "cbs",
 	"mns_open":         "mns",
 	"servicecatalog":   "srvcatalog",
