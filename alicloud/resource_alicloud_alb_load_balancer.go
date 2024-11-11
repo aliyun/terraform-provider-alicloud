@@ -66,6 +66,7 @@ func resourceAliCloudAlbLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
+				Computed: true,
 			},
 			"resource_group_id": {
 				Type:     schema.TypeString,
