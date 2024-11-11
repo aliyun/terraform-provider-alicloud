@@ -1,17 +1,17 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_recycle_bin"
 sidebar_current: "docs-alicloud-resource-nas-recycle-bin"
 description: |-
-  Provides a Alicloud Apsara File Storage (NAS) Recycle Bin resource.
+  Provides a Alicloud File Storage (NAS) Recycle Bin resource.
 ---
 
 # alicloud\_nas\_recycle\_bin
 
-Provides a Apsara File Storage (NAS) Recycle Bin resource.
+Provides a File Storage (NAS) Recycle Bin resource.
 
-For information about Apsara File Storage (NAS) Recycle Bin and how to use it, see [What is Recycle Bin](https://www.alibabacloud.com/help/en/doc-detail/264185.html).
+For information about File Storage (NAS) Recycle Bin and how to use it, see [What is Recycle Bin](https://www.alibabacloud.com/help/en/doc-detail/264185.html).
 
 -> **NOTE:** Available in v1.155.0+.
 
@@ -60,7 +60,7 @@ The following attributes are exported:
 
 ## Import
 
-Apsara File Storage (NAS) Recycle Bin can be imported using the id, e.g.
+File Storage (NAS) Recycle Bin can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_recycle_bin.example <file_system_id>

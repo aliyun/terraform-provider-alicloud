@@ -1,17 +1,17 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_snapshot"
 sidebar_current: "docs-alicloud-resource-nas-snapshot"
 description: |-
-  Provides a Alicloud Apsara File Storage (NAS) Snapshot resource.
+  Provides a Alicloud File Storage (NAS) Snapshot resource.
 ---
 
-# alicloud\_nas\_snapshot
+# alicloud_nas_snapshot
 
-Provides a Apsara File Storage (NAS) Snapshot resource.
+Provides a File Storage (NAS) Snapshot resource.
 
-For information about Apsara File Storage (NAS) Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/en/doc-detail/126549.html).
+For information about File Storage (NAS) Snapshot and how to use it, see [What is Snapshot](https://www.alibabacloud.com/help/en/doc-detail/126549.html).
 
 -> **NOTE:** Available in v1.152.0+.
 
@@ -79,7 +79,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Apsara File Storage (NAS) Snapshot can be imported using the id, e.g.
+File Storage (NAS) Snapshot can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_snapshot.example <id>
