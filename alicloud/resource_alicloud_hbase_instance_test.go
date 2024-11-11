@@ -150,7 +150,7 @@ resource "alicloud_security_group" "default" {
 `, name)
 }
 
-func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
+func TestAccAliCloudHBaseInstanceVpc(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbase_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
@@ -174,17 +174,21 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"name":                  "${var.name}",
-					"engine":                "hbaseue",
-					"engine_version":        "2.0",
-					"master_instance_type":  "hbase.sn2.2xlarge",
-					"core_instance_type":    "hbase.sn2.2xlarge",
-					"core_disk_type":        "cloud_ssd",
-					"vpc_id":                "${data.alicloud_vpcs.default.ids.0}",
-					"vswitch_id":            "${local.vswitch_id}",
-					"immediate_delete_flag": "true",
-					"ip_white":              "192.168.0.1",
-					"cold_storage_size":     "800",
+					"name":                   "${var.name}",
+					"engine":                 "hbaseue",
+					"engine_version":         "2.0",
+					"master_instance_type":   "hbase.sn2.2xlarge",
+					"core_instance_type":     "hbase.sn2.2xlarge",
+					"core_disk_type":         "cloud_ssd",
+					"vpc_id":                 "${data.alicloud_vpcs.default.ids.0}",
+					"vswitch_id":             "${local.vswitch_id}",
+					"zone_id":                "${data.alicloud_hbase_zones.default.ids.0}",
+					"immediate_delete_flag":  "true",
+					"ip_white":               "192.168.0.1",
+					"cold_storage_size":      "800",
+					"auto_renew":             "0",
+					"core_instance_quantity": "2",
+					"pay_type":               "PostPaid",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -208,6 +212,18 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 						"ui_proxy_conn_addrs.#":    CHECKSET,
 						"zk_conn_addrs.#":          CHECKSET,
 						"slb_conn_addrs.#":         CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pay_type": "PrePaid",
+					"duration": "1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pay_type": "PrePaid",
+						"duration": "1",
 					}),
 				),
 			},
@@ -325,6 +341,38 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"master_instance_type": "hbase.sn1.4xlarge",
+					"core_instance_type":   "hbase.sn1.4xlarge",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"master_instance_type": "hbase.sn1.4xlarge",
+						"core_instance_type":   "hbase.sn1.4xlarge",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"core_instance_quantity": "3",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"core_instance_quantity": "3",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"pay_type": "PostPaid",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"pay_type": "PostPaid",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"security_groups": []string{"${alicloud_security_group.default.0.id}"},
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -370,7 +418,7 @@ func TestAccAlicloudHBaseInstanceVpc(t *testing.T) {
 	})
 }
 
-func TestAccAlicloudHBaseInstance_VpcId(t *testing.T) {
+func TestAccAliCloudHBaseInstance_VpcId(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_hbase_instance.default"
 	ra := resourceAttrInit(resourceId, nil)
