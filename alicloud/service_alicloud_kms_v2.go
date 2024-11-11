@@ -28,7 +28,7 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["KmsInstanceId"] = id
+	request["KmsInstanceId"] = id
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -43,11 +43,10 @@ func (s *KmsServiceV2) DescribeKmsInstance(id string) (object map[string]interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

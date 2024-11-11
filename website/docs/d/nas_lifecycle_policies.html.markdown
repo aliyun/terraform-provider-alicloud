@@ -1,5 +1,5 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_lifecycle_policies"
 sidebar_current: "docs-alicloud-datasource-nas-lifecycle-policies"

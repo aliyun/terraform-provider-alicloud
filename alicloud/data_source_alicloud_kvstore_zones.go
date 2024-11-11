@@ -96,7 +96,7 @@ func dataSourceAlicloudKVStoreZoneRead(d *schema.ResourceData, meta interface{})
 			return rkvClient.DescribeAvailableResource(request)
 		})
 		if err != nil {
-			if NeedRetry(err) {
+			if IsExpectedErrors(err, []string{"InternalError"}) || NeedRetry(err) {
 				wait()
 				return resource.RetryableError(err)
 			}

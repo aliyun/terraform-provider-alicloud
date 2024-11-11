@@ -1,5 +1,5 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_auto_snapshot_policies"
 sidebar_current: "docs-alicloud-datasource-nas-auto-snapshot-policies"

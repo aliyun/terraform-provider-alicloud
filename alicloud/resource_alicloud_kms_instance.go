@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -61,6 +60,10 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"end_date": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"force_delete_without_backup": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -108,6 +111,7 @@ func resourceAliCloudKmsInstance() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
+				ForceNew:     true,
 				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
 			},
 			"period": {
@@ -220,12 +224,6 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["ProductType"] = "kms_ddi_public_cn"
-	request["SubscriptionType"] = "Subscription"
-	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
-		request["ProductType"] = "kms_ppi_public_cn"
-		request["SubscriptionType"] = "PayAsYouGo"
-	}
 
 	request["ClientToken"] = buildClientToken(action)
 
@@ -279,13 +277,21 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 	request["Parameter"] = parameterMapList
 
 	request["Period"] = d.Get("period")
-	if v, ok := d.GetOk("renew_period"); ok && request["SubscriptionType"] == "Subscription" {
+	if v, ok := d.GetOkExists("renew_period"); ok && v.(int) > 0 && request["SubscriptionType"] == "Subscription" {
 		request["RenewPeriod"] = v
 	}
 	if v, ok := d.GetOk("renew_status"); ok && request["SubscriptionType"] == "Subscription" {
 		request["RenewalStatus"] = v
 	}
+
 	request["ProductCode"] = "kms"
+	request["ProductType"] = "kms_ddi_public_cn"
+	request["SubscriptionType"] = "Subscription"
+	if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+		request["ProductCode"] = "kms"
+		request["ProductType"] = "kms_ppi_public_cn"
+		request["SubscriptionType"] = v
+	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -297,8 +303,10 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 				return resource.RetryableError(err)
 			}
 			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "kms"
 				request["ProductType"] = "kms_ddi_public_intl"
 				if v, ok := d.GetOk("payment_type"); ok && v == "PayAsYouGo" {
+					request["ProductCode"] = "kms"
 					request["ProductType"] = "kms_ppi_public_intl"
 				}
 				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
@@ -306,14 +314,17 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_instance", action, AlibabaCloudSdkGoERROR)
 	}
-	if fmt.Sprint(response["Code"]) != "Success" {
+	if fmt.Sprint(response["Success"]) == "nil" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
+	}
+	if fmt.Sprint(response["Success"]) != "true" {
 		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
@@ -332,21 +343,19 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["KmsInstanceId"] = d.Id()
+	request["KmsInstanceId"] = d.Id()
 
 	request["VpcId"] = d.Get("vpc_id")
 	request["KMProvider"] = "Aliyun"
 	jsonPathResult1, err := jsonpath.Get("$", d.Get("zone_ids"))
-	if err != nil {
-		return WrapError(err)
+	if err == nil {
+		request["ZoneIds"] = convertListToCommaSeparate(jsonPathResult1.([]interface{}))
 	}
-	request["ZoneIds"] = convertArrayToString(jsonPathResult1, ",")
 
 	jsonPathResult2, err := jsonpath.Get("$", d.Get("vswitch_ids"))
-	if err != nil {
-		return WrapError(err)
+	if err == nil {
+		request["VSwitchIds"] = convertListToCommaSeparate(jsonPathResult2.([]interface{}))
 	}
-	request["VSwitchIds"] = convertArrayToString(jsonPathResult2, ",")
 
 	runtime = util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -360,18 +369,18 @@ func resourceAliCloudKmsInstanceCreate(d *schema.ResourceData, meta interface{})
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_kms_instance", action, AlibabaCloudSdkGoERROR)
 	}
 
-	d.SetId(fmt.Sprint(query["KmsInstanceId"]))
+	d.SetId(fmt.Sprint(request["KmsInstanceId"]))
 
 	kmsServiceV2 = KmsServiceV2{client}
-	stateConf = BuildStateConf([]string{}, []string{"Connected"}, d.Timeout(schema.TimeoutCreate), 2*time.Minute, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "Status", []string{}))
+	stateConf = BuildStateConf([]string{}, []string{"Connected"}, d.Timeout(schema.TimeoutCreate), 5*time.Minute, kmsServiceV2.KmsInstanceStateRefreshFunc(d.Id(), "Status", []string{"Error"}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
@@ -393,18 +402,42 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 		return WrapError(err)
 	}
 
-	d.Set("ca_certificate_chain_pem", objectRaw["CaCertificateChainPem"])
-	d.Set("create_time", objectRaw["CreateTime"])
-	d.Set("instance_name", objectRaw["InstanceName"])
-	d.Set("key_num", objectRaw["KeyNum"])
-	d.Set("log", objectRaw["Log"])
-	d.Set("log_storage", objectRaw["LogStorage"])
-	d.Set("secret_num", objectRaw["SecretNum"])
-	d.Set("spec", objectRaw["Spec"])
-	d.Set("status", objectRaw["Status"])
-	d.Set("vpc_id", objectRaw["VpcId"])
-	d.Set("vpc_num", objectRaw["VpcNum"])
-	d.Set("instance_id", objectRaw["InstanceId"])
+	if objectRaw["CaCertificateChainPem"] != nil {
+		d.Set("ca_certificate_chain_pem", objectRaw["CaCertificateChainPem"])
+	}
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["EndDate"] != nil {
+		d.Set("end_date", objectRaw["EndDate"])
+	}
+	if objectRaw["InstanceName"] != nil {
+		d.Set("instance_name", objectRaw["InstanceName"])
+	}
+	if objectRaw["KeyNum"] != nil {
+		d.Set("key_num", objectRaw["KeyNum"])
+	}
+	if objectRaw["Log"] != nil {
+		d.Set("log", objectRaw["Log"])
+	}
+	if objectRaw["LogStorage"] != nil {
+		d.Set("log_storage", objectRaw["LogStorage"])
+	}
+	if objectRaw["SecretNum"] != nil {
+		d.Set("secret_num", formatInt(objectRaw["SecretNum"]))
+	}
+	if objectRaw["Spec"] != nil {
+		d.Set("spec", objectRaw["Spec"])
+	}
+	if objectRaw["Status"] != nil {
+		d.Set("status", objectRaw["Status"])
+	}
+	if objectRaw["VpcId"] != nil {
+		d.Set("vpc_id", objectRaw["VpcId"])
+	}
+	if objectRaw["VpcNum"] != nil {
+		d.Set("vpc_num", objectRaw["VpcNum"])
+	}
 
 	bindVpc1Raw, _ := jsonpath.Get("$.BindVpcs.BindVpc", objectRaw)
 	bindVpcsMaps := make([]map[string]interface{}, 0)
@@ -415,12 +448,16 @@ func resourceAliCloudKmsInstanceRead(d *schema.ResourceData, meta interface{}) e
 			bindVpcsMap["region_id"] = bindVpcChild1Raw["RegionId"]
 			bindVpcsMap["vswitch_id"] = bindVpcChild1Raw["VSwitchId"]
 			bindVpcsMap["vpc_id"] = bindVpcChild1Raw["VpcId"]
-			bindVpcsMap["vpc_owner_id"] = bindVpcChild1Raw["VpcOwnerId"]
+			bindVpcsMap["vpc_owner_id"] = formatInt(bindVpcChild1Raw["VpcOwnerId"])
 
 			bindVpcsMaps = append(bindVpcsMaps, bindVpcsMap)
 		}
 	}
-	d.Set("bind_vpcs", bindVpcsMaps)
+	if bindVpc1Raw != nil {
+		if err := d.Set("bind_vpcs", bindVpcsMaps); err != nil {
+			return err
+		}
+	}
 
 	d.Set("vswitch_ids", objectRaw["VswitchIds"])
 
@@ -443,7 +480,8 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["InstanceId"] = d.Id()
+	request["InstanceId"] = d.Id()
+
 	request["ClientToken"] = buildClientToken(action)
 	if !d.IsNewResource() && d.HasChanges("vpc_num", "spec", "secret_num", "key_num", "log", "log_storage") {
 		update = true
@@ -516,9 +554,9 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -540,26 +578,27 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["KmsInstanceId"] = d.Id()
+
 	if d.HasChange("bind_vpcs") {
 		update = true
-		query["BindVpcs"] = "[]"
-		if v, ok := d.GetOk("bind_vpcs"); ok {
-			bindVpcsMaps := make([]map[string]interface{}, 0)
-			for _, dataLoop := range v.(*schema.Set).List() {
-				dataLoopTmp := dataLoop.(map[string]interface{})
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["VpcId"] = dataLoopTmp["vpc_id"]
-				dataLoopMap["VpcOwnerId"] = dataLoopTmp["vpc_owner_id"]
-				dataLoopMap["RegionId"] = dataLoopTmp["region_id"]
-				dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
-				bindVpcsMaps = append(bindVpcsMaps, dataLoopMap)
-			}
-			bindVpcsMapsJson, err := json.Marshal(bindVpcsMaps)
-			if err != nil {
-				return WrapError(err)
-			}
-			query["BindVpcs"] = string(bindVpcsMapsJson)
+	}
+	query["BindVpcs"] = "[]"
+	if v, ok := d.GetOk("bind_vpcs"); ok || d.HasChange("bind_vpcs") {
+		bindVpcsMaps := make([]interface{}, 0)
+		for _, dataLoop := range v.(*schema.Set).List() {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["VpcId"] = dataLoopTmp["vpc_id"]
+			dataLoopMap["VpcOwnerId"] = dataLoopTmp["vpc_owner_id"]
+			dataLoopMap["RegionId"] = dataLoopTmp["region_id"]
+			dataLoopMap["VSwitchId"] = dataLoopTmp["vswitch_id"]
+			bindVpcsMaps = append(bindVpcsMaps, dataLoopMap)
 		}
+		bindVpcsMapsJson, err := json.Marshal(bindVpcsMaps)
+		if err != nil {
+			return WrapError(err)
+		}
+		query["BindVpcs"] = string(bindVpcsMapsJson)
 	}
 
 	if update {
@@ -575,9 +614,9 @@ func resourceAliCloudKmsInstanceUpdate(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -600,7 +639,7 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 		request = make(map[string]interface{})
-		query["InstanceId"] = d.Id()
+		request["InstanceId"] = d.Id()
 
 		request["ClientToken"] = buildClientToken(action)
 
@@ -626,12 +665,12 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 
 		if err != nil {
-			if IsExpectedErrors(err, []string{"ResourceNotExists"}) {
+			if IsExpectedErrors(err, []string{"ResourceNotExists"}) || NotFoundError(err) {
 				return nil
 			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
@@ -642,6 +681,7 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
+
 		return nil
 	}
 
@@ -656,7 +696,7 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 			return WrapError(err)
 		}
 		request = make(map[string]interface{})
-		query["KmsInstanceId"] = d.Id()
+		request["KmsInstanceId"] = d.Id()
 
 		if v, ok := d.GetOk("force_delete_without_backup"); ok {
 			request["ForceDeleteWithoutBackup"] = v
@@ -674,15 +714,25 @@ func resourceAliCloudKmsInstanceDelete(d *schema.ResourceData, meta interface{})
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 
 		if err != nil {
+			if NotFoundError(err) {
+				return nil
+			}
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
 
 		return nil
 	}
 	return nil
+}
+
+func convertKmsInstanceSubscriptionTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
+	switch source {
+	}
+	return source
 }

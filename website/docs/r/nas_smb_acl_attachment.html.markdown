@@ -1,5 +1,5 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_smb_acl_attachment"
 sidebar_current: "docs-alicloud-resource-nas-smb-acl-attachment"
