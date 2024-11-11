@@ -6,15 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 )
 
 func TestAccAlicloudCloudFirewallVpcFirewallCenDataSource(t *testing.T) {
 	rand := acctest.RandIntRange(1000000, 9999999)
-	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
-
 	idsConf := dataSourceTestAccConfig{
 		existConfig: testAccCheckAlicloudCloudFirewallVpcFirewallCenSourceConfig(rand, map[string]string{
 			"ids": `["${alicloud_cloud_firewall_vpc_firewall_cen.default.id}"]`,

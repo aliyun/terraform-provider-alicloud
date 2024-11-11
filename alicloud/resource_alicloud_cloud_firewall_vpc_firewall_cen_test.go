@@ -11,7 +11,7 @@ import (
 
 func TestAccAliCloudCloudFirewallA0VpcFirewallCen_basic(t *testing.T) {
 	var v map[string]interface{}
-	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
+	//checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_cen.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallCenMap)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {

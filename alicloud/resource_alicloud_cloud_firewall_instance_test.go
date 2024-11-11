@@ -128,6 +128,7 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForIntl(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -137,8 +138,8 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type": "Subscription",
 					"spec":         "enterprise_version",
-					"ip_number":    "20",
-					"band_width":   "20",
+					"ip_number":    "50",
+					"band_width":   "50",
 					"cfw_log":      "false",
 					"period":       "1",
 				}),
@@ -146,7 +147,7 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 					testAccCheck(map[string]string{
 						"payment_type": "Subscription",
 						"spec":         "enterprise_version",
-						"ip_number":    "20",
+						"ip_number":    "50",
 						"cfw_log":      "false",
 						"period":       "1",
 					}),
@@ -167,7 +168,7 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"band_width":  "25",
+					"band_width":  "55",
 					"modify_type": "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
@@ -198,11 +199,11 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"ip_number": "25",
+					"ip_number": "55",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"ip_number": "25",
+						"ip_number": "55",
 					}),
 				),
 			},
