@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
@@ -15,20 +14,15 @@ type DysmsapiService struct {
 }
 
 func (s *DysmsapiService) DescribeSmsShortUrl(id string) (object map[string]interface{}, err error) {
+	client := s.client
 	var response map[string]interface{}
-	conn, err := s.client.NewDysmsClient()
-	if err != nil {
-		return nil, WrapError(err)
-	}
 	action := "QueryShortUrl"
 	request := map[string]interface{}{
 		"ShortUrl": id,
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(5*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-05-25"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Dysmsapi", "2017-05-25", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

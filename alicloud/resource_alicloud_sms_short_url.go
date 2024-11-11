@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -53,18 +52,15 @@ func resourceAlicloudSmsShortUrl() *schema.Resource {
 func resourceAlicloudSmsShortUrlCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "AddShortUrl"
 	request := make(map[string]interface{})
-	conn, err := client.NewDysmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["EffectiveDays"] = d.Get("effective_days")
 	request["ShortUrlName"] = d.Get("short_url_name")
 	request["SourceUrl"] = d.Get("source_url")
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-05-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dysmsapi", "2017-05-25", action, nil, request, false)
 		if err != nil {
 			if IsExpectedErrors(err, []string{"undefined"}) || NeedRetry(err) {
 				wait()
@@ -109,16 +105,13 @@ func resourceAlicloudSmsShortUrlRead(d *schema.ResourceData, meta interface{}) e
 func resourceAlicloudSmsShortUrlDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
+	var err error
 	action := "DeleteShortUrl"
 	request := make(map[string]interface{})
-	conn, err := client.NewDysmsClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["SourceUrl"] = d.Id()
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-05-25"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Dysmsapi", "2017-05-25", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
