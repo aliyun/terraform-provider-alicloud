@@ -1,17 +1,17 @@
 ---
-subcategory: "Apsara File Storage (NAS)"
+subcategory: "File Storage (NAS)"
 layout: "alicloud"
 page_title: "Alicloud: alicloud_nas_data_flow"
 sidebar_current: "docs-alicloud-resource-nas-data-flow"
 description: |-
-  Provides a Alicloud Apsara File Storage (NAS) Data Flow resource.
+  Provides a Alicloud File Storage (NAS) Data Flow resource.
 ---
 
 # alicloud_nas_data_flow
 
-Provides a Apsara File Storage (NAS) Data Flow resource.
+Provides a File Storage (NAS) Data Flow resource.
 
-For information about Apsara File Storage (NAS) Data Flow and how to use it, see [What is Data Flow](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
+For information about File Storage (NAS) Data Flow and how to use it, see [What is Data Flow](https://www.alibabacloud.com/help/en/doc-detail/27530.html).
 
 -> **NOTE:** Available since v1.153.0.
 
@@ -126,7 +126,7 @@ The `timeouts` block allows you to specify [timeouts](https://www.terraform.io/d
 
 ## Import
 
-Apsara File Storage (NAS) Data Flow can be imported using the id, e.g.
+File Storage (NAS) Data Flow can be imported using the id, e.g.
 
 ```shell
 $ terraform import alicloud_nas_data_flow.example <file_system_id>:<data_flow_id>
