@@ -326,7 +326,8 @@ var irregularProductEndpoint = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpointForIntlAccount = map[string]string{
-	"cas": "cas.ap-southeast-1.aliyuncs.com",
+	"cas":     "cas.ap-southeast-1.aliyuncs.com",
+	"cloudfw": "cloudfw.ap-southeast-1.aliyuncs.com",
 }
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
@@ -482,6 +483,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Thirdly, load endpoint from location
 	endpoint, err := client.describeEndpointForService(productCode)
 	if err == nil {
+		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+			endpoint = v
+		}
 		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
 	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
 		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
