@@ -75,7 +75,7 @@ func resourceAlicloudHBaseInstance() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				ForceNew:         true,
-				ValidateFunc:     validation.StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", ""}, false),
+				ValidateFunc:     StringInSlice([]string{"cloud_ssd", "cloud_essd_pl1", "cloud_essd_pl0", "cloud_efficiency", "local_hdd_pro", "local_ssd_pro", ""}, false),
 				DiffSuppressFunc: engineDiffSuppressFunc,
 			},
 			"core_disk_size": {
@@ -362,6 +362,8 @@ func resourceAlicloudHBaseInstanceRead(d *schema.ResourceData, meta interface{})
 	// Postpaid -> PostPaid
 	d.Set("pay_type", convertHbaseInstancePayTypeResponse(instance["PayType"]))
 	if instance["PayType"] == string(Prepaid) {
+		time.Sleep(20)
+		instance, err := hbaseService.DescribeHBaseInstance(d.Id())
 		period, err := computePeriodByUnit(instance["CreatedTimeUTC"], instance["ExpireTimeUTC"], d.Get("duration").(int), "Month")
 		if err != nil {
 			return WrapError(err)
@@ -589,7 +591,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_NODE_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := BuildStateConf([]string{Hb_NODE_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			5*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_NODE_RESIZING_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
@@ -646,7 +648,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := BuildStateConf([]string{Hb_DISK_RESIZING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			2*time.Minute, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
@@ -668,7 +670,7 @@ func resourceAlicloudHBaseInstanceUpdate(d *schema.ResourceData, meta interface{
 		}
 		// Cumbersome operation，async call, wait for state change
 		// wait instance status is running after modifying
-		stateConf := BuildStateConf([]string{Hb_HBASE_COLD_EXPANDING}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
+		stateConf := BuildStateConf([]string{Hb_HBASE_COLD_EXPANDING, HBASE_SCALE_IN}, []string{Hb_ACTIVATION}, d.Timeout(schema.TimeoutUpdate),
 			10*time.Second, hBaseService.HBaseClusterStateRefreshFunc(d.Id(), []string{Hb_DISK_RESIZE_FAILED}))
 		if _, err := stateConf.WaitForState(); err != nil {
 			return WrapError(err)
