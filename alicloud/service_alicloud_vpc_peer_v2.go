@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	rpc "github.com/alibabacloud-go/tea-rpc/client"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -24,19 +22,13 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnection(id string) (object map[
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcPeerConnectionAttribute"
-	conn, err := client.NewVpcpeerClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -88,8 +80,6 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 	if d.HasChange("tags") {
 		var err error
 		var action string
-		var conn *rpc.Client
-		client := s.client
 		var request map[string]interface{}
 		var response map[string]interface{}
 		query := make(map[string]interface{})
@@ -103,10 +93,7 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 		}
 		if len(removedTagKeys) > 0 {
 			action = "UnTagResources"
-			conn, err = client.NewVpcpeerClient()
-			if err != nil {
-				return WrapError(err)
-			}
+			client := s.client
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -117,11 +104,9 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -140,10 +125,7 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 
 		if len(added) > 0 {
 			action = "TagResources"
-			conn, err = client.NewVpcpeerClient()
-			if err != nil {
-				return WrapError(err)
-			}
+			client := s.client
 			request = make(map[string]interface{})
 			query = make(map[string]interface{})
 			request["ResourceId.1"] = d.Id()
@@ -157,11 +139,9 @@ func (s *VpcPeerServiceV2) SetResourceTags(d *schema.ResourceData, resourceType 
 			}
 
 			request["ResourceType"] = resourceType
-			runtime := util.RuntimeOptions{}
-			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
 			err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-				response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+				response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
 				if err != nil {
 					if NeedRetry(err) {
 						wait()
@@ -192,19 +172,13 @@ func (s *VpcPeerServiceV2) DescribeVpcPeerPeerConnectionAccepter(id string) (obj
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "GetVpcPeerConnectionAttribute"
-	conn, err := client.NewVpcpeerClient()
-	if err != nil {
-		return object, WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-01-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("VpcPeer", "2022-01-01", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
