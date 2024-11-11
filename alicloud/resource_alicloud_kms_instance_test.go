@@ -228,6 +228,7 @@ func TestAccAliCloudKmsInstance_basic4048(t *testing.T) {
 var AlicloudKmsInstanceMap4048 = map[string]string{
 	"status":                   CHECKSET,
 	"create_time":              CHECKSET,
+	"end_date":                 CHECKSET,
 	"instance_name":            CHECKSET,
 	"ca_certificate_chain_pem": CHECKSET,
 }
