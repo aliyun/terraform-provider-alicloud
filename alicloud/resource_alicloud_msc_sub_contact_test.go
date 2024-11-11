@@ -19,7 +19,6 @@ import (
 )
 
 func TestAccAlicloudMscSubContact_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.MSCSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_contact.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubContactMap0)
@@ -118,7 +117,6 @@ variable "name" {
 }
 
 func TestAccAlicloudMscSubContact_basic1(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.MSCSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_contact.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubContactMap1)

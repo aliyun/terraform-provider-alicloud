@@ -21,7 +21,6 @@ import (
 )
 
 func TestAccAlicloudMscSubSubscription_basic0(t *testing.T) {
-	checkoutSupportedRegions(t, true, connectivity.MSCSupportRegions)
 	var v map[string]interface{}
 	resourceId := "alicloud_msc_sub_subscription.default"
 	ra := resourceAttrInit(resourceId, AlicloudMscSubSubscriptionMap0)
