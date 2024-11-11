@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCloudFirewallVpcFirewallCen_basic(t *testing.T) {
+func TestAccAliCloudCloudFirewallA0VpcFirewallCen_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallCenSupportRegions)
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_cen.default"
@@ -34,12 +34,12 @@ func TestAccAliCloudCloudFirewallVpcFirewallCen_basic(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"vpc_firewall_name": name,
-					"cen_id":            "${data.alicloud_cen_instances.cen_instances_ds.instances.0.id}",
+					"cen_id":            "${alicloud_cen_instance.default.id}",
 					"vpc_region":        defaultRegionToTest,
 					"status":            "open",
 					"local_vpc": []map[string]interface{}{
 						{
-							"network_instance_id": "${data.alicloud_vpcs.vpcs_ds.vpcs.0.id}",
+							"network_instance_id": "${alicloud_vpc.default.id}",
 						},
 					},
 					"member_uid": "${data.alicloud_account.current.id}",
@@ -96,12 +96,13 @@ func AliCloudCloudFirewallVpcFirewallCenBasicDependence(name string) string {
 	data "alicloud_account" "current" {
 	}
 
-	data "alicloud_cen_instances" "cen_instances_ds" {
-  		name_regex = "^cfw-test-no-deleting"
+	resource "alicloud_cen_instance" "default" {
+	  cen_instance_name = var.name
+	  description       = var.name
 	}
-
-	data "alicloud_vpcs" "vpcs_ds" {
-  		name_regex = "^cfw-test-no-deleting"
+	
+	resource "alicloud_vpc" "default" {
+		vpc_name = var.name
 	}
 `, name)
 }

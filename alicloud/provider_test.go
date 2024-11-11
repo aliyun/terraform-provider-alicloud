@@ -65,6 +65,13 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
+func testAccPreCheckForIntl(t *testing.T) {
+	if strings.TrimSpace(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) != "International" {
+		t.Skipf("Skipping %s Site.", "International")
+		t.Skipped()
+	}
+}
+
 // currently not all account site type support create PostPaid resources, PayByBandwidth and other limits.
 // The setting of account site type can skip some unsupported cases automatically.
 

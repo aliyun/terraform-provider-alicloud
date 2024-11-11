@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCloudfirewallVpcFirewall_basic(t *testing.T) {
+func TestAccAliCloudCloudfirewallA0VpcFirewall_basic(t *testing.T) {
 	var v map[string]interface{}
 	checkoutSupportedRegions(t, true, connectivity.CloudFirewallVpcFirewallSupportRegions)
 	resourceId := "alicloud_cloud_firewall_vpc_firewall.default"

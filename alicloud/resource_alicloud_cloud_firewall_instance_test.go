@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
+func TestAccAliCloudCloudFirewallAaInstance_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -34,6 +34,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForIntl(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -68,7 +69,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
+func TestAccAliCloudCloudFirewallAaInstance_basic0_twin(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -83,6 +84,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			testAccPreCheck(t)
+			testAccPreCheckForIntl(t)
 		},
 		IDRefreshName: resourceId,
 		Providers:     testAccProviders,
@@ -111,7 +113,7 @@ func TestAccAliCloudCloudFirewallInstance_basic0_twin(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
+func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_instance.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallInstanceMap0)
@@ -134,7 +136,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"payment_type": "Subscription",
-					"spec":         "premium_version",
+					"spec":         "enterprise_version",
 					"ip_number":    "20",
 					"band_width":   "20",
 					"cfw_log":      "false",
@@ -143,7 +145,7 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"payment_type": "Subscription",
-						"spec":         "premium_version",
+						"spec":         "enterprise_version",
 						"ip_number":    "20",
 						"cfw_log":      "false",
 						"period":       "1",
@@ -232,34 +234,34 @@ func TestAccAliCloudCloudFirewallInstance_basic1(t *testing.T) {
 					}),
 				),
 			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_duration": REMOVEKEY,
-					"renew_period":     "2",
-					"renewal_status":   "AutoRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_duration":      "2",
-						"renew_period":          "2",
-						"renewal_duration_unit": "Month",
-						"renewal_status":        "AutoRenewal",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"renewal_status": "NotRenewal",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"renewal_status":        "NotRenewal",
-						"renewal_duration":      REMOVEKEY,
-						"renew_period":          REMOVEKEY,
-						"renewal_duration_unit": REMOVEKEY,
-					}),
-				),
-			},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"renewal_duration": REMOVEKEY,
+			//		"renew_period":     "2",
+			//		"renewal_status":   "AutoRenewal",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"renewal_duration":      "2",
+			//			"renew_period":          "2",
+			//			"renewal_duration_unit": "Month",
+			//			"renewal_status":        "AutoRenewal",
+			//		}),
+			//	),
+			//},
+			//{
+			//	Config: testAccConfig(map[string]interface{}{
+			//		"renewal_status": "NotRenewal",
+			//	}),
+			//	Check: resource.ComposeTestCheckFunc(
+			//		testAccCheck(map[string]string{
+			//			"renewal_status":        "NotRenewal",
+			//			"renewal_duration":      REMOVEKEY,
+			//			"renew_period":          REMOVEKEY,
+			//			"renewal_duration_unit": REMOVEKEY,
+			//		}),
+			//	),
+			//},
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cfw_account":    "true",

@@ -19,7 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic0(t *testing.T) {
+func TestAccAliCloudCloudFirewallA0VpcFirewallControlPolicy_basic0(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap0)
@@ -203,7 +203,7 @@ func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic0(t *testing.T) {
 	})
 }
 
-func TestAccAliCloudCloudFirewallVpcFirewallControlPolicy_basic1(t *testing.T) {
+func TestAccAliCloudCloudFirewallA0VpcFirewallControlPolicy_basic1(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_cloud_firewall_vpc_firewall_control_policy.default"
 	ra := resourceAttrInit(resourceId, AliCloudCloudFirewallVpcFirewallControlPolicyMap0)
