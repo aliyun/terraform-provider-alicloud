@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -51,10 +50,6 @@ func resourceAlicloudMscSubContact() *schema.Resource {
 func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	request := make(map[string]interface{})
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request["ContactName"] = d.Get("contact_name")
 	request["Email"] = d.Get("email")
 	request["Mobile"] = d.Get("mobile")
@@ -62,12 +57,11 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 	request["ClientToken"] = buildClientToken("CreateContact")
 	request["Locale"] = "en"
 	var response map[string]interface{}
+	var err error
 	action := "CreateContact"
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -75,8 +69,7 @@ func resourceAlicloudMscSubContactCreate(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
@@ -111,10 +104,7 @@ func resourceAlicloudMscSubContactRead(d *schema.ResourceData, meta interface{})
 func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	update := false
 	request := map[string]interface{}{
@@ -135,11 +125,9 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 	if update {
 		action := "UpdateContact"
 		request["ClientToken"] = buildClientToken("UpdateContact")
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &runtime)
+			response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, true)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -147,8 +135,7 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 				}
 				return resource.NonRetryableError(err)
 			}
-			response = resp
-			addDebug(action, resp, request)
+			addDebug(action, response, request)
 			return nil
 		})
 		if err != nil {
@@ -163,10 +150,7 @@ func resourceAlicloudMscSubContactUpdate(d *schema.ResourceData, meta interface{
 func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
 	var response map[string]interface{}
-	conn, err := client.NewMscopensubscriptionClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"ContactId": d.Id(),
 	}
@@ -174,7 +158,7 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 	action := "DeleteContact"
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		resp, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-07-13"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("MscOpenSubscription", "2021-07-13", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -182,8 +166,7 @@ func resourceAlicloudMscSubContactDelete(d *schema.ResourceData, meta interface{
 			}
 			return resource.NonRetryableError(err)
 		}
-		response = resp
-		addDebug(action, resp, request)
+		addDebug(action, response, request)
 		return nil
 	})
 	if err != nil {
