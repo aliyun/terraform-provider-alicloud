@@ -482,6 +482,9 @@ func (client *AliyunClient) loadEndpoint(productCode string) error {
 	// Thirdly, load endpoint from location
 	endpoint, err := client.describeEndpointForService(productCode)
 	if err == nil {
+		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
+			endpoint = v
+		}
 		client.config.Endpoints.Store(strings.ToLower(productCode), endpoint)
 	} else if endpointFmt, ok := regularProductEndpoint[productCode]; ok {
 		if v, ok := regularProductEndpointForIntlAccount[productCode]; ok && strings.ToLower(client.config.AccountType) == "international" {
