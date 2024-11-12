@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -28,6 +27,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			Delete: schema.DefaultTimeout(30 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"architecture_type": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"auto_renew": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -43,6 +46,10 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 			"cluster_backup_id": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"connection_domain": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"create_time": {
 				Type:     schema.TypeString,
@@ -81,9 +88,17 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"max_connections": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
 			"modify_mode": {
 				Type:     schema.TypeString,
 				Optional: true,
+			},
+			"network_type": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"node_type": {
 				Type:         schema.TypeString,
@@ -196,13 +211,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
 			"storage_size_gb": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				Computed:     true,
-				ForceNew:     true,
-				ValidateFunc: IntBetween(20, 6150),
+				Type:     schema.TypeInt,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"tags": tagsSchema(),
+			"tair_instance_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"tair_instance_name": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -366,6 +384,12 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
+	if objectRaw["ArchitectureType"] != nil {
+		d.Set("architecture_type", objectRaw["ArchitectureType"])
+	}
+	if objectRaw["ConnectionDomain"] != nil {
+		d.Set("connection_domain", objectRaw["ConnectionDomain"])
+	}
 	if objectRaw["CreateTime"] != nil {
 		d.Set("create_time", objectRaw["CreateTime"])
 	}
@@ -377,6 +401,12 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["InstanceType"] != nil {
 		d.Set("instance_type", objectRaw["InstanceType"])
+	}
+	if objectRaw["Connections"] != nil {
+		d.Set("max_connections", objectRaw["Connections"])
+	}
+	if objectRaw["NetworkType"] != nil {
+		d.Set("network_type", objectRaw["NetworkType"])
 	}
 	if objectRaw["NodeType"] != nil {
 		d.Set("node_type", convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(objectRaw["NodeType"]))
@@ -419,6 +449,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	}
 	if objectRaw["ZoneId"] != nil {
 		d.Set("zone_id", objectRaw["ZoneId"])
+	}
+	if objectRaw["InstanceId"] != nil {
+		d.Set("tair_instance_id", objectRaw["InstanceId"])
 	}
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
@@ -474,6 +507,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 
 	if objectRaw["SSLEnabled"] != nil {
 		d.Set("ssl_enabled", objectRaw["SSLEnabled"])
+	}
+	if objectRaw["InstanceId"] != nil {
+		d.Set("tair_instance_id", objectRaw["InstanceId"])
 	}
 
 	objectRaw, err = redisServiceV2.DescribeDescribeIntranetAttribute(d.Id())
@@ -567,7 +603,6 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOkExists("read_only_count"); ok {
 		request["ReadOnlyCount"] = v
 	}
-
 	if !d.IsNewResource() && d.HasChange("node_type") {
 		update = true
 		request["NodeType"] = d.Get("node_type")
