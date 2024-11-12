@@ -116,11 +116,21 @@ variable "database_name" {
   default = "tftestdatabase"
 }
 
-data "alicloud_db_zones" "default" {}
+data "alicloud_db_zones" "default" {
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_charge_type = "PostPaid"
+	category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+}
 
 data "alicloud_db_instance_classes" "default" {
-  engine         = "MySQL"
-  engine_version = "5.6"
+    zone_id = data.alicloud_db_zones.default.zones.0.id
+	engine = "MySQL"
+	engine_version = "8.0"
+    category = "HighAvailability"
+ 	db_instance_storage_type = "cloud_essd"
+	instance_charge_type = "PostPaid"
 }
 
 data "alicloud_vpcs" "default" {
@@ -133,10 +143,10 @@ data "alicloud_vswitches" "default" {
 }
 
 resource "alicloud_db_instance" "default" {
-  engine           = "MySQL"
-  engine_version   = "5.6"
-  instance_type    = data.alicloud_db_instance_classes.default.instance_classes[0].instance_class
-  instance_storage = "10"
+	engine = "MySQL"
+	engine_version = "8.0"
+	instance_type = data.alicloud_db_instance_classes.default.instance_classes.0.instance_class
+	instance_storage = data.alicloud_db_instance_classes.default.instance_classes.0.storage_range.min
   vswitch_id       = data.alicloud_vswitches.default.ids[0]
   instance_name    = var.name
 }
