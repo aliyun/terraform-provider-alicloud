@@ -20,7 +20,7 @@ For information about CR Chart Repository and how to use it, see [What is Chart 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cr_chart_repository&exampleId=72ccefbf-3927-a0ae-ed67-82c822c833c13c66b607&activeTab=example&spm=docs.r.cr_chart_repository.0.72ccefbf39&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_cr_chart_repository&exampleId=c0f976aa-4477-cd56-6da3-09ba814a248fe75a219d&activeTab=example&spm=docs.r.cr_chart_repository.0.c0f976aa44&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

@@ -20,7 +20,7 @@ For information about Global Accelerator (GA) Custom Routing Endpoint Traffic Po
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_custom_routing_endpoint_traffic_policy&exampleId=d881f1a8-edfc-93c3-67d3-9caf36b2cc85a2ab2193&activeTab=example&spm=docs.r.ga_custom_routing_endpoint_traffic_policy.0.d881f1a8ed&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_custom_routing_endpoint_traffic_policy&exampleId=54c7150b-5960-6f53-4cc8-acb1eb2a46ca9f45d42a&activeTab=example&spm=docs.r.ga_custom_routing_endpoint_traffic_policy.0.54c7150b59&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>

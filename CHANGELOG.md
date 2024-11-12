@@ -1,37 +1,38 @@
-## 1.233.1 (Unreleased)
+## 1.234.0 (Unreleased)
+## 1.233.1 (November 12, 2024)
 
 ENHANCEMENTS:
 
-- client: supports to set connectTimeout on assumeRole. [GH-7810]
-- resource/alicloud_dbfs_snapshot: Removed the ForceNew for field snapshot_name, description; Improved alicloud_dbfs_snapshot testcase. [GH-7814]
-- resource/alicloud_gpdb_instance: Added the field seg_disk_performance_level, serverless_mode, prod_type, data_share_status. [GH-7816]
-- resource/alicloud_dbfs_instance_attachment: Improved alicloud_dbfs_instance_attachment testcase. [GH-7819]
-- resource/alicloud_arms_environment: support sub types for ACK. [GH-7820]
-- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in can modify. [GH-7821]
-- resource/alicloud_redis_tair_instance: Added the field global_instance_id, src_db_instance_id, backup_id, recover_config_mode, intranet_bandwidth. [GH-7829]
-- resource/alicloud_cen_transit_router_route_entry: add retry for 'InstanceStatus.NotSupport'. [GH-7831]
-- resource/alicloud_kms_instance: add new attribute end_date. [GH-7834]
-- resource/alicloud_redis_tair_instance: add new attribute modify_mode, param_no_loose_sentinel_enabled, param_repl_mode, param_semisync_repl_timeout, param_sentinel_compat_enable etc. [GH-7837]
-- resource/alicloud_hbase_instance: Add cloud_essd_pl0. [GH-7838]
-- resource/alicloud_governance_account: add new attribute account_tags. [GH-7839]
-- resource/alicloud_redis_tair_instance: add new attribute architecture_type, connection_domain etc. [GH-7843]
-- docs: fix examples for cms, fc, threat_detection. [GH-7799]
-- docs: mark alicloud_cs_kubernetes_autoscaler, alicloud_arms_remote_write as deprecated. [GH-7801]
-- docs: fix examples for alicloud_arms_prometheus_alert_rule. [GH-7807]
-- docs: fix example for alicloud_vpn_gateway_vco_route. [GH-7809]
-- docs: improve examples for alicloud_ga_additional_certificate and alicloud_ga_custom_routing_endpoint_traffic_policy. [GH-7811]
-- docs: improve examples for cr. [GH-7813]
-- docs: Fix invalid argument for ecs. [GH-7815]
-- docs: improve examples for arms. [GH-7830]
-- docs: Add version info for kms. [GH-7842]
-- docs: Improved subcategory for NAS; Improved the document alicloud_redis_tair_instance. [GH-7835]
-- testcase: fix testcase for resource/alicloud_polardb_cluster_endpoint, resource/alicloud_polardb_cluster, resource/alicloud_polardb_database, resource/alicloud_polardb_endpoint, resource/alicloud_polardb_global_database_network, resource/alicloud_polardb_primary_endpoint. [GH-7805]
-- testcase: fix testcase for resource/alicloud_polardb_backup_policy, resource/alicloud_polardb_account_priviledge. [GH-7812]
+- client: supports to set connectTimeout on assumeRole. ([#7810](https://github.com/aliyun/terraform-provider-alicloud/issues/7810))
+- resource/alicloud_dbfs_snapshot: Removed the ForceNew for field snapshot_name, description; Improved alicloud_dbfs_snapshot testcase. ([#7814](https://github.com/aliyun/terraform-provider-alicloud/issues/7814))
+- resource/alicloud_gpdb_instance: Added the field seg_disk_performance_level, serverless_mode, prod_type, data_share_status. ([#7816](https://github.com/aliyun/terraform-provider-alicloud/issues/7816))
+- resource/alicloud_dbfs_instance_attachment: Improved alicloud_dbfs_instance_attachment testcase. ([#7819](https://github.com/aliyun/terraform-provider-alicloud/issues/7819))
+- resource/alicloud_arms_environment: support sub types for ACK. ([#7820](https://github.com/aliyun/terraform-provider-alicloud/issues/7820))
+- resource/alicloud_ess_scaling_configuration: update internet_max_bandwidth_in can modify. ([#7821](https://github.com/aliyun/terraform-provider-alicloud/issues/7821))
+- resource/alicloud_redis_tair_instance: Added the field global_instance_id, src_db_instance_id, backup_id, recover_config_mode, intranet_bandwidth. ([#7829](https://github.com/aliyun/terraform-provider-alicloud/issues/7829))
+- resource/alicloud_cen_transit_router_route_entry: add retry for 'InstanceStatus.NotSupport'. ([#7831](https://github.com/aliyun/terraform-provider-alicloud/issues/7831))
+- resource/alicloud_kms_instance: add new attribute end_date. ([#7834](https://github.com/aliyun/terraform-provider-alicloud/issues/7834))
+- resource/alicloud_redis_tair_instance: add new attribute modify_mode, param_no_loose_sentinel_enabled, param_repl_mode, param_semisync_repl_timeout, param_sentinel_compat_enable etc. ([#7837](https://github.com/aliyun/terraform-provider-alicloud/issues/7837))
+- resource/alicloud_hbase_instance: Add cloud_essd_pl0. ([#7838](https://github.com/aliyun/terraform-provider-alicloud/issues/7838))
+- resource/alicloud_governance_account: add new attribute account_tags. ([#7839](https://github.com/aliyun/terraform-provider-alicloud/issues/7839))
+- resource/alicloud_redis_tair_instance: add new attribute architecture_type, connection_domain etc. ([#7843](https://github.com/aliyun/terraform-provider-alicloud/issues/7843))
+- docs: fix examples for cms, fc, threat_detection. ([#7799](https://github.com/aliyun/terraform-provider-alicloud/issues/7799))
+- docs: mark alicloud_cs_kubernetes_autoscaler, alicloud_arms_remote_write as deprecated. ([#7801](https://github.com/aliyun/terraform-provider-alicloud/issues/7801))
+- docs: fix examples for alicloud_arms_prometheus_alert_rule. ([#7807](https://github.com/aliyun/terraform-provider-alicloud/issues/7807))
+- docs: fix example for alicloud_vpn_gateway_vco_route. ([#7809](https://github.com/aliyun/terraform-provider-alicloud/issues/7809))
+- docs: improve examples for alicloud_ga_additional_certificate and alicloud_ga_custom_routing_endpoint_traffic_policy. ([#7811](https://github.com/aliyun/terraform-provider-alicloud/issues/7811))
+- docs: improve examples for cr. ([#7813](https://github.com/aliyun/terraform-provider-alicloud/issues/7813))
+- docs: Fix invalid argument for ecs. ([#7815](https://github.com/aliyun/terraform-provider-alicloud/issues/7815))
+- docs: improve examples for arms. ([#7830](https://github.com/aliyun/terraform-provider-alicloud/issues/7830))
+- docs: Add version info for kms. ([#7842](https://github.com/aliyun/terraform-provider-alicloud/issues/7842))
+- docs: Improved subcategory for NAS; Improved the document alicloud_redis_tair_instance. ([#7835](https://github.com/aliyun/terraform-provider-alicloud/issues/7835))
+- testcase: fix testcase for resource/alicloud_polardb_cluster_endpoint, resource/alicloud_polardb_cluster, resource/alicloud_polardb_database, resource/alicloud_polardb_endpoint, resource/alicloud_polardb_global_database_network, resource/alicloud_polardb_primary_endpoint. ([#7805](https://github.com/aliyun/terraform-provider-alicloud/issues/7805))
+- testcase: fix testcase for resource/alicloud_polardb_backup_policy, resource/alicloud_polardb_account_priviledge. ([#7812](https://github.com/aliyun/terraform-provider-alicloud/issues/7812))
 
 BUG FIXES:
 
-- resource/alicloud_cen_transit_router_vbr_attachment: Fixed the diff error caused by field resource_type; Improved alicloud_cen_transit_router_vbr_attachment testcase. [GH-7808]
-- resource/alicloud_alb_load_balancer: Fixed the diff error caused by field bandwidth_package_id. [GH-7833]
+- resource/alicloud_cen_transit_router_vbr_attachment: Fixed the diff error caused by field resource_type; Improved alicloud_cen_transit_router_vbr_attachment testcase. ([#7808](https://github.com/aliyun/terraform-provider-alicloud/issues/7808))
+- resource/alicloud_alb_load_balancer: Fixed the diff error caused by field bandwidth_package_id. ([#7833](https://github.com/aliyun/terraform-provider-alicloud/issues/7833))
 
 ## 1.233.0 (October 31, 2024)
 

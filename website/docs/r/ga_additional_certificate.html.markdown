@@ -20,7 +20,7 @@ For information about Global Accelerator (GA) Additional Certificate and how to 
 Basic Usage
 
 <div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_additional_certificate&exampleId=0cd72293-3857-5cdf-98bd-53a763b4c8f22e2f39fe&activeTab=example&spm=docs.r.ga_additional_certificate.0.0cd7229338&intl_lang=EN_US" target="_blank">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_ga_additional_certificate&exampleId=1ad68600-f4be-90f7-92bd-c8f14d5a3648e7cc5837&activeTab=example&spm=docs.r.ga_additional_certificate.0.1ad68600f4&intl_lang=EN_US" target="_blank">
     <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
   </a>
 </div></div>
