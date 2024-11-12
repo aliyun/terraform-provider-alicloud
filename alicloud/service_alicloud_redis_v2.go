@@ -31,6 +31,7 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -52,13 +53,112 @@ func (s *RedisServiceV2) DescribeRedisTairInstance(id string) (object map[string
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
 	v, err := jsonpath.Get("$.Instances.DBInstanceAttribute[*]", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Instances.DBInstanceAttribute[*]", response)
+	}
+
+	if len(v.([]interface{})) == 0 {
+		return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+	}
+
+	return v.([]interface{})[0].(map[string]interface{}), nil
+}
+func (s *RedisServiceV2) DescribeDescribeInstanceConfig(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeInstanceConfig"
+	conn, err := client.NewRedisClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	return response, nil
+}
+func (s *RedisServiceV2) DescribeDescribeSecurityIps(id, securityIpGroupName string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	action := "DescribeSecurityIps"
+	conn, err := client.NewRedisClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+
+	v, err := jsonpath.Get("$.SecurityIpGroups.SecurityIpGroup[*]", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.SecurityIpGroups.SecurityIpGroup[*]", response)
+	}
+
+	if securityIpGroupName == "" {
+		securityIpGroupName = "default"
+	}
+
+	for _, item := range v.([]interface{}) {
+		securityIpGroup := item.(map[string]interface{})
+		if securityIpGroup["SecurityIpGroupName"] == securityIpGroupName {
+			return securityIpGroup, nil
+		}
 	}
 
 	if len(v.([]interface{})) == 0 {
@@ -80,6 +180,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -98,7 +199,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (
 	})
 	addDebug(action, response, request)
 	if err != nil {
-		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
+		if IsExpectedErrors(err, []string{"IncorrectDBInstanceState", "InvalidInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
@@ -110,7 +211,7 @@ func (s *RedisServiceV2) DescribeDescribeSecurityGroupConfiguration(id string) (
 	}
 
 	if len(v.([]interface{})) == 0 {
-		return object, nil
+		return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
 	}
 
 	return v.([]interface{})[0].(map[string]interface{}), nil
@@ -128,6 +229,7 @@ func (s *RedisServiceV2) DescribeDescribeInstanceSSL(id string) (object map[stri
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -149,7 +251,6 @@ func (s *RedisServiceV2) DescribeDescribeInstanceSSL(id string) (object map[stri
 		if IsExpectedErrors(err, []string{"InvalidInstanceId.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("TairInstance", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 
