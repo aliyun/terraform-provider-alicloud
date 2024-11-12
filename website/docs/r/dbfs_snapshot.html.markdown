@@ -51,8 +51,8 @@ The following arguments are supported:
 
 * `instance_id` - (Required, ForceNew) The ID of the Database File System.
 * `retention_days` - (Optional, ForceNew, Int) The retention period of the snapshot. Valid values: `1` to `65536`.
-* `snapshot_name` - (Optional) The name of the snapshot. The `snapshot_name` must be `2` to `128` characters in length. It must start with a large or small letter or Chinese, and cannot start with `http://`, `https://`, `auto` or `dbfs-auto`. It can contain numbers, colons (:), underscores (_), or hyphens (-). **NOTE:** From version 1.234.0, `snapshot_name` can be modified.
-* `description` - (Optional) The description of the snapshot. The `description` must be `2` to `256` characters in length. It cannot start with `http://` or `https://`. **NOTE:** From version 1.234.0, `description` can be modified.
+* `snapshot_name` - (Optional) The name of the snapshot. The `snapshot_name` must be `2` to `128` characters in length. It must start with a large or small letter or Chinese, and cannot start with `http://`, `https://`, `auto` or `dbfs-auto`. It can contain numbers, colons (:), underscores (_), or hyphens (-). **NOTE:** From version 1.233.1, `snapshot_name` can be modified.
+* `description` - (Optional) The description of the snapshot. The `description` must be `2` to `256` characters in length. It cannot start with `http://` or `https://`. **NOTE:** From version 1.233.1, `description` can be modified.
 * `force` - (Optional, Bool) Specifies whether to force delete the snapshot. Valid values:
   - `true`: Enable.
   - `false`: Disable.
