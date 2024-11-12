@@ -315,7 +315,7 @@ var irregularProductEndpoint = map[string]string{
 	"cloudfw":          "cloudfw.aliyuncs.com",
 	"scdn":             "scdn.aliyuncs.com",
 	"vpcpeer":          "vpcpeer.aliyuncs.com",
-	"resourcecenter":   "resourcecenter.aliyuncs.com", //resourcecenter-intl.aliyuncs.com
+	"resourcecenter":   "resourcecenter.aliyuncs.com",
 	"market":           "market.aliyuncs.com",
 }
 
@@ -326,8 +326,9 @@ var irregularProductEndpoint = map[string]string{
 // Value: product endpoint
 // The priority of this configuration is higher than location service, lower than user environment variable configuration
 var irregularProductEndpointForIntlAccount = map[string]string{
-	"cas":     "cas.ap-southeast-1.aliyuncs.com",
-	"cloudfw": "cloudfw.ap-southeast-1.aliyuncs.com",
+	"cas":            "cas.ap-southeast-1.aliyuncs.com",
+	"cloudfw":        "cloudfw.ap-southeast-1.aliyuncs.com",
+	"resourcecenter": "resourcecenter-intl.aliyuncs.com",
 }
 
 // regularProductEndpoint specially records those product codes that have been confirmed to be
