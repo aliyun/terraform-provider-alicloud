@@ -83,12 +83,12 @@ func resourceAliCloudCenTransitRouterVbrAttachment() *schema.Resource {
 			"route_table_association_enabled": {
 				Type:       schema.TypeBool,
 				Optional:   true,
-				Deprecated: "Field `route_table_association_enabled` has been deprecated from provider version 1.234.0. Please use the resource `alicloud_cen_transit_router_route_table_association` instead.",
+				Deprecated: "Field `route_table_association_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_association` instead.",
 			},
 			"route_table_propagation_enabled": {
 				Type:       schema.TypeBool,
 				Optional:   true,
-				Deprecated: "Field `route_table_propagation_enabled` has been deprecated from provider version 1.234.0. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead.",
+				Deprecated: "Field `route_table_propagation_enabled` has been deprecated from provider version 1.233.1. Please use the resource `alicloud_cen_transit_router_route_table_propagation` instead.",
 			},
 		},
 	}
