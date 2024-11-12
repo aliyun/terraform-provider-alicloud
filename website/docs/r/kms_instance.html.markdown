@@ -99,7 +99,7 @@ The following attributes are exported:
 * `id` - The ID of the resource supplied above.
 * `ca_certificate_chain_pem` - KMS instance certificate chain in PEM format.
 * `create_time` - The creation time of the resource.
-* `end_date` - Instance expiration time.
+* `end_date` - (Available since v1.233.1) Instance expiration time.
 * `instance_name` - The name of the resource.
 * `status` - Instance status.
 
