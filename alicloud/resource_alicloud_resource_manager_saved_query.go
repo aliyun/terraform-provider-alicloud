@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -54,11 +53,8 @@ func resourceAliCloudResourceManagerSavedQueryCreate(d *schema.ResourceData, met
 	action := "CreateSavedQuery"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewResourceCenterClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 
 	request["Expression"] = d.Get("expression")
@@ -66,12 +62,9 @@ func resourceAliCloudResourceManagerSavedQueryCreate(d *schema.ResourceData, met
 		request["Description"] = v
 	}
 	request["Name"] = d.Get("saved_query_name")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-12-01"), StringPointer("AK"), query, request, &runtime)
-
+		response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,13 +111,10 @@ func resourceAliCloudResourceManagerSavedQueryUpdate(d *schema.ResourceData, met
 	client := meta.(*connectivity.AliyunClient)
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	var query map[string]interface{}
 	update := false
 	action := "UpdateSavedQuery"
-	conn, err := client.NewResourceCenterClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["QueryId"] = d.Id()
@@ -142,12 +132,9 @@ func resourceAliCloudResourceManagerSavedQueryUpdate(d *schema.ResourceData, met
 	}
 	request["Name"] = d.Get("saved_query_name")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-12-01"), StringPointer("AK"), query, request, &runtime)
-
+			response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -172,19 +159,13 @@ func resourceAliCloudResourceManagerSavedQueryDelete(d *schema.ResourceData, met
 	action := "DeleteSavedQuery"
 	var request map[string]interface{}
 	var response map[string]interface{}
+	var err error
 	query := make(map[string]interface{})
-	conn, err := client.NewResourceCenterClient()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query["QueryId"] = d.Id()
-
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2022-12-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("ResourceCenter", "2022-12-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
