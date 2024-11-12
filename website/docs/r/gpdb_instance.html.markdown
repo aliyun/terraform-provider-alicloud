@@ -96,8 +96,8 @@ The following arguments are supported:
 * `master_cu` - (Optional, Int, Available since v1.213.0) The amount of coordinator node resources. Valid values: `2`, `4`, `8`, `16`, `32`.
 * `seg_node_num` - (Optional, Int) Calculate the number of nodes. Valid values: `2` to `512`. The value range of the high-availability version of the storage elastic mode is `4` to `512`, and the value must be a multiple of `4`. The value range of the basic version of the storage elastic mode is `2` to `512`, and the value must be a multiple of `2`. The-Serverless version has a value range of `2` to `512`. The value must be a multiple of `2`.
 -> **NOTE:** This parameter must be passed in to create a storage elastic mode instance and a Serverless version instance. During the public beta of the Serverless version (from 0101, 2022 to 0131, 2022), a maximum of 12 compute nodes can be created.
-* `seg_storage_type` - (Optional, ForceNew) The seg storage type. Valid values: `cloud_essd`. **NOTE:** If `db_instance_mode` is set to `StorageElastic`, `seg_storage_type` is required. From version 1.234.0, `seg_storage_type` cannot be modified, or set to `cloud_efficiency`. `seg_storage_type` can only be set to `cloud_essd`.
-* `seg_disk_performance_level` - (Optional, Available since v1.234.0) The ESSD cloud disk performance level. Valid values: `pl0`, `pl1`, `pl2`.
+* `seg_storage_type` - (Optional, ForceNew) The seg storage type. Valid values: `cloud_essd`. **NOTE:** If `db_instance_mode` is set to `StorageElastic`, `seg_storage_type` is required. From version 1.233.1, `seg_storage_type` cannot be modified, or set to `cloud_efficiency`. `seg_storage_type` can only be set to `cloud_essd`.
+* `seg_disk_performance_level` - (Optional, Available since v1.233.1) The ESSD cloud disk performance level. Valid values: `pl0`, `pl1`, `pl2`.
 * `create_sample_data` - (Optional, Bool) Whether to load the sample dataset after the instance is created. Valid values: `true`, `false`.
 * `ssl_enabled` - (Optional, Int, Available since v1.188.0) Enable or disable SSL. Valid values: `0` and `1`.
 * `encryption_type` - (Optional, ForceNew, Available since v1.207.2) The encryption type. Valid values: `CloudDisk`.
@@ -108,9 +108,9 @@ The following arguments are supported:
 * `maintain_start_time` - (Optional) The start time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 02:00Z.
 * `maintain_end_time` - (Optional) The end time of the maintenance window for the instance. in the format of HH:mmZ (UTC time), for example 03:00Z. start time should be later than end time.
 * `resource_management_mode` - (Optional, Available since v1.225.0) Resource management mode. Valid values: `resourceGroup`, `resourceQueue`.
-* `serverless_mode` - (Optional, ForceNew, Available since v1.234.0) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
-* `prod_type` - (Optional, ForceNew, Available since v1.234.0) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
-* `data_share_status` - (Optional, Available since v1.234.0) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
+* `serverless_mode` - (Optional, ForceNew, Available since v1.233.1) The mode of the Serverless instance. Valid values: `Manual`, `Auto`. **NOTE:** `serverless_mode` is valid only when `db_instance_mode` is set to `Serverless`.
+* `prod_type` - (Optional, ForceNew, Available since v1.233.1) The type of the product. Default value: `standard`. Valid values: `standard`, `cost-effective`.
+* `data_share_status` - (Optional, Available since v1.233.1) Specifies whether to enable or disable data sharing. Default value: `closed`. Valid values:
   - `opened`: Enables data sharing.
   - `closed`: Disables data sharing.
 -> **NOTE:** `data_share_status` is valid only when `db_instance_mode` is set to `Serverless`.

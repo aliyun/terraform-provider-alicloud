@@ -65,7 +65,7 @@ The following arguments are supported:
 * `account_name_prefix` - (Optional) Account name prefix.
   - This parameter is required if you are creating a new resource account.
   - If the registration application is applied to an existing account, this parameter does not need to be filled in.
-* `account_tags` - (Optional, ForceNew, List, Available since v1.234.0) The tags of the account See [`account_tags`](#account_tags) below.
+* `account_tags` - (Optional, ForceNew, List, Available since v1.233.1) The tags of the account See [`account_tags`](#account_tags) below.
 * `baseline_id` - (Required) The baseline ID.
 
   If it is left blank, the system default baseline is used by default.
@@ -83,8 +83,8 @@ The following arguments are supported:
 ### `account_tags`
 
 The account_tags supports the following:
-* `tag_key` - (Optional, ForceNew, Available since v1.234.0) The key of the tags
-* `tag_value` - (Optional, ForceNew, Available since v1.234.0) The value of the tags
+* `tag_key` - (Optional, ForceNew, Available since v1.233.1) The key of the tags
+* `tag_value` - (Optional, ForceNew, Available since v1.233.1) The value of the tags
 
 ## Attributes Reference
 
