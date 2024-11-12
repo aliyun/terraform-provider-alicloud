@@ -20,12 +20,6 @@ For information about Governance Account and how to use it, see [What is Account
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_governance_account&exampleId=bafb2fc6-f2e3-9029-f2d2-1e21385b8fba7daab3c6&activeTab=example&spm=docs.r.governance_account.0.bafb2fc6f2&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -65,13 +59,13 @@ Terraform cannot destroy resource `alicloud_governance_account`. Terraform will 
 ## Argument Reference
 
 The following arguments are supported:
-* `account_id` - (Optional, ForceNew, Computed) The ID of the enrolled account.
+* `account_id` - (Optional, ForceNew, Computed, Int) The ID of the enrolled account.
   - If you are creating a new resource account, this parameter is not required.
   - If you are enrolling a existing account to account factory, this parameter is required.
 * `account_name_prefix` - (Optional) Account name prefix.
   - This parameter is required if you are creating a new resource account.
   - If the registration application is applied to an existing account, this parameter does not need to be filled in.
-
+* `account_tags` - (Optional, ForceNew, List, Available since v1.234.0) The tags of the account See [`account_tags`](#account_tags) below.
 * `baseline_id` - (Required) The baseline ID.
 
   If it is left blank, the system default baseline is used by default.
@@ -83,10 +77,14 @@ The following arguments are supported:
   If you want to create a new resource account and leave this parameter blank, the account is created in the Root folder by default.
 
   If the registration application is applied to an existing account, this parameter does not need to be filled in.
-* `payer_account_id` - (Optional) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
+* `payer_account_id` - (Optional, Int) The ID of the billing account. If you leave this parameter empty, the current account is used as the billing account.
 * `default_domain_name` - (Optional, Available since v1.231.0) The domain name is used to qualify the login name of RAM users and RAM roles.
 
-  Format: \<AccountAlias>.onaliyun.com where \<AccountAlias> is the account alias, and the default value is the Aliyun account ID. The default domain name must end with the .onaliyun.com suffix. The maximum length of the default domain name (including suffix) is 64 characters. It can contain English letters, numbers, English periods (.) , dashes (-) and underscores (_).
+### `account_tags`
+
+The account_tags supports the following:
+* `tag_key` - (Optional, ForceNew, Available since v1.234.0) The key of the tags
+* `tag_value` - (Optional, ForceNew, Available since v1.234.0) The value of the tags
 
 ## Attributes Reference
 

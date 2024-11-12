@@ -96,8 +96,8 @@ func (s *GovernanceServiceV2) DescribeGovernanceAccount(id string) (object map[s
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccountUid"] = id
-	query["RegionId"] = client.RegionId
+	request["AccountUid"] = id
+	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
@@ -112,14 +112,13 @@ func (s *GovernanceServiceV2) DescribeGovernanceAccount(id string) (object map[s
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"InvalidBlueprint.NotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Account", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 

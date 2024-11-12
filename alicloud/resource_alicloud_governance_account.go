@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -7,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/PaesslerAG/jsonpath"
 	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
@@ -38,6 +40,25 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"account_tags": {
+				Type:     schema.TypeList,
+				Optional: true,
+				ForceNew: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"tag_key": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+						"tag_value": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+						},
+					},
+				},
+			},
 			"baseline_id": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -54,14 +75,14 @@ func resourceAliCloudGovernanceAccount() *schema.Resource {
 				Type:     schema.TypeInt,
 				Optional: true,
 			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"default_domain_name": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: StringMatch(regexp.MustCompile("^[A-Za-z0-9_.][A-Za-z0-9_.-]{0,49}[A-Za-z0-9_.].onaliyun.com$"), "The default_domain_name (with suffix) has a maximum length of 64 characters and must end with .onaliyun.com."),
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
 			},
 		},
 	}
@@ -81,24 +102,39 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 	}
 	request = make(map[string]interface{})
 	if v, ok := d.GetOk("account_id"); ok {
-		query["AccountUid"] = v
+		request["AccountUid"] = v
 	}
-	query["RegionId"] = client.RegionId
+	request["RegionId"] = client.RegionId
 
 	if v, ok := d.GetOk("account_name_prefix"); ok {
 		request["AccountNamePrefix"] = v
 	}
-	request["BaselineId"] = d.Get("baseline_id")
-	if v, ok := d.GetOk("display_name"); ok {
-		request["DisplayName"] = v
-	}
 	if v, ok := d.GetOk("folder_id"); ok {
 		request["FolderId"] = v
 	}
-	if v, ok := d.GetOk("payer_account_id"); ok {
-		request["PayerAccountUid"] = v
+	if v, ok := d.GetOk("account_tags"); ok {
+		tagMapsArray := make([]interface{}, 0)
+		for _, dataLoop := range v.([]interface{}) {
+			dataLoopTmp := dataLoop.(map[string]interface{})
+			dataLoopMap := make(map[string]interface{})
+			dataLoopMap["Value"] = dataLoopTmp["tag_value"]
+			dataLoopMap["Key"] = dataLoopTmp["tag_key"]
+			tagMapsArray = append(tagMapsArray, dataLoopMap)
+		}
+		tagMapsJson, err := json.Marshal(tagMapsArray)
+		if err != nil {
+			return WrapError(err)
+		}
+		request["Tag"] = string(tagMapsJson)
 	}
 
+	request["BaselineId"] = d.Get("baseline_id")
+	if v, ok := d.GetOkExists("payer_account_id"); ok {
+		request["PayerAccountUid"] = v
+	}
+	if v, ok := d.GetOk("display_name"); ok {
+		request["DisplayName"] = v
+	}
 	baselineItemsMaps := make([]interface{}, 0)
 	if v, ok := d.GetOk("default_domain_name"); ok {
 		baselineItemConfig := make(map[string]interface{})
@@ -110,7 +146,6 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 		baselineItemsMaps = append(baselineItemsMaps, baselineItem)
 	}
 	request["BaselineItems"] = baselineItemsMaps
-
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -123,9 +158,9 @@ func resourceAliCloudGovernanceAccountCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_governance_account", action, AlibabaCloudSdkGoERROR)
@@ -166,6 +201,24 @@ func resourceAliCloudGovernanceAccountRead(d *schema.ResourceData, meta interfac
 		d.Set("account_id", objectRaw["AccountUid"])
 	}
 
+	tag1Raw, _ := jsonpath.Get("$.Inputs.Tag", objectRaw)
+	accountTagsMaps := make([]map[string]interface{}, 0)
+	if tag1Raw != nil {
+		for _, tagChild1Raw := range tag1Raw.([]interface{}) {
+			accountTagsMap := make(map[string]interface{})
+			tagChild1Raw := tagChild1Raw.(map[string]interface{})
+			accountTagsMap["tag_key"] = tagChild1Raw["Key"]
+			accountTagsMap["tag_value"] = tagChild1Raw["Value"]
+
+			accountTagsMaps = append(accountTagsMaps, accountTagsMap)
+		}
+	}
+	if tag1Raw != nil {
+		if err := d.Set("account_tags", accountTagsMaps); err != nil {
+			return err
+		}
+	}
+
 	d.Set("account_id", d.Id())
 
 	return nil
@@ -184,12 +237,13 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["AccountUid"] = d.Id()
-	query["RegionId"] = client.RegionId
+	request["AccountUid"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if d.HasChange("baseline_id") {
 		update = true
 	}
 	request["BaselineId"] = d.Get("baseline_id")
+
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -203,9 +257,9 @@ func resourceAliCloudGovernanceAccountUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
