@@ -81,11 +81,34 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"modify_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 			"node_type": {
 				Type:         schema.TypeString,
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: StringInSlice([]string{"MASTER_SLAVE", "STAND_ALONE", "double", "single"}, false),
+			},
+			"param_no_loose_sentinel_enabled": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"param_repl_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"param_semisync_repl_timeout": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"param_sentinel_compat_enable": {
+				Type:     schema.TypeString,
+				Optional: true,
 			},
 			"password": {
 				Type:      schema.TypeString,
@@ -133,6 +156,16 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
+			"security_ip_group_name": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"security_ips": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"shard_count": {
 				Type:     schema.TypeInt,
 				Optional: true,
@@ -163,10 +196,11 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				ValidateFunc: StringInSlice([]string{"PL1", "PL2", "PL3"}, false),
 			},
 			"storage_size_gb": {
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
-				ForceNew: true,
+				Type:         schema.TypeInt,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: IntBetween(20, 6150),
 			},
 			"tags": tagsSchema(),
 			"tair_instance_name": {
@@ -177,6 +211,11 @@ func resourceAliCloudRedisTairInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"vpc_auth_mode": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 			"vpc_id": {
 				Type:     schema.TypeString,
@@ -218,7 +257,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("secondary_zone_id"); ok {
 		request["SecondaryZoneId"] = v
 	}
-	if v, ok := d.GetOk("port"); ok && v.(int) > 0 {
+	if v, ok := d.GetOkExists("port"); ok && v.(int) > 0 {
 		request["Port"] = v
 	}
 	if v, ok := d.GetOk("tair_instance_name"); ok {
@@ -231,7 +270,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("password"); ok {
 		request["Password"] = v
 	}
-	if v, ok := d.GetOk("period"); ok {
+	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
 	}
 	if v, ok := d.GetOk("auto_renew"); ok {
@@ -241,7 +280,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 		request["AutoRenewPeriod"] = v
 	}
 	request["AutoPay"] = "true"
-	if v, ok := d.GetOk("shard_count"); ok {
+	if v, ok := d.GetOkExists("shard_count"); ok {
 		request["ShardCount"] = v
 	}
 	if v, ok := d.GetOk("engine_version"); ok {
@@ -252,7 +291,7 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 		request = expandTagsToMap(request, tagsMap)
 	}
 
-	if v, ok := d.GetOk("storage_size_gb"); ok {
+	if v, ok := d.GetOkExists("storage_size_gb"); ok && v.(int) > 0 {
 		request["Storage"] = v
 	}
 	if v, ok := d.GetOk("storage_performance_level"); ok {
@@ -261,10 +300,10 @@ func resourceAliCloudRedisTairInstanceCreate(d *schema.ResourceData, meta interf
 	if v, ok := d.GetOk("cluster_backup_id"); ok {
 		request["ClusterBackupId"] = v
 	}
-	if v, ok := d.GetOk("slave_read_only_count"); ok {
+	if v, ok := d.GetOkExists("slave_read_only_count"); ok {
 		request["SlaveReadOnlyCount"] = v
 	}
-	if v, ok := d.GetOk("read_only_count"); ok {
+	if v, ok := d.GetOkExists("read_only_count"); ok {
 		request["ReadOnlyCount"] = v
 	}
 	if v, ok := d.GetOk("node_type"); ok {
@@ -372,6 +411,9 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	if objectRaw["VSwitchId"] != nil {
 		d.Set("vswitch_id", objectRaw["VSwitchId"])
 	}
+	if objectRaw["VpcAuthMode"] != nil {
+		d.Set("vpc_auth_mode", objectRaw["VpcAuthMode"])
+	}
 	if objectRaw["VpcId"] != nil {
 		d.Set("vpc_id", objectRaw["VpcId"])
 	}
@@ -382,8 +424,42 @@ func resourceAliCloudRedisTairInstanceRead(d *schema.ResourceData, meta interfac
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
 
-	objectRaw, err = redisServiceV2.DescribeDescribeSecurityGroupConfiguration(d.Id())
+	objectRaw, err = redisServiceV2.DescribeDescribeInstanceConfig(d.Id())
 	if err != nil {
+		return WrapError(err)
+	}
+
+	if objectRaw["ParamNoLooseSentinelEnabled"] != nil {
+		d.Set("param_no_loose_sentinel_enabled", objectRaw["ParamNoLooseSentinelEnabled"])
+	}
+	if objectRaw["ParamReplMode"] != nil {
+		d.Set("param_repl_mode", objectRaw["ParamReplMode"])
+	}
+	if objectRaw["ParamReplTimeout"] != nil {
+		d.Set("param_semisync_repl_timeout", objectRaw["ParamReplTimeout"])
+	}
+	if objectRaw["ParamSentinelCompatEnable"] != nil {
+		d.Set("param_sentinel_compat_enable", objectRaw["ParamSentinelCompatEnable"])
+	}
+
+	var securityIpGroupName string
+	if v, ok := d.GetOk("security_ip_group_name"); ok {
+		securityIpGroupName = v.(string)
+	}
+	objectRaw, err = redisServiceV2.DescribeDescribeSecurityIps(d.Id(), securityIpGroupName)
+	if err != nil && !NotFoundError(err) {
+		return WrapError(err)
+	}
+
+	if objectRaw["SecurityIpGroupName"] != nil {
+		d.Set("security_ip_group_name", objectRaw["SecurityIpGroupName"])
+	}
+	if objectRaw["SecurityIpList"] != nil {
+		d.Set("security_ips", objectRaw["SecurityIpList"])
+	}
+
+	objectRaw, err = redisServiceV2.DescribeDescribeSecurityGroupConfiguration(d.Id())
+	if err != nil && !NotFoundError(err) {
 		return WrapError(err)
 	}
 
@@ -427,6 +503,7 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("tair_instance_name") {
 		update = true
 		request["InstanceName"] = d.Get("tair_instance_name")
@@ -534,9 +611,8 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	request["ClientToken"] = buildClientToken(action)
 	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
 		update = true
-		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
-
+	request["ResourceGroupId"] = d.Get("resource_group_id")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -566,14 +642,14 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if v, ok := d.GetOk("effective_time"); ok {
 		request["EffectiveTime"] = v
 	}
 	if !d.IsNewResource() && d.HasChange("engine_version") {
 		update = true
-		request["MajorVersion"] = d.Get("engine_version")
 	}
-
+	request["MajorVersion"] = d.Get("engine_version")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -608,11 +684,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["DBInstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if d.HasChange("security_group_id") {
 		update = true
-		request["SecurityGroupId"] = d.Get("security_group_id")
 	}
-
+	request["SecurityGroupId"] = d.Get("security_group_id")
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -642,11 +718,11 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if !d.IsNewResource() && d.HasChange("payment_type") {
 		update = true
-		request["ChargeType"] = convertRedisTairInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	}
-
+	request["ChargeType"] = convertRedisTairInstanceChargeTypeRequest(d.Get("payment_type").(string))
 	request["AutoPay"] = "true"
 	if v, ok := d.GetOkExists("period"); ok {
 		request["Period"] = v
@@ -685,16 +761,17 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["InstanceId"] = d.Id()
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
 	if d.HasChange("ssl_enabled") {
-		redisServiceV2 := RedisServiceV2{client}
-		objectRaw, _ := redisServiceV2.DescribeDescribeInstanceSSL(d.Id())
-		if objectRaw["SSLEnabled"] != nil && objectRaw["SSLEnabled"] != d.Get("ssl_enabled") {
-			update = true
-		}
-		request["SSLEnabled"] = d.Get("ssl_enabled")
+		update = true
 	}
-
+	request["SSLEnabled"] = d.Get("ssl_enabled")
+	redisServiceV2 := RedisServiceV2{client}
+	objectRaw, _ := redisServiceV2.DescribeDescribeInstanceSSL(d.Id())
+	if objectRaw["SSLEnabled"] != nil && objectRaw["SSLEnabled"] == d.Get("ssl_enabled") {
+		update = false
+	}
 	if update {
 		runtime := util.RuntimeOptions{}
 		runtime.SetAutoretry(true)
@@ -759,6 +836,149 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			return WrapErrorf(err, IdMsg, d.Id())
 		}
 	}
+	update = false
+	action = "ModifyInstanceVpcAuthMode"
+	conn, err = client.NewRedisClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("vpc_auth_mode") {
+		update = true
+	}
+	request["VpcAuthMode"] = d.Get("vpc_auth_mode")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 60*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifySecurityIps"
+	conn, err = client.NewRedisClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("security_ip_group_name") {
+		update = true
+	}
+	if v, ok := d.GetOk("security_ip_group_name"); ok {
+		request["SecurityIpGroupName"] = v
+	}
+
+	if v, ok := d.GetOk("modify_mode"); ok {
+		request["ModifyMode"] = v
+	}
+	if d.HasChange("security_ips") {
+		update = true
+	}
+	request["SecurityIps"] = d.Get("security_ips")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		redisServiceV2 := RedisServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ModifyInstanceConfig"
+	conn, err = client.NewRedisClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChange("param_repl_mode") {
+		update = true
+		request["ParamReplMode"] = d.Get("param_repl_mode")
+	}
+
+	if d.HasChange("param_semisync_repl_timeout") {
+		update = true
+		request["ParamSemisyncReplTimeout"] = d.Get("param_semisync_repl_timeout")
+	}
+
+	if d.HasChange("param_no_loose_sentinel_enabled") {
+		update = true
+		request["ParamNoLooseSentinelEnabled"] = d.Get("param_no_loose_sentinel_enabled")
+	}
+
+	if d.HasChange("param_sentinel_compat_enable") {
+		update = true
+		request["ParamSentinelCompatEnable"] = d.Get("param_sentinel_compat_enable")
+	}
+
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2015-01-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+		}
+		stateConf := BuildStateConf([]string{}, []string{"Normal"}, d.Timeout(schema.TimeoutUpdate), 180*time.Second, redisServiceV2.RedisTairInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+
 	if !d.IsNewResource() && d.HasChange("shard_count") {
 		oldEntry, newEntry := d.GetChange("shard_count")
 		oldEntryValue := oldEntry.(int)
@@ -767,14 +987,17 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		added := newEntryValue - oldEntryValue
 
 		if removed > 0 {
-			action = "DeleteShardingNode"
-			conn, err = client.NewRedisClient()
+			action := "DeleteShardingNode"
+			conn, err := client.NewRedisClient()
 			if err != nil {
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["InstanceId"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ShardCount"] = removed
+
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -802,15 +1025,18 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 		}
 
 		if added > 0 {
-			action = "AddShardingNode"
-			conn, err = client.NewRedisClient()
+			action := "AddShardingNode"
+			conn, err := client.NewRedisClient()
 			if err != nil {
 				return WrapError(err)
 			}
 			request = make(map[string]interface{})
+			query = make(map[string]interface{})
 			request["InstanceId"] = d.Id()
+			request["RegionId"] = client.RegionId
 			request["ClientToken"] = buildClientToken(action)
 			request["ShardCount"] = added
+
 			runtime := util.RuntimeOptions{}
 			runtime.SetAutoretry(true)
 			wait := incrementalWait(3*time.Second, 5*time.Second)
@@ -836,9 +1062,8 @@ func resourceAliCloudRedisTairInstanceUpdate(d *schema.ResourceData, meta interf
 			}
 
 		}
-
 	}
-	if !d.IsNewResource() && d.HasChange("tags") {
+	if d.HasChange("tags") {
 		redisServiceV2 := RedisServiceV2{client}
 		if err := redisServiceV2.SetResourceTags(d, "INSTANCE"); err != nil {
 			return WrapError(err)
@@ -856,7 +1081,6 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 			return nil
 		}
 	}
-
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteInstance"
 	var request map[string]interface{}
@@ -887,6 +1111,9 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
@@ -900,6 +1127,7 @@ func resourceAliCloudRedisTairInstanceDelete(d *schema.ResourceData, meta interf
 }
 
 func convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "double":
 		return "MASTER_SLAVE"
@@ -909,6 +1137,7 @@ func convertRedisTairInstanceInstancesDBInstanceAttributeNodeTypeResponse(source
 	return source
 }
 func convertRedisTairInstanceInstancesDBInstanceAttributeChargeTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "PrePaid":
 		return "Subscription"
@@ -918,6 +1147,7 @@ func convertRedisTairInstanceInstancesDBInstanceAttributeChargeTypeResponse(sour
 	return source
 }
 func convertRedisTairInstanceInstancesDBInstanceAttributeStorageTypeResponse(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "essd_pl1":
 		return "PL1"
@@ -929,6 +1159,7 @@ func convertRedisTairInstanceInstancesDBInstanceAttributeStorageTypeResponse(sou
 	return source
 }
 func convertRedisTairInstanceChargeTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "Subscription":
 		return "PrePaid"
@@ -938,6 +1169,7 @@ func convertRedisTairInstanceChargeTypeRequest(source interface{}) interface{} {
 	return source
 }
 func convertRedisTairInstanceStorageTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	case "PL1":
 		return "essd_pl1"
@@ -949,6 +1181,7 @@ func convertRedisTairInstanceStorageTypeRequest(source interface{}) interface{} 
 	return source
 }
 func convertRedisTairInstanceShardTypeRequest(source interface{}) interface{} {
+	source = fmt.Sprint(source)
 	switch source {
 	}
 	return source
