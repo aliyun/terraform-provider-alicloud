@@ -52,6 +52,23 @@ func TestAccAliCloudGovernanceAccount_basic0(t *testing.T) {
 				),
 			},
 			{
+				Config: testAccConfig(map[string]interface{}{
+					"account_tags": []map[string]interface{}{
+						{
+							"tag_key":   "tag-key1",
+							"tag_value": "tag-value1",
+						},
+						{
+							"tag_key":   "tag-key2",
+							"tag_value": "tag-value2",
+						},
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
@@ -90,6 +107,16 @@ func TestAccAliCloudGovernanceAccount_basic7372(t *testing.T) {
 					"account_name_prefix": name,
 					"folder_id":           "${data.alicloud_resource_manager_folders.default.ids.0}",
 					"default_domain_name": defaultDomainName,
+					"account_tags": []map[string]interface{}{
+						{
+							"tag_key":   "tag-key1",
+							"tag_value": "tag-value1",
+						},
+						{
+							"tag_key":   "tag-key2",
+							"tag_value": "tag-value2",
+						},
+					},
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
