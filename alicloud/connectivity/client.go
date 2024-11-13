@@ -1158,17 +1158,28 @@ func (client *AliyunClient) WithDrdsClient(do func(*drds.Client) (interface{}, e
 
 func (client *AliyunClient) WithDdsClient(do func(*dds.Client) (interface{}, error)) (interface{}, error) {
 	// Initialize the DDS client if necessary
+	productCode := "dds"
+	endpoint := ""
+
 	if client.ddsconn == nil {
-		endpoint := client.config.DdsEndpoint
 		if endpoint == "" {
-			endpoint = loadEndpoint(client.config.RegionId, DDSCode)
-			if endpoint == "" {
-				endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
+			if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
+				if err := client.loadEndpoint(productCode); err != nil {
+					endpoint = fmt.Sprintf("mongodb.%s.aliyuncs.com", client.config.RegionId)
+					client.config.Endpoints.Store(productCode, endpoint)
+					log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
+				}
+			}
+
+			if v, ok := client.config.Endpoints.Load(productCode); ok && v.(string) != "" {
+				endpoint = v.(string)
 			}
 		}
 
 		if endpoint != "" {
 			endpoints.AddEndpointMapping(client.config.RegionId, string(DDSCode), endpoint)
+		} else {
+			return nil, fmt.Errorf("[ERROR] missing the product %s endpoint.", productCode)
 		}
 
 		ddsconn, err := dds.NewClientWithOptions(client.config.RegionId, client.getSdkConfig(), client.config.getAuthCredential(true))
