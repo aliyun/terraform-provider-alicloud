@@ -107,17 +107,12 @@ The following arguments are supported:
 * `intranet_bandwidth` - (Optional, Int, Available since v1.233.1) Instance intranet bandwidth
 * `modify_mode` - (Optional, Available since v1.233.1) The modification method when modifying the IP whitelist. The value includes Cover (default): overwrite the original whitelist; Append: Append the whitelist; Delete: Delete the whitelist.
 * `node_type` - (Optional, Computed) Node type, value:
-
-  MASTER_SLAVE: high availability (dual copy)
-
-  STAND_ALONE: single copy
-
-  double: double copy
-
-  single: single copy
-
-  Note For Cloud Native instances, select MASTER_SLAVE or STAND_ALONE. For Classic instances, select double or single.
-* `param_no_loose_sentinel_enabled` - (Optional, Computed, Available since v1.233.1) sentinel compatibility mode, applicable to non-cluster instances. For more information about parameters, see yes or no in the https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance, 取值为. The default value is no.
+  - `MASTER_SLAVE`: high availability (dual copy)
+  - `STAND_ALONE`: single copy
+  - `double`: double copy
+  - `single`: single copy
+-> **NOTE**: Note For Cloud Native instances, select MASTER_SLAVE or STAND_ALONE. For Classic instances, select double or single.
+* `param_no_loose_sentinel_enabled` - (Optional, Computed, Available since v1.233.1) sentinel compatibility mode, applicable to non-cluster instances. For more information about parameters, see yes or no in the https://www.alibabacloud.com/help/en/redis/user-guide/use-the-sentinel-compatible-mode-to-connect-to-an-apsaradb-for-redis-instance, valid values: yes or no. The default value is no.
 * `param_repl_mode` - (Optional, Computed, Available since v1.233.1) The value is semisync or async. The default value is async.
 
   The default data synchronization mode is asynchronous replication. To modify the data synchronization mode, refer to https://www.alibabacloud.com/help/en/redis/user-guide/modify-the-synchronization-mode-of-a-persistent-memory-optimized-instance 。
