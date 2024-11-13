@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -71,18 +70,13 @@ func dataSourceAliCloudGovernanceBaselineRead(d *schema.ResourceData, meta inter
 	var response map[string]interface{}
 	var query map[string]interface{}
 	action := "ListAccountFactoryBaselines"
-	conn, err := client.NewGovernanceClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["RegionId"] = client.RegionId
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-01-20"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("governance", "2021-01-20", action, query, request, true)
 
 		if err != nil {
 			if NeedRetry(err) {
