@@ -155,6 +155,22 @@ func resourceAliCloudAlikafkaInstance() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"ssl_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"ssl_domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"sasl_domain_endpoint": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"topic_num_of_buy": {
 				Type:     schema.TypeInt,
 				Computed: true,
@@ -386,6 +402,10 @@ func resourceAliCloudAlikafkaInstanceRead(d *schema.ResourceData, meta interface
 	d.Set("spec_type", object["SpecType"])
 	d.Set("security_group", object["SecurityGroup"])
 	d.Set("end_point", object["EndPoint"])
+	d.Set("ssl_endpoint", object["SslEndPoint"])
+	d.Set("domain_endpoint", object["DomainEndpoint"])
+	d.Set("ssl_domain_endpoint", object["SslDomainEndpoint"])
+	d.Set("sasl_domain_endpoint", object["SaslDomainEndpoint"])
 	d.Set("status", object["ServiceStatus"])
 	// object.UpgradeServiceDetailInfo.UpgradeServiceDetailInfoVO[0].Current2OpenSourceVersion can guaranteed not to be null
 	d.Set("service_version", object["UpgradeServiceDetailInfo"].(map[string]interface{})["Current2OpenSourceVersion"])
