@@ -871,6 +871,10 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_vpc_ipam_ipam_pool_cidr":                              resourceAliCloudVpcIpamIpamPoolCidr(),
+			"alicloud_vpc_ipam_ipam_pool":                                   resourceAliCloudVpcIpamIpamPool(),
+			"alicloud_vpc_ipam_ipam_scope":                                  resourceAliCloudVpcIpamIpamScope(),
+			"alicloud_vpc_ipam_ipam":                                        resourceAliCloudVpcIpamIpam(),
 			"alicloud_pai_workspace_workspace":                              resourceAliCloudPaiWorkspaceWorkspace(),
 			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
