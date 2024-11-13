@@ -421,20 +421,23 @@ func (s *CloudssoService) ListMFADevicesForUser(id string) (object map[string]in
 
 func (s *CloudssoService) DescribeCloudSsoAccessConfiguration(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "GetAccessConfiguration"
+
 	conn, err := s.client.NewCloudssoClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "GetAccessConfiguration"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"AccessConfigurationId": parts[1],
 		"DirectoryId":           parts[0],
+		"AccessConfigurationId": parts[1],
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -450,36 +453,43 @@ func (s *CloudssoService) DescribeCloudSsoAccessConfiguration(id string) (object
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfiguration"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+
 	v, err := jsonpath.Get("$.AccessConfiguration", response)
 	if err != nil {
 		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.AccessConfiguration", response)
 	}
+
 	object = v.(map[string]interface{})
+
 	return object, nil
 }
 
 func (s *CloudssoService) ListPermissionPoliciesInAccessConfiguration(id string) (object map[string]interface{}, err error) {
 	var response map[string]interface{}
+	action := "ListPermissionPoliciesInAccessConfiguration"
+
 	conn, err := s.client.NewCloudssoClient()
 	if err != nil {
 		return nil, WrapError(err)
 	}
-	action := "ListPermissionPoliciesInAccessConfiguration"
+
 	parts, err := ParseResourceId(id, 2)
 	if err != nil {
-		err = WrapError(err)
-		return
+		return nil, WrapError(err)
 	}
+
 	request := map[string]interface{}{
-		"AccessConfigurationId": parts[1],
 		"DirectoryId":           parts[0],
+		"AccessConfigurationId": parts[1],
 	}
+
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
@@ -495,9 +505,10 @@ func (s *CloudssoService) ListPermissionPoliciesInAccessConfiguration(id string)
 		return nil
 	})
 	addDebug(action, response, request)
+
 	if err != nil {
 		if IsExpectedErrors(err, []string{"EntityNotExists.AccessConfiguration"}) {
-			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundMsg, ProviderERROR, fmt.Sprint(response["RequestId"]))
+			return object, WrapErrorf(Error(GetNotFoundMessage("CloudSSO:AccessConfiguration", id)), NotFoundWithResponse, response)
 		}
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
