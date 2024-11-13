@@ -871,6 +871,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_cms_site_monitors":                                dataSourceAliCloudCloudMonitorServiceSiteMonitors(),
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"alicloud_esa_rate_plan_instance":                               resourceAliCloudEsaRatePlanInstance(),
 			"alicloud_vpc_ipam_ipam_pool_cidr":                              resourceAliCloudVpcIpamIpamPoolCidr(),
 			"alicloud_vpc_ipam_ipam_pool":                                   resourceAliCloudVpcIpamIpamPool(),
 			"alicloud_vpc_ipam_ipam_scope":                                  resourceAliCloudVpcIpamIpamScope(),
@@ -880,6 +881,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gwlb_load_balancer":                                   resourceAliCloudGwlbLoadBalancer(),
 			"alicloud_oss_bucket_cname_token":                               resourceAliCloudOssBucketCnameToken(),
 			"alicloud_oss_bucket_cname":                                     resourceAliCloudOssBucketCname(),
+			"alicloud_esa_site":                                             resourceAliCloudEsaSite(),
 			"alicloud_pai_workspace_workspace":                              resourceAliCloudPaiWorkspaceWorkspace(),
 			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
