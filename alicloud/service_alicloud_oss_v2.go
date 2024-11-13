@@ -1,7 +1,9 @@
 package alicloud
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/tidwall/sjson"
 	"strings"
 	"time"
 
@@ -1326,3 +1328,172 @@ func (s *OssServiceV2) OssBucketPublicAccessBlockStateRefreshFunc(id string, fie
 }
 
 // DescribeOssBucketPublicAccessBlock >>> Encapsulated.
+// DescribeOssBucketCname <<< Encapsulated get interface for Oss BucketCname.
+
+func (s *OssServiceV2) DescribeOssBucketCname(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := fmt.Sprintf("/?cname")
+	conn, err := client.NewOssClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap := make(map[string]*string)
+	hostMap["bucket"] = StringPointer(parts[0])
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.Execute(genXmlParam("ListCname", "GET", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: nil, HostMap: hostMap}, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketCname", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	v, err := jsonpath.Get("$.ListCnameResult", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.ListCnameResult", response)
+	}
+
+	item := v.(map[string]interface{})
+	domains, err := jsonpath.Get("$.Cname[*]", item)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.Cname[*]", item)
+	}
+	for _, vv := range domains.([]interface{}) {
+		if vv.(map[string]interface{})["Domain"] == parts[1] {
+			return vv.(map[string]interface{}), nil
+		}
+	}
+
+	return object, WrapErrorf(Error(GetNotFoundMessage("BucketCname", id)), NotFoundMsg, response)
+}
+
+func (s *OssServiceV2) OssBucketCnameStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeOssBucketCname(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return nil, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeOssBucketCname >>> Encapsulated.
+
+// DescribeOssBucketCnameToken <<< Encapsulated get interface for Oss BucketCnameToken.
+
+func (s *OssServiceV2) DescribeOssBucketCnameToken(id string) (object map[string]interface{}, err error) {
+	client := s.client
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]*string
+	parts := strings.Split(id, ":")
+	if len(parts) != 2 {
+		err = WrapError(fmt.Errorf("invalid Resource Id %s. Expected parts' length %d, got %d", id, 2, len(parts)))
+	}
+	action := fmt.Sprintf("/?cname&comp=token")
+	conn, err := client.NewOssClient()
+	if err != nil {
+		return object, WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]*string)
+	hostMap := make(map[string]*string)
+	hostMap["bucket"] = StringPointer(parts[0])
+
+	jsonString := "{}"
+	jsonString, _ = sjson.Set(jsonString, "BucketCnameConfiguration.Cname.Domain", parts[1])
+	json.Unmarshal([]byte(jsonString), &request)
+	body := request
+
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(1*time.Minute, func() *resource.RetryError {
+		response, err = conn.Execute(genXmlParam("CreateCnameToken", "POST", "2019-05-17", action), &openapi.OpenApiRequest{Query: query, Body: body, HostMap: hostMap}, &util.RuntimeOptions{})
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+	if err != nil {
+		if IsExpectedErrors(err, []string{"NoSuchBucket", "CnameTokenNotFound"}) {
+			return object, WrapErrorf(Error(GetNotFoundMessage("BucketCnameToken", id)), NotFoundMsg, response)
+		}
+		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
+	}
+	response = response["body"].(map[string]interface{})
+
+	v, err := jsonpath.Get("$.CnameToken", response)
+	if err != nil {
+		return object, WrapErrorf(err, FailedGetAttributeMsg, id, "$.CnameToken", response)
+	}
+
+	return v.(map[string]interface{}), nil
+}
+
+func (s *OssServiceV2) OssBucketCnameTokenStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		object, err := s.DescribeOssBucketCnameToken(id)
+		if err != nil {
+			if NotFoundError(err) {
+				return object, "", nil
+			}
+			return nil, "", WrapError(err)
+		}
+
+		v, err := jsonpath.Get(field, object)
+		currentStatus := fmt.Sprint(v)
+
+		for _, failState := range failStates {
+			if currentStatus == failState {
+				return object, currentStatus, WrapError(Error(FailedToReachTargetStatus, currentStatus))
+			}
+		}
+		return object, currentStatus, nil
+	}
+}
+
+// DescribeOssBucketCnameToken >>> Encapsulated.
