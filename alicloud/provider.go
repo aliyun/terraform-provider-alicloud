@@ -878,6 +878,8 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_gwlb_server_group":                                    resourceAliCloudGwlbServerGroup(),
 			"alicloud_gwlb_listener":                                        resourceAliCloudGwlbListener(),
 			"alicloud_gwlb_load_balancer":                                   resourceAliCloudGwlbLoadBalancer(),
+			"alicloud_oss_bucket_cname_token":                               resourceAliCloudOssBucketCnameToken(),
+			"alicloud_oss_bucket_cname":                                     resourceAliCloudOssBucketCname(),
 			"alicloud_pai_workspace_workspace":                              resourceAliCloudPaiWorkspaceWorkspace(),
 			"alicloud_gpdb_database":                                        resourceAliCloudGpdbDatabase(),
 			"alicloud_sls_collection_policy":                                resourceAliCloudSlsCollectionPolicy(),
