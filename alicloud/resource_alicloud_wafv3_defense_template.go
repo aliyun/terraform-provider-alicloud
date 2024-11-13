@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -80,10 +79,7 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewWafv3Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["InstanceId"] = d.Get("instance_id")
 	request["RegionId"] = client.RegionId
@@ -99,11 +95,9 @@ func resourceAliCloudWafv3DefenseTemplateCreate(d *schema.ResourceData, meta int
 		request["ResourceManagerResourceGroupId"] = v
 	}
 	request["TemplateStatus"] = d.Get("status")
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -163,10 +157,7 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 	d.Partial(true)
 	parts := strings.Split(d.Id(), ":")
 	action := "ModifyDefenseTemplate"
-	conn, err := client.NewWafv3Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["TemplateId"] = parts[1]
@@ -185,11 +176,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 		request["ResourceManagerResourceGroupId"] = v
 	}
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -210,10 +199,6 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 	update = false
 	parts = strings.Split(d.Id(), ":")
 	action = "ModifyDefenseTemplateStatus"
-	conn, err = client.NewWafv3Client()
-	if err != nil {
-		return WrapError(err)
-	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
 	query["InstanceId"] = parts[0]
@@ -227,11 +212,9 @@ func resourceAliCloudWafv3DefenseTemplateUpdate(d *schema.ResourceData, meta int
 	}
 	request["TemplateStatus"] = d.Get("status")
 	if update {
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), query, request, &runtime)
+			response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, false)
 
 			if err != nil {
 				if NeedRetry(err) {
@@ -261,10 +244,7 @@ func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta int
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]interface{})
-	conn, err := client.NewWafv3Client()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request = make(map[string]interface{})
 	query["InstanceId"] = parts[0]
 	query["TemplateId"] = parts[1]
@@ -273,11 +253,9 @@ func resourceAliCloudWafv3DefenseTemplateDelete(d *schema.ResourceData, meta int
 	if v, ok := d.GetOk("resource_manager_resource_group_id"); ok {
 		request["ResourceManagerResourceGroupId"] = v
 	}
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2021-10-01"), StringPointer("AK"), query, request, &runtime)
+		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, query, request, false)
 
 		if err != nil {
 			if NeedRetry(err) {
