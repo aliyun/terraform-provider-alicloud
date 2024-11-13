@@ -20,12 +20,6 @@ For information about FCV3 Function and how to use it, see [What is Function](ht
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_function&exampleId=9c93b29f-29a3-2a4a-410e-7ff176f24eb199f2f587&activeTab=example&spm=docs.r.fcv3_function.0.9c93b29f29&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -156,7 +150,7 @@ The custom_container_config supports the following:
 * `acr_instance_id` - (Optional, Deprecated since v1.228.0) ACR Enterprise version Image Repository ID, which must be entered when using ACR Enterprise version image. (Obsolete).
 * `command` - (Optional, List) Container startup parameters.
 * `entrypoint` - (Optional, List) Container start command.
-* `health_check_config` - (Optional, List) Function custom health check configuration. See [`health_check_config`](#custom_container_config-health_check_config) below.
+* `health_check_config` - (Optional, List) Function custom health check configuration See [`health_check_config`](#custom_container_config-health_check_config) below.
 * `image` - (Optional) The container Image address.
 * `port` - (Optional, Int) The listening port of the HTTP Server when the custom container runs.
 
@@ -213,8 +207,8 @@ The gpu_config supports the following:
 ### `instance_lifecycle_config`
 
 The instance_lifecycle_config supports the following:
-* `initializer` - (Optional, List) Initializer handler method configuration. See [`initializer`](#instance_lifecycle_config-initializer) below.
-* `pre_stop` - (Optional, List) PreStop handler method configuration. See [`pre_stop`](#instance_lifecycle_config-pre_stop) below.
+* `initializer` - (Optional, List) Initializer handler method configuration See [`initializer`](#instance_lifecycle_config-initializer) below.
+* `pre_stop` - (Optional, List) PreStop handler method configuration See [`pre_stop`](#instance_lifecycle_config-pre_stop) below.
 
 ### `instance_lifecycle_config-initializer`
 
@@ -276,11 +270,24 @@ The vpc_config supports the following:
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `code_size` - The code package size of the function returned by the system, in byte Example : 1024
 * `create_time` - The creation time of the function.
 * `custom_container_config` - The configuration of the custom container runtime. After the configuration is successful, the function can use the custom container image to execute the function. code and customContainerConfig.
   * `acceleration_info` - (Deprecated) Image Acceleration Information (Obsolete).
     * `status` - Image Acceleration Status (Deprecated).
   * `resolved_image_uri` - The actual digest version of the deployed Image. The code version specified by this digest is used when the function starts.
+* `function_arn` - ARN of function
+* `function_id` - The first ID of the resource
+* `last_modified_time` - Last time the function was Updated
+* `last_update_status` - The status of the last function update operation. When the function is created successfully, the value is Successful. Optional values are Successful, Failed, and InProgress.
+* `last_update_status_reason` - The reason that caused the last function to update the Operation State to the current value
+* `last_update_status_reason_code` - Status code of the reason that caused the last function update operation status to the current value
+* `state` - Function Status
+* `state_reason` - The reason why the function is in the current state
+* `state_reason_code` - The status code of the reason the function is in the current state.
+* `tracing_config` - Tracing configuration
+  * `type` - The tracing protocol type. Currently, only Jaeger is supported.
+  * `params` - Tracing parameters.
 
 ## Timeouts
 
