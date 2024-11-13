@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -109,10 +108,7 @@ func resourceAliCloudSddpRuleCreate(d *schema.ResourceData, meta interface{}) er
 	var response map[string]interface{}
 	action := "CreateRule"
 	request := make(map[string]interface{})
-	conn, err := client.NewSddpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 
 	request["Name"] = d.Get("rule_name")
 	request["Category"] = d.Get("category").(int)
@@ -162,11 +158,9 @@ func resourceAliCloudSddpRuleCreate(d *schema.ResourceData, meta interface{}) er
 		request["Lang"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutCreate)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -292,16 +286,10 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		action := "ModifyRule"
-		conn, err := client.NewSddpClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, modifyRuleReq, &runtime)
+			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, modifyRuleReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -346,16 +334,10 @@ func resourceAliCloudSddpRuleUpdate(d *schema.ResourceData, meta interface{}) er
 
 	if update {
 		action := "ModifyRuleStatus"
-		conn, err := client.NewSddpClient()
-		if err != nil {
-			return WrapError(err)
-		}
-
-		runtime := util.RuntimeOptions{}
-		runtime.SetAutoretry(true)
+		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, modifyRuleStatusReq, &runtime)
+			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, modifyRuleStatusReq, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -383,11 +365,7 @@ func resourceAliCloudSddpRuleDelete(d *schema.ResourceData, meta interface{}) er
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteRule"
 	var response map[string]interface{}
-	conn, err := client.NewSddpClient()
-	if err != nil {
-		return WrapError(err)
-	}
-
+	var err error
 	request := map[string]interface{}{
 		"Id": d.Id(),
 	}
@@ -396,11 +374,9 @@ func resourceAliCloudSddpRuleDelete(d *schema.ResourceData, meta interface{}) er
 		request["Lang"] = v
 	}
 
-	runtime := util.RuntimeOptions{}
-	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutDelete)), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &runtime)
+		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, true)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()

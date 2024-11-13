@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -108,10 +107,7 @@ func resourceAlicloudSddpDataLimitCreate(d *schema.ResourceData, meta interface{
 	var response map[string]interface{}
 	action := "CreateDataLimit"
 	request := make(map[string]interface{})
-	conn, err := client.NewSddpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	if v, ok := d.GetOkExists("audit_status"); ok {
 		request["AuditStatus"] = v
 	}
@@ -141,7 +137,7 @@ func resourceAlicloudSddpDataLimitCreate(d *schema.ResourceData, meta interface{
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -214,13 +210,10 @@ func resourceAlicloudSddpDataLimitUpdate(d *schema.ResourceData, meta interface{
 			request["Lang"] = v
 		}
 		action := "ModifyDataLimit"
-		conn, err := client.NewSddpClient()
-		if err != nil {
-			return WrapError(err)
-		}
+		var err error
 		wait := incrementalWait(3*time.Second, 3*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
-			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+			response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, false)
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -241,10 +234,7 @@ func resourceAlicloudSddpDataLimitDelete(d *schema.ResourceData, meta interface{
 	client := meta.(*connectivity.AliyunClient)
 	action := "DeleteDataLimit"
 	var response map[string]interface{}
-	conn, err := client.NewSddpClient()
-	if err != nil {
-		return WrapError(err)
-	}
+	var err error
 	request := map[string]interface{}{
 		"Id": d.Id(),
 	}
@@ -254,7 +244,7 @@ func resourceAlicloudSddpDataLimitDelete(d *schema.ResourceData, meta interface{
 	}
 	wait := incrementalWait(3*time.Second, 3*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-01-03"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+		response, err = client.RpcPost("Sddp", "2019-01-03", action, nil, request, false)
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
