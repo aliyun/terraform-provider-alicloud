@@ -15,8 +15,6 @@ For information about Cloud SSO Access Configuration and how to use it, see [Wha
 
 -> **NOTE:** Available since v1.145.0.
 
--> **NOTE:** Cloud SSO Only Support `cn-shanghai` And `us-west-1` Region
-
 ## Example Usage
 
 Basic Usage
@@ -29,30 +27,19 @@ Basic Usage
 
 ```terraform
 variable "name" {
-  default = "tf-example"
+  default = "terraform-example"
 }
+
 provider "alicloud" {
   region = "cn-shanghai"
 }
-data "alicloud_cloud_sso_directories" "default" {}
 
-resource "alicloud_cloud_sso_directory" "default" {
-  count          = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? 0 : 1
-  directory_name = var.name
-}
-
-locals {
-  directory_id = length(data.alicloud_cloud_sso_directories.default.ids) > 0 ? data.alicloud_cloud_sso_directories.default.ids[0] : concat(alicloud_cloud_sso_directory.default.*.id, [""])[0]
-}
-
-resource "alicloud_cloud_sso_user" "default" {
-  directory_id = local.directory_id
-  user_name    = var.name
+data "alicloud_cloud_sso_directories" "default" {
 }
 
 resource "alicloud_cloud_sso_access_configuration" "default" {
+  directory_id              = data.alicloud_cloud_sso_directories.default.directories.0.id
   access_configuration_name = var.name
-  directory_id              = local.directory_id
   permission_policies {
     permission_policy_type     = "Inline"
     permission_policy_name     = var.name
@@ -78,13 +65,13 @@ resource "alicloud_cloud_sso_access_configuration" "default" {
 
 The following arguments are supported:
 
-* `access_configuration_name` - (Required, ForceNew) The AccessConfigurationName of the Access Configuration. The name of the resource. The name can be up to `32` characters long and can contain letters, digits, and hyphens (-).
-* `description` - (Optional) The Description of the  Access Configuration. The description can be up to `1024` characters long.
 * `directory_id` - (Required, ForceNew) The ID of the Directory.
-* `permission_policies` - (Optional) The Policy List. See [`permission_policies`](#permission_policies) below.
+* `access_configuration_name` - (Required, ForceNew) The name of the access configuration. The name can be up to `32` characters long and can contain letters, digits, and hyphens (-).
+* `session_duration` - (Optional, Int) The SessionDuration of the Access Configuration. Unit: Seconds. Valid values: `900` to `43200`.
 * `relay_state` - (Optional) The RelayState of the Access Configuration, Cloud SSO users use this access configuration to access the RD account, the initial access page address. Must be the Alibaba Cloud console page, the default is the console home page.
-* `session_duration` - (Optional) The SessionDuration of the Access Configuration. Valid Value: `900` to `43200`. Unit: Seconds.
-* `force_remove_permission_policies` - (Optional) This parameter is used to force deletion `permission_policies`. Valid Value: `true` and `false`.
+* `description` - (Optional) The description of the access configuration. The description can be up to `1024` characters in length.
+* `permission_policies` - (Optional, Set) The Policy List. See [`permission_policies`](#permission_policies) below.
+* `force_remove_permission_policies` - (Optional, Bool) This parameter is used to force deletion `permission_policies`. Valid Value: `true`, `false`.
 
 * **NOTE:** The `permission_policies` will be removed automatically when the resource is deleted, please operate with caution. If there are left more permission policies in the access configuration, please remove them before deleting the access configuration.
 
@@ -92,16 +79,16 @@ The following arguments are supported:
 
 The permission_policies supports the following: 
 
-* `permission_policy_document` - (Optional, Sensitive) The Content of Policy.
-* `permission_policy_name` - (Required) The Policy Name of policy. The name of the resource. 
-* `permission_policy_type` - (Required) The Policy Type of policy. Valid values: `System`, `Inline`.
+* `permission_policy_type` - (Required) The type of the policy. Valid values: `System`, `Inline`.
+* `permission_policy_name` - (Required) The name of the policy.
+* `permission_policy_document` - (Optional) The configurations of the inline policy. **NOTE:** If `permission_policy_type` is set to `Inline`, `permission_policy_document` is required.
 
 ## Attributes Reference
 
 The following attributes are exported:
 
-* `id` - The resource ID of Access Configuration. The value formats as `<directory_id>:<access_configuration_id>`.
-* `access_configuration_id` - The AccessConfigurationId of the Access Configuration.
+* `id` - The resource ID in terraform of Access Configuration. It formats as `<directory_id>:<access_configuration_id>`.
+* `access_configuration_id` - The ID of the Access Configuration.
 
 ## Timeouts
 

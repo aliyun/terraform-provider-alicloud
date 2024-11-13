@@ -1499,7 +1499,7 @@ func Provider() terraform.ResourceProvider {
 			"alicloud_actiontrail_history_delivery_job":                      resourceAlicloudActiontrailHistoryDeliveryJob(),
 			"alicloud_ecs_deployment_set":                                    resourceAlicloudEcsDeploymentSet(),
 			"alicloud_cloud_sso_user":                                        resourceAlicloudCloudSsoUser(),
-			"alicloud_cloud_sso_access_configuration":                        resourceAlicloudCloudSsoAccessConfiguration(),
+			"alicloud_cloud_sso_access_configuration":                        resourceAliCloudCloudSsoAccessConfiguration(),
 			"alicloud_dfs_file_system":                                       resourceAliCloudDfsFileSystem(),
 			"alicloud_vpc_traffic_mirror_filter":                             resourceAliCloudVpcTrafficMirrorFilter(),
 			"alicloud_dfs_access_rule":                                       resourceAliCloudDfsAccessRule(),
