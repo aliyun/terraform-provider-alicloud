@@ -37,6 +37,7 @@ func TestAccAliCloudFcv3LayerVersion_basic6990(t *testing.T) {
 					//"compatible_runtime": []string{
 					//	"custom.debian10", "python3.10", "python3.9"},
 					"layer_name": "FC3LayerResouceTest_ZIP_2024SepWed",
+					"public":     "true",
 					"license":    "Apache2.0",
 					"acl":        "0",
 					"code": []map[string]interface{}{
@@ -79,7 +80,7 @@ func TestAccAliCloudFcv3LayerVersion_basic6990(t *testing.T) {
 				ResourceName:            resourceId,
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"code"},
+				ImportStateVerifyIgnore: []string{"code", "public"},
 			},
 		},
 	})

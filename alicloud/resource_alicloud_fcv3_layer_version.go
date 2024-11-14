@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -63,6 +64,10 @@ func resourceAliCloudFcv3LayerVersion() *schema.Resource {
 					},
 				},
 			},
+			"code_size": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"compatible_runtime": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -84,7 +89,16 @@ func resourceAliCloudFcv3LayerVersion() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"layer_version_arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"license": {
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+			},
+			"public": {
 				Type:     schema.TypeString,
 				Optional: true,
 				ForceNew: true,
@@ -137,8 +151,8 @@ func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interfa
 	}
 
 	if v, ok := d.GetOk("compatible_runtime"); ok {
-		compatibleRuntimeMaps := v.([]interface{})
-		request["compatibleRuntime"] = compatibleRuntimeMaps
+		compatibleRuntimeMapsArray := v.([]interface{})
+		request["compatibleRuntime"] = compatibleRuntimeMapsArray
 	}
 
 	if v, ok := d.GetOk("description"); ok {
@@ -160,9 +174,9 @@ func resourceAliCloudFcv3LayerVersionCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_layer_version", action, AlibabaCloudSdkGoERROR)
@@ -192,11 +206,17 @@ func resourceAliCloudFcv3LayerVersionRead(d *schema.ResourceData, meta interface
 	if objectRaw["acl"] != nil {
 		d.Set("acl", objectRaw["acl"])
 	}
+	if objectRaw["codeSize"] != nil {
+		d.Set("code_size", objectRaw["codeSize"])
+	}
 	if objectRaw["createTime"] != nil {
 		d.Set("create_time", objectRaw["createTime"])
 	}
 	if objectRaw["description"] != nil {
 		d.Set("description", objectRaw["description"])
+	}
+	if objectRaw["layerVersionArn"] != nil {
+		d.Set("layer_version_arn", objectRaw["layerVersionArn"])
 	}
 	if objectRaw["license"] != nil {
 		d.Set("license", objectRaw["license"])
@@ -214,10 +234,6 @@ func resourceAliCloudFcv3LayerVersionRead(d *schema.ResourceData, meta interface
 	}
 
 	d.Set("compatible_runtime", compatibleRuntime1Raw)
-
-	parts := strings.Split(d.Id(), ":")
-	d.Set("layer_name", parts[0])
-	d.Set("version", parts[1])
 
 	return nil
 }
@@ -242,16 +258,16 @@ func resourceAliCloudFcv3LayerVersionUpdate(d *schema.ResourceData, meta interfa
 
 	if d.HasChange("public") {
 		update = true
-	}
-	if v, ok := d.GetOk("public"); ok {
-		query["public"] = StringPointer(v.(string))
+		if v, ok := d.GetOk("public"); ok {
+			query["public"] = StringPointer(v.(string))
+		}
 	}
 
 	if d.HasChange("acl") {
 		update = true
-	}
-	if v, ok := d.GetOk("acl"); ok {
-		query["acl"] = StringPointer(v.(string))
+		if v, ok := d.GetOk("acl"); ok {
+			query["acl"] = StringPointer(v.(string))
+		}
 	}
 
 	body = request
@@ -268,9 +284,9 @@ func resourceAliCloudFcv3LayerVersionUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -308,12 +324,12 @@ func resourceAliCloudFcv3LayerVersionDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"LayerNotFound", "LayerVersionNotFound"}) {
+		if IsExpectedErrors(err, []string{"LayerNotFound", "LayerVersionNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)

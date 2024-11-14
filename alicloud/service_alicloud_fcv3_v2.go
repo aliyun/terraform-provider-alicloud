@@ -572,6 +572,7 @@ func (s *Fcv3ServiceV2) Fcv3ProvisionConfigStateRefreshFunc(id string, field str
 }
 
 // DescribeFcv3ProvisionConfig >>> Encapsulated.
+
 // DescribeFcv3LayerVersion <<< Encapsulated get interface for Fcv3 LayerVersion.
 
 func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]interface{}, err error) {
@@ -606,14 +607,13 @@ func (s *Fcv3ServiceV2) DescribeFcv3LayerVersion(id string) (object map[string]i
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"LayerVersionNotFound", "LayerNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("LayerVersion", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})
