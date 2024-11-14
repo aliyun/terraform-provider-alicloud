@@ -71,10 +71,18 @@ func resourceAliCloudFcv3AsyncInvokeConfig() *schema.Resource {
 					},
 				},
 			},
+			"function_arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"function_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
+			},
+			"last_modified_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"max_async_event_age_in_seconds": {
 				Type:         schema.TypeInt,
@@ -191,6 +199,12 @@ func resourceAliCloudFcv3AsyncInvokeConfigRead(d *schema.ResourceData, meta inte
 	}
 	if objectRaw["createdTime"] != nil {
 		d.Set("create_time", objectRaw["createdTime"])
+	}
+	if objectRaw["functionArn"] != nil {
+		d.Set("function_arn", objectRaw["functionArn"])
+	}
+	if objectRaw["lastModifiedTime"] != nil {
+		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
 	}
 	if objectRaw["maxAsyncEventAgeInSeconds"] != nil {
 		d.Set("max_async_event_age_in_seconds", objectRaw["maxAsyncEventAgeInSeconds"])
