@@ -502,6 +502,7 @@ func (s *Fcv3ServiceV2) Fcv3TriggerStateRefreshFunc(id string, field string, fai
 }
 
 // DescribeFcv3Trigger >>> Encapsulated.
+
 // DescribeFcv3ProvisionConfig <<< Encapsulated get interface for Fcv3 ProvisionConfig.
 
 func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[string]interface{}, err error) {
@@ -532,11 +533,10 @@ func (s *Fcv3ServiceV2) DescribeFcv3ProvisionConfig(id string) (object map[strin
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
 	response = response["body"].(map[string]interface{})

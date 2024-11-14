@@ -20,12 +20,6 @@ For information about FCV3 Provision Config and how to use it, see [What is Prov
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_provision_config&exampleId=b7d5f20b-12e8-9276-1de8-7e72da69cf90a05e628d&activeTab=example&spm=docs.r.fcv3_provision_config.0.b7d5f20b12&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 provider "alicloud" {
   region = "cn-shanghai"
@@ -64,7 +58,7 @@ resource "alicloud_fcv3_function" "function" {
   memory_size   = "512"
   cpu           = 0.5
   handler       = "index.handler"
-  function_name = var.name
+  function_name = "${var.name}-${random_integer.default.result}"
   runtime       = "python3.10"
   disk_size     = "512"
   code {
@@ -148,9 +142,7 @@ The following arguments are supported:
 * `always_allocate_cpu` - (Optional) Whether the CPU is always allocated. The default value is true.
 * `always_allocate_gpu` - (Optional) Whether to always assign GPU to function instance
 * `function_name` - (Required, ForceNew) The name of the function. If this parameter is not specified, the provisioned configurations of all functions are listed.
-
 * `qualifier` - (Optional) The function alias or LATEST.
-
 * `scheduled_actions` - (Optional, List) Timing policy configuration See [`scheduled_actions`](#scheduled_actions) below.
 * `target` - (Optional, Int) Number of reserved target resources. The value range is [0,10000].
 * `target_tracking_policies` - (Optional, List) Metric tracking scaling policy configuration See [`target_tracking_policies`](#target_tracking_policies) below.
@@ -158,29 +150,32 @@ The following arguments are supported:
 ### `scheduled_actions`
 
 The scheduled_actions supports the following:
-* `end_time` - (Optional) Policy expiration time.
-* `name` - (Optional) Policy Name.
-* `schedule_expression` - (Optional) Timing Configuration.
-* `start_time` - (Optional) Policy effective time.
-* `target` - (Optional, Int) Number of reserved target resources.
+* `end_time` - (Optional) Policy expiration time
+* `name` - (Optional) Policy Name
+* `schedule_expression` - (Optional) Timing Configuration
+* `start_time` - (Optional) Policy effective time
+* `target` - (Optional, Int) Number of reserved target resources
 * `time_zone` - (Optional) Time zone.
 
 ### `target_tracking_policies`
 
 The target_tracking_policies supports the following:
-* `end_time` - (Optional) Policy expiration time.
-* `max_capacity` - (Optional, Int) Maximum value of expansion.
-* `metric_target` - (Optional, Float) Tracking value of the indicator.
-* `metric_type` - (Optional) Provisionedconcurrency utilization: Concurrency utilization of reserved mode instances. CPU utilization: CPU utilization. GPUMemUtilization:GPU utilization.
-* `min_capacity` - (Optional, Int) Minimum Shrinkage.
-* `name` - (Optional) Policy Name.
-* `start_time` - (Optional) Policy Effective Time.
+* `end_time` - (Optional) Policy expiration time
+* `max_capacity` - (Optional, Int) Maximum value of expansion
+* `metric_target` - (Optional, Float) Tracking value of the indicator
+* `metric_type` - (Optional) Provisionedconcurrency utilization: Concurrency utilization of reserved mode instances. CPU utilization: CPU utilization. GPUMemUtilization:GPU utilization
+* `min_capacity` - (Optional, Int) Minimum Shrinkage
+* `name` - (Optional) Policy Name
+* `start_time` - (Optional) Policy Effective Time
 * `time_zone` - (Optional) Time zone.
 
 ## Attributes Reference
 
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.
+* `current` - (Available since v1.234.0) Number of actual resources
+* `current_error` - (Available since v1.234.0) Error message when a Reserved Instance creation fails
+* `function_arn` - (Available since v1.234.0) Resource Description of the function
 
 ## Timeouts
 
