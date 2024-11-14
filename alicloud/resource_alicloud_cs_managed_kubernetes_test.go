@@ -130,6 +130,16 @@ func TestAccAliCloudCSManagedKubernetes_basic(t *testing.T) {
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
 					"name":                name + "_update",
 					"custom_san":          "www.terraform.io,terraform.test",
 					"deletion_protection": "true",
