@@ -69,7 +69,7 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("flask-6ew9.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
+	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence6974)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -179,7 +179,7 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 					"protocol": "HTTP,HTTPS",
 					"waf_config": []map[string]interface{}{
 						{
-							"enable_waf": "true",
+							"enable_waf": "false",
 						},
 					},
 					"cert_config": []map[string]interface{}{
@@ -303,7 +303,9 @@ func TestAccAliCloudFcv3CustomDomain_basic6974_raw(t *testing.T) {
 							"auth_type": "function",
 						},
 					},
-					"protocol": "HTTP",
+					"protocol":    "HTTP",
+					"cert_config": REMOVEKEY,
+					"tls_config":  REMOVEKEY,
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -337,7 +339,7 @@ func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 	}, "DescribeFcv3CustomDomain")
 	rac := resourceAttrCheckInit(rc, ra)
 	testAccCheck := rac.resourceAttrMapUpdateSet()
-	name := fmt.Sprintf("flask-6ew9.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
+	name := fmt.Sprintf("flask-07ap.fcv3.%d.%s.fc.devsapp.net", 1511928242963727, defaultRegionToTest)
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudFc3CustomDomainBasicDependence7241)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -567,6 +569,7 @@ func TestAccAliCloudFcv3CustomDomain_basic7241_raw(t *testing.T) {
 						},
 					},
 					"cert_config": REMOVEKEY,
+					"tls_config":  REMOVEKEY,
 					"protocol":    "HTTP",
 				}),
 				Check: resource.ComposeTestCheckFunc(
