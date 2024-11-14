@@ -3,6 +3,7 @@ package alicloud
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -207,6 +208,10 @@ func TestAccAliCloudWafv3Domain_basic2308(t *testing.T) {
 var AlicloudWafv3DomainMap2308 = map[string]string{}
 
 func AlicloudWafv3DomainBasicDependence2308(name string) string {
+	casRegion := "cn-hangzhou"
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) == "international" {
+		casRegion = "ap-southeast-1"
+	}
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -277,5 +282,5 @@ locals {
 }
 
 
-`, name, os.Getenv("ALICLOUD_REGION"))
+`, name, casRegion)
 }

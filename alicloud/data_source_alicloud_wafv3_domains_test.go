@@ -2,6 +2,7 @@ package alicloud
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -112,6 +113,10 @@ func testAccCheckAliCloudWafv3DomainSourceConfig(rand int, attrMap map[string]st
 	var pairs []string
 	for k, v := range attrMap {
 		pairs = append(pairs, k+" = "+v)
+	}
+	casRegion := "cn-hangzhou"
+	if strings.ToLower(os.Getenv("ALIBABA_CLOUD_ACCOUNT_TYPE")) == "international" {
+		casRegion = "ap-southeast-1"
 	}
 	config := fmt.Sprintf(`
 	variable "name" {
@@ -228,6 +233,6 @@ EOF
   		enable_details = true
 		%s
 	}
-`, rand, "cn-hangzhou", strings.Join(pairs, "\n   "))
+`, rand, casRegion, strings.Join(pairs, "\n   "))
 	return config
 }
