@@ -1,4 +1,3 @@
-// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -28,6 +27,14 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"account_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"api_version": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"auth_config": {
 				Type:     schema.TypeList,
 				Optional: true,
@@ -53,6 +60,7 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 			"cert_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -81,6 +89,10 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 				Optional: true,
 				Computed: true,
 				ForceNew: true,
+			},
+			"last_modified_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
 			"protocol": {
 				Type:         schema.TypeString,
@@ -179,9 +191,14 @@ func resourceAliCloudFcv3CustomDomain() *schema.Resource {
 					},
 				},
 			},
+			"subdomain_count": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"tls_config": {
 				Type:     schema.TypeList,
 				Optional: true,
+				Computed: true,
 				MaxItems: 1,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
@@ -234,18 +251,20 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["domainName"] = d.Get("custom_domain_name")
+	if v, ok := d.GetOk("custom_domain_name"); ok {
+		request["domainName"] = v
+	}
 
 	objectDataLocalMap := make(map[string]interface{})
 
 	if v := d.Get("auth_config"); !IsNil(v) {
-		nodeNative, _ := jsonpath.Get("$[0].auth_info", d.Get("auth_config"))
-		if nodeNative != nil && nodeNative != "" {
-			objectDataLocalMap["authInfo"] = nodeNative
+		authInfo1, _ := jsonpath.Get("$[0].auth_info", d.Get("auth_config"))
+		if authInfo1 != nil && authInfo1 != "" {
+			objectDataLocalMap["authInfo"] = authInfo1
 		}
-		nodeNative1, _ := jsonpath.Get("$[0].auth_type", d.Get("auth_config"))
-		if nodeNative1 != nil && nodeNative1 != "" {
-			objectDataLocalMap["authType"] = nodeNative1
+		authType1, _ := jsonpath.Get("$[0].auth_type", d.Get("auth_config"))
+		if authType1 != nil && authType1 != "" {
+			objectDataLocalMap["authType"] = authType1
 		}
 
 		request["authConfig"] = objectDataLocalMap
@@ -254,17 +273,17 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap1 := make(map[string]interface{})
 
 	if v := d.Get("cert_config"); !IsNil(v) {
-		nodeNative2, _ := jsonpath.Get("$[0].cert_name", d.Get("cert_config"))
-		if nodeNative2 != nil && nodeNative2 != "" {
-			objectDataLocalMap1["certName"] = nodeNative2
+		certName1, _ := jsonpath.Get("$[0].cert_name", d.Get("cert_config"))
+		if certName1 != nil && certName1 != "" {
+			objectDataLocalMap1["certName"] = certName1
 		}
-		nodeNative3, _ := jsonpath.Get("$[0].certificate", d.Get("cert_config"))
-		if nodeNative3 != nil && nodeNative3 != "" {
-			objectDataLocalMap1["certificate"] = nodeNative3
+		certificate1, _ := jsonpath.Get("$[0].certificate", d.Get("cert_config"))
+		if certificate1 != nil && certificate1 != "" {
+			objectDataLocalMap1["certificate"] = certificate1
 		}
-		nodeNative4, _ := jsonpath.Get("$[0].private_key", d.Get("cert_config"))
-		if nodeNative4 != nil && nodeNative4 != "" {
-			objectDataLocalMap1["privateKey"] = nodeNative4
+		privateKey1, _ := jsonpath.Get("$[0].private_key", d.Get("cert_config"))
+		if privateKey1 != nil && privateKey1 != "" {
+			objectDataLocalMap1["privateKey"] = privateKey1
 		}
 
 		request["certConfig"] = objectDataLocalMap1
@@ -276,17 +295,17 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap2 := make(map[string]interface{})
 
 	if v := d.Get("tls_config"); !IsNil(v) {
-		nodeNative5, _ := jsonpath.Get("$[0].cipher_suites", v)
-		if nodeNative5 != nil && nodeNative5 != "" {
-			objectDataLocalMap2["cipherSuites"] = nodeNative5
+		cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", v)
+		if cipherSuites1 != nil && cipherSuites1 != "" {
+			objectDataLocalMap2["cipherSuites"] = cipherSuites1
 		}
-		nodeNative6, _ := jsonpath.Get("$[0].max_version", d.Get("tls_config"))
-		if nodeNative6 != nil && nodeNative6 != "" {
-			objectDataLocalMap2["maxVersion"] = nodeNative6
+		maxVersion1, _ := jsonpath.Get("$[0].max_version", d.Get("tls_config"))
+		if maxVersion1 != nil && maxVersion1 != "" {
+			objectDataLocalMap2["maxVersion"] = maxVersion1
 		}
-		nodeNative7, _ := jsonpath.Get("$[0].min_version", d.Get("tls_config"))
-		if nodeNative7 != nil && nodeNative7 != "" {
-			objectDataLocalMap2["minVersion"] = nodeNative7
+		minVersion1, _ := jsonpath.Get("$[0].min_version", d.Get("tls_config"))
+		if minVersion1 != nil && minVersion1 != "" {
+			objectDataLocalMap2["minVersion"] = minVersion1
 		}
 
 		request["tlsConfig"] = objectDataLocalMap2
@@ -311,67 +330,65 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 				dataLoopMap["functionName"] = dataLoopTmp["function_name"]
 				dataLoopMap["path"] = dataLoopTmp["path"]
 				dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
-				if !IsNil(dataLoopTmp["rewrite_config"]) {
-					localData1 := make(map[string]interface{})
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData2, err := jsonpath.Get("$[0].equal_rules", v)
-						if err != nil {
-							localData2 = make([]interface{}, 0)
-						}
-						localMaps2 := make([]interface{}, 0)
-						for _, dataLoop2 := range localData2.([]interface{}) {
-							dataLoop2Tmp := make(map[string]interface{})
-							if dataLoop2 != nil {
-								dataLoop2Tmp = dataLoop2.(map[string]interface{})
-							}
-							dataLoop2Map := make(map[string]interface{})
-							dataLoop2Map["match"] = dataLoop2Tmp["match"]
-							dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
-							localMaps2 = append(localMaps2, dataLoop2Map)
-						}
-						localData1["equalRules"] = localMaps2
+				localData1 := make(map[string]interface{})
+				if v, ok := dataLoopTmp["rewrite_config"]; ok {
+					localData2, err := jsonpath.Get("$[0].equal_rules", v)
+					if err != nil {
+						localData2 = make([]interface{}, 0)
 					}
-
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData3, err := jsonpath.Get("$[0].regex_rules", v)
-						if err != nil {
-							localData3 = make([]interface{}, 0)
+					localMaps2 := make([]interface{}, 0)
+					for _, dataLoop2 := range localData2.([]interface{}) {
+						dataLoop2Tmp := make(map[string]interface{})
+						if dataLoop2 != nil {
+							dataLoop2Tmp = dataLoop2.(map[string]interface{})
 						}
-						localMaps3 := make([]interface{}, 0)
-						for _, dataLoop3 := range localData3.([]interface{}) {
-							dataLoop3Tmp := make(map[string]interface{})
-							if dataLoop3 != nil {
-								dataLoop3Tmp = dataLoop3.(map[string]interface{})
-							}
-							dataLoop3Map := make(map[string]interface{})
-							dataLoop3Map["match"] = dataLoop3Tmp["match"]
-							dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
-							localMaps3 = append(localMaps3, dataLoop3Map)
-						}
-						localData1["regexRules"] = localMaps3
+						dataLoop2Map := make(map[string]interface{})
+						dataLoop2Map["match"] = dataLoop2Tmp["match"]
+						dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
+						localMaps2 = append(localMaps2, dataLoop2Map)
 					}
-
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
-						if err != nil {
-							localData4 = make([]interface{}, 0)
-						}
-						localMaps4 := make([]interface{}, 0)
-						for _, dataLoop4 := range localData4.([]interface{}) {
-							dataLoop4Tmp := make(map[string]interface{})
-							if dataLoop4 != nil {
-								dataLoop4Tmp = dataLoop4.(map[string]interface{})
-							}
-							dataLoop4Map := make(map[string]interface{})
-							dataLoop4Map["match"] = dataLoop4Tmp["match"]
-							dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
-							localMaps4 = append(localMaps4, dataLoop4Map)
-						}
-						localData1["wildcardRules"] = localMaps4
-					}
-
-					dataLoopMap["rewriteConfig"] = localData1
+					localData1["equalRules"] = localMaps2
 				}
+
+				if v, ok := dataLoopTmp["rewrite_config"]; ok {
+					localData3, err := jsonpath.Get("$[0].regex_rules", v)
+					if err != nil {
+						localData3 = make([]interface{}, 0)
+					}
+					localMaps3 := make([]interface{}, 0)
+					for _, dataLoop3 := range localData3.([]interface{}) {
+						dataLoop3Tmp := make(map[string]interface{})
+						if dataLoop3 != nil {
+							dataLoop3Tmp = dataLoop3.(map[string]interface{})
+						}
+						dataLoop3Map := make(map[string]interface{})
+						dataLoop3Map["match"] = dataLoop3Tmp["match"]
+						dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
+						localMaps3 = append(localMaps3, dataLoop3Map)
+					}
+					localData1["regexRules"] = localMaps3
+				}
+
+				if v, ok := dataLoopTmp["rewrite_config"]; ok {
+					localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
+					if err != nil {
+						localData4 = make([]interface{}, 0)
+					}
+					localMaps4 := make([]interface{}, 0)
+					for _, dataLoop4 := range localData4.([]interface{}) {
+						dataLoop4Tmp := make(map[string]interface{})
+						if dataLoop4 != nil {
+							dataLoop4Tmp = dataLoop4.(map[string]interface{})
+						}
+						dataLoop4Map := make(map[string]interface{})
+						dataLoop4Map["match"] = dataLoop4Tmp["match"]
+						dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
+						localMaps4 = append(localMaps4, dataLoop4Map)
+					}
+					localData1["wildcardRules"] = localMaps4
+				}
+
+				dataLoopMap["rewriteConfig"] = localData1
 				localMaps = append(localMaps, dataLoopMap)
 			}
 			objectDataLocalMap3["routes"] = localMaps
@@ -383,9 +400,9 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 	objectDataLocalMap4 := make(map[string]interface{})
 
 	if v := d.Get("waf_config"); !IsNil(v) {
-		nodeNative18, _ := jsonpath.Get("$[0].enable_waf", d.Get("waf_config"))
-		if nodeNative18 != nil && nodeNative18 != "" {
-			objectDataLocalMap4["enableWAF"] = nodeNative18
+		enableWaf, _ := jsonpath.Get("$[0].enable_waf", d.Get("waf_config"))
+		if enableWaf != nil && enableWaf != "" {
+			objectDataLocalMap4["enableWAF"] = enableWaf
 		}
 
 		request["wafConfig"] = objectDataLocalMap4
@@ -404,9 +421,9 @@ func resourceAliCloudFcv3CustomDomainCreate(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_custom_domain", action, AlibabaCloudSdkGoERROR)
@@ -432,11 +449,23 @@ func resourceAliCloudFcv3CustomDomainRead(d *schema.ResourceData, meta interface
 		return WrapError(err)
 	}
 
+	if objectRaw["accountId"] != nil {
+		d.Set("account_id", objectRaw["accountId"])
+	}
+	if objectRaw["apiVersion"] != nil {
+		d.Set("api_version", objectRaw["apiVersion"])
+	}
 	if objectRaw["createdTime"] != nil {
 		d.Set("create_time", objectRaw["createdTime"])
 	}
+	if objectRaw["lastModifiedTime"] != nil {
+		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
+	}
 	if objectRaw["protocol"] != nil {
 		d.Set("protocol", objectRaw["protocol"])
+	}
+	if objectRaw["subdomainCount"] != nil {
+		d.Set("subdomain_count", objectRaw["subdomainCount"])
 	}
 	if objectRaw["domainName"] != nil {
 		d.Set("custom_domain_name", objectRaw["domainName"])
@@ -624,175 +653,174 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 
 	if d.HasChange("auth_config") {
 		update = true
-	}
-	objectDataLocalMap := make(map[string]interface{})
+		objectDataLocalMap := make(map[string]interface{})
 
-	if v := d.Get("auth_config"); !IsNil(v) || d.HasChange("auth_config") {
-		nodeNative, _ := jsonpath.Get("$[0].auth_info", v)
-		if nodeNative != nil && (d.HasChange("auth_config.0.auth_info") || nodeNative != "") {
-			objectDataLocalMap["authInfo"] = nodeNative
-		}
-		nodeNative1, _ := jsonpath.Get("$[0].auth_type", v)
-		if nodeNative1 != nil && (d.HasChange("auth_config.0.auth_type") || nodeNative1 != "") {
-			objectDataLocalMap["authType"] = nodeNative1
-		}
+		if v := d.Get("auth_config"); !IsNil(v) {
+			authInfo1, _ := jsonpath.Get("$[0].auth_info", v)
+			if authInfo1 != nil && (d.HasChange("auth_config.0.auth_info") || authInfo1 != "") {
+				objectDataLocalMap["authInfo"] = authInfo1
+			}
+			authType1, _ := jsonpath.Get("$[0].auth_type", v)
+			if authType1 != nil && (d.HasChange("auth_config.0.auth_type") || authType1 != "") {
+				objectDataLocalMap["authType"] = authType1
+			}
 
-		request["authConfig"] = objectDataLocalMap
+			request["authConfig"] = objectDataLocalMap
+		}
 	}
 
 	if d.HasChange("cert_config") {
 		update = true
-	}
-	objectDataLocalMap1 := make(map[string]interface{})
+		objectDataLocalMap1 := make(map[string]interface{})
 
-	if v := d.Get("cert_config"); !IsNil(v) || d.HasChange("cert_config") {
-		nodeNative2, _ := jsonpath.Get("$[0].cert_name", v)
-		if nodeNative2 != nil && (d.HasChange("cert_config.0.cert_name") || nodeNative2 != "") {
-			objectDataLocalMap1["certName"] = nodeNative2
-		}
-		nodeNative3, _ := jsonpath.Get("$[0].certificate", v)
-		if nodeNative3 != nil && (d.HasChange("cert_config.0.certificate") || nodeNative3 != "") {
-			objectDataLocalMap1["certificate"] = nodeNative3
-		}
-		nodeNative4, _ := jsonpath.Get("$[0].private_key", v)
-		if nodeNative4 != nil && (d.HasChange("cert_config.0.private_key") || nodeNative4 != "") {
-			objectDataLocalMap1["privateKey"] = nodeNative4
-		}
+		if v := d.Get("cert_config"); !IsNil(v) {
+			certName1, _ := jsonpath.Get("$[0].cert_name", v)
+			if certName1 != nil && (d.HasChange("cert_config.0.cert_name") || certName1 != "") {
+				objectDataLocalMap1["certName"] = certName1
+			}
+			certificate1, _ := jsonpath.Get("$[0].certificate", v)
+			if certificate1 != nil && (d.HasChange("cert_config.0.certificate") || certificate1 != "") {
+				objectDataLocalMap1["certificate"] = certificate1
+			}
+			privateKey1, _ := jsonpath.Get("$[0].private_key", v)
+			if privateKey1 != nil && (d.HasChange("cert_config.0.private_key") || privateKey1 != "") {
+				objectDataLocalMap1["privateKey"] = privateKey1
+			}
 
-		request["certConfig"] = objectDataLocalMap1
+			request["certConfig"] = objectDataLocalMap1
+		}
 	}
 
 	if d.HasChange("protocol") {
 		update = true
+		request["protocol"] = d.Get("protocol")
 	}
-	if v, ok := d.GetOk("protocol"); ok || d.HasChange("protocol") {
-		request["protocol"] = v
-	}
+
 	if d.HasChange("tls_config") {
 		update = true
-	}
-	objectDataLocalMap2 := make(map[string]interface{})
+		objectDataLocalMap2 := make(map[string]interface{})
 
-	if v := d.Get("tls_config"); !IsNil(v) || d.HasChange("tls_config") {
-		nodeNative5, _ := jsonpath.Get("$[0].cipher_suites", d.Get("tls_config"))
-		if nodeNative5 != nil && (d.HasChange("tls_config.0.cipher_suites") || nodeNative5 != "") {
-			objectDataLocalMap2["cipherSuites"] = nodeNative5
-		}
-		nodeNative6, _ := jsonpath.Get("$[0].max_version", v)
-		if nodeNative6 != nil && (d.HasChange("tls_config.0.max_version") || nodeNative6 != "") {
-			objectDataLocalMap2["maxVersion"] = nodeNative6
-		}
-		nodeNative7, _ := jsonpath.Get("$[0].min_version", v)
-		if nodeNative7 != nil && (d.HasChange("tls_config.0.min_version") || nodeNative7 != "") {
-			objectDataLocalMap2["minVersion"] = nodeNative7
-		}
+		if v := d.Get("tls_config"); !IsNil(v) {
+			cipherSuites1, _ := jsonpath.Get("$[0].cipher_suites", d.Get("tls_config"))
+			if cipherSuites1 != nil && (d.HasChange("tls_config.0.cipher_suites") || cipherSuites1 != "") {
+				objectDataLocalMap2["cipherSuites"] = cipherSuites1
+			}
+			maxVersion1, _ := jsonpath.Get("$[0].max_version", v)
+			if maxVersion1 != nil && (d.HasChange("tls_config.0.max_version") || maxVersion1 != "") {
+				objectDataLocalMap2["maxVersion"] = maxVersion1
+			}
+			minVersion1, _ := jsonpath.Get("$[0].min_version", v)
+			if minVersion1 != nil && (d.HasChange("tls_config.0.min_version") || minVersion1 != "") {
+				objectDataLocalMap2["minVersion"] = minVersion1
+			}
 
-		request["tlsConfig"] = objectDataLocalMap2
+			request["tlsConfig"] = objectDataLocalMap2
+		}
 	}
 
 	if d.HasChange("route_config") {
 		update = true
-	}
-	objectDataLocalMap3 := make(map[string]interface{})
+		objectDataLocalMap3 := make(map[string]interface{})
 
-	if v := d.Get("route_config"); !IsNil(v) || d.HasChange("route_config") {
-		if v, ok := d.GetOk("route_config"); ok {
-			localData, err := jsonpath.Get("$[0].routes", v)
-			if err != nil {
-				localData = make([]interface{}, 0)
-			}
-			localMaps := make([]interface{}, 0)
-			for _, dataLoop := range localData.([]interface{}) {
-				dataLoopTmp := make(map[string]interface{})
-				if dataLoop != nil {
-					dataLoopTmp = dataLoop.(map[string]interface{})
+		if v := d.Get("route_config"); !IsNil(v) {
+			if v, ok := d.GetOk("route_config"); ok {
+				localData, err := jsonpath.Get("$[0].routes", v)
+				if err != nil {
+					localData = make([]interface{}, 0)
 				}
-				dataLoopMap := make(map[string]interface{})
-				dataLoopMap["methods"] = dataLoopTmp["methods"]
-				dataLoopMap["functionName"] = dataLoopTmp["function_name"]
-				dataLoopMap["path"] = dataLoopTmp["path"]
-				dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
-				if !IsNil(dataLoopTmp["rewrite_config"]) {
-					localData1 := make(map[string]interface{})
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData2, err := jsonpath.Get("$[0].equal_rules", v)
-						if err != nil {
-							localData2 = make([]interface{}, 0)
-						}
-						localMaps2 := make([]interface{}, 0)
-						for _, dataLoop2 := range localData2.([]interface{}) {
-							dataLoop2Tmp := make(map[string]interface{})
-							if dataLoop2 != nil {
-								dataLoop2Tmp = dataLoop2.(map[string]interface{})
-							}
-							dataLoop2Map := make(map[string]interface{})
-							dataLoop2Map["match"] = dataLoop2Tmp["match"]
-							dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
-							localMaps2 = append(localMaps2, dataLoop2Map)
-						}
-						localData1["equalRules"] = localMaps2
+				localMaps := make([]interface{}, 0)
+				for _, dataLoop := range localData.([]interface{}) {
+					dataLoopTmp := make(map[string]interface{})
+					if dataLoop != nil {
+						dataLoopTmp = dataLoop.(map[string]interface{})
 					}
-
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData3, err := jsonpath.Get("$[0].regex_rules", v)
-						if err != nil {
-							localData3 = make([]interface{}, 0)
-						}
-						localMaps3 := make([]interface{}, 0)
-						for _, dataLoop3 := range localData3.([]interface{}) {
-							dataLoop3Tmp := make(map[string]interface{})
-							if dataLoop3 != nil {
-								dataLoop3Tmp = dataLoop3.(map[string]interface{})
+					dataLoopMap := make(map[string]interface{})
+					dataLoopMap["methods"] = dataLoopTmp["methods"]
+					dataLoopMap["functionName"] = dataLoopTmp["function_name"]
+					dataLoopMap["path"] = dataLoopTmp["path"]
+					dataLoopMap["qualifier"] = dataLoopTmp["qualifier"]
+					if !IsNil(dataLoopTmp["rewrite_config"]) {
+						localData1 := make(map[string]interface{})
+						if v, ok := dataLoopTmp["rewrite_config"]; ok {
+							localData2, err := jsonpath.Get("$[0].equal_rules", v)
+							if err != nil {
+								localData2 = make([]interface{}, 0)
 							}
-							dataLoop3Map := make(map[string]interface{})
-							dataLoop3Map["match"] = dataLoop3Tmp["match"]
-							dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
-							localMaps3 = append(localMaps3, dataLoop3Map)
-						}
-						localData1["regexRules"] = localMaps3
-					}
-
-					if v, ok := dataLoopTmp["rewrite_config"]; ok {
-						localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
-						if err != nil {
-							localData4 = make([]interface{}, 0)
-						}
-						localMaps4 := make([]interface{}, 0)
-						for _, dataLoop4 := range localData4.([]interface{}) {
-							dataLoop4Tmp := make(map[string]interface{})
-							if dataLoop4 != nil {
-								dataLoop4Tmp = dataLoop4.(map[string]interface{})
+							localMaps2 := make([]interface{}, 0)
+							for _, dataLoop2 := range localData2.([]interface{}) {
+								dataLoop2Tmp := make(map[string]interface{})
+								if dataLoop2 != nil {
+									dataLoop2Tmp = dataLoop2.(map[string]interface{})
+								}
+								dataLoop2Map := make(map[string]interface{})
+								dataLoop2Map["match"] = dataLoop2Tmp["match"]
+								dataLoop2Map["replacement"] = dataLoop2Tmp["replacement"]
+								localMaps2 = append(localMaps2, dataLoop2Map)
 							}
-							dataLoop4Map := make(map[string]interface{})
-							dataLoop4Map["match"] = dataLoop4Tmp["match"]
-							dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
-							localMaps4 = append(localMaps4, dataLoop4Map)
+							localData1["equalRules"] = localMaps2
 						}
-						localData1["wildcardRules"] = localMaps4
-					}
 
-					dataLoopMap["rewriteConfig"] = localData1
+						if v, ok := dataLoopTmp["rewrite_config"]; ok {
+							localData3, err := jsonpath.Get("$[0].regex_rules", v)
+							if err != nil {
+								localData3 = make([]interface{}, 0)
+							}
+							localMaps3 := make([]interface{}, 0)
+							for _, dataLoop3 := range localData3.([]interface{}) {
+								dataLoop3Tmp := make(map[string]interface{})
+								if dataLoop3 != nil {
+									dataLoop3Tmp = dataLoop3.(map[string]interface{})
+								}
+								dataLoop3Map := make(map[string]interface{})
+								dataLoop3Map["match"] = dataLoop3Tmp["match"]
+								dataLoop3Map["replacement"] = dataLoop3Tmp["replacement"]
+								localMaps3 = append(localMaps3, dataLoop3Map)
+							}
+							localData1["regexRules"] = localMaps3
+						}
+
+						if v, ok := dataLoopTmp["rewrite_config"]; ok {
+							localData4, err := jsonpath.Get("$[0].wildcard_rules", v)
+							if err != nil {
+								localData4 = make([]interface{}, 0)
+							}
+							localMaps4 := make([]interface{}, 0)
+							for _, dataLoop4 := range localData4.([]interface{}) {
+								dataLoop4Tmp := make(map[string]interface{})
+								if dataLoop4 != nil {
+									dataLoop4Tmp = dataLoop4.(map[string]interface{})
+								}
+								dataLoop4Map := make(map[string]interface{})
+								dataLoop4Map["match"] = dataLoop4Tmp["match"]
+								dataLoop4Map["replacement"] = dataLoop4Tmp["replacement"]
+								localMaps4 = append(localMaps4, dataLoop4Map)
+							}
+							localData1["wildcardRules"] = localMaps4
+						}
+
+						dataLoopMap["rewriteConfig"] = localData1
+					}
+					localMaps = append(localMaps, dataLoopMap)
 				}
-				localMaps = append(localMaps, dataLoopMap)
+				objectDataLocalMap3["routes"] = localMaps
 			}
-			objectDataLocalMap3["routes"] = localMaps
+
+			request["routeConfig"] = objectDataLocalMap3
 		}
-
-		request["routeConfig"] = objectDataLocalMap3
 	}
 
 	if d.HasChange("waf_config") {
 		update = true
-	}
-	objectDataLocalMap4 := make(map[string]interface{})
+		objectDataLocalMap4 := make(map[string]interface{})
 
-	if v := d.Get("waf_config"); !IsNil(v) || d.HasChange("waf_config") {
-		nodeNative18, _ := jsonpath.Get("$[0].enable_waf", v)
-		if nodeNative18 != nil && (d.HasChange("waf_config.0.enable_waf") || nodeNative18 != "") {
-			objectDataLocalMap4["enableWAF"] = nodeNative18
+		if v := d.Get("waf_config"); !IsNil(v) {
+			enableWaf, _ := jsonpath.Get("$[0].enable_waf", v)
+			if enableWaf != nil && (d.HasChange("waf_config.0.enable_waf") || enableWaf != "") {
+				objectDataLocalMap4["enableWAF"] = enableWaf
+			}
+
+			request["wafConfig"] = objectDataLocalMap4
 		}
-
-		request["wafConfig"] = objectDataLocalMap4
 	}
 
 	body = request
@@ -809,9 +837,9 @@ func resourceAliCloudFcv3CustomDomainUpdate(d *schema.ResourceData, meta interfa
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -828,7 +856,6 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
@@ -836,12 +863,11 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 	request = make(map[string]interface{})
 	request["domainName"] = d.Id()
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if IsExpectedErrors(err, []string{"429"}) || NeedRetry(err) {
@@ -850,12 +876,12 @@ func resourceAliCloudFcv3CustomDomainDelete(d *schema.ResourceData, meta interfa
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
-		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) {
+		if IsExpectedErrors(err, []string{"DomainNameNotFound"}) || NotFoundError(err) {
 			return nil
 		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
