@@ -222,6 +222,7 @@ func (s *Fcv3ServiceV2) Fcv3FunctionVersionStateRefreshFunc(id string, field str
 }
 
 // DescribeFcv3FunctionVersion >>> Encapsulated.
+
 // DescribeFcv3Alias <<< Encapsulated get interface for Fcv3 Alias.
 
 func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interface{}, err error) {
@@ -256,18 +257,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3Alias(id string) (object map[string]interfac
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"AliasNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Alias", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv3ServiceV2) Fcv3AliasStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

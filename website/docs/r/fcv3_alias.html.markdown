@@ -20,12 +20,6 @@ For information about FCV3 Alias and how to use it, see [What is Alias](https://
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_alias&exampleId=964a205d-f3d9-3bda-b718-c780deee06a81557d045&activeTab=example&spm=docs.r.fcv3_alias.0.964a205df3&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -65,6 +59,7 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<alias_name>`.
 * `create_time` - The creation time of the resource
+* `last_modified_time` - (Available since v1.234.0) Last modification time
 
 ## Timeouts
 

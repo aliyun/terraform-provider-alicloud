@@ -53,6 +53,10 @@ func resourceAliCloudFcv3Alias() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"last_modified_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"version_id": {
 				Type:     schema.TypeString,
 				Optional: true,
@@ -100,9 +104,9 @@ func resourceAliCloudFcv3AliasCreate(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_alias", action, AlibabaCloudSdkGoERROR)
@@ -137,6 +141,9 @@ func resourceAliCloudFcv3AliasRead(d *schema.ResourceData, meta interface{}) err
 	if objectRaw["description"] != nil {
 		d.Set("description", objectRaw["description"])
 	}
+	if objectRaw["lastModifiedTime"] != nil {
+		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
+	}
 	if objectRaw["versionId"] != nil {
 		d.Set("version_id", objectRaw["versionId"])
 	}
@@ -146,7 +153,6 @@ func resourceAliCloudFcv3AliasRead(d *schema.ResourceData, meta interface{}) err
 
 	parts := strings.Split(d.Id(), ":")
 	d.Set("function_name", parts[0])
-	d.Set("alias_name", parts[1])
 
 	return nil
 }
@@ -172,22 +178,19 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 
 	if d.HasChange("description") {
 		update = true
+		request["description"] = d.Get("description")
 	}
-	if v, ok := d.GetOk("description"); ok || d.HasChange("description") {
-		request["description"] = v
-	}
+
 	if d.HasChange("version_id") {
 		update = true
+		request["versionId"] = d.Get("version_id")
 	}
-	if v, ok := d.GetOk("version_id"); ok || d.HasChange("version_id") {
-		request["versionId"] = v
-	}
+
 	if d.HasChange("additional_version_weight") {
 		update = true
+		request["additionalVersionWeight"] = d.Get("additional_version_weight")
 	}
-	if v, ok := d.GetOk("additional_version_weight"); ok || d.HasChange("additional_version_weight") {
-		request["additionalVersionWeight"] = v
-	}
+
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -202,9 +205,9 @@ func resourceAliCloudFcv3AliasUpdate(d *schema.ResourceData, meta interface{}) e
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -223,19 +226,17 @@ func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) e
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -244,11 +245,14 @@ func resourceAliCloudFcv3AliasDelete(d *schema.ResourceData, meta interface{}) e
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
