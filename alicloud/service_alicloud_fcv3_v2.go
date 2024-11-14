@@ -185,18 +185,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3FunctionVersion(id string) (object map[strin
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"VersionNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("FunctionVersion", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv3ServiceV2) Fcv3FunctionVersionStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

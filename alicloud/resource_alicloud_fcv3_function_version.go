@@ -41,6 +41,10 @@ func resourceAliCloudFcv3FunctionVersion() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"last_modified_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -77,9 +81,9 @@ func resourceAliCloudFcv3FunctionVersionCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_function_version", action, AlibabaCloudSdkGoERROR)
@@ -111,12 +115,14 @@ func resourceAliCloudFcv3FunctionVersionRead(d *schema.ResourceData, meta interf
 	if objectRaw["description"] != nil {
 		d.Set("description", objectRaw["description"])
 	}
+	if objectRaw["lastModifiedTime"] != nil {
+		d.Set("last_modified_time", objectRaw["lastModifiedTime"])
+	}
 	if objectRaw["functionName"] != nil {
 		d.Set("function_name", objectRaw["functionName"])
 	}
 
 	parts := strings.Split(d.Id(), ":")
-	d.Set("function_name", parts[0])
 	d.Set("version_id", parts[1])
 
 	return nil
@@ -132,19 +138,17 @@ func resourceAliCloudFcv3FunctionVersionDelete(d *schema.ResourceData, meta inte
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -153,11 +157,14 @@ func resourceAliCloudFcv3FunctionVersionDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
