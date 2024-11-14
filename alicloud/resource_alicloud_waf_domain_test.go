@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/PaesslerAG/jsonpath"
-	util "github.com/alibabacloud-go/tea-utils/service"
-
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
@@ -37,10 +35,9 @@ func testSweepWafDomains(region string) error {
 	wafInstanceIds := make([]string, 0)
 	domainIds := make([]string, 0)
 	request := make(map[string]interface{})
-	var err error
 	action := "DescribeInstanceInfos"
 
-	response, err := conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2019-09-10"), StringPointer("AK"), nil, request, &util.RuntimeOptions{})
+	response, err := client.RpcPost("waf-openapi", "2019-09-10", action, nil, request, false)
 	if err != nil {
 		log.Printf("[ERROR] Failed to retrieve waf instance in service list: %s", err)
 	}

@@ -2,7 +2,6 @@ package alicloud
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -229,6 +228,6 @@ EOF
   		enable_details = true
 		%s
 	}
-`, rand, os.Getenv("ALICLOUD_REGION"), strings.Join(pairs, "\n   "))
+`, rand, "cn-hangzhou", strings.Join(pairs, "\n   "))
 	return config
 }
