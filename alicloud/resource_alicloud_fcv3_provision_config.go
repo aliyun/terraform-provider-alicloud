@@ -35,6 +35,18 @@ func resourceAliCloudFcv3ProvisionConfig() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"current": {
+				Type:     schema.TypeInt,
+				Computed: true,
+			},
+			"current_error": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"function_arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"function_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -149,7 +161,7 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 	}
 
 	if v, ok := d.GetOk("target_tracking_policies"); ok {
-		targetTrackingPoliciesMaps := make([]interface{}, 0)
+		targetTrackingPoliciesMapsArray := make([]interface{}, 0)
 		for _, dataLoop := range v.([]interface{}) {
 			dataLoopTmp := dataLoop.(map[string]interface{})
 			dataLoopMap := make(map[string]interface{})
@@ -161,13 +173,13 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 			dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
 			dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
 			dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
-			targetTrackingPoliciesMaps = append(targetTrackingPoliciesMaps, dataLoopMap)
+			targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
 		}
-		request["targetTrackingPolicies"] = targetTrackingPoliciesMaps
+		request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
 	}
 
 	if v, ok := d.GetOk("scheduled_actions"); ok {
-		scheduledActionsMaps := make([]interface{}, 0)
+		scheduledActionsMapsArray := make([]interface{}, 0)
 		for _, dataLoop1 := range v.([]interface{}) {
 			dataLoop1Tmp := dataLoop1.(map[string]interface{})
 			dataLoop1Map := make(map[string]interface{})
@@ -177,18 +189,18 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 			dataLoop1Map["name"] = dataLoop1Tmp["name"]
 			dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
 			dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
-			scheduledActionsMaps = append(scheduledActionsMaps, dataLoop1Map)
+			scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
 		}
-		request["scheduledActions"] = scheduledActionsMaps
+		request["scheduledActions"] = scheduledActionsMapsArray
 	}
 
-	if v, ok := d.GetOk("target"); ok {
+	if v, ok := d.GetOkExists("target"); ok {
 		request["target"] = v
 	}
-	if v, ok := d.GetOk("always_allocate_cpu"); ok {
+	if v, ok := d.GetOkExists("always_allocate_cpu"); ok {
 		request["alwaysAllocateCPU"] = v
 	}
-	if v, ok := d.GetOk("always_allocate_gpu"); ok {
+	if v, ok := d.GetOkExists("always_allocate_gpu"); ok {
 		request["alwaysAllocateGPU"] = v
 	}
 	body = request
@@ -204,9 +216,9 @@ func resourceAliCloudFcv3ProvisionConfigCreate(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_provision_config", action, AlibabaCloudSdkGoERROR)
@@ -236,6 +248,15 @@ func resourceAliCloudFcv3ProvisionConfigRead(d *schema.ResourceData, meta interf
 	}
 	if objectRaw["alwaysAllocateGPU"] != nil {
 		d.Set("always_allocate_gpu", objectRaw["alwaysAllocateGPU"])
+	}
+	if objectRaw["current"] != nil {
+		d.Set("current", objectRaw["current"])
+	}
+	if objectRaw["currentError"] != nil {
+		d.Set("current_error", objectRaw["currentError"])
+	}
+	if objectRaw["functionArn"] != nil {
+		d.Set("function_arn", objectRaw["functionArn"])
 	}
 	if objectRaw["target"] != nil {
 		d.Set("target", objectRaw["target"])
@@ -315,62 +336,59 @@ func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta inte
 
 	if d.HasChange("target_tracking_policies") {
 		update = true
-	}
-	if v, ok := d.GetOk("target_tracking_policies"); ok || d.HasChange("target_tracking_policies") {
-		targetTrackingPoliciesMaps := make([]interface{}, 0)
-		for _, dataLoop := range v.([]interface{}) {
-			dataLoopTmp := dataLoop.(map[string]interface{})
-			dataLoopMap := make(map[string]interface{})
-			dataLoopMap["endTime"] = dataLoopTmp["end_time"]
-			dataLoopMap["name"] = dataLoopTmp["name"]
-			dataLoopMap["startTime"] = dataLoopTmp["start_time"]
-			dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
-			dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
-			dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
-			dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
-			dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
-			targetTrackingPoliciesMaps = append(targetTrackingPoliciesMaps, dataLoopMap)
+		if v, ok := d.GetOk("target_tracking_policies"); ok || d.HasChange("target_tracking_policies") {
+			targetTrackingPoliciesMapsArray := make([]interface{}, 0)
+			for _, dataLoop := range v.([]interface{}) {
+				dataLoopTmp := dataLoop.(map[string]interface{})
+				dataLoopMap := make(map[string]interface{})
+				dataLoopMap["endTime"] = dataLoopTmp["end_time"]
+				dataLoopMap["name"] = dataLoopTmp["name"]
+				dataLoopMap["startTime"] = dataLoopTmp["start_time"]
+				dataLoopMap["maxCapacity"] = dataLoopTmp["max_capacity"]
+				dataLoopMap["metricTarget"] = dataLoopTmp["metric_target"]
+				dataLoopMap["metricType"] = dataLoopTmp["metric_type"]
+				dataLoopMap["minCapacity"] = dataLoopTmp["min_capacity"]
+				dataLoopMap["timeZone"] = dataLoopTmp["time_zone"]
+				targetTrackingPoliciesMapsArray = append(targetTrackingPoliciesMapsArray, dataLoopMap)
+			}
+			request["targetTrackingPolicies"] = targetTrackingPoliciesMapsArray
 		}
-		request["targetTrackingPolicies"] = targetTrackingPoliciesMaps
 	}
 
 	if d.HasChange("scheduled_actions") {
 		update = true
-	}
-	if v, ok := d.GetOk("scheduled_actions"); ok || d.HasChange("scheduled_actions") {
-		scheduledActionsMaps := make([]interface{}, 0)
-		for _, dataLoop1 := range v.([]interface{}) {
-			dataLoop1Tmp := dataLoop1.(map[string]interface{})
-			dataLoop1Map := make(map[string]interface{})
-			dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
-			dataLoop1Map["target"] = dataLoop1Tmp["target"]
-			dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
-			dataLoop1Map["name"] = dataLoop1Tmp["name"]
-			dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
-			dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
-			scheduledActionsMaps = append(scheduledActionsMaps, dataLoop1Map)
+		if v, ok := d.GetOk("scheduled_actions"); ok || d.HasChange("scheduled_actions") {
+			scheduledActionsMapsArray := make([]interface{}, 0)
+			for _, dataLoop1 := range v.([]interface{}) {
+				dataLoop1Tmp := dataLoop1.(map[string]interface{})
+				dataLoop1Map := make(map[string]interface{})
+				dataLoop1Map["scheduleExpression"] = dataLoop1Tmp["schedule_expression"]
+				dataLoop1Map["target"] = dataLoop1Tmp["target"]
+				dataLoop1Map["endTime"] = dataLoop1Tmp["end_time"]
+				dataLoop1Map["name"] = dataLoop1Tmp["name"]
+				dataLoop1Map["startTime"] = dataLoop1Tmp["start_time"]
+				dataLoop1Map["timeZone"] = dataLoop1Tmp["time_zone"]
+				scheduledActionsMapsArray = append(scheduledActionsMapsArray, dataLoop1Map)
+			}
+			request["scheduledActions"] = scheduledActionsMapsArray
 		}
-		request["scheduledActions"] = scheduledActionsMaps
 	}
 
 	if d.HasChange("target") {
 		update = true
+		request["target"] = d.Get("target")
 	}
-	if v, ok := d.GetOk("target"); ok || d.HasChange("target") {
-		request["target"] = v
-	}
+
 	if d.HasChange("always_allocate_cpu") {
 		update = true
+		request["alwaysAllocateCPU"] = d.Get("always_allocate_cpu")
 	}
-	if v, ok := d.GetOk("always_allocate_cpu"); ok || d.HasChange("always_allocate_cpu") {
-		request["alwaysAllocateCPU"] = v
-	}
+
 	if d.HasChange("always_allocate_gpu") {
 		update = true
+		request["alwaysAllocateGPU"] = d.Get("always_allocate_gpu")
 	}
-	if v, ok := d.GetOk("always_allocate_gpu"); ok || d.HasChange("always_allocate_gpu") {
-		request["alwaysAllocateGPU"] = v
-	}
+
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -385,9 +403,9 @@ func resourceAliCloudFcv3ProvisionConfigUpdate(d *schema.ResourceData, meta inte
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -428,11 +446,14 @@ func resourceAliCloudFcv3ProvisionConfigDelete(d *schema.ResourceData, meta inte
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
