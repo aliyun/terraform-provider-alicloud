@@ -1,29 +1,33 @@
-## 1.234.0 (Unreleased)
+## 1.235.0 (Unreleased)
+## 1.234.0 (November 14, 2024)
 
-- **New Resource:** `alicloud_vpc_ipam_ipam`. [GH-7848]
-- **New Resource:** `alicloud_vpc_ipam_ipam_scope`. [GH-7848]
-- **New Resource:** `alicloud_vpc_ipam_ipam_pool`. [GH-7848]
-- **New Resource:** `alicloud_vpc_ipam_ipam_pool_cidr`. [GH-7848]
-- **New Resource:** `alicloud_gwlb_load_balancer`. [GH-7849]
-- **New Resource:** `alicloud_gwlb_server_group`. [GH-7849]
-- **New Resource:** `alicloud_gwlb_listener`. [GH-7849]
-- **New Resource:** `alicloud_oss_bucket_cname`. [GH-7852]
-- **New Resource:** `alicloud_oss_bucket_cname_token`. [GH-7852]
-- **New Resource:** `alicloud_esa_site`. [GH-7854]
-- **New Resource:** `alicloud_esa_rate_plan_instance`. [GH-7854]
+- **New Resource:** `alicloud_vpc_ipam_ipam`. ([#7848](https://github.com/aliyun/terraform-provider-alicloud/issues/7848))
+- **New Resource:** `alicloud_vpc_ipam_ipam_scope`. ([#7848](https://github.com/aliyun/terraform-provider-alicloud/issues/7848))
+- **New Resource:** `alicloud_vpc_ipam_ipam_pool`. ([#7848](https://github.com/aliyun/terraform-provider-alicloud/issues/7848))
+- **New Resource:** `alicloud_vpc_ipam_ipam_pool_cidr`. ([#7848](https://github.com/aliyun/terraform-provider-alicloud/issues/7848))
+- **New Resource:** `alicloud_gwlb_load_balancer`. ([#7849](https://github.com/aliyun/terraform-provider-alicloud/issues/7849))
+- **New Resource:** `alicloud_gwlb_server_group`. ([#7849](https://github.com/aliyun/terraform-provider-alicloud/issues/7849))
+- **New Resource:** `alicloud_gwlb_listener`. ([#7849](https://github.com/aliyun/terraform-provider-alicloud/issues/7849))
+- **New Resource:** `alicloud_oss_bucket_cname`. ([#7852](https://github.com/aliyun/terraform-provider-alicloud/issues/7852))
+- **New Resource:** `alicloud_oss_bucket_cname_token`. ([#7852](https://github.com/aliyun/terraform-provider-alicloud/issues/7852))
+- **New Resource:** `alicloud_esa_site`. ([#7854](https://github.com/aliyun/terraform-provider-alicloud/issues/7854))
+- **New Resource:** `alicloud_esa_rate_plan_instance`. ([#7854](https://github.com/aliyun/terraform-provider-alicloud/issues/7854))
 
 ENHANCEMENTS:
 
-- resource/alicloud_fcv3_function: add attributes code_size, function_arn and etc. [GH-7855]
-- resource/alicloud_fcv3_trigger: add new attributes http_trigger, last_modified_time and target_arn. [GH-7857]
-- resource/alicloud_fcv3_custom_domain: add new attributes account_id, api_version, last_modified_time and subdomain_count. [GH-7858]
-- resource/alicloud_fcv3_alias: add new attribute last_modified_time. [GH-7859]
-- resource/alicloud_fcv3_async_invoke_config: add new attribute function_arn and last_modified_time.  [GH-7860]
-- resource/alicloud_fcv3_concurrency_config: add new attribute function_arn. [GH-7861]
-- resource/alicloud_fcv3_function_version: add new attribute last_modified_time. [GH-7862]
-- resource/alicloud_fcv3_layer_version: add new attribute code_size, layer_version_arn and public. [GH-7863]
-- resource/alicloud_fcv3_provision_config: add new attributes current, current_error and function_arn. [GH-7864]
-- docs: Improves description for quotas. [GH-7865]
+- client: Improved the old client of dds. ([#7850](https://github.com/aliyun/terraform-provider-alicloud/issues/7850))
+- resource/alicloud_cloud_sso_access_configuration: Fixed the diff error caused by field permission_policies.permission_policy_document. ([#7845](https://github.com/aliyun/terraform-provider-alicloud/issues/7845))
+- resource/alicloud_alikafka_instance: Added the field ssl_endpoint, domain_endpoint, ssl_domain_endpoint, sasl_domain_endpoint. ([#7846](https://github.com/aliyun/terraform-provider-alicloud/issues/7846))
+- resource/alicloud_fcv3_function: add attributes code_size, function_arn and etc. ([#7855](https://github.com/aliyun/terraform-provider-alicloud/issues/7855))
+- resource/alicloud_fcv3_trigger: add new attributes http_trigger, last_modified_time and target_arn. ([#7857](https://github.com/aliyun/terraform-provider-alicloud/issues/7857))
+- resource/alicloud_fcv3_custom_domain: add new attributes account_id, api_version, last_modified_time and subdomain_count. ([#7858](https://github.com/aliyun/terraform-provider-alicloud/issues/7858))
+- resource/alicloud_fcv3_alias: add new attribute last_modified_time. ([#7859](https://github.com/aliyun/terraform-provider-alicloud/issues/7859))
+- resource/alicloud_fcv3_async_invoke_config: add new attribute function_arn and last_modified_time.  ([#7860](https://github.com/aliyun/terraform-provider-alicloud/issues/7860))
+- resource/alicloud_fcv3_concurrency_config: add new attribute function_arn. ([#7861](https://github.com/aliyun/terraform-provider-alicloud/issues/7861))
+- resource/alicloud_fcv3_function_version: add new attribute last_modified_time. ([#7862](https://github.com/aliyun/terraform-provider-alicloud/issues/7862))
+- resource/alicloud_fcv3_layer_version: add new attribute code_size, layer_version_arn and public. ([#7863](https://github.com/aliyun/terraform-provider-alicloud/issues/7863))
+- resource/alicloud_fcv3_provision_config: add new attributes current, current_error and function_arn. ([#7864](https://github.com/aliyun/terraform-provider-alicloud/issues/7864))
+- docs: Improves description for quotas. ([#7865](https://github.com/aliyun/terraform-provider-alicloud/issues/7865))
 
 ## 1.233.1 (November 12, 2024)
 

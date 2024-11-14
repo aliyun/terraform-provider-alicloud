@@ -20,6 +20,12 @@ For information about FCV3 Provision Config and how to use it, see [What is Prov
 
 Basic Usage
 
+<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
+  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_provision_config&exampleId=cb9245ba-4fea-f37a-f548-4c559f5a5e8674cd4c17&activeTab=example&spm=docs.r.fcv3_provision_config.0.cb9245ba4f&intl_lang=EN_US" target="_blank">
+    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
+  </a>
+</div></div>
+
 ```terraform
 provider "alicloud" {
   region = "cn-shanghai"
