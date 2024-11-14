@@ -362,6 +362,7 @@ func (s *Fcv3ServiceV2) Fcv3AsyncInvokeConfigStateRefreshFunc(id string, field s
 }
 
 // DescribeFcv3AsyncInvokeConfig >>> Encapsulated.
+
 // DescribeFcv3ConcurrencyConfig <<< Encapsulated get interface for Fcv3 ConcurrencyConfig.
 
 func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[string]interface{}, err error) {
@@ -392,18 +393,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3ConcurrencyConfig(id string) (object map[str
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"OnDemandConfigNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("ConcurrencyConfig", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv3ServiceV2) Fcv3ConcurrencyConfigStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

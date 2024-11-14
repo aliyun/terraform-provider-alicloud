@@ -27,6 +27,10 @@ func resourceAliCloudFcv3ConcurrencyConfig() *schema.Resource {
 			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
+			"function_arn": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"function_name": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -55,9 +59,11 @@ func resourceAliCloudFcv3ConcurrencyConfigCreate(d *schema.ResourceData, meta in
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	request["functionName"] = d.Get("function_name")
+	if v, ok := d.GetOk("function_name"); ok {
+		request["functionName"] = v
+	}
 
-	if v, ok := d.GetOk("reserved_concurrency"); ok {
+	if v, ok := d.GetOkExists("reserved_concurrency"); ok {
 		request["reservedConcurrency"] = v
 	}
 	body = request
@@ -73,9 +79,9 @@ func resourceAliCloudFcv3ConcurrencyConfigCreate(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_fcv3_concurrency_config", action, AlibabaCloudSdkGoERROR)
@@ -100,6 +106,9 @@ func resourceAliCloudFcv3ConcurrencyConfigRead(d *schema.ResourceData, meta inte
 		return WrapError(err)
 	}
 
+	if objectRaw["functionArn"] != nil {
+		d.Set("function_arn", objectRaw["functionArn"])
+	}
 	if objectRaw["reservedConcurrency"] != nil {
 		d.Set("reserved_concurrency", objectRaw["reservedConcurrency"])
 	}
@@ -129,10 +138,9 @@ func resourceAliCloudFcv3ConcurrencyConfigUpdate(d *schema.ResourceData, meta in
 
 	if d.HasChange("reserved_concurrency") {
 		update = true
+		request["reservedConcurrency"] = d.Get("reserved_concurrency")
 	}
-	if v, ok := d.GetOk("reserved_concurrency"); ok || d.HasChange("reserved_concurrency") {
-		request["reservedConcurrency"] = v
-	}
+
 	body = request
 	if update {
 		runtime := util.RuntimeOptions{}
@@ -147,9 +155,9 @@ func resourceAliCloudFcv3ConcurrencyConfigUpdate(d *schema.ResourceData, meta in
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -166,7 +174,6 @@ func resourceAliCloudFcv3ConcurrencyConfigDelete(d *schema.ResourceData, meta in
 	var request map[string]interface{}
 	var response map[string]interface{}
 	query := make(map[string]*string)
-	body := make(map[string]interface{})
 	conn, err := client.NewFcv2Client()
 	if err != nil {
 		return WrapError(err)
@@ -174,12 +181,11 @@ func resourceAliCloudFcv3ConcurrencyConfigDelete(d *schema.ResourceData, meta in
 	request = make(map[string]interface{})
 	request["functionName"] = d.Id()
 
-	body = request
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
-		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, body, &runtime)
+		response, err = conn.DoRequest(StringPointer("2023-03-30"), nil, StringPointer("DELETE"), StringPointer("AK"), StringPointer(action), query, nil, nil, &runtime)
 
 		if err != nil {
 			if NeedRetry(err) {
@@ -188,11 +194,14 @@ func resourceAliCloudFcv3ConcurrencyConfigDelete(d *schema.ResourceData, meta in
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
