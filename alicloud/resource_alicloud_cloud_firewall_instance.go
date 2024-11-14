@@ -120,6 +120,7 @@ func resourceAliCloudCloudFirewallInstance() *schema.Resource {
 			"fw_vpc_number": {
 				Type:         schema.TypeInt,
 				Optional:     true,
+				Computed:     true,
 				ValidateFunc: IntBetween(2, 500),
 				DiffSuppressFunc: func(k, old, new string, d *schema.ResourceData) bool {
 					if v, ok := d.GetOk("spec"); ok && v.(string) == "premium_version" {

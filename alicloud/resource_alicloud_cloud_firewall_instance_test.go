@@ -172,28 +172,30 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 					"modify_type": "Upgrade",
 				}),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"cfw_log":         "true",
-					"cfw_log_storage": "1000",
-				}),
-				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log":         "true",
-						"cfw_log_storage": "1000",
+						"fw_vpc_number": "2",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"cfw_log_storage": "2000",
+					"cfw_log":         "true",
+					"cfw_log_storage": "3000",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"cfw_log_storage": "2000",
+						"cfw_log":         "true",
+						"cfw_log_storage": "3000",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"cfw_log_storage": "5000",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"cfw_log_storage": "5000",
 					}),
 				),
 			},
@@ -204,6 +206,16 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"ip_number": "55",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"fw_vpc_number": "5",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"fw_vpc_number": "5",
 					}),
 				),
 			},
@@ -266,12 +278,12 @@ func TestAccAliCloudCloudFirewallA0Instance_basic1(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"cfw_account":    "true",
-					"account_number": "1",
+					"account_number": "10",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"cfw_account":    "true",
-						"account_number": "1",
+						"account_number": "10",
 					}),
 				),
 			},
