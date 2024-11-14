@@ -428,6 +428,7 @@ func (s *Fcv3ServiceV2) Fcv3ConcurrencyConfigStateRefreshFunc(id string, field s
 }
 
 // DescribeFcv3ConcurrencyConfig >>> Encapsulated.
+
 // DescribeFcv3Trigger <<< Encapsulated get interface for Fcv3 Trigger.
 
 func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interface{}, err error) {
@@ -462,18 +463,18 @@ func (s *Fcv3ServiceV2) DescribeFcv3Trigger(id string) (object map[string]interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 	if err != nil {
 		if IsExpectedErrors(err, []string{"TriggerNotFound"}) {
 			return object, WrapErrorf(Error(GetNotFoundMessage("Trigger", id)), NotFoundMsg, response)
 		}
-		addDebug(action, response, request)
 		return object, WrapErrorf(err, DefaultErrorMsg, id, action, AlibabaCloudSdkGoERROR)
 	}
+	response = response["body"].(map[string]interface{})
 
-	return response["body"].(map[string]interface{}), nil
+	return response, nil
 }
 
 func (s *Fcv3ServiceV2) Fcv3TriggerStateRefreshFunc(id string, field string, failStates []string) resource.StateRefreshFunc {

@@ -20,12 +20,6 @@ For information about FCV3 Trigger and how to use it, see [What is Trigger](http
 
 Basic Usage
 
-<div style="display: block;margin-bottom: 40px;"><div class="oics-button" style="float: right;position: absolute;margin-bottom: 10px;">
-  <a href="https://api.aliyun.com/api-tools/terraform?resource=alicloud_fcv3_trigger&exampleId=27eb3c9b-5693-567a-b806-d095e2f839501d608279&activeTab=example&spm=docs.r.fcv3_trigger.0.27eb3c9b56&intl_lang=EN_US" target="_blank">
-    <img alt="Open in AliCloud" src="https://img.alicdn.com/imgextra/i1/O1CN01hjjqXv1uYUlY56FyX_!!6000000006049-55-tps-254-36.svg" style="max-height: 44px; max-width: 100%;">
-  </a>
-</div></div>
-
 ```terraform
 variable "name" {
   default = "terraform-example"
@@ -90,7 +84,13 @@ The following arguments are supported:
 The following attributes are exported:
 * `id` - The ID of the resource supplied above.The value is formulated as `<function_name>:<trigger_name>`.
 * `create_time` - Creation time
+* `http_trigger` - (Available since v1.234.0) HTTP trigger information
+  * `url_internet` - The public domain name address. On the Internet, you can access the HTTP Trigger through the HTTP protocol or HTTPS protocol.
+  * `url_intranet` - The private domain name address. In a VPC, you can access the HTTP Trigger through HTTP or HTTPS.
+* `last_modified_time` - (Available since v1.234.0) The last modified time of the trigger
 * `status` - The state of the trigger
+* `target_arn` - (Available since v1.234.0) Resource identity of the function
+* `trigger_id` - (Available since v1.234.0) Trigger ID
 
 ## Timeouts
 
