@@ -474,7 +474,7 @@ func resourceAlicloudWafv3DomainUpdate(d *schema.ResourceData, meta interface{})
 	err = resource.Retry(client.GetRetryTimeout(d.Timeout(schema.TimeoutUpdate)), func() *resource.RetryError {
 		response, err = client.RpcPost("waf-openapi", "2021-10-01", action, nil, request, false)
 		if err != nil {
-			if NeedRetry(err) {
+			if NeedRetry(err) || IsExpectedErrors(err, []string{"Waf.Pullin.ResourceProcessing"}) {
 				wait()
 				return resource.RetryableError(err)
 			}
