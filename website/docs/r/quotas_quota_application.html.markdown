@@ -52,10 +52,9 @@ Terraform cannot destroy resource `alicloud_quotas_quota_application`. Terraform
 ## Argument Reference
 
 The following arguments are supported:
-* `audit_mode` - (Optional, ForceNew, Computed) Quota audit mode. Value:
-  - Sync: Synchronize auditing. The quota center automatically approves, and the approval result is returned immediately, but the probability of application passing is lower than that of asynchronous approval, and the validity period of the increase quota is 1 hour.
-  - Async: Asynchronous auditing. Manual review, the probability of application passing is relatively high, and the validity period of the increase quota is 1 month.
--> **NOTE:**  This parameter takes effect only for the ECS specification quota of the cloud server.
+* `audit_mode` - (Optional, ForceNew, Computed) This parameter is discontinued and is not recommended. The mode in which you want the application to be reviewed. Valid values:
+  - Sync: The application is reviewed in a synchronous manner. Quota Center automatically reviews the application. The result is returned immediately after you submit the application. However, the chance of an approval for an application that is reviewed in Sync mode is lower than the chance of an approval for an application that is reviewed in Async mode. The validity period of the new quota value is 1 hour.
+  - Async: The application is reviewed in an asynchronous manner. An Alibaba Cloud support engineer reviews the application. The chance of an approval for an application that is reviewed in Async mode is higher than the chance of an approval for an application that is reviewed in Sync mode. The validity period of the new quota value is one month.
 * `desire_value` - (Required, ForceNew) The desire value of the quota application.
 * `dimensions` - (Optional, ForceNew) QuotaDimensions. See [`dimensions`](#dimensions) below.
 * `effective_time` - (Optional, ForceNew) The effective time of the quota application.
@@ -76,8 +75,8 @@ The following arguments are supported:
 ### `dimensions`
 
 The dimensions support the following:
-* `key` - (Optional, ForceNew) Key.
-* `value` - (Optional, ForceNew) Value.
+* `key` - (Optional, ForceNew) The key of the dimension. You must configure `dimensions.N.key` and `dimensions.N.value` at the same time. The value range of N varies based on the number of dimensions that are supported by the related Alibaba Cloud service. You can call the [ListProductQuotaDimensions](https://next.api.aliyun.com/document/quotas/2020-05-10/ListProductQuotaDimensions) operation to query the dimensions that are supported by an Alibaba Cloud service. The number of elements in the returned array is N.
+* `value` - (Optional, ForceNew) The value of the dimension. You must configure `dimensions.N.key` and `dimensions.N.value` at the same time. The value range of N varies based on the number of dimensions that are supported by the related Alibaba Cloud service. You can call the [ListProductQuotaDimensions](https://next.api.aliyun.com/document/quotas/2020-05-10/ListProductQuotaDimensions) operation to query the dimensions that are supported by an Alibaba Cloud service. The number of elements in the returned array is N.
 
 
 ## Attributes Reference
