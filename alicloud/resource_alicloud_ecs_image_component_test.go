@@ -472,11 +472,11 @@ func TestUnitAlicloudECSImageComponent(t *testing.T) {
 }
 
 // Test Ecs ImageComponent. >>> Resource test cases, automatically generated.
-// Case 3962
-func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
+// Case imageComponent-test 8168
+func TestAccAliCloudEcsImageComponent_basic8168(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3962)
+	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap8168)
 	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
 		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
 	}, "DescribeEcsImageComponent")
@@ -484,9 +484,10 @@ func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
 	testAccCheck := rac.resourceAttrMapUpdateSet()
 	rand := acctest.RandIntRange(10000, 99999)
 	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence3962)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence8168)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -496,42 +497,32 @@ func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_component_name": name,
-					"content":              "RUN yum update -y",
+					"component_type":       "Test",
+					"description":          "test-version",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"content":              "Parameters:\\n  messgae:\\n    Type: String\\n    DefaultValue: hello world\\nTasks:\\n  - Name: HelloWorld\\n    Action: RunPowerShellCommand\\n    Properties:\\n      commandContent: echo {{messgae}}\\n  - Name: HelloWorldAgain\\n    Action: RunPowerShellCommand\\n    Properties:\\n      commandContent: echo {{HelloWorld.stdout}}",
+					"system_type":          "Windows",
+					"component_version":    "1.1.1",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"image_component_name": name,
-						"content":              "RUN yum update -y",
+						"component_type":       "Test",
+						"description":          "test-version",
+						"resource_group_id":    CHECKSET,
+						"content":              "Parameters:\n  messgae:\n    Type: String\n    DefaultValue: hello world\nTasks:\n  - Name: HelloWorld\n    Action: RunPowerShellCommand\n    Properties:\n      commandContent: echo {{messgae}}\n  - Name: HelloWorldAgain\n    Action: RunPowerShellCommand\n    Properties:\n      commandContent: echo {{HelloWorld.stdout}}",
+						"system_type":          "Windows",
+						"component_version":    "1.1.1",
 					}),
 				),
 			},
 			{
 				Config: testAccConfig(map[string]interface{}{
-					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.groups.1.id}",
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
 						"resource_group_id": CHECKSET,
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_component_name": name + "_update",
-					"component_type":       "Build",
-					"description":          "terraform",
-					"content":              "RUN yum update -y",
-					"system_type":          "Linux",
-					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_component_name": name + "_update",
-						"component_type":       "Build",
-						"description":          "terraform",
-						"content":              "RUN yum update -y",
-						"system_type":          "Linux",
-						"resource_group_id":    CHECKSET,
 					}),
 				),
 			},
@@ -587,11 +578,11 @@ func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
 	})
 }
 
-var AlicloudEcsImageComponentMap3962 = map[string]string{
+var AlicloudEcsImageComponentMap8168 = map[string]string{
 	"create_time": CHECKSET,
 }
 
-func AlicloudEcsImageComponentBasicDependence3962(name string) string {
+func AlicloudEcsImageComponentBasicDependence8168(name string) string {
 	return fmt.Sprintf(`
 variable "name" {
     default = "%s"
@@ -599,10 +590,239 @@ variable "name" {
 
 data "alicloud_resource_manager_resource_groups" "default" {}
 
+
 `, name)
 }
 
-// Case 5173
+// Case imageComponent-version 8104
+func TestAccAliCloudEcsImageComponent_basic8104(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_image_component.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap8104)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsImageComponent")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence8104)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-beijing"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_component_name": name,
+					"component_type":       "Build",
+					"description":          "test-version",
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
+					"content":              "RUN yum update -y",
+					"system_type":          "Linux",
+					"component_version":    "1.1.1",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_component_name": name,
+						"component_type":       "Build",
+						"description":          "test-version",
+						"resource_group_id":    CHECKSET,
+						"content":              "RUN yum update -y",
+						"system_type":          "Linux",
+						"component_version":    "1.1.1",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEcsImageComponentMap8104 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsImageComponentBasicDependence8104(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
+}
+
+// Case ImageComponent-rmc 3892
+func TestAccAliCloudEcsImageComponent_basic3892(t *testing.T) {
+	var v map[string]interface{}
+	resourceId := "alicloud_ecs_image_component.default"
+	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3892)
+	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
+		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
+	}, "DescribeEcsImageComponent")
+	rac := resourceAttrCheckInit(rc, ra)
+	testAccCheck := rac.resourceAttrMapUpdateSet()
+	rand := acctest.RandIntRange(10000, 99999)
+	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
+	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence3892)
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
+			testAccPreCheck(t)
+		},
+		IDRefreshName: resourceId,
+		Providers:     testAccProviders,
+		CheckDestroy:  rac.checkResourceDestroy(),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"image_component_name": name,
+					"component_type":       "Build",
+					"description":          "rmc",
+					"content":              "RUN yum update -y",
+					"system_type":          "Linux",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"image_component_name": name,
+						"component_type":       "Build",
+						"description":          "rmc",
+						"content":              "RUN yum update -y",
+						"system_type":          "Linux",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
+					}),
+				),
+			},
+			{
+				ResourceName:            resourceId,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{},
+			},
+		},
+	})
+}
+
+var AlicloudEcsImageComponentMap3892 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsImageComponentBasicDependence3892(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+
+`, name)
+}
+
+// Case ImageComponent-tag 5173
 func TestAccAliCloudEcsImageComponent_basic5173(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
@@ -617,6 +837,7 @@ func TestAccAliCloudEcsImageComponent_basic5173(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence5173)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -626,18 +847,6 @@ func TestAccAliCloudEcsImageComponent_basic5173(t *testing.T) {
 			{
 				Config: testAccConfig(map[string]interface{}{
 					"image_component_name": name,
-					"content":              "RUN yum update -y",
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_component_name": name,
-						"content":              "RUN yum update -y",
-					}),
-				),
-			},
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_component_name": name + "_update",
 					"component_type":       "Build",
 					"description":          "terraform-tag",
 					"content":              "RUN yum update -y",
@@ -645,12 +854,30 @@ func TestAccAliCloudEcsImageComponent_basic5173(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
-						"image_component_name": name + "_update",
+						"image_component_name": name,
 						"component_type":       "Build",
 						"description":          "terraform-tag",
 						"content":              "RUN yum update -y",
 						"system_type":          "Linux",
 					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
 				),
 			},
 			{
@@ -719,8 +946,8 @@ variable "name" {
 `, name)
 }
 
-// Case 3962  twin
-func TestAccAliCloudEcsImageComponent_basic3962_twin(t *testing.T) {
+// Case ImageComponent-ResourceGroup 3962
+func TestAccAliCloudEcsImageComponent_basic3962(t *testing.T) {
 	var v map[string]interface{}
 	resourceId := "alicloud_ecs_image_component.default"
 	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap3962)
@@ -734,6 +961,7 @@ func TestAccAliCloudEcsImageComponent_basic3962_twin(t *testing.T) {
 	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence3962)
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
+			testAccPreCheckWithRegions(t, true, []connectivity.Region{"cn-hangzhou"})
 			testAccPreCheck(t)
 		},
 		IDRefreshName: resourceId,
@@ -747,11 +975,7 @@ func TestAccAliCloudEcsImageComponent_basic3962_twin(t *testing.T) {
 					"description":          "terraform",
 					"content":              "RUN yum update -y",
 					"system_type":          "Linux",
-					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.groups.0.id}",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
+					"resource_group_id":    "${data.alicloud_resource_manager_resource_groups.default.ids.0}",
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheck(map[string]string{
@@ -761,9 +985,76 @@ func TestAccAliCloudEcsImageComponent_basic3962_twin(t *testing.T) {
 						"content":              "RUN yum update -y",
 						"system_type":          "Linux",
 						"resource_group_id":    CHECKSET,
-						"tags.%":               "2",
-						"tags.Created":         "TF",
-						"tags.For":             "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"resource_group_id": "${data.alicloud_resource_manager_resource_groups.default.ids.1}",
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"resource_group_id": CHECKSET,
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF",
+						"For":     "Test",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF",
+						"tags.For":     "Test",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": map[string]string{
+						"Created": "TF-update",
+						"For":     "Test-update",
+					},
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "2",
+						"tags.Created": "TF-update",
+						"tags.For":     "Test-update",
+					}),
+				),
+			},
+			{
+				Config: testAccConfig(map[string]interface{}{
+					"tags": REMOVEKEY,
+				}),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheck(map[string]string{
+						"tags.%":       "0",
+						"tags.Created": REMOVEKEY,
+						"tags.For":     REMOVEKEY,
 					}),
 				),
 			},
@@ -777,60 +1068,20 @@ func TestAccAliCloudEcsImageComponent_basic3962_twin(t *testing.T) {
 	})
 }
 
-// Case 5173  twin
-func TestAccAliCloudEcsImageComponent_basic5173_twin(t *testing.T) {
-	var v map[string]interface{}
-	resourceId := "alicloud_ecs_image_component.default"
-	ra := resourceAttrInit(resourceId, AlicloudEcsImageComponentMap5173)
-	rc := resourceCheckInitWithDescribeMethod(resourceId, &v, func() interface{} {
-		return &EcsServiceV2{testAccProvider.Meta().(*connectivity.AliyunClient)}
-	}, "DescribeEcsImageComponent")
-	rac := resourceAttrCheckInit(rc, ra)
-	testAccCheck := rac.resourceAttrMapUpdateSet()
-	rand := acctest.RandIntRange(10000, 99999)
-	name := fmt.Sprintf("tf-testacc%secsimagecomponent%d", defaultRegionToTest, rand)
-	testAccConfig := resourceTestAccConfigFunc(resourceId, name, AlicloudEcsImageComponentBasicDependence5173)
-	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			testAccPreCheck(t)
-		},
-		IDRefreshName: resourceId,
-		Providers:     testAccProviders,
-		CheckDestroy:  rac.checkResourceDestroy(),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccConfig(map[string]interface{}{
-					"image_component_name": name,
-					"component_type":       "Build",
-					"description":          "terraform-tag",
-					"content":              "RUN yum update -y",
-					"system_type":          "Linux",
-					"tags": map[string]string{
-						"Created": "TF",
-						"For":     "Test",
-					},
-				}),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheck(map[string]string{
-						"image_component_name": name,
-						"component_type":       "Build",
-						"description":          "terraform-tag",
-						"content":              "RUN yum update -y",
-						"system_type":          "Linux",
-						"tags.%":               "2",
-						"tags.Created":         "TF",
-						"tags.For":             "Test",
-					}),
-				),
-			},
-			{
-				ResourceName:            resourceId,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{},
-			},
-		},
-	})
+var AlicloudEcsImageComponentMap3962 = map[string]string{
+	"create_time": CHECKSET,
+}
+
+func AlicloudEcsImageComponentBasicDependence3962(name string) string {
+	return fmt.Sprintf(`
+variable "name" {
+    default = "%s"
+}
+
+data "alicloud_resource_manager_resource_groups" "default" {}
+
+
+`, name)
 }
 
 // Test Ecs ImageComponent. <<< Resource test cases, automatically generated.
