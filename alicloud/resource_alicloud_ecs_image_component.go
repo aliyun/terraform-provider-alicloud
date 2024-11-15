@@ -33,7 +33,13 @@ func resourceAliCloudEcsImageComponent() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Build"}, true),
+				ValidateFunc: StringInSlice([]string{"Build", "Test"}, false),
+			},
+			"component_version": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
 			"content": {
 				Type:     schema.TypeString,
@@ -65,7 +71,7 @@ func resourceAliCloudEcsImageComponent() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ForceNew:     true,
-				ValidateFunc: StringInSlice([]string{"Linux"}, true),
+				ValidateFunc: StringInSlice([]string{"Linux", "Windows"}, false),
 			},
 			"tags": tagsSchema(),
 		},
@@ -101,16 +107,22 @@ func resourceAliCloudEcsImageComponentCreate(d *schema.ResourceData, meta interf
 		request["ComponentType"] = v
 	}
 	request["Content"] = d.Get("content")
+	if v, ok := d.GetOk("tags"); ok {
+		tagsMap := ConvertTags(v.(map[string]interface{}))
+		request = expandTagsToMap(request, tagsMap)
+	}
+
 	if v, ok := d.GetOk("image_component_name"); ok {
 		request["Name"] = v
+	}
+	if v, ok := d.GetOk("component_version"); ok {
+		request["ComponentVersion"] = v
 	}
 	runtime := util.RuntimeOptions{}
 	runtime.SetAutoretry(true)
 	wait := incrementalWait(3*time.Second, 5*time.Second)
 	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
 		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
-		request["ClientToken"] = buildClientToken(action)
-
 		if err != nil {
 			if NeedRetry(err) {
 				wait()
@@ -118,9 +130,9 @@ func resourceAliCloudEcsImageComponentCreate(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
 		return WrapErrorf(err, DefaultErrorMsg, "alicloud_ecs_image_component", action, AlibabaCloudSdkGoERROR)
@@ -128,7 +140,7 @@ func resourceAliCloudEcsImageComponentCreate(d *schema.ResourceData, meta interf
 
 	d.SetId(fmt.Sprint(response["ImageComponentId"]))
 
-	return resourceAliCloudEcsImageComponentUpdate(d, meta)
+	return resourceAliCloudEcsImageComponentRead(d, meta)
 }
 
 func resourceAliCloudEcsImageComponentRead(d *schema.ResourceData, meta interface{}) error {
@@ -145,13 +157,30 @@ func resourceAliCloudEcsImageComponentRead(d *schema.ResourceData, meta interfac
 		return WrapError(err)
 	}
 
-	d.Set("component_type", objectRaw["ComponentType"])
-	d.Set("content", objectRaw["Content"])
-	d.Set("create_time", objectRaw["CreationTime"])
-	d.Set("description", objectRaw["Description"])
-	d.Set("image_component_name", objectRaw["Name"])
-	d.Set("resource_group_id", objectRaw["ResourceGroupId"])
-	d.Set("system_type", objectRaw["SystemType"])
+	if objectRaw["ComponentType"] != nil {
+		d.Set("component_type", objectRaw["ComponentType"])
+	}
+	if objectRaw["ComponentVersion"] != nil {
+		d.Set("component_version", objectRaw["ComponentVersion"])
+	}
+	if objectRaw["Content"] != nil {
+		d.Set("content", objectRaw["Content"])
+	}
+	if objectRaw["CreationTime"] != nil {
+		d.Set("create_time", objectRaw["CreationTime"])
+	}
+	if objectRaw["Description"] != nil {
+		d.Set("description", objectRaw["Description"])
+	}
+	if objectRaw["Name"] != nil {
+		d.Set("image_component_name", objectRaw["Name"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["SystemType"] != nil {
+		d.Set("system_type", objectRaw["SystemType"])
+	}
 
 	tagsMaps, _ := jsonpath.Get("$.Tags.Tag", objectRaw)
 	d.Set("tags", tagsToMap(tagsMaps))
@@ -172,9 +201,9 @@ func resourceAliCloudEcsImageComponentUpdate(d *schema.ResourceData, meta interf
 	}
 	request = make(map[string]interface{})
 	query = make(map[string]interface{})
-	query["ResourceId"] = d.Id()
+	request["ResourceId"] = d.Id()
 	request["RegionId"] = client.RegionId
-	if _, ok := d.GetOk("resource_group_id"); ok && !d.IsNewResource() && d.HasChange("resource_group_id") {
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
 		update = true
 		request["ResourceGroupId"] = d.Get("resource_group_id")
 	}
@@ -186,7 +215,6 @@ func resourceAliCloudEcsImageComponentUpdate(d *schema.ResourceData, meta interf
 		wait := incrementalWait(3*time.Second, 5*time.Second)
 		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
 			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2014-05-26"), StringPointer("AK"), query, request, &runtime)
-
 			if err != nil {
 				if NeedRetry(err) {
 					wait()
@@ -194,9 +222,9 @@ func resourceAliCloudEcsImageComponentUpdate(d *schema.ResourceData, meta interf
 				}
 				return resource.NonRetryableError(err)
 			}
-			addDebug(action, response, request)
 			return nil
 		})
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
@@ -207,7 +235,6 @@ func resourceAliCloudEcsImageComponentUpdate(d *schema.ResourceData, meta interf
 		if err := ecsServiceV2.SetResourceTags(d, "imagecomponent"); err != nil {
 			return WrapError(err)
 		}
-		d.SetPartial("tags")
 	}
 	return resourceAliCloudEcsImageComponentRead(d, meta)
 }
@@ -224,7 +251,7 @@ func resourceAliCloudEcsImageComponentDelete(d *schema.ResourceData, meta interf
 		return WrapError(err)
 	}
 	request = make(map[string]interface{})
-	query["ImageComponentId"] = d.Id()
+	request["ImageComponentId"] = d.Id()
 	request["RegionId"] = client.RegionId
 
 	runtime := util.RuntimeOptions{}
@@ -240,11 +267,14 @@ func resourceAliCloudEcsImageComponentDelete(d *schema.ResourceData, meta interf
 			}
 			return resource.NonRetryableError(err)
 		}
-		addDebug(action, response, request)
 		return nil
 	})
+	addDebug(action, response, request)
 
 	if err != nil {
+		if NotFoundError(err) {
+			return nil
+		}
 		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 	}
 
