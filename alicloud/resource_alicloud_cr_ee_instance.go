@@ -1,3 +1,4 @@
+// Package alicloud. This file is generated automatically. Please do not modify it manually, thank you!
 package alicloud
 
 import (
@@ -6,86 +7,59 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/cr_ee"
-
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/errors"
-	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
-	"github.com/aliyun/alibaba-cloud-sdk-go/services/bssopenapi"
+	"github.com/PaesslerAG/jsonpath"
+	util "github.com/alibabacloud-go/tea-utils/service"
 	"github.com/aliyun/terraform-provider-alicloud/alicloud/connectivity"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
 
-func resourceAlicloudCrEEInstance() *schema.Resource {
+func resourceAliCloudCrInstance() *schema.Resource {
 	return &schema.Resource{
-		Create: resourceAlicloudCrEEInstanceCreate,
-		Read:   resourceAlicloudCrEEInstanceRead,
-		Update: resourceAlicloudCrEEInstanceUpdate,
-		Delete: resourceAlicloudCrEEInstanceDelete,
+		Create: resourceAliCloudCrInstanceCreate,
+		Read:   resourceAliCloudCrInstanceRead,
+		Update: resourceAliCloudCrInstanceUpdate,
+		Delete: resourceAliCloudCrInstanceDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(10 * time.Minute),
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Update: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(5 * time.Minute),
 		},
 		Schema: map[string]*schema.Schema{
-			"payment_type": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Subscription"}, false),
-				Default:      "Subscription",
+			"create_time": {
+				Type:     schema.TypeString,
+				Computed: true,
 			},
-			"period": {
-				Type:         schema.TypeInt,
-				Optional:     true,
-				ValidateFunc: validation.IntInSlice([]int{1, 2, 3, 6, 12, 24, 36, 48, 60}),
-				Default:      12,
-			},
-			"renew_period": {
-				Type:     schema.TypeInt,
+			"custom_oss_bucket": {
+				Type:     schema.TypeString,
 				Optional: true,
-				ForceNew: true,
-				Default:  0,
 			},
-			"renewal_status": {
+			"default_oss_bucket": {
 				Type:         schema.TypeString,
 				Optional:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
-				Default:      "ManualRenewal",
+				ValidateFunc: StringInSlice([]string{"true", "false"}, false),
 			},
-			"instance_type": {
+			"end_time": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"image_scanner": {
 				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"Basic", "Standard", "Advanced"}, false),
+				Optional:     true,
+				ValidateFunc: StringInSlice([]string{"ACR", "SAS"}, false),
 			},
 			"instance_name": {
 				Type:     schema.TypeString,
 				Required: true,
 				ForceNew: true,
 			},
-			"custom_oss_bucket": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"status": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"created_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"end_time": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-			"password": {
-				Type:      schema.TypeString,
-				Optional:  true,
-				Sensitive: true,
+			"instance_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: StringInSlice([]string{"Basic", "Standard", "Advanced"}, false),
 			},
 			"kms_encrypted_password": {
 				Type:             schema.TypeString,
@@ -100,195 +74,373 @@ func resourceAlicloudCrEEInstance() *schema.Resource {
 				},
 				Elem: schema.TypeString,
 			},
+			"password": {
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"payment_type": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"Subscription", "PayAsYouGo"}, false),
+			},
+			"period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"region_id": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"renew_period": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				ForceNew: true,
+			},
+			"renewal_status": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Computed:     true,
+				ForceNew:     true,
+				ValidateFunc: StringInSlice([]string{"AutoRenewal", "ManualRenewal"}, false),
+			},
+			"resource_group_id": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"status": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"created_time": {
+				Type:       schema.TypeString,
+				Computed:   true,
+				Deprecated: "Field 'created_time' has been deprecated since provider version 1.235.0. New field 'create_time' instead.",
+			},
 		},
 	}
 }
 
-func resourceAlicloudCrEEInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCrInstanceCreate(d *schema.ResourceData, meta interface{}) error {
+
 	client := meta.(*connectivity.AliyunClient)
 
-	request := bssopenapi.CreateCreateInstanceRequest()
-	request.Scheme = "https"
-	request.RegionId = "cn-hangzhou"
-	request.ProductCode = "acr"
-	request.ProductType = "acr_ee_public_cn"
-	request.SubscriptionType = d.Get("payment_type").(string)
-	request.Period = requests.NewInteger(d.Get("period").(int))
-	if v, ok := d.GetOk("renew_period"); ok {
-		request.RenewPeriod = requests.NewInteger(v.(int))
+	action := "CreateInstance"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+
+	request["ClientToken"] = buildClientToken(action)
+
+	if v, ok := d.GetOkExists("period"); ok {
+		request["Period"] = v
 	}
 	if v, ok := d.GetOk("renewal_status"); ok {
-		request.RenewalStatus = v.(string)
+		request["RenewalStatus"] = v
 	}
-
-	parameters := []bssopenapi.CreateInstanceParameter{
-		{
-			Code:  "InstanceType",
-			Value: d.Get("instance_type").(string),
-		},
-		{
-			Code:  "InstanceName",
-			Value: d.Get("instance_name").(string),
-		},
-		{
-			Code:  "Region",
-			Value: client.RegionId,
-		},
+	if v, ok := d.GetOkExists("renew_period"); ok {
+		request["RenewPeriod"] = v
+	}
+	parameterMapList := make([]map[string]interface{}, 0)
+	if v, ok := d.GetOk("instance_type"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceType",
+			"Value": v,
+		})
+	}
+	if v, ok := d.GetOk("instance_name"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceName",
+			"Value": v,
+		})
+	}
+	parameterMapList = append(parameterMapList, map[string]interface{}{
+		"Code":  "Region",
+		"Value": client.RegionId,
+	})
+	if v, ok := d.GetOk("default_oss_bucket"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "DefaultOssBucket",
+			"Value": v,
+		})
 	}
 	if v, ok := d.GetOk("custom_oss_bucket"); ok {
-		parameters = append(parameters, bssopenapi.CreateInstanceParameter{
-			Code:  "DefaultOssBucket",
-			Value: "false",
-		})
-		parameters = append(parameters, bssopenapi.CreateInstanceParameter{
-			Code:  "InstanceStorageName",
-			Value: v.(string),
-		})
-	} else {
-		parameters = append(parameters, bssopenapi.CreateInstanceParameter{
-			Code:  "DefaultOssBucket",
-			Value: "true",
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "InstanceStorageName",
+			"Value": v,
 		})
 	}
-	request.Parameter = &parameters
+	if v, ok := d.GetOk("image_scanner"); ok {
+		parameterMapList = append(parameterMapList, map[string]interface{}{
+			"Code":  "image_scanner",
+			"Value": v,
+		})
+	}
+	request["Parameter"] = parameterMapList
 
-	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		resp, errCreate := bssopenapiClient.CreateInstance(request)
-		if errCreate != nil {
-			// if account site is international, should route to  ap-southeast-1
-			if serverErr, ok := errCreate.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
-				request.RegionId = "ap-southeast-1"
-				request.Domain = "business.ap-southeast-1.aliyuncs.com"
-				request.ProductType = "acr_ee_public_intl"
-				resp, errCreate = bssopenapiClient.CreateInstance(request)
+	request["SubscriptionType"] = d.Get("payment_type")
+	request["ProductCode"] = "acr"
+	request["ProductType"] = "acr_ee_public_cn"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutCreate), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
 			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "acr"
+				request["ProductType"] = "acr_ee_public_intl"
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
 		}
-		return resp, errCreate
+		return nil
 	})
+	addDebug(action, response, request)
+
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", action, AlibabaCloudSdkGoERROR)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*bssopenapi.CreateInstanceResponse)
-	if !response.Success {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+	if fmt.Sprint(response["Code"]) != "Success" {
+		return WrapError(fmt.Errorf("%s failed, response: %v", action, response))
 	}
 
-	d.SetId(fmt.Sprintf("%v", response.Data.InstanceId))
+	id, _ := jsonpath.Get("$.Data.InstanceId", response)
+	d.SetId(fmt.Sprint(id))
 
-	crService := &CrService{client}
-	stateConf := BuildStateConf([]string{"PENDING", "STARTING"}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 15*time.Second, crService.InstanceStatusRefreshFunc(d.Id(), []string{}))
+	crServiceV2 := CrServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"RUNNING"}, d.Timeout(schema.TimeoutCreate), 60*time.Second, crServiceV2.CrInstanceStateRefreshFunc(d.Id(), "InstanceStatus", []string{}))
 	if _, err := stateConf.WaitForState(); err != nil {
 		return WrapErrorf(err, IdMsg, d.Id())
 	}
 
-	return resourceAlicloudCrEEInstanceUpdate(d, meta)
+	return resourceAliCloudCrInstanceUpdate(d, meta)
 }
 
-func resourceAlicloudCrEEInstanceRead(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCrInstanceRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	crService := &CrService{client}
+	crServiceV2 := CrServiceV2{client}
 
-	resp, err := crService.DescribeCrEEInstance(d.Id())
+	objectRaw, err := crServiceV2.DescribeCrInstance(d.Id())
 	if err != nil {
-		if NotFoundError(err) {
-			log.Printf("[DEBUG] Resource alicloud_cr_ee_instance crService.DescribeCrEEInstance Failed!!! %s", err)
+		if !d.IsNewResource() && NotFoundError(err) {
+			log.Printf("[DEBUG] Resource alicloud_cr_ee_instance DescribeCrInstance Failed!!! %s", err)
 			d.SetId("")
 			return nil
 		}
 		return WrapError(err)
 	}
-	d.Set("instance_name", resp.InstanceName)
-	d.Set("instance_type", strings.TrimPrefix(resp.InstanceSpecification, "Enterprise_"))
-	d.Set("status", resp.InstanceStatus)
 
-	request := bssopenapi.CreateQueryAvailableInstancesRequest()
-	request.Scheme = "https"
-	request.RegionId = "cn-hangzhou"
-	request.ProductCode = "acr"
-	request.ProductType = "acr_ee_public_cn"
-	request.InstanceIDs = resp.InstanceId
-	raw, err := client.WithBssopenapiClient(func(bssopenapiClient *bssopenapi.Client) (interface{}, error) {
-		resp, errQuery := bssopenapiClient.QueryAvailableInstances(request)
-		regionRedirect := false
-		if serverErr, ok := errQuery.(*errors.ServerError); ok && serverErr.ErrorCode() == "NotApplicable" {
-			regionRedirect = true
-		} else if !resp.Success && strings.Contains(resp.Message, "code=40001") {
-			regionRedirect = true
-		}
-		if regionRedirect {
-			// if account site is international, should route to  ap-southeast-1
-			request.RegionId = "ap-southeast-1"
-			request.Domain = "business.ap-southeast-1.aliyuncs.com"
-			request.ProductType = "acr_ee_public_intl"
-			resp, errQuery = bssopenapiClient.QueryAvailableInstances(request)
-		}
-		return resp, errQuery
-	})
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["InstanceName"] != nil {
+		d.Set("instance_name", objectRaw["InstanceName"])
+	}
+	if objectRaw["ResourceGroupId"] != nil {
+		d.Set("resource_group_id", objectRaw["ResourceGroupId"])
+	}
+	if objectRaw["InstanceSpecification"] != nil {
+		d.Set("instance_type", strings.TrimPrefix(objectRaw["InstanceSpecification"].(string), "Enterprise_"))
+	}
+	if objectRaw["InstanceStatus"] != nil {
+		d.Set("status", objectRaw["InstanceStatus"])
+	}
+
+	objectRaw, err = crServiceV2.DescribeQueryAvailableInstances(d.Id())
 	if err != nil {
-		return WrapErrorf(err, DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
+		return WrapError(err)
 	}
-	addDebug(request.GetActionName(), raw)
-	response, _ := raw.(*bssopenapi.QueryAvailableInstancesResponse)
-	if !response.Success {
-		return WrapErrorf(fmt.Errorf("%v", response), DefaultErrorMsg, "alicloud_cr_ee_instance", request.GetActionName(), AlibabaCloudSdkGoERROR)
-	}
-	instance := response.Data.InstanceList[0]
-	d.Set("payment_type", instance.SubscriptionType)
-	d.Set("renewal_status", instance.RenewStatus)
-	if instance.RenewalDurationUnit == "M" {
-		d.Set("renew_period", instance.RenewalDuration)
-	} else {
-		d.Set("renew_period", instance.RenewalDuration*12)
-	}
-	d.Set("created_time", instance.CreateTime)
-	d.Set("end_time", instance.EndTime)
 
+	if objectRaw["CreateTime"] != nil {
+		d.Set("create_time", objectRaw["CreateTime"])
+	}
+	if objectRaw["EndTime"] != nil {
+		d.Set("end_time", objectRaw["EndTime"])
+	}
+	if objectRaw["SubscriptionType"] != nil {
+		d.Set("payment_type", objectRaw["SubscriptionType"])
+	}
+	if objectRaw["Region"] != nil {
+		d.Set("region_id", objectRaw["Region"])
+	}
+	if objectRaw["RenewalDuration"] == nil {
+		d.Set("renew_period", objectRaw["RenewalDuration"])
+	}
+	if objectRaw["RenewalDuration"] != nil {
+		d.Set("renew_period", objectRaw["RenewalDuration"])
+	}
+	if objectRaw["RenewStatus"] != nil {
+		d.Set("renewal_status", objectRaw["RenewStatus"])
+	}
+
+	d.Set("created_time", d.Get("create_time"))
 	return nil
 }
 
-func resourceAlicloudCrEEInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
+func resourceAliCloudCrInstanceUpdate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*connectivity.AliyunClient)
-	response := &cr_ee.ResetLoginPasswordResponse{}
-	request := cr_ee.CreateResetLoginPasswordRequest()
-	request.InstanceId = d.Id()
-	action := request.GetActionName()
+	var request map[string]interface{}
+	var response map[string]interface{}
+	var query map[string]interface{}
+	update := false
+	d.Partial(true)
 
-	if d.HasChanges("password", "kms_encrypted_password") {
-		password := d.Get("password").(string)
-		kmsPassword := d.Get("kms_encrypted_password").(string)
-
-		if password == "" && kmsPassword == "" {
-			return WrapError(Error("One of the 'password' and 'kms_encrypted_password' should be set."))
+	action := "ChangeResourceGroup"
+	conn, err := client.NewAcrClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["ResourceId"] = d.Id()
+	request["ResourceRegionId"] = client.RegionId
+	if _, ok := d.GetOk("resource_group_id"); ok && d.HasChange("resource_group_id") {
+		update = true
+	}
+	request["ResourceGroupId"] = d.Get("resource_group_id")
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
+		})
+		addDebug(action, response, request)
+		if err != nil {
+			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-
-		if password != "" {
-			request.Password = password
-		} else {
+		crServiceV2 := CrServiceV2{client}
+		stateConf := BuildStateConf([]string{}, []string{fmt.Sprint(d.Get("resource_group_id"))}, d.Timeout(schema.TimeoutUpdate), 30*time.Second, crServiceV2.CrInstanceStateRefreshFunc(d.Id(), "ResourceGroupId", []string{}))
+		if _, err := stateConf.WaitForState(); err != nil {
+			return WrapErrorf(err, IdMsg, d.Id())
+		}
+	}
+	update = false
+	action = "ResetLoginPassword"
+	conn, err = client.NewAcrClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	query = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+	request["RegionId"] = client.RegionId
+	if d.HasChanges("password", "kms_encrypted_password") {
+		update = true
+	}
+	request["Password"] = d.Get("password")
+	if update && request["Password"] == "" {
+		kmsPassword, ok := d.Get("kms_encrypted_password").(string)
+		if ok {
 			kmsService := KmsService{meta.(*connectivity.AliyunClient)}
 			decryptResp, err := kmsService.Decrypt(kmsPassword, d.Get("kms_encryption_context").(map[string]interface{}))
 			if err != nil {
 				return WrapError(err)
 			}
-			request.Password = decryptResp
+			request["Password"] = decryptResp
 		}
-
-		raw, err := client.WithCrEEClient(func(creeClient *cr_ee.Client) (interface{}, error) {
-			return creeClient.ResetLoginPassword(request)
+	}
+	if update {
+		runtime := util.RuntimeOptions{}
+		runtime.SetAutoretry(true)
+		wait := incrementalWait(3*time.Second, 5*time.Second)
+		err = resource.Retry(d.Timeout(schema.TimeoutUpdate), func() *resource.RetryError {
+			response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2018-12-01"), StringPointer("AK"), query, request, &runtime)
+			if err != nil {
+				if NeedRetry(err) {
+					wait()
+					return resource.RetryableError(err)
+				}
+				return resource.NonRetryableError(err)
+			}
+			return nil
 		})
-
+		addDebug(action, response, request)
 		if err != nil {
 			return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
 		}
-		response, _ = raw.(*cr_ee.ResetLoginPasswordResponse)
-		if !response.ResetLoginPasswordIsSuccess {
-			return WrapErrorf(fmt.Errorf(response.Code), DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
-		}
 	}
-	return resourceAlicloudCrEEInstanceRead(d, meta)
+
+	d.Partial(false)
+	return resourceAliCloudCrInstanceRead(d, meta)
 }
 
-func resourceAlicloudCrEEInstanceDelete(d *schema.ResourceData, meta interface{}) error {
-	log.Printf("[WARN] Cannot destroy resourceAlicloudCrEEInstance. Terraform will remove this resource from the state file, however resources may remain.")
+func resourceAliCloudCrInstanceDelete(d *schema.ResourceData, meta interface{}) error {
+
+	client := meta.(*connectivity.AliyunClient)
+	action := "RefundInstance"
+	var request map[string]interface{}
+	var response map[string]interface{}
+	query := make(map[string]interface{})
+	conn, err := client.NewBssopenapiClient()
+	if err != nil {
+		return WrapError(err)
+	}
+	request = make(map[string]interface{})
+	request["InstanceId"] = d.Id()
+
+	request["ClientToken"] = buildClientToken(action)
+
+	request["ImmediatelyRelease"] = "1"
+	request["ProductCode"] = "acr"
+	request["ProductType"] = "acr_ee_public_cn"
+	runtime := util.RuntimeOptions{}
+	runtime.SetAutoretry(true)
+	wait := incrementalWait(3*time.Second, 5*time.Second)
+	err = resource.Retry(d.Timeout(schema.TimeoutDelete), func() *resource.RetryError {
+		response, err = conn.DoRequest(StringPointer(action), nil, StringPointer("POST"), StringPointer("2017-12-14"), StringPointer("AK"), query, request, &runtime)
+		request["ClientToken"] = buildClientToken(action)
+
+		if err != nil {
+			if NeedRetry(err) {
+				wait()
+				return resource.RetryableError(err)
+			}
+			if IsExpectedErrors(err, []string{"NotApplicable"}) {
+				request["ProductCode"] = "acr"
+				request["ProductType"] = "acr_ee_public_intl"
+				conn.Endpoint = String(connectivity.BssOpenAPIEndpointInternational)
+				return resource.RetryableError(err)
+			}
+			return resource.NonRetryableError(err)
+		}
+		return nil
+	})
+	addDebug(action, response, request)
+
+	if err != nil {
+		if IsExpectedErrors(err, []string{"ResourceNotExists"}) || NotFoundError(err) {
+			return nil
+		}
+		return WrapErrorf(err, DefaultErrorMsg, d.Id(), action, AlibabaCloudSdkGoERROR)
+	}
+
+	crServiceV2 := CrServiceV2{client}
+	stateConf := BuildStateConf([]string{}, []string{"INSTANCE_NOT_EXIST"}, d.Timeout(schema.TimeoutDelete), 5*time.Second, crServiceV2.DescribeAsyncCrInstanceStateRefreshFunc(d, response, "$.Code", []string{}))
+	if jobDetail, err := stateConf.WaitForState(); err != nil {
+		return WrapErrorf(err, IdMsg, d.Id(), jobDetail)
+	}
+
 	return nil
 }

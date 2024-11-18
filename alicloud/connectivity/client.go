@@ -4222,10 +4222,11 @@ func (client *AliyunClient) NewServicemeshClient() (*rpc.Client, error) {
 
 func (client *AliyunClient) NewAcrClient() (*rpc.Client, error) {
 	productCode := "acr"
-	endpoint := ""
+	endpoint := client.config.CrEndpoint
+
 	if v, ok := client.config.Endpoints.Load(productCode); !ok || v.(string) == "" {
 		if err := client.loadEndpoint(productCode); err != nil {
-			endpoint = fmt.Sprintf("acr.%s.aliyuncs.com", client.config.RegionId)
+			endpoint = fmt.Sprintf("cr.%s.aliyuncs.com", client.config.RegionId)
 			client.config.Endpoints.Store(productCode, endpoint)
 			log.Printf("[ERROR] loading %s endpoint got an error: %#v. Using the endpoint %s instead.", productCode, err, endpoint)
 		}
